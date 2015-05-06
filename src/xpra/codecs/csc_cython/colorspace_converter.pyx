@@ -577,7 +577,7 @@ cdef class ColorspaceConverter:
         return out_image
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testcsc
     from xpra.codecs.csc_cython import colorspace_converter
-    testcsc(colorspace_converter)
+    testcsc(colorspace_converter, full)

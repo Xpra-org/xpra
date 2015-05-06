@@ -23,7 +23,7 @@ class TestDecoders(unittest.TestCase):
             selftest = getattr(codec, "selftest", None)
             #print("selftest(%s)=%s" % (codec_name, selftest))
             if selftest:
-                selftest()
+                selftest(True)
 
 
 

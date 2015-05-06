@@ -410,7 +410,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     return cdata
 
 
-def selftest():
+def selftest(full=False):
     #fake empty buffer:
     w, h = 24, 16
     pixels = bytearray(b"\0" * w*h*4)

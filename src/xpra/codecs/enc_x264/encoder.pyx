@@ -585,7 +585,7 @@ cdef class Encoder:
         self.quality = pct
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testencoder
     from xpra.codecs.enc_x264 import encoder
-    testencoder(encoder)
+    testencoder(encoder, full)

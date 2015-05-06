@@ -4,10 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+
 import binascii
 
-from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.log import Logger
 log = Logger("util")
 
@@ -23,6 +22,8 @@ H = 16
 
 
 def make_test_image(pixel_format, w, h):
+    from xpra.codecs.image_wrapper import ImageWrapper
+    from xpra.codecs.codec_constants import get_subsampling_divs
     if pixel_format.startswith("YUV") or pixel_format=="GBRP":
         divs = get_subsampling_divs(pixel_format)
         ydiv = divs[0]  #always (1,1)
@@ -40,7 +41,7 @@ def make_test_image(pixel_format, w, h):
     return image
 
 
-def testdecoder(decoder_module):
+def testdecoder(decoder_module, full):
     for encoding in decoder_module.get_encodings():
         test_data_set = TEST_COMPRESSED_DATA.get(encoding)
         if not test_data_set:
@@ -58,18 +59,19 @@ def testdecoder(decoder_module):
                 assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
                 assert image.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
                 assert image.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
-                #test failures:
-                try:
-                    image = e.decompress_image(b"junk", {})
-                except:
-                    pass
-                if image is not None:
-                    raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
+                if full:
+                    #test failures:
+                    try:
+                        image = e.decompress_image(b"junk", {})
+                    except:
+                        pass
+                    if image is not None:
+                        raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
             finally:
                 e.clean()
 
 
-def testencoder(encoder_module):
+def testencoder(encoder_module, full):
     for encoding in encoder_module.get_encodings():
         for cs_in in encoder_module.get_input_colorspaces(encoding):
             for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
@@ -84,11 +86,26 @@ def testencoder(encoder_module):
                     #import binascii
                     #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
                     #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
+                    if full:
+                        try:
+                            wrong_format = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in][0]
+                            image = make_test_image(wrong_format, W, H)
+                            out = e.compress_image()
+                        except:
+                            out = None
+                        assert out is None
+                        for w,h in ((W*2, H//2), (W//2, H**2)):
+                            try:
+                                image = make_test_image(cs_in, w, h)
+                                out = e.compress_image()
+                            except:
+                                out = None
+                            assert out is None
                 finally:
                     e.clean()
 
 
-def testcsc(csc_module):
+def testcsc(csc_module, full):
     for cs_in in csc_module.get_input_colorspaces():
         for cs_out in csc_module.get_output_colorspaces(cs_in):
             log("%s: testing %s / %s", csc_module.get_type(), cs_in, cs_out)
@@ -102,13 +119,14 @@ def testcsc(csc_module):
                 assert out.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
                 assert out.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
                 assert out.get_pixel_format()==cs_out
-                for w,h in ((W*2, H//2), (W//2, H**2)):
-                    try:
-                        image = make_test_image(cs_in, w, h)
-                        out = e.convert_image(image)
-                    except:
-                        out = None
-                    if out is not None:
-                        raise Exception("converting an image of a smaller size with %s should have failed, got %s instead" % (csc_module.get_type(), out))
+                if full:
+                    for w,h in ((W*2, H//2), (W//2, H**2)):
+                        try:
+                            image = make_test_image(cs_in, w, h)
+                            out = e.convert_image(image)
+                        except:
+                            out = None
+                        if out is not None:
+                            raise Exception("converting an image of a smaller size with %s should have failed, got %s instead" % (csc_module.get_type(), out))
             finally:
                 e.clean()

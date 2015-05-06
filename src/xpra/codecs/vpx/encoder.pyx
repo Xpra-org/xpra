@@ -593,7 +593,7 @@ cdef class Encoder:
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testencoder
     from xpra.codecs.vpx import encoder
-    testencoder(encoder)
+    testencoder(encoder, full)

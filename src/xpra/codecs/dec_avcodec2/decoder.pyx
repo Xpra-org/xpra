@@ -606,7 +606,7 @@ cdef class Decoder:
         return ENUM_TO_FORMAT.get(self.actual_pix_fmt, "unknown/invalid")
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
-    testdecoder(decoder)
+    testdecoder(decoder, full)

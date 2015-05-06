@@ -327,7 +327,7 @@ cdef class Decoder:
         return image
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testdecoder
     from xpra.codecs.vpx import decoder
-    testdecoder(decoder)
+    testdecoder(decoder, full)

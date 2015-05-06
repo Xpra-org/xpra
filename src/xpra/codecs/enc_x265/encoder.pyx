@@ -490,7 +490,7 @@ cdef class Encoder:
         return  "".join(data), client_options
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testencoder
     from xpra.codecs.enc_x265 import encoder
-    testencoder(encoder)
+    testencoder(encoder, full)

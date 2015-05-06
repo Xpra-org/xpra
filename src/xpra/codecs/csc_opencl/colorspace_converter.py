@@ -825,7 +825,7 @@ class ColorspaceConverter(object):
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)
 
 
-def selftest():
+def selftest(full=False):
     from xpra.codecs.codec_selftest import testcsc
     from xpra.codecs.csc_opencl import colorspace_converter
-    testcsc(colorspace_converter)
+    testcsc(colorspace_converter, full)
