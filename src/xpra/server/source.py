@@ -364,7 +364,7 @@ class ServerSource(object):
         self.statistics.update_averages()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
-        sources = list(self.window_sources.items())
+        sources = self.window_sources.items()
         maximized_wids = [wid for wid, source in sources if source is not None and source.maximized]
         fullscreen_wids = [wid for wid, source in sources if source is not None and source.fullscreen]
         for wid in wids:

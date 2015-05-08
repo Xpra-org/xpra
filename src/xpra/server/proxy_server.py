@@ -81,7 +81,7 @@ class ProxyServer(ServerCore):
             return 4, "invalid number of arguments, usage: 'xpra control stop DISPLAY'"
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)
-        for process, v in list(self.processes.items()):
+        for process, v in self.processes.items():
             disp,mq = v
             if disp==display:
                 pid = process.pid

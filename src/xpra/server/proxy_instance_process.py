@@ -711,7 +711,7 @@ class ProxyInstanceProcess(Process):
     def get_encoder_info(self):
         info = {}
         now = time.time()
-        for wid, encoder in list(self.video_encoders.items()):
+        for wid, encoder in self.video_encoders.items():
             ipath = "window[%s].proxy.encoder" % wid
             info[ipath] = encoder.get_type()
             idle_time = now-self.video_encoders_last_used_time.get(wid, 0)
