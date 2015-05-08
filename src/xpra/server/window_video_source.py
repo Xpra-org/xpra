@@ -12,6 +12,7 @@ from xpra.net.compression import Compressed
 from xpra.codecs.codec_constants import get_subsampling_divs, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
+from xpra.server.region import merge_all
 from xpra.server.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.util import updict
@@ -545,23 +546,16 @@ class WindowVideoSource(WindowSource):
         else:
             #find how many pixels are within the region (roughly):
             #find all unique regions that intersect with it:
-            inter = (vr.intersection_rect(r) for r in regions)
-            inter = [x for x in inter if x is not None]
+            inter = [x for x in (vr.intersection_rect(r) for r in regions) if x is not None]
             if len(inter)>0:
                 #merge all regions into one:
-                in_region = None
-                for i in inter:
-                    if in_region is None:
-                        in_region = i
-                    else:
-                        in_region.merge_rect(i)
-                if in_region:
-                    pixels_in_region = vr.width*vr.height
-                    pixels_intersect = in_region.width*in_region.height
-                    if pixels_intersect>=pixels_in_region*40/100:
-                        #we have at least 40% of the video region
-                        #that needs refreshing, do it:
-                        actual_vr = vr
+                in_region = merge_all(inter)
+                pixels_in_region = vr.width*vr.height
+                pixels_intersect = in_region.width*in_region.height
+                if pixels_intersect>=pixels_in_region*40/100:
+                    #we have at least 40% of the video region
+                    #that needs refreshing, do it:
+                    actual_vr = vr
 
             #still no luck?
             if actual_vr is None:

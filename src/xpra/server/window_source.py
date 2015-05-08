@@ -42,7 +42,7 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
-from xpra.server.region import rectangle, add_rectangle, remove_rectangle   #@UnresolvedImport
+from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
@@ -1092,9 +1092,7 @@ class WindowSource(object):
 
             elif len(regions)>1:
                 #try to merge all the regions to see if we save anything:
-                merged = regions[0].clone()
-                for r in regions[1:]:
-                    merged.merge_rect(r)
+                merged = merge_all(regions)
                 #remove the exclude region if needed:
                 if exclude_region:
                     merged_rects = merged.substract_rect(exclude_region)

@@ -60,17 +60,6 @@ cdef class rectangle:
         else:
             raise Exception("invalid richcmp operator: %s" % op)
 
-    def merge(self, x, y, w, h):
-        cdef int newx = MIN(self.x, x)
-        cdef int newy = MIN(self.y, y)
-        self.width = MAX(self.x+self.width, x+w)-newx
-        self.height = MAX(self.y+self.height, y+h)-newy
-        self.x = newx
-        self.y = newy
-
-    def merge_rect(self, rectangle rect):
-        self.merge(rect.x, rect.y, rect.width, rect.height)
-
     def intersects(self, int x, int y, int w, int h):
         cdef int  ix = MAX(self.x, x)
         cdef int  iw = MIN(self.x+self.width, x+w) - ix
@@ -204,6 +193,8 @@ def merge_all(rectangles):
     rx2 = r.x + r.width
     ry2 = r.y + r.height
     for r in rectangles:
+        if not r:
+            continue
         if r.x<rx:
             rx = r.x
         if r.y<ry:
