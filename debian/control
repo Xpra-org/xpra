@@ -101,6 +101,9 @@ Suggests: openssh-server
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
+# for printer forwarding:
+        ,cups-pdf
+        ,python-cups
 # for notifications forwarding:
         ,python-dbus
 # for publishing servers via mdns:
