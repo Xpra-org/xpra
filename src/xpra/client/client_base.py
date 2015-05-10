@@ -74,7 +74,10 @@ class XpraClientBase(object):
             self.defaults_init()
 
     def defaults_init(self):
+        #client state:
         self.exit_code = None
+        self.exit_on_signal = False
+        #connection attributes:
         self.compression_level = 0
         self.display = None
         self.username = None
@@ -167,7 +170,14 @@ class XpraClientBase(object):
         signal.signal(signal.SIGTERM, app_signal)
 
     def signal_disconnect_and_quit(self, exit_code, reason):
-        self.idle_add(self.disconnect_and_quit, exit_code, reason)
+        if not self.exit_on_signal:
+            #if we get another signal, we'll try to exit without idle_add...
+            self.exit_on_signal = True
+            self.idle_add(self.disconnect_and_quit, exit_code, reason)
+            return
+        #warning: this will run cleanup code from the signal handler
+        self.disconnect_and_quit(exit_code, reason)
+        self.quit(exit_code)
 
     def disconnect_and_quit(self, exit_code, reason):
         #try to tell the server we're going, then quit
