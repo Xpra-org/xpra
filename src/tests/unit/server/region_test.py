@@ -19,20 +19,12 @@ except:
     rectangle, R1, R2, R3, R4, R5 = None, None, None, None, None, None
 
 
-class TestVersionUtilModule(unittest.TestCase):
+class TestRegion(unittest.TestCase):
 
     def test_eq(self):
         assert R1==R2
         assert R1!=R3
         assert R2!=R3
-
-    def test_merge(self):
-        r1 = R1.clone()
-        r1.merge_rect(R4)
-        assert r1.x==0 and r1.x==0 and r1.width==60 and r1.height==60
-        r2 = R2.clone()
-        r2.merge_rect(R5)
-        assert r2.x==0 and r2.y==0 and r2.width==200 and r2.height==200
 
     def test_intersection(self):
         r1 = rectangle(0, 0, 100, 100)
