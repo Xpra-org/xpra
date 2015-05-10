@@ -33,13 +33,6 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 grablog = Logger("gtk", "client", "grab")
 
 from xpra.client.gtk2.border_client_window import BorderClientWindow
-from xpra.client.gtk2.client_window import ClientWindow
-from xpra.client.gtk2.custom_client_window import CustomClientWindow
-WINDOW_LAYOUTS = {
-                  "border"  : BorderClientWindow,
-                  "default" : ClientWindow,
-                  "custom"  : CustomClientWindow,
-                  }
 
 FAKE_UI_LOCKUPS = int(os.environ.get("XPRA_FAKE_UI_LOCKUPS", "0"))
 
@@ -57,15 +50,8 @@ class XpraClient(GTKXpraClient):
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
-        if opts.window_layout:
-            assert opts.window_layout in WINDOW_LAYOUTS
-            self.ClientWindowClass = WINDOW_LAYOUTS.get(opts.window_layout)
-        if self.ClientWindowClass:
-            log.info("window layout '%s' specified, disabling OpenGL", opts.window_layout)
-            opts.opengl = False
-        else:
-            self.ClientWindowClass = BorderClientWindow
-            log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
+        self.ClientWindowClass = BorderClientWindow
+        log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
 
     def parse_border(self, border_str, extra_args):
@@ -149,9 +135,6 @@ class XpraClient(GTKXpraClient):
         if w:
             w.border = self.border
         return w
-
-    def get_supported_window_layouts(self):
-        return  WINDOW_LAYOUTS
 
     def do_get_core_encodings(self):
         encodings = GTKXpraClient.do_get_core_encodings(self)

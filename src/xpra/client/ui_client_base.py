@@ -505,9 +505,6 @@ class UIXpraClient(XpraClientBase):
         return core_encodings
 
 
-    def get_supported_window_layouts(self):
-        return  []
-
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
         return KeyboardHelper(self.send, keyboard_sync, key_shortcuts)
 

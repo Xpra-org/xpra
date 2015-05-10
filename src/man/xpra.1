@@ -88,7 +88,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-title\fP=\fIVALUE\fP]
 [\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
 [\fB\-\-border\fP=\fIBORDER\fP]
-[\fB\-\-window\-layout\fP=\fILAYOUT\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-ssh\fP=\fICMD\fP]
@@ -835,7 +834,7 @@ allows the information tab shown to be selected. Use the value
 .IP \fBshow_start_new_command\fP
 Shows the start new command dialog.
 .IP \fBmagic_key\fP
-Placeholder which can be used by some window layouts.
+Placeholder which can be used by some client toolkits.
 .IP \fBvoid\fP
 Does not do anything, and can therefore be used to prevent
 certain key combinations from ever being sent to the server.
@@ -918,12 +917,6 @@ from the server target address (the connection string) so that connecting
 to the same target should always give the same color.
 You may also specify the size of the border in pixels, ie:
 \fI\-\-border\fP=\fIyellow,10\fP.
-.TP
-\fB\-\-window\-layout\fP=\fILAYOUT\fP
-Specifies how main windows are drawn, this can be used to add widgets or
-use custom code.
-Use the special value 'help' to get a list of options.  Each client toolkit
-may or may not provide different window layouts.
 .TP
 \fB\-\-window\-icon\fP=\fIFILENAME\fP
 Path to the default image which will be used for all windows.
