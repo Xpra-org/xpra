@@ -66,6 +66,10 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.w = w;
 	this.h = h;
 
+	// last mouse position
+	this.last_mouse_x = null;
+	this.last_mouse_y = null;
+
 	// get offsets
 	this.leftoffset = parseInt(jQuery(this.div).css('border-left-width'), 10);
 	this.rightoffset = parseInt(jQuery(this.div).css('border-right-width'), 10);
@@ -230,6 +234,22 @@ XpraWindow.prototype.getMouse = function(e) {
 	// get mouse position take into account scroll
 	var mx = e.clientX + jQuery(document).scrollLeft();
 	var my = e.clientY + jQuery(document).scrollTop();
+
+	// check last mouse position incase the event
+	// hasn't provided it - bug #854
+	if(isNaN(mx) || isNaN(my)) {
+		if(!isNaN(this.last_mouse_x) && !isNaN(this.last_mouse_y)) {
+			mx = this.last_mouse_x;
+			my = this.last_mouse_y;
+		} else {
+			// should we avoid sending NaN to the server?
+			mx = 0;
+			my = 0;
+		}
+	} else {
+		this.last_mouse_x = mx;
+		this.last_mouse_y = my;
+	}
 
 	var mbutton = 0;
 	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
