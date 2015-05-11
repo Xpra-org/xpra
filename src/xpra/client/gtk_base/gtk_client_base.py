@@ -437,13 +437,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             w, h = self.get_root_size()
             min_texture_size = max(w, h)
             self.opengl_props = gl_check.check_support(min_texture_size, force_enable=(enable_opengl is True))
+            opengllog("init_opengl: found props %s", self.opengl_props)
             GTK_GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.gl_client_window" % (2+int(is_gtk3()))
             opengllog("init_opengl: trying to load GL client window module '%s'", GTK_GL_CLIENT_WINDOW_MODULE)
             gl_client_window = __import__(GTK_GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow"])
             self.GLClientWindowClass = gl_client_window.GLClientWindow
             self.client_supports_opengl = True
-            #only enable opengl by default if safe to do so:
-            self.opengl_enabled = self.opengl_props.get("safe", False)
+            #only enable opengl by default if force-enabled or if safe to do so:
+            self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
         except ImportError as e:
             opengllog.warn("OpenGL support could not be enabled:")
             opengllog.warn(" %s", e)
