@@ -203,6 +203,10 @@ class TestBencoderFunctions(object):
         ustr = u"Schr\xc3\xb6dinger\xe2\x80\x99s_Cat".encode("utf8")
         estr = binascii.unhexlify("6c32353a53636872c383c2b664696e676572c3a2c280c299735f436174646565")
         self.t([ustr, {}], estr)
+        #from a real packet:
+        packet = ['draw', 2, 0, 820, 1280, 1, 'rgb32', b'\x00\x14\x00\x00OXY[\xff\x04\x00\xff\xd2\x0f\x01\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xcc\x0f\xb4\x11\xff\xd2\x0f\xe4\x01\x1d?\xd6\xd6\xd6\x04\x00\x19P\xff\xd6\xd6\xd6\xff', 94, 5120, {'lz4': 1, 'rgb_format': 'RGBX'}]
+        self.t(packet)
+
 
     def test_encoding_hello(self):
         self.t(hello)
