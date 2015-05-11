@@ -267,6 +267,7 @@ class ServerCore(object):
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.idle_add(self.clean_quit)
+        self.idle_add(sys.exit, 128+signum)
 
     def clean_quit(self, upgrading=False):
         log("clean_quit(%s)", upgrading)
