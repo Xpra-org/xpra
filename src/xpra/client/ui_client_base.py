@@ -1651,15 +1651,6 @@ class UIXpraClient(XpraClientBase):
         self.emit("speaker-changed")
         soundlog("stop_receiving_sound(%s) done", tell_server)
 
-    def bump_sound_sequence(self):
-        if self.server_sound_sequence:
-            #server supports the "sound-sequence" feature
-            #tell it to use a new one:
-            self.min_sound_sequence += 1
-            soundlog("bump_sound_sequence() sequence is now %s", self.min_sound_sequence)
-            #via idle add so this will wait for UI thread to catch up if needed:
-            self.idle_add(self.send_new_sound_sequence)
-
     def send_new_sound_sequence(self):
         soundlog("send_new_sound_sequence() sequence=%s", self.min_sound_sequence)
         self.send("sound-control", "new-sequence", self.min_sound_sequence)
