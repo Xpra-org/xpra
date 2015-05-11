@@ -493,6 +493,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glEnable(GL_LINE_STIPPLE)
             glBegin(GL_LINE_LOOP)
             color = BOX_COLORS.get(encoding, _DEFAULT_BOX_COLOR)
+            log("Painting colored box around %s screen update using: %s (delta=%s)", encoding, color, is_delta)
             glColor4f(*color)
             for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
                 glVertex2i(px, py)
