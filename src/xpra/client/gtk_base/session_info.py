@@ -497,6 +497,8 @@ class SessionInfo(gtk.Window):
             return False
         self.client.send_ping()
         self.last_populate_time = time.time()
+
+        self.show_opengl_state()
         #record bytecount every second:
         self.net_in_bytecount.append(self.connection.input_bytecount)
         self.net_out_bytecount.append(self.connection.output_bytecount)
@@ -584,17 +586,8 @@ class SessionInfo(gtk.Window):
     def populate_package(self):
         return False
 
-    def populate_features(self):
-        size_info = ""
-        if self.client.server_actual_desktop_size:
-            w,h = self.client.server_actual_desktop_size
-            size_info = "%s*%s" % (w,h)
-            if self.client.server_randr and self.client.server_max_desktop_size:
-                size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
-        self.bool_icon(self.server_randr_icon, self.client.server_randr)
-        self.server_randr_label.set_text("%s" % size_info)
-        self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
-        buffering = "n/a"
+
+    def show_opengl_state(self):
         if self.client.opengl_enabled:
             glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
             display_mode = self.client.opengl_props.get("display_mode", [])
@@ -605,9 +598,22 @@ class SessionInfo(gtk.Window):
             else:
                 buffering = "unknown"
         else:
+            #info could be telling us that the gl bindings are missing:
             glinfo = self.client.opengl_props.get("info", "disabled")
+            buffering = "n/a"
         self.client_opengl_label.set_text(glinfo)
         self.opengl_buffering.set_text(buffering)
+
+    def populate_features(self):
+        size_info = ""
+        if self.client.server_actual_desktop_size:
+            w,h = self.client.server_actual_desktop_size
+            size_info = "%s*%s" % (w,h)
+            if self.client.server_randr and self.client.server_max_desktop_size:
+                size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
+        self.bool_icon(self.server_randr_icon, self.client.server_randr)
+        self.server_randr_label.set_text("%s" % size_info)
+        self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
 
         scaps = self.client.server_capabilities
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
