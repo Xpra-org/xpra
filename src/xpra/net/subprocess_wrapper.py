@@ -265,7 +265,10 @@ class subprocess_caller(object):
         protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
         #we assume the other end has the same encoders (which is reasonable):
         #TODO: fallback to bencoder
-        protocol.enable_encoder("rencode")
+        try:
+            protocol.enable_encoder("rencode")
+        except Exception as e:
+            log.warn("failed to enable rencode: %s", e)
         #we assume this is local, so no compression:
         protocol.enable_compressor("none")
         protocol.large_packets = self.large_packets
