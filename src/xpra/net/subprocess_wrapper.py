@@ -216,7 +216,7 @@ class subprocess_callee(object):
         method = getattr(self.wrapped_object, attr, None)
         if not method:
             if self.wrapped_object is not None:
-                log.warn("unknown command: '%s'", method)
+                log.warn("unknown command: '%s'", attr)
                 log.warn(" packet: '%s'", repr_ellipsized(str(packet)))
             return
         if DEBUG_WRAPPER:
