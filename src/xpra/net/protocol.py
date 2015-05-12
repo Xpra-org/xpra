@@ -409,7 +409,16 @@ class Protocol(object):
 
     def noencode(self, data):
         #just send data as a string for clients that don't understand xpra packet format:
-        return ": ".join([str(x) for x in data])+"\n", FLAGS_NOHEADER
+        if sys.version_info[0] >= 3:
+            import codecs
+            def b(x):
+                if type(x)==bytes:
+                    return x
+                return codecs.latin_1_encode(x)[0]
+        else:
+            def b(x):               #@DuplicatedSignature
+                return x
+        return b(": ".join(str(x) for x in data)+"\n"), FLAGS_NOHEADER
 
 
     def encode(self, packet_in):
