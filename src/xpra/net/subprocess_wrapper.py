@@ -10,6 +10,7 @@ import subprocess
 import binascii
 
 from xpra.gtk_common.gobject_compat import import_glib
+from xpra.util import repr_ellipsized
 glib = import_glib()
 
 from xpra.net.bytestreams import TwoFileConnection
@@ -215,7 +216,8 @@ class subprocess_callee(object):
         method = getattr(self.wrapped_object, attr, None)
         if not method:
             if self.wrapped_object is not None:
-                log.warn("unknown command: %s", command)
+                log.warn("unknown command: '%s'", method)
+                log.warn(" packet: '%s'", repr_ellipsized(str(packet)))
             return
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", self.wrapped_object, attr, str(tuple(packet[1:]))[:128])
