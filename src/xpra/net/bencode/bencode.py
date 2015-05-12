@@ -25,10 +25,17 @@ if sys.version_info[0] >= 3:
     #the values end up being ints..
     def cv(x):
         return ord(x)
+    import codecs
+    def b(x):
+        if type(x)==bytes:
+            return x
+        return codecs.latin_1_encode(x)[0]
 else:
     def strindex(s, c, start):
         return s.index(c, start)
     def cv(x):
+        return x
+    def b(x):               #@DuplicatedSignature
         return x
 
 
@@ -57,10 +64,6 @@ def decode_string(x, f):
         raise ValueError
     colon += 1
     return (x[colon:colon+n], colon+n)
-
-def decode_py3kstring(x, f):
-    xs, fs = decode_string(x, f)
-    return (xs, fs)
 
 def decode_unicode(x, f):
     xs, fs = decode_string(x, f+1)
@@ -96,10 +99,7 @@ decode_func['l'] = decode_list
 decode_func['d'] = decode_dict
 decode_func['i'] = decode_int
 for c in '0123456789':
-    if sys.version_info[0]<3:
-        decode_func[c] = decode_string
-    else:
-        decode_func[c] = decode_py3kstring
+    decode_func[c] = decode_string
 decode_func['u'] = decode_unicode
 #now as byte values:
 for k,v in dict(decode_func).items():
@@ -108,17 +108,15 @@ for k,v in dict(decode_func).items():
 
 def bdecode(x):
     try:
-        #v = x[0].encode("utf-8")
-        xs = x.encode("utf8")
-        #v = x[0]
+        xs = b(x)
         fn = decode_func.get(xs[0])
         if not fn:
             raise ValueError("invalid type identifier: %s" % (xs[0]))
         r, l = fn(xs, 0)
-    except (IndexError, KeyError) as e:
+    except (IndexError, KeyError):
         import traceback
         traceback.print_exc()
-        raise e
+        raise ValueError
     return r, l
 
 def encode_int(x, r):
@@ -128,11 +126,9 @@ def encode_int(x, r):
 def encode_string(x, r):
     r.extend((str(len(x)), ':', x))
 
-def encode_bytes(x, r):
-    encode_string(x, r)
-
 def encode_unicode(x, r):
-    encode_string(x.encode("utf8"), r)
+    x = x.encode("utf8")
+    encode_string(x, r)
 
 def encode_list(x, r):
     r.append('l')
@@ -163,18 +159,14 @@ if sys.version_info[0] < 3:
     encode_func[BooleanType] = encode_int
 else:
     encode_func[int] = encode_int
-    encode_func[str] = encode_unicode
+    encode_func[str] = encode_string
     encode_func[list] = encode_list
     encode_func[tuple] = encode_list
     encode_func[dict] = encode_dict
     encode_func[bool] = encode_int
-    encode_func[bytes] = encode_bytes
+    encode_func[bytes] = encode_string
 
 def bencode(x):
     r = []
     encode_func[type(x)](x, r)
-    def bytestostr(x):
-        if type(x)==bytes:
-            return x.decode("utf8")
-        return x
-    return ''.join(bytestostr(x) for x in r)
+    return b''.join(b(v) for v in r)

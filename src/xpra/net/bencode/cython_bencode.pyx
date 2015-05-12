@@ -25,9 +25,16 @@ if sys.version_info[0]>=3:
     ListType    = list
     TupleType   = tuple
     BooleanType = bool
+    import codecs
+    def b(x):
+        if type(x)==bytes:
+            return x
+        return codecs.latin_1_encode(x)[0]
 else:
     from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
                        TupleType, BooleanType)
+    def b(x):               #@DuplicatedSignature
+        return x
 
 
 cdef int find(const char *p, char c, int start, size_t len):
@@ -63,20 +70,16 @@ cdef decode_string(const char *x, int f, int l):
     assert colon>=0, "colon not found in string size header"
     lenstr = x[f:colon]
     try:
-        slen = int(lenstr)
+        slen = IntType(lenstr)
     except (OverflowError, ValueError):
         try:
-            slen = long(lenstr)
+            slen = LongType(lenstr)
         except:
             raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, colon, x))
     if x[f] == '0' and colon != f+1:
         raise ValueError("leading zeroes are not allowed (found in string length)")
     colon += 1
     return (x[colon:colon+slen], colon+slen)
-
-cdef decode_py3kstring(const char *x, int f, int l):
-    xs, fs = decode_string(x, f, l)
-    return (xs.decode("utf8"), fs)
 
 cdef decode_unicode(const char *x, int f, int l):
     xs, fs = decode_string(x, f+1, l)
@@ -117,21 +120,14 @@ cdef decode(const char *x, int f, size_t l, char *what):
     elif c=='i':
         return decode_int(x, f, l)
     elif c in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
-        if sys.version_info[0]<3:
-            return decode_string(x, f, l)
-        else:
-            return decode_py3kstring(x, f, l)
+        return decode_string(x, f, l)
     elif c=='u':
         return decode_unicode(x, f, l)
     else:
         raise ValueError("invalid %s type identifier: %s at position %s" % (what, c, f))
 
-"""
-    cdef const char *s = x
-    cdef size_t l = len(x)
-"""
 def bdecode(x):
-    xs = x.encode("utf8")
+    xs = b(x)
     cdef const char *s
     cdef Py_ssize_t l
     assert object_as_buffer(xs, <const void **> &s, &l)==0, "failed to convert %s to a buffer" % type(x)
@@ -197,11 +193,7 @@ def bencode(x):
     r = []
     try:
         encode(x, r)
-        def bytestostr(x):
-            if type(x)==bytes:
-                return x.decode("utf8")
-            return str(x)
-        return ''.join(bytestostr(x) for x in r)
+        return b''.join(b(v) for v in r)
     except Exception as e:
         import traceback
         traceback.print_exc()
