@@ -578,6 +578,6 @@ cdef class ColorspaceConverter:
 
 
 def selftest(full=False):
-    from xpra.codecs.codec_selftest import testcsc
+    from xpra.codecs.codec_checks import testcsc
     from xpra.codecs.csc_cython import colorspace_converter
     testcsc(colorspace_converter, full)

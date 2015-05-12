@@ -8,6 +8,12 @@ import sys
 import os.path
 from xpra.log import Logger
 log = Logger("codec", "loader")
+try:
+    #this makes py2exe do the right thing:
+    from xpra.codecs import codec_checks
+    assert codec_checks
+except:
+    pass
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment

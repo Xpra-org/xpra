@@ -607,6 +607,6 @@ cdef class Decoder:
 
 
 def selftest(full=False):
-    from xpra.codecs.codec_selftest import testdecoder
+    from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
     testdecoder(decoder, full)

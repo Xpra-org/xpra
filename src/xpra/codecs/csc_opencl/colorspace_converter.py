@@ -826,6 +826,6 @@ class ColorspaceConverter(object):
 
 
 def selftest(full=False):
-    from xpra.codecs.codec_selftest import testcsc
+    from xpra.codecs.codec_checks import testcsc
     from xpra.codecs.csc_opencl import colorspace_converter
     testcsc(colorspace_converter, full)
