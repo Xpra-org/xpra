@@ -27,6 +27,7 @@ try:
 except:
     import __builtin__ as builtins      #@Reimport @UnusedImport
 _memoryview = builtins.__dict__.get("memoryview")
+_buffer = builtins.__dict__.get("buffer")
 
 
 SIGNAMES = {}
@@ -76,7 +77,19 @@ if _memoryview:
         return v
 else:
     def memoryview_to_bytes(v):
+        if _buffer and isinstance(v, _buffer):
+            return str(v)
         return v
+
+if _buffer:
+    def buffer_to_bytes(v):
+        if isinstance(v, _buffer):
+            return bytes(v)
+        return v
+else:
+    def buffer_to_bytes(v):
+        return v
+
 
 if sys.version>='3':
     def data_to_buffer(in_data):

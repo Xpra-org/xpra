@@ -15,7 +15,7 @@ from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_t
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
 from xpra.codecs.codec_constants import get_PIL_encodings
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, buffer_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
@@ -107,7 +107,6 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     #compression stage:
     #by default, wire=raw:
     raw_data = memoryview_to_bytes(pixels)
-    wire_data = raw_data
     level = 0
     algo = "not"
     if len(pixels)>=256 and (rgb_zlib and compression.use_zlib) or (rgb_lz4 and compression.use_lz4) or (rgb_lzo and compression.use_lzo):
@@ -136,6 +135,9 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             #add compressed marker:
             wire_data = cwrapper.data
             options[algo] = level
+    if level==0:
+        #can't pass a raw buffer to bencode / rencode:
+        wire_data = buffer_to_bytes(raw_data)
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:
