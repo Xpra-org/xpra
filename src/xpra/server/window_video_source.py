@@ -599,7 +599,7 @@ class WindowVideoSource(WindowSource):
             else:
                 #delay further: just create new delayed region:
                 sublog("send_delayed_regions: delaying non video regions some more")
-                self._damage_delayed = time.time(), window, trimmed, coding, options
+                self._damage_delayed = time.time(), window, trimmed, coding, options or {}
                 delay = self.video_subregion.non_max_wait-elapsed
                 self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
                 return

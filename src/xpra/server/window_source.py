@@ -831,21 +831,22 @@ class WindowSource(object):
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
 
-        if self._damage_delayed:
+        delayed = self._damage_delayed
+        if delayed:
             #use existing delayed region:
             if not self.full_frames_only:
-                regions = self._damage_delayed[2]
+                regions = delayed[2]
                 region = rectangle(x, y, w, h)
                 add_rectangle(regions, region)
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
-                existing_options = self._damage_delayed[4]
+                existing_options = delayed[4]
                 for k in options.keys():
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
             log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
-                x, y, w, h, options, self.wid, self._damage_delayed[3], now-self._damage_delayed[0])
+                x, y, w, h, options, self.wid, delayed[3], now-delayed[0])
             return
         elif self.batch_config.delay < self.batch_config.min_delay and not self.batch_config.always:
             #work out if we have too many damage requests
@@ -924,7 +925,8 @@ class WindowSource(object):
         self.expire_timer = None
         self._damage_delayed_expired = True
         self.may_send_delayed()
-        if self._damage_delayed is None:
+        delayed = self._damage_delayed
+        if delayed is None:
             #region has been sent
             return
         #the region has not been sent yet because we are waiting for damage ACKs from the client
@@ -938,7 +940,7 @@ class WindowSource(object):
             #NOTE: this should never happen...
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
-            delayed_region_time = self._damage_delayed[0]
+            delayed_region_time = delayed[0]
             self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay, self.delayed_region_timeout, delayed_region_time)
 
     def delayed_region_soft_timeout(self):
@@ -972,10 +974,11 @@ class WindowSource(object):
 
     def may_send_delayed(self):
         """ send the delayed region for processing if the time is right """
-        if not self._damage_delayed:
+        dd = self._damage_delayed
+        if not dd:
             log("window %s delayed region already sent", self.wid)
             return
-        damage_time = self._damage_delayed[0]
+        damage_time = dd[0]
         packets_backlog = self.statistics.get_packets_backlog()
         now = time.time()
         actual_delay = int(1000.0 * (now-damage_time))
