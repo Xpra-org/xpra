@@ -373,6 +373,7 @@ class ServerCore(object):
             frominfo = " from %s" % str(peername)
         netlog.info("New %s connection received%s", socktype, frominfo)
         protocol = Protocol(self, sc, self.process_packet)
+        self._potential_protocols.append(protocol)
         protocol.large_packets.append("info-response")
         protocol.authenticator = None
         if socktype=="tcp":
@@ -382,7 +383,6 @@ class ServerCore(object):
         protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
         protocol.receive_aliases.update(self._aliases)
-        self._potential_protocols.append(protocol)
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
@@ -401,7 +401,10 @@ class ServerCore(object):
 
     def start_tcp_proxy(self, proto, data):
         proxylog("start_tcp_proxy(%s, '%s')", proto, repr_ellipsized(data))
-        self._potential_protocols.remove(proto)
+        try:
+            self._potential_protocols.remove(proto)
+        except:
+            pass        #might already have been removed by now
         proxylog("start_tcp_proxy: protocol state before stealing: %s", proto.get_info(alias_info=False))
         #any buffers read after we steal the connection will be placed in this temporary queue:
         temp_read_buffer = Queue()
