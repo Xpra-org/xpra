@@ -21,7 +21,7 @@ def which(name):
         returncode, out, _ = safe_exec(cmd, log_errors=False)
         if returncode!=0 or not out:
             return ""
-        c = out.replace("\n", "").replace("\r", "")
+        c = out.decode("utf8").replace("\n", "").replace("\r", "")
         if os.path.exists(c) and os.path.isfile(c):
             if os.name=="posix" and not os.access(c, os.X_OK):
                 #odd, it's there but we can't run it!?
