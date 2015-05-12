@@ -81,6 +81,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 os_util.force_quit()
             gobject.timeout_add(5*1000, force_quit)
         self.cleanup()
+        log("GTKXpraClient.quit(%s) cleanup done, main_level=%s", exit_code, gtk.main_level())
         if gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
             gobject.timeout_add(500, gtk_main_quit_really)

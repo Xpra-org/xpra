@@ -170,6 +170,7 @@ class XpraClientBase(object):
         signal.signal(signal.SIGTERM, app_signal)
 
     def signal_disconnect_and_quit(self, exit_code, reason):
+        log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)
         if not self.exit_on_signal:
             #if we get another signal, we'll try to exit without idle_add...
             self.exit_on_signal = True
