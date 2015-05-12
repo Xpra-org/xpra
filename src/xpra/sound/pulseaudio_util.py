@@ -19,6 +19,7 @@ def which(name):
     cmd = ["which", name]
     try:
         returncode, out, _ = safe_exec(cmd, log_errors=False)
+        log("safe_exec(%s)=%s", cmd, (returncode, out))
         if returncode!=0 or not out:
             return ""
         c = out.decode("utf8").replace("\n", "").replace("\r", "")
@@ -26,11 +27,11 @@ def which(name):
             if os.name=="posix" and not os.access(c, os.X_OK):
                 #odd, it's there but we can't run it!?
                 return ""
-            return    c
+            return c
         return ""
     except:
-        pass
-    return    ""
+        log.error("which(%s) error", name, exc_info=True)
+    return ""
 
 pactl_bin = None
 has_pulseaudio = None
@@ -79,7 +80,8 @@ def get_x11_property(atom_name):
 
 def has_pa_x11_property():
     #try root window property (faster)
-    ps = get_x11_property("PULSE_SERVER")
+    ps = get_x11_property(b"PULSE_SERVER")
+    log("has_pa_x11_property: get_x11_property(PULSE_SERVER)=%s", ps)
     return len(ps)>0
 
 def is_pa_installed():
