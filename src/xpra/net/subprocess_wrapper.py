@@ -136,6 +136,7 @@ class subprocess_callee(object):
             protocol.enable_encoder("rencode")
         except Exception as e:
             log.warn("failed to enable rencode: %s", e)
+            protocol.enable_encoder("bencode")
         protocol.enable_compressor("none")
         protocol.large_packets = self.large_packets
         return protocol
@@ -269,6 +270,7 @@ class subprocess_caller(object):
             protocol.enable_encoder("rencode")
         except Exception as e:
             log.warn("failed to enable rencode: %s", e)
+            protocol.enable_encoder("bencode")
         #we assume this is local, so no compression:
         protocol.enable_compressor("none")
         protocol.large_packets = self.large_packets
