@@ -43,7 +43,7 @@ class SoundSource(SoundPipeline):
                 default_src_options = {"device" : monitor_device}
             src_options = default_src_options
             src_options.update(src_options)
-        assert src_type in get_source_plugins(), "invalid source plugin '%s'" % src_type
+        assert src_type in get_source_plugins(), "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins()))
         matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
         log("SoundSource(..) found matching codecs %s", matching)
         assert len(matching)>0, "no matching codecs between arguments %s and supported list %s" % (codecs, CODECS)
