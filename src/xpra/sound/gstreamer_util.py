@@ -193,10 +193,13 @@ try:
     if is_gtk3():
         gst = import_gst1()
         _gst_major_version = 1
+        vinfo = "1.x"
     else:
         gst = import_gst0_10()
         _gst_major_version = 0
+        vinfo = "0.10"
     has_gst = True
+    log("Loaded Python GStreamer version %s for Python %s.%s", vinfo, sys.version_info[0], sys.version_info[1])
 except:
     log("failed to import GStreamer", exc_info=True)
 
