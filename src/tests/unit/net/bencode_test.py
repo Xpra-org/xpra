@@ -123,7 +123,6 @@ def _cmp(o, r):
 
 
 class TestBencoderFunctions(object):
-
    
     def test_decoding(self):
 
@@ -136,7 +135,7 @@ class TestBencoderFunctions(object):
                 print("error on decoding of '%s'" % repr_ellipsized(s))
                 raise e
             rrstr = s[rr:]
-            assert rrstr == remainder, "expected remainder value %s but got %s" % (remainder, rrstr)
+            assert rrstr == remainder, "expected remainder value '%s' but got %s" % (remainder, rrstr)
             # With gibberish added:
             g_str = s + "asdf"
             rv, rr = self.decode(g_str)
@@ -206,7 +205,6 @@ class TestBencoderFunctions(object):
         #from a real packet:
         packet = ['draw', 2, 0, 820, 1280, 1, 'rgb32', b'\x00\x14\x00\x00OXY[\xff\x04\x00\xff\xd2\x0f\x01\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xcc\x0f\xb4\x11\xff\xd2\x0f\xe4\x01\x1d?\xd6\xd6\xd6\x04\x00\x19P\xff\xd6\xd6\xd6\xff', 94, 5120, {'lz4': 1, 'rgb_format': 'RGBX'}]
         self.t(packet)
-
 
     def test_encoding_hello(self):
         self.t(hello)
