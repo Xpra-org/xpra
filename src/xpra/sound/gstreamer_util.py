@@ -220,7 +220,7 @@ def has_plugins(*names):
     allp = get_all_plugin_names()
     missing = [name for name in names if (name is not None and name not in allp)]
     if len(missing)>0:
-        log("missing %s from %s (all=%s)", missing, names, allp)
+        log("missing %s from %s", missing, names)
     return len(missing)==0
 
 
