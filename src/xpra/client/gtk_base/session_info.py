@@ -605,7 +605,7 @@ class SessionInfo(gtk.Window):
             else:
                 buffering = "unknown"
         else:
-            glinfo = self.client.opengl_props.get("info", "")
+            glinfo = self.client.opengl_props.get("info", "disabled")
         self.client_opengl_label.set_text(glinfo)
         self.opengl_buffering.set_text(buffering)
 
