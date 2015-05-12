@@ -763,7 +763,8 @@ class ServerSource(object):
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
             assert self.sound_receive, "cannot send sound: support is not enabled on the client"
-            ss = start_sending_sound(self.sound_source_plugin, codec, volume, self.sound_decoders, self.pulseaudio_server, self.pulseaudio_id)
+            assert codec in self.sound_decoders, "cannot use codec '%s' which is not in the decoders list: %s" % (codec, self.sound_decoders)
+            ss = start_sending_sound(self.sound_source_plugin, codec, volume, [codec], self.pulseaudio_server, self.pulseaudio_id)
             self.sound_source = ss
             soundlog("start_sending_sound() sound source=%s", ss)
             if ss:
