@@ -74,6 +74,9 @@ def untilConcludes(is_active_cb, f, *a, **kw):
         except socket.timeout as e:
             log("untilConcludes(%s, %s, %s, %s) %s", is_active_cb, f, a, kw, e)
             continue
+        except TypeError:
+            log.warn("untilConcludes error calling %s with %s", f, a)
+            raise
         except (IOError, OSError) as e:
             code = e.args[0]
             can_continue = CONTINUE.get(code)
