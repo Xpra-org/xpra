@@ -6,6 +6,7 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
+import sys
 import os
 from xpra.log import Logger
 log = Logger("win32")
@@ -497,7 +498,7 @@ class ClientExtras(object):
     def __init__(self, client, opts):
         self.client = client
         self._kh_warning = False
-        self.setup_console_event_listener()
+        self._console_handler_registered = self.setup_console_event_listener(True)
         try:
             import win32con                 #@Reimport @UnresolvedImport
             el = get_win32_event_listener(True)
@@ -508,7 +509,9 @@ class ClientExtras(object):
             log.error("cannot register focus and power callbacks: %s", e)
 
     def cleanup(self):
-        self.setup_console_event_listener(False)
+        if self._console_handler_registered:
+            self._console_handler_registered = False
+            self.setup_console_event_listener(False)
         log("ClientExtras.cleanup() ended")
         el = get_win32_event_listener(False)
         if el:
@@ -531,17 +534,21 @@ class ClientExtras(object):
         elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and self.client:
             self.client.resume()
 
-    def setup_console_event_listener(self, enable=1):
+    def setup_console_event_listener(self, enable=True):
         try:
-            result = win32api.SetConsoleCtrlHandler(self.handle_console_event, enable)
+            result = win32api.SetConsoleCtrlHandler(self.handle_console_event, int(enable))
             if result == 0:
                 log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
         except:
-            pass
+            log.error("SetConsoleCtrlHandler error", exc_info=True)
+            result = 0
+        return result!=0
+
 
     def handle_console_event(self, event):
-        log("handle_console_event(%s)", event)
+        c = self.client
         event_name = KNOWN_EVENTS.get(event, event)
+        log("handle_console_event(%s) client=%s, event_name=%s", event, c, event_name)
         info_events = [win32con.CTRL_C_EVENT,
                        win32con.CTRL_LOGOFF_EVENT,
                        win32con.CTRL_BREAK_EVENT,
@@ -551,9 +558,9 @@ class ClientExtras(object):
             log.info("received console event %s", str(event_name).replace("_EVENT", ""))
         else:
             log.warn("unknown console event: %s", event_name)
-        c = self.client
         if event==win32con.CTRL_C_EVENT:
             if c:
+                log("calling=%s", c.signal_disconnect_and_quit)
                 c.signal_disconnect_and_quit(0, "CTRL_C")
                 return 1
         if event==win32con.CTRL_CLOSE_EVENT:
@@ -567,7 +574,6 @@ def main():
     from xpra.platform import init, clean
     try:
         init("Platform-Events", "Platform Events Test")
-        import sys
         if "-v" in sys.argv or "--verbose" in sys.argv:
             from xpra.platform.win32.win32_events import log as win32_event_logger
             log.enable_debug()
