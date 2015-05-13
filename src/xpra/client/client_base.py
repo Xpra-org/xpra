@@ -175,6 +175,7 @@ class XpraClientBase(object):
             #if we get another signal, we'll try to exit without idle_add...
             self.exit_on_signal = True
             self.idle_add(self.disconnect_and_quit, exit_code, reason)
+            self.idle_add(self.quit, exit_code)
             return
         #warning: this will run cleanup code from the signal handler
         self.disconnect_and_quit(exit_code, reason)
