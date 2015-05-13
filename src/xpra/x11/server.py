@@ -160,24 +160,6 @@ class DesktopManager(gtk.Widget):
                      "%sx%s vs %sx%s", w0, h0, w, h)
         return x, y
 
-    def get_transient_for(self, window, window_to_id):
-        transient_for = window.get_property("transient-for")
-        if transient_for is None:
-            return None
-        log("found transient_for=%s, xid=%#x", transient_for, transient_for.xid)
-        #try to find the model for this window:
-        for model in self._models.keys():
-            log("testing model %s: %#x", model, model.client_window.xid)
-            if model.client_window.xid==transient_for.xid:
-                wid = window_to_id.get(model)
-                log("found match, window id=%s", wid)
-                return wid
-        root = gtk.gdk.get_default_root_window()
-        if root.xid==transient_for.xid:
-            return -1       #-1 is the backwards compatible marker for root...
-        log("not found transient_for=%s, xid=%#x", transient_for, transient_for.xid)
-        return  None
-
 
 gobject.type_register(DesktopManager)
 
@@ -314,7 +296,22 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def get_transient_for(self, window):
-        return self._desktop_manager.get_transient_for(window, self._window_to_id)
+        transient_for = window.get_property("transient-for")
+        log("get_transient_for window=%s, transient_for=%s", window, transient_for)
+        if transient_for is None:
+            return None
+        xid = transient_for.xid
+        log("transient_for.xid=%#x", xid)
+        for w,wid in self._window_to_id.items():
+            if w.get_property("xid")==xid:
+                log("found match, window id=%s", wid)
+                return wid
+        root = gtk.gdk.get_default_root_window()
+        if root.xid==xid:
+            log("transient-for using root")
+            return -1       #-1 is the backwards compatible marker for root...
+        log("not found transient_for=%s, xid=%#x", transient_for, xid)
+        return  None
 
     def is_shown(self, window):
         return self._desktop_manager.is_shown(window)
