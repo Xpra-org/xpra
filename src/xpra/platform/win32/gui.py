@@ -516,7 +516,7 @@ class ClientExtras(object):
         el = get_win32_event_listener(False)
         if el:
             el.cleanup()
-        self.client = None
+        #self.client = None
 
     def activateapp(self, wParam, lParam):
         log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, self.client)
@@ -539,10 +539,11 @@ class ClientExtras(object):
             result = win32api.SetConsoleCtrlHandler(self.handle_console_event, int(enable))
             if result == 0:
                 log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
-        except:
-            log.error("SetConsoleCtrlHandler error", exc_info=True)
-            result = 0
-        return result!=0
+                return False
+            return True
+        except Exception as e:
+            log.error("SetConsoleCtrlHandler error: %s", e)
+            return False
 
 
     def handle_console_event(self, event):
