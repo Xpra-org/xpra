@@ -174,16 +174,18 @@ class TwoFileConnection(Connection):
         Connection.close(self)
         try:
             self._readable.close()
-        except:
-            pass
+        except Exception as e:
+            log("%s.close() %s", self._readable, e)
         try:
             self._writeable.close()
         except:
-            pass
+            log("%s.close() %s", self._writeable, e)
         cc = self._close_cb
         if cc:
             self._close_cb = None
+            log("%s.close() calling %s", self, cc)
             cc()
+        log("%s.close() done", self)
 
     def __repr__(self):
         return "TwoFileConnection(%s)" % str(self.target)

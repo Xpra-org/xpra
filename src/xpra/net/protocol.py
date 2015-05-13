@@ -872,7 +872,7 @@ class Protocol(object):
         wait_for_write_lock()
 
     def close(self):
-        log("close() closed=%s", self._closed)
+        log("Protocol.close() closed=%s", self._closed)
         if self._closed:
             return
         self._closed = True
@@ -894,6 +894,7 @@ class Protocol(object):
             self._conn = None
         self.terminate_queue_threads()
         self.idle_add(self.clean)
+        log("Protocol.close() done")
 
     def steal_connection(self, read_callback=None):
         #so we can re-use this connection somewhere else

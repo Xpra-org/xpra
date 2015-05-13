@@ -318,7 +318,7 @@ class subprocess_caller(object):
         self.stop_protocol()
 
     def stop_process(self):
-        log("stop() sending stop request to %s", self.description)
+        log("%s.stop_process() sending stop request to %s", self, self.description)
         proc = self.process
         if proc and proc.poll() is None:
             try:
@@ -331,7 +331,7 @@ class subprocess_caller(object):
         p = self.protocol
         if p:
             self.protocol = None
-            log("%s.stop() calling %s", self, p.close)
+            log("%s.stop_protocol() calling %s", self, p.close)
             try:
                 p.close()
             except Exception as e:
