@@ -368,6 +368,7 @@ class UIXpraClient(XpraClientBase):
     def cleanup(self):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
+        self.stop_all_sound()
         for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
                 continue
@@ -380,12 +381,20 @@ class UIXpraClient(XpraClientBase):
         #(cleaner and needed when we run embedded in the client launcher)
         self.destroy_all_windows()
         self.clean_mmap()
+        reaper_cleanup()
+        log("UIXpraClient.cleanup() done")
+
+    def stop_all_sound(self):
         if self.sound_source:
             self.stop_sending_sound()
         if self.sound_sink:
             self.stop_receiving_sound()
+
+    def signal_cleanup(self):
+        XpraClientBase.signal_cleanup(self)
+        self.stop_all_sound()
         reaper_cleanup()
-        log("UIXpraClient.cleanup() done")
+
 
     def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():

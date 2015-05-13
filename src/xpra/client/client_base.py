@@ -165,6 +165,7 @@ class XpraClientBase(object):
             sys.stderr.flush()
             signal.signal(signal.SIGINT, deadly_signal)
             signal.signal(signal.SIGTERM, deadly_signal)
+            self.signal_cleanup()
             self.timeout_add(0, self.disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
@@ -180,6 +181,11 @@ class XpraClientBase(object):
         #warning: this will run cleanup code from the signal handler
         self.disconnect_and_quit(exit_code, reason)
         self.quit(exit_code)
+
+    def signal_cleanup(self):
+        #placeholder for stuff that can be cleaned up from the signal handler
+        #(non UI thread stuff)
+        pass
 
     def disconnect_and_quit(self, exit_code, reason):
         #try to tell the server we're going, then quit
