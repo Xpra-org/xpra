@@ -391,9 +391,11 @@ class UIXpraClient(XpraClientBase):
             self.stop_receiving_sound()
 
     def signal_cleanup(self):
+        log("UIXpraClient.signal_cleanup()")
         XpraClientBase.signal_cleanup(self)
         self.stop_all_sound()
         reaper_cleanup()
+        log("UIXpraClient.signal_cleanup() done")
 
 
     def destroy_all_windows(self):

@@ -177,10 +177,13 @@ class XpraClientBase(object):
             self.exit_on_signal = True
             self.idle_add(self.disconnect_and_quit, exit_code, reason)
             self.idle_add(self.quit, exit_code)
+            self.exit()
             return
         #warning: this will run cleanup code from the signal handler
         self.disconnect_and_quit(exit_code, reason)
         self.quit(exit_code)
+        self.exit()
+        os._exit(exit_code)
 
     def signal_cleanup(self):
         #placeholder for stuff that can be cleaned up from the signal handler
@@ -194,12 +197,15 @@ class XpraClientBase(object):
         if p is None or p._closed:
             self.quit(exit_code)
             return
-        def do_quit():
-            log("disconnect_and_quit: do_quit()")
+        def protocol_closed():
+            log("disconnect_and_quit: protocol_closed()")
             self.quit(exit_code)
         if p:
-            p.flush_then_close(["disconnect", reason], done_callback=do_quit)
-        self.timeout_add(1000, do_quit)
+            p.flush_then_close(["disconnect", reason], done_callback=protocol_closed)
+        self.timeout_add(1000, self.quit, exit_code)
+
+    def exit(self):
+        sys.exit()
 
 
     def client_type(self):

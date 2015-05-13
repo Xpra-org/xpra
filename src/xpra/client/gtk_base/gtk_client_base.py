@@ -74,7 +74,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.exit_code = exit_code
         if gtk.main_level()>0:
             #if for some reason cleanup() hangs, maybe this will fire...
-            gobject.timeout_add(4*1000, gtk_main_quit_really)
+            gobject.timeout_add(4*1000, self.exit)
             #try harder!:
             def force_quit():
                 from xpra import os_util
@@ -84,18 +84,22 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         log("GTKXpraClient.quit(%s) cleanup done, main_level=%s", exit_code, gtk.main_level())
         if gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
-            gobject.timeout_add(500, gtk_main_quit_really)
+            gobject.timeout_add(500, self.exit)
+
+    def exit(self):
+        log("GTKXpraClient.exit() calling %s", gtk_main_quit_really)
+        gtk_main_quit_really()
 
     def cleanup(self):
         if self.session_info:
-            self.session_info.destroy()
             self.session_info = None
+            self.session_info.destroy()
         if self.bug_report:
-            self.bug_report.destroy()
             self.bug_report = None
+            self.bug_report.destroy()
         if self.start_new_command:
-            self.start_new_command.destroy()
             self.start_new_command = None
+            self.start_new_command.destroy()
         UIXpraClient.cleanup(self)
 
 
