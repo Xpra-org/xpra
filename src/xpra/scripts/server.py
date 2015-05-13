@@ -333,15 +333,17 @@ def start_websockify(child_reaper, opts, tcp_sockets):
         except Exception as e:
             raise Exception("invalid html port: %s" % e)
         #we now have the host and port (port may be -1 to mean auto..)
+    from xpra.log import Logger
+    log = Logger("server")
     if html_port==-1:
         #try to find a free port and hope that websockify can then use it..
         html_port = get_free_tcp_port()
+    elif os.name=="posix" and html_port<1024 and os.geteuid()!=0:
+        log.warn("Warning: the html port specified may require special privileges (%s:%s)", html_host, html_port)
     if len(tcp_sockets)<1:
         raise Exception("html web server requires at least one tcp socket, see 'bind-tcp'")
     #use the first tcp socket for websockify to talk back to us:
     _, xpra_tcp_port = list(tcp_sockets)[0]
-    from xpra.log import Logger
-    log = Logger("server")
     websockify_command = ["websockify", "--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
     log("websockify_command: %s", websockify_command)
     websockify_proc = subprocess.Popen(websockify_command, close_fds=True)
