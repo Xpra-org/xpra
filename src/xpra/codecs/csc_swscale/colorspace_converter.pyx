@@ -428,24 +428,26 @@ cdef class ColorspaceConverter:
         cdef Py_buffer *py_buffer
         start = time.time()
         iplanes = image.get_planes()
-        assert iplanes in ImageWrapper.PLANE_OPTIONS, "invalid number of planes: %s" % iplanes
-        input = image.get_pixels()
+        pixels = image.get_pixels()
         strides = image.get_rowstride()
+        assert iplanes in ImageWrapper.PLANE_OPTIONS, "invalid number of planes: %s" % iplanes
         if iplanes==ImageWrapper.PACKED:
             #magic: repack raw pixels/rowstride:
-            input = [input]
+            planes = [pixels]
             strides = [strides]
             iplanes = 1
+        else:
+            planes = pixels
         #print("convert_image(%s) input=%s, strides=%s" % (image, len(input), strides))
         assert pixels, "failed to get pixels from %s" % image
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
-        assert len(input)==iplanes, "expected %s planes but found %s" % (iplanes, len(input))
+        assert len(planes)==iplanes, "expected %s planes but found %s" % (iplanes, len(pixels))
         assert len(strides)==iplanes, "expected %s rowstrides but found %s" % (iplanes, len(strides))
         for i in range(4):
             if i<iplanes:
                 input_stride[i] = strides[i]
-                assert object_as_buffer(input[i], <const void**> &input_image[i], &pic_buf_len)==0
+                assert object_as_buffer(planes[i], <const void**> &input_image[i], &pic_buf_len)==0
             else:
                 #some versions of swscale check all 4 planes
                 #even when we only pass 1! see "check_image_pointers"

@@ -354,12 +354,12 @@ cdef class ColorspaceConverter:
         assert iplanes==ImageWrapper.PACKED, "invalid input format: %s planes" % iplanes
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
-        input = image.get_pixels()
+        pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
-        log("convert_image(%s) input=%s, strides=%s" % (image, len(input), input_stride))
+        log("convert_image(%s) input=%s, strides=%s" % (image, len(pixels), input_stride))
 
-        assert object_as_buffer(input, <const void**> &input_image, &pic_buf_len)==0
+        assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
         #allocate output buffer:
         output_image = <unsigned char*> xmemalign(self.buffer_size)
         Y = output_image + self.offsets[0]
