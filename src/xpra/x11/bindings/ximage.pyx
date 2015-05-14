@@ -240,19 +240,20 @@ cdef class XImageWrapper:
         self.timestamp = int(time.time()*1000)
 
     cdef set_image(self, XImage* image):
+        assert image!=NULL
         global ximage_counter
         ximage_counter += 1
         self.thread_safe = 0
         self.image = image
-        self.rowstride = self.image.bytes_per_line
-        self.depth = self.image.depth
+        self.rowstride = image.bytes_per_line
+        self.depth = image.depth
         if self.depth==24:
-            if self.image.byte_order==MSBFirst:
+            if image.byte_order==MSBFirst:
                 self.pixel_format = XRGB
             else:
                 self.pixel_format = BGRX
         elif self.depth==32:
-            if self.image.byte_order==MSBFirst:
+            if image.byte_order==MSBFirst:
                 self.pixel_format = ARGB
             else:
                 self.pixel_format = BGRA
@@ -588,7 +589,7 @@ cdef class XShmImageWrapper(XImageWrapper):
         if cb:
             self.free_callback = None
             cb()
-        xshmdebug("XShmImageWrapper.free() done, callback=%s", cb)
+        xshmdebug("XShmImageWrapper.free() done for %s, callback fired=%s", self, bool(cb))
 
     cdef set_free_callback(self, object callback):
         self.free_callback = callback
