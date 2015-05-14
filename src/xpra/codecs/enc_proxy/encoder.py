@@ -124,7 +124,7 @@ class Encoder(object):
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         self.quality = quality
         self.speed = speed
-        pixels = memoryview_to_bytes(image.get_pixels()[:])
+        pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         #info used by proxy encoder:
         client_options = {
@@ -153,4 +153,4 @@ class Encoder(object):
         log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
         self.last_frame_times.append(time.time())
         self.frames += 1
-        return  pixels, client_options
+        return  memoryview_to_bytes(pixels[:]), client_options
