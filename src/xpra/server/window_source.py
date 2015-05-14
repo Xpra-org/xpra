@@ -1490,6 +1490,7 @@ class WindowSource(object):
             #we need to copy the pixels because some encodings
             #may modify the pixel array in-place!
             dpixels = image.get_pixels()
+            assert dpixels, "failed to get pixels from %s" % image
             #hack note: the '[:]' slicing does not make a copy when dealing with a memoryview
             #but it does when dealing with strings! (and so we only make one copy no matter what here)
             dpixels = memoryview_to_bytes(dpixels[:])

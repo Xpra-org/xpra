@@ -355,6 +355,7 @@ cdef class ColorspaceConverter:
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         input = image.get_pixels()
+        assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
         log("convert_image(%s) input=%s, strides=%s" % (image, len(input), input_stride))
 
@@ -448,6 +449,7 @@ cdef class ColorspaceConverter:
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         planes = image.get_pixels()
+        assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
         log("do_YUV420P_to_RGB(%s) strides=%s", (image, Rindex, Gindex, Bindex, Xindex), input_strides)
 
@@ -532,6 +534,7 @@ cdef class ColorspaceConverter:
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         planes = image.get_pixels()
+        assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
         log("do_RGBP_to_RGB(%s) strides=%s", (image, Rsrc, Gsrc, Bsrc, Rdst, Gdst, Bdst, Xdst), input_strides)
 

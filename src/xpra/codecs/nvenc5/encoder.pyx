@@ -1782,15 +1782,16 @@ cdef class Encoder:
 
         start = time.time()
         log("compress_image(%s, %s)", image, options)
-        assert self.context!=NULL, "context is not initialized"
-        assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         w = image.get_width()
         h = image.get_height()
-        assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
-        assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
         pixels = image.get_pixels()
         image_stride = image.get_rowstride()
         input_size = self.inputPitch * self.input_height
+        assert pixels, "failed to get pixels from %s" % image
+        assert self.context!=NULL, "context is not initialized"
+        assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
+        assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
+        assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
 
         if self.frames==0:
             #first frame, record pts:

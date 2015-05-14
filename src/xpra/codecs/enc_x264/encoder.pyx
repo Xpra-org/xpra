@@ -501,6 +501,7 @@ cdef class Encoder:
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
+        assert pixels, "failed to get pixels from %s" % image
 
         memset(&pic_out, 0, sizeof(x264_picture_t))
         memset(&pic_in, 0, sizeof(x264_picture_t))

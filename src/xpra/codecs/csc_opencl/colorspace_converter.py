@@ -690,6 +690,7 @@ class ColorspaceConverter(object):
         height = image.get_height()
         strides = image.get_rowstride()
         pixels = image.get_pixels()
+        assert pixels, "failed to get pixels from %s" % image
         assert iplanes==ImageWrapper._3_PLANES, "we only handle planar data as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert len(strides)==len(pixels)==3, "invalid number of planes or strides (should be 3)"
@@ -753,6 +754,7 @@ class ColorspaceConverter(object):
         stride = image.get_rowstride()
         pixels = image.get_pixels()
         #log("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
+        assert pixels, "failed to get pixels from %s" % image
         assert iplanes==ImageWrapper.PACKED, "we only handle packed data as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert width>=self.src_width and height>=self.src_height, "expected source image with dimensions of at least %sx%s but got %sx%s" % (self.src_width, self.src_height, width, height)

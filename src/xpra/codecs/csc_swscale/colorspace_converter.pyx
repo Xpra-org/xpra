@@ -437,6 +437,7 @@ cdef class ColorspaceConverter:
             strides = [strides]
             iplanes = 1
         #print("convert_image(%s) input=%s, strides=%s" % (image, len(input), strides))
+        assert pixels, "failed to get pixels from %s" % image
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert len(input)==iplanes, "expected %s planes but found %s" % (iplanes, len(input))

@@ -453,6 +453,7 @@ cdef class Encoder:
         pic_out = x265_picture_alloc()
         assert pic_out!=NULL
 
+        assert pixels, "failed to get pixels from %s" % image
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
         for i in range(3):
