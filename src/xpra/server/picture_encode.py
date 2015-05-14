@@ -59,7 +59,9 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
             #normalize speed for webp: avoid low speeds!
             speed = int(sqrt(speed) * 10)
         speed = max(0, min(100, speed))
-        cdata = enc_webp.compress(image.get_pixels(), w, h, stride=stride/4, quality=quality, speed=speed, has_alpha=alpha)
+        pixels = image.get_pixels()
+        assert pixels, "failed to get pixels from %s" % image
+        cdata = enc_webp.compress(pixels, w, h, stride=stride/4, quality=quality, speed=speed, has_alpha=alpha)
         client_options = {"speed"       : speed,
                           "rgb_format"  : pixel_format}
         if quality>=0 and quality<=100:
@@ -100,6 +102,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
 
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
+    assert pixels, "failed to get pixels from %s" % image
     width = image.get_width()
     height = image.get_height()
     stride = image.get_rowstride()
@@ -162,8 +165,10 @@ def PIL_encode(coding, image, quality, speed, supports_transparency):
     bpp = 32
     #remove transparency if it cannot be handled:
     try:
+        pixels = image.get_pixels()
+        assert pixels, "failed to get pixels from %s" % image
         #PIL cannot use the memoryview directly:
-        pixels = memoryview_to_bytes(image.get_pixels())
+        pixels = memoryview_to_bytes(pixels)
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
@@ -248,6 +253,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
     #try to fallback to argb module
     #if we have one of the target pixel formats:
     pixels = image.get_pixels()
+    assert pixels, "failed to get pixels from %s" % image
     rs = image.get_rowstride()
     if pixel_format in ("BGRX", "BGRA"):
         if supports_transparency and "RGBA" in rgb_formats:
@@ -297,6 +303,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     global PIL
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
+    assert pixels, "failed to get pixels from %s" % image
     if not PIL:
         #try to fallback to argb module
         return argb_swap(image, rgb_formats, supports_transparency)
@@ -351,6 +358,7 @@ def mmap_send(mmap, mmap_size, image, rgb_formats, supports_transparency):
             return None
     start = time.time()
     data = image.get_pixels()
+    assert data, "failed to get pixels from %s" % image
     mmap_data, mmap_free_size = mmap_write(mmap, mmap_size, data)
     elapsed = time.time()-start+0.000000001 #make sure never zero!
     log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)

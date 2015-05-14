@@ -294,14 +294,17 @@ cdef class XImageWrapper:
 
     def get_pixels(self):
         cdef void *pix_ptr = self.get_pixels_ptr()
+        if pix_ptr==NULL:
+            return None
         return memory_as_pybuffer(pix_ptr, self.get_size(), False)
 
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
             return self.pixels
-        if self.image==NULL:
+        cdef XImage *image = self.image
+        if image==NULL:
             return NULL
-        return self.image.data
+        return image.data
 
     def is_thread_safe(self):
         return self.thread_safe
@@ -567,10 +570,13 @@ cdef class XShmImageWrapper(XImageWrapper):
     cdef void *get_pixels_ptr(self):                #@DuplicatedSignature
         if self.pixels!=NULL:
             return self.pixels
-        assert self.image!=NULL and self.height>0
+        cdef XImage *image = self.image             #
+        if image==NULL:
+            return NULL
+        assert self.height>0
         xshmdebug("XShmImageWrapper.get_pixels_ptr() self=%s", self)
         #calculate offset (assuming 4 bytes "pixelstride"):
-        return self.image.data + (self.y * self.rowstride) + (4 * self.x)
+        return image.data + (self.y * self.rowstride) + (4 * self.x)
 
     def free(self):                                 #@DuplicatedSignature
         #ensure we never try to XDestroyImage:
