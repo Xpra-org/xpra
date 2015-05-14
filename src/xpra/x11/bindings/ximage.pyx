@@ -493,7 +493,6 @@ cdef class XShmWrapper(object):
         assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"
         if self.closed:
             return None
-        xshmdebug("XShmWrapper.get_image%s", (xpixmap, x, y, w, h))
         if x>=self.width or y>=self.height:
             xshmlog("XShmWrapper.get_image%s position outside image dimensions %sx%s", (xpixmap, x, y, w, h), self.width, self.height)
             return None
@@ -512,7 +511,7 @@ cdef class XShmWrapper(object):
         imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
         imageWrapper.set_free_callback(self.free_image_callback)
-        xshmdebug("XShmWrapper.get_image%s ref_count=%s, returning %s", (xpixmap, x, y, w, h), self.ref_count, imageWrapper)
+        xshmdebug("XShmWrapper.get_image%s=%s (ref_count=%s)", (xpixmap, x, y, w, h), imageWrapper, self.ref_count)
         return imageWrapper
 
     def discard(self):
@@ -569,14 +568,17 @@ cdef class XShmImageWrapper(XImageWrapper):
 
     cdef void *get_pixels_ptr(self):                #@DuplicatedSignature
         if self.pixels!=NULL:
+            xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x (pixels) %s", <unsigned long> self.pixels, self)
             return self.pixels
         cdef XImage *image = self.image             #
         if image==NULL:
+            xshmdebug("XShmImageWrapper.get_pixels_ptr()=NULL (XImage is NULL) %s", self)
             return NULL
         assert self.height>0
-        xshmdebug("XShmImageWrapper.get_pixels_ptr() self=%s", self)
         #calculate offset (assuming 4 bytes "pixelstride"):
-        return image.data + (self.y * self.rowstride) + (4 * self.x)
+        cdef void *ptr = image.data + (self.y * self.rowstride) + (4 * self.x)
+        xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <unsigned long> ptr, self)
+        return ptr
 
     def free(self):                                 #@DuplicatedSignature
         #ensure we never try to XDestroyImage:
