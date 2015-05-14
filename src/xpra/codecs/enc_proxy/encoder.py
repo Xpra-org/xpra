@@ -9,6 +9,7 @@ from xpra.log import Logger
 log = Logger("encoder", "proxy")
 
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.os_util import memoryview_to_bytes
 from collections import deque
 
 
@@ -123,7 +124,8 @@ class Encoder(object):
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         self.quality = quality
         self.speed = speed
-        pixels = str(image.get_pixels())
+        pixels = memoryview_to_bytes(image.get_pixels()[:])
+        assert pixels, "failed to get pixels from %s" % image
         #info used by proxy encoder:
         client_options = {
                 "proxy"     : True,
