@@ -92,14 +92,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def cleanup(self):
         if self.session_info:
-            self.session_info = None
             self.session_info.destroy()
+            self.session_info = None
         if self.bug_report:
-            self.bug_report = None
             self.bug_report.destroy()
+            self.bug_report = None
         if self.start_new_command:
-            self.start_new_command = None
             self.start_new_command.destroy()
+            self.start_new_command = None
         UIXpraClient.cleanup(self)
 
 
