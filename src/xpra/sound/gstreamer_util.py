@@ -74,8 +74,8 @@ WAVPACK = "wavpack"
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-            #VORBIS : ("vorbisenc", "oggmux", "vorbisdec", "oggdemux"),
-            #AAC     : ("faac",          "oggmux",   "faad",         "aacparse"),
+            #(VORBIS      , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
+            #(AAC         , "faac",          "oggmux",   "faad",         "aacparse"),
             (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
