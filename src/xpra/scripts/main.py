@@ -502,7 +502,12 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--sound-source", action="store",
                           dest="sound_source", default=defaults.sound_source,
                           help="Specifies which sound system to use to capture the sound stream (use 'help' for options)")
+        legacy_bool_parse("av-sync")
+        group.add_option("--av-sync", action="store",
+                          dest="av_sync", default=defaults.av_sync,
+                          help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
     else:
+        hidden_options["av-sync"] = False
         hidden_options["speaker"] = False
         hidden_options["speaker_codec"] = []
         hidden_options["microphone"] = False

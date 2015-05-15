@@ -17,6 +17,7 @@ compresslog = Logger("window", "compress")
 scalinglog = Logger("scaling")
 iconlog = Logger("icon")
 deltalog = Logger("delta")
+avsynclog = Logger("av-sync")
 
 
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 100))
@@ -72,6 +73,7 @@ class WindowSource(object):
     def __init__(self, queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
+                    av_sync, av_sync_delay,
                     video_helper,
                     server_core_encodings, server_encodings,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
@@ -90,6 +92,9 @@ class WindowSource(object):
         self.wid = wid
         self.global_statistics = statistics             #shared/global statistics from ServerSource
         self.statistics = WindowPerformanceStatistics()
+        self.av_sync = av_sync
+        self.av_sync_delay = av_sync_delay
+        self.encode_queue = []
 
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
@@ -662,7 +667,7 @@ class WindowSource(object):
         damage requests for a window.
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
-        log("cancel_damage() wid=%s, dropping delayed region %s and all sequences up to %s", self.wid, self._damage_delayed, self._sequence)
+        log("cancel_damage() wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s", self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_expire_timer()
@@ -671,6 +676,11 @@ class WindowSource(object):
         self.cancel_timeout_timer()
         #if a region was delayed, we can just drop it now:
         self.refresh_regions = []
+        eq = self.encode_queue
+        if eq:
+            self.encode_queue = []
+            for item in eq:
+                self.free_image_wrapper(item[6])
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
@@ -1139,6 +1149,7 @@ class WindowSource(object):
         """ when not running in the UI thread,
             call this method to free an image wrapper safely
         """
+        log("free_image_wrapper(%s) thread_safe=%s", image, image.is_thread_safe())
         if image.is_thread_safe():
             image.free()
         else:
@@ -1150,8 +1161,11 @@ class WindowSource(object):
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
             Actual damage region processing:
-            we extract the rgb data from the pixmap and place it on the damage queue,
-            so the damage thread will call make_data_packet_cb which does the actual compression
+            we extract the rgb data from the pixmap and:
+            * if doing av-sync, we place the data on the encode queue with a timer,
+              when the timer fires, we queue the work for the damage thread
+            * without av-sync, we just queue the work immediately
+            The damage thread will call make_data_packet_cb which does the actual compression.
             This runs in the UI thread.
         """
         if w==0 or h==0:
@@ -1176,15 +1190,65 @@ class WindowSource(object):
             return
 
         now = time.time()
-        log("process_damage_regions: wid=%s, adding %s pixel data to queue, elapsed time: %.1f ms, request time: %.1f ms",
-                self.wid, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
-        self.statistics.encoding_pending[sequence] = (damage_time, w, h)
-        self.call_in_encode_thread(self.make_data_packet_cb, window, damage_time, now, self.wid, image, coding, sequence, options)
+        log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
+                self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
+        item = (window, damage_time, w, h, now, self.wid, image, coding, sequence, options)
+        av_delay = self.av_sync_delay*int(options.get("av-sync", False))
+        if av_delay==0:
+            self.make_data_packet_cb(*item)
+        else:
+            #schedule encode via queue:
+            self.encode_queue.append(item)
+            self.timeout_add(av_delay, self.call_in_encode_thread, self.encode_from_queue)
 
-    def make_data_packet_cb(self, window, damage_time, process_damage_time, wid, image, coding, sequence, options):
+    def encode_from_queue(self):
+        #note: we use a queue here to ensure we preserve the order
+        #(so we encode frames in the same order they were grabbed)
+        avsynclog("encode_from_queue: %s items", len(self.encode_queue))
+        if not self.encode_queue:
+            return      #nothing to encode, must have been picked off already
+        #find the first item which is due
+        #in seconds, same as time.time():
+        av_delay = 200/1000.0
+        now = time.time()
+        still_due = []
+        pop = None
+        try:
+            for index,item in enumerate(self.encode_queue):
+                ts = item[4]
+                due = ts + av_delay
+                if due<now and pop is None:
+                    #found an item which is due
+                    pop = index
+                    avsynclog("encode_from_queue: processing item %s/%s (overdue by %ims)", index+1, len(self.encode_queue), int(1000*(now-due)))
+                    self.make_data_packet_cb(*item)
+                else:
+                    #we only process only one item per call
+                    #and just keep track of extra ones:
+                    still_due.append(due)
+        except Exception as e:
+            avsynclog.error("error processing encode queue: %s", e, exc_info=True)
+        if pop is not None:
+            self.encode_queue.pop(pop)
+            return
+        #README: encode_from_queue is scheduled to run every time we add an item
+        #to the encode_queue, but since the av_delay can change it is possible
+        #for us to not pop() any items from the list sometimes, and therefore we must ensure
+        #we run this method again later when the items are actually due,
+        #so we need to calculate when that is:
+        if len(still_due)==0:
+            avsynclog("encode_from_queue: nothing due")
+            return
+        first_due = int(max(0, min(still_due)-time.time())*1000)
+        avsynclog("encode_from_queue: first due in %ims, due list=%s", first_due, still_due)
+        self.timeout_add(first_due, self.call_in_encode_thread, self.encode_from_queue)
+
+
+    def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """ This function is called from the damage data thread!
             Extra care must be taken to prevent access to X11 functions on window.
         """
+        self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
             packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options)
         finally:

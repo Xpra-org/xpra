@@ -575,8 +575,10 @@ class WindowVideoSource(WindowSource):
             return send_nonvideo(encoding=None)
 
         #found the video region:
-        #send this straight away using the video encoder:
-        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, options)
+        #send this using the video encoder:
+        video_options = options.copy()
+        video_options["av-sync"] = True
+        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options)
 
         #now substract this region from the rest:
         trimmed = []

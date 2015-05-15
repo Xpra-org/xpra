@@ -27,6 +27,8 @@ grablog = Logger("client", "grab")
 iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
 mouselog = Logger("mouse")
+avsynclog = Logger("av-sync")
+
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -57,6 +59,8 @@ except:
 FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
+
+AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 
 
 PYTHON3 = sys.version_info[0] == 3
@@ -149,6 +153,7 @@ class UIXpraClient(XpraClientBase):
         except Exception as e:
             soundlog("sound support unavailable: %s", e)
             has_gst = False
+        self.av_sync = False
         #sound state:
         self.on_sink_ready = None
         self.sound_sink = None
@@ -164,6 +169,7 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_encoders = []
         self.server_sound_receive = False
         self.server_sound_send = False
+        self.queue_used_sent = None
 
         #dbus:
         self.dbus_counter = AtomicInteger()
@@ -277,6 +283,7 @@ class UIXpraClient(XpraClientBase):
             assert has_gst
             self.microphone_codecs = get_sound_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
+        self.av_sync = opts.av_sync
 
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
@@ -1016,6 +1023,9 @@ class UIXpraClient(XpraClientBase):
             "generic-rgb-encodings"     : True,
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
+            "av-sync"                   : self.av_sync,
+            #start at 0 and rely on sound-control packets to set the correct value:
+            "av-sync.delay.default"     : 0,
             })
         if self.dpi>0:
             #command line (or config file) override supplied:
@@ -1346,6 +1356,8 @@ class UIXpraClient(XpraClientBase):
         log("server has randr: %s", self.server_randr)
         self.server_sound_sequence = c.boolget("sound_sequence")
         self.server_sound_eos_sequence = c.boolget("sound.eos-sequence")
+        self.server_av_sync = c.boolget("av-sync.enabled")
+        avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         self.server_info_request = c.boolget("info-request")
         e = c.strget("encoding")
         if e:
@@ -1807,6 +1819,18 @@ class UIXpraClient(XpraClientBase):
         #(some packets (ie: sos, eos) only contain metadata)
         if len(data)>0:
             ss.add_data(data, metadata)
+        if self.av_sync and self.server_av_sync:
+            info = ss.get_info()
+            queue_used = info.get("queue.used")
+            if not queue_used:
+                avsynclog("server sound sync: info=%s", info)
+            if queue_used and (self.queue_used_sent is None or abs(self.queue_used_sent-queue_used)>=80):
+                avsynclog("server sound sync: sending updated queue.used=%i (was %s)", queue_used, (self.queue_used_sent or "unset"))
+                self.queue_used_sent = queue_used
+                v = queue_used + AV_SYNC_DELTA
+                if AV_SYNC_DELTA:
+                    avsynclog(" adjusted value=%i with sync delta=%i", v, AV_SYNC_DELTA)
+                self.send("sound-control", "sync", v)
 
 
     def send_notify_enabled(self):

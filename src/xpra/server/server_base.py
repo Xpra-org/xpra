@@ -197,6 +197,7 @@ class ServerBase(ServerCore):
         self.send_pings = opts.pings
         self.file_transfer = opts.file_transfer
         self.lpadmin = opts.lpadmin
+        self.av_sync = opts.av_sync
         #server-side printer handling is only for posix via pycups for now:
         if os.name=="posix" and opts.printing:
             try:
@@ -765,7 +766,7 @@ class ServerBase(ServerCore):
                           self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb, self._socket_dir,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
-                          self.supports_mmap,
+                          self.supports_mmap, self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_source_plugin,
                           self.supports_speaker, self.supports_microphone,
@@ -911,6 +912,7 @@ class ServerBase(ServerCore):
                 "sound_sequence", "notify-startup-complete", "suspend-resume",
                 "encoding.generic", "encoding.strict_control",
                 "sound.server_driven",
+                "av-sync",
                 "command_request",
                 "event_request", "server-events",
                 "sound.eos-sequence")
@@ -934,6 +936,7 @@ class ServerBase(ServerCore):
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
+                 "av-sync.enabled"              : self.av_sync,
                  })
             for x in self.get_server_features():
                 capabilities[x] = True

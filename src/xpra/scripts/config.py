@@ -320,6 +320,7 @@ OPTION_TYPES = {
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
                     "remote-logging"    : bool,
+                    "av-sync"           : bool,
                     #arrays of strings:
                     "encodings"         : list,
                     "video-encoders"    : list,
@@ -419,6 +420,7 @@ def get_defaults():
                     "exit-with-client"  : False,
                     "start-new-commands": False,
                     "remote-logging"    : sys.platform.startswith("win") or sys.platform.startswith("darwin"),
+                    "av-sync"           : True,
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
                     "mdns"              : False,

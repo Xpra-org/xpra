@@ -23,6 +23,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
+avsynclog = Logger("av-sync")
 
 
 from xpra.server import ClientException
@@ -50,6 +51,7 @@ try:
     GRACE_PERCENT = int(os.environ.get("XPRA_GRACE_PERCENT", "90"))
 except:
     GRACE_PERCENT = 90
+AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
@@ -155,7 +157,7 @@ class ServerSource(object):
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
-                 supports_mmap,
+                 supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
@@ -166,7 +168,7 @@ class ServerSource(object):
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir,
                  get_transient_for, get_focus,
                  get_window_id,
-                 supports_mmap,
+                 supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
@@ -209,6 +211,8 @@ class ServerSource(object):
         self.sound_source_sequence = 0
         self.sound_source = None
         self.sound_sink = None
+        self.av_sync = av_sync
+        self.av_sync_delay = 0
 
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
@@ -606,8 +610,11 @@ class ServerSource(object):
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
         self.server_driven = c.boolget("sound.server_driven")
+        av_sync = c.boolget("av-sync")
+        self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
+        avsynclog("av-sync: server=%s, client=%s, delay=%s", self.av_sync, av_sync, self.av_sync_delay)
 
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
@@ -889,6 +896,10 @@ class ServerSource(object):
         elif action=="new-sequence":
             self.sound_source_sequence = int(args[0])
             return "new sequence is %s" % self.sound_source_sequence
+        elif action=="sync":
+            assert self.av_sync, "av-sync is not enabled"
+            self.set_av_sync_delay(args[0])
+            return "av-sync delay set to %ims" % self.av_sync_delay
         #elif action=="quality":
         #    assert self.sound_source
         #    quality = args[0]
@@ -940,6 +951,15 @@ class ServerSource(object):
                 log.error("failed to setup sound", exc_info=True)
                 return
         self.sound_sink.add_data(data, metadata)
+
+    def set_av_sync_delay(self, v):
+        #update all window sources with the given delay
+        assert self.av_sync, "av-sync is not enabled"
+        self.av_sync_delay = min(1000, max(0, int(v) + AV_SYNC_DELTA))
+        avsynclog("av-sync set to %ims (from value=%s and delta=%s)", self.av_sync_delay, v, AV_SYNC_DELTA)
+        for ws in self.window_sources.values():
+            ws.av_sync_delay = v
+
 
     def set_screen_sizes(self, screen_sizes):
         self.screen_sizes = screen_sizes or []
@@ -1167,6 +1187,7 @@ class ServerSource(object):
         up("encoding",      self.default_encoding_options)
         up("encoding",      self.encoding_options)
         up("connection",    self.protocol.get_info())
+        up("av-sync",       {"delay"        :self.av_sync_delay})
         info.update(self.get_sound_info())
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
@@ -1650,6 +1671,7 @@ class ServerSource(object):
             ws = WindowVideoSource(self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
+                              self.av_sync, self.av_sync_delay,
                               self.video_helper,
                               self.server_core_encodings, self.server_encodings,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
