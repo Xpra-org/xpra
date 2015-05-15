@@ -1207,7 +1207,7 @@ def get_info():
 def get_encodings():
     return ["h264"]
 
-cdef int roundup(int n, int m):
+cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 

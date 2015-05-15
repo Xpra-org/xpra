@@ -36,7 +36,7 @@ cdef extern from "../../buffers/memalign.h":
 
 from libc.stdint cimport uint8_t
 
-cdef int roundup(int n, int m):
+cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 #precalculate indexes in native endianness:

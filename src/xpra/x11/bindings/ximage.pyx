@@ -16,8 +16,13 @@ xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 
 
-cdef roundup(int n, int m):
+cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
+
+cdef inline int MIN(int a, int b):
+    if a<=b:
+        return a
+    return b
 
 
 ###################################
@@ -399,11 +404,14 @@ cdef class XImageWrapper:
         cdef void *img_buf = self.get_pixels_ptr()
         assert img_buf!=NULL, "this image wrapper is empty!"
         cdef void *new_buf
-        if posix_memalign(<void **> &new_buf, 64, newsize):
+        if posix_memalign(<void **> &new_buf, 64, (newsize+rowstride)):
             raise Exception("posix_memalign failed!")
         cdef int ry
         cdef void *to = new_buf
         cdef int oldstride = self.rowstride                     #using a local variable is faster
+        #Note: we don't zero the buffer,
+        #so if the newstride is bigger than oldstride, you get garbage..
+        cdef int cpy_size = MIN(rowstride, oldstride)
         for 0 <= ry < self.height:
             memcpy(to, img_buf, rowstride)
             to += rowstride
