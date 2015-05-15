@@ -371,19 +371,28 @@ cdef class XImageWrapper:
             free(self.pixels)
             self.pixels = NULL
 
+    def freeze(self):
+        #we don't need to do anything here because the non-XShm version
+        #already uses a copy of the pixels
+        return False
 
     def restride(self, int newstride=0):
         #NOTE: this must be called from the UI thread!
+        cdef int rowstride = newstride
         if newstride==0:
-            newstride = roundup(self.width*len(self.pixel_format), 4)   #a reasonable stride: rounded up to 4
-        if self.rowstride<8 or newstride>self.rowstride or self.height<=2:
-            return False                    #not worth it
+            #if not given a newstride, assume it is optional and check if it is worth doing at all:
+            if self.rowstride<=8 or self.height<=2:
+                return False                                    #not worth it
+            #use a reasonable stride: rounded up to 4
+            rowstride = roundup(self.width*len(self.pixel_format), 4)
+            if rowstride>=self.rowstride:
+                return False                                    #not worth it
+        cdef int newsize = rowstride*self.height                #desirable size we could have
         cdef int size = self.rowstride*self.height
-        cdef int newsize = newstride*self.height                  #desirable size we could have
         #is it worth re-striding to save space:
         #(save at least 1KB and 10%)
-        if size-newsize<1024 or newsize*110/100>size:
-            log("restride(%s) not enough savings: size=%s, newsize=%s", newstride, size, newsize) 
+        if newstride==0 and size-newsize<1024 or newsize*110/100>size:
+            log("restride(%s) not enough savings with stride=%s: size=%s, newsize=%s", newstride, rowstride, size, newsize) 
             return False
         #Note: we could also change the pixel format whilst we're at it
         # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
@@ -395,16 +404,16 @@ cdef class XImageWrapper:
         cdef int ry
         cdef void *to = new_buf
         for 0 <= ry < self.height:
-            memcpy(to, img_buf, newstride)
-            to += newstride
+            memcpy(to, img_buf, rowstride)
+            to += rowstride
             img_buf += self.rowstride
-        log("restride() %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", 
-            self.pixel_format, 100-100*newsize/size, self.rowstride, size, newstride, newsize)
+        log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", 
+            newstride, self.pixel_format, 100-100*newsize/size, self.rowstride, size, rowstride, newsize)
         #we can now free the pixels buffer if present
         #(but not the ximage - this is not running in the UI thread!)
         self.free_pixels()
         #set the new attributes:
-        self.rowstride = newstride
+        self.rowstride = rowstride
         self.pixels = <char *> new_buf
         #without any X11 image to free, this is now thread safe:
         if self.image==NULL:
@@ -580,6 +589,11 @@ cdef class XShmImageWrapper(XImageWrapper):
         cdef void *ptr = image.data + (self.y * self.rowstride) + (4 * self.x)
         xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <unsigned long> ptr, self)
         return ptr
+
+    def freeze(self):                               #@DuplicatedSignature
+        #we just force a restride, which will allocate a new pixel buffer:
+        cdef newstride = roundup(self.width*len(self.pixel_format), 4)
+        return self.restride(newstride)
 
     def free(self):                                 #@DuplicatedSignature
         #ensure we never try to XDestroyImage:

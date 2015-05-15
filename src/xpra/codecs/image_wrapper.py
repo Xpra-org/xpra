@@ -102,6 +102,10 @@ class ImageWrapper(object):
         #not supported by the generic image wrapper:
         return False
 
+    def freeze(self):
+        #some wrappers (XShm) need to be told to stop updating the pixel buffer
+        return False
+
     def clone_pixel_data(self):
         assert not self.freed, "image has already been freed!"
         if self.planes == 0:

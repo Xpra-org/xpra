@@ -1197,7 +1197,9 @@ class WindowSource(object):
         if av_delay==0:
             self.make_data_packet_cb(*item)
         else:
-            #schedule encode via queue:
+            #schedule encode via queue, after freezing the pixels:
+            frozen = image.freeze()
+            avsynclog("scheduling encode queue iteration in %ims, pixels frozen=%s", av_delay, frozen)
             self.encode_queue.append(item)
             self.timeout_add(av_delay, self.call_in_encode_thread, self.encode_from_queue)
 
