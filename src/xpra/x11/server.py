@@ -481,7 +481,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #refresh to ensure the client gets the new window contents:
             #TODO: to save bandwidth, we should compare the dimensions and skip the refresh
             #if the window is smaller than before, or at least only send the new edges rather than the whole window
-            ss.damage(wid, window, 0, 0, nw, nh, {})
+            ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, raw_window):
         xid = raw_window.xid
@@ -628,17 +628,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
         geometry = self._desktop_manager.window_geometry(window)
         self._do_send_new_window_packet("new-window", window, geometry)
 
-    def _send_new_or_window_packet(self, window, options=None):
+    def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
         (_, _, w, h) = geometry
-        self._damage(window, 0, 0, w, h, options=options)
+        self._damage(window, 0, 0, w, h)
 
-    def _send_new_tray_window_packet(self, wid, window, options=None):
+    def _send_new_tray_window_packet(self, wid, window):
         (_, _, w, h) = window.get_property("geometry")
         for ss in self._server_sources.values():
             ss.new_tray(wid, window, w, h)
-        self._damage(window, 0, 0, w, h, options=options)
+        self._damage(window, 0, 0, w, h)
 
 
     def _update_metadata(self, window, pspec):
