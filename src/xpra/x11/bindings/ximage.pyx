@@ -403,10 +403,11 @@ cdef class XImageWrapper:
             raise Exception("posix_memalign failed!")
         cdef int ry
         cdef void *to = new_buf
+        cdef int oldstride = self.rowstride                     #using a local variable is faster
         for 0 <= ry < self.height:
             memcpy(to, img_buf, rowstride)
             to += rowstride
-            img_buf += self.rowstride
+            img_buf += oldstride
         log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", 
             newstride, self.pixel_format, 100-100*newsize/size, self.rowstride, size, rowstride, newsize)
         #we can now free the pixels buffer if present
