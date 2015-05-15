@@ -185,6 +185,10 @@ auto-refresh-delay = 0.15
 #microphone-codec = speex
 #microphone-codec = opus
 
+# Try to synchronize audio and video:
+#av-sync = off
+av-sync = on
+
 
 ################################################################################
 # Network Connection
