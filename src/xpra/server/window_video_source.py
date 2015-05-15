@@ -374,9 +374,12 @@ class WindowVideoSource(WindowSource):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
-        if pixel_count<self._rgb_auto_threshold and "rgb24" in options:
+        if pixel_count<self._rgb_auto_threshold:
             #high speed and high quality, rgb is still good
-            return "rgb24"
+            if "rgb24" in options:
+                return "rgb24"
+            if "rgb32" in options:
+                return "rgb32"
         #use sliding scale for lossless threshold
         #(high speed favours switching to lossy sooner)
         #take into account how many pixels need to be encoder:
@@ -402,8 +405,11 @@ class WindowVideoSource(WindowSource):
                 max_webp = 1024*1024 * (200-quality)/100 * speed/100
                 if pixel_count<max_webp:
                     return "webp"
-            if "rgb24" in options and speed>75:
-                return "rgb24"
+            if speed>75:
+                if "rgb24" in options:
+                    return "rgb24"
+                if "rgb32" in options:
+                    return "rgb32"
             if "png" in options:
                 return "png"
         #we failed to find a good match, default to the first of the options..
