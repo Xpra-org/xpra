@@ -22,6 +22,7 @@ metalog = Logger("metadata")
 printlog = Logger("printing")
 filelog = Logger("file")
 timeoutlog = Logger("timeout")
+proxylog = Logger("proxy")
 
 
 from xpra.server import ClientException
@@ -627,11 +628,11 @@ class ServerSource(object):
             msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
-            log.info(msg)
+            proxylog.info(msg)
             from xpra.version_util import version_compat_check
             msg = version_compat_check(proxy_version)
             if msg:
-                log.warn("Warning: proxy version may not be compatible: %s", msg)
+                proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
 
         #keyboard is now injected into this class, default to undefined:
         self.keyboard_config = None
@@ -684,12 +685,14 @@ class ServerSource(object):
         elog("encoding options: %s", self.encoding_options)
 
         #handle proxy video: add proxy codec to video helper:
-        if self.encoding_options.get("proxy.video", False):
+        pv = self.encoding_options.boolget("proxy.video")
+        proxylog("proxy.video=%s", pv)
+        if pv:
             #enabling video proxy:
             try:
                 self.parse_proxy_video()
             except:
-                log.error("failed to parse proxy video", exc_info=True)
+                proxylog.error("failed to parse proxy video", exc_info=True)
 
         self.default_encoding_options["scaling.control"] = self.encoding_options.get("scaling.control", self.scaling_control)
         q = self.encoding_options.intget("quality", self.default_quality)         #0.7 onwards:
@@ -731,14 +734,16 @@ class ServerSource(object):
 
     def parse_proxy_video(self):
         from xpra.codecs.enc_proxy.encoder import Encoder
-        for encoding, colorspace_specs in self.encoding_options.get("proxy.video.encodings").items():
+        proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
+        proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
+        for encoding, colorspace_specs in proxy_video_encodings.items():
             for colorspace, spec_props in colorspace_specs.items():
                 for spec_prop in spec_props:
                     #make a new spec based on spec_props:
                     spec = codec_spec(Encoder)
                     for k,v in spec_prop.items():
                         setattr(spec, k, v)
-                    log("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
+                    proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
                     self.video_helper.add_encoder_spec(encoding, colorspace, spec)
 
 
