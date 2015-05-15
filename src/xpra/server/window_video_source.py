@@ -607,18 +607,20 @@ class WindowVideoSource(WindowSource):
 
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
-        WindowSource.process_damage_region(self, damage_time, window, x, y, w, h, coding, options)
         #now figure out if we need to send edges separately:
-        dw = w - (w & self.width_mask)
-        dh = h - (h & self.height_mask)
-        if coding in self.video_encodings and (dw>0 or dh>0):
-            #FIXME: we assume that rgb24 is always supported (it generally is)
-            #no point in using get_best_encoding here, rgb24 wins
-            #(as long as the mask is small - and it is)
-            if dw>0:
-                WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, "rgb24", options)
-            if dh>0:
-                WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, "rgb24", options)
+        if coding in self.video_encodings:
+            dw = w - (w & self.width_mask)
+            dh = h - (h & self.height_mask)
+        else:
+            dw, dh = 0, 0
+        WindowSource.process_damage_region(self, damage_time, window, x, y, w-dw, h-dh, coding, options)
+        #FIXME: we assume that rgb24 is always supported (it generally is)
+        #no point in using get_best_encoding here, rgb24 wins
+        #(as long as the mask is small - and it is)
+        if dw>0:
+            WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, "rgb24", options)
+        if dh>0:
+            WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, "rgb24", options)
 
 
     def must_encode_full_frame(self, window, encoding):
