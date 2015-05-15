@@ -1193,8 +1193,9 @@ class WindowSource(object):
         log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         item = (window, damage_time, w, h, now, self.wid, image, coding, sequence, options)
-        av_delay = self.av_sync_delay*int(options.get("av-sync", False))
-        if av_delay==0:
+        av_sync = options.get("av-sync", False)
+        av_delay = self.av_sync_delay*int(av_sync)
+        if not av_sync:
             self.make_data_packet_cb(*item)
         else:
             #schedule encode via queue, after freezing the pixels:
@@ -1211,7 +1212,7 @@ class WindowSource(object):
             return      #nothing to encode, must have been picked off already
         #find the first item which is due
         #in seconds, same as time.time():
-        av_delay = 200/1000.0
+        av_delay = self.av_sync_delay/1000.0
         now = time.time()
         still_due = []
         pop = None
