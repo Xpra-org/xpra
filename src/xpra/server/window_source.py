@@ -1207,8 +1207,9 @@ class WindowSource(object):
     def encode_from_queue(self):
         #note: we use a queue here to ensure we preserve the order
         #(so we encode frames in the same order they were grabbed)
-        avsynclog("encode_from_queue: %s items", len(self.encode_queue))
-        if not self.encode_queue:
+        eq = self.encode_queue
+        avsynclog("encode_from_queue: %s items", len(eq))
+        if not eq:
             return      #nothing to encode, must have been picked off already
         #find the first item which is due
         #in seconds, same as time.time():
@@ -1217,7 +1218,11 @@ class WindowSource(object):
         still_due = []
         pop = None
         try:
-            for index,item in enumerate(self.encode_queue):
+            for index,item in enumerate(eq):
+                sequence = item[8]
+                if self.is_cancelled(sequence):
+                    self.free_image_wrapper(item[6])
+                    return
                 ts = item[4]
                 due = ts + av_delay
                 if due<now and pop is None:
@@ -1232,7 +1237,7 @@ class WindowSource(object):
         except Exception as e:
             avsynclog.error("error processing encode queue: %s", e, exc_info=True)
         if pop is not None:
-            self.encode_queue.pop(pop)
+            eq.pop(pop)
             return
         #README: encode_from_queue is scheduled to run every time we add an item
         #to the encode_queue, but since the av_delay can change it is possible
