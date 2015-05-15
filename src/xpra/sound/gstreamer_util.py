@@ -86,9 +86,27 @@ CODEC_OPTIONS = [
             ]
 CODECS = {}
 
+#these encoders require an "audioconvert" element:
 ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", )
+#options we use to tune for low latency:
+ENCODER_DEFAULT_OPTIONS = {
+            "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
+            "wavpackenc"    : {"mode" : 1},     #"fast" (0 aka "very fast" is not supported)
+            "flacenc"       : {"quality" : 0},  #"fast"
+            "opusenc"       : {"cbr" : 0,
+                               "complexity" : 0},
+           }
+#based on the encoder options above:
+ENCODER_LATENCY = {
+        MP3         : 250,
+        FLAC        : 150,
+        WAV         : 0,
+        WAVPACK     : 600,
+        OPUS        : 500,
+        SPEEX       : 500,
+       }
 
-CODEC_ORDER = [MP3, WAVPACK, WAV, FLAC, SPEEX, OPUS]
+CODEC_ORDER = [FLAC, MP3, WAVPACK, WAV] #, SPEEX, OPUS, VORBIS, AAC]
 #CODEC_ORDER = [MP3, FLAC, SPEEX]
 
 

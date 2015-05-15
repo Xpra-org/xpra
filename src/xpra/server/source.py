@@ -213,6 +213,7 @@ class ServerSource(object):
         self.sound_sink = None
         self.av_sync = av_sync
         self.av_sync_delay = 0
+        self.av_sync_delay_total = 0
 
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
@@ -614,7 +615,7 @@ class ServerSource(object):
         self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
-        avsynclog("av-sync: server=%s, client=%s, delay=%s", self.av_sync, av_sync, self.av_sync_delay)
+        avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
 
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
@@ -820,6 +821,7 @@ class ServerSource(object):
                       {"start-of-stream"    : True,
                        "codec"              : sound_source.codec,
                        "sequence"           : sound_source.sequence})
+        self.update_av_sync_delay_total()
 
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s) suspended=%s",
@@ -955,10 +957,24 @@ class ServerSource(object):
     def set_av_sync_delay(self, v):
         #update all window sources with the given delay
         assert self.av_sync, "av-sync is not enabled"
-        self.av_sync_delay = min(1000, max(0, int(v) + AV_SYNC_DELTA))
-        avsynclog("av-sync set to %ims (from value=%s and delta=%s)", self.av_sync_delay, v, AV_SYNC_DELTA)
+        self.av_sync_delay = v
+        self.update_av_sync_delay_total()
+
+    def update_av_sync_delay_total(self):
+        encoder_latency = 0
+        ss = self.sound_source
+        if ss:
+            try:
+                from xpra.sound.gstreamer_util import ENCODER_LATENCY
+                encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
+                avsynclog("encoder_latency(%s)=%s", ss.codec, encoder_latency)
+            except Exception as e:
+                encoder_latency = 0
+                avsynclog("failed to get encoder latency for %s: %s", ss.codec, e)
+        self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + AV_SYNC_DELTA + encoder_latency))
+        avsynclog("av-sync set to %ims (from client queue latency=%s, encoder latency=%s, env delta=%s)", self.av_sync_delay_total, self.av_sync_delay, encoder_latency, AV_SYNC_DELTA)
         for ws in self.window_sources.values():
-            ws.av_sync_delay = v
+            ws.av_sync_delay = self.av_sync_delay_total
 
 
     def set_screen_sizes(self, screen_sizes):
@@ -1187,7 +1203,9 @@ class ServerSource(object):
         up("encoding",      self.default_encoding_options)
         up("encoding",      self.encoding_options)
         up("connection",    self.protocol.get_info())
-        up("av-sync",       {"delay"        :self.av_sync_delay})
+        up("av-sync",       {"client.delay"         : self.av_sync_delay,
+                             "total"                : self.av_sync_delay_total,
+                             "delta"                : AV_SYNC_DELTA})
         info.update(self.get_sound_info())
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
