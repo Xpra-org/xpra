@@ -163,27 +163,23 @@ def import_gst0_10():
     global gst_version, pygst_version
     import pygst
     pygst.require("0.10")
-    try:
-        #initializing gstreamer parses sys.argv
-        #which interferes with our own command line arguments
-        #so we temporarily replace them:
-        saved_args = sys.argv
-        sys.argv = sys.argv[:1]
-        #now do the import with stderr redirection
-        #to avoid gobject warnings:
-        from xpra.os_util import HideStdErr
-        with HideStdErr():
+    #initializing gstreamer parses sys.argv
+    #which interferes with our own command line arguments
+    #so we temporarily hide it,
+    #also import with stderr redirection in place
+    #to avoid gobject warnings:
+    from xpra.os_util import HideStdErr, HideSysArgv
+    with HideStdErr():
+        with HideSysArgv():
             import gst
-        gst_version = gst.gst_version
-        pygst_version = gst.pygst_version
-        gst.new_buffer = gst.Buffer
-        if not hasattr(gst, 'MESSAGE_STREAM_START'):
-            #a None value is better than nothing:
-            #(our code can assume it exists - just never matches)
-            gst.MESSAGE_STREAM_START = None
-        return gst
-    finally:
-        sys.argv = saved_args
+    gst_version = gst.gst_version
+    pygst_version = gst.pygst_version
+    gst.new_buffer = gst.Buffer
+    if not hasattr(gst, 'MESSAGE_STREAM_START'):
+        #a None value is better than nothing:
+        #(our code can assume it exists - just never matches)
+        gst.MESSAGE_STREAM_START = None
+    return gst
 
 
 _gst_major_version = None

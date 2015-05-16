@@ -214,6 +214,19 @@ class HideStdErr(object):
         if self.savedstderr is not None:
             os.dup2(self.savedstderr, 2)
 
+class HideSysArgv(object):
+
+    def __init__(self, *args, **kw):
+        self.savedsysargv = None
+
+    def __enter__(self):
+        self.savedsysargv = sys.argv
+        sys.argv = sys.argv[:1]
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.savedsysargv is not None:
+            sys.argv = self.savedsysargv
+
 
 def disable_stdout_buffering():
     import gc
