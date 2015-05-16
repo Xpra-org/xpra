@@ -199,9 +199,8 @@ class HideStdErr(object):
         self.savedstderr = None
 
     def __enter__(self):
-        if os.name=="posix":
+        if os.name=="posix" and os.getppid()==1:
             #this interferes with server daemonizing?
-            #if os.getppid()==0:
             return
         sys.stderr.flush() # <--- important when redirecting to files
         self.savedstderr = os.dup(2)
