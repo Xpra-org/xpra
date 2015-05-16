@@ -14,7 +14,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs, \
 from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.region import merge_all
 from xpra.server.video_subregion import VideoSubregion
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import updict
 from xpra.log import Logger
 
@@ -126,6 +126,7 @@ class WindowVideoSource(WindowSource):
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.video_encodings = []
         self.non_video_encodings = []
+        self.edge_encoding = None
 
     def set_auto_refresh_delay(self, d):
         WindowSource.set_auto_refresh_delay(self, d)
@@ -184,7 +185,8 @@ class WindowVideoSource(WindowSource):
             info["encoder"] = ve.get_type()
             up("encoder", ve.get_info())
         up("encoding.pipeline_param", self.get_pipeline_info())
-        up("encodings.non-video", self.non_video_encodings)
+        info["encodings.non-video"] = self.non_video_encodings
+        info["encodings.edge"] = self.edge_encoding or ""
         if self._last_pipeline_check>0:
             info["encoding.pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
@@ -288,7 +290,12 @@ class WindowVideoSource(WindowSource):
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
-        log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, scaling_control=%s", properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.scaling_control)
+        try:
+            self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
+        except:
+            self.edge_encoding = None
+        log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
+            properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         return self.get_best_encoding_video
@@ -623,13 +630,13 @@ class WindowVideoSource(WindowSource):
         else:
             dw, dh = 0, 0
         WindowSource.process_damage_region(self, damage_time, window, x, y, w-dw, h-dh, coding, options)
-        #FIXME: we assume that rgb24 is always supported (it generally is)
-        #no point in using get_best_encoding here, rgb24 wins
-        #(as long as the mask is small - and it is)
+        if not self.edge_encoding:
+            #we can't send the edges, no big deal
+            return
         if dw>0:
-            WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, "rgb24", options)
+            WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, self.edge_encoding, options)
         if dh>0:
-            WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, "rgb24", options)
+            WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, self.edge_encoding, options)
 
 
     def must_encode_full_frame(self, window, encoding):
