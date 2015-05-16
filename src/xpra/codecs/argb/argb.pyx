@@ -10,6 +10,7 @@
 cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num)
@@ -21,6 +22,10 @@ cdef extern from "stdlib.h":
 import struct
 from xpra.log import Logger
 log = Logger("encoding")
+
+
+def buffer_api_version():
+    return get_buffer_api_version()
 
 
 def argb_to_rgba(buf):

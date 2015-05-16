@@ -10,7 +10,7 @@
 
 #include "Python.h"
 
-int get_version(void) {
+int get_buffer_api_version(void) {
     return 0;
 }
 
