@@ -184,6 +184,7 @@ class WindowVideoSource(WindowSource):
             info["encoder"] = ve.get_type()
             up("encoder", ve.get_info())
         up("encoding.pipeline_param", self.get_pipeline_info())
+        up("encodings.non-video", self.non_video_encodings)
         if self._last_pipeline_check>0:
             info["encoding.pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
@@ -632,7 +633,7 @@ class WindowVideoSource(WindowSource):
 
 
     def must_encode_full_frame(self, window, encoding):
-        return self.full_frames_only or self.is_tray or (encoding in self.video_encodings)
+        return self.full_frames_only or self.is_tray or (encoding in self.video_encodings) or not self.non_video_encodings
 
 
     def update_encoding_options(self, force_reload=False):
@@ -650,7 +651,7 @@ class WindowVideoSource(WindowSource):
         WindowSource.update_encoding_options(self, force_reload)
         log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         if self.supports_video_subregion:
-            if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE:
+            if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0:
                 ww, wh = self.window_dimensions
                 self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events)
             else:
