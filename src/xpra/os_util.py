@@ -188,6 +188,33 @@ def force_quit(status=1):
     os._exit(status)
 
 
+#code to temporarily redirect stderr and restore it afterwards, adapted from:
+#http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
+#used by the sound code to get rid of the stupid gst warning below:
+#"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
+#ideally we would redirect to a buffer so we could still capture and show these messages in debug out
+class HideStdErr(object):
+
+    def __init__(self, *args, **kw):
+        self.savedstderr = None
+
+    def __enter__(self):
+        if os.name=="posix":
+            #this interferes with server daemonizing?
+            #if os.getppid()==0:
+            return
+        sys.stderr.flush() # <--- important when redirecting to files
+        self.savedstderr = os.dup(2)
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, 2)
+        os.close(devnull)
+        sys.stderr = os.fdopen(self.savedstderr, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.savedstderr is not None:
+            os.dup2(self.savedstderr, 2)
+
+
 def disable_stdout_buffering():
     import gc
     # Appending to gc.garbage is a way to stop an object from being

@@ -110,28 +110,6 @@ CODEC_ORDER = [FLAC, MP3, WAVPACK, WAV] #, SPEEX, OPUS, VORBIS, AAC]
 #CODEC_ORDER = [MP3, FLAC, SPEEX]
 
 
-#code to temporarily redirect stderr and restore it afterwards, adapted from:
-#http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
-#so we can get rid of the stupid gst warning below:
-#"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
-#ideally we would redirect to a buffer so we could still capture and show these messages in debug out
-#we only do this on win32 because on Linux this interferes with server daemonizing
-def redirect_stderr():
-    if not sys.platform.startswith("win"):
-        return None
-    sys.stderr.flush() # <--- important when redirecting to files
-    newstderr = os.dup(2)
-    devnull = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(devnull, 2)
-    os.close(devnull)
-    sys.stderr = os.fdopen(newstderr, 'w')
-    return newstderr
-
-def unredirect_stderr(oldfd):
-    if oldfd is not None:
-        os.dup2(oldfd, 2)
-
-
 gst = None
 has_gst = False
 
@@ -193,8 +171,9 @@ def import_gst0_10():
         sys.argv = sys.argv[:1]
         #now do the import with stderr redirection
         #to avoid gobject warnings:
-        oldfd = redirect_stderr()
-        import gst
+        from xpra.os_util import HideStdErr
+        with HideStdErr():
+            import gst
         gst_version = gst.gst_version
         pygst_version = gst.pygst_version
         gst.new_buffer = gst.Buffer
@@ -204,8 +183,8 @@ def import_gst0_10():
             gst.MESSAGE_STREAM_START = None
         return gst
     finally:
-        unredirect_stderr(oldfd)
         sys.argv = saved_args
+
 
 _gst_major_version = None
 try:
