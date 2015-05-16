@@ -44,6 +44,7 @@ cdef extern from "stdarg.h":
 
 cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 cdef extern from "x264.h":
 
@@ -253,6 +254,7 @@ def get_type():
 def get_info():
     global COLORSPACES
     return {"version"   : get_version(),
+            "buffer_api": get_buffer_api_version(),
             "formats"   : COLORSPACES.keys()}
 
 def get_encodings():

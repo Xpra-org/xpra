@@ -44,6 +44,7 @@ cdef extern from "../../buffers/memalign.h":
 
 cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
@@ -256,6 +257,7 @@ def get_info():
     global CODECS
     info = {"version"       : get_version(),
             "encodings"     : CODECS,
+            "buffer_api"    : get_buffer_api_version(),
             "abi_version"   : get_abi_version(),
             "build_config"  : vpx_codec_build_config()}
     for k,v in COLORSPACES.items():

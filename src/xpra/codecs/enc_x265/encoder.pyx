@@ -26,6 +26,7 @@ cdef extern from "inttypes.h":
 
 cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 cdef extern from "x265.h":
 
@@ -217,6 +218,16 @@ def get_version():
 def get_type():
     return "x265"
 
+def get_info():
+    f = {}
+    for e in get_encodings():
+        f["formats.%s" % e] = get_input_colorspaces(e)
+    return  {"version"      : get_version(),
+             "encodings"    : get_encodings(),
+             "buffer_api"   : get_buffer_api_version(),
+             "formats"      : f,
+             }
+
 def get_encodings():
     return ["h265"]
 
@@ -363,7 +374,7 @@ cdef class Encoder:
         self.first_frame_timestamp = 0
 
 
-    def get_info(self):
+    def get_info(self):             #@DuplicatedSignature
         cdef float pps
         if self.profile is None:
             return {}

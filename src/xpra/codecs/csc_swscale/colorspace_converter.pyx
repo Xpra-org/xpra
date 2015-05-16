@@ -20,6 +20,7 @@ include "constants.pxi"
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 cdef extern from "../../buffers/memalign.h":
     int pad(int size) nogil
@@ -193,6 +194,7 @@ def get_version():
 def get_info():
     global COLORSPACES
     return {"version"   : get_version(),
+            "buffer_api": get_buffer_api_version(),
             "formats"   : COLORSPACES}
 
 def get_input_colorspaces():

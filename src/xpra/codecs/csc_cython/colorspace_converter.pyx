@@ -29,6 +29,7 @@ cdef extern from "stdlib.h":
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 cdef extern from "../../buffers/memalign.h":
     int pad(int size) nogil
@@ -84,7 +85,8 @@ def get_version():
     return tuple(CSC_CYTHON_VERSION + CYTHON_VERSION)
 
 def get_info():
-    info = {"version"   : CSC_CYTHON_VERSION}
+    info = {"version"   : CSC_CYTHON_VERSION,
+            "buffer_api": get_buffer_api_version()}
     if CYTHON_VERSION:
         info["Cython"] = CYTHON_VERSION
     return info
