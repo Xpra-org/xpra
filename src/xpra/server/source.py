@@ -963,16 +963,17 @@ class ServerSource(object):
     def update_av_sync_delay_total(self):
         encoder_latency = 0
         ss = self.sound_source
+        cinfo = ""
         if ss:
             try:
                 from xpra.sound.gstreamer_util import ENCODER_LATENCY
                 encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
-                avsynclog("encoder_latency(%s)=%s", ss.codec, encoder_latency)
+                cinfo = "%s " % ss.codec
             except Exception as e:
                 encoder_latency = 0
                 avsynclog("failed to get encoder latency for %s: %s", ss.codec, e)
         self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + AV_SYNC_DELTA + encoder_latency))
-        avsynclog("av-sync set to %ims (from client queue latency=%s, encoder latency=%s, env delta=%s)", self.av_sync_delay_total, self.av_sync_delay, encoder_latency, AV_SYNC_DELTA)
+        avsynclog("av-sync set to %ims (from client queue latency=%s, %sencoder latency=%s, env delta=%s)", self.av_sync_delay_total, self.av_sync_delay, cinfo, encoder_latency, AV_SYNC_DELTA)
         for ws in self.window_sources.values():
             ws.av_sync_delay = self.av_sync_delay_total
 
