@@ -20,7 +20,7 @@ screenlog = Logger("gtk", "client", "screen")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import bytestostr, DEFAULT_METADATA_SUPPORTED
+from xpra.util import bytestostr, updict, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -253,13 +253,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         capabilities["metadata.supported"] = ms
         #we need the bindings to support initiate-moveresize (posix only for now):
         from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
-        capabilities["window.initiate-moveresize"] = HAS_X11_BINDINGS
-        #window icon bits
-        capabilities["encoding.icons.greedy"] = True            #we don't set a default window icon any more
-        capabilities["encoding.icons.size"] = 64, 64            #size we want
-        capabilities["encoding.icons.max_size"] = 128, 128      #limit
         from xpra.client.window_backing_base import DELTA_BUCKETS
-        capabilities["encoding.delta_buckets"] = DELTA_BUCKETS
+        capabilities["window.initiate-moveresize"] = HAS_X11_BINDINGS
+        updict(capabilities, "encoding", {
+                    "icons.greedy"      : True,         #we don't set a default window icon any more
+                    "icons.size"        : (64, 64),     #size we want
+                    "icons.max_size"    : (128, 128),   #limit
+                    "delta_buckets"     : DELTA_BUCKETS,
+                    })
         return capabilities
 
 
