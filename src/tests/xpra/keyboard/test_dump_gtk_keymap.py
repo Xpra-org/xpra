@@ -34,7 +34,7 @@ def print_keycodes_with_names():
 			for entry in entries:
 				keyval, keycode, group, level = entry
 				name = gtk.gdk.keyval_name(keyval)
-				if name is None:
+				if keyval and name is None:
 					print("name not found for keyval: %s, entry=%s" % (keyval, entry))
 				ext_entries.append((keyval, name, keycode, group, level))
 			keycodes.append(ext_entries)
