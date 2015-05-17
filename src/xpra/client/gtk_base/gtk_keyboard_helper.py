@@ -31,7 +31,9 @@ class GTKKeyboardHelper(KeyboardHelper):
 
     def _keys_changed(self, *args):
         log("keys_changed")
-        self._keymap.disconnect(self._keymap_change_handler_id)
+        if self._keymap_change_handler_id:
+            self._keymap.disconnect(self._keymap_change_handler_id)
+            self._keymap_change_handler_id = None
         self._keymap = gdk.keymap_get_default()
         self._keymap_change_handler_id = self._keymap.connect("keys-changed", self._keys_changed)
         if self._keymap_changing:
@@ -64,6 +66,15 @@ class GTKKeyboardHelper(KeyboardHelper):
     def get_full_keymap(self):
         return  get_gtk_keymap()
 
+    def cleanup(self):
+        KeyboardHelper.cleanup(self)
+        if self._keymap_change_handler_id:
+            try:
+                self._keymap.disconnect(self._keymap_change_handler_id)
+                self._keymap_change_handler_id = None
+            except Exception as e:
+                log.warn("failed to disconnect keymap change handler: %s", e)
+        
 
 def main():
     #use gtk as display source:
