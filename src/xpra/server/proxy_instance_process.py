@@ -627,7 +627,7 @@ class ProxyInstanceProcess(Process):
             return (wid not in self.lost_windows)
 
         def passthrough():
-            log.info("proxy draw: %s passthrough (rowstride: %s vs %s)", rgb_format, rowstride, client_options.get("rowstride", 0))
+            log("proxy draw: %s passthrough (rowstride: %s vs %s)", rgb_format, rowstride, client_options.get("rowstride", 0))
             #passthrough as plain RGB:
             newdata = bytearray(pixels)
             #force alpha (and assume BGRX..) for now:
