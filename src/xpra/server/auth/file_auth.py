@@ -165,7 +165,7 @@ class Authenticator(object):
         self.salt = None
         entry = self.get_entry()
         if entry is None:
-            log.error("usename %s does not exist in password file '%s'", self.username, password_file)
+            log.error("username '%s' does not exist in password file '%s'", self.username, password_file)
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(fpassword, salt).hexdigest()
