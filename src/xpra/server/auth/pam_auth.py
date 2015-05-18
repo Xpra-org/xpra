@@ -18,6 +18,22 @@ try:
     PAM_SERVICE = 'login'
     PAM_PASSWORD = "password"
 
+    try:
+        PAM_PROMPT_ERROR_MSG = PAM.PAM_PROMPT_ERROR_MSG         #@UndefinedVariable
+    except:
+        try:
+            PAM_PROMPT_ERROR_MSG = PAM.PAM_ERROR_MSG
+        except:
+            PAM_PROMPT_ERROR_MSG = None
+    try:
+        PAM_PROMPT_TEXT_INFO = PAM.PAM_PROMPT_TEXT_INFO         #@UndefinedVariable
+    except:
+        try:
+            PAM_PROMPT_TEXT_INFO = PAM.PAM_TEXT_INFO
+        except:
+            PAM_PROMPT_TEXT_INFO = None
+
+
     class PAM_conv:
         def __init__(self, password):
             self.password = password
@@ -29,7 +45,7 @@ try:
                     query, pam_type = query_list[i]
                     if pam_type == PAM.PAM_PROMPT_ECHO_ON or pam_type == PAM.PAM_PROMPT_ECHO_OFF:
                         resp.append((self.password, 0))
-                    elif pam_type == PAM.PAM_PROMPT_ERROR_MSG or pam_type == PAM.PAM_PROMPT_TEXT_INFO:
+                    elif pam_type == PAM_PROMPT_ERROR_MSG or pam_type == PAM_PROMPT_TEXT_INFO:
                         log("pam_conf_password: ERROR/INFO: '%s'", query)
                         resp.append(('', 0))
                     else:
