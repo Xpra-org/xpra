@@ -215,7 +215,7 @@ class ProxyInstanceProcess(Process):
                     self.video_encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
                     encoder_types.add(spec.codec_type)
 
-        log("encoder types found: %s", encoder_types)
+        log("encoder types found: %s", tuple(encoder_types))
         #remove duplicates and use preferred order:
         order = PREFERRED_ENCODER_ORDER[:]
         for x in list(encoder_types):
@@ -621,8 +621,7 @@ class ProxyInstanceProcess(Process):
             return send_updated("rgb32", str(newdata), {"rgb_format" : rgb_format})
 
         if PASSTHROUGH:
-            passthrough()
-            return
+            return passthrough()
 
         #video encoding: find existing encoder
         ve = self.video_encoders.get(wid)
@@ -630,7 +629,7 @@ class ProxyInstanceProcess(Process):
             if ve in self.lost_windows:
                 #we cannot clean the video encoder here, there may be more frames queue up
                 #"lost-window" in encode_loop will take care of it safely
-                return  False
+                return False
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
@@ -663,8 +662,7 @@ class ProxyInstanceProcess(Process):
                 from xpra.server.picture_encode import PIL_encode, PIL, warn_encoding_once
                 if PIL is None:
                     warn_encoding_once("no-video-no-PIL", "no video encoder found for rgb format %s, sending as plain RGB!" % rgb_format)
-                    passthrough()
-                    return
+                    return passthrough()
                 log("no video encoder available: sending as jpeg")
                 coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, speed, False)
                 return send_updated(coding, compressed_data, client_options)
