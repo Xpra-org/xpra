@@ -180,11 +180,12 @@ class ServerCore(object):
         self.init_auth(opts)
 
     def init_auth(self, opts):
-        self.auth_class = self.get_auth_module(opts.auth, opts.password_file)
-        self.tcp_auth_class = self.get_auth_module(opts.tcp_auth or opts.auth, opts.password_file)
+        self.auth_class = self.get_auth_module("unix-domain-socket", opts.auth, opts.password_file)
+        self.tcp_auth_class = self.get_auth_module("tcp-socket", opts.tcp_auth or opts.auth, opts.password_file)
         log("init_auth(%s) auth class=%s, tcp auth class=%s", opts, self.auth_class, self.tcp_auth_class)
 
-    def get_auth_module(self, auth, password_file):
+    def get_auth_module(self, socket_type, auth, password_file):
+        log("get_auth_module(%s, %s, %s)", socket_type, auth, password_file)
         if not auth and password_file:
             log.warn("no authentication module specified with 'password_file', using 'file' based authentication")
             auth = "file"
