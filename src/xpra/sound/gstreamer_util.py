@@ -28,6 +28,7 @@ def get_queue_time(default_value=450, prefix=""):
 
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
+GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "0")=="1"
 
 
 NAME_TO_SRC_PLUGIN = {
@@ -185,18 +186,28 @@ def import_gst0_10():
 _gst_major_version = None
 try:
     from xpra.gtk_common.gobject_compat import is_gtk3
-    if is_gtk3():
-        gst = import_gst1()
-        _gst_major_version = 1
-        vinfo = "1.x"
-    else:
-        gst = import_gst0_10()
-        _gst_major_version = 0
-        vinfo = "0.10"
-    has_gst = True
+    import_options = [
+               (import_gst0_10, 0),
+               (import_gst1, 1),
+               ]
+    if is_gtk3() or GSTREAMER1:
+        #try gst1 first:
+        imports = import_options.reverse()
+    gst, vinfo = None, None
+    for import_function, v in import_options:
+        try:
+            gst = import_function()
+            v = gst.version()
+            if v[-1]==0:
+                v = v[:-1]
+            vinfo = ".".join((str(x) for x in v))
+            break
+        except Exception as e:
+            log("failed to import GStreamer %s: %s", vinfo, e)
+    has_gst = gst is not None
     log("Loaded Python GStreamer version %s for Python %s.%s", vinfo, sys.version_info[0], sys.version_info[1])
 except:
-    log("failed to import GStreamer", exc_info=True)
+    log.warn("failed to import GStreamer", exc_info=True)
 
 
 def normv(v):
@@ -503,6 +514,7 @@ def main():
         init("GStreamer-Info", "GStreamer Information")
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
+        print("Loaded Python GStreamer version %s for Python %s.%s" % (vinfo, sys.version_info[0], sys.version_info[1]))
         print("GStreamer plugins found: %s" % ", ".join(get_all_plugin_names()))
         print("")
         print("GStreamer version: %s" % ".".join([str(x) for x in gst_version]))
