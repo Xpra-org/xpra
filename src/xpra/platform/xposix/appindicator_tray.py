@@ -21,8 +21,8 @@ def get_appindicator():
     global _appindicator
     if _appindicator is False:
         try:
-            from xpra.gtk_common import is_gtk3
-            if is_gtk3():
+            import sys
+            if "gi" in sys.modules:
                 from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
                 _appindicator = AppIndicator3
             else:
