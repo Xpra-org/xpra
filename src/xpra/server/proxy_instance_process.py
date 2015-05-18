@@ -22,6 +22,7 @@ from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
 from xpra.net.crypto import new_cipher_caps
+from xpra.codecs.loader import load_codecs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
@@ -181,6 +182,8 @@ class ProxyInstanceProcess(Process):
             log("ProxyProcess.run() ending %s", os.getpid())
 
     def video_init(self):
+        log("video_init() loading codecs")
+        load_codecs(decoders=False)
         log("video_init() will try video encoders: %s", self.video_encoder_modules)
         self.video_helper = getVideoHelper()
         #only use video encoders (no CSC supported in proxy)
@@ -608,6 +611,7 @@ class ProxyInstanceProcess(Process):
             return (wid not in self.lost_windows)
 
         def passthrough():
+            log.info("proxy draw: %s passthrough (rowstride: %s vs %s)", rgb_format, rowstride, client_options.get("rowstride", 0))
             #passthrough as plain RGB:
             newdata = bytearray(pixels)
             #force alpha (and assume BGRX..) for now:
