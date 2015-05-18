@@ -292,7 +292,7 @@ start-new-commands = no
 #auth=allow
 #auth=file
 #auth=sys
-auth=none
+#auth=none
 
 # Authentication module to use for TCP sockets:
 #tcp-auth=none
