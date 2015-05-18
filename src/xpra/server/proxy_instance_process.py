@@ -38,7 +38,7 @@ from multiprocessing import Process
 
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
 #for testing only: passthrough as RGB:
-PASSTHROUGH = False
+PASSTHROUGH = os.environ.get("XPRA_PROXY_PASSTHROUGH", "0")=="1"
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
 
