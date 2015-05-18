@@ -181,13 +181,13 @@ class ServerCore(object):
         self.init_auth(opts)
 
     def init_auth(self, opts):
-        self.auth_class = self.get_auth_module("unix-domain-socket", opts.auth, opts.password_file)
-        self.tcp_auth_class = self.get_auth_module("tcp-socket", opts.tcp_auth or opts.auth, opts.password_file)
+        self.auth_class = self.get_auth_module("unix-domain-socket", opts.auth, opts)
+        self.tcp_auth_class = self.get_auth_module("tcp-socket", opts.tcp_auth or opts.auth, opts)
         authlog("init_auth(%s) auth class=%s, tcp auth class=%s", opts, self.auth_class, self.tcp_auth_class)
 
-    def get_auth_module(self, socket_type, auth, password_file):
-        authlog("get_auth_module(%s, %s, %s)", socket_type, auth, password_file)
-        if not auth and password_file:
+    def get_auth_module(self, socket_type, auth, opts):
+        authlog("get_auth_module(%s, %s, %s)", socket_type, auth, opts)
+        if not auth and opts.password_file:
             authlog.warn("no authentication module specified with 'password_file', using 'file' based authentication")
             auth = "file"
         if not auth and os.environ.get('XPRA_PASSWORD'):
@@ -224,6 +224,7 @@ class ServerCore(object):
         if not auth_module:
             raise Exception("cannot find authentication module '%s' (supported: %s)", auth, AUTH_MODULES.keys())
         try:
+            auth_module.init(opts)
             auth_class = getattr(auth_module, "Authenticator")
             return auth_class
         except Exception as e:
