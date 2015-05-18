@@ -6,7 +6,6 @@
 
 # Ubuntu re-invents the wheel, and it's a broken one
 
-import sys
 import os
 
 from xpra.log import Logger
@@ -22,12 +21,13 @@ def get_appindicator():
     global _appindicator
     if _appindicator is False:
         try:
-            if sys.version<'3':
-                import appindicator                     #@UnresolvedImport
-                _appindicator = appindicator
-            else:
+            from xpra.gtk_common import is_gtk3
+            if is_gtk3():
                 from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
                 _appindicator = AppIndicator3
+            else:
+                import appindicator                     #@UnresolvedImport
+                _appindicator = appindicator
         except ImportError:
             _appindicator = None
     return _appindicator
