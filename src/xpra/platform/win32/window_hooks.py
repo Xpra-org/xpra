@@ -40,7 +40,7 @@ class MINMAXINFO(ctypes.Structure):
 
 
 import os
-MINMAXINFO = os.environ.get("XPRA_WIN32_MINMAXINFO", "1")=="1"
+HOOK_MINMAXINFO = os.environ.get("XPRA_WIN32_MINMAXINFO", "1")=="1"
 
 
 class Win32Hooks(object):
@@ -48,7 +48,7 @@ class Win32Hooks(object):
     def __init__(self, hwnd):
         self._hwnd = hwnd
         self._message_map = {}
-        if MINMAXINFO:
+        if HOOK_MINMAXINFO:
             self._message_map[win32con.WM_GETMINMAXINFO] = self.on_getminmaxinfo
         self.max_size = None
         try:
