@@ -70,12 +70,21 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
         log("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
         self.active_state = self.get_active()
         def recheck():
+            log("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s", self.active_state, self.get_active())
             state = self.active_state
             self.active_state = None
             if state is not None and state==self.get_active():
                 #toggle did not fire after the button release, so force it:
                 self.set_active(not state)
         glib.idle_add(recheck)
+
+CheckMenuItem = TrayCheckMenuItem
+def set_use_tray_workaround(enabled):
+    global CheckMenuItem
+    if enabled:
+        CheckMenuItem = TrayCheckMenuItem
+    else:
+        CheckMenuItem = gtk.CheckMenuItem
 
 
 def make_min_auto_menu(title, min_options, options, get_current_min_value, get_current_value, set_min_value_cb, set_value_cb):
@@ -98,7 +107,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
             options[value] = "%s%%" % value
         for s in sorted(options.keys()):
             t = options.get(s)
-            qi = TrayCheckMenuItem(t)
+            qi = CheckMenuItem(t)
             qi.set_draw_as_radio(True)
             candidate_match = s>=max(0, value)
             qi.set_active(not found_match and candidate_match)
@@ -181,7 +190,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         name = ENCODINGS_TO_NAME.get(encoding, encoding)
         descr = ENCODINGS_HELP.get(encoding)
         NAME_TO_ENCODING[name] = encoding
-        encoding_item = TrayCheckMenuItem(name)
+        encoding_item = CheckMenuItem(name)
         if descr:
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"
@@ -323,8 +332,8 @@ class GTKTrayMenuBase(object):
         return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None, active=False):
-        """ Utility method for easily creating a TrayCheckMenuItem """
-        check_item = TrayCheckMenuItem(title)
+        """ Utility method for easily creating a CheckMenuItem """
+        check_item = CheckMenuItem(title)
         check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
@@ -467,7 +476,7 @@ class GTKTrayMenuBase(object):
                             "Secondary" : "SECONDARY"}
             from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
             for label, remote_clipboard in LABEL_TO_NAME.items():
-                clipboard_item = TrayCheckMenuItem(label)
+                clipboard_item = CheckMenuItem(label)
                 def remote_clipboard_changed(item):
                     assert can_clipboard
                     ensure_item_selected(clipboard_submenu, item)
@@ -746,7 +755,7 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         menu.ignore_events = False
         def onoffitem(label, active, cb):
-            c = TrayCheckMenuItem(label)
+            c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
             c.set_active(active)
             def submenu_uncheck(item, menu):
@@ -886,7 +895,7 @@ class GTKTrayMenuBase(object):
                 log("setting compression level to %s", c)
                 self.client.set_deflate_level(c)
         for i in range(0, 10):
-            c = TrayCheckMenuItem(str(compression_options.get(i, i)))
+            c = CheckMenuItem(str(compression_options.get(i, i)))
             c.set_draw_as_radio(True)
             c.set_active(i==self.client.compression_level)
             c.connect('activate', set_compression)

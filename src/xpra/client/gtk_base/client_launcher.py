@@ -39,7 +39,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.os_util import thread
-from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
+from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, set_use_tray_workaround, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
 from xpra.scripts.main import connect_to, make_client
@@ -400,8 +400,9 @@ class ApplicationWindow:
 
     def encoding_changed(self, *args):
         encoding = self.get_selected_encoding()
-        log("encoding_changed(%s) encoding=%s", args, encoding)
         uses_quality_option = encoding in ["jpeg", "webp", "h264"]
+        log("encoding_changed(%s) uses_quality_option(%s)=%s", args, encoding, uses_quality_option)
+        #to prevent win32 crashes:
         if uses_quality_option:
             self.quality_combo.show()
             self.quality_label.show()
@@ -761,7 +762,12 @@ def main():
         if debug:
             for x in debug.split(","):
                 enable_debug_for(x)
-        app.create_window()
+        #suspend tray workaround for our window widgets:
+        try:
+            set_use_tray_workaround(False)
+            app.create_window()
+        finally:
+            set_use_tray_workaround(True)
         app.update_gui_from_config()
     except Exception:
         exception_dialog("Error creating launcher form")
