@@ -19,6 +19,7 @@ import time
 import traceback
 
 from xpra.scripts.main import TCP_NODELAY, warn
+from xpra.os_util import SIGNAMES
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
 
@@ -49,7 +50,7 @@ def add_cleanup(f):
 
 
 def deadly_signal(signum, frame):
-    sys.stdout.write("got deadly signal %s, exiting\n" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+    sys.stdout.write("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
     sys.stdout.flush()
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
