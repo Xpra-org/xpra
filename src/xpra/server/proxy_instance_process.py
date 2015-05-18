@@ -626,7 +626,7 @@ class ProxyInstanceProcess(Process):
             if strip_alpha:
                 #passthrough as plain RGB:
                 Xindex = rgb_format.upper().find("X")
-                if Xindex>=0:
+                if Xindex>=0 and len(rgb_format)==4:
                     #force clear alpha (which may be garbage):
                     newdata = bytearray(pixels)
                     for i in range(len(pixels)/4):
