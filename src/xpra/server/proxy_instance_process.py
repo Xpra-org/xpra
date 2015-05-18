@@ -14,6 +14,7 @@ from threading import Timer
 
 from xpra.log import Logger
 log = Logger("proxy")
+enclog = Logger("encoding")
 
 
 from xpra.server.server_core import get_server_info, get_thread_info
@@ -182,9 +183,9 @@ class ProxyInstanceProcess(Process):
             log("ProxyProcess.run() ending %s", os.getpid())
 
     def video_init(self):
-        log("video_init() loading codecs")
+        enclog("video_init() loading codecs")
         load_codecs(decoders=False)
-        log("video_init() will try video encoders: %s", self.video_encoder_modules)
+        enclog("video_init() will try video encoders: %s", self.video_encoder_modules)
         self.video_helper = getVideoHelper()
         #only use video encoders (no CSC supported in proxy)
         self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
@@ -215,14 +216,14 @@ class ProxyInstanceProcess(Process):
                     self.video_encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
                     encoder_types.add(spec.codec_type)
 
-        log("encoder types found: %s", tuple(encoder_types))
+        enclog("encoder types found: %s", tuple(encoder_types))
         #remove duplicates and use preferred order:
         order = PREFERRED_ENCODER_ORDER[:]
         for x in list(encoder_types):
             if x not in order:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
-        log.info("proxy video encoders: %s", ", ".join(self.video_encoder_types))
+        enclog.info("proxy video encoders: %s", ", ".join(self.video_encoder_types))
 
 
     def create_control_socket(self):
@@ -590,16 +591,16 @@ class ProxyInstanceProcess(Process):
                     now = time.time()
                     idle_time = now-self.video_encoders_last_used_time.get(wid)
                     if ve and idle_time>VIDEO_TIMEOUT:
-                        log("timing out the video encoder context for window %s", wid)
+                        enclog("timing out the video encoder context for window %s", wid)
                         #timeout is confirmed, we are in the encoding thread,
                         #so it is now safe to clean it up:
                         ve.clean()
                         del self.video_encoders[wid]
                         del self.video_encoders_last_used_time[wid]
                 else:
-                    log.warn("unexpected encode packet: %s", packet_type)
+                    enclog.warn("unexpected encode packet: %s", packet_type)
             except:
-                log.warn("error encoding packet", exc_info=True)
+                enclog.warn("error encoding packet", exc_info=True)
 
 
     def process_draw(self, packet):
@@ -608,36 +609,38 @@ class ProxyInstanceProcess(Process):
         if encoding=="mmap":
             return True
 
-        if not self.video_encoder_types or not client_options or not client_options.get("proxy", False):
-            #ensure we don't try to re-compress the pixel data in the network layer:
-            #(re-add the "compressed" marker that gets lost when we re-assemble packets)
-            packet[7] = Compressed("%s pixels" % encoding, packet[7])
-            return True
-
         #we have a proxy video packet:
         rgb_format = client_options.get("rgb_format", "")
-        log("proxy draw: client_options=%s", client_options)
+        enclog("proxy draw: client_options=%s", client_options)
 
         def send_updated(encoding, compressed_data, client_options):
             #update the packet with actual encoding data used:
             packet[6] = encoding
             packet[7] = compressed_data
             packet[10] = client_options
-            log("returning %s bytes from %s", len(compressed_data), len(pixels))
+            enclog("returning %s bytes from %s", len(compressed_data), len(pixels))
             return (wid not in self.lost_windows)
 
         def passthrough():
-            log("proxy draw: %s passthrough (rowstride: %s vs %s)", rgb_format, rowstride, client_options.get("rowstride", 0))
+            enclog("proxy draw: %s passthrough (rowstride: %s vs %s)", rgb_format, rowstride, client_options.get("rowstride", 0))
             #passthrough as plain RGB:
             newdata = bytearray(pixels)
             #force alpha (and assume BGRX..) for now:
             for i in range(len(pixels)/4):
                 newdata[i*4+3] = chr(255)
             packet[9] = client_options.get("rowstride", 0)
-            return send_updated("rgb32", str(newdata), {"rgb_format" : rgb_format})
+            cdata = Compressed("%s pixels" % encoding, bytes(newdata))
+            return send_updated("rgb32", cdata, {"rgb_format" : rgb_format})
 
-        if PASSTHROUGH:
+        proxy_video = client_options.get("proxy", False)
+        if PASSTHROUGH and (encoding in ("rgb32", "rgb24") or proxy_video):
+            #we are dealing with rgb data, so we can pass it through:
             return passthrough()
+        elif not self.video_encoder_types or not client_options or not proxy_video:
+            #ensure we don't try to re-compress the pixel data in the network layer:
+            #(re-add the "compressed" marker that gets lost when we re-assemble packets)
+            packet[7] = Compressed("%s pixels" % encoding, packet[7])
+            return True
 
         #video encoding: find existing encoder
         ve = self.video_encoders.get(wid)
@@ -649,11 +652,11 @@ class ProxyInstanceProcess(Process):
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
-                log("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s", ve, ve.get_width(), ve.get_height(), width, height)
+                enclog("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s", ve, ve.get_width(), ve.get_height(), width, height)
                 ve.clean()
                 ve = None
             elif ve.get_encoding()!=encoding:
-                log("closing existing video encoder %s because encoding has changed from %s to %s", ve.get_encoding(), encoding)
+                enclog("closing existing video encoder %s because encoding has changed from %s to %s", ve.get_encoding(), encoding)
                 ve.clean()
                 ve = None
         #scaling and depth are proxy-encoder attributes:
@@ -679,11 +682,11 @@ class ProxyInstanceProcess(Process):
                 if PIL is None:
                     warn_encoding_once("no-video-no-PIL", "no video encoder found for rgb format %s, sending as plain RGB!" % rgb_format)
                     return passthrough()
-                log("no video encoder available: sending as jpeg")
+                enclog("no video encoder available: sending as jpeg")
                 coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, speed, False)
                 return send_updated(coding, compressed_data, client_options)
 
-            log("creating new video encoder %s for window %s", spec, wid)
+            enclog("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
             #dst_formats is specified with first frame only:
             dst_formats = client_options.get("dst_formats")
@@ -698,7 +701,7 @@ class ProxyInstanceProcess(Process):
             self.video_encoders[wid] = ve
             self.video_encoders_last_used_time[wid] = time.time()       #just to make sure this is always set
         #actual video compression:
-        log("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
+        enclog("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
         data, client_options = ve.compress_image(image, quality, speed, encoder_options)
         self.video_encoders_last_used_time[wid] = time.time()
         return send_updated(ve.get_encoding(), Compressed(encoding, data), client_options)
@@ -712,7 +715,7 @@ class ProxyInstanceProcess(Process):
             idle_time = int(now-self.video_encoders_last_used_time.get(wid))
             if idle_time is None:
                 continue
-            log("timeout_video_encoders() wid=%s, idle_time=%s", wid, idle_time)
+            enclog("timeout_video_encoders() wid=%s, idle_time=%s", wid, idle_time)
             if idle_time and idle_time>VIDEO_TIMEOUT:
                 self.encode_queue.put(["check-video-timeout", wid])
         return True     #run again
@@ -728,7 +731,9 @@ class ProxyInstanceProcess(Process):
             for etype in self.video_encoder_types:
                 for spec in especs:
                     if etype==spec.codec_type:
+                        enclog("_find_video_encoder(%s, %s)=%s", encoding, rgb_format, spec)
                         return spec
+        enclog("_find_video_encoder(%s, %s) not found", encoding, rgb_format)
         return None
 
     def get_encoder_info(self):
@@ -742,4 +747,5 @@ class ProxyInstanceProcess(Process):
             vi = encoder.get_info()
             for k,v in vi.items():
                 info[ipath+"."+k] = v
+        enclog("get_encoder_info()=%s", info)
         return info
