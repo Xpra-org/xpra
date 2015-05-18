@@ -460,6 +460,12 @@ class ProxyInstanceProcess(Process):
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("client connection lost", proto)
             return
+        elif packet_type=="disconnect":
+            log("got disconnect from client: %s", packet[1])
+            if self.exit:
+                self.client_protocol.close()
+            else:
+                self.stop("disconnect from client: %s" % packet[1])
         elif packet_type=="set_deflate":
             #echo it back to the client:
             self.client_packets.put(packet)
@@ -505,6 +511,12 @@ class ProxyInstanceProcess(Process):
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("server connection lost", proto)
             return
+        elif packet_type=="disconnect":
+            log("got disconnect from server: %s", packet[1])
+            if self.exit:
+                self.server_protocol.close()
+            else:
+                self.stop("disconnect from server: %s" % packet[1])
         elif packet_type=="hello":
             c = typedict(packet[1])
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
