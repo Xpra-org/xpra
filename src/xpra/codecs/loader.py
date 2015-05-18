@@ -152,7 +152,7 @@ def load_codecs(encoders=True, decoders=True, csc=True):
     #not really a codec, but gets used by codecs, so include version info:
     add_codec_version("numpy", "numpy")
     try:
-        from xpra.codecs.argb.argb import buffer_api_version
+        from xpra.codecs.argb.argb import buffer_api_version            #@UnresolvedImport
         codec_versions["buffer_api"] = buffer_api_version()
     except Exception as e:
         log("unknown buffer api version: %s", e)
