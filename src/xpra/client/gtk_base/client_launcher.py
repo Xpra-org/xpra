@@ -402,7 +402,6 @@ class ApplicationWindow:
         encoding = self.get_selected_encoding()
         uses_quality_option = encoding in ["jpeg", "webp", "h264"]
         log("encoding_changed(%s) uses_quality_option(%s)=%s", args, encoding, uses_quality_option)
-        #to prevent win32 crashes:
         if uses_quality_option:
             self.quality_combo.show()
             self.quality_label.show()
