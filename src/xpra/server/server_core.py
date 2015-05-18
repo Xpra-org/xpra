@@ -21,6 +21,7 @@ log = Logger("server")
 netlog = Logger("network")
 proxylog = Logger("proxy")
 commandlog = Logger("command")
+authlog = Logger("auth")
 
 import xpra
 from xpra.server import ClientException
@@ -182,15 +183,15 @@ class ServerCore(object):
     def init_auth(self, opts):
         self.auth_class = self.get_auth_module("unix-domain-socket", opts.auth, opts.password_file)
         self.tcp_auth_class = self.get_auth_module("tcp-socket", opts.tcp_auth or opts.auth, opts.password_file)
-        log("init_auth(%s) auth class=%s, tcp auth class=%s", opts, self.auth_class, self.tcp_auth_class)
+        authlog("init_auth(%s) auth class=%s, tcp auth class=%s", opts, self.auth_class, self.tcp_auth_class)
 
     def get_auth_module(self, socket_type, auth, password_file):
-        log("get_auth_module(%s, %s, %s)", socket_type, auth, password_file)
+        authlog("get_auth_module(%s, %s, %s)", socket_type, auth, password_file)
         if not auth and password_file:
-            log.warn("no authentication module specified with 'password_file', using 'file' based authentication")
+            authlog.warn("no authentication module specified with 'password_file', using 'file' based authentication")
             auth = "file"
         if not auth and os.environ.get('XPRA_PASSWORD'):
-            log.warn("no authentication module specified with 'XPRA_PASSWORD', using 'file' based authentication")
+            authlog.warn("no authentication module specified with 'XPRA_PASSWORD', using 'file' based authentication")
             auth = "file"
         if auth=="":
             return None
@@ -200,7 +201,7 @@ class ServerCore(object):
                 auth = "win32"
             else:
                 auth = "pam"
-            log("will try to use sys auth module '%s' for %s", auth, sys.platform)
+            authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
         from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth
         AUTH_MODULES = {
                         "fail"      : fail_auth,
@@ -213,12 +214,12 @@ class ServerCore(object):
             from xpra.server.auth import pam_auth
             AUTH_MODULES["pam"] = pam_auth
         except Exception as e:
-            log("cannot load pam auth: %s", e)
+            authlog("cannot load pam auth: %s", e)
         try:
             from xpra.server.auth import win32_auth
             AUTH_MODULES["win32"] = win32_auth
         except Exception as e:
-            log("cannot load win32 auth: %s", e)
+            authlog("cannot load win32 auth: %s", e)
         auth_module = AUTH_MODULES.get(auth.lower())
         if not auth_module:
             raise Exception("cannot find authentication module '%s' (supported: %s)", auth, AUTH_MODULES.keys())
@@ -568,16 +569,17 @@ class ServerCore(object):
             return  False
 
         def auth_failed(msg):
-            log.info("authentication failed: %s", msg)
+            authlog.warn("authentication failed: %s", msg)
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
         #authenticator:
         username = c.strget("username")
         if proto.authenticator is None and proto.auth_class:
+            authlog("creating authenticator %s", proto.auth_class)
             try:
                 proto.authenticator = proto.auth_class(username)
             except Exception as e:
-                log.warn("error instantiating %s: %s", proto.auth_class, e)
+                authlog.warn("error instantiating %s: %s", proto.auth_class, e)
                 auth_failed("authentication failed")
                 return False
         self.digest_modes = c.get("digest", ("hmac", ))
@@ -590,7 +592,7 @@ class ServerCore(object):
         auth_caps = {}
         if cipher and cipher_iv:
             if cipher not in ENCRYPTION_CIPHERS:
-                log.warn("unsupported cipher: %s", cipher)
+                authlog.warn("unsupported cipher: %s", cipher)
                 auth_failed("unsupported cipher")
                 return False
             encryption_key = self.get_encryption_key(proto.authenticator)
@@ -600,7 +602,7 @@ class ServerCore(object):
             proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations)
             #use the same cipher as used by the client:
             auth_caps = new_cipher_caps(proto, cipher, encryption_key)
-            log("server cipher=%s", auth_caps)
+            authlog("server cipher=%s", auth_caps)
         else:
             auth_caps = None
 
@@ -608,7 +610,7 @@ class ServerCore(object):
         if proto.authenticator and proto.authenticator.requires_challenge():
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
-            log("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""))
+            authlog("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""))
             #send challenge if this is not a response:
             if not challenge_response:
                 challenge = proto.authenticator.get_challenge()
@@ -616,7 +618,7 @@ class ServerCore(object):
                     auth_failed("invalid authentication state: unexpected challenge response")
                     return False
                 salt, digest = challenge
-                log.info("Authentication required, %s sending challenge for '%s' using digest %s", proto.authenticator, username, digest)
+                authlog.info("Authentication required, %s sending challenge for '%s' using digest %s", proto.authenticator, username, digest)
                 if digest not in self.digest_modes:
                     auth_failed("cannot proceed without %s digest support" % digest)
                     return False
@@ -626,7 +628,7 @@ class ServerCore(object):
             if not proto.authenticator.authenticate(challenge_response, client_salt):
                 auth_failed("invalid challenge response")
                 return False
-            log("authentication challenge passed")
+            authlog("authentication challenge passed")
         else:
             #did the client expect a challenge?
             if c.boolget("challenge"):
