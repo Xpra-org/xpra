@@ -23,7 +23,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys
 
 from xpra.log import Logger
-from xpra.client.gtk_base.gtk_tray_menu_base import LOSSLESS
 log = Logger("encoder", "nvenc")
 
 import ctypes
