@@ -421,6 +421,11 @@ class ProxyInstanceProcess(Process):
                 os.unlink(self.control_socket_path)
             except:
                 pass
+            self.control_socket_path = None
+        try:
+            self.control_socket.close()
+        except:
+            pass
         self.main_queue.put(None)
         #empty the main queue:
         q = Queue()
