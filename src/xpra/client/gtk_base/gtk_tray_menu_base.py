@@ -78,13 +78,13 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
                 self.set_active(not state)
         glib.idle_add(recheck)
 
-CheckMenuItem = TrayCheckMenuItem
 def set_use_tray_workaround(enabled):
     global CheckMenuItem
-    if enabled:
+    if enabled and sys.platform.startswith("win"):
         CheckMenuItem = TrayCheckMenuItem
     else:
         CheckMenuItem = gtk.CheckMenuItem
+set_use_tray_workaround(True)
 
 
 def make_min_auto_menu(title, min_options, options, get_current_min_value, get_current_value, set_min_value_cb, set_value_cb):
