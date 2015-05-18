@@ -395,10 +395,11 @@ class ProxyInstanceProcess(Process):
         while not self.exit:
             log("run_queue() size=%s", self.main_queue.qsize())
             v = self.main_queue.get()
-            log("run_queue() item=%s", v)
             if v is None:
+                log("run_queue() None exit marker")
                 break
             fn, args, kwargs = v
+            log("run_queue() %s%s%s", fn, args, kwargs)
             try:
                 v = fn(*args, **kwargs)
                 if bool(v):
@@ -413,6 +414,8 @@ class ProxyInstanceProcess(Process):
                 break
             if i==0:
                 log.info("waiting for network connections to close")
+            else:
+                log("still waiting %i/10 - client.closed=%s, server.closed=%s", i+1, self.client_protocol._closed, self.server_protocol._closed)
             time.sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
@@ -440,6 +443,7 @@ class ProxyInstanceProcess(Process):
         self.encode_queue = q
         for proto in (self.client_protocol, self.server_protocol):
             if proto and proto!=skip_proto:
+                log("sending disconnect to %s", proto)
                 proto.flush_then_close(["disconnect", SERVER_SHUTDOWN, reason])
 
 

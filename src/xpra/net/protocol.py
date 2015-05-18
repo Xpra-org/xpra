@@ -804,6 +804,7 @@ class Protocol(object):
             then no matter what, we close the connection and stop the threads.
         """
         def done():
+            log("flush_then_close: done, callback=%s", done_callback)
             if done_callback:
                 done_callback()
         if self._closed:
