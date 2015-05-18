@@ -69,7 +69,7 @@ def load_auth_file():
                 log.error("error loading %s: %s", password_file, e)
                 data = ""
         else:
-            data = os.environ.get('XPRA_PASSWORD')
+            data = os.environ.get('XPRA_PASSWORD', "")
         i = 0
         for line in data.splitlines():
             i += 1
@@ -165,7 +165,7 @@ class Authenticator(object):
         self.salt = None
         entry = self.get_entry()
         if entry is None:
-            log.error("usename %s does not exist in %s", self.username, password_file)
+            log.error("usename %s does not exist in password file '%s'", self.username, password_file)
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(fpassword, salt).hexdigest()
