@@ -719,6 +719,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             if not shadowing and not proxying:
                 display_name_check(display_name)
         else:
+            if proxying:
+                error_cb("you must specify a free virtual display name to use with the proxy server")
             if not opts.displayfd:
                 error_cb("displayfd support is not enabled on this system, you must specify the display to use")
             if opts.use_display:
