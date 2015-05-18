@@ -621,21 +621,34 @@ class ProxyInstanceProcess(Process):
             enclog("returning %s bytes from %s", len(compressed_data), len(pixels))
             return (wid not in self.lost_windows)
 
-        def passthrough():
-            enclog("proxy draw: %s passthrough (rowstride: %s vs %s)", rgb_format, rowstride, client_options.get("rowstride", 0))
-            #passthrough as plain RGB:
-            newdata = bytearray(pixels)
-            #force alpha (and assume BGRX..) for now:
-            for i in range(len(pixels)/4):
-                newdata[i*4+3] = chr(255)
-            packet[9] = client_options.get("rowstride", 0)
-            cdata = Compressed("%s pixels" % encoding, bytes(newdata))
-            return send_updated("rgb32", cdata, {"rgb_format" : rgb_format})
+        def passthrough(strip_alpha=True):
+            enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)", rgb_format, rowstride, client_options.get("rowstride", 0), strip_alpha)
+            if strip_alpha:
+                #passthrough as plain RGB:
+                Xindex = rgb_format.upper().find("X")
+                if Xindex>=0:
+                    #force clear alpha (which may be garbage):
+                    newdata = bytearray(pixels)
+                    for i in range(len(pixels)/4):
+                        newdata[i*4+Xindex] = chr(255)
+                    packet[9] = client_options.get("rowstride", 0)
+                    cdata = bytes(newdata)
+                else:
+                    cdata = pixels
+                new_client_options = {"rgb_format" : rgb_format}
+            else:
+                #preserve
+                cdata = pixels
+                new_client_options = client_options
+            wrapped = Compressed("%s pixels" % encoding, cdata)
+            #FIXME: we should not assume that rgb32 is supported here...
+            #(we may have to convert to rgb24..)
+            return send_updated("rgb32", wrapped, new_client_options)
 
         proxy_video = client_options.get("proxy", False)
         if PASSTHROUGH and (encoding in ("rgb32", "rgb24") or proxy_video):
             #we are dealing with rgb data, so we can pass it through:
-            return passthrough()
+            return passthrough(proxy_video)
         elif not self.video_encoder_types or not client_options or not proxy_video:
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
@@ -681,7 +694,7 @@ class ProxyInstanceProcess(Process):
                 from xpra.server.picture_encode import PIL_encode, PIL, warn_encoding_once
                 if PIL is None:
                     warn_encoding_once("no-video-no-PIL", "no video encoder found for rgb format %s, sending as plain RGB!" % rgb_format)
-                    return passthrough()
+                    return passthrough(True)
                 enclog("no video encoder available: sending as jpeg")
                 coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, speed, False)
                 return send_updated(coding, compressed_data, client_options)
