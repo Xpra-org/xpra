@@ -26,7 +26,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid
-from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, CLIENT_REQUEST, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
+from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
     repr_ellipsized
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
@@ -513,7 +513,6 @@ class ServerBase(ServerCore):
             "exit-server":                          self._process_exit_server,
             "buffer-refresh":                       self._process_buffer_refresh,
             "screenshot":                           self._process_screenshot,
-            "disconnect":                           self._process_disconnect,
             "info-request":                         self._process_info_request,
             "start-command":                        self._process_start_command,
             "print":                                self._process_print,
@@ -652,17 +651,11 @@ class ServerBase(ServerCore):
         source.go_idle()
 
 
-    def _process_disconnect(self, proto, packet):
-        info = packet[1]
-        if len(packet)>2:
-            info += " (%s)" % (", ".join(packet[2:]))
+    def _disconnect_proto_info(self, proto):
         #only log protocol info if there is more than one client:
-        proto_info = ""
         if len(self._server_sources)>1:
-            proto_info = " %s" % proto
-        netlog.info("client%s has requested disconnection: %s", proto_info, info)
-        self.disconnect_protocol(proto, CLIENT_REQUEST)
-
+            return " %s" % proto
+        return ""
 
     def _process_connection_lost(self, proto, packet):
         ServerCore._process_connection_lost(self, proto, packet)

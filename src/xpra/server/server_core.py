@@ -38,7 +38,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
 from xpra.util import typedict, updict, repr_ellipsized, \
-        SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, AUTHENTICATION_ERROR
+        SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, AUTHENTICATION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
 
@@ -245,6 +245,7 @@ class ServerCore(object):
         log("initializing packet handlers")
         self._default_packet_handlers = {
             "hello":                                self._process_hello,
+            "disconnect":                           self._process_disconnect,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
             Protocol.INVALID:                       self._process_invalid,
@@ -491,6 +492,19 @@ class ServerCore(object):
         netlog.info("Disconnecting client%s: %s", proto_info, i)
         protocol.flush_then_close(["disconnect", reason]+list(extra))
 
+
+    def _process_disconnect(self, proto, packet):
+        info = packet[1]
+        if len(packet)>2:
+            info += " (%s)" % (", ".join(packet[2:]))
+        #only log protocol info if there is more than one client:
+        proto_info = self._disconnect_proto_info(proto)
+        netlog.info("client%s has requested disconnection: %s", proto_info, info)
+        self.disconnect_protocol(proto, CLIENT_REQUEST)
+
+    def _disconnect_proto_info(self, proto):
+        #overriden in server_base in case there is more than one protocol
+        return ""
 
     def _process_connection_lost(self, proto, packet):
         netlog("process_connection_lost(%s, %s)", proto, packet)
@@ -800,7 +814,7 @@ class ServerCore(object):
                 netlog("process packet %s", packet_type)
                 handler(proto, packet)
                 return
-            netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
+            netlog.error("unknown or invalid packet type: '%s' from %s", packet_type, proto)
             proto.close()
         except KeyboardInterrupt:
             raise
