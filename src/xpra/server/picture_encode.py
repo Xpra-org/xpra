@@ -132,23 +132,22 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         else:
             cwrapper = None
         if cwrapper is None or len(cwrapper.data)>=(len(raw_data)-32):
-            #compressed is actually bigger! (use uncompressed)
+            #compressed is actually bigger! (fall through to uncompressed)
             level = 0
         else:
             #add compressed marker:
-            wire_data = cwrapper.data
             options[algo] = level
     if level==0:
         #can't pass a raw buffer to bencode / rencode:
-        wire_data = buffer_to_bytes(raw_data)
+        cwrapper = compression.Compressed(coding, buffer_to_bytes(raw_data), True)
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:
         bpp = 24
-    log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(wire_data))
+    log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
-    return coding, compression.Compressed(coding, wire_data, True), options, width, height, stride, bpp
+    return coding, cwrapper, options, width, height, stride, bpp
 
 
 def PIL_encode(coding, image, quality, speed, supports_transparency):
