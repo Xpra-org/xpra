@@ -305,8 +305,8 @@ class WindowSource(object):
         now = time.time()
         for i,x in enumerate(self.delta_pixel_data):
             if x:
-                w, h, coding, store, buflen, _, hits, last_used = x
-                info["encoding.delta.bucket[%s]" % i] = w, h, coding, store, buflen, hits, int((now-last_used)*1000)
+                w, h, pixel_format, coding, store, buflen, _, hits, last_used = x
+                info["encoding.delta.bucket[%s]" % i] = w, h, pixel_format, coding, store, buflen, hits, int((now-last_used)*1000)
         up("encoding",  self.get_quality_speed_info())
         try:
             #ie: get_strict_encoding -> "strict_encoding"
@@ -1572,8 +1572,8 @@ class WindowSource(object):
             for i, dr in enumerate(list(self.delta_pixel_data)):
                 if dr is None:
                     continue
-                lw, lh, lpixel_format, lsequence, buflen, ldata, hits, _ = dr
-                if lw==w and lh==h and lpixel_format==pixel_format and buflen==dlen:
+                lw, lh, lpixel_format, lcoding, lsequence, buflen, ldata, hits, _ = dr
+                if lw==w and lh==h and lpixel_format==pixel_format and lcoding==coding and buflen==dlen:
                     deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lpixel_format, dlen, lsequence, hits)
                     #xor with this matching delta bucket:
                     delta = lsequence
@@ -1637,7 +1637,7 @@ class WindowSource(object):
                                 t = dr[-1]
                                 bucket = i
                         deltalog("delta: using oldest bucket %i", bucket)
-                self.delta_pixel_data[bucket] = [w, h, coding, store, len(dpixels), dpixels, hits, time.time()]
+                self.delta_pixel_data[bucket] = [w, h, pixel_format, coding, store, len(dpixels), dpixels, hits, time.time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
                 #record number of frames and pixels:
