@@ -1773,6 +1773,7 @@ cdef class Encoder:
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
+        assert self.inputBuffer, "BUG: encoder is closed?"
 
         if self.frames==0:
             #first frame, record pts:
