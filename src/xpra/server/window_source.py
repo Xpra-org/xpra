@@ -1588,6 +1588,7 @@ class WindowSource(object):
                         deltalog("delta: too many hits for bucket %s: %s, clearing it", bucket, hits)
                         hits = 0
                         self.delta_pixel_data[i] = None
+                        delta = -1
                     break
 
         #by default, don't set rowstride (the container format will take care of providing it):
