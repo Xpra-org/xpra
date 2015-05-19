@@ -59,6 +59,8 @@ OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0] == 3
 
 
+from xpra import __version__
+print("Xpra version %s" % __version__)
 #*******************************************************************************
 # Most of the options below can be modified on the command line
 # using --with-OPTION or --without-OPTION
