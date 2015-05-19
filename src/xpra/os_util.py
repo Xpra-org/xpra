@@ -74,11 +74,15 @@ if _memoryview:
             return v
         if isinstance(v, _memoryview):
             return v.tobytes()
+        if isinstance(v, bytearray):
+            return bytes(v)
         return v
 else:
     def memoryview_to_bytes(v):
         if _buffer and isinstance(v, _buffer):
             return str(v)
+        if isinstance(v, bytearray):
+            return bytes(v)
         return v
 
 if _buffer:
