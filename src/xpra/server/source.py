@@ -920,7 +920,7 @@ class ServerSource(object):
             log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.cleanup()
             self.sound_sink = None
-        if metadata.boolget("end-of-stream"):
+        if metadata.get("end-of-stream"):
             soundlog("client sent end-of-stream, closing sound pipeline")
             self.stop_receiving_sound(False)
             return
