@@ -18,7 +18,7 @@ import select
 import time
 import traceback
 
-from xpra.scripts.main import TCP_NODELAY, warn
+from xpra.scripts.main import TCP_NODELAY, warn, InitException
 from xpra.os_util import SIGNAMES
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
@@ -258,14 +258,14 @@ def parse_bind_tcp(bind_tcp):
     if bind_tcp:
         for spec in bind_tcp:
             if ":" not in spec:
-                raise Exception("TCP port must be specified as [HOST]:PORT")
+                raise InitException("TCP port must be specified as [HOST]:PORT")
             host, port = spec.rsplit(":", 1)
             if host == "":
                 host = "127.0.0.1"
             try:
                 iport = int(port)
             except:
-                raise Exception("invalid port number: %s" % port)
+                raise InitException("invalid port number: %s" % port)
             tcp_sockets.add((host, iport))
     return tcp_sockets
 
@@ -280,11 +280,11 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group, socket_permis
         display_name = dotxpra.normalize_local_display_name(display_name)
         sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
     except ServerSockInUse:
-        raise Exception("You already have an xpra server running at %s\n"
+        raise InitException("You already have an xpra server running at %s\n"
                      "  (did you want 'xpra upgrade'?)"
                      % (display_name,))
     except Exception as e:
-        raise Exception("socket path error: %s" % e)
+        raise InitException("socket path error: %s" % e)
     sock = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
     def cleanup_socket():
         log.info("removing socket %s", sockpath)
@@ -315,12 +315,12 @@ def start_websockify(child_reaper, opts, tcp_sockets):
         #html disabled
         return
     if opts.tcp_proxy:
-        raise Exception("cannot use tcp-proxy mode with html, use one or the other")
+        raise InitException("cannot use tcp-proxy mode with html, use one or the other")
         return 1
     from xpra.platform.paths import get_resources_dir
     www_dir = os.path.abspath(os.path.join(get_resources_dir(), "www"))
     if not os.path.exists(www_dir):
-        raise Exception("cannot find xpra's html directory (not found in '%s')" % www_dir)
+        raise InitException("cannot find xpra's html directory (not found in '%s')" % www_dir)
     import websockify           #@UnresolvedImport
     assert websockify
     html_port = -1
@@ -332,7 +332,7 @@ def start_websockify(child_reaper, opts, tcp_sockets):
         try:
             html_port = int(html)
         except Exception as e:
-            raise Exception("invalid html port: %s" % e)
+            raise InitException("invalid html port: %s" % e)
         #we now have the host and port (port may be -1 to mean auto..)
     from xpra.log import Logger
     log = Logger("server")
@@ -342,7 +342,7 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     elif os.name=="posix" and html_port<1024 and os.geteuid()!=0:
         log.warn("Warning: the html port specified may require special privileges (%s:%s)", html_host, html_port)
     if len(tcp_sockets)<1:
-        raise Exception("html web server requires at least one tcp socket, see 'bind-tcp'")
+        raise InitException("html web server requires at least one tcp socket, see 'bind-tcp'")
     #use the first tcp socket for websockify to talk back to us:
     _, xpra_tcp_port = list(tcp_sockets)[0]
     websockify_command = ["websockify", "--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
@@ -540,7 +540,7 @@ def start_Xvfb(xvfb_str, display_name):
 
     xvfb_cmd = xvfb_str.split()
     if not xvfb_cmd:
-        raise Exception("cannot start Xvfb, command definition is missing!")
+        raise InitException("cannot start Xvfb, the command definition is missing!")
     xvfb_executable = xvfb_cmd[0]
     if display_name[0]=='S':
         # 'S' means that we allocate the display automatically
