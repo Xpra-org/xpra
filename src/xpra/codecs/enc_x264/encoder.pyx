@@ -547,6 +547,7 @@ cdef class Encoder:
         self.time += end-start
         self.frames += 1
         self.last_frame_times.append((start, end))
+        assert self.context!=NULL
         return  cdata, client_options
 
 
