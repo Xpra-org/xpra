@@ -1574,14 +1574,14 @@ class WindowSource(object):
                     continue
                 lw, lh, lpixel_format, lcoding, lsequence, buflen, ldata, hits, _ = dr
                 if lw==w and lh==h and lpixel_format==pixel_format and lcoding==coding and buflen==dlen:
-                    deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lpixel_format, dlen, lsequence, hits)
-                    #xor with this matching delta bucket:
-                    delta = lsequence
                     bucket = i
-                    xored = xor_str(dpixels, ldata)
-                    image.set_pixels(xored)
-                    dr[-1] = time.time()            #update last used time
                     if MAX_DELTA_HITS>0 and hits<MAX_DELTA_HITS:
+                        deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lpixel_format, dlen, lsequence, hits)
+                        #xor with this matching delta bucket:
+                        delta = lsequence
+                        xored = xor_str(dpixels, ldata)
+                        image.set_pixels(xored)
+                        dr[-1] = time.time()            #update last used time
                         hits += 1
                         dr[-2] = hits               #update hit count
                     else:
