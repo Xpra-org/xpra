@@ -1196,7 +1196,7 @@ class WindowSource(object):
         av_sync = options.get("av-sync", False)
         av_delay = self.av_sync_delay*int(av_sync)
         if not av_sync:
-            self.make_data_packet_cb(*item)
+            self.call_in_encode_thread(self.make_data_packet_cb, *item)
         else:
             #schedule encode via queue, after freezing the pixels:
             frozen = image.freeze()
