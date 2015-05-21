@@ -956,24 +956,27 @@ class ServerSource(object):
 
     def set_av_sync_delay(self, v):
         #update all window sources with the given delay
-        assert self.av_sync, "av-sync is not enabled"
         self.av_sync_delay = v
         self.update_av_sync_delay_total()
 
     def update_av_sync_delay_total(self):
-        encoder_latency = 0
-        ss = self.sound_source
-        cinfo = ""
-        if ss:
-            try:
-                from xpra.sound.gstreamer_util import ENCODER_LATENCY
-                encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
-                cinfo = "%s " % ss.codec
-            except Exception as e:
-                encoder_latency = 0
-                avsynclog("failed to get encoder latency for %s: %s", ss.codec, e)
-        self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + AV_SYNC_DELTA + encoder_latency))
-        avsynclog("av-sync set to %ims (from client queue latency=%s, %sencoder latency=%s, env delta=%s)", self.av_sync_delay_total, self.av_sync_delay, cinfo, encoder_latency, AV_SYNC_DELTA)
+        if self.av_sync:
+            encoder_latency = 0
+            ss = self.sound_source
+            cinfo = ""
+            if ss:
+                try:
+                    from xpra.sound.gstreamer_util import ENCODER_LATENCY
+                    encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
+                    cinfo = "%s " % ss.codec
+                except Exception as e:
+                    encoder_latency = 0
+                    avsynclog("failed to get encoder latency for %s: %s", ss.codec, e)
+            self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + AV_SYNC_DELTA + encoder_latency))
+            avsynclog("av-sync set to %ims (from client queue latency=%s, %sencoder latency=%s, env delta=%s)", self.av_sync_delay_total, self.av_sync_delay, cinfo, encoder_latency, AV_SYNC_DELTA)
+        else:
+            avsynclog("av-sync support is disabled, setting it to 0")
+            self.av_sync_delay_total = 0
         for ws in self.window_sources.values():
             ws.av_sync_delay = self.av_sync_delay_total
 
