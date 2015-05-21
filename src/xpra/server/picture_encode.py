@@ -131,7 +131,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             algo = "zlib"
         else:
             cwrapper = None
-        if cwrapper is None or len(cwrapper.data)>=(len(raw_data)-32):
+        if cwrapper is None or len(cwrapper)>=(len(raw_data)-32):
             #compressed is actually bigger! (fall through to uncompressed)
             level = 0
         else:
