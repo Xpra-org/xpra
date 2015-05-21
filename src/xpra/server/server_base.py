@@ -2093,7 +2093,8 @@ class ServerBase(ServerCore):
                     ss = self._server_sources.get(proto)
                     if ss and win:
                         ss.refresh(wid, win, {})
-                self.idle_add(refresh)
+                #it could fail again, so throttle things with a delay:
+                self.timeout_add(250, refresh)
 
 
     def _damage(self, window, x, y, width, height, options=None):
