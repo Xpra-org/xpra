@@ -396,7 +396,7 @@ cdef class Encoder:
         self.speed = 0
         self.bytes_in = 0
         self.bytes_out = 0
-        self.last_frame_times = 0
+        self.last_frame_times = []
         self.first_frame_timestamp = 0
 
 
