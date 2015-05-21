@@ -169,7 +169,7 @@ class WindowBackingBase(object):
                 assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
                 img_data = compression.decompress_by_name(raw_data, algo=comp[0])
         if len(img_data)!=rowstride * height:
-            log.error("invalid img data %s: %s", type(img_data), str(img_data)[:256])
+            deltalog.error("invalid img data length: expected %s but got %s (%s: %s)", rowstride * height, len(img_data), type(img_data), str(img_data)[:256])
             raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
                                 (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
         delta = options.intget("delta", -1)
