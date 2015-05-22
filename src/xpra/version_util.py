@@ -8,6 +8,7 @@
 from xpra.scripts.config import python_platform as pp
 import sys
 import os
+from xpra.util import updict
 from xpra import __version__ as local_version
 from xpra.log import Logger
 log = Logger("util")
@@ -47,7 +48,7 @@ def get_host_info():
                     "byteorder"             : sys.byteorder,
                     "hostname"              : socket.gethostname(),
                     "python.full_version"   : sys.version,
-                    "python.version"        : sys.version_info[:3],
+                    "python.version"        : ".".join(str(x) for x in sys.version_info[:3]),
                     })
     except:
         pass
@@ -72,20 +73,25 @@ def get_version_info():
     except Exception as e:
         log.warn("missing some source information: %s", e)
     try:
-        from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, \
-                                    COMPILER_VERSION, LINKER_VERSION, BUILD_TIME, PYTHON_VERSION, CYTHON_VERSION
-        props.update({
-                    "date"                 : BUILD_DATE,
-                    "time"                 : BUILD_TIME,
-                    "by"                   : BUILT_BY,
-                    "on"                   : BUILT_ON,
-                    "bit"                  : BUILD_BIT,
-                    "cpu"                  : BUILD_CPU,
-                    "compiler"             : COMPILER_VERSION,
-                    "linker"               : LINKER_VERSION,
-                    "python"               : PYTHON_VERSION,
-                    "cython"               : CYTHON_VERSION,
-                  })
+        from xpra import build_info
+        #rename these build info properties:
+        for k,bk in {
+                    "date"                 : "BUILD_DATE",
+                    "time"                 : "BUILD_TIME",
+                    "by"                   : "BUILT_ON",
+                    "bit"                  : "BUILD_BIT",
+                    "cpu"                  : "BUILD_CPU",
+                    "compiler"             : "COMPILER_VERSION",
+                    "linker"               : "LINKER_VERSION",
+                    "python"               : "PYTHON_VERSION",
+                    "cython"               : "CYTHON_VERSION",
+                  }.items():
+            v = getattr(build_info, bk, None)
+            if v:
+                props[k] = v
+        #record library versions:
+        d = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
+        updict(props, "lib", d)
     except Exception as e:
         log.warn("missing some build information: %s", e)
     return props

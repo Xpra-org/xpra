@@ -41,7 +41,8 @@ def save_properties(props, filename):
     with open(filename, mode='wb') as f:
         def w(v):
             f.write(u(v))
-        for name,value in props.items():
+        for name in sorted(props.keys()):
+            value = props[name]
             s = str(value).replace("'", "\\'")
             w(name)
             w("=")
@@ -93,13 +94,24 @@ def get_cpuinfo():
                     return line.split(": ")[1].replace("\n", "").replace("\r", "")
     return "unknown"
 
+def get_status_output(*args, **kwargs):
+    kwargs["stdout"] = subprocess.PIPE
+    kwargs["stderr"] = subprocess.PIPE
+    try:
+        p = subprocess.Popen(*args, **kwargs)
+    except Exception as e:
+        print("error running %s,%s: %s" % (args, kwargs, e))
+        return -1, "", ""
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout, stderr
+
 def get_first_line_output(commands):
     for cmd, valid_exit_code in commands:
         try:
-            proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-            stdout, _ = proc.communicate()
-            if proc.returncode!=valid_exit_code:
-                print("'%s' failed with return code %s" % (cmd, proc.returncode))
+            returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=True)
+            if returncode!=valid_exit_code:
+                print("'%s' failed with return code %s" % (cmd, returncode))
+                print("stderr: %s" % stderr)
                 continue
             if not stdout:
                 print("could not get version information")
@@ -187,11 +199,26 @@ def record_build_info(is_build=True):
             from Cython import __version__ as cython_version
         except:
             cython_version = "unknown"
-        set_prop(props, "PYTHON_VERSION", sys.version_info[:3])
+        set_prop(props, "PYTHON_VERSION", ".".join(str(x) for x in sys.version_info[:3]))
         set_prop(props, "CYTHON_VERSION", cython_version)
         set_prop(props, "COMPILER_VERSION", get_compiler_version())
         set_prop(props, "LINKER_VERSION", get_linker_version())
         set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
+        #record pkg-config versions:
+        PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
+        for pkg in ("libc",
+                    "vpx", "libvpx", "x264", "x265", "webp",
+                    "avcodec", "avutil", "swscale",
+                    "nvenc3", "nvenc4", "nvenc5",
+                    "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
+                    "gtk+-3.0", "pycairo", "pygobject-2.0", "pygtk-2.0", ):
+            #fugly magic for turning the package atom into a legal variable name:
+            pkg_name = pkg.lstrip("lib").replace("+", "").split("-")[0]
+            cmd = [PKG_CONFIG, "--modversion", pkg]
+            returncode, out, _ = get_status_output(cmd)
+            if returncode==0:
+                set_prop(props, "lib_"+pkg_name, out.replace("\n", "").replace("\r", ""))
+            
     save_properties(props, BUILD_INFO_FILE)
 
 
