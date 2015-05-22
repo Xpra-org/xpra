@@ -217,7 +217,7 @@ def record_build_info(is_build=True):
             cmd = [PKG_CONFIG, "--modversion", pkg]
             returncode, out, _ = get_status_output(cmd)
             if returncode==0:
-                set_prop(props, "lib_"+pkg_name, out.replace("\n", "").replace("\r", ""))
+                set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
             
     save_properties(props, BUILD_INFO_FILE)
 
