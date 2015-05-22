@@ -181,7 +181,7 @@ class SoundPipeline(gobject.GObject):
             log("stream status: %s", message)
         elif t == gst.MESSAGE_STREAM_START:
             log("stream start: %s", message)
-        elif t in (gst.MESSAGE_LATENCY, gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
+        elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
             if isinstance(message.src, gst.Pipeline):
@@ -200,7 +200,7 @@ class SoundPipeline(gobject.GObject):
             except:
                 log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
-            log.info("Latency message from %s: %s", message.src, message)
+            log("Latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:
             log.info("Sound pipeline message: %s", message)
         elif t == gst.MESSAGE_WARNING:
