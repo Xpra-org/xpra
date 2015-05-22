@@ -137,6 +137,9 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         else:
             #add compressed marker:
             options[algo] = level
+            #remove network layer compression marker
+            #so that this data will be decompressed by the decode thread client side:
+            cwrapper.level = 0
     if level==0:
         #can't pass a raw buffer to bencode / rencode:
         cwrapper = compression.Compressed(coding, memoryview_to_bytes(raw_data), True)
