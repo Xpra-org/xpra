@@ -613,12 +613,12 @@ class ProxyInstanceProcess(Process):
         rgb_format = client_options.get("rgb_format", "")
         enclog("proxy draw: client_options=%s", client_options)
 
-        def send_updated(encoding, compressed_data, video_client_options):
+        def send_updated(encoding, compressed_data, updated_client_options):
             #update the packet with actual encoding data used:
             packet[6] = encoding
             packet[7] = compressed_data
-            packet[10] = video_client_options
-            enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), video_client_options)
+            packet[10] = updated_client_options
+            enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), updated_client_options)
             return (wid not in self.lost_windows)
 
         def passthrough(strip_alpha=True):
