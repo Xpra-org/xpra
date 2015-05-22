@@ -8,7 +8,7 @@ import time
 from math import sqrt
 
 from xpra.log import Logger
-log = Logger("window", "encoding")
+log = Logger("window", "compress")
 
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba  #@UnresolvedImport
@@ -256,20 +256,24 @@ def argb_swap(image, rgb_formats, supports_transparency):
     rs = image.get_rowstride()
     if pixel_format in ("BGRX", "BGRA"):
         if supports_transparency and "RGBA" in rgb_formats:
+            log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgba(pixels))
             image.set_pixel_format("RGBA")
             return True
         if "RGB" in rgb_formats:
+            log("argb_swap: bgra_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs/4*3)
             return True
     if pixel_format in ("XRGB", "ARGB"):
         if supports_transparency and "RGBA" in rgb_formats:
+            log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgba(pixels))
             image.set_pixel_format("RGBA")
             return True
         if "RGB" in rgb_formats:
+            log("argb_swap: argb_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs/4*3)
@@ -305,6 +309,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     assert pixels, "failed to get pixels from %s" % image
     if not PIL:
         #try to fallback to argb module
+        log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
     if supports_transparency:
         modes = PIL_conv.get(pixel_format)
@@ -312,6 +317,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
         modes = PIL_conv_noalpha.get(pixel_format)
     target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
     if len(target_rgb)==0:
+        log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         #try argb module:
         if argb_swap(image, rgb_formats, supports_transparency):
             return True
@@ -324,6 +330,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     h = image.get_height()
     #PIL cannot use the memoryview directly:
     pixels = memoryview_to_bytes(pixels)
+    log("rgb_reformat: converting %s from %s to %s using PIL", image, input_format, target_format)
     img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
     #use tobytes() if present, fallback to tostring():
