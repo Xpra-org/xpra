@@ -8,6 +8,7 @@
 
 import time
 import os
+import hashlib
 from collections import deque
 
 from xpra.log import Logger
@@ -35,6 +36,7 @@ HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
 MERGE_REGIONS = os.environ.get("XPRA_MERGE_REGIONS", "1")=="1"
+INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
 
 
 from xpra.util import updict
@@ -1647,6 +1649,16 @@ class WindowSource(object):
                 totals[1] = totals[1] + w*h
                 deltalog("delta: client options=%s (for region %s)", client_options, (x, y, w, h))
         encoding = coding
+        if INTEGRITY_HASH:
+            #could be a compressed wrapper or just raw bytes:
+            try:
+                v = data.data
+            except:
+                v = data
+            md5 = hashlib.md5(v).hexdigest()
+            client_options["z.md5"] = md5
+            client_options["z.len"] = len(data)
+            log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), md5)
         #actual network packet:
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()

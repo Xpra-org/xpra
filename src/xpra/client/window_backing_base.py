@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import hashlib
 from xpra.log import Logger
 log = Logger("paint")
 deltalog = Logger("delta")
@@ -21,6 +22,7 @@ from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
 
 DELTA_BUCKETS = int(os.environ.get("XPRA_DELTA_BUCKETS", "5"))
+INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
@@ -465,6 +467,16 @@ class WindowBackingBase(object):
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
         coding = bytestostr(coding)
         options["encoding"] = coding            #used for choosing the color of the paint box
+        if INTEGRITY_HASH:
+            l = options.get("z.len")
+            if l:
+                assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
+            md5 = options.get("z.md5")
+            if md5:
+                h = hashlib.md5(img_data)
+                hd = h.hexdigest()
+                assert md5==hd, "pixel data failed compressed md5 integrity check: expected %s but got %s" % (md5, hd)
+            deltalog("passed compressed data integrity checks: len=%s, md5=%s (type=%s)", l, md5, type(img_data))
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "rgb24":
