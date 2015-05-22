@@ -108,8 +108,6 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     stride = image.get_rowstride()
 
     #compression stage:
-    #by default, wire=raw:
-    raw_data = pixels
     level = 0
     algo = "not"
     if len(pixels)>=256 and (rgb_zlib and compression.use_zlib) or (rgb_lz4 and compression.use_lz4) or (rgb_lzo and compression.use_lzo):
@@ -119,19 +117,19 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             level = level // 2
     if level>0:
         if rgb_lz4 and compression.use_lz4:
-            cwrapper = compression.compressed_wrapper(coding, raw_data, lz4=True)
+            cwrapper = compression.compressed_wrapper(coding, pixels, lz4=True)
             algo = "lz4"
             level = 1
         elif rgb_lzo and compression.use_lzo:
-            cwrapper = compression.compressed_wrapper(coding, raw_data, lzo=True)
+            cwrapper = compression.compressed_wrapper(coding, pixels, lzo=True)
             algo = "lzo"
             level = 1
         elif rgb_zlib and compression.use_zlib:
-            cwrapper = compression.compressed_wrapper(coding, raw_data, zlib=True, level=level)
+            cwrapper = compression.compressed_wrapper(coding, pixels, zlib=True, level=level)
             algo = "zlib"
         else:
             cwrapper = None
-        if cwrapper is None or len(cwrapper)>=(len(raw_data)-32):
+        if cwrapper is None or len(cwrapper)>=(len(pixels)-32):
             #compressed is actually bigger! (fall through to uncompressed)
             level = 0
         else:
@@ -142,7 +140,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             cwrapper.level = 0
     if level==0:
         #can't pass a raw buffer to bencode / rencode:
-        cwrapper = compression.Compressed(coding, memoryview_to_bytes(raw_data), True)
+        cwrapper = compression.Compressed(coding, memoryview_to_bytes(pixels), True)
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:
