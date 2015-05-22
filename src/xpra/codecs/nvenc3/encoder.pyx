@@ -15,6 +15,7 @@ from pycuda import driver
 from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger, updict
+from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, select_device, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
@@ -1775,19 +1776,29 @@ cdef class Encoder:
             #first frame, record pts:
             self.first_frame_timestamp = image.get_timestamp()
 
-        #FIXME: we should copy from pixels directly..
         #copy to input buffer:
-        if image_stride<self.inputPitch:
+        cdef object buf
+        if _memoryview and isinstance(pixels, _memoryview):
+            #copy memoryview to inputBuffer directly:
+            buf = self.inputBuffer
+        else:
+            #this is a numpy.ndarray type:
+            buf = self.inputBuffer.data
+        cdef long pix_len = len(pixels)
+        if image_stride<=self.inputPitch:
             stride = image_stride
-            assert len(pixels)<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, len(pixels), w, h, stride, self.inputPitch, self.input_height)
-            self.inputBuffer[:len(pixels)] = pixels
+            assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
+            log("copying %s pixels from %s into %s, in one shot", pix_len, type(pixels), type(self.inputBuffer))
+            buf[:pix_len] = pixels
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
             stride = self.inputPitch
+            log("copying %s pixels from %s into %s, %i stride at a time", stride*h, type(pixels), type(self.inputBuffer), stride)
             for i in range(h):
-                self.inputBuffer[i*stride:(i+1)*stride] = pixels[i*image_stride:(i+1)*image_stride+stride]
-        log("compress_image(..) host buffer populated with %s bytes (max %s)", len(pixels), input_size)
+                x = i*stride
+                y = i*image_stride
+                buf[x:x+stride] = pixels[y:y+stride]
 
         #copy input buffer to CUDA buffer:
         driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
