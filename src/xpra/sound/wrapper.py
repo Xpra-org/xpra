@@ -235,7 +235,10 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
         self._add_debug_args()
 
     def __repr__(self):
-        return "source_subprocess_wrapper(%s)" % self.process
+        try:
+            return "source_subprocess_wrapper(%s)" % self.process.pid
+        except:
+            return "source_subprocess_wrapper(%s)" % self.process
 
 
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
@@ -253,7 +256,10 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         self.send("add_data", data, dict(metadata))
 
     def __repr__(self):
-        return "sink_subprocess_wrapper(%s)" % self.process
+        try:
+            return "sink_subprocess_wrapper(%s)" % self.process.pid
+        except:
+            return "sink_subprocess_wrapper(%s)" % self.process
 
 
 def start_sending_sound(sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
