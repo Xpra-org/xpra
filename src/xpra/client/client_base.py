@@ -298,6 +298,7 @@ class XpraClientBase(object):
                 "client_type"           : self.client_type(),
                 "python.version"        : sys.version_info[:3],
                 "compression_level"     : self.compression_level,
+                "argv"                  : sys.argv,
                 })
         if self.display:
             capabilities["display"] = self.display

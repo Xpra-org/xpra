@@ -279,6 +279,7 @@ class ServerSource(object):
         self.hostname = ""
         self.username = ""
         self.name = ""
+        self.argv = []
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
@@ -560,6 +561,7 @@ class ServerSource(object):
         self.hostname = c.strget("hostname")
         self.username = c.strget("username")
         self.name = c.strget("name")
+        self.argv = c.strlistget("argv")
         self.client_type = c.strget("client_type", "PyGTK")
         self.client_platform = c.strget("platform")
         self.client_machine = c.strget("platform.machine")
@@ -1180,6 +1182,7 @@ class ServerSource(object):
                 "idle_time"         : int(time.time()-self.last_user_event),
                 "idle"              : self.idle,
                 "hostname"          : self.hostname,
+                "argv"              : self.argv,
                 "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",
                 "desktops"          : self.desktops,
