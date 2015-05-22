@@ -141,49 +141,53 @@ def bdecode(x):
 
 # Encoding functions:
 
-cdef void encode_int(x, r) except *:
+cdef int encode_int(x, r) except -1:
     r.extend(('i', str(x), 'e'))
+    return 0
 
-cdef void encode_string(x, r) except *:
+cdef int encode_string(x, r) except -1:
     r.extend((str(len(x)), ':', x))
+    return 0
 
-cdef void encode_unicode(x, r) except *:
+cdef int encode_unicode(x, r) except -1:
     x = x.encode("utf8")
-    encode_string(x, r)
+    return encode_string(x, r)
 
-cdef void encode_list(object x, r) except *:
+cdef int encode_list(object x, r) except -1:
     r.append('l')
     for i in x:
-        encode(i, r)
+        assert encode(i, r)==0
     r.append('e')
+    return 0
 
-cdef void encode_dict(object x, r) except *:
+cdef int encode_dict(object x, r) except -1:
     r.append('d')
     for k in sorted(x.keys()):
         v = x[k]
-        encode(k, r)
-        encode(v, r)
+        assert encode(k, r)==0
+        assert encode(v, r)==0
     r.append('e')
+    return 0
 
 
-cdef void encode(object v, r) except *:
+cdef int encode(object v, r) except -1:
     cdef object t = type(v)
     if t==IntType:
-        encode_int(v, r)
+        return encode_int(v, r)
     elif t==LongType:
-        encode_int(v, r)
+        return encode_int(v, r)
     elif t==StringType:
-        encode_string(v, r)
+        return encode_string(v, r)
     elif t==UnicodeType:
-        encode_unicode(v, r)
+        return encode_unicode(v, r)
     elif t==ListType:
-        encode_list(v, r)
+        return encode_list(v, r)
     elif t==TupleType:
-        encode_list(v, r)
+        return encode_list(v, r)
     elif t==DictType:
-        encode_dict(v, r)
+        return encode_dict(v, r)
     elif t==BooleanType:
-        encode_int(long(v), r)
+        return encode_int(long(v), r)
     elif v==None:
         raise ValueError("found None value!")
     else:
@@ -192,7 +196,7 @@ cdef void encode(object v, r) except *:
 def bencode(x):
     r = []
     try:
-        encode(x, r)
+        assert encode(x, r)==0
         return b''.join(b(v) for v in r)
     except Exception as e:
         import traceback
