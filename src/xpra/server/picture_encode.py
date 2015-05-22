@@ -15,7 +15,7 @@ from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_t
 from xpra.os_util import StringIOClass
 from xpra.codecs.loader import get_codec, get_codec_version
 from xpra.codecs.codec_constants import get_PIL_encodings
-from xpra.os_util import memoryview_to_bytes, buffer_to_bytes
+from xpra.os_util import memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
@@ -127,7 +127,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             algo = "lzo"
             level = 1
         elif rgb_zlib and compression.use_zlib:
-            cwrapper = compression.compressed_wrapper(coding, memoryview_to_bytes(raw_data), zlib=True, level=level)
+            cwrapper = compression.compressed_wrapper(coding, raw_data, zlib=True, level=level)
             algo = "zlib"
         else:
             cwrapper = None
@@ -139,7 +139,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             options[algo] = level
     if level==0:
         #can't pass a raw buffer to bencode / rencode:
-        cwrapper = compression.Compressed(coding, buffer_to_bytes(memoryview_to_bytes(raw_data)), True)
+        cwrapper = compression.Compressed(coding, memoryview_to_bytes(raw_data), True)
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:
