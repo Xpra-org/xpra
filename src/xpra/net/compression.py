@@ -20,7 +20,7 @@ try:
     from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     def lz4_compress(packet, level):
-        return level | LZ4_FLAG, LZ4_compress(memoryview_to_bytes(packet))
+        return level | LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
     if hasattr(lz4, "VERSION"):
         lz4_version = lz4.VERSION
@@ -62,7 +62,7 @@ try:
     has_lzo = True
     lzo_version = lzo.LZO_VERSION_STRING
     def lzo_compress(packet, level):
-        return level | LZO_FLAG, lzo.compress(memoryview_to_bytes(packet))
+        return level | LZO_FLAG, lzo.compress(packet)
     LZO_decompress = lzo.decompress
 except Exception as e:
     log("lzo not found: %s", e)
@@ -184,18 +184,19 @@ class Uncompressed(object):
         raise Exception("compress() not defined on %s" % self)
 
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
+    bdata = memoryview_to_bytes(data)
     if lz4:
         assert use_lz4, "cannot use lz4"
         algo = "lz4"
-        cl, cdata = lz4_compress(data, level)
+        cl, cdata = lz4_compress(bdata, level)
     elif lzo:
         assert use_lzo, "cannot use lzo"
         algo = "lzo"
-        cl, cdata = lzo_compress(data, level)
+        cl, cdata = lzo_compress(bdata, level)
     else:
         assert use_zlib, "cannot use zlib"
         algo = "zlib"
-        cl, cdata = zcompress(memoryview_to_bytes(data), level)
+        cl, cdata = zcompress(bdata, level)
     return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)
 
 
