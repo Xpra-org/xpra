@@ -507,6 +507,7 @@ XpraClient.prototype._make_hello = function() {
 		"system_tray"				: true,
 		//we cannot handle this (GTK only):
 		"named_cursors"				: false,
+		"argv"						: [window.location.href],
 	};
 }
 
