@@ -68,39 +68,16 @@ else:
             return x.decode("latin1")
         return str(x)
 
-if _memoryview:
-    def memoryview_to_bytes(v):
-        if type(v)==bytes:
-            return v
-        if isinstance(v, _memoryview):
-            return v.tobytes()
-        if isinstance(v, bytearray):
-            return bytes(v)
+def memoryview_to_bytes(v):
+    if type(v)==bytes:
         return v
-else:
-    def memoryview_to_bytes(v):
-        if _buffer and isinstance(v, _buffer):
-            return str(v)
-        if isinstance(v, bytearray):
-            return bytes(v)
-        return v
-
-if _buffer:
-    def buffer_to_bytes(v):
-        if isinstance(v, _buffer):
-            return bytes(v)
-        return v
-else:
-    def buffer_to_bytes(v):
-        return v
-
-
-if sys.version>='3':
-    def data_to_buffer(in_data):
-        return BytesIOClass(bytearray(in_data.encode("latin1")))
-else:
-    def data_to_buffer(in_data):
-        return BytesIOClass(bytearray(in_data))
+    if _memoryview and isinstance(v, _memoryview):
+        return v.tobytes()
+    if _buffer and isinstance(v, _buffer):
+        return bytes(v)
+    if isinstance(v, bytearray):
+        return bytes(v)
+    return v
 
 
 def platform_name(sys_platform, release):
