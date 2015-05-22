@@ -1782,15 +1782,11 @@ cdef class Encoder:
             return self.convert_image(image, options, retry+1)
 
     cdef do_compress_image(self, image, options={}):
-        cdef const void* buf = NULL
-        cdef Py_ssize_t buf_len = 0
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         cdef size_t size
         cdef int input_size
-        cdef int offset = 0
-        cdef input_buf_len = 0
         cdef int x, y, image_stride, stride
         cdef int w, h
         cdef int i
