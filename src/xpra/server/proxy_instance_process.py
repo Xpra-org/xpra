@@ -613,12 +613,12 @@ class ProxyInstanceProcess(Process):
         rgb_format = client_options.get("rgb_format", "")
         enclog("proxy draw: client_options=%s", client_options)
 
-        def send_updated(encoding, compressed_data, client_options):
+        def send_updated(encoding, compressed_data, video_client_options):
             #update the packet with actual encoding data used:
             packet[6] = encoding
             packet[7] = compressed_data
-            packet[10] = client_options
-            enclog("returning %s bytes from %s", len(compressed_data), len(pixels))
+            packet[10] = video_client_options
+            enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), video_client_options)
             return (wid not in self.lost_windows)
 
         def passthrough(strip_alpha=True):
@@ -715,9 +715,14 @@ class ProxyInstanceProcess(Process):
             self.video_encoders_last_used_time[wid] = time.time()       #just to make sure this is always set
         #actual video compression:
         enclog("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
-        data, client_options = ve.compress_image(image, quality, speed, encoder_options)
+        data, out_options = ve.compress_image(image, quality, speed, encoder_options)
+        #pass through some options if we don't have them from the encoder
+        #(maybe we should also use the "pts" from the real server?)
+        for k in ("timestamp", "rgb_format", "depth", "csc"):
+            if k not in out_options and k in client_options:
+                out_options[k] = client_options[k]
         self.video_encoders_last_used_time[wid] = time.time()
-        return send_updated(ve.get_encoding(), Compressed(encoding, data), client_options)
+        return send_updated(ve.get_encoding(), Compressed(encoding, data), out_options)
 
     def timeout_video_encoders(self):
         #have to be careful as another thread may come in...
