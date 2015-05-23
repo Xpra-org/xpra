@@ -104,7 +104,9 @@ class ClientWindow(GTKClientWindowBase):
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         # does not work with gtk3? what the??
-        #self.set_data(strtobytes("_kde_no_window_grab"), 1)
+        # they moved it gobject, then removed it, unbelievable:
+        # https://bugzilla.gnome.org/show_bug.cgi?id=641944
+        #self.set_data("_kde_no_window_grab", 1)
         def motion(w, event):
             self.do_motion_notify_event(event)
         self.connect("motion-notify-event", motion)
