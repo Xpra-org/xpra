@@ -102,19 +102,19 @@ class SoundSource(SoundPipeline):
     def on_new_preroll1(self, appsink):
         sample = appsink.emit('pull-preroll')
         log('new preroll1: %s', sample)
-        self.emit_buffer1(sample)
+        return self.emit_buffer1(sample)
 
     def on_new_sample(self, bus):
         #Gst 1.0
         sample = self.sink.emit("pull-sample")
-        self.emit_buffer1(sample)
+        return self.emit_buffer1(sample)
 
     def emit_buffer1(self, sample):
         buf = sample.get_buffer()
         #info = sample.get_info()
         size = buf.get_size()
         data = buf.extract_dup(0, size)
-        self.do_emit_buffer(data, {"timestamp"  : normv(buf.pts),
+        return self.do_emit_buffer(data, {"timestamp"  : normv(buf.pts),
                                    "duration"   : normv(buf.duration),
                                    })
 
@@ -122,12 +122,12 @@ class SoundSource(SoundPipeline):
     def on_new_preroll0(self, appsink):
         buf = appsink.emit('pull-preroll')
         log('new preroll0: %s bytes', len(buf))
-        self.emit_buffer0(buf)
+        return self.emit_buffer0(buf)
 
     def on_new_buffer(self, bus):
         #pygst 0.10
         buf = self.sink.emit("pull-buffer")
-        self.emit_buffer0(buf)
+        return self.emit_buffer0(buf)
 
 
     def emit_buffer0(self, buf, metadata={}):
@@ -139,7 +139,7 @@ class SoundSource(SoundPipeline):
         #            "duration"  : buf.duration,
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
-        self.do_emit_buffer(buf.data, {
+        return self.do_emit_buffer(buf.data, {
                                        "caps"      : buf.get_caps().to_string(),
                                        "timestamp" : normv(buf.timestamp),
                                        "duration"  : normv(buf.duration)
@@ -152,6 +152,7 @@ class SoundSource(SoundPipeline):
         metadata["time"] = int(time.time()*1000)
         self.idle_emit("new-buffer", data, metadata)
         self.emit_info()
+        return 0
 
 
 gobject.type_register(SoundSource)

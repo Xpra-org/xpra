@@ -210,6 +210,7 @@ class SoundPipeline(gobject.GObject):
         else:
             log.info("unhandled bus message type %s: %s", t, message)
         self.emit_info()
+        return 0
 
     def parse_message0(self, message):
         #message parsing code for GStreamer 0.10
