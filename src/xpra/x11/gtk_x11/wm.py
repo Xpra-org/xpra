@@ -14,7 +14,7 @@ from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
-from xpra.x11.gtk_x11.window import WindowModel, Unmanageable
+from xpra.x11.gtk_x11.window import WindowModel, Unmanageable, configure_bits
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                get_children,                                #@UnresolvedImport
@@ -406,10 +406,11 @@ class Wm(gobject.GObject):
         # anyway, no harm in letting them move existing ones around), and it
         # means that when the window actually gets mapped, we have more
         # accurate info on what the app is actually requesting.
+        
         if event.window in self._windows:
-            log("do_child_configure_request_event(%s) should be handled by the window model", event)
+            log("do_child_configure_request_event(%s) value_mask=%s, should be handled by the window model", event, configure_bits(event.value_mask))
             return
-        log("do_child_configure_request_event(%s) reconfigure on withdrawn window", event)
+        log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window", event, configure_bits(event.value_mask))
         with xswallow:
             xid = event.window.xid
             log("current geometry(%#x)=%s", xid, X11Window.getGeometry(xid))

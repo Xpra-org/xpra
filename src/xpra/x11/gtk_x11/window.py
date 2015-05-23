@@ -64,6 +64,19 @@ CWBorderWidth   = constants["CWBorderWidth"]
 CWSibling       = constants["CWSibling"]
 CWStackMode     = constants["CWStackMode"]
 CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
+CW_MASK_TO_NAME = {
+                   CWX              : "X",
+                   CWY              : "Y",
+                   CWWidth          : "Width",
+                   CWHeight         : "Height",
+                   CWBorderWidth    : "BorderWidth",
+                   CWSibling        : "Sibling",
+                   CWStackMode      : "StackMode",
+                   CWBorderWidth    : "BorderWidth",
+                   }
+def configure_bits(value_mask):
+    return "|".join((v for k,v in CW_MASK_TO_NAME.items() if (k&value_mask)))
+    
 
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
@@ -1398,7 +1411,7 @@ class WindowModel(BaseWindowModel):
         return modded
 
     def do_child_configure_request_event(self, event):
-        log("do_child_configure_request_event(%s) client=%#x, corral=%#x", event, self.client_window.xid, self.corral_window.xid)
+        log("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s", event, self.client_window.xid, self.corral_window.xid, configure_bits(event.value_mask))
         if event.value_mask & CWStackMode:
             log(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
