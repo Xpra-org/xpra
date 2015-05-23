@@ -117,7 +117,8 @@ class DesktopManager(gtk.Widget):
             #Note: this will fire a metadata change event, which will fire a message to the client(s),
             #which is wasteful when we only have one client and it is the one that configured the window,
             #but when we have multiple clients, this keeps things in sync
-            win.set_property("iconic", False)
+            if win.get_property("iconic"):
+                win.set_property("iconic", False)
             if win.ownership_election():
                 #window has been configured already
                 update_geometry = False
