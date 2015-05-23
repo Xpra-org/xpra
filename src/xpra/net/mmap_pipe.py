@@ -5,7 +5,7 @@
 
 import os
 import ctypes
-from xpra.os_util import strtobytes, memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes
 from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
 log = Logger("mmap")
@@ -57,7 +57,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         mmap_size = roundup(size, unit)
         log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
         os.lseek(fd, mmap_size-1, os.SEEK_SET)
-        assert os.write(fd, strtobytes('\x00'))
+        assert os.write(fd, b'\x00')
         os.lseek(fd, 0, os.SEEK_SET)
         mmap_area = mmap.mmap(fd, length=mmap_size)
         write_mmap_token(mmap_area, token)
