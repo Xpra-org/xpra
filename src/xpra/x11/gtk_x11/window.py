@@ -1314,8 +1314,9 @@ class WindowModel(BaseWindowModel):
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
+        log("_update_client_geometry: owner=%s, setup_done=%s", owner, self._setup_done)
         if owner is not None:
-            log("_update_client_geometry: owner()=%s", owner)
+            log("_update_client_geometry: using owner=%s", owner)
             def window_size():
                 return  owner.window_size(self)
             def window_position(w, h):
@@ -1347,15 +1348,18 @@ class WindowModel(BaseWindowModel):
             X11Window.configureAndNotify(self.client_window.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
-        log("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x", event, self.corral_window.xid, self.client_window.xid)
+        log("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, self.corral_window.xid, self.client_window.xid, self._managed)
         if not self._managed:
             return
         if event.window!=self.client_window:
             #we only care about events on the client window
+            log("WindowModel.do_xpra_configure_event: event is not on the client window")
             return
         if self.corral_window is None or not self.corral_window.is_visible():
+            log("WindowModel.do_xpra_configure_event: corral window is not visible")
             return
         if self.client_window is None or not self.client_window.is_visible():
+            log("WindowModel.do_xpra_configure_event: client window is not visible")
             return
         try:
             #workaround applications whose windows disappear from underneath us:
@@ -1430,6 +1434,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-size", (w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
+        log("do_child_configure_request_event updated requested geometry: %s", (x, y, w, h))
         self._update_client_geometry()
 
         # FIXME: consider handling attempts to change stacking order here.
