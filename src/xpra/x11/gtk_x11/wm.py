@@ -406,9 +406,11 @@ class Wm(gobject.GObject):
         # anyway, no harm in letting them move existing ones around), and it
         # means that when the window actually gets mapped, we have more
         # accurate info on what the app is actually requesting.
-        
-        if event.window in self._windows:
-            log("do_child_configure_request_event(%s) value_mask=%s, should be handled by the window model", event, configure_bits(event.value_mask))
+        model = self._windows.get(event.window)
+        if model:
+            log("do_child_configure_request_event(%s) value_mask=%s, should be handled by %s", event, configure_bits(event.value_mask), model)
+            #should we be forwarding this?
+            #model.do_child_configure_request_event(event)
             return
         log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window", event, configure_bits(event.value_mask))
         with xswallow:
