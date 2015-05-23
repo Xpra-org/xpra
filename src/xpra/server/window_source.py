@@ -31,6 +31,7 @@ DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MIN_DELTA_SIZE = int(os.environ.get("XPRA_MIN_DELTA_SIZE", "1024"))
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "32768"))
 MAX_DELTA_HITS = int(os.environ.get("XPRA_MAX_DELTA_HITS", "20"))
+MIN_WINDOW_REGION_SIZE = int(os.environ.get("XPRA_MIN_WINDOW_REGION_SIZE", "1024"))
 
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
@@ -1085,6 +1086,10 @@ class WindowSource(object):
 
             if len(regions)>self.max_small_regions:
                 #too many regions!
+                send_full_window_update()
+                return
+            if ww*wh<=MIN_WINDOW_REGION_SIZE:
+                #size is too small to bother with regions:
                 send_full_window_update()
                 return
 
