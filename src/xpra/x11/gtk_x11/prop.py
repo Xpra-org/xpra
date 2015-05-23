@@ -100,6 +100,44 @@ class MotifWMHints(object):
             struct.unpack("=IIIiI", pdata)
         log("MotifWMHints(%s)=%s", binascii.hexlify(data), self)
 
+    #found in mwmh.h:
+    # "flags":
+    #FUNCTIONS_BIT = 0,
+    #DECORATIONS_BIT = 1
+    #INPUT_MODE_BIT = 2
+    #STATUS_BIT = 3
+    # "functions":
+    #ALL_BIT = 0,
+    #RESIZE_BIT = 1
+    #MOVE_BIT = 2            # like _NET_WM_ACTION_MOVE
+    #MINIMIZE_BIT = 3        # like _NET_WM_ACTION_MINIMIZE
+    #MAXIMIZE_BIT = 4        # like _NET_WM_ACTION_(FULLSCREEN|MAXIMIZE_(HORZ|VERT))
+    #CLOSE_BIT = 5           # like _NET_WM_ACTION_CLOSE
+    #SHADE_BIT = 6           # like _NET_WM_ACTION_SHADE
+    #STICK_BIT = 7           # like _NET_WM_ACTION_STICK
+    #FULLSCREEN_BIT = 8      # like _NET_WM_ACTION_FULLSCREEN
+    #ABOVE_BIT = 9           # like _NET_WM_ACTION_ABOVE
+    #BELOW_BIT = 10          # like _NET_WM_ACTION_BELOW
+    #MAXIMUS_BIT = 11        # like _NET_WM_ACTION_MAXIMUS_(LEFT|RIGHT|TOP|BOTTOM)
+    # "decorations":
+    #ALL_BIT = 0,
+    #BORDER_BIT,
+    #RESIZEH_BIT,
+    #TITLE_BIT
+    #MENU_BIT
+    #MINIMIZE_BIT
+    #MAXIMIZE_BIT
+    #CLOSE_BIT                # non-standard close button
+    #RESIZE_BIT               # non-standard resize button
+    #SHADE_BIT,               # non-standard shade button
+    #STICK_BIT,               # non-standard stick button
+    #MAXIMUS_BIT              # non-standard maxim
+    # "input":
+    #MODELESS = 0,
+    #PRIMARY_APPLICATION_MODAL = 1,
+    #SYSTEM_MODAL = 2,
+    #FULL_APPLICATION_MODAL = 3,
+
     def __str__(self):
         return "MotifWMHints(%s)" % {"flags"        : self.flags,
                                      "functions"    : self.functions,
