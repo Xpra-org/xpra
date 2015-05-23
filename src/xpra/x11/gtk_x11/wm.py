@@ -406,12 +406,14 @@ class Wm(gobject.GObject):
         # anyway, no harm in letting them move existing ones around), and it
         # means that when the window actually gets mapped, we have more
         # accurate info on what the app is actually requesting.
-        log("do_child_configure_request_event(%s)", event)
         if event.window in self._windows:
+            log("do_child_configure_request_event(%s) should be handled by the window model", event)
             return
-        log("Reconfigure on withdrawn window")
+        log("do_child_configure_request_event(%s) reconfigure on withdrawn window", event)
         with xswallow:
-            X11Window.configureAndNotify(event.window.xid, event.x, event.y,
+            xid = event.window.xid
+            log("current geometry(%#x)=%s", xid, X11Window.getGeometry(xid))
+            X11Window.configureAndNotify(xid, event.x, event.y,
                      event.width, event.height, event.value_mask)
 
     def do_xpra_focus_in_event(self, event):
