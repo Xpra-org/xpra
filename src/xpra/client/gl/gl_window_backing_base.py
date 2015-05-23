@@ -27,7 +27,6 @@ _DEFAULT_BOX_COLORS = {
               "png/L"   : "teal",
               "h265"    : "khaki",
               "vp9"     : "lavender",
-              "expose"  : "violet",
               }
 
 def get_fcolor(encoding):
@@ -444,7 +443,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self, encoding, is_delta, x, y, w, h):
+    def present_fbo(self, x, y, w, h):
         if not self.paint_screen:
             return
         self.gl_marker("Presenting FBO on screen")
@@ -466,6 +465,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             x, y = 0, 0
             w, h = ww, wh
 
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
         if self._alpha_enabled:
             # support alpha channel if present:
@@ -484,22 +484,6 @@ class GLWindowBackingBase(GTKWindowBacking):
         glVertex2i(x+w, y)          #top-right of window viewport
         glEnd()
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
-
-        #show region being painted:
-        if OPENGL_PAINT_BOX:
-            glLineWidth(1)
-            if is_delta:
-                glLineStipple(1, 0xf0f0)
-                glEnable(GL_LINE_STIPPLE)
-            glBegin(GL_LINE_LOOP)
-            color = BOX_COLORS.get(encoding, _DEFAULT_BOX_COLOR)
-            log("Painting colored box around %s screen update using: %s (delta=%s)", encoding, color, is_delta)
-            glColor4f(*color)
-            for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
-                glVertex2i(px, py)
-            glEnd()
-            if is_delta:
-                glDisable(GL_LINE_STIPPLE)
 
         if self.paint_spinner:
             #add spinner:
@@ -549,6 +533,27 @@ class GLWindowBackingBase(GTKWindowBacking):
             #just ensure stuff gets painted:
             log("%s.gl_show() flushing", self)
             glFlush()
+
+
+    def paint_box(self, encoding, is_delta, x, y, w, h):
+        #show region being painted if debug paint box is enabled only:
+        if not OPENGL_PAINT_BOX:
+            return
+        glDisable(GL_TEXTURE_RECTANGLE_ARB)
+        glDisable(GL_FRAGMENT_PROGRAM_ARB)
+        glLineWidth(1.5)
+        if is_delta:
+            glLineStipple(1, 0xaaaa)
+            glEnable(GL_LINE_STIPPLE)
+        glBegin(GL_LINE_LOOP)
+        color = BOX_COLORS.get(encoding, _DEFAULT_BOX_COLOR)
+        log("Painting colored box around %s screen update using: %s (delta=%s)", encoding, color, is_delta)
+        glColor4f(*color)
+        for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
+            glVertex2i(px, py)
+        glEnd()
+        if is_delta:
+            glDisable(GL_LINE_STIPPLE)
 
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
@@ -647,8 +652,10 @@ class GLWindowBackingBase(GTKWindowBacking):
             glVertex2i(x+width, y)
             glEnd()
 
+            self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
+
             # Present update to screen
-            self.present_fbo(options.get("encoding"), options.get("delta", 0), x, y, width, height)
+            self.present_fbo(x, y, width, height)
             # present_fbo has reset state already
         return True
 
@@ -680,8 +687,9 @@ class GLWindowBackingBase(GTKWindowBacking):
                     x_scale = float(width)/enc_width
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
+                self.paint_box(encoding, False, x, y, width, height)
                 # Present it on screen
-                self.present_fbo(encoding, False, x, y, width, height)
+                self.present_fbo(x, y, width, height)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
