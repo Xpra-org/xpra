@@ -165,6 +165,7 @@ class sound_subprocess_wrapper(subprocess_caller):
 
     def start(self):
         subprocess_caller.start(self)
+        log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
         glib.timeout_add(2500, self.verify_started)
 
 
