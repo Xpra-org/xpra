@@ -1073,9 +1073,6 @@ class WindowModel(BaseWindowModel):
         self._read_initial_properties()
         self._write_initial_properties_and_setup()
 
-        # For now, we never use the Iconic state at all.
-        self._internal_set_property("iconic", False)
-
         log("setup() adding to save set")
         X11Window.XAddToSaveSet(self.client_window.xid)
         self.in_save_set = True
@@ -1087,6 +1084,7 @@ class WindowModel(BaseWindowModel):
         log("setup() geometry")
         w,h = X11Window.getGeometry(self.client_window.xid)[2:4]
         hints = self.get_property("size-hints")
+        log("setup() hints=%s size=%ix%i", hints, w, h)
         self._sanitize_size_hints(hints)
         nw, nh = calc_constrained_size(w, h, hints)[:2]
         if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
