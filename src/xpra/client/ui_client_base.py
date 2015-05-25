@@ -1666,6 +1666,9 @@ class UIXpraClient(XpraClientBase):
         self.speaker_enabled = False
         if tell_server:
             self.send("sound-control", "stop")
+        if self.server_sound_sequence:
+            self.min_sound_sequence += 1
+            self.send("sound-control", "new-sequence", self.min_sound_sequence)
         if ss is None:
             return
         self.sound_sink = None
@@ -1673,11 +1676,6 @@ class UIXpraClient(XpraClientBase):
         ss.cleanup()
         self.emit("speaker-changed")
         soundlog("stop_receiving_sound(%s) done", tell_server)
-
-    def send_new_sound_sequence(self):
-        soundlog("send_new_sound_sequence() sequence=%s", self.min_sound_sequence)
-        self.send("sound-control", "new-sequence", self.min_sound_sequence)
-
 
     def sound_sink_state_changed(self, sound_sink, state):
         if sound_sink!=self.sound_sink:
@@ -1711,28 +1709,14 @@ class UIXpraClient(XpraClientBase):
     def sound_sink_overrun(self, sound_sink, *args):
         if sound_sink!=self.sound_sink:
             soundlog("sound_sink_overrun() not the current sink, ignoring it")
-            return
-        soundlog.warn("re-starting speaker because of overrun")
-        codec = self.sound_sink.codec
-        if self.server_sound_sequence:
-            self.min_sound_sequence += 1
-        self.stop_receiving_sound()
-        def restart():
-            soundlog("restarting sound sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
-            if self.server_sound_sequence:
-                self.send_new_sound_sequence()
-            self.start_receiving_sound()
-        #by default for older servers,
-        #wait before restarting so we can process the "end-of-stream" message:
-        delay = 500 * int(not self.server_sound_eos_sequence)
-        soundlog("sound_sink_overrun() will restart in %ims (server supports eos sequence: %s)", delay, self.server_sound_eos_sequence)
-        self.timeout_add(delay, restart)
+        else:
+            soundlog.warn("sound sink overrun")
 
     def sound_sink_exit(self, sound_sink, *args):
         log("sound_sink_exit(%s, %s) sound_sink=%s", sound_sink, args, self.sound_sink)
         ss = self.sound_sink
         if sound_sink!=ss:
-            soundlog("sound_sink_overrun() not the current sink, ignoring it")
+            soundlog("sound_sink_exit() not the current sink, ignoring it")
             return
         if ss and ss.codec:
             #the mandatory "I've been naughty warning":

@@ -932,15 +932,7 @@ class ServerSource(object):
                     log.warn("stopping sound input because of error")
                     self.stop_receiving_sound()
                 def sound_sink_overrun(*args):
-                    log.warn("re-starting sound input because of overrun")
-                    def sink_clean():
-                        soundlog("sink_clean() sound_sink=%s", self.sound_sink)
-                        ss = self.sound_sink
-                        if ss:
-                            self.sound_sink = None
-                            ss.cleanup()
-                    self.idle_add(sink_clean)
-                    #Note: the next sound packet will take care of starting a new pipeline
+                    log.warn("sound overrun")
                 from xpra.sound.wrapper import start_receiving_sound
                 ss = start_receiving_sound(codec)
                 if not ss:

@@ -11,7 +11,7 @@ from xpra.os_util import SIGNAMES
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, get_queue_time, normv, \
-                                MP3, CODECS, CODEC_ORDER, QUEUE_LEAK, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT
+                                MP3, CODECS, CODEC_ORDER, QUEUE_LEAK, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -139,6 +139,7 @@ class SoundSource(SoundPipeline):
         #            "duration"  : buf.duration,
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
+        log("emit buffer: %s bytes, timestamp=%s", len(buf.data), buf.timestamp//MS_TO_NS)
         return self.do_emit_buffer(buf.data, {
                                        "caps"      : buf.get_caps().to_string(),
                                        "timestamp" : normv(buf.timestamp),

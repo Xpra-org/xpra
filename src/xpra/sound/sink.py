@@ -92,7 +92,7 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
         pipeline_els.append("volume name=volume volume=%s" % volume)
-        queue_el =  ["queue",
+        queue_el = ["queue",
                     "name=queue",
                     "min-threshold-time=%s" % QUEUE_MIN_TIME,
                     "max-size-buffers=0",
@@ -129,25 +129,28 @@ class SoundSink(SoundPipeline):
 
 
     def queue_pushing(self, *args):
-        ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        log("queue pushing: level=%s", ltime)
+        ltime = self.queue.get_property("current-level-time")/MS_TO_NS
+        log("queue pushing: level=%i", ltime)
         self.queue_state = "pushing"
         self.emit_info()
 
     def queue_running(self, *args):
-        ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
+        ltime = self.queue.get_property("current-level-time")/MS_TO_NS
         log("queue running: level=%s", ltime)
         if self.queue_state=="underrun" and VARIABLE_MIN_QUEUE:
             #lift min time restrictions:
-            #gobject.timeout_add(400, self.queue.set_property, "min-threshold-time", 0)
             self.queue.set_property("min-threshold-time", 0)
-            #pass
+        elif self.queue_state == "overrun":
+            clt = self.queue.get_property("current-level-time")
+            qpct = min(QUEUE_TIME, clt)*100//QUEUE_TIME
+            log("resetting max-size-time back to %ims (level=%ims, %i%%)", QUEUE_TIME//MS_TO_NS, clt//MS_TO_NS, qpct)
+            self.queue.set_property("max-size-time", QUEUE_TIME)
         self.queue_state = "running"
         self.emit_info()
 
     def queue_underrun(self, *args):
-        ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-        log("queue underrun: level=%s", ltime)
+        ltime = self.queue.get_property("current-level-time")/MS_TO_NS
+        log("queue underrun: level=%i", ltime)
         if self.queue_state!="underrun" and VARIABLE_MIN_QUEUE:
             #lift min time restrictions:
             self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
@@ -155,17 +158,21 @@ class SoundSink(SoundPipeline):
         self.emit_info()
 
     def queue_overrun(self, *args):
-        ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
+        ltime = self.queue.get_property("current-level-time")//MS_TO_NS
+        pqs = self.queue_state
         self.queue_state = "overrun"
         #no overruns for the first 2 seconds:
-        elapsed = time.time()-self.start_time
-        if ltime<(QUEUE_TIME/MS_TO_NS/2*75/100):
-            log("queue overrun ignored: level=%s, elapsed time=%.1f", ltime, elapsed)
+        if ltime<QUEUE_TIME//MS_TO_NS//2*75//100:
+            elapsed = time.time()-self.start_time
+            log("queue overrun ignored: level=%i, elapsed time=%.1f", ltime, elapsed)
             return
-        log("queue overrun: level=%s", ltime)
-        self.overruns += 1
-        self.emit("overrun", ltime)
-        self.emit_info()
+        log("queue overrun: level=%i, previous state=%s", ltime//MS_TO_NS, pqs)
+        if pqs!="overrun":
+            log("halving the max-size-time to %ims", QUEUE_TIME//2//MS_TO_NS)
+            self.queue.set_property("max-size-time", QUEUE_TIME//2)
+            self.overruns += 1
+            self.emit("overrun", ltime)
+            self.emit_info()
 
     def eos(self):
         log("eos()")
@@ -178,28 +185,22 @@ class SoundSink(SoundPipeline):
         if QUEUE_TIME>0:
             clt = self.queue.get_property("current-level-time")
             updict(info, "queue", {
-                "time"          : int(QUEUE_TIME/MS_TO_NS),
-                "min_time"      : int(QUEUE_MIN_TIME/MS_TO_NS),
-                "used_pct"      : int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME),
-                "used"          : int(clt/MS_TO_NS),
+                "time"          : QUEUE_TIME//MS_TO_NS,
+                "min_time"      : QUEUE_MIN_TIME//MS_TO_NS,
+                "used_pct"      : min(QUEUE_TIME, clt)*100//QUEUE_TIME,
+                "used"          : clt//MS_TO_NS,
                 "overruns"      : self.overruns,
                 "state"         : self.queue_state})
         return info
 
     def add_data(self, data, metadata=None):
-        #debug("adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/MS_TO_NS))
         if not self.src:
             log("add_data(..) dropped")
             return
-        log("add_data(%s bytes, %s) queue_state=%s, src=%s", len(data), metadata, self.queue_state, self.src)
-        if self.queue_state == "overrun":
-            clt = self.queue.get_property("current-level-time")
-            qpct = int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME)
-            if qpct<50:
-                self.queue_state = "running"
-            else:
-                log("dropping new data because of overrun: %s%%", qpct)
-                return
+        #having a timestamp causes problems with the queue and overruns:
+        if "timestamp" in metadata:
+            del metadata["timestamp"]
+        log("add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         buf = gst.new_buffer(data)
         if metadata:
             ts = metadata.get("timestamp")
@@ -208,20 +209,11 @@ class SoundSink(SoundPipeline):
             d = metadata.get("duration")
             if d is not None:
                 buf.duration = normv(d)
-            #for seeing how the elapsed time evolves
-            #(cannot be used for much else as client and server may have different times!)
-            #t = metadata.get("time")
-            #if t:
-            #    log("elapsed=%s    (..)", int(time.time()*1000)-t)
-            #if we have caps, use them:
-            #caps = metadata.get("caps")
-            #if caps:
-            #    buf.set_caps(gst.caps_from_string(caps))
         if self.push_buffer(buf):
             self.buffer_count += 1
             self.byte_count += len(data)
-            ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
-            log("pushed %s bytes, new buffer level: %sms", len(data), ltime)
+            ltime = self.queue.get_property("current-level-time")//MS_TO_NS
+            log("pushed %s bytes, new buffer level: %sms, queue state=%s", len(data), ltime, self.queue_state)
         self.emit_info()
 
     def push_buffer(self, buf):
@@ -298,7 +290,7 @@ def main():
         signal.signal(signal.SIGTERM, deadly_signal)
 
         def check_for_end(*args):
-            qtime = int(ss.queue.get_property("current-level-time")/MS_TO_NS)
+            qtime = ss.queue.get_property("current-level-time")//MS_TO_NS
             if qtime<=0:
                 log.info("underrun (end of stream)")
                 thread.start_new_thread(ss.stop, ())
