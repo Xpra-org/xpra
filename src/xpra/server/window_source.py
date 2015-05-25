@@ -97,6 +97,7 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.av_sync = av_sync
         self.av_sync_delay = av_sync_delay
+        self.av_sync_delay_target = av_sync_delay
         self.encode_queue = []
 
         self.server_core_encodings = server_core_encodings
@@ -292,6 +293,8 @@ class WindowSource(object):
         def up(prefix, d):
             updict(info, prefix, d)
 
+        up("av-sync",       {"current"  : self.av_sync_delay,
+                             "target"   : self.av_sync_delay_target})
         #heuristics
         up("encoding.lossless_threshold", {
                 "base"                  : self._lossless_threshold_base,
@@ -538,6 +541,24 @@ class WindowSource(object):
 
     def set_auto_refresh_delay(self, d):
         self.auto_refresh_delay = d
+
+    def set_av_sync_delay(self, new_delay):
+        self.av_sync_delay_target = new_delay
+        self.update_av_sync_delay()
+
+    def update_av_sync_delay(self):
+        if not self.av_sync:
+            self.av_sync_delay = 0
+            return
+        delta = self.av_sync_delay_target-self.av_sync_delay
+        if delta==0:
+            return
+        #limit the rate of change:
+        AV_SYNC_RATE_CHANGE = 20
+        rdelta = min(AV_SYNC_RATE_CHANGE, max(-AV_SYNC_RATE_CHANGE, delta))
+        avsynclog("update_av_sync_delay() current=%s, target=%s, adding %s (capped to +-%s from %s)", self.av_sync_delay, self.av_sync_delay_target, rdelta, AV_SYNC_RATE_CHANGE, delta)
+        self.av_sync_delay += rdelta
+
 
     def set_new_encoding(self, encoding, strict):
         """ Changes the encoder for the given 'window_ids',
@@ -1218,6 +1239,7 @@ class WindowSource(object):
         avsynclog("encode_from_queue: %s items", len(eq))
         if not eq:
             return      #nothing to encode, must have been picked off already
+        self.update_av_sync_delay()
         #find the first item which is due
         #in seconds, same as time.time():
         av_delay = self.av_sync_delay/1000.0
