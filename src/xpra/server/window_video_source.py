@@ -12,7 +12,7 @@ from xpra.net.compression import Compressed
 from xpra.codecs.codec_constants import get_subsampling_divs, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
-from xpra.server.region import merge_all
+from xpra.server.region import merge_all            #@UnresolvedImport
 from xpra.server.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import updict
