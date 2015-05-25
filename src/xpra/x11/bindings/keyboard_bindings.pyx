@@ -281,6 +281,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             return  NoSymbol
         keysym = XStringToKeysym(symbol)
         if keysym==NoSymbol:
+            if symbol.startswith("U+"):
+                symbol = "0x"+symbol[2:]
             if symbol.lower().startswith("0x"):
                 return int(symbol, 16)
             if len(symbol)>0 and symbol[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
