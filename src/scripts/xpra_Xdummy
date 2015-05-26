@@ -35,8 +35,13 @@ find_ld_linux() {
 	fi
 }
 
-if [ -x "/usr/libexec/Xorg.bin" ]; then
-	#Fedora 21+ workaround where /usr/bin/Xorg is not suid
+if [ -x "/usr/libexec/Xorg" ]; then
+	#Fedora 22+ workaround where /usr/bin/Xorg is not suid
+	#because it is a script, which calls /usr/libexec/Xorg.wrap
+	#which is setuid, and which eventually calls this one:
+	XORG_BIN="/usr/libexec/Xorg"
+elif [ -x "/usr/libexec/Xorg.bin" ]; then
+	#Fedora 21 workaround where /usr/bin/Xorg is not suid
 	#because it is a script, which calls /usr/libexec/Xorg.wrap
 	#which is setuid, and which eventually calls this one:
 	XORG_BIN="/usr/libexec/Xorg.bin"
