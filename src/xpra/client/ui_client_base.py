@@ -1175,11 +1175,11 @@ class UIXpraClient(XpraClientBase):
                 if self._protocol is None:
                     #no longer connected!
                     return False
+                ok = self.server_ok()
                 self.redraw_spinners()
-                if self.server_ok():
+                if ok:
                     log.info("server is OK again")
-                    return False
-                return True
+                return not ok           #repaint again until ok
             self.idle_add(self.redraw_spinners)
             self.timeout_add(250, timer_redraw)
         return False
@@ -1188,6 +1188,7 @@ class UIXpraClient(XpraClientBase):
         #draws spinner on top of the window, or not (plain repaint)
         #depending on whether the server is ok or not
         ok = self.server_ok()
+        log("redraw_spinners() ok=%s", ok)
         for w in self._id_to_window.values():
             if not w.is_tray():
                 w.spinner(ok)
