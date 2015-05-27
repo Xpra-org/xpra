@@ -10,7 +10,7 @@ import re
 from xpra.x11.gtk_x11 import gdk_display_source
 assert gdk_display_source
 
-from xpra.util import std, nonl
+from xpra.util import std
 from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.gtk_common.error import xsync
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -35,27 +35,6 @@ OPTIONAL_KEYS = ["XF86AudioForward", "XF86AudioLowerVolume", "XF86AudioMedia", "
                  "XF86ScrollDown", "XF86ScrollUp", "XF86Search", "XF86Send", "XF86Shop", "XF86Sleep", "XF86Suspend",
                  "XF86Switch_VT_1", "XF86Switch_VT_10", "XF86Switch_VT_11", "XF86Switch_VT_12", "XF86Switch_VT_2", "XF86Switch_VT_3", "XF86Switch_VT_4", "XF86Switch_VT_5", "XF86Switch_VT_6", "XF86Switch_VT_7", "XF86Switch_VT_8", "XF86Switch_VT_9",
                  "XF86Tools", "XF86TouchpadOff", "XF86TouchpadOn", "XF86TouchpadToggle", "XF86Ungrab", "XF86WakeUp", "XF86WebCam", "XF86WLAN", "XF86WWW", "XF86Xfer"]
-
-
-def exec_keymap_command(args, stdin=None):
-    try:
-        from xpra.scripts.exec_util import safe_exec
-        returncode, _, _ = safe_exec(args, stdin)
-        def logstdin():
-            if not stdin or len(stdin)<500:
-                return  nonl(stdin)
-            return nonl(stdin[:500])+".."
-        if returncode==0:
-            if not stdin:
-                log("%s", args)
-            else:
-                log("%s with stdin=%s", args, logstdin())
-        else:
-            log.error("%s with stdin=%s, failed with exit code %s", args, logstdin(), returncode)
-        return returncode
-    except Exception as e:
-        log.error("error calling '%s': %s" % (str(args), e))
-        return -1
 
 
 def clean_keyboard_state():
@@ -88,30 +67,24 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         model:      evdev
         layout:     gb
         options:    grp:shift_caps_toggle
-        And we want to call something like:
-        setxkbmap -rules evdev -model evdev -layout gb
-        setxkbmap -option "" -option grp:shift_caps_toggle
         (we execute the options separately in case that fails..)
         """
         #parse the data into a dict:
         settings = parse_xkbmap_query(xkbmap_query)
-        #construct the command line arguments for setxkbmap:
-        args = ["setxkbmap"]
-        used_settings = {}
-        for setting in ["rules", "model", "layout"]:
-            if setting in settings:
-                value = settings.get(setting)
-                args += ["-%s" % setting, value]
-                used_settings[setting] = value
-        if len(args)==1:
-            log.warn("do_set_keymap could not find rules, model or layout in the xkbmap query string..")
-        else:
-            log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in used_settings.items()]))
-        exec_keymap_command(args)
-        #try to set the options:
-        if "options" in settings:
-            log.info("setting keymap options: %s", std(str(settings.get("options"))))
-            exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
+        rules = settings.get("rules")
+        model = settings.get("model")
+        layout = settings.get("layout")
+        variant = settings.get("variant")
+        options = settings.get("options")
+        try:
+            X11Keyboard.setxkbmap(rules, model, layout, variant, options)
+        except:
+            log.warn("failed to set exact keymap using %s", settings)
+            #try again with no options:
+            try:
+                X11Keyboard.setxkbmap(rules, model, layout, variant, "")
+            except:
+                log.error("failed to set exact keymap even without applying options")
     elif xkbmap_print:
         log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
@@ -122,29 +95,13 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                 if m:
                     layout = std(m.group(1))
                     log.info("guessing keyboard layout='%s'" % layout)
-                    exec_keymap_command(["setxkbmap", layout])
-                    break
+                    X11Keyboard.setxkbmap("", "pc104", layout, "", "")
         except Exception as e:
             log.info("error setting keymap: %s" % e)
     else:
         layout = xkbmap_layout or "us"
         log.info("setting keyboard layout to '%s'", std(layout))
-        set_layout = ["setxkbmap", "-layout", layout]
-        if xkbmap_variant:
-            set_layout += ["-variant", xkbmap_variant]
-        if not exec_keymap_command(set_layout) and xkbmap_variant:
-            log.info("error setting keymap with variant %s, retrying with just layout %s", std(xkbmap_variant), std(layout))
-            set_layout = ["setxkbmap", "-layout", layout]
-            exec_keymap_command(set_layout)
-
-    display = os.environ.get("DISPLAY")
-    if xkbmap_print:
-        #there may be a junk header, if so remove it:
-        pos = xkbmap_print.find("xkb_keymap {")
-        if pos>0:
-            xkbmap_print = xkbmap_print[pos:]
-        log.info("setting full keymap definition from client via xkbcomp")
-        exec_keymap_command(["xkbcomp", "-", display], xkbmap_print)
+        X11Keyboard.setxkbmap("", "", layout, xkbmap_variant, "")
 
 
 ################################################################################

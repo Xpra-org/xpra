@@ -13,12 +13,20 @@ log = Logger("x11", "bindings", "keyboard")
 from xpra.util import bytestostr
 
 
+DEF PATH_MAX = 1024
+DEF DFLT_XKB_RULES_FILE = "base"
+DEF DFLT_XKB_CONFIG_ROOT = "/usr/share/X11/xkb"
+
 ###################################
 # Headers, python magic
 ###################################
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
     void free(void* mem)
+
+cdef extern from "locale.h":
+    char *setlocale(int category, const char *locale)
+    int LC_ALL
 
 cdef extern from "X11/Xutil.h":
     pass
@@ -91,13 +99,31 @@ cdef extern from "X11/extensions/XKB.h":
     unsigned long XkbUseCoreKbd
     unsigned long XkbDfltXIId
     unsigned long XkbBellNotifyMask
+    unsigned int XkbGBN_AllComponentsMask
+    unsigned int XkbGBN_GeometryMask
 
 cdef extern from "X11/extensions/XKBstr.h":
-    pass
+    ctypedef struct XkbComponentNamesRec:
+        char *                   keymap
+        char *                   keycodes
+        char *                   types
+        char *                   compat
+        char *                   symbols
+        char *                   geometry
+    ctypedef XkbComponentNamesRec*  XkbComponentNamesPtr
+    ctypedef struct XkbDescRec:
+        pass
+    ctypedef XkbDescRec* XkbDescPtr
+
 
 cdef extern from "X11/extensions/XKBrules.h":
     #define _XKB_RF_NAMES_PROP_ATOM         "_XKB_RULES_NAMES"
     #unsigned int _XKB_RF_NAMES_PROP_MAXLEN
+
+    ctypedef struct XkbRF_RulesRec:
+        pass
+
+    ctypedef XkbRF_RulesRec* XkbRF_RulesPtr    
 
     ctypedef struct XkbRF_VarDefsRec:
         char *                  model
@@ -112,7 +138,9 @@ cdef extern from "X11/extensions/XKBrules.h":
     ctypedef XkbRF_VarDefsRec* XkbRF_VarDefsPtr
 
     Bool XkbRF_GetNamesProp(Display *dpy, char **rules_file_rtrn, XkbRF_VarDefsPtr var_defs_rtrn)
-    #Bool XkbRF_SetNamesProp(Display *dpy, char *rules_file, XkbRF_VarDefsPtr var_defs)
+    Bool XkbRF_SetNamesProp(Display *dpy, char *rules_file, XkbRF_VarDefsPtr var_defs)
+    Bool XkbRF_GetComponents(XkbRF_RulesPtr rules, XkbRF_VarDefsPtr var_defs, XkbComponentNamesPtr names)
+    XkbRF_RulesPtr XkbRF_Load(char *base, char *locale, Bool wantDesc, Bool wantRules)
 
 
 cdef extern from "X11/XKBlib.h":
@@ -122,6 +150,9 @@ cdef extern from "X11/XKBlib.h":
     Bool XkbDeviceBell(Display *, Window w, int deviceSpec, int bellClass, int bellID, int percent, Atom name)
     Bool XkbSetAutoRepeatRate(Display *, unsigned int deviceSpec, unsigned int delay, unsigned int interval)
     Bool XkbGetAutoRepeatRate(Display *, unsigned int deviceSpec, unsigned int *delayRtrn, unsigned int *intervalRtrn)
+
+    XkbDescPtr XkbGetKeyboardByName(Display *display, unsigned int deviceSpec, XkbComponentNamesPtr names,
+                                    unsigned int want, unsigned int need, Bool load)
 
 
 cdef extern from "X11/extensions/XTest.h":
@@ -175,6 +206,12 @@ cdef extern from "X11/extensions/xfixeswire.h":
     void XFixesSelectCursorInput(Display *, Window w, long mask)
 
 
+cdef NS(char *v):
+    if v==NULL:
+        return "NULL"
+    return str(v)
+
+
 # xmodmap's "keycode" action done implemented in python
 # some of the methods aren't very pythonic
 # that's intentional so as to keep as close as possible
@@ -204,6 +241,89 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef int ignored = 0
         XTestQueryExtension(self.display, &ignored, &ignored, &ignored, &ignored)
 
+    cpdef int setxkbmap(self, rules_name, model, layout, variant, options) except -1:
+        log("setxkbmap(%s, %s, %s, %s, %s)", rules_name, model, layout, variant, options)
+        cdef XkbRF_RulesPtr rules = NULL
+        cdef XkbRF_VarDefsRec rdefs
+        cdef XkbComponentNamesRec rnames
+        cdef char *locale = setlocale(LC_ALL, NULL)
+        log("setxkbmap: using locale=%s", locale)
+
+        rdefs.model = model
+        rdefs.layout = layout
+        if variant:
+            rdefs.variant = variant
+        else:
+            rdefs.variant = NULL
+        if options:
+            rdefs.options = options
+        else:
+            rdefs.options = NULL
+        if not rules_name:
+            rules_name = DFLT_XKB_RULES_FILE
+
+        log("setxkbmap: using %s", {"rules" : rules_name, "model" : NS(rdefs.model),
+                                     "layout" : NS(rdefs.layout), "variant" : NS(rdefs.variant),
+                                     "options" : NS(rdefs.options)})
+        #try to load rules files from all include paths until the first
+        #we succeed with
+        for include_path in (".", DFLT_XKB_CONFIG_ROOT):
+            rules_path = os.path.join(include_path, "rules", rules_name)
+            if len(rules_path)>=PATH_MAX:
+                log.warn("rules path too long: %. Ignored.", rules_path)
+                continue
+            log("setxkbmap: trying to load rules file %s...", rules_path)
+            rules = XkbRF_Load(rules_path, locale, True, True)
+            if rules:
+                log("setxkbmap: loaded rules from %s", rules_path)
+                break
+        if rules==NULL:
+            log.warn("Couldn't find rules file '%s'", rules_name)
+            return False
+
+        # Let the rules file do the magic:
+        assert XkbRF_GetComponents(rules, &rdefs, &rnames), "failed to get components"
+        props = self.getXkbProperties()
+        if rnames.keycodes:
+            props["keycodes"] = str(rnames.keycodes)
+        if rnames.symbols:
+            props["symbols"] = str(rnames.symbols)
+        if rnames.types:
+            props["types"] = str(rnames.types)
+        if rnames.compat:
+            props["compat"] = str(rnames.compat)
+        if rnames.geometry:
+            props["geometry"] = str(rnames.geometry).encode()
+        if rnames.keymap:
+            props["keymap"] = str(rnames.keymap).encode()
+        #note: this value is from XkbRF_VarDefsRec as XkbComponentNamesRec has no layout attribute
+        #(and we want to make sure we don't use the default value from getXkbProperties above)
+        if rdefs.layout:
+            props["layout"] = str(rdefs.layout).encode()
+        log("setxkbmap: properties=%s", props)
+        #strip out strings inside parenthesis if any:
+        filtered_props = {}
+        for k,v in props.items():
+            ps = v.find("(")
+            if ps>=0:
+                v = v[:ps]
+            filtered_props[k] = v
+        log("setxkbmap: filtered properties=%s", filtered_props)
+        cdef XkbDescPtr xkb = XkbGetKeyboardByName(self.display, XkbUseCoreKbd, &rnames,
+                                   XkbGBN_AllComponentsMask,
+                                   XkbGBN_AllComponentsMask & (~XkbGBN_GeometryMask), True)
+        log("setxkbmap: XkbGetKeyboardByName returned %#x", <unsigned long> xkb)
+        if not xkb:
+            log.error("Error loading new keyboard description")
+            return False
+        # update the XKB root property:
+        if rules_name and (model or layout):
+            if not XkbRF_SetNamesProp(self.display, rules_name, &rdefs):
+                log.error("Error updating the XKB names property")
+                return False
+            log("X11 keymap property updated: %s", self.getXkbProperties())
+        return True
+        
 
     def getXkbProperties(self):
         cdef XkbRF_VarDefsRec vd
