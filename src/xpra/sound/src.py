@@ -61,9 +61,10 @@ class SoundSource(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
         self.sink.set_property("emit-signals", True)
-        self.sink.set_property("max-buffers", 10)       #0?
-        self.sink.set_property("drop", False)
-        self.sink.set_property("sync", True)            #False?
+        self.sink.set_property("max-buffers", 10)
+        self.sink.set_property("drop", True)
+        self.sink.set_property("sync", False)
+        self.sink.set_property("async", False)
         self.sink.set_property("qos", False)
         try:
             #Gst 1.0:
