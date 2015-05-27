@@ -76,6 +76,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         layout = settings.get("layout")
         variant = settings.get("variant")
         options = settings.get("options")
+        log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in settings.items() if k in ["rules", "model", "layout"] and v]))
         try:
             X11Keyboard.setxkbmap(rules, model, layout, variant, options)
         except:
