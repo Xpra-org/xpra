@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import time
 
@@ -14,6 +15,8 @@ from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_sou
                                 MP3, CODECS, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
 from xpra.log import Logger
 log = Logger("sound")
+
+APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
 
 
 class SoundSource(SoundPipeline):
@@ -56,16 +59,10 @@ class SoundSource(SoundPipeline):
         pipeline_els.append("volume name=volume volume=%s" % volume)
         pipeline_els += [encoder_str,
                         fmt,
-                        "appsink name=sink"]
+                        APPSINK]
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
-        self.sink.set_property("emit-signals", True)
-        self.sink.set_property("max-buffers", 10)
-        self.sink.set_property("drop", True)
-        self.sink.set_property("sync", False)
-        self.sink.set_property("async", False)
-        self.sink.set_property("qos", False)
         try:
             #Gst 1.0:
             self.sink.connect("new-sample", self.on_new_sample)
