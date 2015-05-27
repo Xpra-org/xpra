@@ -10,14 +10,10 @@ import time
 from xpra.os_util import SIGNAMES
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, get_queue_time, normv, \
-                                MP3, CODECS, CODEC_ORDER, QUEUE_LEAK, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
+from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, normv, \
+                                MP3, CODECS, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
 from xpra.log import Logger
 log = Logger("sound")
-
-
-AUDIORESAMPLE = False
-QUEUE_TIME = get_queue_time(0)
 
 
 class SoundSource(SoundPipeline):
@@ -57,19 +53,7 @@ class SoundSource(SoundPipeline):
         pipeline_els = [source_str]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
-        if AUDIORESAMPLE:
-            pipeline_els += [
-                         "audioresample",
-                         "audio/x-raw-int,rate=44100,channels=2"]
         pipeline_els.append("volume name=volume volume=%s" % volume)
-        if QUEUE_TIME>0:
-            queue_el =  ["queue",
-                         "name=queue",
-                         "max-size-buffers=0",
-                         "max-size-bytes=0",
-                         "max-size-time=%s" % QUEUE_TIME,
-                         "leaky=%s" % QUEUE_LEAK]
-            pipeline_els.append(" ".join(queue_el))
         pipeline_els += [encoder_str,
                         fmt,
                         "appsink name=sink"]
