@@ -133,6 +133,7 @@ class SoundSink(SoundPipeline):
         log("queue pushing: level=%i", ltime)
         self.queue_state = "pushing"
         self.emit_info()
+        return 0
 
     def queue_running(self, *args):
         ltime = self.queue.get_property("current-level-time")/MS_TO_NS
@@ -147,6 +148,7 @@ class SoundSink(SoundPipeline):
             self.queue.set_property("max-size-time", QUEUE_TIME)
         self.queue_state = "running"
         self.emit_info()
+        return 0
 
     def queue_underrun(self, *args):
         ltime = self.queue.get_property("current-level-time")/MS_TO_NS
@@ -156,6 +158,7 @@ class SoundSink(SoundPipeline):
             self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
         self.queue_state = "underrun"
         self.emit_info()
+        return 0
 
     def queue_overrun(self, *args):
         ltime = self.queue.get_property("current-level-time")//MS_TO_NS
@@ -165,7 +168,7 @@ class SoundSink(SoundPipeline):
         if ltime<QUEUE_TIME//MS_TO_NS//2*75//100:
             elapsed = time.time()-self.start_time
             log("queue overrun ignored: level=%i, elapsed time=%.1f", ltime, elapsed)
-            return
+            return 0
         log("queue overrun: level=%i, previous state=%s", ltime//MS_TO_NS, pqs)
         if pqs!="overrun":
             log("halving the max-size-time to %ims", QUEUE_TIME//2//MS_TO_NS)
@@ -173,12 +176,14 @@ class SoundSink(SoundPipeline):
             self.overruns += 1
             self.emit("overrun", ltime)
             self.emit_info()
+        return 0
 
     def eos(self):
         log("eos()")
         if self.src:
             self.src.emit('end-of-stream')
         self.cleanup()
+        return 0
 
     def get_info(self):
         info = SoundPipeline.get_info(self)
