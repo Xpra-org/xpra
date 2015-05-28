@@ -53,6 +53,11 @@ workspacelog = Logger("x11", "window", "workspace")
 _NET_WM_STATE_REMOVE = 0
 _NET_WM_STATE_ADD    = 1
 _NET_WM_STATE_TOGGLE = 2
+STATE_STRING = {
+            _NET_WM_STATE_REMOVE    : "REMOVE",
+            _NET_WM_STATE_ADD       : "ADD",
+            _NET_WM_STATE_TOGGLE    : "TOGGLE",
+                }
 
 XNone = constants["XNone"]
 
@@ -737,16 +742,17 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         #   _NET_WM_STATE (more fully)
         def update_wm_state(prop):
             current = self.get_property(prop)
-            if event.data[0]==_NET_WM_STATE_ADD:
+            mode = event.data[0]
+            if mode==_NET_WM_STATE_ADD:
                 v = True
-            elif event.data[0]==_NET_WM_STATE_REMOVE:
+            elif mode==_NET_WM_STATE_REMOVE:
                 v = False
-            elif event.data[0]==_NET_WM_STATE_TOGGLE:
+            elif mode==_NET_WM_STATE_TOGGLE:
                 v = not bool(current)
             else:
-                log.warn("invalid mode for _NET_WM_STATE: %s", event.data[0])
+                log.warn("invalid mode for _NET_WM_STATE: %s", mode)
                 return
-            log("do_xpra_client_message_event(%s) window %s=%s (current state=%s)", event, prop, v, current)
+            log("do_xpra_client_message_event(%s) window %s=%s after %s (current state=%s)", event, prop, v, STATE_STRING.get(mode, mode), current)
             if v!=current:
                 self.set_property(prop, v)
 
