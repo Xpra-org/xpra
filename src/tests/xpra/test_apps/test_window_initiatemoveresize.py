@@ -2,18 +2,32 @@
 
 import gtk
 
-_NET_WM_MOVERESIZE_SIZE_TOPLEFT      = 0
-_NET_WM_MOVERESIZE_SIZE_TOP          = 1
-_NET_WM_MOVERESIZE_SIZE_TOPRIGHT     = 2
-_NET_WM_MOVERESIZE_SIZE_RIGHT        = 3
-_NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT  = 4
-_NET_WM_MOVERESIZE_SIZE_BOTTOM       = 5
-_NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT   = 6
-_NET_WM_MOVERESIZE_SIZE_LEFT         = 7
-_NET_WM_MOVERESIZE_MOVE              = 8
-_NET_WM_MOVERESIZE_SIZE_KEYBOARD     = 9
-_NET_WM_MOVERESIZE_MOVE_KEYBOARD     = 10
-_NET_WM_MOVERESIZE_CANCEL            = 11
+MOVERESIZE_SIZE_TOPLEFT      = 0
+MOVERESIZE_SIZE_TOP          = 1
+MOVERESIZE_SIZE_TOPRIGHT     = 2
+MOVERESIZE_SIZE_RIGHT        = 3
+MOVERESIZE_SIZE_BOTTOMRIGHT  = 4
+MOVERESIZE_SIZE_BOTTOM       = 5
+MOVERESIZE_SIZE_BOTTOMLEFT   = 6
+MOVERESIZE_SIZE_LEFT         = 7
+MOVERESIZE_MOVE              = 8
+MOVERESIZE_SIZE_KEYBOARD     = 9
+MOVERESIZE_MOVE_KEYBOARD     = 10
+MOVERESIZE_CANCEL            = 11
+MOVERESIZE_DIRECTION_STRING = {
+                    MOVERESIZE_SIZE_TOPLEFT     : "SIZE_TOPLEFT",
+                    MOVERESIZE_SIZE_TOP         : "SIZE_TOP",
+                    MOVERESIZE_SIZE_TOPRIGHT    : "SIZE_TOPRIGHT",
+                    MOVERESIZE_SIZE_RIGHT       : "SIZE_RIGHT",
+                    MOVERESIZE_SIZE_BOTTOMRIGHT : "SIZE_BOTTOMRIGHT",
+                    MOVERESIZE_SIZE_BOTTOM      : "SIZE_BOTTOM",
+                    MOVERESIZE_SIZE_BOTTOMLEFT  : "SIZE_BOTTOMLEFT",
+                    MOVERESIZE_SIZE_LEFT        : "SIZE_LEFT",
+                    MOVERESIZE_MOVE             : "MOVE",
+                    MOVERESIZE_SIZE_KEYBOARD    : "SIZE_KEYBOARD",
+                    MOVERESIZE_MOVE_KEYBOARD    : "MOVE_KEYBOARD",
+                    MOVERESIZE_CANCEL           : "CANCEL",
+                    }
 
 width = 400
 height = 200
@@ -42,32 +56,49 @@ def main():
 			  x_root, y_root, direction, button, source_indication)
 
 	def cancel():
-		initiate(0, 0, _NET_WM_MOVERESIZE_CANCEL, 0, 1)
+		initiate(0, 0, MOVERESIZE_CANCEL, 0, 1)
 
-	vbox = gtk.VBox(False, 0)
+
+	table = gtk.Table(3, 3, True)
+	table.set_col_spacings(0)
+	table.set_row_spacings(0)
+	
 	btn = gtk.Button("initiate move")
-	vbox.pack_start(btn, expand=False, fill=False, padding=10)
+	table.attach(btn, 1, 2, 1, 2, xoptions=gtk.FILL, yoptions=gtk.FILL)
 	def initiate_move(*args):
 		cancel()
 		x, y = root.get_pointer()[:2]
 		source_indication = 1	#normal
 		button = 1
-		direction = _NET_WM_MOVERESIZE_MOVE
+		direction = MOVERESIZE_MOVE
 		initiate(x, y, direction, button, source_indication)
 	btn.connect('button-press-event', initiate_move)
 
-	btn = gtk.Button("initiate move resize")
-	vbox.pack_start(btn, expand=False, fill=False, padding=10)
-	def initiate_resize(*args):
+	def btn_callback(btn, direction):
 		cancel()
 		x, y = root.get_pointer()[:2]
 		source_indication = 1	#normal
 		button = 1
-		direction = _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT
 		initiate(x, y, direction, button, source_indication)
-	btn.connect('clicked', initiate_resize)
+	def add_button(x, y, direction):
+		btn = gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
+		table.attach(btn, x, x+1, y, y+1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.EXPAND|gtk.FILL)
+		btn.connect('clicked', btn_callback, direction)
 
-	window.add(vbox)
+	for x,y,direction in (
+						(0, 0, MOVERESIZE_SIZE_TOPLEFT),
+						(1, 0, MOVERESIZE_SIZE_TOP),
+						(2, 0, MOVERESIZE_SIZE_TOPRIGHT),
+						(0, 1, MOVERESIZE_SIZE_LEFT),
+						(1, 1, MOVERESIZE_MOVE),
+						(2, 1, MOVERESIZE_SIZE_RIGHT),
+						(0, 2, MOVERESIZE_SIZE_BOTTOMLEFT),
+						(1, 2, MOVERESIZE_SIZE_BOTTOM),
+						(2, 2, MOVERESIZE_SIZE_BOTTOMRIGHT),
+							):
+		add_button(x, y, direction)
+
+	window.add(table)
 	window.show_all()
 	gtk.main()
 	return 0
