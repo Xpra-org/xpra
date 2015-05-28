@@ -140,6 +140,10 @@ class WindowSource(object):
         self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ServerSource sets defaults with the client's scaling.control value
         self.scaling = None
         self.maximized = False          #set by the client!
+        self.iconic = False
+        if "iconic" in window.get_dynamic_property_names():
+            self.iconic = window.get_property("iconic")
+            window.connect("notify::iconic", self._iconic_changed)
         if "fullscreen" in window.get_dynamic_property_names():
             window.connect("notify::fullscreen", self._fullscreen_changed)
 
@@ -378,6 +382,8 @@ class WindowSource(object):
         self.batch_config.delay = max(500, self.batch_config.delay)
 
     def no_idle(self):
+        if self.iconic:
+            return
         self.batch_config.locked = False
         self.batch_config.delay = self.batch_config.saved
 
@@ -514,6 +520,13 @@ class WindowSource(object):
         self.fullscreen = window.get_property("fullscreen")
         log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(True)
+
+    def _iconic_changed(self, window, *args):
+        self.iconic = window.get_property("iconic")
+        if self.iconic:
+            self.go_idle()
+        else:
+            self.no_idle()
 
     def set_client_properties(self, properties):
         #filter out stuff we don't care about
