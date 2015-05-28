@@ -143,6 +143,9 @@ def add_window_hooks(window):
         handle = window.get_window().handle
     except:
         return
+    if not handle:
+        log.warn("cannot add window hooks without a window handle!")
+        return
 
     if GROUP_LEADER:
         #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
