@@ -192,7 +192,7 @@ def main():
 		print("")
 		print("Protocol Capabilities:")
 		from xpra.net.protocol import get_network_caps
-		netcaps = get_network_caps(legacy=verbose)
+		netcaps = get_network_caps()
 		for k in sorted(netcaps.keys()):
 			print("* %s : %s" % (str(k).ljust(20), pver(netcaps[k])))
 

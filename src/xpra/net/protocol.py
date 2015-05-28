@@ -49,7 +49,7 @@ INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 32768))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
 
 
-def get_network_caps(legacy=True):
+def get_network_caps():
     try:
         from xpra.net.mmap_pipe import can_use_mmap
         mmap = can_use_mmap()
@@ -61,12 +61,6 @@ def get_network_caps(legacy=True):
                 "encoders"              : packet_encoding.get_enabled_encoders(),
                 "mmap"                  : mmap,
                }
-    if legacy:
-        #for backwards compatibility only:
-        caps.update({
-                "raw_packets"           : True,
-                "chunked_compression"   : True
-                })
     caps.update(get_crypto_caps())
     caps.update(get_compression_caps())
     caps.update(get_packet_encoding_caps())
