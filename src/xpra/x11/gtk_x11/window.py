@@ -397,7 +397,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._geometry = None
         self._damage_forward_handle = None
         self._internal_set_property("client-window", client_window)
-        use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
+        use_xshm = USE_XSHM and not self.is_tray()
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
         self.property_names = ["pid", "transient-for", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
                                "xid", "workspace", "has-alpha", "opacity", "strut"]
