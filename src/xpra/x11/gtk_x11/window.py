@@ -732,106 +732,21 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def do_xpra_client_message_event(self, event):
         log("do_xpra_client_message_event(%s)", event)
-        # FIXME
-        # Need to listen for:
-        #   _NET_CURRENT_DESKTOP
-        #   _NET_REQUEST_FRAME_EXTENTS
-        #   _NET_WM_PING responses
-        # and maybe:
-        #   _NET_RESTACK_WINDOW
-        #   _NET_WM_STATE (more fully)
-        def update_wm_state(prop):
-            current = self.get_property(prop)
-            mode = event.data[0]
-            if mode==_NET_WM_STATE_ADD:
-                v = True
-            elif mode==_NET_WM_STATE_REMOVE:
-                v = False
-            elif mode==_NET_WM_STATE_TOGGLE:
-                v = not bool(current)
-            else:
-                log.warn("invalid mode for _NET_WM_STATE: %s", mode)
-                return
-            log("do_xpra_client_message_event(%s) window %s=%s after %s (current state=%s)", event, prop, v, STATE_STRING.get(mode, mode), current)
-            if v!=current:
-                self.set_property(prop, v)
-
         if not event.data or len(event.data)!=5:
             log.warn("invalid event data: %s", event.data)
             return
+        if not self.process_client_message_event(event):
+            log.warn("do_xpra_client_message_event(%s) not handled", event)
 
-        if event.message_type=="_NET_WM_STATE":
-            atom1 = get_pyatom(event.window, event.data[1])
-            log("_NET_WM_STATE: %s", atom1)
-            if atom1=="_NET_WM_STATE_FULLSCREEN":
-                update_wm_state("fullscreen")
-            elif atom1=="_NET_WM_STATE_ABOVE":
-                update_wm_state("above")
-            elif atom1=="_NET_WM_STATE_BELOW":
-                update_wm_state("below")
-            elif atom1=="_NET_WM_STATE_SHADED":
-                update_wm_state("shaded")
-            elif atom1=="_NET_WM_STATE_STICKY":
-                update_wm_state("sticky")
-            elif atom1=="_NET_WM_STATE_SKIP_TASKBAR":
-                update_wm_state("skip-taskbar")
-            elif atom1=="_NET_WM_STATE_SKIP_PAGER":
-                update_wm_state("skip-pager")
-                get_pyatom(event.window, event.data[2])
-            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
-                atom2 = get_pyatom(event.window, event.data[2])
-                #we only have one state for both, so we require both to be set:
-                if atom1!=atom2 and atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
-                    update_wm_state("maximized")
-            elif atom1=="_NET_WM_STATE_HIDDEN":
-                log("ignoring 'HIDDEN' _NET_WM_STATE: %s", event)
-                #we don't honour those because they make little sense, see:
-                #https://mail.gnome.org/archives/wm-spec-list/2005-May/msg00004.html
-                pass
-            elif atom1=="_NET_WM_STATE_MODAL":
-                update_wm_state("modal")
-            else:
-                log.info("do_xpra_client_message_event(%s) unhandled atom=%s", event, atom1)
-        elif event.message_type=="WM_CHANGE_STATE":
-            log("WM_CHANGE_STATE: %s", event.data[0])
-            if event.data[0]==IconicState and event.serial>self.last_unmap_serial:
-                self._internal_set_property("iconic", True)
-        elif event.message_type=="_NET_WM_MOVERESIZE":
-            log("_NET_WM_MOVERESIZE: %s", event)
-            self.emit("initiate-moveresize", event)
-        elif event.message_type=="_NET_MOVERESIZE_WINDOW":
-            log("ignoring _NET_MOVERESIZE_WINDOW on %s (data=%s)", self, event.data)
-        elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data[0] in (0, 1):
-            log("_NET_ACTIVE_WINDOW: %s", event)
-            self.set_active()
-            self.emit("raised", event)
-        elif event.message_type=="_NET_CLOSE_WINDOW":
+    def process_client_message_event(self, event):
+        #most messages are only handled in WindowModel,
+        #OR windows and trays should not be receiving any other message
+        if event.message_type=="_NET_CLOSE_WINDOW":
             log.info("_NET_CLOSE_WINDOW received by %s", self)
             self.request_close()
-        elif event.message_type=="_NET_WM_DESKTOP":
-            workspace = int(event.data[0])
-            #query the workspace count on the root window
-            #since we cannot access Wm from here..
-            root = self.client_window.get_screen().get_root_window()
-            ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
-            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
-            if ndesktops>0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or (workspace>=0 and workspace<ndesktops)):
-                self.move_to_workspace(workspace)
-            else:
-                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
-        elif event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
-            log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
-            #TODO: we should validate the indexes instead of copying them blindly!
-            m1, m2, m3, m4 = event.data[0], event.data[1], event.data[2], event.data[3]
-            N = 16      #FIXME: arbitrary limit
-            if m1<0 or m1>=N or m2<0 or m2>=N or m3<0 or m3>=N or m4<0 or m4>=N:
-                log.warn("invalid list of _NET_WM_FULLSCREEN_MONITORS - ignored")
-                return
-            monitors = [m1, m2, m3, m4]
-            log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
-            prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
-        else:
-            log("do_xpra_client_message_event(%s)", event)
+            return True
+        return False
+
 
     def set_active(self):
         prop_set(self.client_window.get_screen().get_root_window(), "_NET_ACTIVE_WINDOW", "u32", self.client_window.xid)
@@ -1138,8 +1053,106 @@ class WindowModel(BaseWindowModel):
         return  self.get_property("actual-size")
 
 
-    def do_xpra_client_message_event(self, event):
-        if event.message_type=="_NET_MOVERESIZE_WINDOW" and event.data and len(event.data)==5:
+    def process_client_message_event(self, event):
+        if BaseWindowModel.process_client_message_event(self, event):
+            #already handled
+            return True
+        # FIXME
+        # Need to listen for:
+        #   _NET_CURRENT_DESKTOP
+        #   _NET_REQUEST_FRAME_EXTENTS
+        #   _NET_WM_PING responses
+        # and maybe:
+        #   _NET_RESTACK_WINDOW
+        #   _NET_WM_STATE (more fully)
+        def update_wm_state(prop):
+            current = self.get_property(prop)
+            mode = event.data[0]
+            if mode==_NET_WM_STATE_ADD:
+                v = True
+            elif mode==_NET_WM_STATE_REMOVE:
+                v = False
+            elif mode==_NET_WM_STATE_TOGGLE:
+                v = not bool(current)
+            else:
+                log.warn("invalid mode for _NET_WM_STATE: %s", mode)
+                return
+            log("do_xpra_client_message_event(%s) window %s=%s after %s (current state=%s)", event, prop, v, STATE_STRING.get(mode, mode), current)
+            if v!=current:
+                self.set_property(prop, v)
+
+        if event.message_type=="_NET_WM_STATE":
+            atom1 = get_pyatom(event.window, event.data[1])
+            log("_NET_WM_STATE: %s", atom1)
+            if atom1=="_NET_WM_STATE_FULLSCREEN":
+                update_wm_state("fullscreen")
+            elif atom1=="_NET_WM_STATE_ABOVE":
+                update_wm_state("above")
+            elif atom1=="_NET_WM_STATE_BELOW":
+                update_wm_state("below")
+            elif atom1=="_NET_WM_STATE_SHADED":
+                update_wm_state("shaded")
+            elif atom1=="_NET_WM_STATE_STICKY":
+                update_wm_state("sticky")
+            elif atom1=="_NET_WM_STATE_SKIP_TASKBAR":
+                update_wm_state("skip-taskbar")
+            elif atom1=="_NET_WM_STATE_SKIP_PAGER":
+                update_wm_state("skip-pager")
+                get_pyatom(event.window, event.data[2])
+            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                atom2 = get_pyatom(event.window, event.data[2])
+                #we only have one state for both, so we require both to be set:
+                if atom1!=atom2 and atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                    update_wm_state("maximized")
+            elif atom1=="_NET_WM_STATE_HIDDEN":
+                log("ignoring 'HIDDEN' _NET_WM_STATE: %s", event)
+                #we don't honour those because they make little sense, see:
+                #https://mail.gnome.org/archives/wm-spec-list/2005-May/msg00004.html
+                pass
+            elif atom1=="_NET_WM_STATE_MODAL":
+                update_wm_state("modal")
+            else:
+                log.info("do_xpra_client_message_event(%s) unhandled atom=%s", event, atom1)
+            return True
+        elif event.message_type=="WM_CHANGE_STATE":
+            log("WM_CHANGE_STATE: %s", event.data[0])
+            if event.data[0]==IconicState and event.serial>self.last_unmap_serial:
+                self._internal_set_property("iconic", True)
+            return True
+        elif event.message_type=="_NET_WM_MOVERESIZE":
+            log("_NET_WM_MOVERESIZE: %s", event)
+            self.emit("initiate-moveresize", event)
+            return True
+        elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data[0] in (0, 1):
+            log("_NET_ACTIVE_WINDOW: %s", event)
+            self.set_active()
+            self.emit("raised", event)
+            return True
+        elif event.message_type=="_NET_WM_DESKTOP":
+            workspace = int(event.data[0])
+            #query the workspace count on the root window
+            #since we cannot access Wm from here..
+            root = self.client_window.get_screen().get_root_window()
+            ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
+            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
+            if ndesktops>0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or (workspace>=0 and workspace<ndesktops)):
+                self.move_to_workspace(workspace)
+            else:
+                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
+            return True
+        elif event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
+            log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
+            #TODO: we should validate the indexes instead of copying them blindly!
+            m1, m2, m3, m4 = event.data[0], event.data[1], event.data[2], event.data[3]
+            N = 16      #FIXME: arbitrary limit
+            if m1<0 or m1>=N or m2<0 or m2>=N or m3<0 or m3>=N or m4<0 or m4>=N:
+                log.warn("invalid list of _NET_WM_FULLSCREEN_MONITORS - ignored")
+                return
+            monitors = [m1, m2, m3, m4]
+            log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
+            prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
+            return True
+        elif event.message_type=="_NET_MOVERESIZE_WINDOW":
             #TODO: honour gravity, show source indication
             geom = self.corral_window.get_geometry()
             x, y, w, h, _ = geom
@@ -1157,8 +1170,10 @@ class WindowModel(BaseWindowModel):
             log("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
             with xswallow:
                 X11Window.configureAndNotify(self.client_window.xid, x, y, w, h)
-            return
-        BaseWindowModel.do_xpra_client_message_event(self, event)
+            return True
+        #not handled:
+        return False
+
 
     def do_xpra_xkb_event(self, event):
         log("WindowModel.do_xpra_xkb_event(%r)" % event)
