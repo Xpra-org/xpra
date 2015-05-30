@@ -332,6 +332,10 @@ class WindowVideoSource(WindowSource):
             #window is too small!
             return nonvideo()
 
+        #ensure the dimensions we use for decision making are the ones actually used:
+        ww = ww & self.width_mask
+        wh = wh & self.height_mask
+
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #video encoder cannot handle this size!
             #(maybe this should be an 'assert' statement here?)
@@ -370,9 +374,6 @@ class WindowVideoSource(WindowSource):
             #below threshold
             return nonvideo()
 
-        #ensure the dimensions we use for decision making are the ones actually used:
-        ww = ww & self.width_mask
-        wh = wh & self.height_mask
         if ww<self.min_w or ww>self.max_w or wh<self.min_h or wh>self.max_h:
             #failsafe:
             return nonvideo()
