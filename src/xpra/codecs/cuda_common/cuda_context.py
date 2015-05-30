@@ -35,6 +35,8 @@ def record_device_success(device_id):
 
 
 def device_info(d):
+    if not d:
+        return "None"
     return "%s @ %s" % (d.name(), d.pci_bus_id())
 
 def get_pycuda_version():
