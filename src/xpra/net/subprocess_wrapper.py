@@ -365,7 +365,7 @@ class subprocess_caller(object):
 
     def _fire_callback(self, signal_name, extra_args=[]):
         callbacks = self.signal_callbacks.get(signal_name)
-        log("firing callback for %s: %s", signal_name, callbacks)
+        log("firing callback for '%s': %s", signal_name, callbacks)
         if callbacks:
             for cb, args in callbacks:
                 try:
