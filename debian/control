@@ -28,7 +28,6 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy
-        ,xserver-xorg-input-void
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl

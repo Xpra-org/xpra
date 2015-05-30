@@ -101,7 +101,7 @@ Requires: python-rencode
 Requires: python-pillow
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
-Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
+Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 Requires: %{libvpx}
 Requires: %{libwebp}
 Requires: x264-xpra
