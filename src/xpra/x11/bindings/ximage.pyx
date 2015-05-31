@@ -191,15 +191,15 @@ SBFirst = {
            LSBFirst : "LSBFirst"
            }
 
-cdef char *XRGB = "XRGB"
-cdef char *BGRX = "BGRX"
-cdef char *ARGB = "ARGB"
-cdef char *BGRA = "BGRA"
-cdef char *RGB = "RGB"
-cdef char *RGBA = "RGBA"
-cdef char *RGBX = "RGBX"
+cdef const char *XRGB = "XRGB"
+cdef const char *BGRX = "BGRX"
+cdef const char *ARGB = "ARGB"
+cdef const char *BGRA = "BGRA"
+cdef const char *RGB = "RGB"
+cdef const char *RGBA = "RGBA"
+cdef const char *RGBX = "RGBX"
 
-cdef char *RGB_FORMATS[8]
+cdef const char *RGB_FORMATS[8]
 RGB_FORMATS[0] = XRGB
 RGB_FORMATS[1] = BGRX
 RGB_FORMATS[2] = ARGB
@@ -226,7 +226,7 @@ cdef class XImageWrapper:
     cdef int rowstride
     cdef int planes
     cdef int thread_safe
-    cdef char *pixel_format
+    cdef const char *pixel_format
     cdef char *pixels
     cdef object del_callback
     cdef uint64_t timestamp
