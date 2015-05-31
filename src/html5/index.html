@@ -215,13 +215,13 @@
 				    client.callback_close = function(reason) {
 				    	if(submit) {
 				    		if(reason) {
-				    			window.location="/connect.html?disconnect="+reason;
+				    			window.location="connect.html?disconnect="+reason;
 				    		} else {
-				    			window.location="/connect.html?disconnect=Connection closed (socket closed)";
+				    			window.location="connect.html?disconnect=Connection closed (socket closed)";
 				    		}
 				    	} else {
 					    	// if we didn't submit through the form, silently redirect to the connect gui
-					    	window.location="/connect.html";
+					    	window.location="connect.html";
 					    }
 				    }
 				}
