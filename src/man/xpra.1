@@ -754,16 +754,14 @@ Allow the client to forward its log output to the server.
 .SS Options for attach
 .TP
 \fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
-Select the level of zlib compression xpra will use when transmitting data
-over the network.  Higher levels of compression transmit less data over
-the network, but use more CPU power.  Valid options are between 0
-(meaning no compression) and 9, inclusive.  Higher levels take
-progressively more CPU while giving diminishing returns in terms of
-actual compression achieved; the default is 3, which gives a
-reasonable trade-off in general.
-If lz4 compression is available, it will be enabled when the level
-is set to 1, lz4 compresses a lot less than zlib but it is also
-much faster.
+Select the level of compression xpra will use when transmitting data
+over the network.
+With the \fBlz4\fP and \fBlzo\fP compressors,
+there are only two possible values:
+0 (meaning no compression) and 1 (compression enabled).
+The \fBzlib\fP compressor supports values between 0
+(meaning no compression) and 9, inclusive. It should only be used
+when \fBlz4\fP and \fBlzo\fP are not available.
 
 This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
