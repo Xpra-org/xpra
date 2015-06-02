@@ -2,10 +2,10 @@
 Name=Xpra Launcher
 Comment=Connect to an Xpra session
 TryExec=xpra_launcher
-Exec=xpra_launcher
+Exec=xpra_launcher %f
 Icon=xpra
 Terminal=false
 Type=Application
 StartupNotify=false
 Categories=Network;
-MimeType=text/x-xpraconfig;
+MimeType=application/x-xpraconfig;
