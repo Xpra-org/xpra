@@ -47,6 +47,7 @@ LARGE_PACKET_SIZE = 4096
 #inline compressed data in packet if smaller than:
 INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 32768))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
+MIN_COMPRESS_SIZE = int(os.environ.get("XPRA_MIN_COMPRESS_SIZE", 378))
 
 
 def get_network_caps():
@@ -433,7 +434,7 @@ class Protocol(object):
         packet = list(packet_in)
         level = self.compression_level
         size_check = LARGE_PACKET_SIZE
-        min_comp_size = 378
+        min_comp_size = MIN_COMPRESS_SIZE
         for i in range(1, len(packet)):
             item = packet[i]
             ti = type(item)
