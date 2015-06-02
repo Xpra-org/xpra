@@ -1,6 +1,14 @@
 v0.16.0 (2015-05-03)
 ======================
-	-- TODO
+	-- remove more legacy code
+	-- audio-video synchronization
+	-- use newer memoryview interface by default on Python 2.7 and later
+	-- enable OpenGL accelerated rendering by default on all platforms
+	-- add more sanity checks to codecs and csc modules
+	-- improved Python3 support
+	-- use XShm for override-redirect windows
+	-- use palib for in-process access to pulseaudio API
+	-- replace calls to setxkbmap with native X11 API
 
 
 v0.15.0 (2015-04-28)
