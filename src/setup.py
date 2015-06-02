@@ -655,8 +655,9 @@ def get_conf_dir(install_dir, stripbuildroot=True):
         if "BUILDROOT" in dirs:
             if "debian" in dirs and "tmp" in dirs:
                 #ugly fix for stripping the debian tmp dir:
-                #ie: "???/tags/v0.15.x/src/debian/tmp/" -> ""
-                dirs = dirs[dirs.index("tmp")+2:]
+                #ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
+                while "tmp" in dirs:
+                    dirs = dirs[dirs.index("tmp")+1:]
             else:
                 #strip rpm style build root:
                 #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
