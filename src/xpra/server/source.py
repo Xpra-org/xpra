@@ -45,7 +45,7 @@ from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOU
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
-MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "10"))
+MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "20"))
 ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
 try:
     GRACE_PERCENT = int(os.environ.get("XPRA_GRACE_PERCENT", "90"))
