@@ -17,9 +17,11 @@ from xpra.os_util import memoryview_to_bytes
 lz4_version = None
 try:
     import lz4
-    from lz4 import LZ4_compress, LZ4_uncompress        #@UnresolvedImport
+    from lz4 import LZ4_compress, compressHC, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     def lz4_compress(packet, level):
+        if level>=9:
+            return level | LZ4_FLAG, compressHC(packet)
         return level | LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
     if hasattr(lz4, "VERSION"):
