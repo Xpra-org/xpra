@@ -179,11 +179,9 @@ def fixup_video_all_or_none(options):
     options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
 
 def fixup_encodings(options):
-    from xpra.codecs.loader import ALL_OLD_ENCODING_NAMES_TO_NEW, PREFERED_ENCODING_ORDER
+    from xpra.codecs.loader import PREFERED_ENCODING_ORDER
     RENAME = {"jpg" : "jpeg"}
     if options.encoding:
-        #fix old encoding names if needed:
-        options.encoding = ALL_OLD_ENCODING_NAMES_TO_NEW.get(options.encoding, options.encoding)
         options.encoding = RENAME.get(options.encoding, options.encoding)
     estr = _csvstr(options.encodings)
     if estr=="all":

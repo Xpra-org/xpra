@@ -185,9 +185,6 @@ def has_codec(name):
     return name in codecs
 
 
-OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"}
-ALL_OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8", "rgb24" : "rgb"}
-
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl"
 ENCODER_CODECS = "PIL", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc3", "nvenc4", "nvenc5"
 DECODER_CODECS = "PIL", "dec_vpx", "dec_webp", "dec_avcodec2"
