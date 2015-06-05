@@ -24,7 +24,6 @@ CODEC_TO_MODULE = {"vpx"        : ["vpx"],
                    "swscale"    : ["csc_swscale"],
                    "cython"     : ["csc_cython"],
                    "opencl"     : ["csc_opencl"],
-                   "avcodec"    : ["dec_avcodec"],
                    "avcodec2"   : ["dec_avcodec2"]}
 
 def has_codec_module(module_name):
@@ -52,10 +51,10 @@ def try_import_modules(codec_names):
 ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "x265", "nvenc"])
 ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "cython", "opencl"])
 NO_GFX_CSC_OPTIONS = [x for x in ALL_CSC_MODULE_OPTIONS if x not in ("opencl", )]
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec", "avcodec2", "vpx"])
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec2", "vpx"])
 
 PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "x265"]
-PREFERRED_DECODER_ORDER = ["avcodec", "avcodec2", "vpx"]
+PREFERRED_DECODER_ORDER = ["avcodec2", "vpx"]
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: NO_GFX_CSC_OPTIONS=%s", NO_GFX_CSC_OPTIONS)
