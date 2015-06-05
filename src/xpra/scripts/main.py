@@ -336,7 +336,7 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Enable the web server and the html5 client. Default: '%default'.")
     else:
         hidden_options["tcp_proxy"] = ""
-        hidden_options["html5"] = ""
+        hidden_options["html"] = ""
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
         legacy_bool_parse("daemon")
         group.add_option("--daemon", action="store", metavar="yes|no",
