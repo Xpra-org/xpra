@@ -146,6 +146,7 @@ class ServerCore(object):
         #Features:
         self.digest_modes = ("hmac", )
         self.encryption_keyfile = None
+        self.tcp_encryption_keyfile = None
         self.password_file = None
         self.compression_level = 1
         self.exit_with_client = False
@@ -174,6 +175,7 @@ class ServerCore(object):
         self._socket_dir = opts.socket_dir
         self._tcp_proxy = opts.tcp_proxy
         self.encryption_keyfile = opts.encryption_keyfile
+        self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
@@ -382,8 +384,10 @@ class ServerCore(object):
         protocol.authenticator = None
         if socktype=="tcp":
             protocol.auth_class = self.tcp_auth_class
+            protocol.keyfile = self.tcp_encryption_keyfile
         else:
             protocol.auth_class = self.auth_class
+            protocol.keyfile = self.encryption_keyfile
         protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
         protocol.receive_aliases.update(self._aliases)
@@ -610,7 +614,7 @@ class ServerCore(object):
                 authlog.warn("unsupported cipher: %s", cipher)
                 auth_failed("unsupported cipher")
                 return False
-            encryption_key = self.get_encryption_key(proto.authenticator)
+            encryption_key = self.get_encryption_key(proto.authenticator, proto.keyfile)
             if encryption_key is None:
                 auth_failed("encryption key is missing")
                 return False
@@ -619,6 +623,10 @@ class ServerCore(object):
             auth_caps = new_cipher_caps(proto, cipher, encryption_key)
             authlog("server cipher=%s", auth_caps)
         else:
+            if proto.keyfile:
+                authlog.warn("client does not provide encryption tokens")
+                auth_failed("missing encryption")
+                return False
             auth_caps = None
 
         #verify authentication if required:
@@ -658,11 +666,11 @@ class ServerCore(object):
             return None
         return v.strip("\n\r")
 
-    def get_encryption_key(self, authenticator=None):
+    def get_encryption_key(self, authenticator=None, keyfile=None):
         #if we have a keyfile specified, use that:
-        if self.encryption_keyfile:
-            netlog("trying to load encryption key from keyfile: %s", self.encryption_keyfile)
-            return self.filedata_nocrlf(self.encryption_keyfile)
+        if keyfile:
+            netlog("trying to load encryption key from keyfile: %s", keyfile)
+            return self.filedata_nocrlf(keyfile)
         env_key = os.environ.get('XPRA_ENCRYPTION_KEY')
         if env_key:
             return env_key

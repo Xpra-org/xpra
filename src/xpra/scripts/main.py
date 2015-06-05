@@ -692,9 +692,19 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="encryption_keyfile", default=defaults.encryption_keyfile,
                           metavar="FILE",
                           help="Specifies the file containing the encryption key. (default: '%default')")
+        group.add_option("--tcp-encryption", action="store",
+                          dest="tcp_encryption", default=defaults.tcp_encryption,
+                          metavar="ALGO",
+                          help="Specifies the encryption cipher to use for TCP sockets, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
+        group.add_option("--tcp-encryption-keyfile", action="store",
+                          dest="tcp_encryption_keyfile", default=defaults.tcp_encryption_keyfile,
+                          metavar="FILE",
+                          help="Specifies the file containing the encryption key to use for TCP sockets. (default: '%default')")
     else:
         hidden_options["encryption"] = ''
+        hidden_options["tcp_encryption"] = ''
         hidden_options["encryption_keyfile"] = ''
+        hidden_options["tcp_encryption_keyfile"] = ''
 
     options, args = parser.parse_args(cmdline[1:])
 

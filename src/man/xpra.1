@@ -1,7 +1,7 @@
 .\" Man page for xpra
 .\"
 .\" Copyright (C) 2008-2009 Nathaniel Smith <njs@pobox.com>
-.\" Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+.\" Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 .\"
 .\" You may distribute under the terms of the GNU General Public
 .\" license, either version 2 or (at your option) any later version.
@@ -40,7 +40,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
+[\fB\-\-tcp\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
+[\fB\-\-tcp\-encryption\-keyfile\fP=\fIFILENAME\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
@@ -664,12 +666,20 @@ but only if the server supports this feature too.
 Note: this feature has not been extensively reviewed and as it is
 it should not be considered safe from determined attackers.
 .TP
+\fB\-\-tcp\-encryption\fP=\fICIPHER\fP
+Just like the \fBencryption\fP switch, except this one only applies
+to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
+.TP
 \fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP
 Specifies the key to use with the encryption cipher specified
 with \fB\-\-encryption\fP.  The client and server must use the
 same keyfile contents.
 Instead of using this option, the key can be provided
 via the \fBXPRA_ENCRYPTION_KEY\fP environment variable.
+.TP
+\fB\-\-tcp\-encryption\-keyfile\fP=\fIFILENAME\fP
+Just like the \fBencryption\-keyfile\fP switch, except this one only applies
+to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 .TP
 \fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP
 The connection will be terminated if there is no user activity

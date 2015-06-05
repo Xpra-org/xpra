@@ -195,7 +195,7 @@ class ProxyServer(ServerCore):
         if auth_caps:
             cipher = auth_caps.get("cipher")
             if cipher:
-                encryption_key = self.get_encryption_key(client_proto.authenticator)
+                encryption_key = self.get_encryption_key(client_proto.authenticator, client_proto.keyfile)
         log("start_proxy(..) client connection=%s", client_conn)
         log("start_proxy(..) client state=%s", client_state)
 
