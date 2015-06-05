@@ -225,9 +225,13 @@ packet-encoders = rencode, bencode, yaml
 #socket-dir = /tmp
 #socket-dir = ~/.xpra
 
-# Idle timeout in seconds:
+# Session idle timeout in seconds:
 #idle-timeout = 120
 idle-timeout = 0
+
+# Server idle timeout in seconds:
+#server-idle-timeout = 600
+server-idle-timeout = 0
 
 
 ################################################################################

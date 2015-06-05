@@ -382,6 +382,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--idle-timeout", action="store",
                       dest="idle_timeout", type="int", default=defaults.idle_timeout,
                       help="Disconnects the client when idle (0 to disable). Default: %s seconds" % defaults.idle_timeout)
+    group.add_option("--server-idle-timeout", action="store",
+                      dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
+                      help="Exits the server when idle (0 to disable). Default: %s seconds" % defaults.server_idle_timeout)
     if supports_server:
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,

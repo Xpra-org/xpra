@@ -22,6 +22,7 @@ netlog = Logger("network")
 proxylog = Logger("proxy")
 commandlog = Logger("command")
 authlog = Logger("auth")
+timeoutlog = Logger("timeout")
 
 import xpra
 from xpra.server import ClientException
@@ -150,6 +151,8 @@ class ServerCore(object):
         self.password_file = None
         self.compression_level = 1
         self.exit_with_client = False
+        self.server_idle_timeout = 0
+        self.server_idle_timer = None
 
         #control mode:
         self.control_commands = ["hello"]
@@ -179,6 +182,7 @@ class ServerCore(object):
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
+        self.server_idle_timeout = opts.server_idle_timeout
 
         self.init_auth(opts)
 
@@ -330,6 +334,7 @@ class ServerCore(object):
                 except Exception as e:
                     log.error("error on %s: %s", x, e)
         self.idle_add(start_ready_callbacks)
+        self.idle_add(self.reset_server_timeout)
         def print_ready():
             log.info("xpra is ready.")
             sys.stdout.flush()
@@ -728,6 +733,22 @@ class ServerCore(object):
         proto.send_aliases = c.dictget("aliases")
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
+        self.reset_server_timeout(False)
+
+    def reset_server_timeout(self, reschedule=True):
+        timeoutlog("reset_server_timeout(%s) server_idle_timeout=%s, server_idle_timer=%s", reschedule, self.server_idle_timeout, self.server_idle_timer)
+        if self.server_idle_timeout<=0:
+            return
+        if self.server_idle_timer:
+            self.source_remove(self.server_idle_timer)
+            self.server_idle_timer = None
+        if reschedule:
+            self.server_idle_timer = self.timeout_add(self.server_idle_timeout*1000, self.server_idle_timedout)
+
+    def server_idle_timedout(self, *args):
+        timeoutlog.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
+        self.quit(False)
+
 
     def make_hello(self, source):
         now = time.time()
@@ -800,6 +821,7 @@ class ServerCore(object):
                 "mode"              : self.get_server_mode(),
                 "type"              : "Python",
                 "start_time"        : int(self.start_time),
+                "idle-timeout"      : int(self.server_idle_timeout),
                 "authenticator"     : str((self.auth_class or str)("")),
                 "argv"              : sys.argv,
                 "path"              : sys.path,

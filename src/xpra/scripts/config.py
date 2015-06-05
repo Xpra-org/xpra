@@ -287,6 +287,7 @@ OPTION_TYPES = {
                     "scaling"           : int,
                     "file-size-limit"   : int,
                     "idle-timeout"      : int,
+                    "server-idle-timeout" : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -396,6 +397,7 @@ def get_defaults():
                     "scaling"           : 1,
                     "file-size-limit"   : 10,
                     "idle-timeout"      : 0,
+                    "server-idle-timeout" : 0,
                     "auto-refresh-delay": 0.25,
                     "daemon"            : True,
                     "use-display"       : False,

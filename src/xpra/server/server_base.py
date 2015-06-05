@@ -136,7 +136,7 @@ class ServerBase(ServerCore):
                     "sound-output",
                     "scaling", "scaling-control",
                     "suspend", "resume", "name", "ungrab",
-                    "key", "focus", "workspace", "idle-timeout",
+                    "key", "focus", "workspace", "idle-timeout", "server-idle-timeout",
                     "client", "start", "start-child",
                     "send-file", "print"]
 
@@ -616,11 +616,13 @@ class ServerBase(ServerCore):
             self.server_event("connection-lost", source.uuid)
             source.close()
             del self._server_sources[protocol]
-            if self.exit_with_client:
-                netlog.info("Last client has disconnected, terminating")
-                self.quit(0)
-            else:
-                netlog.info("xpra client disconnected.")
+            if len(self._server_sources)==0:
+                if self.exit_with_client:
+                    netlog.info("Last client has disconnected, terminating")
+                    self.quit(False)
+                else:
+                    netlog.info("xpra client disconnected.")
+                    self.reset_server_timeout(True)
         return source
 
     def is_timedout(self, protocol):
@@ -743,9 +745,8 @@ class ServerBase(ServerCore):
             #same for xsettings and double click settings:
             #fake an empty xsettings update:
             self.update_server_settings({"xsettings-blob" : (0, [])}, reset=reset)
-        #max packet size from client (the biggest we can get are clipboard packets)
-        proto.max_packet_size = 1024*1024  #1MB
-        proto.send_aliases = c.dictget("aliases")
+
+        self.accept_client(proto, c)
         #use blocking sockets from now on:
         self.set_socket_timeout(proto._conn, None)
 
@@ -1268,6 +1269,14 @@ class ServerBase(ServerCore):
                 csource.idle_timeout = t
                 csource.schedule_idle_timeout()
             return 0, "idle-timeout set to %s" % t
+        elif command=="server-idle-timeout":
+            if len(args)!=1:
+                return argn_err(1)
+            t = int(args[0])
+            self.server_idle_timeout = t
+            reschedule = len(self._server_sources)==0
+            self.reset_server_timeout(reschedule)
+            return 0, "server-idle-timeout set to %s" % t
         elif command=="workspace":
             if len(args)!=2:
                 return argn_err(2)
