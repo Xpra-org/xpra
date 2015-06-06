@@ -38,13 +38,20 @@ if CLIPBOARDS_ENV is not None:
 
 TEST_DROP_CLIPBOARD_REQUESTS = int(os.environ.get("XPRA_TEST_DROP_CLIPBOARD", "0"))
 
-_discard_target_strs_ = ("^SAVE_TARGETS$",
-        "^COMPOUND_TEXT$",
-        "^NeXT ",
+_discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
+if _discard_target_strs_ is not None:
+    DISCARD_TARGETS = _discard_target_strs_.split(",")
+else:
+    #default:
+    DISCARD_TARGETS = [
+        "^SAVE_TARGETS$",
+        "^COMPOUND_TEXT",
+        "^NeXT",
         "^com\.apple\.",
-        "^CorePasteboardFlavorType ",
-        "^dyn\.")
-DISCARD_TARGETS = [re.compile(x) for x in _discard_target_strs_]
+        "^CorePasteboardFlavorType",
+        "^dyn\."]
+log("DISCARD_TARGETS=%s", DISCARD_TARGETS)
+DISCARD_TARGETS = [re.compile(x) for x in DISCARD_TARGETS]
 
 TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
