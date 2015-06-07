@@ -108,6 +108,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
+        #add platform hooks
+        self.connect("realize", self.on_realize)
+        self.connect('unrealize', self.on_unrealize)
+        self.set_app_paintable(True)
+        self.add_events(self.WINDOW_EVENT_MASK)
         ClientWindowBase.init_window(self, metadata)
 
     def _is_popup(self, metadata):
@@ -168,12 +173,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def setup_window(self):
-        self.set_app_paintable(True)
-        self.add_events(self.WINDOW_EVENT_MASK)
-        #add platform hooks
-        self.connect("realize", self.on_realize)
-        self.connect('unrealize', self.on_unrealize)
-
         self.set_alpha()
 
         if self._override_redirect:
