@@ -103,7 +103,7 @@ DBUS_PATH="/com/redhat/PrinterSpooler"
 DBUS_IFACE="com.redhat.PrinterSpooler"
 def handle_dbus_signal(*args):
     global printers_modified_callback
-    log.info("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
+    log("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
     printers_modified_callback()
 
 def init_dbus_listener():
