@@ -195,7 +195,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #honour the initial position if the flag is set
         #(or just if non zero, for older servers)
         if self._pos!=(0, 0) or self._set_initial_position:
-            self.move(*self._pos)
+            x,y = self._pos
+            if not self.is_OR():
+                #try to adjust for window frame size if we can figure it out:
+                wfs = get_window_frame_sizes()
+                dx, dy = 0, 0
+                if wfs:
+                    log("setup_window() window frame sizes=%s", wfs)
+                    v = wfs.get("normal")
+                    if v:
+                        dx, dy = v
+                    dy += wfs.get("caption", 0)
+                    if dx:
+                        x = max(0, x-dx)
+                    if dy:
+                        y = max(0, y-dy)
+            self.move(x, y)
         self.set_default_size(*self._size)
 
     def set_alpha(self):
