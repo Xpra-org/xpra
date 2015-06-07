@@ -220,7 +220,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def on_realize(self, widget):
-        eventslog.info("on_realize(%s)", widget)
+        eventslog("on_realize(%s)", widget)
         add_window_hooks(self)
 
     def on_unrealize(self, widget):
