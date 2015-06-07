@@ -27,6 +27,7 @@ from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import get_window_frame_sizes, set_fullscreen_monitors, set_shaded
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
+from xpra.platform.gui import add_window_hooks, remove_window_hooks
 gtk     = import_gtk()
 gdk     = import_gdk()
 cairo   = import_cairo()
@@ -169,6 +170,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def setup_window(self):
         self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
+        #add platform hooks
+        self.connect("realize", self.on_realize)
+        self.connect('unrealize', self.on_unrealize)
+
         self.set_alpha()
 
         if self._override_redirect:
@@ -213,6 +218,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.move(x, y)
         self.set_default_size(*self._size)
 
+
+    def on_realize(self, widget):
+        eventslog.info("on_realize(%s)", widget)
+        add_window_hooks(self)
+
+    def on_unrealize(self, widget):
+        eventslog("on_unrealize(%s)", widget)
+        remove_window_hooks(self)
+
+
     def set_alpha(self):
         #try to enable alpha on this window if needed,
         #and if the backing class can support it:
@@ -234,15 +249,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def show(self):
-        if self.group_leader:
-            if not self.is_realized():
-                self.realize()
-            self.window.set_group(self.group_leader)
+        if not self.is_realized():
+            self.realize()
         gtk.Window.show(self)
-        #now it is realized, we can set WM_COMMAND (for X11 clients only)
-        command = self._metadata.strget("command")
-        if command and HAS_X11_BINDINGS:
-            prop_set(self.get_window(), "WM_COMMAND", "latin1", command.decode("latin1"))
 
 
     def window_state_updated(self, widget, event):
@@ -420,6 +429,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return self.flags() & gtk.REALIZED
 
 
+    def realize(self):
+        gtk.Window.realize(self)
+        if self.group_leader:
+            if not self.is_realized():
+                self.realize()
+            self.window.set_group(self.group_leader)
+        if HAS_X11_BINDINGS:
+            #now it is realized, we can set WM_COMMAND (for X11 clients only)
+            command = self._metadata.strget("command")
+            if command:
+                prop_set(self.get_window(), "WM_COMMAND", "latin1", command.decode("latin1"))
+
+
     def property_changed(self, widget, event):
         statelog("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
@@ -565,7 +587,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #root is a gdk window, so we need to ensure we have one
             #backing our gtk window to be able to call set_transient_for on it
             log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.get_window(), self.is_mapped())
-            if self.get_window() is None:
+            if not self.is_realized():
                 self.realize()
             self.get_window().set_transient_for(gtk.gdk.get_default_root_window())
         else:
