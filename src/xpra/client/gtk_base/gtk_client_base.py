@@ -30,7 +30,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import system_bell, get_workarea, get_workareas, get_fixed_cursor_size
+from xpra.platform.gui import get_window_frame_sizes, system_bell, get_workarea, get_workareas, get_fixed_cursor_size
 
 missing_cursor_names = set()
 
@@ -53,12 +53,33 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.client_supports_opengl = False
         self.opengl_enabled = False
         self.opengl_props = {}
+        #frame request hidden window:
+        self.frame_request_window = None
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
         UIXpraClient.init(self, opts)
 
+
+    def setup_frame_request_windows(self):
+        #query the window manager to get the frame size:
+        from xpra.client.gtk_base.gtk_client_window_base import CurrentTime, SubstructureNotifyMask, SubstructureRedirectMask, X11Window
+        from xpra.gtk_common.error import xsync
+        self.frame_request_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
+        root = gtk.gdk.get_default_root_window()
+        self.frame_request_window.realize()
+        with xsync:
+            event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+            win = self.frame_request_window.get_window()
+            X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
+                      "_NET_REQUEST_FRAME_EXTENTS",
+                      0, CurrentTime)
+
     def run(self):
+        from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
+        if HAS_X11_BINDINGS:
+            self.setup_frame_request_windows()
         UIXpraClient.run(self)
         gtk_main_quit_on_fatal_exceptions_enable()
         self.gtk_main()
@@ -173,6 +194,24 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         except:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return  None
+
+
+    def get_window_frame_sizes(self):
+        wfs = get_window_frame_sizes()
+        if self.frame_request_window:
+            def get_frame_extents(w):
+                from xpra.x11.gtk_x11.prop import prop_get
+                gdkwin = w.get_window()
+                assert gdkwin
+                v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+                log("get_frame_extents(%s)=%s", w.get_title(), v)
+                return v
+            v = get_frame_extents(self.frame_request_window)
+            if v:
+                l, _, t, _ = v
+                wfs["frame"] = v
+                wfs["offset"] = (l, t)
+        return wfs
 
 
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):

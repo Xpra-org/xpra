@@ -25,7 +25,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo,
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
-from xpra.platform.gui import get_window_frame_sizes, set_fullscreen_monitors, set_shaded
+from xpra.platform.gui import set_fullscreen_monitors, set_shaded
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 from xpra.platform.gui import add_window_hooks, remove_window_hooks
 gtk     = import_gtk()
@@ -156,20 +156,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             pass
         else:
             gtk.Window.set_decorated(self, decorated)
-        #win32 workaround for new window offsets:
-        #keep the window contents where they were and adjust the frame
-        #this generates a configure event which ensures the server has the correct window position
-        #if we end up implementing "get_window_frame_sizes" on other platforms,
-        #we may end up calling this code unnecessarily - meh
-        wfs = get_window_frame_sizes()
-        if wfs and decorated and not was_decorated:
-            normal = wfs.get("normal")
-            fixed = wfs.get("fixed")
-            if normal and fixed:
-                nx, ny = normal
-                fx, fy = fixed
-                x, y = self.get_position()
-                gtk.Window.move(self, max(0, x-nx+fx), max(0, y-ny+fy))
+        if WIN32:
+            #workaround for new window offsets:
+            #keep the window contents where they were and adjust the frame
+            #this generates a configure event which ensures the server has the correct window position
+            wfs = self._client.get_window_frame_sizes()
+            if wfs and decorated and not was_decorated:
+                normal = wfs.get("normal")
+                fixed = wfs.get("fixed")
+                if normal and fixed:
+                    nx, ny = normal
+                    fx, fy = fixed
+                    x, y = self.get_position()
+                    gtk.Window.move(self, max(0, x-nx+fx), max(0, y-ny+fy))
 
 
     def setup_window(self):
@@ -202,17 +201,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             x,y = self._pos
             if not self.is_OR():
                 #try to adjust for window frame size if we can figure it out:
-                wfs = get_window_frame_sizes()
+                wfs = self._client.get_window_frame_sizes()
                 dx, dy = 0, 0
                 if wfs:
                     log("setup_window() window frame sizes=%s", wfs)
-                    v = wfs.get("normal")
+                    v = wfs.get("offset")
                     if v:
                         dx, dy = v
-                    dy += wfs.get("caption", 0)
-                    if dx:
                         x = max(0, x-dx)
-                    if dy:
                         y = max(0, y-dy)
             self.move(x, y)
         self.set_default_size(*self._size)
@@ -445,6 +441,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         statelog("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             self.do_workspace_changed(event)
+        elif event.atom=="_NET_FRAME_EXTENTS":
+            v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+            statelog("_NET_FRAME_EXTENTS: %s", v)
         elif event.atom=="XKLAVIER_STATE":
             #unused for now, but log it:
             xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)

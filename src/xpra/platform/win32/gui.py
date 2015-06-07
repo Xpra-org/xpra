@@ -476,6 +476,7 @@ def get_window_frame_sizes():
                 "menu-bar"  : m,
                 "border"    : b,
                 "caption"   : c,
+                "offset"    : (rx, ry+c)
                 }
     except Exception as e:
         log.warn("failed to get window frame size information: %s", e)
