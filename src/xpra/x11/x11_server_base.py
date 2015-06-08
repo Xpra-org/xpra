@@ -7,8 +7,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-import os.path
-import sys
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11 import gdk_display_source
@@ -22,6 +20,7 @@ from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
 X11Core = X11CoreBindings()
 from xpra.gtk_common.error import XError, xswallow, xsync
 from xpra.server.server_uuid import save_uuid, get_uuid
+from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 
 from xpra.log import Logger
 log = Logger("x11", "server")
@@ -30,8 +29,6 @@ mouselog = Logger("x11", "server", "mouse")
 grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 
-from xpra.util import prettify_plug_name
-from xpra.os_util import find_lib, find_lib_ldconfig
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
@@ -97,24 +94,24 @@ class X11ServerBase(GTKServerBase):
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
         #if some x11 atoms aren't defined, so we define them in advance:
-        for atom_name in ["_NET_WM_WINDOW_TYPE",
-                          "_NET_WM_WINDOW_TYPE_NORMAL",
-                          "_NET_WM_WINDOW_TYPE_DESKTOP",
-                          "_NET_WM_WINDOW_TYPE_DOCK",
-                          "_NET_WM_WINDOW_TYPE_TOOLBAR",
-                          "_NET_WM_WINDOW_TYPE_MENU",
-                          "_NET_WM_WINDOW_TYPE_UTILITY",
-                          "_NET_WM_WINDOW_TYPE_SPLASH",
-                          "_NET_WM_WINDOW_TYPE_DIALOG",
-                          "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
-                          "_NET_WM_WINDOW_TYPE_POPUP_MENU",
-                          "_NET_WM_WINDOW_TYPE_TOOLTIP",
-                          "_NET_WM_WINDOW_TYPE_NOTIFICATION",
-                          "_NET_WM_WINDOW_TYPE_COMBO",
-                          "_NET_WM_WINDOW_TYPE_DND",
-                          "_NET_WM_WINDOW_TYPE_NORMAL"
-                          ]:
-            X11Core.get_xatom(atom_name)
+        for wtype in ["",
+                      "_NORMAL",
+                      "_DESKTOP",
+                      "_DOCK",
+                      "_TOOLBAR",
+                      "_MENU",
+                      "_UTILITY",
+                      "_SPLASH",
+                      "_DIALOG",
+                      "_DROPDOWN_MENU",
+                      "_POPUP_MENU",
+                      "_TOOLTIP",
+                      "_NOTIFICATION",
+                      "_COMBO",
+                      "_DND",
+                      "_NORMAL"
+                      ]:
+            X11Core.get_xatom("_NET_WM_WINDOW_TYPE"+wtype)
 
     def init_keyboard(self):
         GTKServerBase.init_keyboard(self)
@@ -128,23 +125,13 @@ class X11ServerBase(GTKServerBase):
 
 
     def get_child_env(self):
-        #adds fakexinerama:
+        #adds fakeXinerama:
         env = GTKServerBase.get_child_env(self)
         if self.fake_xinerama:
-            libfakeXinerama_so = self.find_fakeXinerama()
+            libfakeXinerama_so = find_libfakeXinerama()
             if libfakeXinerama_so:
                 env["LD_PRELOAD"] = libfakeXinerama_so
         return env
-
-    def find_fakeXinerama(self):
-        if sys.platform.startswith("linux"):
-            try:
-                libpath = find_lib_ldconfig("fakeXinerama")
-                if libpath:
-                    return libpath
-            except:
-                log.warn("Failed to launch ldconfig -p")
-        return find_lib("libfakeXinerama.so.1")
 
 
     def get_uuid(self):
@@ -191,7 +178,7 @@ class X11ServerBase(GTKServerBase):
         except:
             pass
         try:
-            fx = self.find_fakeXinerama()
+            fx = find_libfakeXinerama()
         except:
             fx = None
         info["server.fakeXinerama"] = self.fake_xinerama and bool(fx)
@@ -351,7 +338,14 @@ class X11ServerBase(GTKServerBase):
         log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
         #now actually apply the new settings:
         w, h = new_size
-        xinerama_changed = self.save_fakexinerama_config()
+        #fakeXinerama:
+        ui_clients = [s for s in self._server_sources.values() if s.ui_client]
+        source = None
+        if len(ui_clients)==1:
+            source = ui_clients[0]
+        else:
+            log("fakeXinerama can only be enabled for a single client (found %s)" % len(ui_clients))
+        xinerama_changed = save_fakeXinerama_config(self.fake_xinerama, source, source.screen_sizes)
         #we can only keep things unchanged if xinerama was also unchanged
         #(many apps will only query xinerama again if they get a randr notification)
         if (w==root_w and h==root_h) and not xinerama_changed:
@@ -405,88 +399,10 @@ class X11ServerBase(GTKServerBase):
             log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return  root_w, root_h
 
-    def save_fakexinerama_config(self):
-        """ returns True if the fakexinerama config was modified """
-        xinerama_files = self.get_xinerama_filenames()
-        def delfile(msg):
-            if msg:
-                log.warn(msg)
-            self.cleanup_fakexinerama()
-            oldconf = self.current_xinerama_config
-            self.current_xinerama_config = None
-            return oldconf is not None
-        if not self.fake_xinerama:
-            return delfile(None)
-        ui_client_count = len([True for s in self._server_sources.values() if s.ui_client])
-        if ui_client_count!=1:
-            return delfile("fakeXinerama can only be enabled for a single client (found %s)" % ui_client_count)
-        source = self._server_sources.values()[0]
-        ss = source.screen_sizes
-        if len(ss)==0:
-            return delfile("cannot save fake xinerama settings: no display found")
-        if len(ss)>1:
-            return delfile("cannot save fake xinerama settings: more than one display found")
-        if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
-            #just WxH, not enough display information
-            return delfile("cannot save fake xinerama settings: missing display data from client %s" % source)
-        display_info = ss[0]
-        if len(display_info)<10:
-            return delfile("cannot save fake xinerama settings: incomplete display data from client %s" % source)
-        #display_name, width, height, width_mm, height_mm, \
-        #monitors, work_x, work_y, work_width, work_height = s[:11]
-        monitors = display_info[5]
-        if len(monitors)>=10:
-            return delfile("cannot save fake xinerama settings: too many monitors! (%s)" % len(monitors))
-        #generate the file data:
-        from xpra import __version__
-        data = ["# file generated by xpra %s for display %s" % (__version__, os.environ.get("DISPLAY")),
-                "# %s monitors:" % len(monitors),
-                "%s" % len(monitors)]
-        #the new config (numeric values only)
-        config = [len(monitors)]
-        for i, m in enumerate(monitors):
-            if len(m)<7:
-                return delfile("cannot save fake xinerama settings: incomplete monitor data for monitor: %s" % m)
-            plug_name, x, y, width, height, wmm, hmm = m[:7]
-            data.append("# %s (%smm x %smm)" % (prettify_plug_name(plug_name, "monitor %s" % i), wmm, hmm))
-            data.append("%s %s %s %s" % (x, y, width, height))
-            config.append((x, y, width, height))
-        if self.current_xinerama_config==config:
-            #we assume that no other process is going to overwrite the deprecated .fakexinerama
-            log("fake xinerama config unchanged")
-            return False
-        self.current_xinerama_config = config
-        data.append("")
-        contents = "\n".join(data)
-        for filename in xinerama_files:
-            try:
-                with open(filename, 'wb') as f:
-                    f.write(contents)
-            except Exception as e:
-                log.warn("error writing fake xinerama file %s: %s", filename, e)
-        log("saved %s monitors to fake xinerama files: %s", len(monitors), xinerama_files)
-        return True
-
-    def get_xinerama_filenames(self):
-        return [
-                #the new fakexinerama file:
-                os.path.expanduser("~/.%s-fakexinerama" % os.environ.get("DISPLAY")),
-                #compat file for "old" version found on github:
-                os.path.expanduser("~/.fakexinerama"),
-               ]
-
-    def cleanup_fakexinerama(self):
-        for f in self.get_xinerama_filenames():
-            try:
-                if os.path.exists(f):
-                    log=("cleanup_fakexinerama() deleting fake xinerama file '%s'", f)
-                    os.unlink(f)
-            except Exception as e:
-                log.warn("cleanup_fakexinerama() error deleting fake xinerama file '%s': %s", f, e)
 
     def cleanup(self, *args):
         GTKServerBase.cleanup(self)
-        self.cleanup_fakexinerama()
+        cleanup_fakeXinerama()
 
 
     def _process_server_settings(self, proto, packet):
