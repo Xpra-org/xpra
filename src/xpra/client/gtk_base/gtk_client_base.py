@@ -197,7 +197,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def request_frame_extents(self, window):
-        from xpra.client.gtk_base.gtk_client_window_base import CurrentTime, SubstructureNotifyMask, SubstructureRedirectMask, X11Window
+        from xpra.client.gtk_base.gtk_client_window_base import SubstructureNotifyMask, SubstructureRedirectMask, X11Window
         from xpra.gtk_common.error import xsync
         root = gtk.gdk.get_default_root_window()
         with xsync:
@@ -205,8 +205,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             win = window.get_window()
             log("request_frame_extents(%s)", window.get_title())
             X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
-                      "_NET_REQUEST_FRAME_EXTENTS",
-                      0, CurrentTime)
+                      "_NET_REQUEST_FRAME_EXTENTS")
 
     def get_frame_extents(self, w):
         if not HAS_X11_BINDINGS:
