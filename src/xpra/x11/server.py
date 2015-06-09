@@ -229,10 +229,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
         if source.wants_features:
-            capabilities["window.raise"] = True
-            capabilities["window.resize-counter"] = True
-            capabilities["window.configure.skip-geometry"] = True
-            capabilities["pointer.grabs"] = True
+            capabilities.update({
+                "window.frame-extents"          : True,
+                "window.raise"                  : True,
+                "window.resize-counter"         : True,
+                "window.configure.skip-geometry": True,
+                "pointer.grabs"                 : True,
+                })
         return capabilities
 
 

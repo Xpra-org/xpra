@@ -207,6 +207,7 @@ class UIXpraClient(XpraClientBase):
         self.xsettings_enabled = False
         self.server_dbus_proxy = False
         self.start_new_commands = False
+        self.server_window_frame_extents = False
 
         self.client_supports_opengl = False
         self.client_supports_notifications = False
@@ -1314,6 +1315,7 @@ class UIXpraClient(XpraClientBase):
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         self.start_new_commands = c.boolget("start-new-commands")
+        self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = c.intget("mmap_token")

@@ -449,13 +449,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
             statelog("_NET_FRAME_EXTENTS: %s", v)
             if v:
-                self._window_state["frame"] = v
-                if self.is_OR() and not self._client.window_configure_skip_geometry:
+                if self.is_OR():
                     #we can't do it: the server can't handle configure packets for OR windows!
+                    return
+                if not self._client.window_configure_skip_geometry or not self._client.server_window_frame_extents:
+                    #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
                     return
                 #tell server about new value:
                 #TODO: don't bother if unchanged
-                statelog("sending configure event to update _NET_FRAME_EXTENTS")
+                statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
+                self._window_state["frame"] = v
                 self.process_configure_event(True)
         elif event.atom=="XKLAVIER_STATE":
             #unused for now, but log it:
@@ -672,7 +675,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
-        if "frame" not in state:
+        if self._client.server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
             if wfs:
                 state["frame"] = wfs
