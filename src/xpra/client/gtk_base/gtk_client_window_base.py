@@ -201,6 +201,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             x,y = self._pos
             if not self.is_OR():
                 #try to adjust for window frame size if we can figure it out:
+                #Note: we cannot just call self.get_window_frame_size() here because
+                #the window is not realized yet, and it may take a while for the window manager
+                #to set the frame-extents property anyway
                 wfs = self._client.get_window_frame_sizes()
                 dx, dy = 0, 0
                 if wfs:
@@ -435,6 +438,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             command = self._metadata.strget("command")
             if command:
                 prop_set(self.get_window(), "WM_COMMAND", "latin1", command.decode("latin1"))
+            self._client.request_frame_extents(self)
 
 
     def property_changed(self, widget, event):
@@ -444,6 +448,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         elif event.atom=="_NET_FRAME_EXTENTS":
             v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
             statelog("_NET_FRAME_EXTENTS: %s", v)
+            if v:
+                self._window_state["frame"] = v
+                if self.is_OR() and not self._client.window_configure_skip_geometry:
+                    #we can't do it: the server can't handle configure packets for OR windows!
+                    return
+                #tell server about new value:
+                #TODO: don't bother if unchanged
+                statelog("sending configure event to update _NET_FRAME_EXTENTS")
+                self.process_configure_event(True)
         elif event.atom=="XKLAVIER_STATE":
             #unused for now, but log it:
             xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
@@ -659,11 +672,24 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
             self._window_workspace = workspace
             props["workspace"] = workspace
+        if "frame" not in state:
+            wfs = self.get_window_frame_size()
+            if wfs:
+                state["frame"] = wfs
         eventslog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
         self.send("map-window", self._id, x, y, w, h, props, state)
         self._pos = (x, y)
         self._size = (w, h)
         self.idle_add(self._focus_change, "initial")
+
+    def get_window_frame_size(self):
+        frame = self._client.get_frame_extents(self)
+        if not frame:
+            #default to global value we may have:
+            wfs = self._client.get_window_frame_sizes()
+            if wfs:
+                frame = wfs.get("frame")
+        return frame
 
 
     def do_configure_event(self, event):

@@ -7,6 +7,7 @@
 
 import os
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -77,7 +78,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                       0, CurrentTime)
 
     def run(self):
-        from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
         UIXpraClient.run(self)
@@ -196,17 +196,32 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             return  None
 
 
+    def request_frame_extents(self, window):
+        from xpra.client.gtk_base.gtk_client_window_base import CurrentTime, SubstructureNotifyMask, SubstructureRedirectMask, X11Window
+        from xpra.gtk_common.error import xsync
+        root = gtk.gdk.get_default_root_window()
+        with xsync:
+            event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+            win = window.get_window()
+            log("request_frame_extents(%s)", window.get_title())
+            X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
+                      "_NET_REQUEST_FRAME_EXTENTS",
+                      0, CurrentTime)
+
+    def get_frame_extents(self, w):
+        if not HAS_X11_BINDINGS:
+            return None
+        from xpra.x11.gtk_x11.prop import prop_get
+        gdkwin = w.get_window()
+        assert gdkwin
+        v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+        log("get_frame_extents(%s)=%s", w.get_title(), v)
+        return v
+
     def get_window_frame_sizes(self):
         wfs = get_window_frame_sizes()
         if self.frame_request_window:
-            def get_frame_extents(w):
-                from xpra.x11.gtk_x11.prop import prop_get
-                gdkwin = w.get_window()
-                assert gdkwin
-                v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
-                log("get_frame_extents(%s)=%s", w.get_title(), v)
-                return v
-            v = get_frame_extents(self.frame_request_window)
+            v = self.get_frame_extents(self.frame_request_window)
             if v:
                 l, _, t, _ = v
                 wfs["frame"] = v
@@ -291,9 +306,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
         #we need the bindings to support initiate-moveresize (posix only for now):
-        from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
         from xpra.client.window_backing_base import DELTA_BUCKETS
         capabilities["window.initiate-moveresize"] = HAS_X11_BINDINGS
+        capabilities["window.frame_sizes"] = self.get_window_frame_sizes()
         updict(capabilities, "encoding", {
                     "icons.greedy"      : True,         #we don't set a default window icon any more
                     "icons.size"        : (64, 64),     #size we want

@@ -93,6 +93,14 @@ def get_double_click_time():
         return -1
 
 
+def get_window_frame_sizes():
+    #TODO: implement this using contentRectForFrameRect
+    #instead of using hardcoded values!
+    return {            #left, right, top, bottom:
+            "frame"     : (0, 0, 22, 0),
+            }
+
+
 try:
     import Quartz.CoreGraphics as CG    #@UnresolvedImport
     ALPHA = {
