@@ -194,15 +194,16 @@ class NotificationHandler(NSObject):
 
 class ClientExtras(object):
     def __init__(self, client, opts, blocking=False):
-        log("ClientExtras.__init__(%s, %s, %s) swap_keys=%s", client, opts, blocking, opts.swap_keys)
+        swap_keys = opts and opts.swap_keys
+        log("ClientExtras.__init__(%s, %s, %s) swap_keys=%s", client, opts, blocking, swap_keys)
         self.client = client
         self.blocking = blocking
         self.setup_event_loop()
         if opts and client:
-            log("setting swap_keys=%s using %s", opts.swap_keys, client.keyboard_helper)
+            log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
             if client.keyboard_helper and client.keyboard_helper.keyboard:
-                log("%s.swap_keys=%s", client.keyboard_helper.keyboard, opts.swap_keys)
-                client.keyboard_helper.keyboard.swap_keys = opts.swap_keys
+                log("%s.swap_keys=%s", client.keyboard_helper.keyboard, swap_keys)
+                client.keyboard_helper.keyboard.swap_keys = swap_keys
 
     def cleanup(self):
         self.client = None
