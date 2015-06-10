@@ -73,7 +73,7 @@ GTK3_NAME_TO_HINT = {
 """
 GTK3 version of the ClientWindow class
 """
-class ClientWindow(GTKClientWindowBase):
+class ClientWindow(GTKClientWindowBase, Gtk.Window):
 
     WINDOW_EVENT_MASK   = GTK3_WINDOW_EVENT_MASK
     BUTTON_MASK         = GTK3_BUTTON_MASK
