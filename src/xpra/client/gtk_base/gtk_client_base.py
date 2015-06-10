@@ -25,7 +25,8 @@ from xpra.util import bytestostr, updict, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
-            pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, INTERP_BILINEAR
+            pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
+            INTERP_BILINEAR, WINDOW_TOPLEVEL
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
@@ -66,9 +67,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #query the window manager to get the frame size:
         from xpra.client.gtk_base.gtk_client_window_base import CurrentTime, SubstructureNotifyMask, SubstructureRedirectMask, X11Window
         from xpra.gtk_common.error import xsync
-        self.frame_request_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.frame_request_window = gtk.Window(WINDOW_TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
-        root = gtk.gdk.get_default_root_window()
+        root = self.get_root_window()
         self.frame_request_window.realize()
         with xsync:
             event_mask = SubstructureNotifyMask | SubstructureRedirectMask
@@ -78,6 +79,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                       0, CurrentTime)
 
     def run(self):
+        log("run() HAS_X11_BINDINGS=%s", HAS_X11_BINDINGS)
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
         UIXpraClient.run(self)
@@ -199,7 +201,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def request_frame_extents(self, window):
         from xpra.client.gtk_base.gtk_client_window_base import SubstructureNotifyMask, SubstructureRedirectMask, X11Window
         from xpra.gtk_common.error import xsync
-        root = gtk.gdk.get_default_root_window()
+        root = self.get_root_window()
         with xsync:
             event_mask = SubstructureNotifyMask | SubstructureRedirectMask
             win = window.get_window()

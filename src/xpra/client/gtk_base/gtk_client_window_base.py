@@ -22,7 +22,7 @@ eventslog = Logger("events")
 
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
-from xpra.gtk_common.gtk_util import get_pixbuf_from_data
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data, WINDOW_POPUP, WINDOW_TOPLEVEL
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
@@ -105,6 +105,13 @@ class GTKKeyEvent(AdHocStruct):
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def init_window(self, metadata):
+        if self._is_popup(metadata):
+            window_type = WINDOW_POPUP
+        else:
+            window_type = WINDOW_TOPLEVEL
+        self.do_init_window(window_type)
+        self.set_decorated(self._is_decorated(metadata))
+        self.set_app_paintable(True)
         self._window_state = {}
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
@@ -112,7 +119,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #add platform hooks
         self.connect("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
-        self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
         ClientWindowBase.init_window(self, metadata)
 

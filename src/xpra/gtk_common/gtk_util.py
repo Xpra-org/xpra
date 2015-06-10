@@ -113,6 +113,9 @@ if is_gtk3():
     BUTTONS_CLOSE   = gtk.ButtonsType.CLOSE
     DIALOG_DESTROY_WITH_PARENT  = 0
 
+    WINDOW_POPUP    = gtk.WindowType.POPUP
+    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
+
     LSB_FIRST       = gdk.ByteOrder.LSB_FIRST
     MSB_FIRST       = gdk.ByteOrder.MSB_FIRST
     STATIC_GRAY     = gdk.VisualType.STATIC_GRAY
@@ -210,6 +213,9 @@ else:
     MESSAGE_INFO    = gtk.MESSAGE_INFO
     BUTTONS_CLOSE   = gtk.BUTTONS_CLOSE
     DIALOG_DESTROY_WITH_PARENT = gtk.DIALOG_DESTROY_WITH_PARENT
+
+    WINDOW_POPUP    = gtk.WINDOW_POPUP
+    WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
 
     LSB_FIRST       = gtk.gdk.LSB_FIRST
     MSB_FIRST       = gtk.gdk.MSB_FIRST

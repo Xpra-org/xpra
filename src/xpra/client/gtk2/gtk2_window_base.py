@@ -85,13 +85,8 @@ class GTK2WindowBase(GTKClientWindowBase):
     WINDOW_STATE_STICKY     = gdk.WINDOW_STATE_STICKY
 
 
-    def init_window(self, metadata):
-        if self._is_popup(metadata):
-            gtk.Window.__init__(self, gtk.WINDOW_POPUP)
-        else:
-            gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.set_decorated(self._is_decorated(metadata))
-        GTKClientWindowBase.init_window(self, metadata)
+    def do_init_window(self, window_type=gtk.WINDOW_TOPLEVEL):
+        gtk.Window.__init__(self, window_type)
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         self.set_data("_kde_no_window_grab", 1)

@@ -89,18 +89,8 @@ class ClientWindow(GTKClientWindowBase):
     WINDOW_STATE_STICKY     = Gdk.WindowState.STICKY
 
 
-    def init_window(self, metadata):
-        #TODO: no idea how to do the window-type with gtk3
-        #maybe not even be possible..
-        if self._is_popup(metadata):
-            window_type = Gtk.WindowType.POPUP
-        else:
-            window_type = Gtk.WindowType.TOPLEVEL
-        Gtk.Window.__init__(self,
-                            type = window_type,
-                            decorated = self._is_decorated(metadata),
-                            app_paintable = True)
-        GTKClientWindowBase.init_window(self, metadata)
+    def do_init_window(self, window_type):
+        Gtk.Window.__init__(self, type = window_type)
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         # does not work with gtk3? what the??
