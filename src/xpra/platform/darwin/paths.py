@@ -46,8 +46,6 @@ def get_resources_dir():
     i = rsc.rfind(RESOURCES)
     if i>0:
         rsc = rsc[:i+len(RESOURCES)]
-    else:
-        rsc = None
     debug("get_resources_dir()=%s", rsc)
     return rsc
 
