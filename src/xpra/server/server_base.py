@@ -790,6 +790,27 @@ class ServerBase(ServerCore):
             if p:
                 self.disconnect_client(p, SERVER_ERROR, "error accepting new connection")
 
+    def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
+        #process screen size (if needed)
+        if send_ui:
+            root_w, root_h = self.do_parse_screen_info(ss)
+            self.parse_hello_ui_clipboard(ss, c)
+            key_repeat = self.parse_hello_ui_keyboard(ss, c)
+            self.parse_hello_ui_window_settings(ss, c)
+        else:
+            root_w, root_h = self.get_root_window_size()
+            key_repeat = (0, 0)
+
+        #send_hello will take care of sending the current and max screen resolutions
+        self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
+
+        if send_ui:
+            # now we can set the modifiers to match the client
+            self.send_windows_and_cursors(ss, share_count>0)
+
+        ss.startup_complete()
+        self.server_event("startup-complete", ss.uuid)
+
     def do_parse_screen_info(self, ss):
         dw, dh = None, None
         if ss.desktop_size:
@@ -812,54 +833,43 @@ class ServerBase(ServerCore):
         self.set_desktop_geometry(w, h)
         return w, h
 
-    def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
-        #process screen size (if needed)
-        if send_ui:
-            root_w, root_h = self.do_parse_screen_info(ss)
-            #take the clipboard if no-one else has yet:
-            if ss.clipboard_enabled and self._clipboard_helper is not None and \
-                (self._clipboard_client is None or self._clipboard_client.is_closed()):
-                self._clipboard_client = ss
-                #deal with buggy win32 clipboards:
-                if "clipboard.greedy" not in c:
-                    #old clients without the flag: take a guess based on platform:
-                    client_platform = c.strget("platform", "")
-                    greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
-                else:
-                    greedy = c.boolget("clipboard.greedy")
-                self._clipboard_helper.set_greedy_client(greedy)
-                want_targets = c.boolget("clipboard.want_targets")
-                self._clipboard_helper.set_want_targets_client(want_targets)
-                #the selections the client supports (default to all):
-                from xpra.platform.features import CLIPBOARDS
-                client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-                log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
-                self._clipboard_helper.enable_selections(client_selections)
+    def parse_hello_ui_clipboard(self, ss, c):
+        #take the clipboard if no-one else has it yet:
+        if ss.clipboard_enabled and self._clipboard_helper is not None and \
+            (self._clipboard_client is None or self._clipboard_client.is_closed()):
+            self._clipboard_client = ss
+            #deal with buggy win32 clipboards:
+            if "clipboard.greedy" not in c:
+                #old clients without the flag: take a guess based on platform:
+                client_platform = c.strget("platform", "")
+                greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
+            else:
+                greedy = c.boolget("clipboard.greedy")
+            self._clipboard_helper.set_greedy_client(greedy)
+            want_targets = c.boolget("clipboard.want_targets")
+            self._clipboard_helper.set_want_targets_client(want_targets)
+            #the selections the client supports (default to all):
+            from xpra.platform.features import CLIPBOARDS
+            client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+            log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
+            self._clipboard_helper.enable_selections(client_selections)
 
-            #keyboard:
-            ss.keyboard_config = self.get_keyboard_config(c)
+    def parse_hello_ui_keyboard(self, ss, c):
+        #keyboard:
+        ss.keyboard_config = self.get_keyboard_config(c)
 
-            #so only activate this feature afterwards:
-            self.keyboard_sync = c.boolget("keyboard_sync", True)
-            key_repeat = c.intpair("key_repeat")
-            self.set_keyboard_repeat(key_repeat)
+        #so only activate this feature afterwards:
+        self.keyboard_sync = c.boolget("keyboard_sync", True)
+        key_repeat = c.intpair("key_repeat")
+        self.set_keyboard_repeat(key_repeat)
 
-            #always clear modifiers before setting a new keymap
-            ss.make_keymask_match(c.strlistget("modifiers", []))
-            self.set_keymap(ss)
-        else:
-            root_w, root_h = self.get_root_window_size()
-            key_repeat = (0, 0)
+        #always clear modifiers before setting a new keymap
+        ss.make_keymask_match(c.strlistget("modifiers", []))
+        self.set_keymap(ss)
+        return key_repeat
 
-        #send_hello will take care of sending the current and max screen resolutions
-        self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
-
-        if send_ui:
-            # now we can set the modifiers to match the client
-            self.send_windows_and_cursors(ss, share_count>0)
-
-        ss.startup_complete()
-        self.server_event("startup-complete", ss.uuid)
+    def parse_hello_ui_window_settings(self, ss, c):
+        pass
 
 
     def server_event(self, *args):

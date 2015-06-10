@@ -371,6 +371,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if X11Window.is_override_redirect(window.xid) and X11Window.is_mapped(window.xid):
                 self._add_new_or_window(window)
 
+
+    def parse_hello_ui_window_settings(self, ss, c):
+        frame_sizes = c.dictget("window.frame_sizes")
+        log("parse_hello_ui_window_settings: ", frame_sizes)
+        frame = None
+        if frame_sizes:
+            frame = frame_sizes.get("frame")
+        self._wm.set_default_frame_extents(frame)
+
+
     def send_windows_and_cursors(self, ss, sharing=False):
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
@@ -709,6 +719,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _set_window_state(self, proto, wid, window, new_window_state):
         metadatalog("set_window_state%s", (wid, window, new_window_state))
         changes = []
+        if "frame" in new_window_state:
+            #the size of the window frame may have changed
+            frame = new_window_state.get("frame") or (0, 0, 0, 0)
+            window.set_property("frame", frame)
         for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar", "iconified"):
             if k in new_window_state:
                 #stupid naming conflict (should have used the same at both ends):

@@ -17,6 +17,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.x11.gtk_x11.window import WindowModel, Unmanageable, configure_bits
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
+               add_catchall_receiver,                       #@UnresolvedImport
                get_children,                                #@UnresolvedImport
                )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -168,8 +169,9 @@ class Wm(gobject.GObject):
 
         "_MOTIF_WM_HINTS",
         "_MOTIF_WM_INFO",
+
+        "_NET_REQUEST_FRAME_EXTENTS",
         # Not at all yet:
-        #"_NET_REQUEST_FRAME_EXTENTS",
         #"_NET_RESTACK_WINDOW",
         #"_NET_WM_DESKTOP",
         ]
@@ -251,6 +253,7 @@ class Wm(gobject.GObject):
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
         add_event_receiver(self._root, self)
+        add_catchall_receiver("xpra-client-message-event", self)
         X11Window.substructureRedirect(self._root.xid)
 
         for w in get_children(self._root):
@@ -291,6 +294,18 @@ class Wm(gobject.GObject):
         v = [width, height]
         screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
+
+    def set_default_frame_extents(self, v):
+        if not v:
+            v = (0, 0, 0, 0)
+        self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
+        #update the models that are using the global default value:
+        for win in list(self._windows.itervalues()):
+            if win.is_OR() or win.is_tray():
+                continue
+            cur = win.get_property("frame")
+            if cur is None:
+                win._handle_frame_changed()
 
 
     def enableCursors(self, on):
@@ -372,7 +387,6 @@ class Wm(gobject.GObject):
         # Need to listen for:
         #   _NET_ACTIVE_WINDOW
         #   _NET_CURRENT_DESKTOP
-        #   _NET_REQUEST_FRAME_EXTENTS
         #   _NET_WM_PING responses
         # and maybe:
         #   _NET_RESTACK_WINDOW
@@ -382,6 +396,16 @@ class Wm(gobject.GObject):
         if event.message_type=="_NET_SHOWING_DESKTOP":
             show = bool(event.data[0])
             self.emit("show-desktop", show)
+        elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
+            #if we're here, that means the window model does not exist
+            #(or it would have processed the event)
+            #so this must be a an unmapped window
+            if X11Window.is_override_redirect(event.window):
+                frame = (0, 0, 0, 0)
+            else:
+                frame = self._default_frame
+            with xswallow:
+                prop_set(self.client_window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection %s, exiting", selection)

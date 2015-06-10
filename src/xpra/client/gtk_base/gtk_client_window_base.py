@@ -108,6 +108,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
+        self._current_frame_extents = None
         #add platform hooks
         self.connect("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
@@ -449,7 +450,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
             statelog("_NET_FRAME_EXTENTS: %s", v)
             if v:
-                if self.is_OR():
+                if v==self._current_frame_extents:
+                    #unchanged
+                    return
+                if not self._been_mapped:
+                    #map event will take care of sending it
+                    return
+                if self.is_OR() or self.is_tray():
                     #we can't do it: the server can't handle configure packets for OR windows!
                     return
                 if not self._client.window_configure_skip_geometry or not self._client.server_window_frame_extents:
@@ -457,6 +464,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     return
                 #tell server about new value:
                 #TODO: don't bother if unchanged
+                self._current_frame_extents = v
                 statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
                 self._window_state["frame"] = v
                 self.process_configure_event(True)
@@ -679,6 +687,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             wfs = self.get_window_frame_size()
             if wfs:
                 state["frame"] = wfs
+                self._current_frame_extents = wfs
         eventslog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
         self.send("map-window", self._id, x, y, w, h, props, state)
         self._pos = (x, y)

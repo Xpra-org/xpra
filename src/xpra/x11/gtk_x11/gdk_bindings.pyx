@@ -811,8 +811,17 @@ def remove_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.remove(event_type)
 
+catchall_receivers = {}
+def add_catchall_receiver(signal, handler):
+    catchall_receivers.setdefault(signal, []).append(handler)
+
 cdef void _maybe_send_event(DEBUG, window, signal, event):
     handlers = window.get_data(_ev_receiver_key)
+    hinfo = ""
+    if not handlers:
+        global catchall_receivers
+        handlers = catchall_receivers.get(signal)
+        hinfo = "catchall "
     if not handlers:
         if DEBUG:
             log.info("  no handler registered for window %#x (%s), ignoring event", window.xid, handlers)
@@ -823,7 +832,7 @@ cdef void _maybe_send_event(DEBUG, window, signal, event):
         signals = gobject.signal_list_names(handler)
         if signal in signals:
             if DEBUG:
-                log.info("  forwarding event to a %s handler's %s signal", type(handler).__name__, signal)
+                log.info("  forwarding event to a %s %shandler's %s signal", type(handler).__name__, hinfo, signal)
             handler.emit(signal, event)
             if DEBUG:
                 log.info("  forwarded")

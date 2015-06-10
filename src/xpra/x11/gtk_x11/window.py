@@ -905,6 +905,9 @@ class WindowModel(BaseWindowModel):
         "protocols": (gobject.TYPE_PYOBJECT,
                       "Supported WM protocols", "",
                       gobject.PARAM_READABLE),
+        "frame": (gobject.TYPE_PYOBJECT,
+                      "Size of the window frame", "",
+                      gobject.PARAM_READWRITE),
         "client-machine": (gobject.TYPE_PYOBJECT,
                            "Host where client process is running", "",
                            gobject.PARAM_READABLE),
@@ -1060,7 +1063,6 @@ class WindowModel(BaseWindowModel):
         # FIXME
         # Need to listen for:
         #   _NET_CURRENT_DESKTOP
-        #   _NET_REQUEST_FRAME_EXTENTS
         #   _NET_WM_PING responses
         # and maybe:
         #   _NET_RESTACK_WINDOW
@@ -1170,6 +1172,10 @@ class WindowModel(BaseWindowModel):
             log("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
             with xswallow:
                 X11Window.configureAndNotify(self.client_window.xid, x, y, w, h)
+            return True
+        elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
+            log("_NET_REQUEST_FRAME_EXTENTS")
+            self._handle_frame_changed()
             return True
         #not handled:
         return False
@@ -1721,6 +1727,19 @@ class WindowModel(BaseWindowModel):
             prop_set(self.client_window, "_NET_WM_STATE",
                  ["atom"], self.get_property("state"))
 
+    def _handle_frame_changed(self, *args):
+        v = self.get_property("frame")
+        if not v and (not self.is_OR() and not self.is_tray()):
+            root = self.client_window.get_screen().get_root_window()
+            v = prop_get(root, "DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
+        if not v:
+            #default for OR, or if we don't have any other value:
+            v = (0, 0, 0, 0)
+        log("handle_frame_changed: setting _NET_FRAME_EXTENTS=%s on %#x", v, self.client_window.xid)
+        with xswallow:
+            prop_set(self.client_window, "_NET_FRAME_EXTENTS", ["u32"], v)            
+
+    
     def do_set_property(self, pspec, value):
         if pspec.name in self._state_properties:
             state_names = self._state_properties[pspec.name]
@@ -1777,10 +1796,8 @@ class WindowModel(BaseWindowModel):
         # Things that don't change:
         prop_set(self.client_window, "_NET_WM_ALLOWED_ACTIONS",
                  ["atom"], self._NET_WM_ALLOWED_ACTIONS)
-        prop_set(self.client_window, "_NET_FRAME_EXTENTS",
-                 ["u32"], [0, 0, 0, 0])
-
         self.connect("notify::state", self._handle_state_changed)
+        self.connect("notify::frame", self._handle_frame_changed)
         # Flush things:
         self._handle_state_changed()
 
