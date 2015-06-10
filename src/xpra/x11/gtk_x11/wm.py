@@ -400,12 +400,16 @@ class Wm(gobject.GObject):
             #if we're here, that means the window model does not exist
             #(or it would have processed the event)
             #so this must be a an unmapped window
-            if X11Window.is_override_redirect(event.window):
+            frame = (0, 0, 0, 0)
+            if not X11Window.is_override_redirect(event.window.xid):
+                #use the global default:
+                frame = prop_get(self._root, "DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
+            if not frame:
+                #fallback:
                 frame = (0, 0, 0, 0)
-            else:
-                frame = self._default_frame
+            log("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, event.window.xid)
             with xswallow:
-                prop_set(self.client_window, "_NET_FRAME_EXTENTS", ["u32"], frame)
+                prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection %s, exiting", selection)

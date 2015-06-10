@@ -28,7 +28,7 @@ def main():
             event_mask = SubstructureNotifyMask | SubstructureRedirectMask
             X11Window.sendClientMessage(root.xid, win.get_window().xid, False, event_mask,
                       "_NET_REQUEST_FRAME_EXTENTS")
-            print("sending _NET_REQUEST_FRAME_EXTENTS to %#x" % root.xid)
+            print("sending _NET_REQUEST_FRAME_EXTENTS to %#x for %#x" % (root.xid, win.get_window().xid))
         return v is None
     print_extents()
     gobject.timeout_add(1000, print_extents)
