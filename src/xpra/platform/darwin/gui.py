@@ -94,11 +94,28 @@ def get_double_click_time():
 
 
 def get_window_frame_sizes():
-    #TODO: implement this using contentRectForFrameRect
-    #instead of using hardcoded values!
-    return {            #left, right, top, bottom:
-            "frame"     : (0, 0, 22, 0),
-            }
+    try:
+        import Quartz                   #@UnresolvedImport
+        cr = Quartz.NSMakeRect(20, 20, 100, 100)
+        mask = Quartz.NSTitledWindowMask | Quartz.NSClosableWindowMask | Quartz.NSMiniaturizableWindowMask | Quartz.NSResizableWindowMask
+        wr = Quartz.NSWindow.pyobjc_classMethods.frameRectForContentRect_styleMask_(cr, mask)
+        dx = wr[0][0] - cr[0][0]
+        dy = wr[0][1] - cr[0][1]
+        dw = wr[1][0] - cr[1][0]
+        dh = wr[1][1] - cr[1][1]
+        #note: we assume that the title bar is at the top
+        #dx, dy and dw are usually 0
+        #dh is usually 22 on my 10.5.x system
+        return {
+                "offset"    : (dx+dw//2, dy+dh),
+                "frame"     : (dx+dw//2, dx+dw//2, dy+dh, dy),
+                }
+    except:
+        log("failed to query frame size using Quartz, using hardcoded value", exc_info=True)
+        return {            #left, right, top, bottom:
+                "offset"    : (0, 22),
+                "frame"     : (0, 0, 22, 0),
+               }
 
 
 try:
