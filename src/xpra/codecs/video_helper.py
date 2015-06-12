@@ -13,7 +13,7 @@ log = Logger("codec", "video")
 from xpra.codecs.loader import get_codec, get_codec_error
 
 
-NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", "4,3,5").split(",")]
+NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", "4,5").split(",")]
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:

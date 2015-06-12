@@ -144,10 +144,9 @@ dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fa
 # * wheezy: 53.35
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 csc_cython_ENABLED      = True
-nvenc3_ENABLED          = pkg_config_ok("--exists", "nvenc3")
 nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
 nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
-cuda_ENABLED            = nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED
+cuda_ENABLED            = nvenc4_ENABLED or nvenc5_ENABLED
 #elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
 #...
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
@@ -164,7 +163,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265",
-            "nvenc3", "nvenc4", "nvenc5", "cuda",
+            "nvenc4", "nvenc5", "cuda",
             "vpx", "webp",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython",
@@ -846,8 +845,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/nvenc3/encoder.c",
-                   "xpra/codecs/nvenc3/constants.pxi",
                    "xpra/codecs/nvenc4/encoder.c",
                    "xpra/codecs/nvenc4/constants.pxi",
                    "xpra/codecs/nvenc5/encoder.c",
@@ -1453,7 +1450,7 @@ if WIN32:
             add_keywords([webp_bin_dir], [webp_include_dir],
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
-        elif ("nvenc3" in pkgs_options[0]) or ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
+        elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
                          nvenc_lib_names)
@@ -1826,11 +1823,10 @@ if server_ENABLED:
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
-toggle_packages(nvenc3_ENABLED, "xpra.codecs.nvenc3")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
-toggle_packages(nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common")
-if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
+toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common")
+if nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
     options = [os.path.join(x, "nvcc") for x in os.environ.get("PATH", "").split(os.path.pathsep)]+["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
@@ -1859,7 +1855,7 @@ if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
     #TODO:
     # * compile directly to output directory instead of using data files?
     # * detect which arches we want to build for? (does it really matter much?)
-    kernels = ("BGRA_to_NV12", "BGRA_to_U", "BGRA_to_V", "BGRA_to_Y", "BGRA_to_YUV444")
+    kernels = ("BGRA_to_NV12", "BGRA_to_YUV444")
     for kernel in kernels:
         cuda_src = "xpra/codecs/cuda_common/%s.cu" % kernel
         cuda_bin = "xpra/codecs/cuda_common/%s.fatbin" % kernel
@@ -1886,8 +1882,7 @@ if nvenc3_ENABLED or nvenc4_ENABLED or nvenc5_ENABLED:
             sys.exit(1)
     add_data_files("share/xpra/cuda",
                    ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
-    for nvenc_version, _nvenc_version_enabled in {3 : nvenc3_ENABLED,
-                                                  4 : nvenc4_ENABLED,
+    for nvenc_version, _nvenc_version_enabled in {4 : nvenc4_ENABLED,
                                                   5 : nvenc5_ENABLED}.items():
         if not _nvenc_version_enabled:
             continue
