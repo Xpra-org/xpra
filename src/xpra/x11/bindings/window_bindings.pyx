@@ -8,7 +8,7 @@
 import struct
 import time
 
-from xpra.gtk_common.error import trap, XError
+from xpra.gtk_common.error import XError
 from xpra.os_util import strtobytes
 
 from xpra.log import Logger
