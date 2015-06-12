@@ -32,7 +32,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import get_window_frame_sizes, system_bell, get_workarea, get_workareas, get_fixed_cursor_size
+from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_workarea, get_workareas, get_fixed_cursor_size
 
 missing_cursor_names = set()
 
@@ -209,14 +209,23 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
                       "_NET_REQUEST_FRAME_EXTENTS")
 
-    def get_frame_extents(self, w):
+    def get_frame_extents(self, window):
+        #try native platform code first:
+        x, y = window.get_position()
+        w, h = window.get_size()
+        v = get_window_frame_size(x, y, w, h)
+        log("get_window_frame_size%s=%s", (x, y, w, h), v)
+        if v:
+            #(OSX does give us these values via Quartz API)
+            return v
         if not HAS_X11_BINDINGS:
+            #nothing more we can do!
             return None
         from xpra.x11.gtk_x11.prop import prop_get
-        gdkwin = w.get_window()
+        gdkwin = window.get_window()
         assert gdkwin
         v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
-        log("get_frame_extents(%s)=%s", w.get_title(), v)
+        log("get_frame_extents(%s)=%s", window.get_title(), v)
         return v
 
     def get_window_frame_sizes(self):

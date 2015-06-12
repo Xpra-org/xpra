@@ -99,6 +99,9 @@ def get_double_click_distance():
 def get_fixed_cursor_size():
     return -1, -1
 
+def get_window_frame_size(x, y, w, h):
+    return None
+
 def get_window_frame_sizes():
     return {}
 

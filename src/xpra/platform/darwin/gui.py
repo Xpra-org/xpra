@@ -94,15 +94,19 @@ def get_double_click_time():
 
 
 def get_window_frame_sizes():
+    #use a hard-coded window position and size:
+    return get_window_frame_size(20, 20, 100, 100)
+
+def get_window_frame_size(x, y, w, h):
     try:
         import Quartz                   #@UnresolvedImport
-        cr = Quartz.NSMakeRect(20, 20, 100, 100)
+        cr = Quartz.NSMakeRect(x, y, w, h)
         mask = Quartz.NSTitledWindowMask | Quartz.NSClosableWindowMask | Quartz.NSMiniaturizableWindowMask | Quartz.NSResizableWindowMask
         wr = Quartz.NSWindow.pyobjc_classMethods.frameRectForContentRect_styleMask_(cr, mask)
-        dx = wr[0][0] - cr[0][0]
-        dy = wr[0][1] - cr[0][1]
-        dw = wr[1][0] - cr[1][0]
-        dh = wr[1][1] - cr[1][1]
+        dx = int(wr[0][0] - cr[0][0])
+        dy = int(wr[0][1] - cr[0][1])
+        dw = int(wr[1][0] - cr[1][0])
+        dh = int(wr[1][1] - cr[1][1])
         #note: we assume that the title bar is at the top
         #dx, dy and dw are usually 0
         #dh is usually 22 on my 10.5.x system
