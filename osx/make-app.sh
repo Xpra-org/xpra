@@ -31,10 +31,10 @@ pushd ../src
 svn upgrade ../.. >& /dev/null
 python -c "from add_build_info import record_src_info;record_src_info()"
 rm -fr build/*
-./setup.py clean
+python ./setup.py clean
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see install.log for details - this may take a minute or two)"
-./setup.py install ${BUILD_ARGS} >& install.log
+python ./setup.py install ${BUILD_ARGS} >& install.log
 if [ "$?" != "0" ]; then
 	echo "ERROR: install failed"
 	echo
@@ -48,7 +48,7 @@ echo "**************************************************************************
 echo "py2app step:"
 echo "./setup.py py2app ${BUILD_ARGS}"
 echo " (see py2app.log for details - this may take a minute or two)"
-./setup.py py2app ${BUILD_ARGS} >& py2app.log
+python ./setup.py py2app ${BUILD_ARGS} >& py2app.log
 if [ "$?" != "0" ]; then
 	echo "ERROR: py2app failed"
 	echo
