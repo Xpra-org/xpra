@@ -363,8 +363,15 @@ class ServerBase(ServerCore):
         if self.is_child_alive(proc):
             soundlog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
-                self.pulseaudio_proc = None
-                proc.terminate()
+                #first we try pactl (required on Ubuntu):
+                from xpra.scripts.exec_util import safe_exec
+                r, _, _ = safe_exec(["pactl", "exit"])
+                #warning: pactl will return 0 whether it succeeds or not...
+                #but we can't kill the process because Ubuntu starts a new one
+                if r!=0:
+                    #fallback to using SIGINT:
+                    proc.terminate()
+                    self.pulseaudio_proc = None
             except:
                 #only log the full stacktrace if the process failed to terminate:
                 full_trace = self.is_child_alive(proc)
