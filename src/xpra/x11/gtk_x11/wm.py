@@ -296,7 +296,7 @@ class Wm(gobject.GObject):
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
 
     def set_default_frame_extents(self, v):
-        if not v:
+        if not v or len(v)!=4:
             v = (0, 0, 0, 0)
         self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
         #update the models that are using the global default value:

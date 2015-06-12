@@ -373,11 +373,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def parse_hello_ui_window_settings(self, ss, c):
-        frame_sizes = c.dictget("window.frame_sizes")
-        log("parse_hello_ui_window_settings: ", frame_sizes)
+        log("parse_hello_ui_window_settings: ", ss.window_frame_sizes)
         frame = None
-        if frame_sizes:
-            frame = frame_sizes.get("frame")
+        if ss.window_frame_sizes:
+            frame = ss.window_frame_sizes.intlistget("frame")
         self._wm.set_default_frame_extents(frame)
 
 

@@ -593,6 +593,7 @@ class ServerSource(object):
         self.vrefresh = c.intget("vrefresh", -1)
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
+        self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -1203,6 +1204,8 @@ class ServerSource(object):
         up("av-sync",       {"client.delay"         : self.av_sync_delay,
                              "total"                : self.av_sync_delay_total,
                              "delta"                : AV_SYNC_DELTA})
+        if self.window_frame_sizes:
+            up("window.frame-sizes", self.window_frame_sizes)
         info.update(self.get_sound_info())
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
