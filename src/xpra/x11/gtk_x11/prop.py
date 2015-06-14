@@ -9,16 +9,40 @@
 Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here."""
 
+import sys
 import binascii
 import struct
-import gtk.gdk
 import cairo
 
-from xpra.x11.gtk_x11.gdk_bindings import (
-                get_xatom, get_pyatom,      #@UnresolvedImport
-                get_xwindow, get_pywindow,  #@UnresolvedImport
-                get_xvisual,                #@UnresolvedImport
-               )
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
+gtk = import_gtk()
+gdk = import_gdk()
+
+from xpra.log import Logger
+log = Logger("x11", "window")
+
+try:
+    from xpra.x11.gtk_x11.gdk_bindings import (
+                    get_xatom, get_pyatom,      #@UnresolvedImport
+                    get_xwindow, get_pywindow,  #@UnresolvedImport
+                    get_xvisual,                #@UnresolvedImport
+                   )
+except ImportError as e:
+    #we should only ever be missing the gdk_bindings with GTK3 builds:
+    log("cannot import gdk bindings", exc_info=True)
+    assert is_gtk3()
+    def get_xwindow(w):
+        try:
+            return w.get_xid()
+        except:
+            try:
+                return int(w)
+            except:
+                raise Exception("cannot convert %s to an xid!" % type(w))
+    def missing_fn():
+        raise NotImplementedError()
+    get_xatom, get_pyatom, get_pywindow, get_xvisual = missing_fn, missing_fn, missing_fn, missing_fn
+
 from xpra.x11.bindings.window_bindings import (
                 constants,                      #@UnresolvedImport
                 X11WindowBindings,          #@UnresolvedImport
@@ -29,11 +53,8 @@ from xpra.os_util import StringIOClass
 from xpra.x11.xsettings_prop import set_settings, get_settings
 from xpra.gtk_common.error import xsync, XError
 from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
-from xpra.log import Logger
-log = Logger("x11", "window")
 
 
-import sys
 if sys.version > '3':
     long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
@@ -209,45 +230,51 @@ def _get_multiple(disp, d):
         return  str(d)
     return _get_atom(disp, d)
 
+def _to_latin1(disp, v):
+    return v.encode("latin1")
+
+def _from_latin1(disp, v):
+    return v.decode("latin1")
+
+def _to_utf8(disp, v):
+    return v.encode("UTF-8")
+
+def _from_utf8(disp, v):
+    return v.decode("UTF-8")
+
 
 _prop_types = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
     # terminator
-    "utf8": (unicode, "UTF8_STRING", 8,
-             lambda disp, u: u.encode("UTF-8"),
-             lambda disp, d: d.decode("UTF-8"),
-             "\0"),
+    "utf8": (unicode, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
     # In theory, there should be something clever about COMPOUND_TEXT here.  I
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
     # that Xutf8TextPropertyToTextList exists.
-    "latin1": (unicode, "STRING", 8,
-               lambda disp, u: u.encode("latin1"),
-               lambda disp, d: d.decode("latin1"),
-               "\0"),
+    "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "atom": (str, "ATOM", 32,
              lambda disp, a: struct.pack("@I", get_xatom(a)),
               _get_atom,
-             ""),
+             b""),
     "state": ((int, long), "WM_STATE", 32,
             lambda disp, c: struct.pack("=I", c),
             lambda disp, d: struct.unpack("=I", d)[0],
-            ""),
+            b""),
     "u32": ((int, long), "CARDINAL", 32,
             lambda disp, c: struct.pack("=I", c),
             lambda disp, d: struct.unpack("=I", d)[0],
-            ""),
+            b""),
     "integer": ((int, long), "INTEGER", 32,
             lambda disp, c: struct.pack("=I", c),
             lambda disp, d: struct.unpack("=I", d)[0],
-            ""),
-    "visual": (gtk.gdk.Visual, "VISUALID", 32,
+            b""),
+    "visual": (gdk.Visual, "VISUALID", 32,
                lambda disp, c: struct.pack("=I", get_xvisual(c)),
                unsupported,
-               ""),
-    "window": (gtk.gdk.Window, "WINDOW", 32,
+               b""),
+    "window": (gdk.Window, "WINDOW", 32,
                lambda disp, c: struct.pack("=I", get_xwindow(c)),
                lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),
-               ""),
+               b""),
     "strut": (NetWMStrut, "CARDINAL", 32,
               unsupported, NetWMStrut, None),
     "strut-partial": (NetWMStrut, "CARDINAL", 32,

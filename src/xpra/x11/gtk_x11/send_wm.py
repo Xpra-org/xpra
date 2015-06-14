@@ -14,6 +14,14 @@ CurrentTime = constants["CurrentTime"]
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
+from xpra.gtk_common.gobject_compat import is_gtk3
+if is_gtk3():
+    def get_xwindow(w):
+        return w.get_xid()
+else:
+    def get_xwindow(w):
+        return w.xid
+
 
 def send_wm_take_focus(target, timestamp):
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", target.xid, timestamp)
@@ -21,19 +29,27 @@ def send_wm_take_focus(target, timestamp):
         timestamp = CurrentTime    #better than nothing...
     elif timestamp>0xFFFFFFFF:
         raise OverflowError("invalid time: %#x" % timestamp)
-    X11Window.sendClientMessage(target.xid, target.xid, False, 0,
+    xid = get_xwindow(target)
+    X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_TAKE_FOCUS", timestamp)
 
 def send_wm_delete_window(target):
     log("sending WM_DELETE_WINDOW to %#x", target.xid)
-    X11Window.sendClientMessage(target.xid, target.xid, False, 0,
+    xid = get_xwindow(target)
+    X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
                       CurrentTime)
 
 def send_wm_workspace(root, win, workspace=0):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-    X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
+    X11Window.sendClientMessage(get_xwindow(root), get_xwindow(win), False, event_mask,
                       "_NET_WM_DESKTOP",
                       workspace, CurrentTime)
+
+def send_wm_request_frame_extents(root, win):
+    event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+    X11Window.sendClientMessage(get_xwindow(root), get_xwindow(win), False, event_mask,
+              "_NET_REQUEST_FRAME_EXTENTS",
+              0, CurrentTime)

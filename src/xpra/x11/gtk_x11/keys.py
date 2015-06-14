@@ -12,6 +12,9 @@ X11Keyboard = X11KeyboardBindings()
 def grok_modifier_map(display, meanings):
     """Return an dict mapping modifier names to corresponding X modifier
     bitmasks."""
+    #TODO: needs fixing for GTK3
+    from xpra.gtk_common.gtk_util import is_gtk3
+    assert not is_gtk3(), "grok_modifier_map needs porting to GTK3"
     from xpra.keyboard.mask import MODIFIER_MAP
     modifier_map = MODIFIER_MAP.copy()
     modifier_map.update({

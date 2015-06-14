@@ -4,4 +4,8 @@
 # later version. See the file COPYING for details.
 
 #We must import "*" or things will fail in mysterious ways!
-from xpra.x11.gtk_x11.gdk_bindings import *
+try:
+    #this is now optional because GTK3 does not have the bindings
+    from xpra.x11.gtk_x11.gdk_bindings import *
+except:
+    pass

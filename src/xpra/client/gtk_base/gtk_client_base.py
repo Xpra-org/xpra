@@ -65,18 +65,15 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def setup_frame_request_windows(self):
         #query the window manager to get the frame size:
-        from xpra.client.gtk_base.gtk_client_window_base import CurrentTime, SubstructureNotifyMask, SubstructureRedirectMask, X11Window
         from xpra.gtk_common.error import xsync
+        from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
         self.frame_request_window = gtk.Window(WINDOW_TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
         root = self.get_root_window()
         self.frame_request_window.realize()
         with xsync:
-            event_mask = SubstructureNotifyMask | SubstructureRedirectMask
             win = self.frame_request_window.get_window()
-            X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
-                      "_NET_REQUEST_FRAME_EXTENTS",
-                      0, CurrentTime)
+            send_wm_request_frame_extents(root, win)
 
     def run(self):
         log("run() HAS_X11_BINDINGS=%s", HAS_X11_BINDINGS)
@@ -199,15 +196,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def request_frame_extents(self, window):
-        from xpra.client.gtk_base.gtk_client_window_base import SubstructureNotifyMask, SubstructureRedirectMask, X11Window
+        from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
         from xpra.gtk_common.error import xsync
         root = self.get_root_window()
         with xsync:
-            event_mask = SubstructureNotifyMask | SubstructureRedirectMask
             win = window.get_window()
-            log("request_frame_extents(%s)", window.get_title())
-            X11Window.sendClientMessage(root.xid, win.xid, False, event_mask,
-                      "_NET_REQUEST_FRAME_EXTENTS")
+            send_wm_request_frame_extents(root, win)
 
     def get_frame_extents(self, window):
         #try native platform code first:

@@ -94,8 +94,10 @@ UNDECORATED_TYPE_HINTS = set((
                     "DND"))
 
 import sys
-PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
+PYTHON3 = sys.version_info[0] == 3
+if PYTHON3:
+    unicode = str           #@ReservedAssignment
 
 
 class GTKKeyEvent(AdHocStruct):
@@ -443,8 +445,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if HAS_X11_BINDINGS:
             #now it is realized, we can set WM_COMMAND (for X11 clients only)
             command = self._metadata.strget("command")
-            if command:
-                prop_set(self.get_window(), "WM_COMMAND", "latin1", command.decode("latin1"))
+            v = command
+            if type(command)!=unicode:
+                v = bytestostr(command).decode("utf8")
+            log("realize() command=%s (%s)", v, type(v))
+            prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
             self._client.request_frame_extents(self)
 
 

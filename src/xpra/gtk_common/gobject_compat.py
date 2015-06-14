@@ -9,7 +9,7 @@ with python2, we try to import pygtk (gobject/gtk/gdk) before trying gobject int
 Once we have imported something, stick to that version from then on for all other imports.
 """
 
-import sys
+import sys, os
 
 __all__ = ["is_gtk3", "get_xid", "import_gobject", "import_gtk", "import_gdk", "import_pango", "import_glib", "import_pixbufloader"]
 
@@ -35,6 +35,16 @@ def _try_import(import_method_gtk3, import_method_gtk2):
         _is_gtk3 = True
         imported = import_method_gtk3()
     return imported
+
+def try_import_GdkX11():
+    if os.name=="posix" and not sys.platform.startswith("darwin"):
+        #try to ensure that we can call get_xid() on Gdk windows later,
+        #this is a workaround for this GTK bug:
+        #https://bugzilla.gnome.org/show_bug.cgi?id=656314
+        try:
+            from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
+        except:
+            pass
 
 
 def get_xid(window):
@@ -69,6 +79,7 @@ def import_gtk2():
     return gtk
 def import_gtk3():
     from gi.repository import Gtk                   #@UnresolvedImport
+    try_import_GdkX11()
     return Gtk
 def import_gtk():
     return  _try_import(import_gtk3, import_gtk2)
@@ -78,6 +89,7 @@ def import_gdk2():
     return gdk
 def import_gdk3():
     from gi.repository import Gdk                   #@UnresolvedImport
+    try_import_GdkX11()
     return Gdk
 def import_gdk():
     return  _try_import(import_gdk3, import_gdk2)
