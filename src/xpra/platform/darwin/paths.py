@@ -76,11 +76,15 @@ def get_system_conf_dir():
     return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
 
 
-def get_sound_executable():
+def get_sound_command():
+    cs = os.environ.get("XPRA_SOUND_COMMAND")
+    if cs:
+        import shlex
+        return shlex.split(cs)
     #try to use the subapp:
     base = get_app_dir()
     subapp = os.path.join(base, "Xpra_NoDock.app", "Contents")
     if os.path.exists(subapp) and os.path.isdir(subapp):
         base = subapp
     helper = os.path.join(subapp, "MacOS", "Xpra")
-    return os.environ.get("XPRA_SOUND_EXECUTABLE", helper)
+    return [helper]

@@ -7,7 +7,7 @@ import os
 import time
 
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, glib
-from xpra.platform.paths import get_sound_executable
+from xpra.platform.paths import get_sound_command
 from xpra.util import AdHocStruct
 from xpra.log import Logger
 log = Logger("sound")
@@ -232,7 +232,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
     def __init__(self, plugin, options, codecs, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound-source")
         self.large_packets = ["new-buffer"]
-        self.command = [get_sound_executable(), "_sound_record", "-", "-", plugin or "", "", ",".join(codecs), "", str(volume)]
+        self.command = get_sound_command()+["_sound_record", "-", "-", plugin or "", "", ",".join(codecs), "", str(volume)]
         self._add_debug_args()
 
     def __repr__(self):
@@ -248,7 +248,7 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         sound_subprocess_wrapper.__init__(self, "sound-sink")
         self.large_packets = ["add_data"]
         self.codec = codec
-        self.command = [get_sound_executable(), "_sound_play", "-", "-", plugin or "", "", codec, "", str(volume)]
+        self.command = get_sound_command()+["_sound_play", "-", "-", plugin or "", "", codec, "", str(volume)]
         self._add_debug_args()
 
     def add_data(self, data, metadata):

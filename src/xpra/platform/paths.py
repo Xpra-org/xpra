@@ -127,8 +127,10 @@ def get_license_text(self):
     return LICENSE_TEXT
 
 
-def get_sound_executable():
-    return os.environ.get("XPRA_SOUND_EXECUTABLE", "xpra")
+def get_sound_command():
+    cs = os.environ.get("XPRA_SOUND_COMMAND", "xpra")
+    import shlex
+    return shlex.split(cs)
 
 
 from xpra.platform import platform_import
@@ -137,7 +139,7 @@ platform_import(globals(), "paths", True,
                 "get_app_dir",
                 "get_icon_dir")
 platform_import(globals(), "paths", False,
-                "get_sound_executable",
+                "get_sound_command",
                 "get_install_prefix",
                 "get_default_conf_dir",
                 "get_system_conf_dir",
@@ -156,7 +158,7 @@ def get_info():
             "resources"         : get_resources_dir(),
             "icons"             : get_icon_dir(),
             "home"              : os.path.expanduser("~"),
-            "sound_executable"  : get_sound_executable(),
+            "sound_command"     : get_sound_command(),
             }
 
 
