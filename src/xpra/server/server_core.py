@@ -29,7 +29,7 @@ from xpra.server import ClientException
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.scripts.server import deadly_signal
-from xpra.net.bytestreams import SocketConnection
+from xpra.net.bytestreams import SocketConnection, pretty_socket
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
@@ -381,7 +381,9 @@ class ServerCore(object):
         netlog("socket connection: %s", sc)
         frominfo = ""
         if peername:
-            frominfo = " from %s" % str(peername)
+            frominfo = " from %s" % pretty_socket(peername)
+        elif socktype=="unix-domain":
+            frominfo = " on %s" % sockname
         netlog.info("New %s connection received%s", socktype, frominfo)
         protocol = Protocol(self, sc, self.process_packet)
         self._potential_protocols.append(protocol)

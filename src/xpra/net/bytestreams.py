@@ -89,6 +89,13 @@ def untilConcludes(is_active_cb, f, *a, **kw):
             log("untilConcludes(%s, %s, %s, %s) %s / %s (raised)", is_active_cb, f, a, kw, ABORT.get(code, code), e)
             raise
 
+def pretty_socket(s):
+    try:
+        assert len(s)==2
+        return "%s:%s" % (s[0], s[1])
+    except:
+        return str(s)
+
 
 class Connection(object):
     def __init__(self, target, info):
@@ -222,8 +229,8 @@ class SocketConnection(Connection):
 
     def __repr__(self):
         if self.remote:
-            return "SocketConnection(%s - %s)" % (self.local, self.remote)
-        return "SocketConnection(%s)" % self.local
+            return "%s socket: %s <- %s" % (self.info, pretty_socket(self.local), pretty_socket(self.remote))
+        return "%s socket:%s" % (self.info, pretty_socket(self.local))
 
     def get_info(self):
         d = Connection.get_info(self)
