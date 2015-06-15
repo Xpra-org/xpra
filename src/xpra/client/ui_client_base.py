@@ -136,15 +136,16 @@ class UIXpraClient(XpraClientBase):
         self.microphone_enabled = False
         self.microphone_codecs = []
         try:
-            from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
+            from xpra.sound.gstreamer_util import has_gst
             self.speaker_allowed = has_gst
-            if self.speaker_allowed:
+            self.speaker_codecs = []
+            self.microphone_allowed = has_gst
+            self.microphone_codecs = []
+            self.microphone_enabled = False
+            if has_gst:
+                from xpra.sound.wrapper import get_sound_codecs
                 self.speaker_codecs = get_sound_codecs(True, False)
                 self.speaker_allowed = len(self.speaker_codecs)>0
-            self.microphone_allowed = has_gst
-            self.microphone_enabled = False
-            self.microphone_codecs = []
-            if self.microphone_allowed:
                 self.microphone_codecs = get_sound_codecs(False, False)
                 self.microphone_allowed = len(self.microphone_codecs)>0
             if has_gst:
@@ -266,7 +267,8 @@ class UIXpraClient(XpraClientBase):
         self.mmap_group = opts.mmap_group
 
         try:
-            from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
+            from xpra.sound.gstreamer_util import has_gst
+            from xpra.sound.wrapper import get_sound_codecs
         except:
             has_gst = False
         self.sound_source_plugin = opts.sound_source
@@ -277,7 +279,6 @@ class UIXpraClient(XpraClientBase):
         self.speaker_codecs = opts.speaker_codec
         if len(self.speaker_codecs)==0 and self.speaker_allowed:
             assert has_gst
-            self.speaker_codecs = get_sound_codecs(True, False)
             self.speaker_allowed = len(self.speaker_codecs)>0
         self.microphone_codecs = opts.microphone_codec
         if len(self.microphone_codecs)==0 and self.microphone_allowed:

@@ -194,13 +194,14 @@ try:
         #try gst1 first:
         imports = import_options.reverse()
     gst, vinfo = None, None
-    for import_function, v in import_options:
+    for import_function, MV in import_options:
         try:
             gst = import_function()
             v = gst.version()
             if v[-1]==0:
                 v = v[:-1]
             vinfo = ".".join((str(x) for x in v))
+            _gst_major_version = MV
             break
         except Exception as e:
             log("failed to import GStreamer %s: %s", vinfo, e)
@@ -240,12 +241,17 @@ if has_gst:
         if encoding in CODECS:
             #we already have one for this encoding
             continue
-        elif sys.platform.startswith("win") and _gst_major_version==0 and encoding==FLAC:
-            #the gstreamer 0.10 builds on win32 use the outdated oss build,
-            #which includes outdated flac libraries with known CVEs,
-            #so avoid using those:
-            log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
-            continue
+        elif encoding==FLAC:
+            #flac problems:
+            if sys.platform.startswith("win") and _gst_major_version==0 and encoding==FLAC:
+                #the gstreamer 0.10 builds on win32 use the outdated oss build,
+                #which includes outdated flac libraries with known CVEs,
+                #so avoid using those:
+                log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
+                continue
+            elif _gst_major_version==1:
+                log("skipping flac with Gstreamer 1.x to avoid obscure 'not-neogtiated' errors I do not have time for")
+                continue
         #verify we have all the elements needed:
         if has_plugins(*elements[1:]):
             #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux" = elements
@@ -254,49 +260,6 @@ if has_gst:
     log("initialized CODECS:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         log("* %s : %s", k, CODECS[k])
-
-def get_sound_codecs(is_speaker, is_server):
-    global has_gst
-    if not has_gst:
-        return []
-    try:
-        if (is_server and is_speaker) or (not is_server and not is_speaker):
-            return can_encode()
-        else:
-            return can_decode()
-    except Exception as e:
-        log.warn("failed to get list of codecs: %s" % e)
-        return []
-
-def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
-    if not has_gst:
-        return "sound is not supported - gstreamer not present or not accessible"
-    info = []
-    all_speaker_codecs = get_sound_codecs(True, is_server)
-    invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
-    hs = "help" in speaker_codecs
-    if hs:
-        info.append("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
-    elif len(invalid_sc):
-        info.append("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
-        for x in invalid_sc:
-            speaker_codecs.remove(x)
-    elif len(speaker_codecs)==0:
-        speaker_codecs += all_speaker_codecs
-
-    all_microphone_codecs = get_sound_codecs(True, is_server)
-    invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
-    hm = "help" in microphone_codecs
-    if hm:
-        info.append("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
-    elif len(invalid_mc):
-        info.append("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
-        for x in invalid_mc:
-            microphone_codecs.remove(x)
-    elif len(microphone_codecs)==0:
-        microphone_codecs += all_microphone_codecs
-    return info
-
 
 def get_encoder_formatter(name):
     assert name in CODECS, "invalid codec: %s (should be one of: %s)" % (name, CODECS.keys())
@@ -332,7 +295,6 @@ def can_encode():
 
 def can_decode():
     return [x for x in CODEC_ORDER if has_decoder(x)]
-
 
 def plugin_str(plugin, options):
     if plugin is None:

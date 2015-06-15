@@ -224,6 +224,31 @@ class subprocess_callee(object):
         glib.idle_add(method, *packet[1:])
 
 
+def exec_kwargs():
+    if os.name=="posix":
+        return {"close_fds" : True}
+    elif sys.platform.startswith("win"):
+        if not WIN32_SHOWWINDOW:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            return {"startupinfo" : startupinfo}
+    return {}
+
+def exec_env(blacklist=["LS_COLORS", ]):
+    env = os.environ.copy()
+    env["XPRA_SKIP_UI"] = "1"
+    #let's make things more complicated than they should be:
+    #on win32, the environment can end up containing unicode, and subprocess chokes on it
+    for k,v in env.items():
+        if k in blacklist:
+            continue
+        try:
+            env[k] = bytestostr(v.encode("utf8"))
+        except:
+            env[k] = bytestostr(v)
+    return env
+
+
 class subprocess_caller(object):
     """
     This is the caller side, wrapping the subprocess.
@@ -280,35 +305,16 @@ class subprocess_caller(object):
 
 
     def exec_subprocess(self):
-        kwargs = self.exec_kwargs()
+        kwargs = exec_kwargs()
         log("exec_subprocess() command=%s, kwargs=%s", self.command, kwargs)
         proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=self.get_env(), **kwargs)
         getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
     def get_env(self):
-        env = os.environ.copy()
-        env["XPRA_SKIP_UI"] = "1"
+        env = exec_env()
         env["XPRA_LOG_PREFIX"] = "%s " % self.description
-        #let's make things more complicated than they should be:
-        #on win32, the environment can end up containing unicode, and subprocess chokes on it
-        for k,v in env.items():
-            try:
-                env[k] = bytestostr(v.encode("utf8"))
-            except:
-                env[k] = bytestostr(v)
         return env
-
-    def exec_kwargs(self):
-        if os.name=="posix":
-            return {"close_fds" : True}
-        elif sys.platform.startswith("win"):
-            if not WIN32_SHOWWINDOW:
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                return {"startupinfo" : startupinfo}
-        return {}
-
 
     def cleanup(self):
         self.stop()

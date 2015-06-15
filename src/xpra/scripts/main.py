@@ -736,11 +736,10 @@ def do_parse_cmdline(cmdline, defaults):
             if cat=="help":
                 raise InitInfo("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
     if options.sound_source=="help":
+        from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
-            #NOTE: this will import GTK, so we have to exit
-            #(we cannot start the server after this for example)
-            from xpra.sound.gstreamer_util import get_available_source_plugins, SRC_TO_NAME_PLUGIN, NAME_TO_INFO_PLUGIN
-            source_plugins = [SRC_TO_NAME_PLUGIN[p] for p in get_available_source_plugins()]
+            from xpra.sound.wrapper import query_sound_sources
+            source_plugins = query_sound_sources()
         except Exception as e:
             raise InitInfo(e)
             source_plugins = []
@@ -814,11 +813,41 @@ def dump_frames(*arsg):
         traceback.print_stack(frame)
     print("")
 
+def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
+    from xpra.sound.gstreamer_util import has_gst
+    from xpra.sound.wrapper import get_sound_codecs
+    if not has_gst:
+        return "sound is not supported - gstreamer not present or not accessible"
+    info = []
+    all_speaker_codecs = get_sound_codecs(True, is_server)
+    invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
+    hs = "help" in speaker_codecs
+    if hs:
+        info.append("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
+    elif len(invalid_sc):
+        info.append("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
+        for x in invalid_sc:
+            speaker_codecs.remove(x)
+    elif len(speaker_codecs)==0:
+        speaker_codecs += all_speaker_codecs
+
+    all_microphone_codecs = get_sound_codecs(True, is_server)
+    invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
+    hm = "help" in microphone_codecs
+    if hm:
+        info.append("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
+    elif len(invalid_mc):
+        info.append("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
+        for x in invalid_mc:
+            microphone_codecs.remove(x)
+    elif len(microphone_codecs)==0:
+        microphone_codecs += all_microphone_codecs
+    return info
+
 
 def configure_logging(options, mode):
     if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
-            from xpra.sound.gstreamer_util import show_sound_codec_help
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
     else:
@@ -876,7 +905,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode in ("_proxy", "_proxy_start", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
-        elif mode in ("_sound_record", "_sound_play"):
+        elif mode in ("_sound_record", "_sound_play", "_sound_query"):
             if not has_sound_support:
                 error_cb("no sound support!")
             from xpra.sound.wrapper import run_sound
