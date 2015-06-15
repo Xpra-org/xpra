@@ -25,9 +25,13 @@ def add_audio_tagging_env(icon_path=None):
 
 #prefer the palib option which does everything in process:
 try:
-    if os.environ.get("XPRA_USE_PACTL", "0")=="1":
-        raise ImportError("environment override: not using palib")
-    from xpra.sound import pulseaudio_palib_util as _pulseaudio_util
+    #use "none" on win32 and osx:
+    if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+        from xpra.sound import pulseaudio_none_util as _pulseaudio_util
+    else:
+        if os.environ.get("XPRA_USE_PACTL", "0")=="1":
+            raise ImportError("environment override: not using palib")
+        from xpra.sound import pulseaudio_palib_util as _pulseaudio_util
 except ImportError as e:
     #fallback forks a process and parses the output:
     log.warn("palib not available, using legacy pactl fallback")
