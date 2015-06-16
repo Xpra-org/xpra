@@ -21,7 +21,7 @@ import cairo
 import signal
 
 from xpra.util import nonl, WORKSPACE_UNSET, WORKSPACE_ALL
-from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -81,7 +81,7 @@ CW_MASK_TO_NAME = {
                    }
 def configure_bits(value_mask):
     return "|".join((v for k,v in CW_MASK_TO_NAME.items() if (k&value_mask)))
-    
+
 
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
@@ -384,6 +384,17 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 #        "xpra-focus-in-event"   : one_arg_signal,
 #        "xpra-focus-out-event"  : one_arg_signal,
         }
+    __common_signals__ = {
+        "bell"                      : one_arg_signal,   #out
+        "xpra-xkb-event"            : one_arg_signal,
+        "xpra-shape-event"          : one_arg_signal,
+        "xpra-configure-event"      : one_arg_signal,
+        "xpra-unmap-event"          : one_arg_signal,
+        "xpra-client-message-event" : one_arg_signal,
+        "xpra-property-notify-event": one_arg_signal,
+        "xpra-focus-in-event"       : one_arg_signal,
+        "xpra-focus-out-event"      : one_arg_signal,
+        }
 
     def __init__(self, client_window):
         log("new window %#x", client_window.xid)
@@ -399,6 +410,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and not self.is_tray()
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
+        if X11Window.displayHasXShape():
+            X11Window.XShapeSelectInput(self.client_window.xid)
         self.property_names = ["pid", "transient-for", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
                                "xid", "workspace", "has-alpha", "opacity", "strut"]
 
@@ -730,6 +743,18 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
             return None
 
+
+    def do_xpra_shape_event(self, event):
+        log("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
+
+    def do_xpra_xkb_event(self, event):
+        log("WindowModel.do_xpra_xkb_event(%r)" % event)
+        if event.type!="bell":
+            log.error("WindowModel.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            return
+        event.window_model = self
+        self.emit("bell", event)
+
     def do_xpra_client_message_event(self, event):
         log("do_xpra_client_message_event(%s)", event)
         if not event.data or len(event.data)!=5:
@@ -781,14 +806,7 @@ gobject.type_register(BaseWindowModel)
 # ordinary managed windows; so some of that code should get pushed up into the
 # superclass sooner or later.  When someone cares, presumably.
 class OverrideRedirectWindowModel(BaseWindowModel):
-    __gsignals__ = {
-        "xpra-configure-event": one_arg_signal,
-        "xpra-unmap-event": one_arg_signal,
-        "xpra-client-message-event" : one_arg_signal,
-        "xpra-property-notify-event": one_arg_signal,
-        "xpra-focus-in-event"   : one_arg_signal,
-        "xpra-focus-out-event"  : one_arg_signal,
-        }
+    __gsignals__ = BaseWindowModel.__common_signals__.copy()
 
     def __init__(self, client_window):
         super(OverrideRedirectWindowModel, self).__init__(client_window)
@@ -943,25 +961,13 @@ class WindowModel(BaseWindowModel):
                        True,
                        gobject.PARAM_READABLE),
         }
-    __gsignals__ = {
-        # X11 bell event:
-        "bell": one_arg_signal,
-
-        "ownership-election": (gobject.SIGNAL_RUN_LAST,
-                               gobject.TYPE_PYOBJECT, (),
-                               non_none_list_accumulator),
-        "xpra-property-notify-event": one_arg_signal,
-        "xpra-configure-event": one_arg_signal,
-        "xpra-focus-in-event"   : one_arg_signal,
-        "xpra-focus-out-event"  : one_arg_signal,
-
-        "child-map-request-event": one_arg_signal,
-        "child-configure-request-event": one_arg_signal,
-        "xpra-client-message-event" : one_arg_signal,
-        "xpra-unmap-event": one_arg_signal,
-        "xpra-destroy-event": one_arg_signal,
-        "xpra-xkb-event": one_arg_signal,
-        }
+    __gsignals__ = BaseWindowModel.__common_signals__.copy()
+    __gsignals__.update({
+        "ownership-election"            : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_PYOBJECT, (), non_none_list_accumulator),
+        "child-map-request-event"       : one_arg_signal,
+        "child-configure-request-event" : one_arg_signal,
+        "xpra-destroy-event"            : one_arg_signal,
+        })
 
     def __init__(self, parking_window, client_window):
         """Register a new client window with the WM.
@@ -1180,14 +1186,6 @@ class WindowModel(BaseWindowModel):
         #not handled:
         return False
 
-
-    def do_xpra_xkb_event(self, event):
-        log("WindowModel.do_xpra_xkb_event(%r)" % event)
-        if event.type!="bell":
-            log.error("WindowModel.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
-            return
-        event.window_model = self
-        self.emit("bell", event)
 
     def do_xpra_property_notify_event(self, event):
         if event.delivered_to is self.corral_window:

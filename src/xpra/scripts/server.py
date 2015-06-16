@@ -892,6 +892,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if not X11Window.displayHasXComposite():
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
+        log("XShape=%s", X11Window.displayHasXShape())
         app = XpraServer(clobber)
         info = "xpra"
 

@@ -283,6 +283,15 @@ cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify
     unsigned long XFixesDisplayCursorNotifyMask
 
+cdef extern from "X11/extensions/shape.h":
+    Bool XShapeQueryExtension(Display *display, int *event_base, int *error_base)
+    ctypedef struct XShapeEvent:
+        Window window
+        int kind            #ShapeBounding or ShapeClip
+        int x, y            #extents of new region
+        unsigned width, height
+        Bool shaped         #true if the region exists
+
 cdef extern from "X11/extensions/Xdamage.h":
     ctypedef XID Damage
     unsigned int XDamageNotify
@@ -653,8 +662,9 @@ def cleanup_all_event_receivers():
             window.set_data(_ev_receiver_key, None)
 
 
-CursorNotify = 0
-XKBNotify = 0
+cdef int CursorNotify = -1
+cdef int XKBNotify = -1
+cdef int ShapeNotify = -1
 _x_event_signals = {}
 event_type_names = {}
 names_to_event_type = {}
@@ -691,6 +701,7 @@ cdef int get_XFixes_event_base():
     xdisplay = get_xdisplay_for(display)
     XFixesQueryExtension(xdisplay, &event_base, &error_base)
     verbose("get_XFixes_event_base(%s)=%s", display.get_name(), int(event_base))
+    assert event_base>0, "invalid event base for XFixes"
     return event_base
 
 cdef int get_XDamage_event_base():
@@ -701,8 +712,17 @@ cdef int get_XDamage_event_base():
     xdisplay = get_xdisplay_for(display)
     XDamageQueryExtension(xdisplay, &event_base, &error_base)
     verbose("get_XDamage_event_base(%s)=%s", display.get_name(), int(event_base))
+    assert event_base>0, "invalid event base for XDamage"
     return event_base
 
+cdef int get_XShape_event_base():
+    cdef Display * xdisplay                             #@DuplicatedSignature
+    display = gtk.gdk.get_default_root_window().get_display()
+    xdisplay = get_xdisplay_for(display)
+    cdef int event_base = 0, ignored = 0
+    if not XShapeQueryExtension(xdisplay, &event_base, &ignored):
+        return -1
+    return event_base
 
 
 cdef init_x11_events():
@@ -710,6 +730,7 @@ cdef init_x11_events():
     XKBNotify = get_XKB_event_base()
     CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
     DamageNotify = XDamageNotify+get_XDamage_event_base()
+    cdef int xshape_base = get_XShape_event_base()
     _x_event_signals = {
         MapRequest          : (None, "child-map-request-event"),
         ConfigureRequest    : (None, "child-configure-request-event"),
@@ -770,6 +791,12 @@ cdef init_x11_events():
         DamageNotify        : "DamageNotify",
         #GenericEvent        : "GenericEvent",    #Old versions of X11 don't have this defined, ignore it
         }
+    if xshape_base>=0:
+        global ShapeNotify
+        ShapeNotify = xshape_base
+        _x_event_signals[ShapeNotify] = ("xpra-shape-event", None)
+        event_type_names[ShapeNotify] = "ShapeNotify"
+        log("added ShapeNotify=%s", ShapeNotify)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
     verbose("x_event_signals=%s", _x_event_signals)
@@ -928,6 +955,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef XFixesCursorNotifyEvent * cursor_e
     cdef XkbAnyEvent * xkb_e
     cdef XkbBellNotifyEvent * bell_e
+    cdef XShapeEvent * shape_e
     cdef double start
     cdef object my_events
     cdef object event_args
@@ -1069,6 +1097,15 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.state = e.xmotion.state
                     pyev.is_hint = e.xmotion.is_hint
                     pyev.same_screen = e.xmotion.same_screen
+                elif e.type == ShapeNotify:
+                    shape_e = <XShapeEvent*> e
+                    pyev.window = _gw(d, shape_e.window)
+                    pyev.kind = shape_e.kind
+                    pyev.x = shape_e.x
+                    pyev.y = shape_e.y
+                    pyev.width = shape_e.width
+                    pyev.height = shape_e.height
+                    pyev.shaped = shape_e.shaped
                 elif e.type == XKBNotify:
                     # note we could just cast directly to XkbBellNotifyEvent
                     # but this would be dirty, and we may want to catch

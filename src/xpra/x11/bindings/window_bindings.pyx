@@ -261,6 +261,21 @@ cdef extern from "X11/extensions/Xcomposite.h":
     void XCompositeUnredirectWindow(Display *, Window, int mode)
     void XCompositeUnredirectSubwindows(Display *, Window, int mode)
 
+cdef extern from "X11/extensions/shape.h":
+    Bool XShapeQueryExtension(Display *display, int *event_base, int *error_base)
+    Status XShapeQueryVersion(Display *display, int *major_version, int *minor_version)
+    Status XShapeQueryExtents(Display *display, Window window, Bool *bounding_shaped, int *x_bounding, int *y_bounding, unsigned int *w_bounding, unsigned int *h_bounding, Bool *clip_shaped, int *x_clip, int *y_clip, unsigned int *w_clip, unsigned int *h_clip)
+    void XShapeSelectInput(Display *display, Window window, unsigned long mask)
+    unsigned long XShapeInputSelected(Display *display, Window window)
+    XRectangle *XShapeGetRectangles(Display *display, Window window, int kind, int *count, int *ordering)
+
+    cdef int ShapeBounding
+    cdef int ShapeClip
+SHAPE_KIND = {
+                ShapeBounding   : "Bounding",
+                ShapeClip       : "Clip",
+              }
+
 ###################################
 # Xfixes: cursor events
 ###################################
@@ -508,6 +523,23 @@ cdef class X11WindowBindings(X11CoreBindings):
         except Exception as e:
             log.error("%s", e)
         return False
+
+    def displayHasXShape(self):
+        cdef int event_base = 0, ignored = 0
+        if not XShapeQueryExtension(self.display, &event_base, &ignored):
+            log.warn("X11 extension XShape not available")
+            return False
+        log("X11 extension XShape event_base=%s", event_base)
+        cdef int cmajor, cminor
+        if not XShapeQueryVersion(self.display, &cmajor, &cminor):
+            log.warn("XShape version query failed")
+            return False
+        log("found X11 extension XShape with version %i.%i", cmajor, cminor)
+        return True
+
+    def XShapeSelectInput(self, Window window):
+        cdef int ShapeNotifyMask = 1
+        XShapeSelectInput(self.display, window, ShapeNotifyMask)
 
     def XCompositeRedirectWindow(self, Window xwindow):
         XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)
