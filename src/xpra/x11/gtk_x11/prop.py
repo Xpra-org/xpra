@@ -23,7 +23,6 @@ log = Logger("x11", "window")
 
 try:
     from xpra.x11.gtk_x11.gdk_bindings import (
-                    get_xatom,                  #@UnresolvedImport
                     get_xwindow, get_pywindow,  #@UnresolvedImport
                     get_xvisual,                #@UnresolvedImport
                    )
@@ -41,7 +40,7 @@ except ImportError as e:
                 raise Exception("cannot convert %s to an xid!" % type(w))
     def missing_fn(*args):
         raise NotImplementedError()
-    get_xatom, get_pywindow, get_xvisual = missing_fn, missing_fn, missing_fn
+    get_pywindow, get_xvisual = missing_fn, missing_fn
 
 from xpra.x11.bindings.window_bindings import (
                 constants,                      #@UnresolvedImport
@@ -226,6 +225,10 @@ def _get_atom(disp, d):
         return pyatom.decode()
     return pyatom
 
+def _get_xatom(str_or_int):
+    with xsync:
+        return X11Window.get_xatom(str_or_int)
+
 def _get_multiple(disp, d):
     uint_struct = struct.Struct("@I")
     log("get_multiple struct size=%s, len(%s)=%s", uint_struct.size, d, len(d))
@@ -256,7 +259,7 @@ _prop_types = {
     # that Xutf8TextPropertyToTextList exists.
     "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "atom": (str, "ATOM", 32,
-             lambda disp, a: struct.pack("@I", get_xatom(a)),
+             lambda disp, a: struct.pack("@I", _get_xatom(a)),
               _get_atom,
              b""),
     "state": ((int, long), "WM_STATE", 32,
