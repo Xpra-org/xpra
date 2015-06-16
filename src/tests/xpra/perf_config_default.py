@@ -160,7 +160,7 @@ class Config():
 
     #XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
     #XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
-    XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
+    XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "h264", "vp8", "vp9", "mmap"]
 
     #XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
     #    "webp" : XPRA_QUALITY_OPTIONS,
