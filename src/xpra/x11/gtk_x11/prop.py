@@ -23,7 +23,7 @@ log = Logger("x11", "window")
 
 try:
     from xpra.x11.gtk_x11.gdk_bindings import (
-                    get_xatom, get_pyatom,      #@UnresolvedImport
+                    get_xatom,                  #@UnresolvedImport
                     get_xwindow, get_pywindow,  #@UnresolvedImport
                     get_xvisual,                #@UnresolvedImport
                    )
@@ -39,9 +39,9 @@ except ImportError as e:
                 return int(w)
             except:
                 raise Exception("cannot convert %s to an xid!" % type(w))
-    def missing_fn():
+    def missing_fn(*args):
         raise NotImplementedError()
-    get_xatom, get_pyatom, get_pywindow, get_xvisual = missing_fn, missing_fn, missing_fn, missing_fn
+    get_xatom, get_pywindow, get_xvisual = missing_fn, missing_fn, missing_fn
 
 from xpra.x11.bindings.window_bindings import (
                 constants,                      #@UnresolvedImport
@@ -216,11 +216,15 @@ def NetWMIcons(disp, data):
 
 def _get_atom(disp, d):
     unpacked = struct.unpack("@I", d)[0]
-    pyatom = get_pyatom(disp, unpacked)
+    with xsync:
+        pyatom = X11Window.XGetAtomName(unpacked)
     if not pyatom:
         log.error("invalid atom: %s - %s", repr(d), repr(unpacked))
         return  None
-    return str(pyatom)
+    if type(pyatom)!=str:
+        #py3k:
+        return pyatom.decode()
+    return pyatom
 
 def _get_multiple(disp, d):
     uint_struct = struct.Struct("@I")

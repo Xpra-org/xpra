@@ -22,7 +22,7 @@ eventslog = Logger("events")
 
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
-from xpra.gtk_common.gtk_util import get_pixbuf_from_data, WINDOW_POPUP, WINDOW_TOPLEVEL
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, WINDOW_POPUP, WINDOW_TOPLEVEL
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
@@ -52,11 +52,11 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
 
         try:
             #TODO: in theory this is not a proper check, meh - that will do
-            root = gtk.gdk.get_default_root_window()
+            root = get_default_root_window()
             supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
             CAN_SET_WORKSPACE = bool(supported) and "_NET_WM_DESKTOP" in supported
         except Exception as e:
-            log.info("failed to setup workspace hooks: %s", e)
+            log.info("failed to setup workspace hooks: %s", e, exc_info=True)
     except ImportError:
         pass
 

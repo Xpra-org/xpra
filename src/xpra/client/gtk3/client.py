@@ -78,9 +78,6 @@ class XpraClient(GTKXpraClient):
             GTKXpraClient.set_windows_cursor(self, windows, cursor_data)
 
 
-    def get_root_window(self):
-        return Gdk.Screen.get_default().get_root_window()
-
     def get_root_size(self):
         if WIN32:
             #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?

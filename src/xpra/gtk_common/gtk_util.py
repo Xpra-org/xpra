@@ -69,6 +69,8 @@ if is_gtk3():
         if not ok:
             return None
         return v
+    get_default_root_window = gdk.Screen.get_default().get_root_window
+
     default_Cursor          = gdk.Cursor.new(gdk.CursorType.X_CURSOR)
     new_Cursor_for_display  = gdk.Cursor.new_for_display
     new_Cursor_from_pixbuf  = gdk.Cursor.new_from_pixbuf
@@ -170,6 +172,8 @@ else:
     #gtk2:
     if gtk.gtk_version<(2,18):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
+
+    get_default_root_window = gdk.get_default_root_window
 
     color_parse             = gdk.color_parse
     default_Cursor          = gdk.Cursor(gdk.X_CURSOR)

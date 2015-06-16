@@ -26,6 +26,7 @@ from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
+            get_default_root_window, \
             INTERP_BILINEAR, WINDOW_TOPLEVEL
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -259,7 +260,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def get_root_window(self):
-        raise Exception("override me!")
+        return get_default_root_window()
 
     def get_root_size(self):
         raise Exception("override me!")
