@@ -39,7 +39,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server.proxy import XpraProxy
 from xpra.util import typedict, updict, repr_ellipsized, \
-        SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, AUTHENTICATION_ERROR, CLIENT_REQUEST
+        SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
 
@@ -662,8 +662,7 @@ class ServerCore(object):
         else:
             #did the client expect a challenge?
             if c.boolget("challenge"):
-                self.disconnect_client(proto, AUTHENTICATION_ERROR, "this server does not require authentication")
-                return False
+                authlog.warn("this server does not require authentication (client supplied a challenge)")
         return auth_caps
 
     def filedata_nocrlf(self, filename):
