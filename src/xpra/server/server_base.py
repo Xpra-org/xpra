@@ -379,7 +379,8 @@ class ServerBase(ServerCore):
 
     def init_sound_options(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
         try:
-            from xpra.sound.gstreamer_util import has_gst, get_sound_codecs
+            from xpra.sound.gstreamer_util import has_gst
+            from xpra.sound.wrapper import get_sound_codecs
         except Exception as e:
             log("cannot load gstreamer: %s", e)
             has_gst = False
