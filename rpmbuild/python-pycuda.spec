@@ -8,8 +8,8 @@
 %define __requires_exclude ^libcuda.*$
 
 Name:           python-pycuda
-Version:        2014.1
-Release:        3
+Version:        2015.1
+Release:        1
 Url:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
@@ -63,6 +63,8 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
+* Wed Jun 17 2015 Antoine Martin <antoine@devloop.org.uk - 2015.1-1
+- new upstream release
 
 * Sun Mar 29 2015 Antoine Martin <antoine@devloop.org.uk - 2014.1-3
 - remove dependency on libcuda so the package can be installed without using the RPM drivers
