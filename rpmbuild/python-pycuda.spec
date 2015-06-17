@@ -36,7 +36,7 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 %setup -q -n pycuda-%{version}
 
 %build
-./configure.py \
+%{__python} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=/usr/local/cuda \
 	--cudadrv-lib-dir=/usr/local/lib64 \
