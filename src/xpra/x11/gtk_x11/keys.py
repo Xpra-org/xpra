@@ -44,7 +44,4 @@ def grok_modifier_map(display, meanings):
                     modifier = meanings.get(keyval_name)
                     if modifier:
                         modifier_map[modifier] |= (1 << i)
-    modifier_map["nuisance"] = (modifier_map["lock"]
-                                | modifier_map["scroll"]
-                                | modifier_map["num"])
     return modifier_map
