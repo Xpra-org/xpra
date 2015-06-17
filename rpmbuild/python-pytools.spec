@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python-pytools
-Version:        2014.3
+Version:        2014.3.5
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 
@@ -51,5 +51,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Jun 17 2015 Antoine Martin <antoine@devloop.org.uk - 2014.3.5
+- new upstream release
+
 * Thu Sep 04 2014 Antoine Martin <antoine@devloop.org.uk - 2014.3
 - Initial packaging for xpra
