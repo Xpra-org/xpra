@@ -864,7 +864,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
-                   "xpra/server/stats/cymaths.c",
+                   "xpra/server/stats/cystats.c",
+                   "xpra/server/region.c",
                    "etc/xpra/xpra.conf"]
     if WIN32:
         #on win32, the build creates ".pyd" files, clean those too:
