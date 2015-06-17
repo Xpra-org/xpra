@@ -308,12 +308,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
+        if HAS_X11_BINDINGS:
+            ms += ["shape"]
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
         #we need the bindings to support initiate-moveresize (posix only for now):
+        updict(capabilities, "window", {
+               "initiate-moveresize"    : HAS_X11_BINDINGS,
+               "frame_sizes"            : self.get_window_frame_sizes()
+               })
         from xpra.client.window_backing_base import DELTA_BUCKETS
-        capabilities["window.initiate-moveresize"] = HAS_X11_BINDINGS
-        capabilities["window.frame_sizes"] = self.get_window_frame_sizes()
         updict(capabilities, "encoding", {
                     "icons.greedy"      : True,         #we don't set a default window icon any more
                     "icons.size"        : (64, 64),     #size we want

@@ -284,6 +284,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 "Opacity", "",
                 -1, 0xffffffff, -1,
                 gobject.PARAM_READABLE),
+        "shape": (gobject.TYPE_PYOBJECT,
+                          "Window XShape data", "",
+                          gobject.PARAM_READABLE),
         "xid": (gobject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
@@ -413,13 +416,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         if X11Window.displayHasXShape():
             X11Window.XShapeSelectInput(self.client_window.xid)
         self.property_names = ["pid", "transient-for", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "window-type", "role", "group-leader",
-                               "xid", "workspace", "has-alpha", "opacity", "strut"]
+                               "xid", "workspace", "has-alpha", "opacity", "strut", "shape"]
 
     def get_property_names(self):
         return self.property_names
 
     def get_dynamic_property_names(self):
-        return ("title", "size-hints", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "opacity", "workspace", "strut")
+        return ("title", "size-hints", "fullscreen", "fullscreen-monitors", "bypass-compositor", "maximized", "opacity", "workspace", "strut", "shape")
 
 
     def managed_connect(self, detailed_signal, handler, *args):
@@ -591,6 +594,28 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def _read_initial_X11_properties(self):
         self._internal_set_property("has-alpha", X11Window.get_depth(self.client_window.xid)==32)
+        self._internal_set_property("shape", self._read_xshape())
+
+    def _read_xshape(self):
+        xid = self.client_window.xid
+        extents = X11Window.XShapeQueryExtents(xid)
+        if not extents:
+            return {}
+        v = {}
+        #w,h = X11Window.getGeometry(xid)[2:4]
+        bextents = extents[0]
+        cextents = extents[1]
+        if bextents[0]==0 and cextents[0]==0:
+            #shape not used
+            return {}
+        v["Bounding.extents"] = bextents
+        v["Clip.extents"] = cextents
+        for kind in SHAPE_KIND.keys():
+            kind_name = SHAPE_KIND[kind]
+            rectangles = X11Window.XShapeGetRectangles(xid, kind)
+            v[kind_name+".rectangles"] = rectangles
+        log("_read_shape()=%s", v)
+        return v
 
 
     def _handle_workspace_change(self):
@@ -746,6 +771,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def do_xpra_shape_event(self, event):
         log("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
+        self._internal_set_property("shape", self._read_xshape())
+
 
     def do_xpra_xkb_event(self, event):
         log("WindowModel.do_xpra_xkb_event(%r)" % event)

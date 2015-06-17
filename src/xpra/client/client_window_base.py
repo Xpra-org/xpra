@@ -295,6 +295,11 @@ class ClientWindowBase(ClientWidgetBase):
         if b"fullscreen-monitors" in metadata:
             self.set_fullscreen_monitors(metadata.intlistget("fullscreen-monitors"))
 
+        if b"shape" in metadata:
+            self.set_shape(metadata.dictget("shape"))
+
+    def set_shape(self, shape):
+        log("set_shape(%s) not implemented", shape)
 
     def set_bypass_compositor(self, v):
         pass        #see gtk client window base

@@ -269,6 +269,9 @@ cdef extern from "X11/extensions/shape.h":
     unsigned long XShapeInputSelected(Display *display, Window window)
     XRectangle *XShapeGetRectangles(Display *display, Window window, int kind, int *count, int *ordering)
 
+    void XShapeCombineRectangles(Display *display, Window dest, int dest_kind, int x_off, int y_off, XRectangle *rectangles, int n_rects, int op, int ordering)
+
+
     cdef int ShapeBounding
     cdef int ShapeClip
 SHAPE_KIND = {
@@ -507,23 +510,8 @@ cdef class X11WindowBindings(X11CoreBindings):
 
 
     ###################################
-    # Composite
+    # Shape
     ###################################
-    def ensure_XComposite_support(self):
-        # We need NameWindowPixmap, but we don't need the overlay window
-        # (v0.3) or the special manual-redirect clipping semantics (v0.4).
-        self.ensure_extension_support(0, 2, "Composite",
-                                  XCompositeQueryExtension,
-                                  XCompositeQueryVersion)
-
-    def displayHasXComposite(self):
-        try:
-            self.ensure_XComposite_support()
-            return  True
-        except Exception as e:
-            log.error("%s", e)
-        return False
-
     def displayHasXShape(self):
         cdef int event_base = 0, ignored = 0
         if not XShapeQueryExtension(self.display, &event_base, &ignored):
@@ -540,6 +528,66 @@ cdef class X11WindowBindings(X11CoreBindings):
     def XShapeSelectInput(self, Window window):
         cdef int ShapeNotifyMask = 1
         XShapeSelectInput(self.display, window, ShapeNotifyMask)
+
+    def XShapeQueryExtents(self, Window window):
+        cdef Bool bounding_shaped, clip_shaped
+        cdef int x_bounding, y_bounding, x_clip, y_clip
+        cdef unsigned int w_bounding, h_bounding, w_clip, h_clip
+        if not XShapeQueryExtents(self.display, window,
+                                  &bounding_shaped, &x_bounding, &y_bounding, &w_bounding, &h_bounding,
+                                  &clip_shaped, &x_clip, &y_clip, &w_clip, &h_clip):
+            return None
+        return (
+                (bounding_shaped, x_bounding, y_bounding, w_bounding, h_bounding),
+                (clip_shaped, x_clip, y_clip, w_clip, h_clip)
+                )
+
+    def XShapeGetRectangles(self, Window window, int kind):
+        cdef XRectangle* rect
+        cdef int count, ordering
+        rect = XShapeGetRectangles(self.display, window, kind, &count, &ordering)
+        if rect==NULL or count<=0:
+            return []
+        rectangles = []
+        cdef int i
+        for i in range(count):
+            rectangles.append((rect[i].x, rect[i].y, rect[i].width, rect[i].height))
+        return rectangles
+
+    def XShapeCombineRectangles(self, Window window, int kind, int x_off, int y_off, rectangles):
+        cdef int n_rects = len(rectangles)
+        cdef int op = 0     #SET
+        cdef int ordering = 0   #Unsorted
+        cdef XRectangle *rects = <XRectangle*> malloc(sizeof(XRectangle) * n_rects)
+        cdef int i = 0
+        for r in rectangles:
+            rects[i].x = r[0]
+            rects[i].y = r[1]
+            rects[i].width = r[2]
+            rects[i].height = r[3]
+            i += 1
+        XShapeCombineRectangles(self.display, window, kind, x_off, y_off,
+                                rects, n_rects, op, ordering)
+        free(rects)
+
+
+    ###################################
+    # Composite
+    ###################################
+    def ensure_XComposite_support(self):
+        # We need NameWindowPixmap, but we don't need the overlay window
+        # (v0.3) or the special manual-redirect clipping semantics (v0.4).
+        self.ensure_extension_support(0, 2, "Composite",
+                                  XCompositeQueryExtension,
+                                  XCompositeQueryVersion)
+
+    def displayHasXComposite(self):
+        try:
+            self.ensure_XComposite_support()
+            return  True
+        except Exception as e:
+            log.error("%s", e)
+        return False
 
     def XCompositeRedirectWindow(self, Window xwindow):
         XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)

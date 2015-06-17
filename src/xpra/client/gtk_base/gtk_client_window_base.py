@@ -21,7 +21,7 @@ eventslog = Logger("events")
 
 
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, WINDOW_POPUP, WINDOW_TOPLEVEL
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
@@ -38,7 +38,7 @@ HAS_X11_BINDINGS = False
 if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
-        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings
         from xpra.gtk_common.error import xsync, xswallow
         from xpra.x11.gtk_x11.send_wm import send_wm_workspace
@@ -340,6 +340,21 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #(used by the win32 platform workarounds)
         pass
 
+    def set_shape(self, shape):
+        log("set_shape(%s)", shape)
+        if not HAS_X11_BINDINGS:
+            return
+        if not self.is_realized():
+            self.realize()
+        xid = get_xid(self.get_window())
+        for kind, name in SHAPE_KIND.items():
+            rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
+            if rectangles is not None:
+                #FIXME: are we supposed to get the offset from the "extents"?
+                x_off, y_off = 0, 0
+                log("XShapeCombineRectangles %s=%s", name, rectangles)
+                with xsync:
+                    X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
 
     def set_bypass_compositor(self, v):
         if not HAS_X11_BINDINGS:
@@ -582,8 +597,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if workspace==WORKSPACE_UNSET:
             #we want to remove the setting, so access the window property directly:
             self._window_workspace = workspace
+            xid = get_xid(gdkwin)
             with xswallow:
-                X11Window.XDeleteProperty(gdkwin.xid, "_NET_WM_DESKTOP")
+                X11Window.XDeleteProperty(xid, "_NET_WM_DESKTOP")
             return self._window_workspace
         #clamp to number of workspaces just in case we have a mismatch:
         if workspace==WORKSPACE_ALL:
@@ -605,11 +621,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         statelog("initiate_moveresize%s", (x_root, y_root, direction, button, source_indication))
         assert HAS_X11_BINDINGS, "cannot handle initiate-moveresize without X11 bindings"
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
+        root = self.get_window().get_screen().get_root_window()
+        root_xid = get_xid(root)
+        xwin = get_xid(self.get_window())
         with xsync:
-            from xpra.gtk_common.gobject_compat import get_xid
-            root = self.get_window().get_screen().get_root_window()
-            root_xid = get_xid(root)
-            xwin = get_xid(self.get_window())
             X11Core.UngrabPointer()
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
                   x_root, y_root, direction, button, source_indication)
