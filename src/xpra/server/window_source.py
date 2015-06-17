@@ -141,11 +141,14 @@ class WindowSource(object):
         self.scaling = None
         self.maximized = False          #set by the client!
         self.iconic = False
+        self.window_signal_handlers = []
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
-            window.connect("notify::iconic", self._iconic_changed)
+            sid = window.connect("notify::iconic", self._iconic_changed)
+            self.window_signal_handlers.append((window, sid))
         if "fullscreen" in window.get_dynamic_property_names():
-            window.connect("notify::fullscreen", self._fullscreen_changed)
+            sid = window.connect("notify::fullscreen", self._fullscreen_changed)
+            self.window_signal_handlers.append((window, sid))
 
         #for deciding between small regions and full screen updates:
         self.max_small_regions = 40
@@ -282,6 +285,12 @@ class WindowSource(object):
         log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
         self._damage_cancelled = float("inf")
+        def window_signal_handlers_cleanup():
+            log("window_signal_handlers_cleanup: will disconnect %s", [int(sid) for _,sid in self.window_signal_handlers])
+            for window, sid in self.window_signal_handlers:
+                window.disconnect(sid)
+            self.window_signal_handlers = []
+        self.idle_add(window_signal_handlers_cleanup)
 
 
     def get_info(self):
