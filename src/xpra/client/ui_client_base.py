@@ -128,32 +128,28 @@ class UIXpraClient(XpraClientBase):
         self.encoding = None
 
         #sound:
-        self.sound_source_plugin = None
-        self.speaker_allowed = False
-        self.speaker_enabled = False
-        self.speaker_codecs = []
-        self.microphone_allowed = False
-        self.microphone_enabled = False
-        self.microphone_codecs = []
         try:
             from xpra.sound.gstreamer_util import has_gst
-            self.speaker_allowed = has_gst
-            self.speaker_codecs = []
-            self.microphone_allowed = has_gst
-            self.microphone_codecs = []
-            self.microphone_enabled = False
-            if has_gst:
+        except:
+            has_gst = False
+        self.sound_source_plugin = None
+        self.speaker_allowed = has_gst
+        self.speaker_enabled = False
+        self.speaker_codecs = []
+        self.microphone_allowed = has_gst
+        self.microphone_enabled = False
+        self.microphone_codecs = []
+        if has_gst:
+            try:
                 from xpra.sound.wrapper import get_sound_codecs
                 self.speaker_codecs = get_sound_codecs(True, False)
                 self.speaker_allowed = len(self.speaker_codecs)>0
                 self.microphone_codecs = get_sound_codecs(False, False)
                 self.microphone_allowed = len(self.microphone_codecs)>0
-            if has_gst:
-                soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
-                soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
-        except Exception as e:
-            soundlog("sound support unavailable: %s", e)
-            has_gst = False
+            except Exception as e:
+                soundlog("sound support unavailable: %s", e)
+        soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
+        soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
         self.av_sync = False
         #sound state:
         self.on_sink_ready = None
@@ -268,7 +264,6 @@ class UIXpraClient(XpraClientBase):
 
         try:
             from xpra.sound.gstreamer_util import has_gst
-            from xpra.sound.wrapper import get_sound_codecs
         except:
             has_gst = False
         self.sound_source_plugin = opts.sound_source
@@ -276,15 +271,14 @@ class UIXpraClient(XpraClientBase):
         self.speaker_enabled = sound_option(opts.speaker)=="on" and has_gst
         self.microphone_allowed = sound_option(opts.microphone) in ("on", "off") and has_gst
         self.microphone_enabled = sound_option(opts.microphone)=="on" and has_gst
-        self.speaker_codecs = opts.speaker_codec
+        if opts.speaker_codec:
+            self.speaker_codecs = opts.speaker_codec
         if len(self.speaker_codecs)==0 and self.speaker_allowed:
-            assert has_gst
-            self.speaker_allowed = len(self.speaker_codecs)>0
-        self.microphone_codecs = opts.microphone_codec
+            self.speaker_allowed = False
+        if opts.microphone_codec:
+            self.microphone_codecs = opts.microphone_codec
         if len(self.microphone_codecs)==0 and self.microphone_allowed:
-            assert has_gst
-            self.microphone_codecs = get_sound_codecs(False, False)
-            self.microphone_allowed = len(self.microphone_codecs)>0
+            self.microphone_allowed = False
         self.av_sync = opts.av_sync
 
         self.readonly = opts.readonly
