@@ -866,7 +866,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cystats.c",
                    "xpra/server/region.c",
-                   "etc/xpra/xpra.conf"]
+                   "etc/xpra/xpra.conf",
+                   #special case for the generated xpra.conf in build (see #891):
+                   "build/etc/xpra/xpra.conf"]
     if WIN32:
         #on win32, the build creates ".pyd" files, clean those too:
         for x in list(CLEAN_FILES):
