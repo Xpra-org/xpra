@@ -4,17 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 X11Keyboard = X11KeyboardBindings()
+from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
+from xpra.gtk_common.gtk_util import keymap_get_for_display
+gdk = import_gdk()
 
 def grok_modifier_map(display, meanings):
     """Return an dict mapping modifier names to corresponding X modifier
     bitmasks."""
     #TODO: needs fixing for GTK3
-    from xpra.gtk_common.gtk_util import is_gtk3
-    assert not is_gtk3(), "grok_modifier_map needs porting to GTK3"
     from xpra.keyboard.mask import MODIFIER_MAP
     modifier_map = MODIFIER_MAP.copy()
     modifier_map.update({
@@ -30,7 +30,7 @@ def grok_modifier_map(display, meanings):
 
     (max_keypermod, keycodes) = X11Keyboard.get_modifier_map()
     assert len(keycodes) == 8 * max_keypermod
-    keymap = gtk.gdk.keymap_get_for_display(display)
+    keymap = keymap_get_for_display(display)
     for i in range(8):
         for j in range(max_keypermod):
             keycode = keycodes[i * max_keypermod + j]
@@ -39,8 +39,15 @@ def grok_modifier_map(display, meanings):
                 if entries is None:
                     # This keycode has no entry in the keymap:
                     continue
-                for (keyval, _, _, _) in entries:
-                    keyval_name = gtk.gdk.keyval_name(keyval)
+                if is_gtk3():
+                    found, _, keyvals = entries
+                    if not found:
+                        continue
+                else:
+                    #(keyval, _, _, _) in entries
+                    keyvals = [x[0] for x in entries]
+                for keyval in keyvals:
+                    keyval_name = gdk.keyval_name(keyval)
                     modifier = meanings.get(keyval_name)
                     if modifier:
                         modifier_map[modifier] |= (1 << i)
