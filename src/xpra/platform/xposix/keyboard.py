@@ -97,9 +97,9 @@ class Keyboard(KeyboardBase):
             layout = v
         def s(v):
             try:
-                return s.encode("ascii")
+                return v.encode("ascii")
             except:
-                return str(s)
+                return str(v)
         return s(layout), [s(x) for x in layouts], b"", None
 
 
