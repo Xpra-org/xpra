@@ -452,6 +452,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def realize(self):
+        self.set_alpha()
         gtk.Window.realize(self)
         if self.group_leader:
             if not self.is_realized():
