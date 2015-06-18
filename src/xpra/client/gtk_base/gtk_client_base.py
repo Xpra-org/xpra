@@ -315,6 +315,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #we need the bindings to support initiate-moveresize (posix only for now):
         updict(capabilities, "window", {
                "initiate-moveresize"    : HAS_X11_BINDINGS,
+               "configure.pointer"      : True,
                "frame_sizes"            : self.get_window_frame_sizes()
                })
         from xpra.client.window_backing_base import DELTA_BUCKETS

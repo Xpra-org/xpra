@@ -16,7 +16,7 @@ import gtk.gdk
 import gobject
 import time
 
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, updict
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
 from xpra.x11.gtk_x11.wm import Wm
@@ -229,12 +229,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
         if source.wants_features:
-            capabilities.update({
-                "window.frame-extents"          : True,
-                "window.raise"                  : True,
-                "window.resize-counter"         : True,
-                "window.configure.skip-geometry": True,
-                "pointer.grabs"                 : True,
+            capabilities["pointer.grabs"] = True
+            updict(capabilities, "window", {
+                "frame-extents"          : True,
+                "raise"                  : True,
+                "resize-counter"         : True,
+                "configure.skip-geometry": True,
+                "configure.pointer"      : True,
                 })
         return capabilities
 
@@ -777,6 +778,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         resize_counter = 0
         if len(packet)>=8:
             resize_counter = packet[7]
+        if len(packet)>=13:
+            wid = packet[10]
+            pointer = packet[11]
+            modifiers = packet[12]
+            log.info("configure with mouse: %s", (wid, pointer, modifiers))
+            self. _process_mouse_common(proto, wid, pointer, modifiers)
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
         window = self._id_to_window.get(wid)

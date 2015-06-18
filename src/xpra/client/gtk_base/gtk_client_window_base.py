@@ -757,6 +757,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         packet = ["configure-window", self._id, x, y, w, h, props, self._resize_counter, state, skip_geometry]
+        if self._client.window_configure_pointer:
+            packet.append(self.get_mouse_event_wid())
+            packet.append(self._client.get_mouse_position())
+            packet.append(self._client.get_current_modifiers())
         eventslog("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:
