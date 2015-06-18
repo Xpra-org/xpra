@@ -775,18 +775,20 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
         cur_shape = self.get_property("shape")
         if cur_shape and cur_shape.get("serial", 0)>=event.serial:
-            shapelog("same or older xshape serial no: %s", event.serial)
+            shapelog("same or older xshape serial no: %#x", event.serial)
             return
-        #remove serial before comparing:
+        #remove serial before comparing dicts:
         try:
             cur_shape["serial"]
         except:
             pass
+        #read new xshape:
         v = self._read_xshape()
         if cur_shape==v:
             shapelog("xshape unchanged")
             return
         v["serial"] = int(event.serial)
+        shapelog("xshape updated with serial %#x", event.serial)
         self._internal_set_property("shape", v)
 
 
