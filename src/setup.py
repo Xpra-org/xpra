@@ -845,6 +845,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
+                   "xpra/codecs/vpx/constants.pxi",
                    "xpra/codecs/nvenc4/encoder.c",
                    "xpra/codecs/nvenc4/constants.pxi",
                    "xpra/codecs/nvenc5/encoder.c",
