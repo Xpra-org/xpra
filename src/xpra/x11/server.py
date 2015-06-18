@@ -6,11 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# Todo:
-#   xsync resize stuff
-#   shape?
-#   any other interesting metadata? _NET_WM_TYPE, WM_TRANSIENT_FOR, etc.?
-
 import os
 import gtk.gdk
 import gobject
@@ -782,7 +777,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             wid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
-            log.info("configure with mouse: %s", (wid, pointer, modifiers))
             self. _process_mouse_common(proto, wid, pointer, modifiers)
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
