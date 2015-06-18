@@ -18,9 +18,13 @@ SET PYTHON_EXE=%PYTHON%\python.exe
 SET PYTHONPATH=.;%PYTHONPATH%
 SET INNOSETUP=C:\Program Files\Inno Setup 5\ISCC.exe
 SET TORTOISESVN=C:\Program Files\TortoiseSVN
+SET ZIP7=C:\Program Files\7-Zip\7z.exe
 SET SVNVERSION_EXE=svnversion
 SET EXTRA_VERSION=
 SET BUILD_DIR=build
+SET DO_BUILD=1
+SET DO_INSTALLER=1
+SET DO_ZIP=1
 
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version_info.major)"') DO set PYTHON_MAJOR_VERSION=%%i
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version_info.minor)"') DO set PYTHON_MINOR_VERSION=%%i
@@ -32,11 +36,13 @@ SET BUILD_ARGS=
 REM "IE:"
 REM SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
-REM CLEAN
-%PYTHON_EXE% ./setup.py clean
-
-REM Record Version Info
-%PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
+if "%DO_BUILD%"=="1" (
+	REM CLEAN
+	%PYTHON_EXE% ./setup.py clean
+	
+	REM Record Version Info
+	%PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
+)
 
 SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(__version__)"') DO set VERSION=%%i
@@ -49,8 +55,15 @@ FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
 IF [%REVISION%]==[] set REVISION=%SVNVERSION%
 SET FULL_VERSION=%VERSION%-r%REVISION%
 ECHO Full version           %FULL_VERSION%
+SET ZIP_DIR=Xpra%EXTRA_VERSION%%BUILD_TYPE%_%FULL_VERSION%
+SET ZIP_FILENAME=%ZIP_DIR%.zip
+SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
 
 
+if "%DO_BUILD%"=="0" (
+	ECHO "Skipping build step"
+	GOTO MAKEINSTALLER
+)
 ECHO ***************************************************************
 ECHO ****** Clearing build directory
 RMDIR /S /Q %BUILD_DIR% dist Output Temp 2> NUL
@@ -163,24 +176,38 @@ COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" dist\Plink.exe > NUL
 COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\ > NUL
 
 
-ECHO ***************************************************************
-ECHO ****** Creating the installer using InnoSetup:
-COPY /Y win32\xpra.iss xpra.iss > NUL
-ECHO "%INNOSETUP%" xpra.iss ^> innosetup.log
-"%INNOSETUP%" xpra.iss > innosetup.log
-if %errorlevel% NEQ 0 (
-	ECHO "InnoSetup error"
-	GOTO ERROR
+if "%DO_ZIP%"=="1" (
+	ECHO ***************************************************************
+	ECHO ****** Creating ZIP file
+	ECHO RD /S /Q %ZIP_DIR%
+	RD /S /Q %ZIP_DIR% > NUL
+	DEL %ZIP_FILENAME% > NUL
+	ECHO XCOPY /S /I /X /Q dist %ZIP_DIR%
+	XCOPY /S /I /X /Q dist %ZIP_DIR%
+	ECHO "%ZIP7%" a -r %ZIP_FILENAME% %ZIP_DIR% ^> NUL
+	"%ZIP7%" a -r %ZIP_FILENAME% %ZIP_DIR% > NUL
+	dir %ZIP_FILENAME%
 )
 
-ECHO ***************************************************************
-ECHO ****** Finished - running the new installer
-SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
-MOVE /Y Output\Xpra_Setup.exe %INSTALLER_FILENAME%
-RMDIR Output
-dir %INSTALLER_FILENAME%
+if "%DO_INSTALLER%"=="1" (
+	ECHO ***************************************************************
+	ECHO ****** Creating the installer using InnoSetup:
+	COPY /Y win32\xpra.iss xpra.iss > NUL
+	ECHO "%INNOSETUP%" xpra.iss ^> innosetup.log
+	"%INNOSETUP%" xpra.iss > innosetup.log
+	if %errorlevel% NEQ 0 (
+		ECHO "InnoSetup error"
+		GOTO ERROR
+	)
 
-%INSTALLER_FILENAME% %ARGS%
+	ECHO ***************************************************************
+	ECHO ****** Finished - running the new installer
+	MOVE /Y Output\Xpra_Setup.exe %INSTALLER_FILENAME%
+	RMDIR Output
+	dir %INSTALLER_FILENAME%
+	
+	%INSTALLER_FILENAME% %ARGS%
+)
 GOTO END
 
 :ERROR
