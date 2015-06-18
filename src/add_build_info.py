@@ -105,7 +105,7 @@ def get_status_output(*args, **kwargs):
     stdout, stderr = p.communicate()
     return p.returncode, stdout, stderr
 
-def get_first_line_output(commands):
+def get_output_lines(commands):
     for cmd, valid_exit_code in commands:
         try:
             returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=True)
@@ -117,10 +117,25 @@ def get_first_line_output(commands):
                 print("could not get version information")
                 continue
             out = stdout.decode('utf-8')
-            return out.splitlines()[0]
+            return out.splitlines()
         except:
             pass
+    return  []
+
+def get_first_line_output(commands):
+    lines = get_output_lines(commands)
+    if len(lines)>0:
+        return lines[0]
     return  ""
+
+def get_nvcc_version():
+    lines = get_output_lines([("nvcc --version", 0)])
+    if len(lines)>0:
+        vline = lines[-1]
+        vpos = vline.rfind(", V")
+        if vpos>0:
+            return vline[vpos+3:]
+    return None
 
 def get_compiler_version():
     #FIXME: we assume we'll use GCC if it is on the path...
@@ -140,6 +155,8 @@ def get_linker_version():
 
 
 def set_prop(props, key, value):
+    if value is None:
+        return
     if value!="unknown" or props.get(key) is None:
         props[key] = value
 
@@ -202,6 +219,7 @@ def record_build_info(is_build=True):
         set_prop(props, "PYTHON_VERSION", ".".join(str(x) for x in sys.version_info[:3]))
         set_prop(props, "CYTHON_VERSION", cython_version)
         set_prop(props, "COMPILER_VERSION", get_compiler_version())
+        set_prop(props, "NVCC_VERSION", get_nvcc_version())
         set_prop(props, "LINKER_VERSION", get_linker_version())
         set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
         #record pkg-config versions:
