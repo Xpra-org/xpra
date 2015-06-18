@@ -430,6 +430,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _add_new_window_common(self, window):
         windowlog("adding window %s", window)
+        for prop in window.get_dynamic_property_names():
+            window.connect("notify::%s" % prop, self._update_metadata)
         wid = X11ServerBase._add_new_window_common(self, window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
@@ -441,8 +443,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _add_new_window(self, window):
         self._add_new_window_common(window)
-        for prop in window.get_dynamic_property_names():
-            window.connect("notify::%s" % prop, self._update_metadata)
         _, _, w, h, _ = window.get_property("client-window").get_geometry()
         x, y, _, _, _ = window.corral_window.get_geometry()
         windowlog("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
