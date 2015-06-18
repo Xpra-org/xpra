@@ -95,7 +95,12 @@ class Keyboard(KeyboardBase):
         if v:
             layouts = v.split(",")
             layout = v
-        return layout, layouts, "", None
+        def s(v):
+            try:
+                return s.encode("ascii")
+            except:
+                return str(s)
+        return s(layout), [s(x) for x in layouts], b"", None
 
 
     def get_keyboard_repeat(self):
