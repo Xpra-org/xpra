@@ -17,46 +17,34 @@ from xpra.os_util import memoryview_to_bytes
 lz4_version = None
 try:
     import lz4
+    from lz4 import VERSION as lz4_VERSION                          #@UnresolvedImport
     from lz4 import LZ4_compress, compressHC, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
-    def lz4_compress(packet, level):
-        if level>=9:
-            return level | LZ4_FLAG, compressHC(packet)
-        return level | LZ4_FLAG, LZ4_compress(packet)
+    if hasattr(lz4, "LZ4_compress_fast"):
+        from lz4 import LZ4_compress_fast                           #@UnresolvedImport
+        def lz4_compress(packet, level):
+            if level>=9:
+                return level | LZ4_FLAG, compressHC(packet)
+            #clamp it: 0->17, 1->12, 2->7, 3->2, >=4->1
+            accel = max(1, 17-level*5)
+            return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
+    else:
+        #v0.7.0 and earlier
+        def lz4_compress(packet, level):
+            if level>=9:
+                return level | LZ4_FLAG, compressHC(packet)
+            return level | LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
-    if hasattr(lz4, "VERSION"):
-        lz4_version = lz4.VERSION
-        if hasattr(lz4, "LZ4_VERSION"):
-            lz4_version.append(lz4.LZ4_VERSION)
-    elif hasattr(lz4, "__file__"):
-        #hack it..
-        import os.path
-        f = lz4.__file__
-        #ie: /usr/lib/python2.7/site-packages/lz4-0.7.0-py2.7-linux-x86_64.egg/lz4.so
-        for x in f.split(os.path.sep):
-            #ie: lz4-0.7.0-py2.7-linux-x86_64.egg
-            if x.startswith("lz4-") and x.find("-py"):
-                tmp = x.split("-")[1]
-                #ie: "0.7.0"
-                tmpv = []
-                #stop if we hit non numeric chars
-                try:
-                    for x in tmp.split("."):
-                        tmpv.append(int(x))
-                except:
-                    pass
-                #we want at least two numbers first:
-                if len(tmpv)>=2:
-                    #ie: (0, 7, 0)
-                    lz4_version = tuple(tmpv)
-                    assert lz4_version>=(0, 7), "versions older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715"
+    lz4_version = lz4_VERSION
+    if hasattr(lz4, "LZ4_VERSION"):
+        lz4_version += "-"+lz4.LZ4_VERSION
+    assert lz4_version>="0.7", "versions older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715"
 except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
     has_lz4 = False
     def lz4_compress(packet, level):
         raise Exception("lz4 is not supported!")
-
 
 lzo_version = None
 try:
