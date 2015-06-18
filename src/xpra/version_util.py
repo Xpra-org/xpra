@@ -82,6 +82,7 @@ def get_version_info():
                     "bit"                  : "BUILD_BIT",
                     "cpu"                  : "BUILD_CPU",
                     "compiler"             : "COMPILER_VERSION",
+                    "nvcc"                 : "NVCC_VERSION",
                     "linker"               : "LINKER_VERSION",
                     "python"               : "PYTHON_VERSION",
                     "cython"               : "CYTHON_VERSION",
