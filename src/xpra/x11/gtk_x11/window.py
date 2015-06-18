@@ -48,6 +48,7 @@ focuslog = Logger("x11", "window", "focus")
 grablog = Logger("x11", "window", "grab")
 iconlog = Logger("x11", "window", "icon")
 workspacelog = Logger("x11", "window", "workspace")
+shapelog = Logger("x11", "window", "shape")
 
 
 _NET_WM_STATE_REMOVE = 0
@@ -600,13 +601,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         xid = self.client_window.xid
         extents = X11Window.XShapeQueryExtents(xid)
         if not extents:
+            shapelog("read_shape for window %#x: no extents", xid)
             return {}
         v = {}
         #w,h = X11Window.getGeometry(xid)[2:4]
         bextents = extents[0]
         cextents = extents[1]
         if bextents[0]==0 and cextents[0]==0:
-            #shape not used
+            shapelog("read_shape for window %#x: none enabled", xid)
             return {}
         v["Bounding.extents"] = bextents
         v["Clip.extents"] = cextents
@@ -614,7 +616,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             kind_name = SHAPE_KIND[kind]
             rectangles = X11Window.XShapeGetRectangles(xid, kind)
             v[kind_name+".rectangles"] = rectangles
-        log("_read_shape()=%s", v)
+        shapelog("_read_shape()=%s", v)
         return v
 
 
@@ -770,8 +772,22 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
 
     def do_xpra_shape_event(self, event):
-        log("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
-        self._internal_set_property("shape", self._read_xshape())
+        shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
+        cur_shape = self.get_property("shape")
+        if cur_shape and cur_shape.get("serial", 0)>=event.serial:
+            shapelog("same or older xshape serial no: %s", event.serial)
+            return
+        #remove serial before comparing:
+        try:
+            cur_shape["serial"]
+        except:
+            pass
+        v = self._read_xshape()
+        if cur_shape==v:
+            shapelog("xshape unchanged")
+            return
+        v["serial"] = int(event.serial)
+        self._internal_set_property("shape", v)
 
 
     def do_xpra_xkb_event(self, event):

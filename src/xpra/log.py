@@ -117,7 +117,7 @@ KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "vid
                  "gobject", "gtk", "main", "util", "dbus",
                  "window", "icon", "info", "launcher", "mdns", "cursor",
                  "mmap", "network", "protocol", "crypto", "encoder", "stats",
-                 "notify", "xsettings", "grab", "xshm", "workspace",
+                 "notify", "xsettings", "grab", "xshm", "shape", "workspace",
                  "sound", "av-sync",
                  "printing", "file", "events",
                  "opengl",

@@ -18,6 +18,7 @@ iconlog = Logger("icon")
 metalog = Logger("metadata")
 statelog = Logger("state")
 eventslog = Logger("events")
+shapelog = Logger("shape")
 
 
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
@@ -341,7 +342,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         pass
 
     def set_shape(self, shape):
-        log("set_shape(%s)", shape)
+        shapelog("set_shape(%s)", shape)
         if not HAS_X11_BINDINGS:
             return
         if not self.is_realized():
@@ -352,7 +353,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if rectangles is not None:
                 #FIXME: are we supposed to get the offset from the "extents"?
                 x_off, y_off = 0, 0
-                log("XShapeCombineRectangles %s=%s", name, rectangles)
+                shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
                 with xsync:
                     X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
 
