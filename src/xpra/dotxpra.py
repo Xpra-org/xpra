@@ -109,7 +109,7 @@ class DotXpra(object):
             os.unlink(socket_path)
         return socket_path
 
-    def sockets(self, check_uid=0):
+    def sockets(self, check_uid=0, matching_state=None):
         results = []
         base = os.path.join(self._sockdir, self._prefix)
         potential_sockets = glob.glob(base + "*")
@@ -121,6 +121,8 @@ class DotXpra(object):
                         #socket uid does not match
                         continue
                 state = self.get_server_state(path)
+                if matching_state and state!=matching_state:
+                    continue
                 local_display = ":"+path[len(base):]
                 results.append((state, local_display))
         return results
