@@ -280,17 +280,17 @@ class Protocol(object):
         if packet is None:
             return
         log("add_packet_to_queue(%s ...)", packet[0])
-        chunks, proto_flags = self.encode(packet)
+        chunks = self.encode(packet)
         with self._write_lock:
             if self._closed:
                 return
-            self._add_chunks_to_queue(chunks, proto_flags, start_send_cb, end_send_cb)
+            self._add_chunks_to_queue(chunks, start_send_cb, end_send_cb)
 
-    def _add_chunks_to_queue(self, chunks, proto_flags, start_send_cb=None, end_send_cb=None):
+    def _add_chunks_to_queue(self, chunks, start_send_cb=None, end_send_cb=None):
         """ the write_lock must be held when calling this function """
         counter = 0
         items = []
-        for index,level,data in chunks:
+        for proto_flags,index,level,data in chunks:
             scb, ecb = None, None
             #fire the start_send_callback just before the first packet is processed:
             if counter==0:
@@ -457,7 +457,7 @@ class Protocol(object):
                         #LevelCompressed is decompressed by the network layer
                         #so we must tell it how to do that and pass the level flag
                         il = item.level
-                    packets.append((i, il, item.data))
+                    packets.append((0, i, il, item.data))
                     packet[i] = ''
                 else:
                     #data is small enough, inline it:
@@ -468,7 +468,7 @@ class Protocol(object):
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
-                packets.append((i, cl, cdata))
+                packets.append((0, i, cl, cdata))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti not in (str, bytes):
@@ -480,7 +480,7 @@ class Protocol(object):
             #replace the packet type with the alias:
             packet[0] = self.send_aliases[packet_type]
         try:
-            main_packet, proto_version = self._encoder(packet)
+            main_packet, proto_flags = self._encoder(packet)
         except Exception as e:
             if self._closed:
                 return [], 0
@@ -495,10 +495,10 @@ class Protocol(object):
         #compress, but don't bother for small packets:
         if level>0 and len(main_packet)>min_comp_size:
             cl, cdata = self._compress(main_packet, level)
-            packets.append((0, cl, cdata))
+            packets.append((proto_flags, 0, cl, cdata))
         else:
-            packets.append((0, 0, main_packet))
-        return packets, proto_version
+            packets.append((proto_flags, 0, 0, main_packet))
+        return packets
 
     def set_compression_level(self, level):
         #this may be used next time encode() is called
@@ -819,7 +819,7 @@ class Protocol(object):
                     self.timeout_add(100, wait_for_queue, timeout-1)
             else:
                 log("flush_then_close: queue is now empty, sending the last packet and closing")
-                chunks, proto_flags = self.encode(last_packet)
+                chunks = self.encode(last_packet)
                 def close_and_release():
                     log("flush_then_close: wait_for_packet_sent() close_and_release()")
                     self.close()
@@ -840,7 +840,7 @@ class Protocol(object):
                     log("flush_then_close: packet_queued() closed=%s", self._closed)
                     #check every 100ms
                     self.timeout_add(100, wait_for_packet_sent)
-                self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=packet_queued)
+                self._add_chunks_to_queue(chunks, start_send_cb=None, end_send_cb=packet_queued)
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 
