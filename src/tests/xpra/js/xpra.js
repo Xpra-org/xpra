@@ -3,8 +3,9 @@ function set_title(index, title) {
     var c = $('canvas.flot-base')[index];
     var canvas = c.getContext("2d");
     var cx = c.width / 2;
+    cx = 0;
     canvas.font = "15px sans-serif";
-    canvas.textAlign = 'center';
+    canvas.textAlign = 'left';
     canvas.fillText(title, cx, 35);
 }
 

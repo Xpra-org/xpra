@@ -21,18 +21,21 @@ import collections
 #----------------------------------------------------------------
 
 # Location of the data files
-data_dir = "./logs"
+data_dir = "/home/xpratest/xtests/logs"
 
 # Data file prefix
-prefix = "all_tests_40"
+prefix = "h264_glx"
+
+rev_1 = "8585"
+rev_2 = "8600"
 
 # id is the actual id string used in the data file name
 # display is how that parameter should be displayed in the charts
-params = [{"id": "16", "display": "v14.16"},
-          {"id": "14", "display": "v14.19"}]
+params = [{"id": rev_1, "display": "r" + rev_1},
+          {"id": rev_2, "display": "r" + rev_2}]
 
 # The description will be shown on the output page
-description = 'Comparison of v14.16 and v14.19'
+description = 'Comparison of r' + rev_1 + ' and r' + rev_2
 
 # Each file name's 'rep' value is the sequence number of that
 # data file, when results of multiple files should be averaged
@@ -44,10 +47,10 @@ reps = 9     # Number of data files in this set
 #
 apps = {"glxgears": 1,
         "glxspheres": 1,
-        "moebiusgears": 1,
-        "polytopes": 1,
+        "moebiusgears": 0,
+        "polytopes": 0,
         "x11perf": 0,
-        "xterm": 1,
+        "xterm": 0,
         "gtkperf": 0}
 
 metrics = {"Regions/s": 1,
@@ -81,12 +84,12 @@ metrics = {"Regions/s": 1,
            "Avg Speed": 0,
            "Max Speed": 0}
 
-encodings = {"jpeg": 1,
-             "mmap": 1,
-             "png": 1,
-             "rgb24": 1,
-             "vpx": 1,
-             "x264": 1}
+encodings = {"png": 0,
+             "rgb24": 0,
+             "jpeg": 0,
+             "h264": 1,
+             "vp8": 0,
+             "vp9": 0}
 
 header_dupes = []
 headers = {}
@@ -124,6 +127,7 @@ def accumulate_values(file_name, rep, param):
                         if (rgb_values is None):
                             rgb_values = ftree()
                             rgb_count = 0
+                   
                     for metric in metrics:
                         if (metrics[metric] == 1):
                             row_value = float(get_metric(row, metric))
