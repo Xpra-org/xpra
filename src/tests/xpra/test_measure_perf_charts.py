@@ -21,13 +21,13 @@ import collections
 #----------------------------------------------------------------
 
 # Location of the data files
-data_dir = "/home/xpratest/xtests/logs"
+data_dir = "/home/nickc/xtests/logs"
 
 # Data file prefix
 prefix = "h264_glx"
 
 rev_1 = "8585"
-rev_2 = "8600"
+rev_2 = "9638"
 
 # id is the actual id string used in the data file name
 # display is how that parameter should be displayed in the charts
@@ -169,7 +169,7 @@ def write_html():
     ofile.write('  <script language="javascript" type="text/javascript" src="js/xpra.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript">\n')
     ofile.write('    var options = {canvas:true, grid: {margin: {top:50}, hoverable: true}, series: {bars: {show: true, barWidth: 0.15}}, '
-                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count-1) + '.3}, colors: ["#89A54E", "#4572A7"]};\n')
+                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#89A54E", "#4572A7"]};\n')
 
     m_index = 0
     m_names = []
@@ -212,7 +212,7 @@ def write_html():
             title_index += 1
 
     for mx in range(0, m_index):
-        ofile.write('$("#metric_link_'+str(mx)+'").click(function() {$("#metric_list").scrollTop(800*'+str(mx)+');});')
+        ofile.write('$("#metric_link_'+str(mx)+'").click(function() {$("#metric_list").scrollTop(400*'+str(mx)+');});')
     ofile.write('    });\n')
 
     ofile.write('  </script>\n')
