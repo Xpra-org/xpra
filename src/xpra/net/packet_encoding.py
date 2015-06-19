@@ -9,7 +9,7 @@ import os
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML   #, FLAGS_BENCODE
+from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 
 
 rencode_dumps, rencode_loads, rencode_version = None, None, None
@@ -61,7 +61,7 @@ log("packet encoding: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml,
 
 
 def do_bencode(data):
-    return bencode(data), 0
+    return bencode(data), FLAGS_BENCODE
 
 def do_rencode(data):
     return  rencode_dumps(data), FLAGS_RENCODE

@@ -5,16 +5,19 @@
 
 import struct
 
-
-ZLIB_FLAG       = 0x0       #assume zlib if no other compression flag is set
+#packet encoding flags:
+FLAGS_BENCODE   = 0x0       #assume bencode if not other flag is set
 FLAGS_RENCODE   = 0x1
 FLAGS_CIPHER    = 0x2
 FLAGS_YAML      = 0x4
-#0x8 is free
+
+#compression flags are carried in the "level" field,
+#the low bits contain the compression level, the high bits the compression algo:
+ZLIB_FLAG       = 0x0       #assume zlib if no other compression flag is set
 LZ4_FLAG        = 0x10
 LZO_FLAG        = 0x20
 FLAGS_NOHEADER  = 0x40
-#0x80 is free
+
 
 _header_unpack_struct = struct.Struct('!cBBBL')
 def unpack_header(buf):
