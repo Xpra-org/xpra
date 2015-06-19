@@ -110,7 +110,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     #compression stage:
     level = 0
     algo = "not"
-    if len(pixels)>=256 and (rgb_zlib and compression.use_zlib) or (rgb_lz4 and compression.use_lz4) or (rgb_lzo and compression.use_lzo):
+    if len(pixels)>=256:
         level = max(0, min(5, int(115-speed)/20))
         if len(pixels)<1024:
             #fewer pixels, make it more likely we won't bother compressing:
@@ -130,7 +130,8 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         else:
             cwrapper = None
         if cwrapper is None or len(cwrapper)>=(len(pixels)-32):
-            #compressed is actually bigger! (fall through to uncompressed)
+            #no compression is enabled, or compressed is actually bigger!
+            #(fall through to uncompressed)
             level = 0
         else:
             #add compressed marker:
