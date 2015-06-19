@@ -1534,7 +1534,7 @@ class ServerBase(ServerCore):
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
              "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
-             "with_speed"           : [x for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb", "png", "png/P", "png/L")],
+             "with_speed"           : list(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L"))),
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings}
 
