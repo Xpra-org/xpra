@@ -1412,12 +1412,21 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
     if mode in ("_proxy_start", "_shadow_start"):
+        dotxpra = DotXpra()
         #we must use a subprocess to avoid messing things up - yuk
         cmd = [script_file]
         if mode=="_proxy_start":
             cmd.append("start")
-            assert len(args)==1, "_proxy_start: expected 1 argument but got %s: %s" % (len(args), args)
-            display_name = args[0]
+            if len(args)==1:
+                display_name = args[0]
+            elif len(args)==0:
+                if not opts.displayfd:
+                    raise InitException("this server does not support displayfd, you must specify a DISPLAY to use")
+                #let the server get one from Xorg via displayfd:
+                display_name = 'S' + str(os.getpid())
+                existing_sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
+            else:
+                raise InitException("_proxy_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args))
         else:
             assert mode=="_shadow_start"
             assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
@@ -1440,23 +1449,59 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             cmd.append("--exit-with-children")
         if opts.exit_with_client or mode=="_shadow_start":
             cmd.append("--exit-with-client")
+        #add a unique uuid to the server env:
+        server_env = os.environ.copy()
+        import uuid
+        new_server_uuid = str(uuid.uuid4())
+        server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
         def setsid():
             os.setsid()
-        proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True)
-        dotxpra = DotXpra()
+        proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
         start = time.time()
-        while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
-            if time.time()-start>15:
-                warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
-                return
-            time.sleep(0.10)
+        if display_name[0]=='S':
+            #wait until the new socket appears:
+            while time.time()-start<15 and display_name[0]=='S':
+                sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
+                new_sockets = list(sockets-existing_sockets)
+                if len(new_sockets)==1:
+                    d = new_sockets[0][1]
+                    #verify that this is the right server:
+                    try:
+                        import subprocess
+                        cmd = [sys.argv[0], "info", d]
+                        p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        stdout, _ = p.communicate()
+                        if p.returncode==0:
+                            out = stdout.decode('utf-8')
+                            PREFIX = "env.XPRA_PROXY_START_UUID="
+                            for line in out.splitlines():
+                                if line.startswith(PREFIX):
+                                    info_uuid = line[len(PREFIX):]
+                                    if info_uuid==new_server_uuid:
+                                        #found it!
+                                        display_name = d
+                                        break
+                    except Exception as e:
+                        warn("error during server process detection: %s" % e)
+                time.sleep(0.10)
+        else:
+            #wait for the display specified to become live:
+            while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
+                if time.time()-start>15:
+                    warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
+                    return
+                time.sleep(0.10)
+        display = parse_display_name(error_cb, opts, display_name)
         #start a thread just to reap server startup process (yuk)
         #(as the server process will exit as it daemonizes)
         def reaper():
             proc.wait()
         from xpra.daemon_thread import make_daemon_thread
         make_daemon_thread(reaper, "server-startup-reaper").start()
-    server_conn = connect_or_fail(pick_display(error_cb, opts, args))
+    else:
+        #use display specified on command line:
+        display = pick_display(error_cb, opts, args)
+    server_conn = connect_or_fail(display)
     app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
     signal.signal(signal.SIGTERM, app.quit)
