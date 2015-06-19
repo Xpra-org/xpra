@@ -27,8 +27,8 @@ def find_libfakeXinerama():
             libpath = find_lib_ldconfig("fakeXinerama")
             if libpath:
                 return libpath
-        except:
-            log.warn("Failed to launch ldconfig -p")
+        except Exception as e:
+            log.warn("Failed to launch ldconfig -p: %s", e)
     return find_lib("libfakeXinerama.so.1")
 
 current_xinerama_config = None
