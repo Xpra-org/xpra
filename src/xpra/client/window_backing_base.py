@@ -155,7 +155,7 @@ class WindowBackingBase(object):
             unpremultiply_argb_in_place(img_data)
             return img_data
         except:
-            return str(unpremultiply_argb(img_data))
+            return unpremultiply_argb(img_data)
 
 
     def process_delta(self, raw_data, width, height, rowstride, options):

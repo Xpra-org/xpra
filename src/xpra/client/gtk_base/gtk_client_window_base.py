@@ -21,6 +21,7 @@ eventslog = Logger("events")
 shapelog = Logger("shape")
 
 
+from xpra.os_util import memoryview_to_bytes
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, WINDOW_POPUP, WINDOW_TOPLEVEL
@@ -887,7 +888,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             data = unpremultiply_argb(data)
-            rgba = str(bgra_to_rgba(data))
+            rgba = memoryview_to_bytes(bgra_to_rgba(data))
             pixbuf = get_pixbuf_from_data(rgba, True, width, height, width*4)
         else:
             loader = PixbufLoader()
