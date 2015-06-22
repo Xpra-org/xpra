@@ -2,7 +2,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name:		Cython
-Version:	0.22
+Version:	0.22.1
 Release:	0%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -62,6 +62,21 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jun 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.1
+- Crash when returning values on generator termination.
+- In some cases, exceptions raised during internal isinstance() checks were not propagated.
+- Runtime reported file paths of source files (e.g for profiling and tracing) are now relative to the build root directory instead of the main source file.
+- Tracing exception handling code could enter the trace function with an active exception set.
+- The internal generator function type was not shared across modules.
+- Comparisons of (inferred) ctuples failed to compile.
+- Closures inside of cdef functions returning void failed to compile.
+- Using const C++ references in intermediate parts of longer expressions could fail to compile.
+- C++ exception declarations with mapping functions could fail to compile when pre-declared in .pxd files.
+- C++ compilation could fail with an ambiguity error in recent MacOS-X Xcode versions.
+- C compilation could fail in pypy3.
+- Fixed a memory leak in the compiler when compiling multiple modules.
+- When compiling multiple modules, external library dependencies could leak into later compiler runs. Fix by Jeroen Demeyer. This fixes ticket 845.
+
 * Thu Feb 12 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22
 - new upstream release
 
