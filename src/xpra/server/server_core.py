@@ -240,7 +240,7 @@ class ServerCore(object):
     def init_sockets(self, sockets):
         ### All right, we're ready to accept customers:
         for socktype, sock in sockets:
-            log("init_sockets(%s) will add %s socket %s", sockets, socktype, sock)
+            netlog("init_sockets(%s) will add %s socket %s", sockets, socktype, sock)
             self.idle_add(self.add_listen_socket, socktype, sock)
 
     def init_when_ready(self, callbacks):
@@ -248,7 +248,7 @@ class ServerCore(object):
 
 
     def init_packet_handlers(self):
-        log("initializing packet handlers")
+        netlog("initializing packet handlers")
         self._default_packet_handlers = {
             "hello":                                self._process_hello,
             "disconnect":                           self._process_disconnect,
