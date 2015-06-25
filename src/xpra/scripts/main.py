@@ -23,8 +23,6 @@ from xpra.dotxpra import DotXpra, osexpand
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
-from xpra.net.bytestreams import TwoFileConnection, SocketConnection
-from xpra.net.protocol import ConnectionClosedException
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
@@ -1095,6 +1093,7 @@ def pick_display(error_cb, opts, extra_args):
 def _socket_connect(sock, endpoint, description, dtype):
     sock.connect(endpoint)
     sock.settimeout(None)
+    from xpra.net.bytestreams import SocketConnection
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
 
 def connect_or_fail(display_desc):
@@ -1114,6 +1113,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     dtype = display_desc["type"]
     conn = None
     if dtype == "ssh":
+        from xpra.net.protocol import ConnectionClosedException
         cmd = display_desc["full_ssh"]
         proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
         cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
@@ -1181,6 +1181,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                     child.terminate()
             except Exception as e:
                 print("error trying to stop ssh tunnel process: %s" % e)
+        from xpra.net.bytestreams import TwoFileConnection
         conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
         conn.timeout = 0            #taken care of by abort_test
 
@@ -1502,6 +1503,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)
     server_conn = connect_or_fail(display)
+    from xpra.net.bytestreams import TwoFileConnection
     app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
     signal.signal(signal.SIGTERM, app.quit)
