@@ -8,7 +8,6 @@ import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
 from xpra.log import Logger
 log = Logger("shadow", "win32")
-keylog = Logger("keyboard", "shadow", "win32")
 
 from xpra.server.gtk_root_window_model import GTKRootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
