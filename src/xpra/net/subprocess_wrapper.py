@@ -133,11 +133,11 @@ class subprocess_callee(object):
         conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.net_stop)
         conn.timeout = 0
         protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
-        try:
-            protocol.enable_encoder("rencode")
-        except Exception as e:
-            log.warn("failed to enable rencode: %s", e)
-            protocol.enable_encoder("bencode")
+        from xpra.net.packet_encoding import get_enabled_encoders
+        encoders = get_enabled_encoders()
+        log("make_protocol found enabled encoders=%s", encoders)
+        assert len(encoders)>0, "no packet encoders available!?"
+        protocol.enable_encoder(encoders[0])
         protocol.enable_compressor("none")
         protocol.large_packets = self.large_packets
         return protocol
