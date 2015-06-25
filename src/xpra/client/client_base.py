@@ -17,6 +17,7 @@ from xpra.log import Logger
 log = Logger("client")
 printlog = Logger("printing")
 filelog = Logger("file")
+netlog = Logger("network")
 
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.scripts.config import ENCRYPTION_CIPHERS
@@ -216,7 +217,7 @@ class XpraClientBase(object):
         raise NotImplementedError()
 
     def setup_connection(self, conn):
-        log("setup_connection(%s)", conn)
+        netlog("setup_connection(%s) timeout=%s", conn, conn.timeout)
         self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
@@ -227,6 +228,7 @@ class XpraClientBase(object):
         self.have_more = self._protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
+        netlog("setup_connection(%s) protocol=%s", conn, self._protocol)
 
     def init_packet_handlers(self):
         self._packet_handlers = {
@@ -326,7 +328,7 @@ class XpraClientBase(object):
                 self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
                 return
             self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations)
-            log("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
+            netlog("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
         return capabilities
 
     def make_hello(self):
@@ -430,14 +432,14 @@ class XpraClientBase(object):
             props = p.get_info()
             c = props.get("compression", "unknown")
             e = props.get("encoder", "unknown")
-            log.warn("failed to receive anything, not an xpra server?")
-            log.warn("  could also be the wrong username, password or port")
+            netlog.warn("failed to receive anything, not an xpra server?")
+            netlog.warn("  could also be the wrong username, password or port")
             if c!="unknown" or e!="unknown":
-                log.warn("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
+                netlog.warn("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
         self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):
-        log("processing challenge: %s", packet[1:])
+        netlog("processing challenge: %s", packet[1:])
         if not self.password_file and not os.environ.get('XPRA_PASSWORD'):
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requires authentication, please provide a password")
             return
@@ -505,11 +507,11 @@ class XpraClientBase(object):
         if not key and self.password_file:
             key = load_binary_file(self.password_file)
             if key:
-                log("used password file as encryption key")
+                netlog("used password file as encryption key")
         if not key:
             key = os.environ.get('XPRA_PASSWORD')
             if key:
-                log("used XPRA_PASSWORD as encryption key")
+                netlog("used XPRA_PASSWORD as encryption key")
         if key is None:
             raise Exception("no encryption key")
         return key.strip("\n\r")
@@ -522,7 +524,7 @@ class XpraClientBase(object):
         if password is None:
             return None
         password = password.strip("\n\r")
-        log("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
+        netlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
         return password
 
     def _process_hello(self, packet):
@@ -531,10 +533,10 @@ class XpraClientBase(object):
             return
         try:
             self.server_capabilities = typedict(packet[1])
-            log("processing hello from server: %s", self.server_capabilities)
+            netlog("processing hello from server: %s", self.server_capabilities)
             self.server_connection_established()
         except Exception as e:
-            log.info("error in hello packet", exc_info=True)
+            netlog.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
 
     def capsget(self, capabilities, key, default):
@@ -545,21 +547,21 @@ class XpraClientBase(object):
 
 
     def server_connection_established(self):
-        log("server_connection_established()")
+        netlog("server_connection_established()")
         if not self.parse_version_capabilities():
-            log("server_connection_established() failed version capabilities")
+            netlog("server_connection_established() failed version capabilities")
             return False
         if not self.parse_server_capabilities():
-            log("server_connection_established() failed server capabilities")
+            netlog("server_connection_established() failed server capabilities")
             return False
         if not self.parse_network_capabilities():
-            log("server_connection_established() failed network capabilities")
+            netlog("server_connection_established() failed network capabilities")
             return False
         if not self.parse_encryption_capabilities():
-            log("server_connection_established() failed encryption capabilities")
+            netlog("server_connection_established() failed encryption capabilities")
             return False
         self.parse_printing_capabilities()
-        log("server_connection_established() adding authenticated packet handlers")
+        netlog("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
 
@@ -829,12 +831,12 @@ class XpraClientBase(object):
             data = bytestostr(data)
             if data.find("Traceback "):
                 for x in data.split("\n"):
-                    log.warn(x.strip("\r"))
+                    netlog.warn(x.strip("\r"))
             else:
-                log.warn("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
+                netlog.warn("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
         else:
-            log.warn("Received uninterpretable nonsense: %s", message)
-            log.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            netlog.warn("Received uninterpretable nonsense: %s", message)
+            netlog.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
         if str(data).find("assword")>0:
             self.warn_and_quit(EXIT_SSH_FAILURE,
                               "Your ssh program appears to be asking for a password."
@@ -848,8 +850,8 @@ class XpraClientBase(object):
 
     def _process_invalid(self, packet):
         (_, message, data) = packet
-        log.info("Received invalid packet: %s", message)
-        log(" data: %s", repr_ellipsized(data))
+        netlog.info("Received invalid packet: %s", message)
+        netlog(" data: %s", repr_ellipsized(data))
         self.quit(EXIT_PACKET_FAILURE)
 
 
@@ -865,10 +867,10 @@ class XpraClientBase(object):
                 return
             handler = self._ui_packet_handlers.get(packet_type)
             if not handler:
-                log.error("unknown packet type: %s", packet_type)
+                netlog.error("unknown packet type: %s", packet_type)
                 return
             self.idle_add(handler, packet)
         except KeyboardInterrupt:
             raise
         except:
-            log.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+            netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
