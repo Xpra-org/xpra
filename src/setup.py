@@ -673,8 +673,9 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     if len(dirs)==0 or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
         #ie: ["/", "usr"] or ["/", "usr", "local"]
         dirs.insert(0, os.path.sep)
-    dirs.append("etc")
-    dirs.append("xpra")
+    if not WIN32:
+        dirs.append("etc")
+        dirs.append("xpra")
     return os.path.join(*dirs)
 
 def detect_xorg_setup(install_dir=None):
@@ -806,8 +807,9 @@ def build_xpra_conf(install_dir):
             'remote_logging' : bstr(OSX or WIN32),
             'env'            : env,
             'has_displayfd'  : bstr(has_displayfd),
-            'conf_dir'       : conf_dir}
-    #print("conf substitutions=%s" % SUBS)
+            'conf_dir'       : conf_dir,
+            'mdns'           : bstr(not WIN32),
+            'pulseaudio'     : bstr(not OSX and not WIN32)}
     conf = template % SUBS
     #get conf dir for install, without stripping the build root
     conf_dir = get_conf_dir(install_dir, stripbuildroot=False)

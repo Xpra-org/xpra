@@ -21,11 +21,8 @@
 # General Options
 
 # Enable clipboard forwarding:
-#clipboard = disabled
-#clipboard = on
-#clipboard = off
-#clipboard = receive-only
-#clipboard = send-only
+#clipboard = yes
+#clipboard = no
 clipboard = yes
 
 # Forward notifications:
@@ -211,7 +208,7 @@ sharing = no
 #compressors = all
 #compressors = none
 #compressors = zlib
-compressors = lz4, zlib, lzo
+compressors = lz4, lzo, zlib
 
 # Default compression (0 to 9):
 compression_level = 1
@@ -334,7 +331,7 @@ log-file = $DISPLAY.log
 
 # Publish sessions:
 #mdns = no
-mdns = yes
+mdns = %(mdns)s
 
 # Forward client dbus rpc requests:
 # (requires client configuration)
@@ -360,7 +357,7 @@ input-method=none
 %(env)s
 
 # Start a pulseaudio server with each session:
-pulseaudio = yes
+pulseaudio = %(pulseaudio)s
 
 # pulseaudio server start command:
 pulseaudio-command = pulseaudio --start --daemonize=false --system=false \
