@@ -429,7 +429,7 @@ def get_defaults():
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
-                    "mdns"              : False,
+                    "mdns"              : not sys.platform.startswith("win"),
                     "file-transfer"     : True,
                     "printing"          : True,
                     "open-files"        : False,
