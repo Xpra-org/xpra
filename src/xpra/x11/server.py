@@ -653,12 +653,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._damage(window, 0, 0, w, h)
 
 
-    def _update_metadata(self, window, pspec):
-        windowlog("updating metadata on %s: %s", window, pspec)
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            ss.window_metadata(wid, window, pspec.name)
-
     def _lost_window(self, window, wm_exiting=False):
         wid = self._window_to_id[window]
         windowlog("lost_window: %s - %s", wid, window)

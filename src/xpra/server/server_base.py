@@ -21,6 +21,7 @@ clientlog = Logger("client")
 screenlog = Logger("screen")
 printlog = Logger("printing")
 netlog = Logger("network")
+windowlog = Logger("window")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -1663,7 +1664,19 @@ class ServerBase(ServerCore):
         #default: no focus
         return -1
 
+
+    def _update_metadata(self, window, pspec):
+        windowlog("updating metadata on %s: %s", window, pspec)
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.window_metadata(wid, window, pspec.name)
+
+
     def _add_new_window_common(self, window):
+        props = window.get_dynamic_property_names()
+        windowlog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
+        for prop in props:
+            window.connect("notify::%s" % prop, self._update_metadata)
         wid = self._max_window_id
         self._max_window_id += 1
         self._window_to_id[window] = wid

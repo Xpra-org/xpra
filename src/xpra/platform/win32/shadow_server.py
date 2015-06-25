@@ -4,10 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
+import win32gui         #@UnresolvedImport
+import win32process     #@UnresolvedImport
 from xpra.log import Logger
+from xpra.util import AdHocStruct
 log = Logger("shadow", "win32")
+shapelog = Logger("shape")
 
 from xpra.server.gtk_root_window_model import GTKRootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
@@ -29,6 +34,120 @@ BUTTON_EVENTS = {
                  (5, False) : NOEVENT,
                  }
 
+SEAMLESS = os.environ.get("XPRA_WIN32_SEAMLESS", "0")=="1"
+
+
+class Win32RootWindowModel(GTKRootWindowModel):
+
+    def __init__(self, root):
+        GTKRootWindowModel.__init__(self, root)
+        if SEAMLESS:
+            self.property_names.append("shape")
+            self.dynamic_property_names.append("shape")
+            self.rectangles = self.get_shape_rectangles(logit=True)
+            self.shape_notify = []
+
+    def refresh_shape(self):
+        rectangles = self.get_shape_rectangles()
+        if rectangles==self.rectangles:
+            return  #unchanged
+        self.rectangles = rectangles
+        shapelog("refresh_shape() sending notify for updated rectangles: %s", rectangles)
+        #notify listeners:
+        pspec = AdHocStruct()
+        pspec.name = "shape"
+        for cb, args in self.shape_notify:
+            shapelog("refresh_shape() notifying: %s", cb)
+            try:
+                cb(self, pspec, *args)
+            except:
+                shapelog.error("error in shape notify callback %s", cb, exc_info=True)
+
+    def connect(self, signal, cb, *args):
+        if signal=="notify::shape":
+            self.shape_notify.append((cb, args))
+        else:
+            GTKRootWindowModel.connect(self, signal, cb, *args)
+
+    def get_shape_rectangles(self, logit=False):
+        #get the list of windows
+        l = log
+        if logit or os.environ.get("XPRA_SHAPE_DEBUG", "0")=="1":
+            l = shapelog
+        taskbar = win32gui.FindWindow("Shell_TrayWnd", None)
+        l("taskbar window=%#x", taskbar)
+        ourpid = os.getpid()
+        l("our pid=%i", ourpid)
+        def enum_windows_cb(hwnd, rects):
+            if not win32gui.IsWindowVisible(hwnd):
+                l("skipped invisible window %#x", hwnd)
+                return True
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            if pid==ourpid:
+                l("skipped our own window %#x", hwnd)
+                return True
+            #skipping IsWindowEnabled check
+            window_title = win32gui.GetWindowText(hwnd)
+            l("get_shape_rectangles() found window '%s' with pid=%s", window_title, pid)
+            left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+            if right<0 or bottom<0:
+                l("skipped offscreen window at %ix%i", right, bottom)
+                return True
+            if hwnd==taskbar:
+                l("skipped taskbar")
+                return True
+            #dirty way:
+            if window_title=='Program Manager':
+                return True
+            #this should be the proper way using GetTitleBarInfo (but does not seem to work)
+            #import ctypes
+            #from ctypes.windll.user32 import GetTitleBarInfo        #@UnresolvedImport
+            #from ctypes.wintypes import (DWORD, RECT)
+            #class TITLEBARINFO(ctypes.Structure):
+            #    pass
+            #TITLEBARINFO._fields_ = [
+            #    ('cbSize', DWORD),
+            #    ('rcTitleBar', RECT),
+            #    ('rgstate', DWORD * 6),
+            #]
+            #ti = TITLEBARINFO()
+            #ti.cbSize = ctypes.sizeof(ti)
+            #GetTitleBarInfo(hwnd, ctypes.byref(ti))
+            #if ti.rgstate[0] & win32con.STATE_SYSTEM_INVISIBLE:
+            #    log("skipped system invisible window")
+            #    return True
+            w = right-left
+            h = bottom-top 
+            l("shape(%s - %#x)=%s", window_title, hwnd, (left, top, w, h))
+            if w<=0 and h<=0:
+                l("skipped invalid window size: %ix%i", w, h)
+                return True
+            if left==-32000 and top==-32000:
+                #there must be a better way of skipping those - I haven't found it
+                l("skipped special window")
+                return True
+            #now clip rectangle:
+            if left<0:
+                left = 0
+                w = right
+            if top<0:
+                top = 0
+                h = bottom
+            rects.append((left, top, w, h))
+            return True
+        rectangles = []
+        win32gui.EnumWindows(enum_windows_cb, rectangles)
+        l("get_shape_rectangles()=%s", rectangles)
+        return sorted(rectangles)
+
+    def get_property(self, prop):
+        if prop=="shape":
+            assert SEAMLESS
+            shape = {"Bounding.rectangles" : self.rectangles}
+            #provide clip rectangle? (based on workspace area?)
+            return shape
+        return GTKRootWindowModel.get_property(self, prop)
+
 
 class ShadowServer(ShadowServerBase, GTKServerBase):
 
@@ -39,7 +158,14 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         self.keycodes = {}
 
     def makeRootWindowModel(self):
-        return GTKRootWindowModel(self.root)
+        return Win32RootWindowModel(self.root)
+
+    def refresh(self):
+        v = ShadowServerBase.refresh(self)
+        if v and SEAMLESS:
+            self.root_window_model.refresh_shape()
+        log("refresh()=%s", v)
+        return v
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         #adjust pointer position for offset in client:

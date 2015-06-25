@@ -21,6 +21,8 @@ class RootWindowModel(object):
 
     def __init__(self, root_window):
         self.window = root_window
+        self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon"]
+        self.dynamic_property_names = []
 
     def is_managed(self):
         return True
@@ -50,11 +52,10 @@ class RootWindowModel(object):
         raise NotImplementedError()
 
     def get_property_names(self):
-        return ("title", "class-instance", "client-machine", "window-type", "size-hints", "icon")
+        return self.property_names
 
     def get_dynamic_property_names(self):
-        #nothing changes
-        return ()
+        return self.dynamic_property_names
 
     def get_generic_os_name(self):
         for k,v in {"linux"     : "linux",
