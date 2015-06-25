@@ -19,7 +19,7 @@ from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
-from xpra.daemon_thread import make_daemon_thread
+from xpra.make_thread import make_thread
 
 
 PROXY_SOCKET_TIMEOUT = float(os.environ.get("XPRA_PROXY_SOCKET_TIMEOUT", "0.1"))
@@ -226,7 +226,7 @@ class ProxyServer(ServerCore):
                 #now we can close our handle on the connection:
                 client_conn.close()
                 server_conn.close()
-        make_daemon_thread(do_start_proxy, "start_proxy(%s)" % client_conn).start()
+        make_thread(do_start_proxy, "start_proxy(%s)" % client_conn).start()
 
 
     def reap(self):

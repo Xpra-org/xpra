@@ -29,7 +29,7 @@ from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
 from xpra.util import typedict, updict, LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
-from xpra.daemon_thread import make_daemon_thread
+from xpra.make_thread import make_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
 from xpra.scripts.main import SOCKET_TIMEOUT
@@ -139,10 +139,10 @@ class ProxyInstanceProcess(Process):
         signal.signal(signal.SIGINT, self.signal_quit)
         log("registered signal handler %s", self.signal_quit)
 
-        make_daemon_thread(self.server_message_queue, "server message queue").start()
+        make_thread(self.server_message_queue, "server message queue").start()
 
         if self.create_control_socket():
-            self.control_socket_thread = make_daemon_thread(self.control_socket_loop, "control")
+            self.control_socket_thread = make_thread(self.control_socket_loop, "control")
             self.control_socket_thread.start()
 
         self.main_queue = Queue()
@@ -162,7 +162,7 @@ class ProxyInstanceProcess(Process):
 
         self.lost_windows = set()
         self.encode_queue = Queue()
-        self.encode_thread = make_daemon_thread(self.encode_loop, "encode")
+        self.encode_thread = make_thread(self.encode_loop, "encode")
         self.encode_thread.start()
 
         log("starting network threads")

@@ -129,9 +129,9 @@ class Protocol(object):
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
         self._write_lock = Lock()
-        from xpra.daemon_thread import make_daemon_thread
-        self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
-        self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
+        from xpra.make_thread import make_thread
+        self._write_thread = make_thread(self._write_thread_loop, "write")
+        self._read_thread = make_thread(self._read_thread_loop, "read")
         self._read_parser_thread = None         #started when needed
         self._write_format_thread = None        #started when needed
         self._source_has_more = threading.Event()
@@ -258,8 +258,8 @@ class Protocol(object):
         self._source_has_more.set()
         #start the format thread:
         if not self._write_format_thread:
-            from xpra.daemon_thread import make_daemon_thread
-            self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
+            from xpra.make_thread import make_thread
+            self._write_format_thread = make_thread(self._write_format_thread_loop, "format")
             self._write_format_thread.start()
 
     def _write_format_thread_loop(self):
@@ -604,8 +604,8 @@ class Protocol(object):
     def read_queue_put(self, data):
         #start the parse thread if needed:
         if not self._read_parser_thread:
-            from xpra.daemon_thread import make_daemon_thread
-            self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
+            from xpra.make_thread import make_thread
+            self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse")
             self._read_parser_thread.start()
         self._read_queue.put(data)
 

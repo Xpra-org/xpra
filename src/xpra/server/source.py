@@ -37,7 +37,7 @@ from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
-from xpra.daemon_thread import make_daemon_thread
+from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
 from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -253,7 +253,7 @@ class ServerSource(object):
 
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
-        self.encode_thread = make_daemon_thread(self.encode_loop, "encode")
+        self.encode_thread = make_thread(self.encode_loop, "encode")
         self.encode_thread.start()
         #for managing the recalculate_delays work:
         self.calculate_window_ids = set()

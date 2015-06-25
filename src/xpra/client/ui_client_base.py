@@ -48,7 +48,7 @@ from xpra.scripts.config import parse_bool_or_int
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
-from xpra.daemon_thread import make_daemon_thread
+from xpra.make_thread import make_thread
 from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, CLIENT_EXIT
 try:
@@ -346,7 +346,7 @@ class UIXpraClient(XpraClientBase):
 
         #draw thread:
         self._draw_queue = Queue()
-        self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
+        self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 
     def setup_connection(self, conn):
         XpraClientBase.setup_connection(self, conn)

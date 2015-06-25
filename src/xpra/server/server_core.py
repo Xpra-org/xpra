@@ -36,7 +36,7 @@ from xpra.version_util import version_compat_check, get_version_info, get_platfo
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import new_cipher_caps
 from xpra.server.background_worker import stop_worker, get_worker
-from xpra.daemon_thread import make_daemon_thread
+from xpra.make_thread import make_thread
 from xpra.server.proxy import XpraProxy
 from xpra.util import typedict, updict, repr_ellipsized, \
         SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
@@ -408,8 +408,7 @@ class ServerCore(object):
             #start a new proxy in a thread
             def run_proxy():
                 self.start_tcp_proxy(proto, data)
-            t = make_daemon_thread(run_proxy, "web-proxy-for-%s" % proto)
-            t.start()
+            make_thread(run_proxy, "web-proxy-for-%s" % proto).start()
             return
         err = "invalid packet format, not an xpra client?"
         proto.gibberish(err, data)
