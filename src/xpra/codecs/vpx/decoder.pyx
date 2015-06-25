@@ -228,7 +228,7 @@ cdef class Decoder:
         dec_cfg.threads = self.max_threads
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
-            raise Exception("failed to instantiate vpx decoder: %s" % vpx_codec_error(self.context))
+            raise Exception("failed to instantiate vpx decoder: %s" % bytestostr(vpx_codec_error(self.context)))
         log("vpx_codec_dec_init_ver for %s succeeded", encoding)
 
     def __repr__(self):
