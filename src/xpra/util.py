@@ -465,15 +465,23 @@ def pver(v):
             return ", ".join(v)
     return v
 
-def std(_str, extras="-,./: "):
+def std(s, extras="-,./: "):
+    try:
+        s = s.decode("latin1")
+    except:
+        pass
     def f(v):
         return str.isalnum(str(v)) or v in extras
-    return "".join(filter(f, _str))
+    return "".join(filter(f, s))
 
-def alnum(_str):
+def alnum(s):
+    try:
+        s = s.encode("latin1")
+    except:
+        pass
     def f(v):
         return str.isalnum(str(v))
-    return "".join(filter(f, _str))
+    return "".join(filter(f, s))
 
 def nonl(x):
     if x is None:
