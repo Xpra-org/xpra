@@ -775,6 +775,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     from xpra.log import Logger
     log = Logger("server")
 
+    #warn early about this:
+    if starting:
+        de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
+        if de and (opts.pulseaudio or opts.notifications):
+            log.warn("Warning: xpra start from an existing '%s' desktop session", de)
+            log.warn(" pulseaudio and notifications forwarding may not work")
+            log.warn(" try using a clean environment, a dedicated user, or turn off those options")
+
     mdns_recs = []
     sockets = []
     try:
