@@ -123,5 +123,5 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Fri Aug 08 2014 Antoine Martin <antoine@devloop.org.uk> 1.3.0
+* Fri Aug 08 2014 Antoine Martin <antoine@devloop.org.uk> 2.6.1-2
 - Initial packaging for xpra
