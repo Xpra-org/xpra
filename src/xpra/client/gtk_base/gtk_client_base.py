@@ -1,11 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
+import os, sys
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
 gobject = import_gobject()
@@ -58,6 +58,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.opengl_props = {}
         #frame request hidden window:
         self.frame_request_window = None
+        #group leader bits:
+        self._ref_to_group_leader = {}
+        self._group_leader_wids = {}
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -590,3 +593,103 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 if decoder_lock:
                     decoder_lock.release()
         opengllog("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
+
+
+    def get_group_leader(self, wid, metadata, override_redirect):
+        transient_for = metadata.intget("transient-for", -1)
+        log("get_group_leader: transient_for=%s", transient_for)
+        if transient_for>0:
+            client_window = self._id_to_window.get(transient_for)
+            if client_window:
+                gdk_window = client_window.get_window()
+                if gdk_window:
+                    return gdk_window
+        pid = metadata.intget("pid", -1)
+        leader_xid = metadata.intget("group-leader-xid", -1)
+        leader_wid = metadata.intget("group-leader-wid", -1)
+        group_leader_window = self._id_to_window.get(leader_wid)
+        if group_leader_window:
+            #leader is another managed window
+            log("found group leader window %s for wid=%s", group_leader_window, leader_wid)
+            return group_leader_window
+        log("get_group_leader: leader pid=%s, xid=%s, wid=%s", pid, leader_xid, leader_wid)
+        reftype = "xid"
+        ref = leader_xid
+        if ref<0:
+            reftype = "leader-wid"
+            ref = leader_wid
+        if ref<0:
+            ci = metadata.strlistget("class-instance")
+            if ci:
+                reftype = "class"
+                ref = "|".join(ci)
+            elif pid>0:
+                reftype = "pid"
+                ref = pid
+            elif transient_for>0:
+                #this should have matched a client window above..
+                #but try to use it anyway:
+                reftype = "transient-for"
+                ref = transient_for
+            else:
+                #no reference to use
+                return None
+        refkey = "%s:%s" % (reftype, ref)
+        group_leader_window = self._ref_to_group_leader.get(refkey)
+        if group_leader_window:
+            log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
+            return group_leader_window
+        #we need to create one:
+        title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
+        #group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
+        #static new(parent, attributes, attributes_mask)
+        if is_gtk3():
+            #long winded and annoying
+            attributes = gdk.WindowAttr()
+            attributes.width = 1
+            attributes.height = 1
+            attributes.title = title
+            attributes.wclass = gdk.WindowWindowClass.INPUT_ONLY
+            attributes.event_mask = 0
+            attributes_mask = gdk.WindowAttributesType.TITLE | gdk.WindowAttributesType.WMCLASS
+            group_leader_window = gdk.Window(None, attributes, attributes_mask)
+            group_leader_window.resize(1, 1)
+        else:
+            #gtk2:
+            group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
+        self._ref_to_group_leader[refkey] = group_leader_window
+        #avoid warning on win32...
+        if not sys.platform.startswith("win"):
+            #X11 spec says window should point to itself:
+            group_leader_window.set_group(group_leader_window)
+        log("new hidden group leader window %s for ref=%s", group_leader_window, refkey)
+        self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
+        return group_leader_window
+
+    def destroy_window(self, wid, window):
+        #override so we can cleanup the group-leader if needed,
+        UIXpraClient.destroy_window(self, wid, window)
+        group_leader = window.group_leader
+        if group_leader is None or len(self._group_leader_wids)==0:
+            return
+        wids = self._group_leader_wids.get(group_leader)
+        if wids is None:
+            #not recorded any window ids on this group leader
+            #means it is another managed window, leave it alone
+            return
+        if wid in wids:
+            wids.remove(wid)
+        if len(wids)>0:
+            #still has another window pointing to it
+            return
+        #the last window has gone, we can remove the group leader,
+        #find all the references to this group leader:
+        del self._group_leader_wids[group_leader]
+        refs = []
+        for ref, gl in self._ref_to_group_leader.items():
+            if gl==group_leader:
+                refs.append(ref)
+        for ref in refs:
+            del self._ref_to_group_leader[ref]
+        log("last window for refs %s is gone, destroying the group leader %s", refs, group_leader)
+        group_leader.destroy()

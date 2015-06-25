@@ -459,7 +459,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self.group_leader:
             if not self.is_realized():
                 self.realize()
-            self.window.set_group(self.group_leader)
+            self.get_window().set_group(self.group_leader)
         if HAS_X11_BINDINGS:
             #now it is realized, we can set WM_COMMAND (for X11 clients only)
             command = self._metadata.strget("command")
