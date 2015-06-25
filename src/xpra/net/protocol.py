@@ -11,9 +11,8 @@
 import sys
 from socket import error as socket_error
 import os
-import threading
 import binascii
-from threading import Lock
+from threading import Lock, Event
 
 
 from xpra.log import Logger
@@ -130,11 +129,11 @@ class Protocol(object):
         self.cipher_out_block_size = 0
         self._write_lock = Lock()
         from xpra.make_thread import make_thread
-        self._write_thread = make_thread(self._write_thread_loop, "write")
-        self._read_thread = make_thread(self._read_thread_loop, "read")
+        self._write_thread = make_thread(self._write_thread_loop, "write", daemon=True)
+        self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
         self._read_parser_thread = None         #started when needed
         self._write_format_thread = None        #started when needed
-        self._source_has_more = threading.Event()
+        self._source_has_more = Event()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size",

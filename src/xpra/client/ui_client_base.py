@@ -371,6 +371,8 @@ class UIXpraClient(XpraClientBase):
     def cleanup(self):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
+        #tell the draw thread to exit:
+        self._draw_queue.put(None)
         self.stop_all_sound()
         for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
@@ -1981,6 +1983,8 @@ class UIXpraClient(XpraClientBase):
     def _draw_thread_loop(self):
         while self.exit_code is None:
             packet = self._draw_queue.get()
+            if packet is None:
+                break
             try:
                 self._do_draw(packet)
                 time.sleep(0)
@@ -1988,6 +1992,7 @@ class UIXpraClient(XpraClientBase):
                 raise
             except:
                 log.error("error processing draw packet", exc_info=True)
+        log("draw thread ended")
 
     def _do_draw(self, packet):
         """ this runs from the draw thread above """

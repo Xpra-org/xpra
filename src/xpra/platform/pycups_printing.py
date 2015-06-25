@@ -139,9 +139,9 @@ def check_printers():
 _polling_timer = None
 def schedule_polling_timer():
     #fallback to polling:
-    import threading
+    from threading import Timer
     global _polling_timer
-    _polling_timer = threading.Timer(POLLING_DELAY, check_printers)
+    _polling_timer = Timer(POLLING_DELAY, check_printers)
     _polling_timer.start()
 
 def init_printing(callback):

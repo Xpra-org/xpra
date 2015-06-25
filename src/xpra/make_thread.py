@@ -13,7 +13,7 @@ This is used by the pycallgraph test wrapper.
  as only our code will be affected)
 """
 
-def make_thread(target, name, daemon=True):
+def make_thread(target, name, daemon=False):
     t = Thread(target=target, name=name)
     t.daemon = daemon
     return t
