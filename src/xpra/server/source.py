@@ -24,6 +24,7 @@ filelog = Logger("file")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
+mmaplog = Logger("mmap")
 
 
 from xpra.server import ClientException
@@ -722,12 +723,12 @@ class ServerSource(object):
         #mmap:
         mmap_filename = c.strget("mmap_file")
         mmap_token = c.intget("mmap_token")
-        log("client supplied mmap_file=%s, mmap supported=%s, token=%s", mmap_filename, self.supports_mmap, mmap_token)
+        mmaplog("client supplied mmap_file=%s, mmap supported=%s, token=%s", mmap_filename, self.supports_mmap, mmap_token)
         if mmap_filename:
             if not self.supports_mmap:
-                log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)
+                mmaplog("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)
             elif not os.path.exists(mmap_filename):
-                log.warn("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
+                mmaplog("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
             else:
                 from xpra.net.mmap_pipe import init_server_mmap
                 from xpra.os_util import get_int_uuid
@@ -737,10 +738,10 @@ class ServerSource(object):
                     self.mmap_client_token = new_token
 
         if self.mmap_size>0:
-            log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
+            mmaplog.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
-            log.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
+            elog.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
 
     def parse_proxy_video(self):
         from xpra.codecs.enc_proxy.encoder import Encoder
