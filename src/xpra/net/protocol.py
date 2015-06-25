@@ -867,14 +867,16 @@ class Protocol(object):
         wait_for_write_lock()
 
     def close(self):
-        log("Protocol.close() closed=%s", self._closed)
+        log("Protocol.close() closed=%s, connection=%s", self._closed, self._conn)
         if self._closed:
             return
         self._closed = True
         self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
-        if self._conn:
+        c = self._conn
+        if c:
             try:
-                self._conn.close()
+                log("Protocol.close() calling %s", c.close)
+                c.close()
                 if self._log_stats is None and self._conn.input_bytecount==0 and self._conn.output_bytecount==0:
                     #no data sent or received, skip logging of stats:
                     self._log_stats = False

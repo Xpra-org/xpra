@@ -9,6 +9,7 @@ import os
 import sys
 import socket
 import binascii
+import traceback
 import string
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
@@ -380,11 +381,21 @@ class XpraClientBase(object):
 
 
     def cleanup(self):
-        log("XpraClientBase.cleanup() protocol=%s", self._protocol)
-        if self._protocol:
-            self._protocol.close()
+        p = self._protocol
+        log("XpraClientBase.cleanup() protocol=%s", p)
+        if p:
+            log("calling %s", p.close)
+            p.close()
             self._protocol = None
         self.cleanup_printing()
+        frames = sys._current_frames()
+        log("after cleanup, found %s frames:", len(frames))
+        for i,(fid,frame) in enumerate(frames.items()):
+            log("%i: %s - %s:", i, fid, frame)
+            for x in traceback.format_stack(frame):
+                for l in x.splitlines():
+                    log("%s", l)
+
 
     def glib_init(self):
         try:

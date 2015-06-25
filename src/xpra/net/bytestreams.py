@@ -224,8 +224,11 @@ class SocketConnection(Connection):
         return self._write(self._socket.send, buf)
 
     def close(self):
+        log("%s.close() for socket=%s", self, self._socket)
         Connection.close(self)
+        self._socket.settimeout(0.0)
         self._socket.close()
+        log("%s.close() done", self)
 
     def __repr__(self):
         if self.remote:
