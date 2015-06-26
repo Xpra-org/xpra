@@ -5,9 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os.path
+import sys
 
 #defaults which may be overriden by platform_import:
-LOCAL_SERVERS_SUPPORTED = False
+LOCAL_SERVERS_SUPPORTED = sys.version_info[0]<3
 SHADOW_SUPPORTED = False
 MMAP_SUPPORTED = False
 SYSTEM_TRAY_SUPPORTED = False

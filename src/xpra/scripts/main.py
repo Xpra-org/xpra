@@ -245,7 +245,22 @@ def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
         newoptionname = optionname
     do_replace_option(cmdline, no, "--%s=no" % optionname)
     do_replace_option(cmdline, yes, "--%s=yes" % optionname)
-
+def ignore_options(args, options):
+    for x in options:
+        o = "--%s" % x      #ie: --use-display
+        while o in args:
+            args.remove(o)
+        o = "--%s=" % x     #ie: --bind-tcp=....
+        remove = []
+        #find all command line arguments starting with this option:
+        for v in args:
+            if v.startswith(o):
+                remove.append(v)
+        #and remove them all:
+        for r in remove:
+            while r in args:
+                args.remove(r)
+        
 
 def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
@@ -299,6 +314,10 @@ def do_parse_cmdline(cmdline, defaults):
         do_replace_option(cmdline, oldoption, newoption)
     def legacy_bool_parse(optionname, newoptionname=None):
         do_legacy_bool_parse(cmdline, optionname, newoptionname)
+    def ignore(defaults):
+        ignore_options(cmdline, defaults.keys())
+        for k,v in defaults.items():
+            hidden_options[k.replace("-", "_")] = v
     group = optparse.OptionGroup(parser, "Server Options",
                 "These options are only relevant on the server when using the %s mode." %
                 " or ".join(["'%s'" % x for x in server_modes]))
@@ -320,21 +339,21 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="env", default=list(defaults.env or []),
                       help="Define environment variables used with 'start-child' and 'start'. Default: %default.")
 
+    legacy_bool_parse("html")
     if supports_server:
         group.add_option("--tcp-proxy", action="store",
                           dest="tcp_proxy", default=defaults.tcp_proxy,
                           metavar="HOST:PORT",
                           help="The address to which non-xpra packets will be forwarded. Default: '%default'.")
-        legacy_bool_parse("html")
         group.add_option("--html", action="store",
                           dest="html", default=defaults.html,
                           metavar="on|off|[HOST:]PORT",
                           help="Enable the web server and the html5 client. Default: '%default'.")
     else:
-        hidden_options["tcp_proxy"] = ""
-        hidden_options["html"] = ""
+        ignore({"tcp_proxy" : "",
+                "html"      : ""})
+    legacy_bool_parse("daemon")
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
-        legacy_bool_parse("daemon")
         group.add_option("--daemon", action="store", metavar="yes|no",
                           dest="daemon", default=defaults.daemon,
                           help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
@@ -345,8 +364,8 @@ def do_parse_cmdline(cmdline, defaults):
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
     else:
-        hidden_options["daemon"] = False
-        hidden_options["log_file"] = defaults.log_file
+        ignore({"daemon"    : False,
+                "log_file"  : defaults.log_file})
 
     #FIXME: file tranfer command line options:
     legacy_bool_parse("printing")
@@ -363,24 +382,25 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="COMMAND",
                           help="Specify the lpadmin command to use. Default: '%default'.")
     else:
-        hidden_options["lpadmin"] = defaults.lpadmin
+        ignore({"lpadmin"   : defaults.lpadmin})
     hidden_options["file_size_limit"] = defaults.file_size_limit
     hidden_options["open_command"] = defaults.open_command
     hidden_options["open_files"] = defaults.open_files
 
+    legacy_bool_parse("exit-with-client")
     if (supports_server or supports_shadow):
-        legacy_bool_parse("exit-with-client")
         group.add_option("--exit-with-client", action="store", metavar="yes|no",
                           dest="exit_with_client", default=defaults.exit_with_client,
                           help="Terminate the server when the last client disconnects. Default: %s" % enabled_str(defaults.exit_with_client))
     else:
-        hidden_options["exit_with_client"] = False
+        ignore({"exit_with_client" : False})
     group.add_option("--idle-timeout", action="store",
                       dest="idle_timeout", type="int", default=defaults.idle_timeout,
                       help="Disconnects the client when idle (0 to disable). Default: %s seconds" % defaults.idle_timeout)
     group.add_option("--server-idle-timeout", action="store",
                       dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
                       help="Exits the server when idle (0 to disable). Default: %s seconds" % defaults.server_idle_timeout)
+    legacy_bool_parse("fake-xinerama")
     if supports_server:
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,
@@ -390,15 +410,14 @@ def do_parse_cmdline(cmdline, defaults):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server. Default: '%default'.")
-        legacy_bool_parse("fake-xinerama")
         group.add_option("--fake-xinerama", action="store", metavar="yes|no",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
                           help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
-        hidden_options["use_display"] = False
-        hidden_options["xvfb"] = ''
-        hidden_options["fake_xinerama"] = False
+        ignore({"use-display"   : False,
+                "xvfb"          : '',
+                "fake-xinerama" : False})
     if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
@@ -406,30 +425,30 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Listen for connections over TCP (use --password-file to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
     else:
-        hidden_options["bind_tcp"] = []
+        ignore({"bind-tcp" : []})
+    legacy_bool_parse("mdns")
     if (supports_server or supports_shadow):
-        legacy_bool_parse("mdns")
         group.add_option("--mdns", action="store", metavar="yes|no",
                           dest="mdns", default=defaults.mdns,
                           help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
     else:
-        hidden_options["mdns"] = False
+        ignore({"mdns" : False})
+    legacy_bool_parse("pulseaudio")
+    legacy_bool_parse("dbus-proxy")
     if supports_server:
-        legacy_bool_parse("pulseaudio")
         group.add_option("--pulseaudio", action="store", metavar="yes|no",
                       dest="pulseaudio", default=defaults.pulseaudio,
                       help="Start a pulseaudio server for the session. Default: %s." % enabled_str(defaults.pulseaudio))
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server. Default: '%default'.")
-        legacy_bool_parse("dbus-proxy")
         group.add_option("--dbus-proxy", action="store", metavar="yes|no",
                       dest="dbus_proxy", default=defaults.dbus_proxy,
                       help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
     else:
-        hidden_options["pulseaudio"] = False
-        hidden_options["pulseaudio_command"] = ""
-        hidden_options["dbus_proxy"] = False
+        ignore({"pulseaudio"            : False,
+                "pulseaudio-command"    : "",
+                "dbus-proxy"            : False})
 
     group = optparse.OptionGroup(parser, "Server Controlled Features",
                 "These options can be used to turn certain features on or off, "
@@ -456,13 +475,13 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--bell", action="store",
                       dest="bell", default=defaults.bell, metavar="yes|no",
                       help="Forward the system bell. Default: %s." % enabled_str(defaults.bell))
+    legacy_bool_parse("xsettings")
     if os.name=="posix":
-        legacy_bool_parse("xsettings")
         group.add_option("--xsettings", action="store", metavar="yes|no",
                           dest="xsettings", default=defaults.xsettings,
                           help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
     else:
-        hidden_options["xsettings"] =  False
+        ignore({"xsettings" : False})
     legacy_bool_parse("mmap")
     group.add_option("--mmap", action="store", metavar="yes|no",
                       dest="mmap", default=defaults.mmap,
@@ -478,8 +497,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--remote-logging", action="store", metavar="yes|no",
                       dest="remote_logging", default=defaults.remote_logging,
                       help="Forward all the client's log output to the server. Default: %s." % enabled_str(defaults.remote_logging))
+    legacy_bool_parse("speaker")
+    legacy_bool_parse("microphone")
+    legacy_bool_parse("av-sync")
     if has_sound_support:
-        legacy_bool_parse("speaker")
         group.add_option("--speaker", action="store", metavar="on|off|disabled",
                           dest="speaker", default=defaults.speaker,
                           help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
@@ -491,7 +512,6 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--speaker-codec", action="append",
                           dest="speaker_codec", default=list(defaults.speaker_codec or []),
                           help=CODEC_HELP % "speaker")
-        legacy_bool_parse("microphone")
         group.add_option("--microphone", action="store", metavar="on|off|disabled",
                           dest="microphone", default=defaults.microphone,
                           help="Forward sound input to the server. Default: %s." % sound_option(defaults.microphone))
@@ -501,17 +521,16 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--sound-source", action="store",
                           dest="sound_source", default=defaults.sound_source,
                           help="Specifies which sound system to use to capture the sound stream (use 'help' for options)")
-        legacy_bool_parse("av-sync")
         group.add_option("--av-sync", action="store",
                           dest="av_sync", default=defaults.av_sync,
                           help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
     else:
-        hidden_options["av-sync"] = False
-        hidden_options["speaker"] = False
-        hidden_options["speaker_codec"] = []
-        hidden_options["microphone"] = False
-        hidden_options["microphone_codec"] = []
-        hidden_options["sound_source"] = ""
+        ignore({"av-sync"           : False,
+                "speaker"           : False,
+                "speaker-codec"     : [],
+                "microphone"        : False,
+                "microphone-codec"  : [],
+                "sound-source"      : ""})
 
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
@@ -531,7 +550,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="video_encoders", default=defaults.video_encoders,
                           help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
     else:
-        hidden_options["video_encoders"] = []
+        ignore({"video-encoders" : []})
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
                       help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help'. Default: %default.")
@@ -668,8 +687,8 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="socket_permissions", default=defaults.socket_permissions,
                           help="When creating the server unix domain socket, what file access mode to use (default: '%default')")
     else:
-        hidden_options["mmap_group"] = False
-        hidden_options["socket_permissions"] = 0o600
+        ignore({"mmap-group"            : False,
+                "socket-permissions"    : 0o600})
 
     replace_option("--enable-pings", "--pings=yes")
     group.add_option("--pings", action="store", metavar="yes|no",
@@ -700,10 +719,10 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="FILE",
                           help="Specifies the file containing the encryption key to use for TCP sockets. (default: '%default')")
     else:
-        hidden_options["encryption"] = ''
-        hidden_options["tcp_encryption"] = ''
-        hidden_options["encryption_keyfile"] = ''
-        hidden_options["tcp_encryption_keyfile"] = ''
+        ignore({"encryption"                : "",
+                "tcp-encryption"            : "",
+                "encryption-keyfile"        : "",
+                "tcp-encryption_keyfile"    : ""})
 
     options, args = parser.parse_args(cmdline[1:])
 

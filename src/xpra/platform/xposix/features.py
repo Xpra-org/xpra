@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 #don't bother trying to forward system tray with Ubuntu's "unity":
-LOCAL_SERVERS_SUPPORTED = True
 SHADOW_SUPPORTED = True
 from xpra.util import is_unity
 SYSTEM_TRAY_SUPPORTED = not is_unity()
