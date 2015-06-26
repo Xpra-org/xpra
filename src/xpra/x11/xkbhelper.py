@@ -7,7 +7,7 @@ import os
 import re
 
 #ensure that we use gtk as display source:
-from xpra.x11.gtk_x11 import gdk_display_source
+from xpra.x11.gtk2 import gdk_display_source
 assert gdk_display_source
 
 from xpra.util import std

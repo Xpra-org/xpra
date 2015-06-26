@@ -9,7 +9,7 @@
 import gtk.gdk
 
 #ensure that we use gtk as display source:
-from xpra.x11.gtk_x11 import gdk_display_source
+from xpra.x11.gtk2 import gdk_display_source
 assert gdk_display_source
 
 from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
@@ -46,7 +46,7 @@ def window_info(window):
     return "%s %s (%s / %s)" % (net_wm_name, window, window.get_geometry(), window.is_visible())
 
 
-from xpra.x11.gtk_x11.gdk_bindings import get_children #@UnresolvedImport
+from xpra.x11.gtk2.gdk_bindings import get_children #@UnresolvedImport
 def dump_windows():
     root = gtk.gdk.get_default_root_window()
     log("root window: %s" % root)
@@ -166,7 +166,7 @@ class X11ServerBase(GTKServerBase):
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
         info["server.type"] = "Python/gtk/x11"
         try:
-            from xpra.x11.gtk_x11.composite import CompositeHelper
+            from xpra.x11.gtk2.composite import CompositeHelper
             info["server.XShm"] = CompositeHelper.XShmEnabled
         except:
             pass
@@ -254,7 +254,7 @@ class X11ServerBase(GTKServerBase):
 
 
     def get_max_screen_size(self):
-        from xpra.x11.gtk_x11.window import MAX_WINDOW_SIZE
+        from xpra.x11.gtk2.window import MAX_WINDOW_SIZE
         max_w, max_h = gtk.gdk.get_default_root_window().get_size()
         sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:

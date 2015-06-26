@@ -874,7 +874,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         info = "proxy"
     else:
         assert starting or upgrading
-        from xpra.x11.gtk_x11 import gdk_display_source
+        from xpra.x11.gtk2 import gdk_display_source
         assert gdk_display_source
         #(now we can access the X11 server)
 
@@ -886,7 +886,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             save_xvfb_pid(xvfb_pid)
 
         #check for an existing window manager:
-        from xpra.x11.gtk_x11.wm import wm_check
+        from xpra.x11.gtk2.wm import wm_check
         if not wm_check(display, opts.wm_name, upgrading):
             return 1
         try:

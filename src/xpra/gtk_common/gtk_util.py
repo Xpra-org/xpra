@@ -69,6 +69,14 @@ if is_gtk3():
         if not ok:
             return None
         return v
+    def get_xwindow(w):
+        try:
+            return w.get_xid()
+        except:
+            try:
+                return int(w)
+            except:
+                raise Exception("cannot convert %s to an xid!" % type(w))
     get_default_root_window = gdk.Screen.get_default().get_root_window
     keymap_get_for_display  = gdk.Keymap.get_for_display
 
@@ -170,6 +178,8 @@ if is_gtk3():
             gdk.threads_leave()
 
 else:
+    def get_xwindow(w):
+        return w.xid
     #gtk2:
     if gtk.gtk_version<(2,18):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))

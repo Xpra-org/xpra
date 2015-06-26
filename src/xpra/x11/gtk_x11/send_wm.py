@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
@@ -14,29 +15,21 @@ CurrentTime = constants["CurrentTime"]
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
-from xpra.gtk_common.gobject_compat import is_gtk3
-if is_gtk3():
-    def get_xwindow(w):
-        return w.get_xid()
-else:
-    def get_xwindow(w):
-        return w.xid
-
 
 def send_wm_take_focus(target, timestamp):
-    log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", target.xid, timestamp)
+    xid = get_xwindow(target)
+    log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, timestamp)
     if timestamp<0:
         timestamp = CurrentTime    #better than nothing...
     elif timestamp>0xFFFFFFFF:
         raise OverflowError("invalid time: %#x" % timestamp)
-    xid = get_xwindow(target)
     X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_TAKE_FOCUS", timestamp)
 
 def send_wm_delete_window(target):
-    log("sending WM_DELETE_WINDOW to %#x", target.xid)
     xid = get_xwindow(target)
+    log("sending WM_DELETE_WINDOW to %#x", xid)
     X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",

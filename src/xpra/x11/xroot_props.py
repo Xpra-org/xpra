@@ -7,8 +7,9 @@
 import gtk
 import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver, cleanup_all_event_receivers    #@UnresolvedImport
-from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter             #@UnresolvedImport
+from xpra.x11.gtk2.gdk_bindings import (add_event_receiver, remove_event_receiver,  #@UnresolvedImport
+                                        cleanup_all_event_receivers,                #@UnresolvedImport
+                                        init_x11_filter, cleanup_x11_filter)        #@UnresolvedImport
 from xpra.gtk_common.error import xsync
 
 from xpra.log import Logger

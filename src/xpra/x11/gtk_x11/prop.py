@@ -17,27 +17,20 @@ import cairo
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
+from xpra.gtk_common.gtk_util import get_xwindow
 
 from xpra.log import Logger
 log = Logger("x11", "window")
 
 try:
-    from xpra.x11.gtk_x11.gdk_bindings import (
-                    get_xwindow, get_pywindow,  #@UnresolvedImport
+    from xpra.x11.gtk2.gdk_bindings import (
+                    get_pywindow,               #@UnresolvedImport
                     get_xvisual,                #@UnresolvedImport
                    )
 except ImportError as e:
     #we should only ever be missing the gdk_bindings with GTK3 builds:
     log("cannot import gdk bindings", exc_info=True)
     assert is_gtk3()
-    def get_xwindow(w):
-        try:
-            return w.get_xid()
-        except:
-            try:
-                return int(w)
-            except:
-                raise Exception("cannot convert %s to an xid!" % type(w))
     def missing_fn(*args):
         raise NotImplementedError()
     get_pywindow, get_xvisual = missing_fn, missing_fn

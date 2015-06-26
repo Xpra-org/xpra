@@ -831,10 +831,10 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     CLEAN_FILES = [
                    "xpra/build_info.py",
                    "xpra/gtk_common/gdk_atoms.c",
-                   "xpra/x11/gtk_x11/constants.pxi",
-                   "xpra/x11/gtk_x11/gdk_bindings.c",
-                   "xpra/x11/gtk_x11/gdk_display_source.c",
-                   "xpra/x11/gtk3_x11/gdk_display_source.c",
+                   "xpra/x11/gtk2/constants.pxi",
+                   "xpra/x11/gtk2/gdk_bindings.c",
+                   "xpra/x11/gtk2/gdk_display_source.c",
+                   "xpra/x11/gtk3/gdk_display_source.c",
                    "xpra/x11/bindings/constants.pxi",
                    "xpra/x11/bindings/wait_for_x_server.c",
                    "xpra/x11/bindings/keyboard_bindings.c",
@@ -1709,7 +1709,7 @@ toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")
-    make_constants("xpra", "x11", "gtk_x11", "constants")
+    make_constants("xpra", "x11", "gtk2", "constants")
 
     cython_add(Extension("xpra.x11.bindings.wait_for_x_server",
                 ["xpra/x11/bindings/wait_for_x_server.pyx"],
@@ -1748,21 +1748,23 @@ if x11_ENABLED:
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 if gtk_x11_ENABLED:
+    toggle_packages(PYTHON3, "xpra.x11.gtk3")
+    toggle_packages(not PYTHON3, "xpra.x11.gtk2")
     if PYTHON3:
         #GTK3 display source:
-        cython_add(Extension("xpra.x11.gtk3_x11.gdk_display_source",
-                    ["xpra/x11/gtk3_x11/gdk_display_source.pyx"],
+        cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
+                    ["xpra/x11/gtk3/gdk_display_source.pyx"],
                     **pkgconfig("gtk+-3.0")
                     ))
     else:
         #below uses gtk/gdk:
-        cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
-                    ["xpra/x11/gtk_x11/gdk_display_source.pyx"],
+        cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
+                    ["xpra/x11/gtk2/gdk_display_source.pyx"],
                     **pkgconfig(*PYGTK_PACKAGES)
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["xfixes", "xdamage"]
-        cython_add(Extension("xpra.x11.gtk_x11.gdk_bindings",
-                    ["xpra/x11/gtk_x11/gdk_bindings.pyx"],
+        cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
+                    ["xpra/x11/gtk2/gdk_bindings.pyx"],
                     **pkgconfig(*GDK_BINDINGS_PACKAGES)
                     ))
 

@@ -4,8 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk.gdk
 
+from xpra.gtk_common.gtk_util import get_xwindow, get_default_root_window
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
 from xpra.server.gtk_root_window_model import GTKRootWindowModel
@@ -14,13 +14,13 @@ from xpra.server.gtk_root_window_model import GTKRootWindowModel
 class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def __repr__(self):
-        return "GTKX11RootWindowModel(%#x)" % self.window.xid
+        return "GTKX11RootWindowModel(%#x)" % get_xwindow(self.window)
 
 
 class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
     def __init__(self):
-        ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
+        ShadowServerBase.__init__(self, get_default_root_window())
         X11ServerBase.__init__(self, False)
 
 

@@ -8,10 +8,9 @@ import gobject
 import gtk
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
-from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk2.selection import ManagerSelection
+from xpra.x11.gtk2.gdk_bindings import (
                add_event_receiver,          #@UnresolvedImport
                remove_event_receiver,       #@UnresolvedImport
                get_pywindow,                #@UnresolvedImport

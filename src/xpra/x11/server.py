@@ -13,11 +13,13 @@ import time
 
 from xpra.util import AdHocStruct, updict
 from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
-from xpra.x11.gtk_x11.wm import Wm
-from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.prop import prop_set
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk2.wm import Wm
+from xpra.x11.gtk2.tray import get_tray_window, SystemTray
+from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
+from xpra.x11.gtk2.gdk_bindings import (
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
@@ -28,7 +30,6 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
-from xpra.x11.gtk_x11.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
 from xpra.gtk_common.error import trap, xsync
 
 from xpra.log import Logger
@@ -300,14 +301,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
         log("get_transient_for window=%s, transient_for=%s", window, transient_for)
         if transient_for is None:
             return None
-        xid = transient_for.xid
+        xid = get_xwindow(transient_for)
         log("transient_for.xid=%#x", xid)
         for w,wid in self._window_to_id.items():
             if w.get_property("xid")==xid:
                 log("found match, window id=%s", wid)
                 return wid
-        root = gtk.gdk.get_default_root_window()
-        if root.xid==xid:
+        root = get_default_root_window()
+        if get_xwindow(root)==xid:
             log("transient-for using root")
             return -1       #-1 is the backwards compatible marker for root...
         log("not found transient_for=%s, xid=%#x", transient_for, xid)
@@ -364,7 +365,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         root = gtk.gdk.get_default_root_window()
         for window in get_children(root):
-            if X11Window.is_override_redirect(window.xid) and X11Window.is_mapped(window.xid):
+            xid = get_xwindow(window)
+            if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
                 self._add_new_or_window(window)
 
 
@@ -496,7 +498,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, raw_window):
-        xid = raw_window.xid
+        xid = get_xwindow(raw_window)
         if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
@@ -571,7 +573,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _bell_signaled(self, wm, event):
-        log("bell signaled on window %s", event.window.xid)
+        log("bell signaled on window %#x", get_xwindow(event.window))
         if not self.bell:
             return
         wid = 0
