@@ -10,10 +10,11 @@ import logging
 import weakref
 # This module is used by non-GUI programs and thus must not import gtk.
 
-logging.basicConfig(format="%(asctime)s %(message)s")
-logging.root.setLevel(logging.INFO)
-
 LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
+LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s")
+
+logging.basicConfig(format=LOG_FORMAT)
+logging.root.setLevel(logging.INFO)
 
 #so we can keep a reference to all the loggers in use
 #we may have multiple loggers for the same key, so use a dict

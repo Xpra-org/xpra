@@ -844,7 +844,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def setloghandler(lh):
     logging.root.handlers = []
-    logging.root.addHandler(lh(sys.stdout))
+    logging.root.addHandler(lh)
 
 def configure_logging(options, mode):
     if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play"):
@@ -853,11 +853,15 @@ def configure_logging(options, mode):
             raise InitInfo("\n".join(info))
         if mode in ("start", "upgrade", "attach", "shadow", "proxy") and os.isatty(sys.stdout.fileno()):
             from xpra.colorstreamhandler import ColorStreamHandler
-            setloghandler(ColorStreamHandler)
+            from xpra.log import LOG_FORMAT
+            from logging import Formatter
+            csh = ColorStreamHandler(sys.stdout)
+            csh.setFormatter(Formatter(LOG_FORMAT))
+            setloghandler(csh)
     else:
         #a bit naughty here, but it's easier to let xpra.log initialize
         #the logging system every time, and just undo things here..
-        setloghandler(logging.StreamHandler)
+        setloghandler(logging.StreamHandler(sys.stdout))
 
     from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
     if options.debug:
