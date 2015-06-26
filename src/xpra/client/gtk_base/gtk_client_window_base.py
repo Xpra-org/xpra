@@ -465,7 +465,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             command = self._metadata.strget("command")
             v = command
             if type(command)!=unicode:
-                v = bytestostr(command).decode("utf8")
+                v = bytestostr(command)
+                try:
+                    v = v.decode("utf8")
+                except:
+                    pass
             log("realize() command=%s (%s)", v, type(v))
             prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
             self._client.request_frame_extents(self)
