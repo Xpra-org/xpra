@@ -39,7 +39,7 @@ from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)
 from xpra.gtk_common.error import XError, xsync, xswallow
-from xpra.x11.gtk_x11.prop import prop_get, prop_set
+from xpra.x11.gtk_x11.prop import prop_get, prop_set, MotifWMHints
 from xpra.x11.gtk_x11.composite import CompositeHelper
 
 from xpra.log import Logger
@@ -1561,7 +1561,8 @@ class WindowModel(BaseWindowModel):
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
         motif_hints = prop_get(self.client_window, "_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
         log("_handle_motif_wm_hints() motif_hints=%s", motif_hints)
-        self._internal_set_property("decorations", (motif_hints is None) or bool(motif_hints.decorations))
+        if motif_hints and motif_hints.flags&(2**MotifWMHints.DECORATIONS_BIT):
+            self._internal_set_property("decorations", motif_hints.decorations)
     _property_handlers["_MOTIF_WM_HINTS"] = _handle_motif_wm_hints
 
     def _handle_net_wm_icon(self):
