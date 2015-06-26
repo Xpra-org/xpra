@@ -674,7 +674,7 @@ cdef class PixmapWrapper(object):
             xpixmap_counter -= 1
 
     def cleanup(self):                      #@DuplicatedSignature
-        ximagedebug("%s.cleanup() pixmap=%#x", self, self.pixmap)
+        ximagedebug("%s.cleanup()", self)
         self.do_cleanup()
 
 
