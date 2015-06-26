@@ -10,5 +10,5 @@ import os
 if os.name=="posix":
     try:
         from xpra.x11.gtk3 import gdk_display_source
-    except Exception:
-        log.warn("cannot import gtk3_x11 display source", exc_info=True)
+    except ImportError:
+        log.warn("cannot import gtk3 x11 display source", exc_info=True)

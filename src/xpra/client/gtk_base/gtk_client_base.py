@@ -23,7 +23,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import bytestostr, updict, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, default_Cursor, \
+from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, \
@@ -400,7 +400,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 log.warn("error creating cursor: %s (using default)", e, exc_info=True)
             if cursor is None:
                 #use default:
-                cursor = default_Cursor
+                cursor = get_default_cursor()
         for w in windows:
             gdkwin = w.get_window()
             #trays don't have a gdk window

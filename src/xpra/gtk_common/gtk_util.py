@@ -77,10 +77,12 @@ if is_gtk3():
                 return int(w)
             except:
                 raise Exception("cannot convert %s to an xid!" % type(w))
-    get_default_root_window = gdk.Screen.get_default().get_root_window
+    def get_default_root_window():
+        return gdk.Screen.get_default().get_root_window
     keymap_get_for_display  = gdk.Keymap.get_for_display
 
-    default_Cursor          = gdk.Cursor.new(gdk.CursorType.X_CURSOR)
+    def get_default_cursor():
+        return gdk.Cursor.new(gdk.CursorType.X_CURSOR)
     new_Cursor_for_display  = gdk.Cursor.new_for_display
     new_Cursor_from_pixbuf  = gdk.Cursor.new_from_pixbuf
     from gi.repository import GdkPixbuf     #@UnresolvedImport
@@ -187,8 +189,9 @@ else:
     get_default_root_window = gdk.get_default_root_window
     keymap_get_for_display  = gdk.keymap_get_for_display
 
+    def get_default_cursor():
+        return gdk.Cursor(gdk.X_CURSOR)
     color_parse             = gdk.color_parse
-    default_Cursor          = gdk.Cursor(gdk.X_CURSOR)
     new_Cursor_for_display  = gdk.Cursor
     new_Cursor_from_pixbuf  = gdk.Cursor
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf

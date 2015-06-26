@@ -40,11 +40,14 @@ def init_gdk_display_source():
     cdef GdkDisplay* gdk_display
     cdef Display * x11_display
     from gi.repository import Gdk
+    gdk_display = gdk_display_get_default()
+    if not gdk_display:
+        from xpra.scripts.main import InitException
+        raise InitException("cannot access the display")
     #this next line actually ensures Gdk is initialized, somehow
     root = Gdk.get_default_root_window()
     assert root is not None, "could not get the default root window"
     #now we can get a display:
-    gdk_display = gdk_display_get_default()
     x11_display = gdk_x11_display_get_xdisplay(gdk_display)
     set_display(x11_display)
     set_display_name(gdk_display_get_name(gdk_display))
