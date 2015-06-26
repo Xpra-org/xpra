@@ -15,6 +15,7 @@ import socket
 import signal
 import threading
 import thread
+import traceback
 
 from xpra.log import Logger
 log = Logger("server")
@@ -302,6 +303,13 @@ class ServerCore(object):
             os_util.force_quit()
         self.timeout_add(5000, force_quit)
         log("clean_quit(..) quit timers scheduled")
+        frames = sys._current_frames()
+        log("clean_quit() after cleanup, found %s frames:", len(frames))
+        for i,(fid,frame) in enumerate(frames.items()):
+            log("%i: %s - %s:", i, fid, frame)
+            for x in traceback.format_stack(frame):
+                for l in x.splitlines():
+                    log("%s", l)
 
     def quit(self, upgrading):
         log("quit(%s)", upgrading)
