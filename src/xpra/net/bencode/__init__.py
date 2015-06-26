@@ -11,8 +11,10 @@ if os.environ.get("USE_CYTHON_BENCODE", "1")!="0":
     try:
         from xpra.net.bencode.cython_bencode import bencode, bdecode, __version__
         cython_bencode_loaded = True
-    except ImportError:
-        pass
+    except ImportError as e:
+        from xpra.log import Logger
+        log = Logger("network")
+        log.warn("cannot load cython bencode module: %s", e)
 if not cython_bencode_loaded:
     from xpra.net.bencode.bencode import bencode, bdecode, __version__      #@Reimport
 
