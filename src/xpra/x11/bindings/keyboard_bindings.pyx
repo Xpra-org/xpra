@@ -454,9 +454,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     cdef xmodmap_setkeycodes(self, keycodes, new_keysyms):
         cdef KeySym keysym                      #@DuplicatedSignature
         cdef KeySym* ckeysyms
-        cdef int num_codes
+        cdef int num_codes, keycode, i, first_keycode, last_keycode
         cdef int keysyms_per_keycode
-        cdef first_keycode
         first_keycode = min(keycodes.keys())
         last_keycode = max(keycodes.keys())
         num_codes = 1+last_keycode-first_keycode
@@ -469,16 +468,16 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             for i in range(0, num_codes):
                 keycode = first_keycode+i
                 keysyms_strs = keycodes.get(keycode)
-                log("setting keycode %s: %s", keycode, keysyms_strs)
+                log("setting keycode %i: %s", keycode, keysyms_strs)
                 if keysyms_strs is None:
                     if len(new_keysyms)>0:
                         #no keysyms for this keycode yet, assign one of the "new_keysyms"
                         keysyms = new_keysyms[:1]
                         new_keysyms = new_keysyms[1:]
-                        log("assigned keycode %s to %s", keycode, keysyms[0])
+                        log("assigned keycode %i to %s", keycode, keysyms[0])
                     else:
                         keysyms = []
-                        log("keycode %s is still free", keycode)
+                        log("keycode %i is still free", keycode)
                 else:
                     keysyms = []
                     for ks in keysyms_strs:
@@ -528,7 +527,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef KeyCode keycode
         min_keycode,max_keycode = self._get_minmax_keycodes()
         keyboard_map = XGetKeyboardMapping(self.display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
-        log("XGetKeyboardMapping keysyms_per_keycode=%s", keysyms_per_keycode)
+        log("XGetKeyboardMapping keysyms_per_keycode=%i", keysyms_per_keycode)
         mappings = {}
         i = 0
         keycode = min_keycode
@@ -673,7 +672,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         cdef XModifierKeymap* keymap                    #@DuplicatedSignature
         keymap = self.get_keymap(True)
         keycode = <KeyCode*> keymap.modifiermap
-        log("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
+        log("clear modifier: clearing all %i for modifier=%s", keymap.max_keypermod, modifier)
         for i in range(0, keymap.max_keypermod):
             keycode[modifier*keymap.max_keypermod+i] = 0
 

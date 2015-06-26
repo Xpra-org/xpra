@@ -406,13 +406,13 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef int event_base = 0, ignored = 0
         if not (query_extension)(self.display, &event_base, &ignored):
             raise ValueError("X11 extension %s not available" % extension)
-        log("X11 extension %s event_base=%s", extension, event_base)
+        log("X11 extension %s event_base=%i", extension, event_base)
         cdef int cmajor = major, cminor = minor
         if (query_version)(self.display, &cmajor, &cminor):
             # See X.org bug #14511:
-            log("found X11 extension %s with version %s.%s", extension, major, minor)
+            log("found X11 extension %s with version %i.%i", extension, major, minor)
             if cmajor<major or (cmajor==major and cminor<minor):
-                raise ValueError("%s v%s.%s not supported; required: v%s.%s"
+                raise ValueError("%s v%i.%i not supported; required: v%i.%i"
                                  % (extension, cmajor, cminor, major, minor))
 
     cdef get_xatom(self, str_or_int):
@@ -517,7 +517,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         if not XShapeQueryExtension(self.display, &event_base, &ignored):
             log.warn("X11 extension XShape not available")
             return False
-        log("X11 extension XShape event_base=%s", event_base)
+        log("X11 extension XShape event_base=%i", event_base)
         cdef int cmajor, cminor
         if not XShapeQueryVersion(self.display, &cmajor, &cminor):
             log.warn("XShape version query failed")
@@ -654,7 +654,7 @@ cdef class X11WindowBindings(X11CoreBindings):
             time = CurrentTime
         return XSetSelectionOwner(self.display, self.get_xatom(atom), xwindow, time)
 
-    def sendClientMessage(self, Window xtarget, Window xwindow, propagate, event_mask,
+    def sendClientMessage(self, Window xtarget, Window xwindow, int propagate, int event_mask,
                           message_type, data0=0, data1=0, data2=0, data3=0, data4=0):
         # data0 etc. are passed through get_xatom, so they can be integers, which
         # are passed through directly, or else they can be strings, which are
@@ -864,7 +864,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
         if bytes_after:
-            raise PropertyOverflow("reserved %s bytes for %s buffer, but data is bigger by %s bytes!" % (buffer_size, etype, bytes_after))
+            raise PropertyOverflow("reserved %i bytes for %s buffer, but data is bigger by %i bytes!" % (buffer_size, etype, bytes_after))
         # actual_format is in (8, 16, 32), and is the number of bits in a logical
         # element.  However, this doesn't mean that each element is stored in that
         # many bits, oh no.  On a 32-bit machine it is, but on a 64-bit machine,

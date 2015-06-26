@@ -16,7 +16,7 @@ cdef extern from "X11/Xlib.h":
 
 
 # timeout is in seconds
-def wait_for_x_server(display_name, timeout):
+def wait_for_x_server(display_name, int timeout):
     cdef Display * d
     cdef char* name
     start = time.time()
@@ -30,4 +30,4 @@ def wait_for_x_server(display_name, timeout):
         if d is not NULL:
             XCloseDisplay(d)
             return
-    raise RuntimeError("could not connect to X server on display '%s' after %s seconds" % (display_name, timeout))
+    raise RuntimeError("could not connect to X server on display '%s' after %i seconds" % (display_name, timeout))

@@ -89,7 +89,7 @@ cdef class RandRBindings(X11CoreBindings):
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         if XRRQueryExtension(self.display, &event_base, &ignored):
             if XRRQueryVersion(self.display, &cmajor, &cminor):
-                log("found XRandR extension version %s.%s", cmajor, cminor)
+                log("found XRandR extension version %i.%i", cmajor, cminor)
                 if cmajor==1 and cminor>=2:
                     return True
         return False
@@ -140,7 +140,7 @@ cdef class RandRBindings(X11CoreBindings):
                 if xrr.width==width and xrr.height==height:
                     sizeID = i
             if sizeID<0:
-                log.error("size not found for %sx%s" % (width, height))
+                log.error("size not found for %ix%i" % (width, height))
                 return False
             rates = XRRConfigRates(config, sizeID, &num_rates)
             rate = rates[0]
