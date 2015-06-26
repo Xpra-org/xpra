@@ -316,11 +316,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def is_shown(self, window):
         return self._desktop_manager.is_shown(window)
 
-    def cleanup(self, *args):
+    def do_cleanup(self, *args):
         if self._tray:
             self._tray.cleanup()
             self._tray = None
-        X11ServerBase.cleanup(self)
+        X11ServerBase.do_cleanup(self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
         if self._wm:
@@ -333,9 +333,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.X11_ungrab()
 
 
-    def cleanup_source(self, protocol):
+    def cleanup_protocol(self, protocol):
         had_client = len(self._server_sources)>0
-        X11ServerBase.cleanup_source(self, protocol)
+        X11ServerBase.cleanup_protocol(self, protocol)
         has_client = len(self._server_sources)>0
         if had_client and not has_client:
             #last client is gone:

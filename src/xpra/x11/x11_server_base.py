@@ -400,8 +400,8 @@ class X11ServerBase(GTKServerBase):
         return  root_w, root_h
 
 
-    def cleanup(self, *args):
-        GTKServerBase.cleanup(self)
+    def do_cleanup(self, *args):
+        GTKServerBase.do_cleanup(self)
         cleanup_fakeXinerama()
 
 

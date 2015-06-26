@@ -98,7 +98,6 @@ def get_thread_info(proto=None, protocols=[]):
             if x is None:
                 return ""
             return x
-        import traceback
         frames = sys._current_frames()
         for i,frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
@@ -362,9 +361,27 @@ class ServerCore(object):
             reason = SERVER_EXIT
         else:
             reason = SERVER_SHUTDOWN
-        for proto in list(self._potential_protocols):
-            self.disconnect_client(proto, reason)
+        self.cleanup_all_protocols(reason, False)
+        self.do_cleanup()
+        self.cleanup_all_protocols(reason, True)
         self._potential_protocols = []
+
+    def do_cleanup(self):
+        #allow just a bit of time for the protocol packet flush
+        time.sleep(0.1)
+
+
+    def cleanup_all_protocols(self, reason, force=False):
+        self.do_cleanup_all_protocols(reason, force)
+
+    def do_cleanup_all_protocols(self, protocols, reason, force=False):
+        netlog("do_cleanup_all_protocols(%s, %s, %s)", protocols, reason, force)
+        for protocol in protocols:
+            if force:
+                self.force_disconnect(protocol)
+            else:
+                self.disconnect_protocol(protocol, reason)
+
 
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
@@ -409,6 +426,7 @@ class ServerCore(object):
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
+
 
     def invalid_header(self, proto, data):
         netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)

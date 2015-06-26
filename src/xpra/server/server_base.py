@@ -577,62 +577,70 @@ class ServerBase(ServerCore):
             self.idle_add(self.clean_quit)
 
 
-    def cleanup(self, *args):
+    def do_cleanup(self, *args):
         if self.notifications_forwarder:
             thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None
-        ServerCore.cleanup(self)
         getVideoHelper().cleanup()
         reaper_cleanup()
         self.cleanup_pulseaudio()
 
+
     def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
 
-    def _disconnect_all(self, message, *extra):
-        for p in self._potential_protocols:
-            try:
-                self.send_disconnect(p, message, *extra)
-            except:
-                pass
 
     def _process_exit_server(self, proto, packet):
         log.info("Exiting response to request")
-        self._disconnect_all(SERVER_EXIT)
+        self.cleanup_all_protocols(SERVER_EXIT)
         self.timeout_add(1000, self.clean_quit, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
-        self._disconnect_all(SERVER_SHUTDOWN)
+        self.cleanup_all_protocols(SERVER_SHUTDOWN)
         self.timeout_add(1000, self.clean_quit)
 
     def force_disconnect(self, proto):
-        self.cleanup_source(proto)
+        self.cleanup_protocol(proto)
         ServerCore.force_disconnect(self, proto)
 
     def disconnect_protocol(self, protocol, reason, *extra):
         ServerCore.disconnect_protocol(self, protocol, reason, *extra)
-        self.cleanup_source(protocol)
+        self.cleanup_protocol(protocol)
 
-    def cleanup_source(self, protocol):
-        netlog("cleanup_source(%s)", protocol)
+    def cleanup_protocol(self, protocol):
+        netlog("cleanup_protocol(%s)", protocol)
         #this ensures that from now on we ignore any incoming packets coming
         #from this connection as these could potentially set some keys pressed, etc
-        if protocol in self._potential_protocols:
-            self._potential_protocols.remove(protocol)
+        try:
+            del self._potential_protocols[protocol]
+        except:
+            pass
         source = self._server_sources.get(protocol)
         if source:
-            self.server_event("connection-lost", source.uuid)
-            source.close()
-            del self._server_sources[protocol]
-            if len(self._server_sources)==0:
-                if self.exit_with_client:
-                    netlog.info("Last client has disconnected, terminating")
-                    self.quit(False)
-                else:
-                    netlog.info("xpra client disconnected.")
-                    self.reset_server_timeout(True)
+            try:
+                del self._server_sources[protocol]
+            except:
+                pass
+            self.cleanup_source(source)
         return source
+
+    def cleanup_source(self, source):
+        self.server_event("connection-lost", source.uuid)
+        source.close()
+        if len(self._server_sources)==0:
+            if self.exit_with_client:
+                netlog.info("Last client has disconnected, terminating")
+                self.quit(False)
+            else:
+                netlog.info("xpra client disconnected.")
+                self.reset_server_timeout(True)
+
+    def cleanup_all_protocols(self, reason, force=False):
+        protocols = list(self._potential_protocols) + list(self._server_sources.keys())
+        self.do_cleanup_all_protocols(protocols, reason, force)
+
+
 
     def is_timedout(self, protocol):
         v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
@@ -672,7 +680,7 @@ class ServerBase(ServerCore):
         ServerCore._process_connection_lost(self, proto, packet)
         if self._clipboard_client and self._clipboard_client.protocol==proto:
             self._clipboard_client = None
-        source = self.cleanup_source(proto)
+        source = self.cleanup_protocol(proto)
         if len(self._server_sources)==0:
             self._clear_keys_pressed()
             self._focus(source, 0, [])
