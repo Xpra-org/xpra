@@ -348,9 +348,8 @@ class ServerSource(object):
             window_source.cleanup()
         self.window_sources = {}
         #it is now safe to add the end of queue marker:
-        #(all window sources will have stopped queuing data,
-        # they queue data using the UI thread, so we use it too)
-        self.idle_add(self.encode_work_queue.put, None)
+        #(all window sources will have stopped queuing data)
+        self.encode_work_queue.put(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         if self.mmap:
