@@ -60,7 +60,7 @@ def wm_check(display, wm_name, upgrading=False):
             if w:
                 return "%#x" % w.xid
             return None
-        log("_NET_SUPPORTING_WM_CHECK for screen %s: %s (root=%s)", i, xid(ewmh_wm), xid(root))
+        log("_NET_SUPPORTING_WM_CHECK for screen %i: %s (root=%s)", i, xid(ewmh_wm), xid(root))
         if ewmh_wm:
             try:
                 name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
@@ -283,7 +283,7 @@ class Wm(gobject.GObject):
         #(and will not be honoured by anything else..)
         self.root_set("dummy-constant-xdpi", "u32", xdpi)
         self.root_set("dummy-constant-ydpi", "u32", ydpi)
-        screenlog("set_dpi(%s, %s)", xdpi, ydpi)
+        screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
     def set_workarea(self, x, y, width, height):
         v = [x, y, width, height]

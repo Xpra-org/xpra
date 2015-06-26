@@ -690,7 +690,7 @@ cdef int get_XKB_event_base():
     display = gtk.gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor)
-    verbose("get_XKB_event_base(%s)=%s", display.get_name(), int(event_base))
+    verbose("get_XKB_event_base(%s)=%i", display.get_name(), event_base)
     return event_base
 
 cdef int get_XFixes_event_base():
@@ -700,7 +700,7 @@ cdef int get_XFixes_event_base():
     display = gtk.gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     XFixesQueryExtension(xdisplay, &event_base, &error_base)
-    verbose("get_XFixes_event_base(%s)=%s", display.get_name(), int(event_base))
+    verbose("get_XFixes_event_base(%s)=%i", display.get_name(), event_base)
     assert event_base>0, "invalid event base for XFixes"
     return event_base
 
@@ -711,7 +711,7 @@ cdef int get_XDamage_event_base():
     display = gtk.gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     XDamageQueryExtension(xdisplay, &event_base, &error_base)
-    verbose("get_XDamage_event_base(%s)=%s", display.get_name(), int(event_base))
+    verbose("get_XDamage_event_base(%s)=%i", display.get_name(), event_base)
     assert event_base>0, "invalid event base for XDamage"
     return event_base
 
@@ -1126,12 +1126,12 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     # since we can fire it from a specific window
                     # but we need one for the dispatch logic, so use root if unset
                     if bell_e.window!=0:
-                        verbose("using bell_e.window=%s", bell_e.window)
+                        verbose("using bell_e.window=%#x", bell_e.window)
                         pyev.window = _gw(d, bell_e.window)
                     else:
                         rw = d.get_default_screen().get_root_window()
                         pyev.window = rw
-                        verbose("bell using root window=%s", pyev.window)
+                        verbose("bell using root window=%#x", pyev.window)
                     pyev.event_only = bool(bell_e.event_only)
                     pyev.delivered_to = pyev.window
                     pyev.window_model = None
