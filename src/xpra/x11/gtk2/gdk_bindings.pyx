@@ -396,10 +396,7 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 
 # Basic utilities:
 
-def get_xwindow(pywindow):
-    return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gtk.gdk.Window))
-
-cdef _get_xwindow(pywindow):
+cdef int get_xwindow(pywindow):
     return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gtk.gdk.Window))
 
 def get_pywindow(display_source, xwindow):
@@ -484,7 +481,7 @@ cdef _query_tree(pywindow):
     cdef object pychildren
     cdef object pyparent
     if not XQueryTree(get_xdisplay_for(pywindow),
-                      _get_xwindow(pywindow),
+                      get_xwindow(pywindow),
                       &root, &parent, &children, &nchildren):
         return (None, [])
     pychildren = []

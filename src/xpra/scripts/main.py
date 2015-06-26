@@ -1101,8 +1101,6 @@ def pick_display(error_cb, opts, extra_args):
                         for (state, display) in servers
                         if state is DotXpra.LIVE]
         if len(live_servers) == 0:
-            if not LOCAL_SERVERS_SUPPORTED:
-                error_cb("this installation does not support local servers, you must specify a remote display")
             error_cb("cannot find a live server to connect to")
         elif len(live_servers) == 1:
             return parse_display_name(error_cb, opts, live_servers[0])

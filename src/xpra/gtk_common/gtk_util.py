@@ -70,15 +70,9 @@ if is_gtk3():
             return None
         return v
     def get_xwindow(w):
-        try:
-            return w.get_xid()
-        except:
-            try:
-                return int(w)
-            except:
-                raise Exception("cannot convert %s to an xid!" % type(w))
+        return w.get_xid()
     def get_default_root_window():
-        return gdk.Screen.get_default().get_root_window
+        return gdk.Screen.get_default().get_root_window()
     keymap_get_for_display  = gdk.Keymap.get_for_display
 
     def get_default_cursor():
