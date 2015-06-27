@@ -163,6 +163,7 @@ class Wm(gobject.GObject):
         "_NET_WM_STATE_FULLSCREEN",
         "_NET_WM_STATE_ABOVE",
         "_NET_WM_STATE_BELOW",
+        "_NET_WM_STATE_FOCUSED",
 
         "_NET_WM_DESKTOP",
 
