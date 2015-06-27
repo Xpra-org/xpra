@@ -363,8 +363,16 @@ class ClientWindowBase(ClientWidgetBase):
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
             metalog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
-            hints["max_width"] = maxw
-            hints["max_height"] = maxh
+            #ensure we don't have duplicates with bytes / strings,
+            #and that keys are always "bytes":
+            #(in practice this code should never fire, just here as a reminder)
+            for x in ("max_width", "max_height"):
+                try:
+                    del hints[x]
+                except:
+                    pass
+            hints[b"max_width"] = maxw
+            hints[b"max_height"] = maxh
         try:
             metalog("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:
