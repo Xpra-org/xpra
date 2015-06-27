@@ -57,7 +57,7 @@ class SoundPipeline(gobject.GObject):
     def get_info(self):
         info = {"codec"             : self.codec or "",
                 "codec_description" : self.codec_description,
-                "state"             : self.get_state(),
+                "state"             : self.get_state() or "unknown",
                 "buffers"           : self.buffer_count,
                 "bytes"             : self.byte_count,
                 "pipeline"          : self.pipeline_str,
