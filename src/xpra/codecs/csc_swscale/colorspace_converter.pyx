@@ -29,6 +29,9 @@ cdef extern from "../../buffers/memalign.h":
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
+cdef extern from "string.h":
+    int vsnprintf(char * s, size_t n, const char * format, va_list arg)
+
 cdef extern from "../../inline.h":
     pass
 
@@ -38,6 +41,20 @@ cdef extern from "libavcodec/version.h":
     int LIBSWSCALE_VERSION_MAJOR
     int LIBSWSCALE_VERSION_MINOR
     int LIBSWSCALE_VERSION_MICRO
+
+cdef extern from "libavutil/log.h":
+    ctypedef struct va_list:
+        pass
+    cdef int AV_LOG_ERROR
+    cdef int AV_LOG_WARNING
+    cdef int AV_LOG_INFO
+    cdef int AV_LOG_DEBUG
+    #this is the correct signature, but I can't get Cython to play nice with it:
+    #ctypedef void (*log_callback)(void *avcl, int level, const char *fmt, va_list vl)
+    ctypedef void* log_callback
+    void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
+    void av_log_set_callback(void *callback)
+
 
 cdef extern from "libavcodec/avcodec.h":
     AVPixelFormat PIX_FMT_NONE
@@ -74,6 +91,9 @@ cdef class CSCPixelFormat:
             self.width_mult[i] = width_mult[i]
             self.height_mult[i] = height_mult[i]
         self.pix_fmt = pix_fmt
+
+    def __repr__(self):
+        return "CSCPixelFormat(%s)" % av_enum_name
 
 #we could use a class to represent these options:
 COLORSPACES = []
@@ -177,13 +197,48 @@ def get_swscale_flags_strs(int flags):
             strs.append(flag)
     return strs
 
+import sys
+cdef public void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
+    if level<=AV_LOG_ERROR:
+        l = log.error
+    elif level<=AV_LOG_WARNING:
+        l = log.warn
+    elif level<=AV_LOG_INFO:
+        l = log.info
+    elif level<=AV_LOG_DEBUG:
+        l = log.debug
+    else:
+        #don't bother
+        return
+    #turn it into a string:
+    cdef char buffer[256]
+    cdef int r
+    r = vsnprintf(buffer, 256, fmt, vl)
+    if r<0:
+        log.error("swscale_log: vsnprintf returned %s on format string '%s'", r, fmt)
+        return
+    s = str(buffer[:r]).rstrip("\n\r")
+    if s.startswith("Warning: data is not aligned!"):
+        #silence this crap, since there is nothing we can do about it
+        l = log.debug
+    #l("log_callback_override(%#x, %i, %s, ..)", <unsigned long> avcl, level, fmt)
+    l("csc_swscale: %s", s)
+
+cdef override_logger():
+    cdef void *cb = <void*> log_callback_override
+    av_log_set_callback(cb)
+
+cdef restore_logger():
+    av_log_set_callback(<void*> av_log_default_callback)
 
 def init_module():
     #nothing to do!
     log("csc_swscale.init_module()")
+    override_logger()
 
 def cleanup_module():
     log("csc_swscale.cleanup_module()")
+    restore_logger()
 
 def get_type():
     return "swscale"
@@ -241,6 +296,9 @@ cdef class CSCImage:
     cdef set_plane(self, int plane, uint8_t *buf):
         assert plane in (0, 1, 2, 3)
         self.buf[plane] = buf
+
+    def __repr__(self):
+        return "CSCImage(%#x, freed=%s)" % (<unsigned long> self.buf, self.freed)
 
     def __dealloc__(self):
         #log("CSCImage.__dealloc__()")
@@ -500,4 +558,5 @@ cdef class ColorspaceConverter:
 def selftest(full=False):
     from xpra.codecs.codec_checks import testcsc
     from xpra.codecs.csc_swscale import colorspace_converter
+    override_logger()
     testcsc(colorspace_converter, full)
