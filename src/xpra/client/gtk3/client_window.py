@@ -13,6 +13,7 @@ from gi.repository import GdkPixbuf             #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
@@ -177,6 +178,7 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
         geom = Gdk.Geometry()
         mask = 0
         for k,v in hints.items():
+            k = bytestostr(k)
             if k in INT_FIELDS:
                 setattr(geom, k, int(v))
                 mask |= int(name_to_hint.get(k, 0))

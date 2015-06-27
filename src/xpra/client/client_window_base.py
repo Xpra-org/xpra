@@ -315,23 +315,24 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def set_size_constraints(self, size_constraints, max_window_size):
+        metalog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         self._set_initial_position = size_constraints.get("set-initial-position")
-        hints = {}
+        hints = typedict()
         for (a, h1, h2) in [
-            ("maximum-size", "max_width", "max_height"),
-            ("minimum-size", "min_width", "min_height"),
-            ("base-size", "base_width", "base_height"),
-            ("increment", "width_inc", "height_inc"),
+            (b"maximum-size", b"max_width", b"max_height"),
+            (b"minimum-size", b"min_width", b"min_height"),
+            (b"base-size", b"base_width", b"base_height"),
+            (b"increment", b"width_inc", b"height_inc"),
             ]:
-            v = size_constraints.intlistget(a)
+            v = size_constraints.intpair(a)
             if v:
                 v1, v2 = v
                 hints[h1], hints[h2] = int(v1), int(v2)
         for (a, h) in [
-            ("minimum-aspect-ratio", "min_aspect"),
-            ("maximum-aspect-ratio", "max_aspect"),
+            (b"minimum-aspect-ratio", b"min_aspect"),
+            (b"maximum-aspect-ratio", b"max_aspect"),
             ]:
-            v = size_constraints.intlistget(a)
+            v = size_constraints.intpair(a)
             if v:
                 v1, v2 = v
                 hints[h] = float(v1)/float(v2)
@@ -339,8 +340,8 @@ class ClientWindowBase(ClientWidgetBase):
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
             #get the min size, if there is one:
-            minw = max(1, hints.get("min_width", 1))
-            minh = max(1, hints.get("min_height", 1))
+            minw = max(1, hints.intget(b"min_width", 1))
+            minh = max(1, hints.intget(b"min_height", 1))
             #the actual max size is:
             # * greater than the min-size
             # * the lowest of the max-size set by the application and the one we have
@@ -348,12 +349,12 @@ class ClientWindowBase(ClientWidgetBase):
             #according to the GTK docs:
             #allowed window widths are base_width + width_inc * N where N is any integer
             #allowed window heights are base_height + width_inc * N where N is any integer
-            maxw = hints.get("max_width", 32768)
-            maxh = hints.get("max_height", 32768)
+            maxw = hints.intget(b"max_width", 32768)
+            maxh = hints.intget(b"max_height", 32768)
             maxw = max(minw, min(w, maxw))
             maxh = max(minh, min(h, maxh))
-            rw = (maxw - hints.get("base_width", 0)) % max(hints.get("width_inc", 1), 1)
-            rh = (maxh - hints.get("base_height", 0)) % max(hints.get("height_inc", 1), 1)
+            rw = (maxw - hints.intget(b"base_width", 0)) % max(hints.intget(b"width_inc", 1), 1)
+            rh = (maxh - hints.intget(b"base_height", 0)) % max(hints.intget(b"height_inc", 1), 1)
             maxw -= rw
             maxh -= rh
             #if the hints combination is invalid, it's possible that we'll end up
