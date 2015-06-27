@@ -81,9 +81,9 @@ class RootWindowModel(object):
             return None
         elif prop=="size-hints":
             size = self.window.get_size()
-            return {"max_size"  : size,
-                    "min_size"  : size,
-                    "base_size" : size}
+            return {"maximum-size"  : size,
+                    "minimum-size"  : size,
+                    "base-size" : size}
         elif prop=="class-instance":
             osn = self.get_generic_os_name()
             return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
