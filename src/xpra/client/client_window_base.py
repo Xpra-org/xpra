@@ -42,6 +42,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._skip_taskbar = False
         self._sticky = False
         self._iconified = False
+        self._focused = False
         self.border = border
         self.max_window_size = max_window_size
         self.button_state = {}

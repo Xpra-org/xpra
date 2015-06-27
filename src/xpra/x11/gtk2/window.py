@@ -314,13 +314,17 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "hint that the window would benefit from running uncomposited ", "",
                        0, 2, 0,
                        gobject.PARAM_READABLE),
+        "fullscreen-monitors": (gobject.TYPE_PYOBJECT,
+                         "List of 4 monitor indices indicating the top, bottom, left, and right edges of the window when the fullscreen state is enabled", "",
+                         gobject.PARAM_READABLE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
                        gobject.PARAM_READWRITE),
-        "fullscreen-monitors": (gobject.TYPE_PYOBJECT,
-                         "List of 4 monitor indices indicating the top, bottom, left, and right edges of the window when the fullscreen state is enabled", "",
-                         gobject.PARAM_READABLE),
+        "focused": (gobject.TYPE_BOOLEAN,
+                       "Is the window focused", "",
+                       False,
+                       gobject.PARAM_READWRITE),
         "maximized": (gobject.TYPE_BOOLEAN,
                        "Is the window maximized", "",
                        False,
@@ -1729,6 +1733,7 @@ class WindowModel(BaseWindowModel):
         "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
         "skip-pager"            : ("_NET_WM_STATE_SKIP_PAGER", ),
         "modal"                 : ("_NET_WM_STATE_MODAL", ),
+        "focused"               : ("_NET_WM_STATE_FOCUSED", ),
         }
 
     _state_properties_reversed = {}
@@ -1768,8 +1773,9 @@ class WindowModel(BaseWindowModel):
     def _handle_state_changed(self, *args):
         # Sync changes to "state" property out to X property.
         with xswallow:
-            prop_set(self.client_window, "_NET_WM_STATE",
-                 ["atom"], self.get_property("state"))
+            wm_state = list(self.get_property("state"))
+            prop_set(self.client_window, "_NET_WM_STATE", ["atom"], wm_state)
+            log("_handle_state_changed: _NET_WM_STATE=%s", wm_state)
 
     def _handle_frame_changed(self, *args):
         v = self.get_property("frame")
@@ -1783,16 +1789,22 @@ class WindowModel(BaseWindowModel):
         with xswallow:
             prop_set(self.client_window, "_NET_FRAME_EXTENTS", ["u32"], v)            
 
-    
     def do_set_property(self, pspec, value):
         if pspec.name in self._state_properties:
-            state_names = self._state_properties[pspec.name]
-            if value:
-                self._state_add(*state_names)
-            else:
-                self._state_remove(*state_names)
+            #virtual property for WM_STATE:
+            self.update_state(pspec.name, value)
+            return
+        AutoPropGObjectMixin.do_set_property(self, pspec, value)
+
+    def update_wm_state(self, prop, b):
+        state_names = self._state_properties.get(prop)
+        assert state_names, "invalid window state %s" % prop
+        log("update_wm_state(%s, %s) state_names=%s", prop, b, state_names)
+        if b:
+            self._state_add(*state_names)
         else:
-            AutoPropGObjectMixin.do_set_property(self, pspec, value)
+            self._state_remove(*state_names)
+
 
     def do_get_property_can_focus(self, name):
         assert name == "can-focus"
@@ -1800,14 +1812,20 @@ class WindowModel(BaseWindowModel):
 
     def do_get_property(self, pspec):
         if pspec.name in self._state_properties:
-            #return True if any is set (only relevant for maximized)
-            state_names = self._state_properties[pspec.name]
-            for x in state_names:
-                if self._state_isset(x):
-                    return True
-            return False
-        else:
-            return AutoPropGObjectMixin.do_get_property(self, pspec)
+            #virtual property for WM_STATE:
+            return self.get_wm_state(pspec.name)
+        return AutoPropGObjectMixin.do_get_property(self, pspec)
+
+    def get_wm_state(self, prop):
+        state_names = self._state_properties.get(prop)
+        assert state_names, "invalid window state %s" % prop
+        log("get_wm_state(%s) state_names=%s", prop, state_names)
+        #this is a virtual property for WM_STATE:
+        #return True if any is set (only relevant for maximized)
+        for x in state_names:
+            if self._state_isset(x):
+                return True
+        return False
 
 
     def unmap(self):
@@ -1851,7 +1869,7 @@ class WindowModel(BaseWindowModel):
     ################################
 
     def give_client_focus(self):
-        """The focus manager has decided that our client should recieve X
+        """The focus manager has decided that our client should receive X
         focus.  See world_window.py for details."""
         if self.corral_window:
             with xswallow:

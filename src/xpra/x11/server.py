@@ -714,15 +714,21 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #the size of the window frame may have changed
             frame = new_window_state.get("frame") or (0, 0, 0, 0)
             window.set_property("frame", frame)
-        for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar", "iconified"):
+        #boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
+        iconified = new_window_state.get("iconified")
+        if iconified is not None:
+            if window.get_property("iconic")!=bool(iconified):
+                window.set_property("iconic", iconified)
+                changes.append("iconified")
+        #handle wm_state virtual booleans:
+        for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar", "focused"):
             if k in new_window_state:
-                #stupid naming conflict (should have used the same at both ends):
-                wpropname = {"iconified" : "iconic"}.get(k, k)
+                #metadatalog.info("window.get_property=%s", window.get_property)
                 new_state = bool(new_window_state.get(k, False))
-                cur_state = bool(window.get_property(wpropname))
-                metadatalog("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
+                cur_state = bool(window.get_property(k))
+                #metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
                 if cur_state!=new_state:
-                    window.set_property(wpropname, new_state)
+                    window.update_wm_state(k, new_state)
                     changes.append(k)
         metadatalog("set_window_state: changes=%s", changes)
         return changes

@@ -328,7 +328,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #if we have state updates, send them back to the server using a configure window packet:
         if self.is_OR() and not self._client.window_configure_skip_geometry:
             #we can't do it: the server can't handle configure packets for OR windows!
-            log("not sending updated window state %s to a server which is missing the configure skip-geometry feature", self._window_state)
+            statelog("not sending updated window state %s to a server which is missing the configure skip-geometry feature", self._window_state)
             return
         def send_updated_window_state():
             if self._window_state and self.get_window():
@@ -517,6 +517,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                              "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
                              "above"                 : ("_NET_WM_STATE_ABOVE", ),
                              "below"                 : ("_NET_WM_STATE_BELOW", ),
+                             "focused"               : ("_NET_WM_STATE_FOCUSED", ),
                              }
             state_atoms = set(wm_state_atoms)
             state_updates = {}
