@@ -30,7 +30,7 @@ from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
-INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv || echo \"Warning: xpra server does not support initenv\" 1>&2")
+INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -1137,7 +1137,10 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         from xpra.net.protocol import ConnectionClosedException
         cmd = display_desc["full_ssh"]
         proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
-        cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
+        if INITENV_COMMAND:
+            cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
+        else:
+            cmd = proxy_cmd
         try:
             kwargs = {}
             kwargs["stderr"] = sys.stderr
