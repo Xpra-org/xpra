@@ -12,6 +12,8 @@ X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 
 
+from xpra.util import nonl
+from xpra.os_util import bytestostr
 from xpra.codecs.codec_constants import get_subsampling_divs, video_codec_spec
 from collections import deque
 
@@ -306,7 +308,7 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
     if r<0:
         log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
         return
-    s = str(buffer[:r]).rstrip("\n\r")
+    s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
     logger = LOGGERS.get(level, log.info)
     logger("X264: %s", s)
 

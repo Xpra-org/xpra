@@ -10,7 +10,8 @@ import time
 from xpra.log import Logger
 log = Logger("csc", "swscale")
 
-from xpra.os_util import is_Ubuntu
+from xpra.util import nonl
+from xpra.os_util import is_Ubuntu, bytestostr
 from xpra.codecs.codec_constants import codec_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 
@@ -217,7 +218,7 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
     if r<0:
         log.error("swscale_log: vsnprintf returned %s on format string '%s'", r, fmt)
         return
-    s = str(buffer[:r]).rstrip("\n\r")
+    s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
     if s.startswith("Warning: data is not aligned!"):
         #silence this crap, since there is nothing we can do about it
         l = log.debug
