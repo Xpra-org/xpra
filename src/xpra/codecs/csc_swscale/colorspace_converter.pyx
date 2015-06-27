@@ -198,7 +198,7 @@ def get_swscale_flags_strs(int flags):
     return strs
 
 import sys
-cdef public void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
+cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
     if level<=AV_LOG_ERROR:
         l = log.error
     elif level<=AV_LOG_WARNING:
