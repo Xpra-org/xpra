@@ -96,7 +96,7 @@ def get_cpuinfo():
 
 def get_status_output(*args, **kwargs):
     kwargs["stdout"] = subprocess.PIPE
-    kwargs["stderr"] = subprocess.PIPE
+    kwargs["stderr"] = subprocess.STDOUT
     try:
         p = subprocess.Popen(*args, **kwargs)
     except Exception as e:
