@@ -164,6 +164,8 @@ class Wm(gobject.GObject):
         "_NET_WM_STATE_ABOVE",
         "_NET_WM_STATE_BELOW",
 
+        "_NET_WM_DESKTOP",
+
         "_NET_WM_MOVERESIZE",
         "_NET_MOVERESIZE_WINDOW",
 
@@ -173,7 +175,6 @@ class Wm(gobject.GObject):
         "_NET_REQUEST_FRAME_EXTENTS",
         # Not at all yet:
         #"_NET_RESTACK_WINDOW",
-        #"_NET_WM_DESKTOP",
         ]
 
     __gproperties__ = {
@@ -390,7 +391,6 @@ class Wm(gobject.GObject):
         #   _NET_WM_PING responses
         # and maybe:
         #   _NET_RESTACK_WINDOW
-        #   _NET_WM_DESKTOP
         #   _NET_WM_STATE
         log("do_xpra_client_message_event(%s)", event)
         if event.message_type=="_NET_SHOWING_DESKTOP":
