@@ -22,7 +22,9 @@ from ctypes import windll, byref
 WINDOW_HOOKS = os.environ.get("XPRA_WIN32_WINDOW_HOOKS", "1")=="1"
 GROUP_LEADER = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GROUP_LEADER", "1")=="1"
 UNDECORATED_STYLE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_UNDECORATED_STYLE", "1")=="1"
-MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", "1")=="1"
+#GTK3 is fixed, so we don't need this hook:
+DEFAULT_MAX_SIZE_HINT = sys.version_info[0]<3
+MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", str(bool(DEFAULT_MAX_SIZE_HINT)))=="1"
 GEOMETRY = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GEOMETRY", "1")=="1"
 
 
