@@ -178,8 +178,11 @@ class typedict(dict):
         return bytestostr(v)
 
     def intget(self, k, d=0):
+        v = self.capsget(k)
+        if v is None:
+            return d
         try:
-            return int(self.capsget(k, d))
+            return int(v)
         except Exception as e:
             typedict.log.warn("error on %s: %s", k, e)
             return d
