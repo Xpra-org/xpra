@@ -169,7 +169,9 @@ class XpraClientBase(object):
             signal.signal(signal.SIGTERM, deadly_signal)
             self.signal_cleanup()
             self.timeout_add(0, self.disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
-        signal.signal(signal.SIGINT, app_signal)
+        if sys.version_info[0]<3:
+            #breaks GTK3..
+            signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
 
     def signal_disconnect_and_quit(self, exit_code, reason):

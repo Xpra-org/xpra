@@ -737,6 +737,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
 
     atexit.register(run_cleanups)
     #the server class will usually override those:
+    #SIGINT breaks GTK3.. (but there are no py3k servers!)
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 

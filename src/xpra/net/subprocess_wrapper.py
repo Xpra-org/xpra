@@ -68,7 +68,9 @@ class subprocess_callee(object):
         self.wrapped_object = wrapped_object
         self.send_queue = Queue()
         self.protocol = None
-        signal.signal(signal.SIGINT, self.handle_signal)
+        if sys.version_info[0]<3:
+            #this breaks gobject3!
+            signal.signal(signal.SIGINT, self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
 
 

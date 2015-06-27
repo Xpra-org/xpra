@@ -752,7 +752,9 @@ def main():
                 gobject.timeout_add(1000, app.set_info_color, True)
             #call from UI thread:
             glib.idle_add(show_signal)
-        signal.signal(signal.SIGINT, app_signal)
+        if sys.version_info[0]<3:
+            #breaks GTK3..
+            signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
         has_file = len(args) == 1
         if has_file:
