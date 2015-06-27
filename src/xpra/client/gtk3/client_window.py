@@ -17,6 +17,7 @@ from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
+metalog = Logger("metadata")
 
 
 GTK3_WINDOW_EVENT_MASK = Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.KEY_RELEASE_MASK \
@@ -126,18 +127,19 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
 
 
     def xget_u32_property(self, target, name):
+        if HAS_X11_BINDINGS:
+            return GTKClientWindowBase.xget_u32_property(self, target, name)
+        #pure Gdk lookup:
         try:
-            if not HAS_X11_BINDINGS:
-                name_atom = Gdk.Atom.intern(name, False)
-                type_atom = Gdk.Atom.intern("CARDINAL", False)
-                prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
-                if not prop or len(prop)!=3 or len(prop[2])!=1:
-                    return  None
-                log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
-                return prop[2][0]
+            name_atom = Gdk.Atom.intern(name, False)
+            type_atom = Gdk.Atom.intern("CARDINAL", False)
+            prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
+            if not prop or len(prop)!=3 or len(prop[2])!=1:
+                return  None
+            metalog("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
+            return prop[2][0]
         except Exception as e:
-            log.error("xget_u32_property error on %s / %s: %s", target, name, e)
-        return GTKClientWindowBase.xget_u32_property(self, target, name)
+            metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
 
     def is_mapped(self):
         return self.get_mapped()
@@ -187,7 +189,7 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
         gdk_hints = Gdk.WindowHints(mask)
-        log("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
+        metalog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(None, geom, gdk_hints)
 
 
