@@ -17,7 +17,7 @@
 
 Name:           python-lz4
 Version:        0.7.0
-Release:        0%{?dist}
+Release:        2%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -27,6 +27,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
+Patch1:         lz4_add_version.patch
 
 %description
 This package provides Python2 bindings for the lz4 compression library
@@ -54,6 +55,7 @@ http://code.google.com/p/lz4/ by Yann Collet.
 #should work... until things get out of sync again
 %else
 %patch0 -p1
+%patch1 -p1
 %endif
 
 %if 0%{?with_python3}
@@ -93,6 +95,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Jun 27 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.7.0-2
+- Add version information to package
+
 * Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.7.0-1
 - Add Python3 package
 
