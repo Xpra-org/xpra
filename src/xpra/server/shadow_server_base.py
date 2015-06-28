@@ -115,6 +115,9 @@ class RootWindowModel(object):
     def connect(self, *args):
         log.warn("ignoring signal connect request: %s", args)
 
+    def disconnect(self, *args):
+        log.warn("ignoring signal disconnect request: %s", args)
+
     def get_dimensions(self):
         return self.window.get_size()
 
