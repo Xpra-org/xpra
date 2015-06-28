@@ -291,7 +291,7 @@
   <distutils id="python-pillow">
      <branch repo="pypi.python.org"
 	     module="/packages/source/P/Pillow/Pillow-2.8.2.zip"
-             hash="md5:8a89e3fcb04e80ad029ba18f47e118e5"
+             hash="md5:1122186af2c3baa411e881f0faffd89b"
 	     version="2.8.2"/>
   </distutils>
 
