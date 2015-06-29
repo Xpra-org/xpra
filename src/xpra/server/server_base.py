@@ -311,7 +311,7 @@ class ServerBase(ServerCore):
         if not self.uuid:
             self.uuid = unicode(get_hex_uuid())
             self.save_uuid()
-        log.info("server uuid is %s", self.uuid)
+        log("server uuid is %s", self.uuid)
 
     def get_uuid(self):
         return  None
