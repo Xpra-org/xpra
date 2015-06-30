@@ -392,7 +392,15 @@ class X11ServerBase(GTKServerBase):
                 if actual_xdpi==xdpi and actual_ydpi==ydpi:
                     log.info("DPI set to %s x %s", xdpi, ydpi)
                 else:
-                    log.info("DPI set to %s x %s (wanted %s x %s)", actual_xdpi, actual_ydpi, xdpi, ydpi)
+                    #should this be a warning:
+                    l = log.info
+                    maxdelta = max(abs(actual_xdpi-xdpi), abs(actual_ydpi-ydpi))
+                    if maxdelta>=10:
+                        l = log.warn
+                    l("DPI set to %s x %s (wanted %s x %s)", actual_xdpi, actual_ydpi, xdpi, ydpi)
+                    if maxdelta>=10:
+                        l(" you may experience scaling problems, such as huge or small fonts, etc")
+                        l(" to fix this issue, try the dpi switch, or use a patched Xdummy driver")
             #show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(show_dpi)
         except Exception as e:
