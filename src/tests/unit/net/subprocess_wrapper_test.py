@@ -23,8 +23,12 @@ from xpra.os_util import Queue
 
 class fake_subprocess():
     """ defined just so the protocol layer can call terminate() on it """
+    def __init__(self):
+        self.returncode = None
     def terminate(self):
-        pass
+        self.returncode = 1
+    def poll(self):
+        return self.returncode
 
 class loopback_connection(Connection):
     """ a fake connection which just writes back whatever is sent to it """
@@ -42,8 +46,12 @@ class loopback_connection(Connection):
         self.queue.put(buf)
         return len(buf)
 
+    def close(self):
+        self.queue.put(None)
+        Connection.close(self)
+
     def may_abort(self, action):
-        return False
+        assert self.active
 
 def loopback_protocol(process_packet_cb, get_packet_cb):
     conn = loopback_connection("fake", "fake")
@@ -84,19 +92,24 @@ class SubprocessWrapperTest(unittest.TestCase):
         def record_packet(self, *args):
             readback.append(args)
         lp.connect("foo", record_packet)
+        def stop():
+            #this may deadlock on win32..
+            lp.stop_protocol()
+            lp.stop_process()
+            glib.idle_add(mainloop.quit)
         def end(*args):
-            mainloop.quit()
+            stop()
         lp.connect("end", end)
         self.timeout = False
         def timeout_error():
             self.timeout = True
-            mainloop.quit()
+            stop()
         glib.timeout_add(500, timeout_error)
         sent_str = b"hello foo"
         glib.idle_add(lp.send, "foo", sent_str)
         glib.idle_add(lp.send, "bar", b"hello bar")
         glib.idle_add(lp.send, "end")
-        lp.stop = mainloop.quit
+        lp.stop = stop
         #run!
         lp.start()
         mainloop.run()
@@ -106,6 +119,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         assert self.timeout is False, "the test did not exit cleanly (not received the 'end' packet?)"
 
     def test_loopback_callee(self):
+        mainloop = glib.MainLoop()
         callee = TestCallee()
         lc = loopback_callee(wrapped_object=callee, method_whitelist=["test-signal", "stop", "unused"])
         #this will cause the "test-signal" to be sent via the loopback connection
@@ -118,19 +132,23 @@ class SubprocessWrapperTest(unittest.TestCase):
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
         self.timeout = False
-        def timeout_error():
-            self.timeout = True
+        def stop(*args):
             lc.stop()
+            glib.idle_add(mainloop.quit)
+        def timeout_error():
+            log.info("timeout_error()")
+            self.timeout = True
+            stop()
         glib.timeout_add(500, timeout_error)
         signal_string = b"hello foo"
         glib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
-        def stop(*args):
-            lc.stop()
         callee.stop = stop
         glib.idle_add(lc.send, "stop")
         #run!
         lc.start()
+        mainloop.run()
+        lc.stop()
         assert len(readback)==1, "expected 1 record in loopback but got %s" % len(readback)
         rss = readback[0][0]
         assert rss== signal_string, "expected signal string '%s' but got '%s'" % (signal_string, rss)
