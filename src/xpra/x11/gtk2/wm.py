@@ -15,7 +15,7 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
 from xpra.x11.gtk2.window import WindowModel, Unmanageable, configure_bits
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk2.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                add_catchall_receiver,                       #@UnresolvedImport
                get_children,                                #@UnresolvedImport
