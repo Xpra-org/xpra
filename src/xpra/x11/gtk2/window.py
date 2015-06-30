@@ -387,10 +387,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         "grab"                  : one_arg_signal,
         "ungrab"                : one_arg_signal,
-# these signals must be defined in the subclasses to be seen by the event stuff:
-#        "xpra-configure-event": one_arg_signal,
-#        "xpra-focus-in-event"   : one_arg_signal,
-#        "xpra-focus-out-event"  : one_arg_signal,
         }
     __common_signals__ = {
         "bell"                      : one_arg_signal,   #out
