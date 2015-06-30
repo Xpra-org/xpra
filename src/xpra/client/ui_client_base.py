@@ -2095,7 +2095,7 @@ class UIXpraClient(XpraClientBase):
 
     def _process_pointer_position(self, packet):
         x, y = packet[1:3]
-        log.info("process_pointer_position: %s,%s", x, y)
+        mouselog("process_pointer_position: %s - current position is %s", (x, y), self.get_mouse_position())
 
 
     def _process_initiate_moveresize(self, packet):

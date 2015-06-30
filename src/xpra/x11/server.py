@@ -576,7 +576,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def do_xpra_motion_event(self, event):
-        log.info("motion: %s", event)
+        mouselog("motion event: %s", event)
         window = self._window_to_id.get(event.subwindow)
         for ss in self._server_sources.values():
             ss.update_mouse(window, event.x_root, event.y_root)
