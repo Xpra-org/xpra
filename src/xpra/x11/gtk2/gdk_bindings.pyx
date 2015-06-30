@@ -837,9 +837,11 @@ def remove_debug_route_event(event_type):
 
 catchall_receivers = {}
 def add_catchall_receiver(signal, handler):
+    global catchall_receivers
     catchall_receivers.setdefault(signal, []).append(handler)
+    log("add_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
-cdef void _maybe_send_event(DEBUG, window, signal, event):
+cdef _maybe_send_event(DEBUG, window, signal, event):
     handlers = window.get_data(_ev_receiver_key)
     hinfo = ""
     if not handlers:
