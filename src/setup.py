@@ -110,6 +110,7 @@ server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
 client_ENABLED = True
 
 x11_ENABLED = not WIN32 and not OSX
+dbus_ENABLED = x11_ENABLED
 gtk_x11_ENABLED = not WIN32 and not OSX
 gtk2_ENABLED = client_ENABLED and not PYTHON3
 gtk3_ENABLED = PYTHON3
@@ -170,7 +171,7 @@ SWITCHES = ["enc_x264", "enc_x265",
             "memoryview",
             "bencode", "cython_bencode",
             "clipboard",
-            "server", "client", "x11", "gtk_x11",
+            "server", "client", "dbus", "x11", "gtk_x11",
             "gtk2", "gtk3", "html5",
             "sound", "opengl", "printing",
             "rebuild",
@@ -1706,6 +1707,7 @@ toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
+toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")
