@@ -20,6 +20,7 @@ from xpra.x11.gtk2.wm import Wm
 from xpra.x11.gtk2.tray import get_tray_window, SystemTray
 from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
 from xpra.x11.gtk2.gdk_bindings import (
+                               add_catchall_receiver,       #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
@@ -163,8 +164,9 @@ gobject.type_register(DesktopManager)
 
 class XpraServer(gobject.GObject, X11ServerBase):
     __gsignals__ = {
-        "xpra-child-map-event": one_arg_signal,
-        "xpra-cursor-event": one_arg_signal,
+        "xpra-child-map-event"  : one_arg_signal,
+        "xpra-cursor-event"     : one_arg_signal,
+        "xpra-motion-event"     : one_arg_signal,
         }
 
     def __init__(self, clobber):
@@ -199,6 +201,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
+        add_catchall_receiver("xpra-motion-event", self)
 
         #save default xsettings:
         self.default_xsettings = XSettingsHelper().get_settings()
@@ -570,6 +573,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for ss in self._server_sources.values():
             ss.send_cursor()
         return False
+
+
+    def do_xpra_motion_event(self, event):
+        log.info("motion: %s", event)
+        window = self._window_to_id.get(event.subwindow)
+        for ss in self._server_sources.values():
+            ss.update_mouse(window, event.x_root, event.y_root)
 
 
     def _bell_signaled(self, wm, event):

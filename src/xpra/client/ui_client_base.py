@@ -61,6 +61,7 @@ PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
+MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
 
 
 PYTHON3 = sys.version_info[0] == 3
@@ -973,6 +974,8 @@ class UIXpraClient(XpraClientBase):
             "wants_events"              : True,
             "randr_notify"              : True,
             "compressible_cursors"      : True,
+            "mouse.echo"                : MOUSE_ECHO,
+            "mouse.initial-position"    : self.get_mouse_position(),
             "clipboard"                 : self.client_supports_clipboard,
             "clipboard.notifications"   : self.client_supports_clipboard,
             "clipboard.selections"      : CLIPBOARDS,
@@ -2090,6 +2093,11 @@ class UIXpraClient(XpraClientBase):
         show_desktop(show)
 
 
+    def _process_pointer_position(self, packet):
+        x, y = packet[1:3]
+        log.info("process_pointer_position: %s,%s", x, y)
+
+
     def _process_initiate_moveresize(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
@@ -2177,6 +2185,7 @@ class UIXpraClient(XpraClientBase):
             "show-desktop":         self._process_show_desktop,
             "window-move-resize":   self._process_window_move_resize,
             "window-resized":       self._process_window_resized,
+            "pointer-position":     self._process_pointer_position,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,
             "notify_show":          self._process_notify_show,

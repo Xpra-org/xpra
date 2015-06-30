@@ -2123,6 +2123,9 @@ class ServerBase(ServerCore):
 
     def _process_pointer_position(self, proto, packet):
         wid, pointer, modifiers = packet[1:4]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            ss.mouse_last_position = (wid, pointer)
         self._process_mouse_common(proto, wid, pointer, modifiers)
 
 

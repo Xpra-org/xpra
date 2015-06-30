@@ -202,6 +202,9 @@ class ServerSource(object):
         self.mmap = None
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
+        # mouse echo:
+        self.mouse_echo = False
+        self.mouse_last_position = None
         # sound:
         self.sound_source_plugin = sound_source_plugin
         self.supports_speaker = supports_speaker
@@ -578,6 +581,8 @@ class ServerSource(object):
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
         self.randr_notify = c.boolget("randr_notify")
+        self.mouse_echo = c.boolget("mouse.echo")
+        self.mouse_last_position = c.intpair("mouse.initial-position")
         self.clipboard_enabled = c.boolget("clipboard", True)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
@@ -1045,6 +1050,14 @@ class ServerSource(object):
             return -1
         return self.keyboard_config.get_keycode(client_keycode, keyname, modifiers)
 
+
+    def update_mouse(self, window, x, y):
+        log("update_mouse(%s, %i, %i) current=%s", window, x, y, self.mouse_last_position)
+        if not self.mouse_echo:
+            return
+        if self.mouse_last_position!=(x,y):
+            self.mouse_last_position = (x, y)
+            self.send("pointer-position", x, y)
 
 #
 # Functions for interacting with the network layer:
