@@ -155,6 +155,7 @@ class WindowBackingBase(object):
             unpremultiply_argb_in_place(img_data)
             return img_data
         except:
+            log.warn("failed to unpremultiply %s (len=%s)" % (type(img_data), len(img_data)))
             return unpremultiply_argb(img_data)
 
 
