@@ -323,7 +323,7 @@ class ServerBase(ServerCore):
         log("init_notification_forwarder() enabled=%s", self.notifications)
         if self.notifications and os.name=="posix" and not sys.platform.startswith("darwin"):
             try:
-                from xpra.x11.dbus_notifications_forwarder import register
+                from xpra.dbus.notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
                 if self.notifications_forwarder:
                     log.info("using notification forwarder: %s", self.notifications_forwarder)
@@ -457,7 +457,7 @@ class ServerBase(ServerCore):
         if not self.supports_dbus_proxy:
             return
         try:
-            from xpra.x11.dbus_helper import DBusHelper
+            from xpra.dbus.helper import DBusHelper
             self.dbus_helper = DBusHelper()
         except Exception as e:
             log.warn("cannot load dbus helper: %s", e)

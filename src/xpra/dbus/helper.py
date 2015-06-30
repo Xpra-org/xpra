@@ -12,7 +12,7 @@ log = Logger("dbus")
 class DBusHelper(object):
 
     def __init__(self):
-        from xpra.x11.dbus_common import init_session_bus
+        from xpra.dbus.common import init_session_bus
         self.bus = init_session_bus()
 
     def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb):

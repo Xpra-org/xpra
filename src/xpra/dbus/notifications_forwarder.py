@@ -71,10 +71,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             log.error("failed to release dbus notification forwarder: %s", e)
 
     def __str__(self):
-        return  "DBUSNotificationsForwarder(%s)" % BUS_NAME
+        return  "DBUS-NotificationsForwarder(%s)" % BUS_NAME
 
 def register(notify_callback=None, close_callback=None, replace=False):
-    from xpra.x11.dbus_common import init_session_bus
+    from xpra.dbus.common import init_session_bus
     bus = init_session_bus()
     flags = dbus.bus.NAME_FLAG_DO_NOT_QUEUE
     if replace:

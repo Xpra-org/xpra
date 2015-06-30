@@ -385,7 +385,7 @@ class ClientExtras(object):
 
     def setup_dbus_signals(self):
         try:
-            from xpra.x11.dbus_common import init_system_bus
+            from xpra.dbus.common import init_system_bus
             bus = init_system_bus()
             self.system_bus = bus
             log("setup_dbus_signals() system bus=%s", bus)

@@ -113,7 +113,7 @@ def init_dbus_listener():
     log("init_dbus_listener() dbus_init=%s", dbus_init)
     if dbus_init is None:
         try:
-            from xpra.x11.dbus_common import init_system_bus
+            from xpra.dbus.common import init_system_bus
             system_bus = init_system_bus()
             log("system bus: %s", system_bus)
             sig_match = system_bus.add_signal_receiver(handle_dbus_signal, path=DBUS_PATH, dbus_interface=DBUS_IFACE)
