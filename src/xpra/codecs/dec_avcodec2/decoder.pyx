@@ -139,8 +139,8 @@ if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
     CODECS.append("h264")
 if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
     CODECS.append("vp8")
-#if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
-#    CODECS.append("vp9")
+if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+    CODECS.append("vp9")
 if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
     CODECS.append("h265")
 log("avcodec2.init_module: CODECS=%s", CODECS)
@@ -616,6 +616,7 @@ cdef class Decoder:
 
 
 def selftest(full=False):
+    global CODECS
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
-    testdecoder(decoder, full)
+    CODECS = testdecoder(decoder, full)

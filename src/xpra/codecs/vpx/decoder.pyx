@@ -109,7 +109,6 @@ IF ENABLE_VP9:
 
 def init_module():
     log("vpx.decoder.init_module() info=%s", get_info())
-    assert len(CODECS)>0, "no supported encodings!"
     log("supported codecs: %s", CODECS)
     log("supported colorspaces: %s", COLORSPACES)
 
@@ -330,6 +329,7 @@ cdef class Decoder:
 
 
 def selftest(full=False):
+    global CODECS
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.vpx import decoder
-    testdecoder(decoder, full)
+    CODECS = testdecoder(decoder, full)

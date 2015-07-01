@@ -47,66 +47,90 @@ def make_test_image(pixel_format, w, h):
 
 
 def testdecoder(decoder_module, full):
-    for encoding in decoder_module.get_encodings():
-        test_data_set = TEST_COMPRESSED_DATA.get(encoding)
-        if not test_data_set:
-            log("%s: no test data for %s", decoder_module.get_type(), encoding)
-            continue
-        for cs in decoder_module.get_input_colorspaces(encoding):
-            e = decoder_module.Decoder()
-            try:
-                e.init_context(encoding, W, H, cs)
-                test_data = test_data_set.get(cs)
-                if test_data:
-                    log("%s: testing %s / %s with %s bytes of data", decoder_module.get_type(), encoding, cs, len(test_data))
-                    image = e.decompress_image(test_data, {})
-                    assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
-                    assert image.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
-                    assert image.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
-                if full:
-                    log("%s: testing %s / %s with junk data", decoder_module.get_type(), encoding, cs)
-                    #test failures:
-                    try:
-                        image = e.decompress_image(b"junk", {})
-                    except:
-                        image = None
-                    if image is not None:
-                        raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
-            finally:
-                e.clean()
+    codecs = decoder_module.get_encodings()
+    for encoding in list(codecs):
+        try:
+            testdecoding(decoder_module, encoding, full)
+        except Exception as e:
+            log("%s: %s decoding failed", decoder_module.get_type(), encoding, exc_info=True)
+            log.warn("%s: %s decoding failed: %s", decoder_module.get_type(), encoding, e)
+            codecs.remove(encoding)
+    if not codecs:
+        log.error("%s: all the codecs have failed! (%s)", decoder_module.get_type(), ", ".join(decoder_module.get_encodings()))
+    return codecs
+
+def testdecoding(decoder_module, encoding, full):
+    test_data_set = TEST_COMPRESSED_DATA.get(encoding)
+    if not test_data_set:
+        log("%s: no test data for %s", decoder_module.get_type(), encoding)
+        return
+    for cs in decoder_module.get_input_colorspaces(encoding):
+        e = decoder_module.Decoder()
+        try:
+            e.init_context(encoding, W, H, cs)
+            test_data = test_data_set.get(cs)
+            if test_data:
+                log("%s: testing %s / %s with %s bytes of data", decoder_module.get_type(), encoding, cs, len(test_data))
+                image = e.decompress_image(test_data, {})
+                assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
+                assert image.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
+                assert image.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
+            if full:
+                log("%s: testing %s / %s with junk data", decoder_module.get_type(), encoding, cs)
+                #test failures:
+                try:
+                    image = e.decompress_image(b"junk", {})
+                except:
+                    image = None
+                if image is not None:
+                    raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
+        finally:
+            e.clean()
 
 
 def testencoder(encoder_module, full):
-    for encoding in encoder_module.get_encodings():
-        for cs_in in encoder_module.get_input_colorspaces(encoding):
-            for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
-                e = encoder_module.Encoder()
-                try:
-                    e.init_context(W, H, cs_in, [cs_out], encoding, W, H, (1,1), {})
-                    image = make_test_image(cs_in, W, H)
-                    data, meta = e.compress_image(image)
-                    assert len(data)>0
-                    assert meta is not None
-                    #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
-                    #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
-                    #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
-                    if full:
+    codecs = encoder_module.get_encodings()
+    for encoding in list(codecs):
+        try:
+            testencoding(encoder_module, encoding, full)
+        except Exception as e:
+            log("%s: %s encoding failed", encoder_module.get_type(), encoding, exc_info=True)
+            log.warn("%s: %s encoding failed: %s", encoder_module.get_type(), encoding, e)
+            codecs.remove(encoding)
+    if not codecs:
+        log.error("%s: all the codecs have failed! (%s)", encoder_module.get_type(), ", ".join(encoder_module.get_encodings()))
+    return codecs
+
+def testencoding(encoder_module, encoding, full):
+    for cs_in in encoder_module.get_input_colorspaces(encoding):
+        for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
+            e = encoder_module.Encoder()
+            try:
+                e.init_context(W, H, cs_in, [cs_out], encoding, W, H, (1,1), {})
+                image = make_test_image(cs_in, W, H)
+                data, meta = e.compress_image(image)
+                assert len(data)>0
+                assert meta is not None
+                #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
+                #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
+                #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
+                if full:
+                    try:
+                        wrong_format = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in][0]
+                        image = make_test_image(wrong_format, W, H)
+                        out = e.compress_image()
+                    except:
+                        out = None
+                    assert out is None
+                    for w,h in ((W*2, H//2), (W//2, H**2)):
                         try:
-                            wrong_format = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in][0]
-                            image = make_test_image(wrong_format, W, H)
+                            image = make_test_image(cs_in, w, h)
                             out = e.compress_image()
                         except:
                             out = None
                         assert out is None
-                        for w,h in ((W*2, H//2), (W//2, H**2)):
-                            try:
-                                image = make_test_image(cs_in, w, h)
-                                out = e.compress_image()
-                            except:
-                                out = None
-                            assert out is None
-                finally:
-                    e.clean()
+            finally:
+                e.clean()
 
 
 def testcsc(csc_module, full):
