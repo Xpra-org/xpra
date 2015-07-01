@@ -47,7 +47,7 @@ def make_test_image(pixel_format, w, h):
 
 
 def testdecoder(decoder_module, full):
-    codecs = decoder_module.get_encodings()
+    codecs = list(decoder_module.get_encodings())
     for encoding in list(codecs):
         try:
             testdecoding(decoder_module, encoding, full)
@@ -89,7 +89,7 @@ def testdecoding(decoder_module, encoding, full):
 
 
 def testencoder(encoder_module, full):
-    codecs = encoder_module.get_encodings()
+    codecs = list(encoder_module.get_encodings())
     for encoding in list(codecs):
         try:
             testencoding(encoder_module, encoding, full)
@@ -158,3 +158,4 @@ def testcsc(csc_module, full):
                             raise Exception("converting an image of a smaller size with %s should have failed, got %s instead" % (csc_module.get_type(), out))
             finally:
                 e.clean()
+
