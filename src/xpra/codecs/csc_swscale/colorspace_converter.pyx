@@ -170,6 +170,8 @@ cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
     #but we don't want the flag otherwise, unless we are scaling or downsampling:
     if ((scaling or subsampling) and speed<100) or dst_format=="XRGB":
         flags |= SWS_ACCURATE_RND
+    if dst_format=="GBRP":
+        flags |= SWS_FULL_CHR_H_INT
     return flags
 
 
