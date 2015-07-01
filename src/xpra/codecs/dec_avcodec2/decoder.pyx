@@ -133,16 +133,32 @@ ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
 
+def get_version():
+    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
+
 avcodec_register_all()
 CODECS = []
 if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
     CODECS.append("h264")
 if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
     CODECS.append("vp8")
-if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
-    CODECS.append("vp9")
 if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
     CODECS.append("h265")
+if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+    VP9_CS = []
+    #there used to be problems with YUV444P with older versions of ffmpeg:
+    # "[vp9 @ ...] Invalid compressed header size"
+    #this version definitely works (older versions may work too - untested):
+    v = get_version()
+    if v<(56, 26, 100):         #2.6.3
+        log.warn("libavcodec version %s is too old: disabling VP9", v)
+    else:
+        VP9_CS = ["YUV420P"]
+        if v<(56, 41, 100):     #2.7.1
+            log.warn("libavcodec version %s is too old: disabling VP9 YUV444P support", v)
+        else:
+            VP9_CS.append("YUV444P")
+    CODECS.append("vp9")
 log("avcodec2.init_module: CODECS=%s", CODECS)
 
 
@@ -153,9 +169,6 @@ def init_module():
 def cleanup_module():
     log("dec_avcodec2.cleanup_module()")
     restore_logger()
-
-def get_version():
-    return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 def get_type():
     return "avcodec2"
@@ -182,9 +195,7 @@ def get_input_colorspaces(encoding):
     elif encoding=="vp8":
         return ["YUV420P"]
     assert encoding=="vp9"
-    #we only handle YUV420P encoding at present,
-    #(YUV444P seems to cause errors: "[vp9 @ ...] Invalid compressed header size")
-    return ["YUV420P"]
+    return VP9_CS
 
 def get_output_colorspace(encoding, csc):
     if encoding not in CODECS:
