@@ -12,6 +12,7 @@ READ_ONLY = False
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 
 
 ctypedef unsigned long size_t
@@ -138,8 +139,8 @@ if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
     CODECS.append("h264")
 if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
     CODECS.append("vp8")
-if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
-    CODECS.append("vp9")
+#if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+#    CODECS.append("vp9")
 if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
     CODECS.append("h265")
 log("avcodec2.init_module: CODECS=%s", CODECS)
@@ -147,9 +148,11 @@ log("avcodec2.init_module: CODECS=%s", CODECS)
 
 def init_module():
     log("dec_avcodec2.init_module()")
+    override_logger()
 
 def cleanup_module():
     log("dec_avcodec2.cleanup_module()")
+    restore_logger()
 
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)

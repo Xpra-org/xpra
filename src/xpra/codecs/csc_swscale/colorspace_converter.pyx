@@ -10,10 +10,10 @@ import time
 from xpra.log import Logger
 log = Logger("csc", "swscale")
 
-from xpra.util import nonl
-from xpra.os_util import is_Ubuntu, bytestostr
+from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import codec_spec
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 
 include "constants.pxi"
 
@@ -30,9 +30,6 @@ cdef extern from "../../buffers/memalign.h":
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef extern from "string.h":
-    int vsnprintf(char * s, size_t n, const char * format, va_list arg)
-
 cdef extern from "../../inline.h":
     pass
 
@@ -42,20 +39,6 @@ cdef extern from "libavcodec/version.h":
     int LIBSWSCALE_VERSION_MAJOR
     int LIBSWSCALE_VERSION_MINOR
     int LIBSWSCALE_VERSION_MICRO
-
-cdef extern from "libavutil/log.h":
-    ctypedef struct va_list:
-        pass
-    cdef int AV_LOG_ERROR
-    cdef int AV_LOG_WARNING
-    cdef int AV_LOG_INFO
-    cdef int AV_LOG_DEBUG
-    #this is the correct signature, but I can't get Cython to play nice with it:
-    #ctypedef void (*log_callback)(void *avcl, int level, const char *fmt, va_list vl)
-    ctypedef void* log_callback
-    void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
-    void av_log_set_callback(void *callback)
-
 
 cdef extern from "libavcodec/avcodec.h":
     AVPixelFormat PIX_FMT_NONE
@@ -198,39 +181,6 @@ def get_swscale_flags_strs(int flags):
             strs.append(flag)
     return strs
 
-import sys
-cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
-    if level<=AV_LOG_ERROR:
-        l = log.error
-    elif level<=AV_LOG_WARNING:
-        l = log.warn
-    elif level<=AV_LOG_INFO:
-        l = log.info
-    elif level<=AV_LOG_DEBUG:
-        l = log.debug
-    else:
-        #don't bother
-        return
-    #turn it into a string:
-    cdef char buffer[256]
-    cdef int r
-    r = vsnprintf(buffer, 256, fmt, vl)
-    if r<0:
-        log.error("swscale_log: vsnprintf returned %s on format string '%s'", r, fmt)
-        return
-    s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
-    if s.startswith("Warning: data is not aligned!"):
-        #silence this crap, since there is nothing we can do about it
-        l = log.debug
-    #l("log_callback_override(%#x, %i, %s, ..)", <unsigned long> avcl, level, fmt)
-    l("csc_swscale: %s", s)
-
-cdef override_logger():
-    cdef void *cb = <void*> log_callback_override
-    av_log_set_callback(cb)
-
-cdef restore_logger():
-    av_log_set_callback(<void*> av_log_default_callback)
 
 def init_module():
     #nothing to do!

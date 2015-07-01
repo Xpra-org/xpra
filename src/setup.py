@@ -1947,6 +1947,16 @@ if webp_ENABLED:
                 ["xpra/codecs/webp/decode.pyx"]+membuffers_c,
                 **webp_pkgconfig))
 
+#swscale and avcodec2 use libav_common/av_log:
+libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
+toggle_packages(libav_common, "xpra.codecs.libav_common")
+if libav_common:
+    avutil_pkgconfig = pkgconfig("avutil")
+    cython_add(Extension("xpra.codecs.libav_common.av_log",
+                ["xpra/codecs/libav_common/av_log.pyx"],
+                **avutil_pkgconfig))
+
+
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil")
