@@ -103,6 +103,7 @@ class subprocess_callee(object):
             log.error("error in main loop", exc_info=True)
             return 1
         finally:
+            self.cleanup()
             if self.protocol:
                 self.protocol.close()
                 self.protocol = None
