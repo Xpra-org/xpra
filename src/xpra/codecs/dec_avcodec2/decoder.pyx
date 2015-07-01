@@ -535,7 +535,11 @@ cdef class Decoder:
                 len = avcodec_decode_video2(self.codec_ctx, av_frame, &got_picture, &avpkt)
             if len<0:
                 av_frame_unref(av_frame)
-                log.warn("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
+                log.error("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
+                return None
+            if len==0:
+                av_frame_unref(av_frame)
+                log.error("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
                 return None
 
             if steps==1:
