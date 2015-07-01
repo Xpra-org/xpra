@@ -913,7 +913,7 @@ class WindowSource(object):
             eratio = float(len(all_pixels)) / self.batch_config.max_events
             pratio = float(sum(all_pixels)) / self.batch_config.max_pixels
             if eratio>1.0 or pratio>1.0:
-                self.batch_config.delay = self.batch_config.min_delay * max(eratio, pratio)
+                self.batch_config.delay = int(self.batch_config.min_delay * max(eratio, pratio))
 
         delay = options.get("delay", self.batch_config.delay)
         if now-self.statistics.last_resized<0.250:
@@ -1040,9 +1040,9 @@ class WindowSource(object):
         actual_delay = int(1000.0 * (now-damage_time))
         if packets_backlog>0:
             if actual_delay>self.batch_config.timeout_delay:
-                log.warn("send_delayed for wid %s, elapsed time %.1f is above limit of %.1f", self.wid, actual_delay, self.batch_config.max_delay)
+                log.warn("send_delayed for wid %s, elapsed time %ims is above limit of %.1f", self.wid, actual_delay, self.batch_config.max_delay)
                 return
-            log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
+            log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %i, elapsed time is %ims",
                     self.wid, packets_backlog, self.batch_config.delay, actual_delay)
             #this method will fire again from damage_packet_acked
             return
@@ -1078,7 +1078,7 @@ class WindowSource(object):
             return
         #no backlog, so ok to send, clear soft-expired counter:
         self.soft_expired = 0
-        log("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
+        log("send_delayed for wid %s, batch delay is %i, elapsed time is %i ms", self.wid, self.batch_config.delay, actual_delay)
         self.do_send_delayed()
 
     def do_send_delayed(self):
@@ -1540,7 +1540,7 @@ class WindowSource(object):
             check for it.
             (warning: this runs from the non-UI network parse thread)
         """
-        log("packet decoding sequence %s for window %s %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
+        log("packet decoding sequence %s for window %s: %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         elif decode_time<0:
