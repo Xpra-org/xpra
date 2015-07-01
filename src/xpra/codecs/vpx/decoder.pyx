@@ -104,6 +104,8 @@ IF ENABLE_VP9:
     #this is the ABI version with libvpx 1.4.0:
     if VPX_DECODER_ABI_VERSION>=9:
         vp9_cs.append("YUV444P")
+    else:
+        log.warn("libvpx ABI version %s is too old: disabling VP9 YUV444P support")
     COLORSPACES["vp9"] = vp9_cs
 
 
@@ -227,8 +229,8 @@ cdef class Decoder:
         dec_cfg.threads = self.max_threads
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
-            raise Exception("failed to instantiate vpx decoder: %s" % bytestostr(vpx_codec_error(self.context)))
-        log("vpx_codec_dec_init_ver for %s succeeded", encoding)
+            raise Exception("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, bytestostr(vpx_codec_error(self.context))))
+        log("vpx_codec_dec_init_ver for %s succeeded with ABI version %s", encoding, VPX_DECODER_ABI_VERSION)
 
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding

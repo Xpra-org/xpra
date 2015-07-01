@@ -384,7 +384,7 @@ cdef class Encoder:
             free(self.context)
             self.context = NULL
             log.warn("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
-            raise Exception("failed to initialized vpx encoder: %s" % vpx_codec_error(self.context))
+            raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, bytestostr(vpx_codec_error(self.context))))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         cdef vpx_codec_err_t ctrl
         IF ENABLE_VP9:
