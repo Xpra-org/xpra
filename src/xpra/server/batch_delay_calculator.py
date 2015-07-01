@@ -94,7 +94,7 @@ def update_batch_delay(batch, factors):
         w = max(1, hist_w)*weight/all_factors_weight
         tw += w
         tv += target_delay*w
-    batch.delay = max(0, min(max_delay, tv / tw))
+    batch.delay = max(0, min(max_delay, tv // tw))
     batch.last_updated = now
     batch.factors = valid_factors
 
