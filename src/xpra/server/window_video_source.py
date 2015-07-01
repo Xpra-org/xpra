@@ -320,8 +320,12 @@ class WindowVideoSource(WindowSource):
         if len(self.non_video_encodings)==0:
             return current_encoding
 
-        #if speed is high, assume we have bandwidth to spare
-        if pixel_count<=self._rgb_auto_threshold:
+        sr = self.video_subregion.rectangle
+
+        rgbmax = self._rgb_auto_threshold
+        if sr:
+            rgbmax = min(rgbmax, sr.width*sr.height//2)
+        if pixel_count<=rgbmax:
             return lossless("low pixel count")
 
         if current_encoding not in self.video_encodings:
@@ -357,7 +361,6 @@ class WindowVideoSource(WindowSource):
             #quality or speed override, best not to force video encoder re-init
             return nonvideo()
 
-        sr = self.video_subregion.rectangle
         if sr and (sr.width!=ww or sr.height!=wh):
             #we have a video region, and this is not it, so don't use video
             #raise the quality as the areas around video tend to not be graphics
