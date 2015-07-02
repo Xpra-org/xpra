@@ -309,12 +309,12 @@ def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wai
     return sockpath
 
 
-def setup_local_socket(dotxpra, display_name, clobber, mmap_group, socket_permissions):
+def setup_local_socket(socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions):
     if sys.platform.startswith("win"):
         return None, None
     from xpra.log import Logger
     log = Logger("network")
-    #print("creating server socket %s" % sockpath)
+    dotxpra = DotXpra(socket_dir or socket_dirs[0])
     try:
         dotxpra.mksockdir()
         display_name = normalize_local_display_name(display_name)
@@ -878,8 +878,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         return  1
 
     #setup unix domain socket:
-    dotxpra = DotXpra(opts.socket_dir or opts.socket_dirs[0])
-    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group, opts.socket_permissions)
+    socket, cleanup_socket = setup_local_socket(opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
     if socket:      #win32 returns None!
         sockets.append(socket)
         if opts.mdns:
