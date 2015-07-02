@@ -328,11 +328,13 @@ class ServerBase(ServerCore):
                 if self.notifications_forwarder:
                     log.info("using notification forwarder: %s", self.notifications_forwarder)
             except Exception as e:
-                log.error("error loading or registering our dbus notifications forwarder:")
-                log.error("  %s", e)
-                log.info("  if you do not have a dedicated dbus session for this xpra instance,")
-                log.info("  you should use the '--no-notifications' flag")
-                log.info("")
+                if str(e).endswith("is already claimed on the session bus"):
+                    log.warn("Warning: cannot forward notifications, the interface is already claimed")
+                else:
+                    log.warn("Warning: failed to load or register our dbus notifications forwarder:")
+                    log.warn(" %s", e)
+                log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
+                log.warn(" use the 'notifications=no' option")
 
     def init_pulseaudio(self):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
@@ -347,8 +349,9 @@ class ServerBase(ServerCore):
             elapsed = time.time()-started_at
             if elapsed<2:
                 soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
-                soundlog.warn(" Either fix the pulseaudio command line or use the 'pulseaudio=no' option to avoid this warning.")
                 soundlog.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
+                soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
+                soundlog.warn(" or use the 'pulseaudio=no' option")
             else:
                 soundlog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
