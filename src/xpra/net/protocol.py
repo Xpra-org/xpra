@@ -480,14 +480,14 @@ class Protocol(object):
             packet[0] = self.send_aliases[packet_type]
         try:
             main_packet, proto_flags = self._encoder(packet)
-        except Exception as e:
+        except Exception:
             if self._closed:
                 return [], 0
             log.error("failed to encode packet: %s", packet, exc_info=True)
             #make the error a bit nicer to parse: undo aliases:
             packet[0] = packet_type
             self.verify_packet(packet)
-            raise e
+            raise
         if len(main_packet)>size_check and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))

@@ -671,7 +671,7 @@ class ColorspaceConverter(object):
             return self.do_convert_image(image)
         except pyopencl.LogicError as e:
             if retry>0:
-                raise e
+                raise
             log.warn("OpenCL error: %s", e)
             self.reinit()
             return self.convert_image(image, retry+1)

@@ -275,7 +275,7 @@ class VideoHelper(object):
         except Exception as e:
             log("exception in %s module %s initialization %s: %s", encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
             log.warn("Warning: %s video encoder failed: %s", encoder_type, e)
-            raise e
+            raise
         encodings = encoder_module.get_encodings()
         log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
         for encoding in encodings:

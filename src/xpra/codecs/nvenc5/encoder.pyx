@@ -1257,7 +1257,7 @@ cdef class Encoder:
         except Exception as e:
             log("init_cuda failed", exc_info=True)
             record_device_failure(self.cuda_device_id)
-            raise e
+            raise
 
         end = time.time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
@@ -1759,7 +1759,7 @@ cdef class Encoder:
                 self.cuda_context.pop()
         except driver.LogicError as e:
             if retry>0:
-                raise e
+                raise
             log.warn("PyCUDA error: %s", e)
             self.clean()
             self.init_cuda()

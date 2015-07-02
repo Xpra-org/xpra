@@ -1319,7 +1319,7 @@ def run_client(error_cb, opts, extra_args, mode):
             app.setup_connection(conn)
         except Exception as e:
             app.cleanup()
-            raise e
+            raise
     return do_run_client(app)
 
 def make_client(error_cb, opts):
