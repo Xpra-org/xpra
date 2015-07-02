@@ -11,6 +11,9 @@ from xpra.log import Logger
 log = Logger("libav")
 
 
+cdef extern from "../../inline.h":
+    pass
+
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char * format, va_list arg)
 

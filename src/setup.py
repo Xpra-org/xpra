@@ -1433,7 +1433,7 @@ if WIN32:
                 add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             if nocmt:
                 add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
-        if "avcodec" in pkgs_options[0]:#
+        if "avcodec" in pkgs_options[0]:
             add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
                          ["avcodec", "avutil"])
@@ -1441,6 +1441,10 @@ if WIN32:
             add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
                          ["swscale", "avutil"])
+        elif "avutil" in pkgs_options[0]:
+            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
+                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
+                         ["avutil"])
         elif "x264" in pkgs_options[0]:
             add_keywords([x264_bin_dir], [x264_include_dir],
                          [x264_lib_dir],
