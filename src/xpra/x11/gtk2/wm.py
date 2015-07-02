@@ -9,11 +9,11 @@ import gobject
 import os
 
 from xpra.gtk_common.error import xsync, xswallow
-import xpra.x11.gtk_x11.selection
-from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
+from xpra.x11.gtk2.selection import ManagerSelection
+from xpra.x11.gtk2.world_window import WorldWindow
 from xpra.x11.gtk2.window import WindowModel, Unmanageable, configure_bits
 from xpra.x11.gtk2.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
@@ -227,8 +227,8 @@ class Wm(gobject.GObject):
         self._windows_in_order = []
 
         # Become the Official Window Manager of this year's display:
-        self._wm_selection = xpra.x11.gtk_x11.selection.ManagerSelection(self._display, "WM_S0")
-        self._cm_wm_selection = xpra.x11.gtk_x11.selection.ManagerSelection(self._display, "_NET_WM_CM_S0")
+        self._wm_selection = ManagerSelection(self._display, "WM_S0")
+        self._cm_wm_selection = ManagerSelection(self._display, "_NET_WM_CM_S0")
         self._wm_selection.connect("selection-lost", self._lost_wm_selection)
         self._cm_wm_selection.connect("selection-lost", self._lost_wm_selection)
         # May throw AlreadyOwned:

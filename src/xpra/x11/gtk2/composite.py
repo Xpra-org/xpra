@@ -6,13 +6,13 @@
 
 import gobject
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk2.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             get_parent)                     #@UnresolvedImport
 from xpra.gtk_common.error import trap
 
-from xpra.x11.gtk_x11.world_window import get_world_window
+from xpra.x11.gtk2.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 XImage = XImageBindings()
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport

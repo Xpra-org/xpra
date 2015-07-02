@@ -13,7 +13,7 @@ from xpra.gtk_common.error import xswallow, xsync
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk2.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                remove_event_receiver,                       #@UnresolvedImport
                )

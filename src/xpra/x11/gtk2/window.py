@@ -24,7 +24,13 @@ from xpra.util import nonl, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND #@UnresolvedImport
 X11Window = X11WindowBindings()
 
-from xpra.x11.gtk_x11.gdk_bindings import (
+from xpra.x11.gtk_x11.send_wm import (
+                send_wm_take_focus,
+                send_wm_delete_window)
+from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
+                           one_arg_signal,
+                           non_none_list_accumulator)
+from xpra.x11.gtk2.gdk_bindings import (
                 get_pyatom,                                 #@UnresolvedImport
                 get_pywindow,                               #@UnresolvedImport
                 add_event_receiver,                         #@UnresolvedImport
@@ -32,15 +38,9 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                 get_display_for,                            #@UnresolvedImport
                 calc_constrained_size,                      #@UnresolvedImport
                )
-from xpra.x11.gtk_x11.send_wm import (
-                send_wm_take_focus,
-                send_wm_delete_window)
-from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
-                           one_arg_signal,
-                           non_none_list_accumulator)
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, MotifWMHints
-from xpra.x11.gtk_x11.composite import CompositeHelper
+from xpra.x11.gtk2.composite import CompositeHelper
 
 from xpra.log import Logger
 log = Logger("x11", "window")
