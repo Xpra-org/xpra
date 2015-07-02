@@ -272,7 +272,8 @@ class ServerCore(object):
         self.clean_quit()
 
     def signal_quit(self, signum, frame):
-        log.info("")
+        sys.stdout.write("\n")
+        sys.stdout.flush()
         log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
