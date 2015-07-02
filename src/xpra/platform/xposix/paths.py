@@ -8,7 +8,7 @@ import sys
 import site
 
 
-def get_install_prefix():
+def do_get_install_prefix():
     #special case for "user" installations, ie:
     #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
     try:
@@ -19,8 +19,9 @@ def get_install_prefix():
         return base
     return sys.prefix
 
-def get_resources_dir():
+def do_get_resources_dir():
     #is there a better/cleaner way?
+    from xpra.platform.paths import get_install_prefix
     options = [get_install_prefix(),
                sys.exec_prefix,
                "/usr",
@@ -38,8 +39,20 @@ def get_resources_dir():
         pass
     return os.getcwd()
 
-def get_app_dir():
+def do_get_app_dir():
+    from xpra.platform.paths import get_resources_dir
     return get_resources_dir()
 
-def get_icon_dir():
+def do_get_icon_dir():
+    from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
+
+def do_get_socket_dirs():
+    SOCKET_DIRS = ["~/.xpra"]   #the old default
+    #added in 0.16, support for /run:
+    if os.path.exists("/run/user") and os.path.isdir("/run/user"):
+        #private, per user: /run/user/1000/xpra
+        SOCKET_DIRS.append("/run/user/$UID/xpra")
+        #for shared sockets:
+        SOCKET_DIRS.append("/run/xpra")
+    return SOCKET_DIRS

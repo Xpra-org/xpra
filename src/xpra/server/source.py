@@ -1438,11 +1438,9 @@ class ServerSource(object):
             location = "on %s (via xpra)" % self.hostname
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
         from xpra.dotxpra import osexpand
-        from xpra.platform.paths import get_default_socket_dir
-        socket_dir = osexpand(self.socket_dir or get_default_socket_dir())
         attributes = {"display"         : os.environ.get("DISPLAY"),
                       "source"          : self.uuid,
-                      "socket-dir"      : socket_dir}
+                      "socket-dir"      : osexpand(self.socket_dir)}
         for k,v in printers.items():
             if k in self.printers:
                 #remove existing definition:

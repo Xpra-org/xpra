@@ -16,36 +16,77 @@ def valid_dir(path):
         return False
 
 
-def get_default_conf_dir():
-    #some platforms may also ship a default config with the application
-    return None
+#helpers to easily override using env vars:
+def envaslist_or_delegate(env_name, impl):
+    env_value = os.environ.get(env_name)
+    if env_value is not None:
+        return [env_value]
+    return impl()
+def env_or_delegate(env_name, impl):
+    env_value = os.environ.get(env_name)
+    if env_value is not None:
+        return env_value
+    return impl()
 
 
 def get_install_prefix():
+    return env_or_delegate("XPRA_INSTALL_PREFIX", do_get_install_prefix)
+def do_get_install_prefix():
     return sys.prefix
 
-def get_system_conf_dir():
-    env_conf_dir = os.environ.get("XPRA_SYSCONF_DIR")
-    if env_conf_dir is not None:
-        return env_conf_dir
+
+def get_system_conf_dirs():
+    return envaslist_or_delegate("XPRA_SYSCONF_DIRS", do_get_system_conf_dirs)
+def do_get_system_conf_dirs():
     prefix = get_install_prefix()
     #the system wide configuration directory
     if prefix == '/usr':
         #default posix config location:
-        return '/etc/xpra'
+        return ['/etc/xpra']
     #hope the prefix is something like "/usr/local" or "$HOME/.local":
-    return prefix + '/etc/xpra/'
+    return [prefix + '/etc/xpra/']
 
-def get_user_conf_dir():
+def get_user_conf_dirs():
+    return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs)
+def do_get_user_conf_dirs():
     #per-user configuration location:
-    return os.environ.get("XPRA_USER_CONF_DIR", "~/.xpra")
+    return ["~/.xpra"]
+
+def get_default_conf_dirs():
+    return envaslist_or_delegate("XPRA_DEFAULT_CONF_DIRS", do_get_default_conf_dirs)
+def do_get_default_conf_dirs():
+    #some platforms may also ship a default config with the application
+    return []
 
 
-def get_default_socket_dir():
-    return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
+def get_socket_dirs():
+    return envaslist_or_delegate("XPRA_SOCKET_DIRS", do_get_socket_dirs)
+def do_get_socket_dirs():
+    return ["~/.xpra"]
+
+def get_default_log_dir():
+    return env_or_delegate("XPRA_LOG_DIR", do_get_default_log_dir)
+def do_get_default_log_dir():
+    return "~/.xpra"
+
+def get_download_dir():
+    return env_or_delegate("XPRA_DOWNLOAD_DIR", do_get_download_dir)
+def do_get_download_dir():
+    d = "~/Downloads"
+    if not os.path.exists(os.path.expanduser(d)):
+        return "~"
+    return d
+
+def get_script_bin_dir():
+    return env_or_delegate("XPRA_SCRIPT_BIN_DIR", do_get_script_bin_dir)
+def do_get_script_bin_dir():
+    return "~/.xpra"
+
 
 #overriden in platform code:
 def get_app_dir():
+    return env_or_delegate("XPRA_APP_DIR", do_get_app_dir)
+def do_get_app_dir():
     return default_get_app_dir()
 
 def default_get_app_dir():
@@ -68,10 +109,14 @@ def default_get_app_dir():
 
 #may be overriden in platform code:
 def get_resources_dir():
+    return env_or_delegate("XPRA_RESOURCES_DIR", do_get_resources_dir)
+def do_get_resources_dir():
     return get_app_dir()
 
 #may be overriden in platform code:
 def get_icon_dir():
+    return env_or_delegate("XPRA_ICON_DIR", do_get_icon_dir)
+def do_get_icon_dir():
     adir = get_app_dir()
     idir = os.path.join(adir, "icons")
     if valid_dir(idir):
@@ -128,31 +173,40 @@ def get_license_text(self):
 
 
 def get_sound_command():
-    cs = os.environ.get("XPRA_SOUND_COMMAND", "xpra")
-    import shlex
-    return shlex.split(cs)
+    envvalue = os.environ.get("XPRA_SOUND_COMMAND")
+    if envvalue:
+        import shlex
+        return shlex.split(envvalue)        
+    return do_get_sound_command()
+def do_get_sound_command():
+    return ["xpra"]
 
 
 from xpra.platform import platform_import
 platform_import(globals(), "paths", True,
-                "get_resources_dir",
-                "get_app_dir",
-                "get_icon_dir")
+                "do_get_resources_dir",
+                "do_get_app_dir",
+                "do_get_icon_dir")
 platform_import(globals(), "paths", False,
-                "get_sound_command",
-                "get_install_prefix",
-                "get_default_conf_dir",
-                "get_system_conf_dir",
-                "get_user_conf_dir",
-                "get_default_socket_dir")
+                "do_get_sound_command",
+                "do_get_install_prefix",
+                "do_get_default_conf_dirs",
+                "do_get_system_conf_dirs",
+                "do_get_user_conf_dirs",
+                "do_get_socket_dirs",
+                "do_get_default_log_dir",
+                "do_get_download_dir",
+                "do_get_script_bin_dir")
 
 def get_info():
     return {
             "install.prefix"    : get_install_prefix(),
-            "default_conf.dir"  : get_default_conf_dir(),
-            "system_conf.dir"   : get_system_conf_dir(),
-            "user_conf.dir"     : get_user_conf_dir(),
-            "socket"            : get_default_socket_dir(),
+            "default_conf.dirs" : get_default_conf_dirs(),
+            "system_conf.dirs"  : get_system_conf_dirs(),
+            "user_conf.dirs"    : get_user_conf_dirs(),
+            "socket.dirs"       : get_socket_dirs(),
+            "log.dir"           : get_default_log_dir(),
+            "download.dir"      : get_download_dir(),
             "app.dir"           : get_app_dir(),
             "app.default.dir"   : default_get_app_dir(),
             "resources"         : get_resources_dir(),

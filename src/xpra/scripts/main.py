@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-import os
+import os.path
 import stat
 import socket
 import time
@@ -19,10 +19,9 @@ import shlex
 import traceback
 
 from xpra import __version__ as XPRA_VERSION
-from xpra.dotxpra import DotXpra, osexpand
+from xpra.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.platform.paths import get_default_socket_dir
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
@@ -175,6 +174,16 @@ def fixup_video_all_or_none(options):
     options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
     options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
     options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
+
+def fixup_socketdirs(options):
+    if not options.socket_dirs:
+        from xpra.platform.paths import get_socket_dirs
+        options.socket_dirs = get_socket_dirs()
+    elif type(options.socket_dirs)==str:
+        options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
+    else:
+        assert type(options.socket_dirs) in (list, tuple)
+        options.socket_dirs = [v for x in options.socket_dirs for v in x.split(os.path.pathsep)]
 
 def fixup_encodings(options):
     from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -357,15 +366,21 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--daemon", action="store", metavar="yes|no",
                           dest="daemon", default=defaults.daemon,
                           help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
+        group.add_option("--log-dir", action="store",
+                      dest="log_dir", default=defaults.log_dir,
+                      help="The directory where log files are placed"
+                      )
         group.add_option("--log-file", action="store",
                       dest="log_file", default=defaults.log_file,
                       help="When daemonizing, this is where the log messages will go. Default: '%default'."
-                      + " If a relative filename is specified the it is relative to --socket-dir,"
+                      + " If a relative filename is specified the it is relative to --log-dir,"
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
     else:
         ignore({"daemon"    : False,
-                "log_file"  : defaults.log_file})
+                "log_file"  : defaults.log_file,
+                "log_dir"   : defaults.log_dir,
+                })
 
     #FIXME: file tranfer command line options:
     legacy_bool_parse("printing")
@@ -656,7 +671,11 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--dpi", action="store",
                       dest="dpi", default=defaults.dpi,
                       help="The 'dots per inch' value that client applications should try to honour, from 10 to 1000 or 0 for automatic setting. Default: %s." % print_number(defaults.dpi))
-    default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
+    from xpra.platform.paths import get_socket_dirs
+    group.add_option("--socket-dirs", action="append",
+                      dest="socket_dirs", default=[],
+                      help="Directories to look for the socket files in. Default: %s." % os.path.pathsep.join("'%s'" % x for x in get_socket_dirs()))
+    default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or the first valid directory in socket-dirs"
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
                       help="Directory to place/look for the socket files in. Default: '%s'." % default_socket_dir_str)
@@ -771,6 +790,7 @@ def do_parse_cmdline(cmdline, defaults):
     fixup_compression(options)
     fixup_packetencoding(options)
     fixup_video_all_or_none(options)
+    fixup_socketdirs(options)
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
@@ -939,8 +959,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "initenv":
             from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_script
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
-            dotxpra = DotXpra(options.socket_dir)
-            write_runner_shell_script(dotxpra, script, False)
+            write_runner_shell_script(script, False)
             return 0
         else:
             error_cb("invalid mode '%s'" % mode)
@@ -954,10 +973,12 @@ def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
     if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
-        desc["type"] = "ssh"
-        desc["proxy_command"] = ["_proxy"]
-        desc["local"] = False
-        desc["exit_ssh"] = opts.exit_ssh
+        desc.update({
+                "type"             : "ssh",
+                "proxy_command"    : ["_proxy"],
+                "local"            : False,
+                "exit_ssh"         : opts.exit_ssh,
+                 })
         parts = display_name.split(separator)
         if len(parts)>2:
             #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
@@ -1025,13 +1046,19 @@ def parse_display_name(error_cb, opts, display_name):
                 error_cb("invalid ssh port specified: %s" % ssh_port)
             #grr why bother doing it different?
             if is_putty:
+                #special env used by plink:
+                env = os.environ.copy()
+                env["PLINK_PROTOCOL"] = "ssh"
+                desc["env"] = env
                 full_ssh += ["-P", ssh_port]
             else:
                 full_ssh += ["-p", ssh_port]
 
         full_ssh += ["-T", host]
-        desc["host"] = host
-        desc["full_ssh"] = full_ssh
+        desc.update({
+                     "host"     : host,
+                     "full_ssh" : full_ssh
+                     })
         remote_xpra = opts.remote_xpra.split()
         if opts.socket_dir:
             #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
@@ -1044,24 +1071,34 @@ def parse_display_name(error_cb, opts, display_name):
             except Exception as e:
                 print("failed to read password file %s: %s", opts.password_file, e)
         return desc
-    elif display_name.startswith(":"):
-        desc["type"] = "unix-domain"
-        desc["local"] = True
-        desc["display"] = display_name
-        opts.display = display_name
-        desc["socket_dir"] = osexpand(opts.socket_dir or get_default_socket_dir(), opts.username)
-        return desc
     elif display_name.startswith("socket:"):
-        desc["type"] = "unix-domain"
-        desc["local"] = True
-        desc["display"] = display_name
+        #use the socketfile specified:
+        sockfile = display_name[len("socket:"):]
+        desc.update({
+                "type"          : "unix-domain",
+                "local"         : True,
+                "display"       : display_name,
+                "socket_dir"    : os.path.basename(sockfile),
+                "socket_dirs"   : opts.socket_dirs,
+                "socket_path"   : sockfile})
         opts.display = display_name
-        desc["socket_path"] = display_name[len("socket:"):]
+        return desc
+    elif display_name.startswith(":"):
+        desc.update({
+                "type"          : "unix-domain",
+                "local"         : True,
+                "display"       : display_name,
+                "socket_dirs"   : opts.socket_dirs})
+        opts.display = display_name
+        if opts.socket_dir:
+            desc["socket_dir"] = opts.socket_dir
         return desc
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
         separator = display_name[3] # ":" or "/"
-        desc["type"] = "tcp"
-        desc["local"] = False
+        desc.update({
+                     "type"     : "tcp",
+                     "local"    : False,
+                     })
         parts = display_name.split(separator)
         if len(parts) not in (3, 4):
             error_cb("invalid tcp connection string, use tcp/[username@]host/port[/display] or tcp:[username@]host:port[:display]")
@@ -1086,6 +1123,7 @@ def parse_display_name(error_cb, opts, display_name):
             error_cb("invalid port number: %s" % port)
         desc["port"] = port
         #host:
+        
         host = parts[1]
         if host.find("@")>0:
             username, host = host.split("@", 1)
@@ -1102,21 +1140,39 @@ def parse_display_name(error_cb, opts, display_name):
 def pick_display(error_cb, opts, extra_args):
     if len(extra_args) == 0:
         # Pick a default server
-        sockdir = DotXpra(opts.socket_dir or get_default_socket_dir())
-        servers = sockdir.sockets()
-        live_servers = [display
-                        for (state, display) in servers
-                        if state is DotXpra.LIVE]
-        if len(live_servers) == 0:
-            error_cb("cannot find a live server to connect to")
-        elif len(live_servers) == 1:
-            return parse_display_name(error_cb, opts, live_servers[0])
-        else:
-            error_cb("there are multiple servers running, please specify")
+        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
+        sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
+        desc = {
+                "type"          : "unix-domain",
+                "local"         : True,
+                "display"       : display,
+                "display_name"  : display,
+                "socket_dir"    : sockdir,
+                "socket_path"   : sockpath}
+        return desc
     elif len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0])
     else:
         error_cb("too many arguments")
+
+def single_display_match(dir_servers, error_cb):
+    #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
+    if len(dir_servers) == 0:
+        error_cb("cannot find any live servers to connect to")
+    if len(dir_servers) > 1:
+        error_cb("there are multiple servers running in multiple locations, please specify")
+    assert len(dir_servers)==1, "len(dir_servers)=%s" % len(dir_servers)
+    #ie: [(LIVE, "desktop-10", "/tmp/desktop-10"), ]
+    sockdir, servers = dir_servers.items()[0]
+    assert len(servers)>0
+    if len(servers) > 1:
+        error_cb("there are multiple servers running in %s, please specify" % sockdir)
+    #ie: (LIVE, "desktop-10", "/tmp/desktop-10")
+    server = servers[0]
+    #ie: ("/tmp", "desktop-10", "/tmp/desktop-10")
+    return sockdir, server[1], server[2]
+
 
 def _socket_connect(sock, endpoint, description, dtype):
     sock.connect(endpoint)
@@ -1127,7 +1183,11 @@ def _socket_connect(sock, endpoint, description, dtype):
 def connect_or_fail(display_desc):
     try:
         return connect_to(display_desc)
+    except InitException:
+        raise
     except Exception as e:
+        raise
+    #    traceback.print_stack()
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
@@ -1150,6 +1210,8 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             cmd = proxy_cmd
         try:
             kwargs = {}
+            if "env" in display_desc:
+                kwargs["env"] = display_desc["env"]
             kwargs["stderr"] = sys.stderr
             if not display_desc.get("exit_ssh", False) and os.name=="posix" and not sys.platform.startswith("darwin"):
                 def setsid():
@@ -1219,15 +1281,15 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
             return False, "unix domain sockets are not available on this operating system"
-        #if the path was specified, use that:
-        sockfile = display_desc.get("socket_path")
-        if not sockfile:
-            #find the socket using the display:
-            dotxpra = DotXpra(display_desc["socket_dir"])
-            sockfile = dotxpra.socket_path(display_desc["display"])        
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
-        conn = _socket_connect(sock, sockfile, display_name, dtype)
+        def sockpathfail_cb(msg):
+            raise InitException(msg)
+        sockpath = get_sockpath(display_desc, sockpathfail_cb)
+        try:
+            conn = _socket_connect(sock, sockpath, display_name, dtype)
+        except Exception as e:
+            raise InitException("cannot connect to %s: %s" % (sockpath, e))
         conn.timeout = SOCKET_TIMEOUT
 
     elif dtype == "tcp":
@@ -1242,6 +1304,16 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         assert False, "unsupported display type in connect: %s" % dtype
     return conn
 
+def get_sockpath(display_desc, error_cb):
+    #if the path was specified, use that:
+    sockpath = display_desc.get("socket_path")
+    if not sockpath:
+        #find the socket using the display:
+        dotxpra = DotXpra(sockdir=display_desc.get("socket_dir"), sockdirs=display_desc.get("socket_dirs"))
+        display = display_desc["display"]
+        dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE, matching_display=display)
+        _, _, sockpath = single_display_match(dir_servers, error_cb)
+    return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
     if mode=="screenshot":
@@ -1419,24 +1491,14 @@ def find_X11_displays(max_display_no=10):
                 pass
     return displays
 
-def guess_xpra_display(socket_dir):
-    sockdir = DotXpra(socket_dir)
-    results = sockdir.sockets()
-    live = [display for state, display in results if state==DotXpra.LIVE]
-    if len(live)==0:
-        raise InitException("no existing xpra servers found")
-    if len(live)>1:
-        raise InitException("too many existing xpra servers found, cannot guess which one to use")
-    return live[0]
-
-def guess_X11_display(socket_dir):
+def guess_X11_display(socket_dir, socket_dirs):
     displays = [":%s" % x for x in find_X11_displays()]
     assert len(displays)!=0, "could not detect any live X11 displays"
     if len(displays)>1:
         #since we are here to shadow,
         #assume we want to shadow a real X11 server,
         #so remove xpra's own displays to narrow things down:
-        sockdir = DotXpra(socket_dir)
+        sockdir = DotXpra(socket_dir, socket_dir)
         results = sockdir.sockets()
         xpra_displays = [display for _, display in results]
         displays = list(set(displays)-set(xpra_displays))
@@ -1448,7 +1510,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
     if mode in ("_proxy_start", "_shadow_start"):
-        dotxpra = DotXpra()
+        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         #we must use a subprocess to avoid messing things up - yuk
         cmd = [script_file]
         if mode=="_proxy_start":
@@ -1472,7 +1534,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 #display_name was provided:
                 display_name = args[0]
             else:
-                display_name = guess_X11_display(opts.socket_dir)
+                display_name = guess_X11_display(opts.socket_dir, opts.socket_dirs)
                 #we now know the display name, so add it:
                 args = [display_name]
         #adds the display to proxy start command:
@@ -1522,7 +1584,8 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 time.sleep(0.10)
         else:
             #wait for the display specified to become live:
-            while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
+            socket_path = dotxpra.socket_path(display_name)            
+            while dotxpra.get_server_state(socket_path, 1)!=DotXpra.LIVE:
                 if time.time()-start>15:
                     warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
                     return
@@ -1548,10 +1611,14 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
 def run_stopexit(mode, error_cb, opts, extra_args):
     assert "gtk" not in sys.modules
 
-    def show_final_state(display):
-        sockdir = DotXpra(opts.socket_dir)
+    def show_final_state(display_desc):
+        #this is for local sockets only!
+        display = display_desc["display"]
+        sockdir = display_desc["socket_dir"]
+        sockdir = DotXpra(sockdir)
+        sockfile = get_sockpath(display_desc, error_cb)
         for _ in range(6):
-            final_state = sockdir.server_state(display)
+            final_state = sockdir.get_server_state(sockfile, 1)
             if final_state is DotXpra.LIVE:
                 time.sleep(0.5)
         if final_state is DotXpra.DEAD:
@@ -1585,17 +1652,17 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if app:
             app.cleanup()
     if display_desc["local"]:
-        show_final_state(display_desc["display"])
+        show_final_state(display_desc)
     else:
         print("Sent shutdown command")
     return  e
 
 
-def may_cleanup_socket(sockdir, state, display, clean_states=[DotXpra.DEAD]):
+def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
     sys.stdout.write("\t%s session at %s" % (state, display))
     if state in clean_states:
         try:
-            os.unlink(sockdir.socket_path(display))
+            os.unlink(sockpath)
         except OSError:
             pass
         else:
@@ -1606,36 +1673,41 @@ def run_list(error_cb, opts, extra_args):
     assert "gtk" not in sys.modules
     if extra_args:
         error_cb("too many arguments for mode")
-    sockdir = DotXpra(opts.socket_dir)
-    results = sockdir.sockets()
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    results = dotxpra.socket_details()
     if not results:
         error_cb("No xpra sessions found")
     sys.stdout.write("Found the following xpra sessions:\n")
-    for state, display in results:
-        may_cleanup_socket(sockdir, state, display)
+    unknown = []
+    for socket_dir, values in results.items():
+        sys.stdout.write("%s:\n" % socket_dir)
+        for state, display, sockpath in values:
+            may_cleanup_socket(state, display, sockpath)
+            if state is DotXpra.UNKNOWN:
+                unknown.append((socket_dir, display, sockpath))
     #now, re-probe the "unknown" ones:
-    unknown = [display for state, display in results if state==DotXpra.UNKNOWN]
     if len(unknown)>0:
-        sys.stdout.write("Re-probing unknown sessions: %s\n" % (", ".join(unknown)))
+        sys.stdout.write("Re-probing unknown sessions: %s\n" % [x[0] for x in unknown])
     counter = 0
     while len(unknown)>0 and counter<5:
         time.sleep(1)
         counter += 1
         probe_list = list(unknown)
         unknown = []
-        for display in probe_list:
-            state = sockdir.server_state(display)
+        for v in probe_list:
+            socket_dir, display, sockpath = v
+            state = dotxpra.get_server_state(sockpath, 1)
             if state is DotXpra.DEAD:
-                may_cleanup_socket(sockdir, state, display)
+                may_cleanup_socket(state, display, sockpath)
             elif state is DotXpra.UNKNOWN:
-                unknown.append(display)
+                unknown.append(v)
             else:
                 sys.stdout.write("\t%s session at %s\n" % (state, display))
     #now cleanup those still unknown:
     clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
-    for display in unknown:
-        state = sockdir.server_state(display)
-        may_cleanup_socket(sockdir, state, display, clean_states=clean_states)
+    for state, display, sockpath in unknown:
+        state = dotxpra.get_server_state(sockpath)
+        may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
     return 0
 
 

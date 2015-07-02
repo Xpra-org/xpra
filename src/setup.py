@@ -803,12 +803,17 @@ def build_xpra_conf(install_dir):
         return ["no", "yes"][int(b)]
     env = "\n".join(envstr(*x) for x in env_strs)
     conf_dir = get_conf_dir(install_dir)
+    from xpra.platform.paths import get_socket_dirs, get_default_log_dir
+    #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
+    socket_dirs = get_socket_dirs()
     SUBS = {'xvfb_command'   : xvfb_command,
             'ssh_command'    : ssh_command,
             'remote_logging' : bstr(OSX or WIN32),
             'env'            : env,
             'has_displayfd'  : bstr(has_displayfd),
             'conf_dir'       : conf_dir,
+            'socket_dirs'    : "\nsocket-dirs = ".join(socket_dirs),
+            'log_dir'        : get_default_log_dir(),
             'mdns'           : bstr(not WIN32),
             'pulseaudio'     : bstr(not OSX and not WIN32)}
     conf = template % SUBS

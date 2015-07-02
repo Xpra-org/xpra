@@ -100,6 +100,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-mouse\-polling\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 [\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
@@ -135,26 +136,32 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBexit\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBscreenshot\fP \fIfilename\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBversion\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBinfo\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBcontrol\fP (\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP) \fIcommand\fP [\fIarguments..\fP] [\fB\-\-ssh\fP=\fICMD\fP]
@@ -428,7 +435,7 @@ compressed and lossy: it uses a colour palette, which means better compression b
 .IP \fBpng/L\fP
 compressed and lossy: grayscale only using a palette.
 .IP \fBrgb\fP
-a raw pixel format (lossless) compressed with zlib or lz4,
+a raw pixel format (lossless) compressed with lz4, lzo or zlib (see \fIcompressors\fP)
 the compression ratio is lower, but it is by far the fastest encoding available.
 .IP \fBwebp\fP
 can be used in lossy or lossless mode,
@@ -441,9 +448,10 @@ it is lossy and usually very fast.
 lossy video encoding which always uses colour subsampling.
 Fast at encoding and decoding.
 .IP \fBvp9\fP
-Far too slow at encoding, avoid.
+Video encoding which supports both lossy and lossless modes,
+available if your ffmpeg library version is recent enough.
 .IP \fBh264\fP
-Currently the best encoding available: it is fast, efficient
+One of the best encoding available: it is fast, efficient
 and tunable via the quality and speed options.
 .IP \fBh265\fP
 Far too slow at encoding, avoid.
@@ -459,7 +467,7 @@ the server and the client:
 all require their respective shared libraries,
 as well as the xpra codec that uses them.
 
-Note: when selecting a video encoding (usually \fBh264\fP or \fBvp8\fP),
+Note: when selecting a video encoding (usually \fBh264\fP, \fBvp8\fP or fBvp9\fP),
 some of the smaller screen updates will be sent using
 one of the other non-video encodings.
 .TP
@@ -474,25 +482,29 @@ and will cause automatic refreshes (if enabled), it is most
 useful on video content where it saves a considerable amount of bandwidth.
 .TP
 
-\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
-Use OpenGL accelerated rendering on the client.
-The default is to detect if the graphics card and drivers are
-supported (\fIauto\fP mode), but one can also disable OpenGL (\fIno\fP)
-or force it enabled (\fIyes\fP).
-.TP
 \fB\-\-socket\-dir\fP=\fIDIR\fP
 Location where to write and look for the Xpra socket files.
-Defaults to "~/.xpra".  It may also be specified using the
-XPRA_SOCKET_DIR environment variable.
+The default location varies from platform to platform
+("~/.xpra" on most Posix systems).
+If unspecified, the first value from \fBsocket-dirs\fP will be used.
+It may also be specified using the XPRA_SOCKET_DIR environment variable.
 
 When using the socket-dir option, it is generally necessary to specify
-socket-dir on all following commands, for xpra to work with the
-open sessions.  Mixing different socket-dir options is not
-recommended.
+\fBsocket\-dir\fP or \fBsocket\-dirs\fP on all following commands,
+for xpra to work with the open sessions. 
 
 By specifying a shared directory this can be coupled with the
 \fImmap\-group\fP or \fIsocket\-permissions\fP option to connect
 Xpra sessions across user accounts.
+.TP
+
+\fB\-\-socket\-dirs\fP=\fIDIR\fP
+Specifies the directories where to look for existing sockets if
+a specific one was not set using \fBsocket\-dir\fP.
+You may specify each directory using a new \fB\-\-socket\-dirs\fP
+command line argument, or joined together by the path separator (\fB:\fP on Posix).
+The paths will be expanded.
+(ie: \fI\-\-socket-dirs=~/.xpra:/tmp\fP)
 
 .SS Options for start, upgrade, proxy and shadow
 .TP
@@ -770,6 +782,12 @@ Allow the client to forward its log output to the server.
 
 .SS Options for attach
 .TP
+\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+Use OpenGL accelerated rendering on the client.
+The default is to detect if the graphics card and drivers are
+supported (\fIauto\fP mode), but one can also disable OpenGL (\fIno\fP)
+or force it enabled (\fIyes\fP).
+.TP
 \fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
 Select the level of compression xpra will use when transmitting data
 over the network.
@@ -791,6 +809,7 @@ Values range from 1 (lowest quality, high compression - generally unusable)
 to 100 (highest quality, low compression).
 Specify a value of zero to let the system tune the quality dynamically
 to achieve the best bandwidth usage possible.
+It is usually best not to use this option and use \fBmin\-quality\fP instead.
 .TP
 \fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP
 This option sets the minimum encoding quality allowed when the quality option is
@@ -801,6 +820,7 @@ This option sets the encoding speed.  Slower compresses more, faster
 will give better latency.
 The system normally uses a variable speed, this option forces
 a fixed speed setting to be used instead.
+It is usually best not to use this option and use \fBmin\-speed\fP instead.
 .TP
 \fB\-\-min\-speed\fP=\fIMIN\-SPEED\fP
 This option sets the minimum encoding speed allowed when the speed option is
@@ -810,9 +830,8 @@ set to automatic mode.
 This option sets a delay after which the windows are automatically
 refreshed using a lossless frame.
 The delay is a floating-point number and is in seconds.
-This option is enabled by default with a delay of 1 second.
-This option is only relevant when using a lossy encoding
-with a quality lower than 95%.
+This option is enabled by default with a delay of 0.25 seconds.
+This option is only relevant when using a lossy encoding.
 .TP
 \fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP
 Can be specified multiple times to add multiple key shortcuts.

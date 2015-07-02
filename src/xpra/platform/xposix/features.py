@@ -4,11 +4,8 @@
 # later version. See the file COPYING for details.
 
 #don't bother trying to forward system tray with Ubuntu's "unity":
-SHADOW_SUPPORTED = True
 from xpra.util import is_unity
 SYSTEM_TRAY_SUPPORTED = not is_unity()
-MMAP_SUPPORTED = True
-CAN_DAEMONIZE = True
 DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 CLIPBOARDS=["CLIPBOARD", "PRIMARY", "SECONDARY"]

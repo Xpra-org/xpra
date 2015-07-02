@@ -53,8 +53,8 @@ def get_nvenc_license_keys(nvenc_version=0):
         keys = []
         try:
             #see read_xpra_defaults for an explanation of paths
-            from xpra.platform.paths import get_default_conf_dir, get_system_conf_dir, get_user_conf_dir
-            dirs = [get_default_conf_dir(), get_system_conf_dir(), get_user_conf_dir()]
+            from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
+            dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
             for d in dirs:
                 if not d:
                     continue

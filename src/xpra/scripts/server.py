@@ -20,7 +20,7 @@ import traceback
 
 from xpra.scripts.main import TCP_NODELAY, warn, InitException
 from xpra.os_util import SIGNAMES
-from xpra.dotxpra import DotXpra, ServerSockInUse
+from xpra.dotxpra import DotXpra, norm_makepath
 
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
@@ -137,7 +137,7 @@ fi
 """)
     return "".join(script)
 
-def write_runner_shell_script(dotxpra, contents, overwrite=True):
+def write_runner_shell_script(contents, overwrite=True):
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
     # will clobber the rest.  This isn't great, but the tradeoff is that it
@@ -146,7 +146,11 @@ def write_runner_shell_script(dotxpra, contents, overwrite=True):
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    scriptpath = os.path.join(dotxpra.confdir(), "run-xpra")
+    from xpra.platform.paths import do_get_script_bin_dir
+    scriptdir = os.path.expanduser(do_get_script_bin_dir())
+    if not os.path.exists(scriptdir):
+        os.mkdir(scriptdir, 0o700)
+    scriptpath = os.path.join(scriptdir, "run-xpra")
     if os.path.exists(scriptpath) and not overwrite:
         return
     # Write out a shell-script so that we can start our proxy in a clean
@@ -270,6 +274,41 @@ def parse_bind_tcp(bind_tcp):
     return tcp_sockets
 
 
+def normalize_local_display_name(local_display_name):
+    if not local_display_name.startswith(":"):
+        local_display_name = ":" + local_display_name
+    if "." in local_display_name:
+        local_display_name = local_display_name[:local_display_name.rindex(".")]
+    assert local_display_name.startswith(":")
+    for char in local_display_name[1:]:
+        assert char in "0123456789", "invalid character in display name: %s" % char
+    return local_display_name
+
+# Same as socket_path, but preps for the server:
+def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wait_for_unknown=0):
+    if not clobber:
+        state = dotxpra.get_server_state(sockpath, 1)
+        counter = 0
+        while state==dotxpra.UNKNOWN and counter<wait_for_unknown:
+            if counter==0:
+                sys.stdout.write("%s is not responding, waiting for it to timeout before clearing it" % sockpath)
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            counter += 1
+            time.sleep(1)
+            state = dotxpra.get_server_state(sockpath)
+        if counter>0:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+        if state not in (dotxpra.DEAD, dotxpra.UNKNOWN):
+            raise InitException("You already have an xpra server running at %s\n"
+                     "  (did you want 'xpra upgrade'?)"
+                     % (local_display_name,))
+    if os.path.exists(sockpath):
+        os.unlink(sockpath)
+    return sockpath
+
+
 def setup_local_socket(dotxpra, display_name, clobber, mmap_group, socket_permissions):
     if sys.platform.startswith("win"):
         return None, None
@@ -277,14 +316,12 @@ def setup_local_socket(dotxpra, display_name, clobber, mmap_group, socket_permis
     log = Logger("network")
     #print("creating server socket %s" % sockpath)
     try:
-        display_name = dotxpra.normalize_local_display_name(display_name)
-        sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
-    except ServerSockInUse:
-        raise InitException("You already have an xpra server running at %s\n"
-                     "  (did you want 'xpra upgrade'?)"
-                     % (display_name,))
+        dotxpra.mksockdir()
+        display_name = normalize_local_display_name(display_name)
+        sockpath = dotxpra.socket_path(display_name)
     except Exception as e:
         raise InitException("socket path error: %s" % e)
+    setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
     sock = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
     def cleanup_socket():
         log.info("removing socket %s", sockpath)
@@ -403,7 +440,7 @@ def open_log_file(logpath):
         os.rename(logpath, logpath + ".old")
     return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
 
-def select_log_file(dotxpra, log_file, display_name):
+def select_log_file(log_dir, log_file, display_name):
     """ returns the log file path we should be using given the parameters,
         this may return a temporary logpath if display_name is not available.
     """
@@ -411,12 +448,12 @@ def select_log_file(dotxpra, log_file, display_name):
         if os.path.isabs(log_file):
             logpath = log_file
         else:
-            logpath = os.path.join(dotxpra.sockdir(), log_file)
+            logpath = os.path.join(log_dir, log_file)
         logpath = shellsub(logpath, {"DISPLAY" : display_name})
     elif display_name:
-        logpath = dotxpra.log_path(display_name) + ".log"
+        logpath = norm_makepath(log_dir, display_name) + ".log"
     else:
-        logpath = os.path.join(dotxpra.sockdir(), "tmp_%d.log" % os.getpid())
+        logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
     return logpath
 
 
@@ -625,6 +662,8 @@ def check_xvfb_process(xvfb=None):
     log = Logger("server")
     log.error("")
     log.error("Xvfb command has terminated! xpra cannot continue")
+    log.error(" if the display is already running, try a different one,")
+    log.error(" or use the --use-display flag")
     log.error("")
     return False
 
@@ -663,6 +702,16 @@ def verify_display_ready(xvfb, display_name, shadowing):
         log.error("")
         return  None
     return display
+
+def guess_xpra_display(socket_dir, socket_dirs):
+    dotxpra = DotXpra(socket_dir, socket_dirs)
+    results = dotxpra.sockets()
+    live = [display for state, display in results if state==DotXpra.LIVE]
+    if len(live)==0:
+        raise InitException("no existing xpra servers found")
+    if len(live)>1:
+        raise InitException("too many existing xpra servers found, cannot guess which one to use")
+    return live[0]
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args):
@@ -709,8 +758,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         from xpra.scripts.main import guess_X11_display
         display_name = guess_X11_display(opts.socket_dir)
     elif upgrading and len(extra_args)==0:
-        from xpra.scripts.main import guess_xpra_display
-        display_name = guess_xpra_display(opts.socket_dir)
+        display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
             error_cb("too many extra arguments: only expected a display number")
@@ -725,8 +773,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
                 error_cb("displayfd support is not enabled on this system, you must specify the display to use")
             if opts.use_display:
                 #only use automatic guess for xpra displays and not X11 displays:
-                from xpra.scripts.main import guess_xpra_display     #@Reimport
-                display_name = guess_xpra_display(opts.socket_dir)
+                display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
             else:
                 # We will try to find one automaticaly
                 # Use the temporary magic value 'S' as marker:
@@ -741,8 +788,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 
-    dotxpra = DotXpra(opts.socket_dir)
-
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     script = xpra_runner_shell_script(xpra_file, os.getcwd(), opts.socket_dir)
@@ -756,7 +801,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             opts.password_file = os.path.abspath(opts.password_file)
         # At this point we may not know the display name,
         # so log_filename0 may point to a temporary file which we will rename later
-        log_filename0 = select_log_file(dotxpra, opts.log_file, display_name)
+        log_filename0 = select_log_file(opts.log_dir, opts.log_file, display_name)
         logfd = open_log_file(log_filename0)
         assert logfd > 2
         stdout, stderr = daemonize(logfd)
@@ -771,7 +816,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if os.name=="posix":
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
-        write_runner_shell_script(dotxpra, script)
+        write_runner_shell_script(script)
 
     from xpra.log import Logger
     log = Logger("server")
@@ -820,7 +865,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         os.environ["DISPLAY"] = display_name
 
     if opts.daemon:
-        log_filename1 = select_log_file(dotxpra, opts.log_file, display_name)
+        log_filename1 = select_log_file(opts.log_dir, opts.log_file, display_name)
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             os.rename(log_filename0, log_filename1)
@@ -833,6 +878,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         return  1
 
     #setup unix domain socket:
+    dotxpra = DotXpra(opts.socket_dir or opts.socket_dirs[0])
     socket, cleanup_socket = setup_local_socket(dotxpra, display_name, clobber, opts.mmap_group, opts.socket_permissions)
     if socket:      #win32 returns None!
         sockets.append(socket)

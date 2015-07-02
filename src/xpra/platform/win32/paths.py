@@ -27,33 +27,62 @@ def _get_data_dir():
         os.mkdir(data_dir)
     return data_dir
 
-def get_icon_dir():
+def do_get_icon_dir():
+    from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
 
 
-def get_system_conf_dir():
+def do_get_system_conf_dirs():
     #ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP
     #or: "C:\ProgramData\Xpra" with Vista onwards
     try:
         from win32com.shell import shell, shellcon      #@UnresolvedImport
         common_appdata = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, None, 0)
-        return os.path.join(common_appdata, "Xpra")
+        return [os.path.join(common_appdata, "Xpra")]
     except:
-        return None
+        return []
 
-def get_default_conf_dir():
+def do_get_default_conf_dirs():
     #ie: C:\Program Files\Xpra\
-    return get_app_dir()
+    from xpra.platform.paths import get_app_dir
+    return [get_app_dir()]
 
-def get_user_conf_dir():
+def do_get_user_conf_dirs():
     #ie: "C:\Documents and Settings\<user name>\Application Data\Xpra" with XP
     #or: "C:\Users\<user name>\AppData\Roaming" with Visa onwards
-    return os.environ.get("XPRA_CONF_DIR", _get_data_dir())
+    return [_get_data_dir()]
 
 
-def get_default_socket_dir():
+def get_registry_value(key, reg_path, entry):
+    import win32api             #@UnresolvedImport
+    hKey = win32api.RegOpenKey(key, reg_path)
+    value, _ = win32api.RegQueryValueEx(hKey, entry)
+    win32api.RegCloseKey(hKey)
+    return    value
+
+def do_get_download_dir():
+    #TODO: use "FOLDERID_Downloads":
+    # FOLDERID_Downloads = "{374DE290-123F-4565-9164-39C4925E467B}"
+    # maybe like here:
+    # https://gist.github.com/mkropat/7550097
+    #from win32com.shell import shell, shellcon
+    #shell.SHGetFolderPath(0, shellcon.CSIDL_MYDOCUMENTS, None, 0)
+    try:
+        #use the internet explorer registry key:
+        #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
+        import win32con             #@UnresolvedImport
+        DOWNLOAD_PATH = get_registry_value(win32con.HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer", "Download Directory")
+    except:
+        #fallback to what the documentation says is the default:
+        DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
+        if not os.path.exists(DOWNLOAD_PATH):
+            DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "Downloads")
+
+
+def do_get_socket_dirs():
     #ie: C:\Documents and Settings\Username\Application Data\Xpra
-    return os.environ.get("XPRA_SOCKET_DIR", _get_data_dir())
+    return [_get_data_dir()]
+
 
 APP_DIR = None
 if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe"):    #@UndefinedVariable
@@ -68,19 +97,16 @@ if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe")
     #so we can easily load DLLs with ctypes:
     os.environ['PATH'] = APP_DIR + ';' + os.environ['PATH']
 
-def get_resources_dir():
+def do_get_resources_dir():
+    from xpra.platform.paths import get_app_dir
     return get_app_dir()
 
-def get_app_dir():
+def do_get_app_dir():
     global APP_DIR
     if APP_DIR is not None:
         return APP_DIR
     from xpra.platform.paths import default_get_app_dir   #imported here to prevent import loop
     return default_get_app_dir()
 
-def get_sound_command():
-    cs = os.environ.get("XPRA_SOUND_COMMAND")
-    if cs:
-        import shlex
-        return shlex.split(cs)
+def do_get_sound_command():
     return ["xpra_cmd.exe"]

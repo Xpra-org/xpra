@@ -33,7 +33,7 @@ from xpra.make_thread import make_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
 from xpra.scripts.main import SOCKET_TIMEOUT
-from xpra.dotxpra import DotXpra
+from xpra.dotxpra import DotXpra, norm_makepath
 from xpra.net.bytestreams import SocketConnection
 from multiprocessing import Process
 
@@ -227,9 +227,9 @@ class ProxyInstanceProcess(Process):
 
 
     def create_control_socket(self):
+        assert self.socket_dir
+        sockpath = norm_makepath(self.socket_dir, ":proxy-%s" % os.getpid())
         dotxpra = DotXpra(self.socket_dir)
-        name = "proxy-%s" % os.getpid()
-        sockpath = dotxpra.norm_make_path(name, dotxpra.sockdir())
         state = dotxpra.get_server_state(sockpath)
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
             log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)

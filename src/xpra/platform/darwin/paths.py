@@ -13,7 +13,7 @@ def debug(*msg):
     return None
 
 
-def get_resources_dir():
+def do_get_resources_dir():
     rsc = None
     RESOURCES = "/Resources/"
     #FUGLY warning: importing gtkosx_application causes the dock to appear,
@@ -49,7 +49,8 @@ def get_resources_dir():
     debug("get_resources_dir()=%s", rsc)
     return rsc
 
-def get_app_dir():
+def do_get_app_dir():
+    from xpra.platform.paths import get_resources_dir
     rsc = get_resources_dir()
     CONTENTS = "/Contents/"
     i = rsc.rfind(CONTENTS)
@@ -58,30 +59,76 @@ def get_app_dir():
     debug("get_app_dir()=%s", rsc)
     return rsc  #hope for the best..
 
-def get_icon_dir():
-    rsc = get_resources_dir()
-    i = os.path.join(rsc, "share", "xpra", "icons")
+def do_get_icon_dir():
+    from xpra.platform.paths import get_resources_dir
+    i = os.path.join(get_resources_dir(), "share", "xpra", "icons")
     debug("get_icon_dir()=%s", i)
     return i
 
 
-def get_default_conf_dir():
+def do_get_default_conf_dirs():
     #the default config file we install into the Resources folder:
     #ie: /Volumes/Xpra/Xpra.app/Contents/Resources/etc
-    return os.path.join(get_resources_dir(), "etc")
+    from xpra.platform.paths import get_resources_dir
+    return [os.path.join(get_resources_dir(), "etc")]
 
-def get_system_conf_dir():
+def do_get_system_conf_dirs():
     #the system wide configuration directory
+    try:
+        from Foundation import  NSSearchPathForDirectoriesInDomains, NSApplicationSupportDirectory, NSLocalDomainMask, NSSystemDomainMask  #@UnresolvedImport
+        dirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSLocalDomainMask|NSSystemDomainMask, False)
+        return list(dirs)
+    except:
+        pass
+    #fallback to hardcoded:
     default_conf_dir = "/Library/Application Support/Xpra"
-    return os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)
+    return [os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)]
+
+def do_get_user_conf_dirs():
+    #the system wide configuration directory
+    try:
+        #when running sandboxed, it may look like this:
+        #~/Library/Containers/<bundle_id>/Data/Library/Application Support/
+        from Foundation import  NSSearchPathForDirectoriesInDomains, NSApplicationSupportDirectory, NSUserDomainMask    #@UnresolvedImport
+        dirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, False)
+        return list(dirs)
+    except:
+        pass
+    #fallback to hardcoded:
+    default_conf_dir = "/Library/Application Support/Xpra"
+    return [os.environ.get("XPRA_USER_CONF_DIR", default_conf_dir)]
+
+def do_get_default_log_dir():
+    try:
+        from Foundation import  NSSearchPathForDirectoriesInDomains, NSLibraryDirectory, NSUserDomainMask    #@UnresolvedImport
+        dirs = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, False)
+        #ie: ~/Library/
+        library_dir = dirs[0]
+        return os.path.join(library_dir, "Xpra")
+    except:
+        pass
+    return "~/Library/Logs"
+
+def do_get_socket_dirs():
+    return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
 
 
-def get_sound_command():
-    cs = os.environ.get("XPRA_SOUND_COMMAND")
-    if cs:
-        import shlex
-        return shlex.split(cs)
+def do_get_download_dir():
+    d = "~/Downloads"
+    try:
+        from Foundation import  NSSearchPathForDirectoriesInDomains, NSDownloadsDirectory, NSUserDomainMask     #@UnresolvedImport
+        d = NSSearchPathForDirectoriesInDomains(NSDownloadsDirectory, NSUserDomainMask, False)[0]
+        #(should be "~/Downloads")
+    except:
+        pass
+    if not os.path.exists(os.path.expanduser(d)):
+        return "~"
+    return d
+
+
+def do_get_sound_command():
     #try to use the subapp:
+    from xpra.platform.paths import get_app_dir
     base = get_app_dir()
     subapp = os.path.join(base, "Xpra_NoDock.app", "Contents")
     if os.path.exists(subapp) and os.path.isdir(subapp):

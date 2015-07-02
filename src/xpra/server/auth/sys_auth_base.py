@@ -11,9 +11,11 @@ log = Logger("auth")
 
 
 socket_dir = None
+socket_dirs = None
 def init(opts):
-    global socket_dir
+    global socket_dir, socket_dirs
     socket_dir = opts.socket_dir
+    socket_dirs = opts.socket_dirs
 
 
 class SysAuthenticator(object):
@@ -79,7 +81,7 @@ class SysAuthenticator(object):
         uid = self.get_uid()
         gid = self.get_gid()
         try:
-            sockdir = DotXpra(socket_dir, actual_username=self.username)
+            sockdir = DotXpra(socket_dir, socket_dirs, actual_username=self.username)
             results = sockdir.sockets(check_uid=uid)
             displays = [display for state, display in results if state==DotXpra.LIVE]
         except Exception as e:

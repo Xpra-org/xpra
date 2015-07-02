@@ -23,10 +23,12 @@ log = Logger("auth")
 
 password_file = None
 socket_dir = None
+socket_dirs = None
 def init(opts):
-    global password_file, socket_dir
+    global password_file, socket_dir, socket_dirs
     password_file = opts.password_file
     socket_dir = opts.socket_dir
+    socket_dirs = opts.socket_dirs
 
 
 def parseOptions(s):
@@ -46,7 +48,7 @@ def parseOptions(s):
 auth_data = None
 auth_data_time = None
 def load_auth_file():
-    global auth_data, auth_data_time, password_file, socket_dir
+    global auth_data, auth_data_time, password_file, socket_dir, socket_dirs
     ptime = 0
     if password_file:
         if not os.path.exists(password_file):
@@ -80,7 +82,7 @@ def load_auth_file():
             if line.find("|")<0:
                 #assume old style file with just the password
                 #get all the displays for the current user:
-                sockdir = DotXpra(socket_dir)
+                sockdir = DotXpra(socket_dir, socket_dirs)
                 results = sockdir.sockets()
                 displays = [display for state, display in results if state==DotXpra.LIVE]
                 auth_data[""] = line, os.getuid(), os.getgid(), displays, {}, {}

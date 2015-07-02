@@ -175,7 +175,7 @@ class ServerCore(object):
         self.session_name = opts.session_name
         set_application_name(self.session_name or "Xpra")
 
-        self._socket_dir = opts.socket_dir
+        self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
         self._tcp_proxy = opts.tcp_proxy
         self.encryption_keyfile = opts.encryption_keyfile
         self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile

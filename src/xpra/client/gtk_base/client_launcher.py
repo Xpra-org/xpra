@@ -112,11 +112,12 @@ class ApplicationWindow:
         # Default connection options
         self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=LAUNCHER_VALIDATION)
         #TODO: the fixup does not belong here?
-        from xpra.scripts.main import fixup_video_all_or_none, fixup_encodings, fixup_compression, fixup_packetencoding
+        from xpra.scripts.main import fixup_video_all_or_none, fixup_encodings, fixup_compression, fixup_packetencoding, fixup_socketdirs
         fixup_video_all_or_none(self.config)
         fixup_encodings(self.config)
         fixup_compression(self.config)
         fixup_packetencoding(self.config)
+        fixup_socketdirs(self.config)
         #what we save by default:
         self.config_keys = set(SAVED_FIELDS)
         def raise_exception(*args):

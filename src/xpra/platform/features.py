@@ -4,32 +4,29 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os.path
 import sys
-
 #defaults which may be overriden by platform_import:
 LOCAL_SERVERS_SUPPORTED = sys.version_info[0]<3
-SHADOW_SUPPORTED = False
-MMAP_SUPPORTED = False
+SHADOW_SUPPORTED = True
+CAN_DAEMONIZE = True
+MMAP_SUPPORTED = True
 SYSTEM_TRAY_SUPPORTED = False
-DEFAULT_SSH_CMD = False
-GOT_PASSWORD_PROMPT_SUGGESTION = ""
+
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = False
 CLIPBOARD_GREEDY = False
 CLIPBOARD_NATIVE_CLASS = None
-CAN_DAEMONIZE = False
+
 UI_THREAD_POLLING = 0
 OPEN_COMMAND = "xdg-open"
-DOWNLOAD_PATH = "~/Downloads"
-if not os.path.exists(os.path.expanduser(DOWNLOAD_PATH)):
-    DOWNLOAD_PATH = "~"
 
 DEFAULT_PULSEAUDIO_COMMAND = "pulseaudio --start --daemonize=false --system=false " + \
                                     "--exit-idle-time=-1 -n --load=module-suspend-on-idle " + \
                                     "--load=module-null-sink --load=module-native-protocol-unix "+ \
                                     "--log-level=2 --log-target=stderr"
 DEFAULT_XVFB_COMMAND = "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY"
+DEFAULT_SSH_CMD = False
+GOT_PASSWORD_PROMPT_SUGGESTION = ""
 
 
 _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
@@ -41,7 +38,6 @@ _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "DEFAULT_PULSEAUDIO_COMMAND",
                 "DEFAULT_XVFB_COMMAND",
                 "GOT_PASSWORD_PROMPT_SUGGESTION",
-                "DOWNLOAD_PATH",
                 "CLIPBOARDS",
                 "CLIPBOARD_WANT_TARGETS",
                 "CLIPBOARD_GREEDY",

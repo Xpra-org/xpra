@@ -23,6 +23,9 @@ def debug(*args):
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
+POSIX = os.name=="posix"
+WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
 
 ENCRYPTION_CIPHERS = []
 try:
@@ -211,7 +214,7 @@ def read_xpra_defaults():
         returns a dict with values as strings and arrays of strings.
         If the <conf_dir> is not specified, we figure out its location.
     """
-    from xpra.platform.paths import get_default_conf_dir, get_system_conf_dir, get_user_conf_dir
+    from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
     #                          (ie: "C:\Program Files\Xpra\" on win32)
@@ -223,7 +226,7 @@ def read_xpra_defaults():
     # * user config            (ie: "~/.xpra/" on all Posix, including OSX)
     #                          (ie: "C:\Documents and Settings\Username\Application Data\Xpra" with XP)
     #                          (ie: "C:\Users\<user name>\AppData\Roaming" with Visa onwards)
-    dirs = [get_default_conf_dir(), get_system_conf_dir(), get_user_conf_dir()]
+    dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
     defaults = {}
     for d in dirs:
         if not d:
@@ -263,6 +266,7 @@ OPTION_TYPES = {
                     "ssh"               : str,
                     "xvfb"              : str,
                     "socket-dir"        : str,
+                    "log-dir"           : str,
                     "log-file"          : str,
                     "border"            : str,
                     "max-size"          : str,
@@ -325,6 +329,7 @@ OPTION_TYPES = {
                     "remote-logging"    : bool,
                     "av-sync"           : bool,
                     #arrays of strings:
+                    "socket-dirs"       : list,
                     "encodings"         : list,
                     "video-encoders"    : list,
                     "csc-modules"       : list,
@@ -347,7 +352,8 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_CMD, DOWNLOAD_PATH, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
+    from xpra.platform.features import DEFAULT_SSH_CMD, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
+    from xpra.platform.paths import get_download_dir, get_default_log_dir
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -375,12 +381,13 @@ def get_defaults():
                     "ssh"               : DEFAULT_SSH_CMD,
                     "xvfb"              : DEFAULT_XVFB_COMMAND,
                     "socket-dir"        : "",
+                    "log-dir"           : get_default_log_dir(),
                     "log-file"          : "$DISPLAY.log",
                     "border"            : "auto,0",
                     "max-size"          : "",
                     "display"           : "",
                     "tcp-proxy"         : "",
-                    "download-path"     : DOWNLOAD_PATH,
+                    "download-path"     : get_download_dir(),
                     "open-command"      : OPEN_COMMAND,
                     "lpadmin"           : "lpadmin",
                     "debug"             : "",
@@ -406,7 +413,7 @@ def get_defaults():
                     "tray"              : True,
                     "clipboard"         : True,
                     "pulseaudio"        : True,
-                    "dbus-proxy"        : os.name=="posix" and not sys.platform.startswith("darwin"),
+                    "dbus-proxy"        : POSIX and not OSX,
                     "mmap"              : True,
                     "mmap-group"        : False,
                     "speaker"           : ["disabled", "on"][has_sound_support],
@@ -417,7 +424,7 @@ def get_defaults():
                     "cursors"           : True,
                     "bell"              : True,
                     "notifications"     : True,
-                    "xsettings"         : os.name=="posix",
+                    "xsettings"         : POSIX and not OSX,
                     "system-tray"       : True,
                     "sharing"           : False,
                     "delay-tray"        : False,
@@ -425,15 +432,16 @@ def get_defaults():
                     "exit-with-children": False,
                     "exit-with-client"  : False,
                     "start-new-commands": False,
-                    "remote-logging"    : sys.platform.startswith("win") or sys.platform.startswith("darwin"),
+                    "remote-logging"    : WIN32 or OSX,
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "opengl"            : OPENGL_DEFAULT,
-                    "mdns"              : not sys.platform.startswith("win"),
+                    "mdns"              : not WIN32,
                     "file-transfer"     : True,
                     "printing"          : True,
                     "open-files"        : False,
-                    "swap-keys"         : sys.platform.startswith("darwin"),    #only used on osx
+                    "swap-keys"         : OSX,  #only used on osx
+                    "socket-dirs"       : [],
                     "encodings"         : ["all"],
                     "video-encoders"    : ["all"],
                     "csc-modules"       : ["all"],
