@@ -412,7 +412,10 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
     from xpra.platform.gui import gl_check
     warning = gl_check()
     if warning:
-        gl_check_error(warning)
+        if force_enable:
+            log.warn("Warning: trying to continue despite '%s'" % warning)
+        else:
+            gl_check_error(warning)
 
     props = {}
     #this will import gtk.gtkgl / gdkgl or gi.repository.GtkGLExt / GdkGLExt:
@@ -425,7 +428,7 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         display_mode &= ~MODE_DOUBLE
         glconfig = Config_new_by_mode(display_mode)
     if not glconfig:
-        raise Exception("cannot setup an OpenGL context")
+        gl_check_error("cannot setup an OpenGL context")
     props["display_mode"] = get_MODE_names(display_mode)
     props["glconfig"] = glconfig
     props["has_alpha"] = glconfig.has_alpha()
