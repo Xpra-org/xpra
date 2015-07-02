@@ -1549,9 +1549,10 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             cmd.append("--exit-with-client")
         #add a unique uuid to the server env:
         server_env = os.environ.copy()
-        import uuid
-        new_server_uuid = str(uuid.uuid4())
-        server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
+        if display_name[0]=='S':
+            import uuid
+            new_server_uuid = str(uuid.uuid4())
+            server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
         def setsid():
             os.setsid()
         proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
