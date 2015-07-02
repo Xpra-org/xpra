@@ -115,7 +115,7 @@ class _ErrorManager(object):
                 self._exit(need_sync)
             except XError as ee:
                 log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
-            raise e
+            raise
         self._exit(need_sync)
         return value
 
@@ -169,7 +169,7 @@ class XSyncContext(object):
         except XError as ee:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
-                raise ee
+                raise
             log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
         #raise the original exception:
         return False
