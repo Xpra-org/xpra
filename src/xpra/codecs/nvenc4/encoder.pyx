@@ -1340,6 +1340,7 @@ cdef class Encoder:
 
             #load the kernel:
             self.kernel_name, self.kernel = kernel_gen(self.cuda_device_id)
+            assert self.kernel, "failed to load %s for device %i" % (self.kernel_name, self.cuda_device_id)
 
             #allocate CUDA input buffer (on device) 32-bit RGB
             #(and make it bigger just in case - subregions from XShm can have a huge rowstride):
