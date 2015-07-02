@@ -780,10 +780,6 @@ def build_xpra_conf(install_dir):
     xvfb_command, has_displayfd, _ = detect_xorg_setup(install_dir)
     with open("etc/xpra/xpra.conf.in", "r") as f_in:
         template  = f_in.read()
-    if WIN32:
-        ssh_command = "plink -ssh -agent"
-    else:
-        ssh_command = "ssh -x"
     env_strs = []
     if os.name=="posix":
         env_strs += [
@@ -803,11 +799,12 @@ def build_xpra_conf(install_dir):
         return ["no", "yes"][int(b)]
     env = "\n".join(envstr(*x) for x in env_strs)
     conf_dir = get_conf_dir(install_dir)
+    from xpra.platform.features import DEFAULT_SSH_COMMAND
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     SUBS = {'xvfb_command'   : xvfb_command,
-            'ssh_command'    : ssh_command,
+            'ssh_command'    : DEFAULT_SSH_COMMAND,
             'remote_logging' : bstr(OSX or WIN32),
             'env'            : env,
             'has_displayfd'  : bstr(has_displayfd),

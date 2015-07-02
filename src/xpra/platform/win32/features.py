@@ -8,7 +8,6 @@
 CAN_DAEMONIZE = False
 MMAP_SUPPORTED = False
 SYSTEM_TRAY_SUPPORTED = True
-DEFAULT_SSH_CMD = "plink"
 
 GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
@@ -20,3 +19,4 @@ CLIPBOARD_NATIVE_CLASS = ("xpra.clipboard.translated_clipboard", "TranslatedClip
 DEFAULT_PULSEAUDIO_COMMAND = ""
 DEFAULT_XVFB_COMMAND = ""
 PRINT_COMMAND = ""
+DEFAULT_SSH_COMMAND="plink -ssh -agent"

@@ -352,7 +352,7 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_CMD, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
     from xpra.platform.paths import get_download_dir, get_default_log_dir
     try:
         from xpra.platform.info import get_username
@@ -378,7 +378,7 @@ def get_defaults():
                     "tcp-encryption"    : "",
                     "encryption-keyfile": "",
                     "tcp-encryption-keyfile": "",
-                    "ssh"               : DEFAULT_SSH_CMD,
+                    "ssh"               : DEFAULT_SSH_COMMAND,
                     "xvfb"              : DEFAULT_XVFB_COMMAND,
                     "socket-dir"        : "",
                     "log-dir"           : get_default_log_dir(),
@@ -405,7 +405,7 @@ def get_defaults():
                     "file-size-limit"   : 10,
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
-                    "auto-refresh-delay": 0.25,
+                    "auto-refresh-delay": 0.15,
                     "daemon"            : True,
                     "use-display"       : False,
                     "displayfd"         : False,
@@ -456,10 +456,10 @@ def get_defaults():
                                            "Meta+Shift+F8:magic_key",
                                            "Meta+Shift+F11:show_session_info"
                                            ],
-                    "bind-tcp"          : None,
-                    "start"             : None,
-                    "start-child"       : None,
-                    "env"               : None,
+                    "bind-tcp"          : [],
+                    "start"             : [],
+                    "start-child"       : [],
+                    "env"               : [],
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:

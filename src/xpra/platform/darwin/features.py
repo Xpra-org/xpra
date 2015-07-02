@@ -12,5 +12,5 @@ CLIPBOARD_NATIVE_CLASS = ("xpra.platform.darwin.osx_clipboard", "OSXClipboardPro
 
 UI_THREAD_POLLING = 500    #poll every 500 ms
 
-DEFAULT_SSH_CMD = "ssh"
+DEFAULT_SSH_COMMAND = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"

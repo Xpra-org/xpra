@@ -12,6 +12,7 @@ import weakref
 
 LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
 LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s")
+NOPREFIX_FORMAT = "%(message)s"
 
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)

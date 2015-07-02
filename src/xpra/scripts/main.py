@@ -292,6 +292,7 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog control DISPLAY command [arg1] [arg2]..\n",
                         "\t%prog print DISPLAY filename",
                         "\t%prog version [DISPLAY]\n"
+                        "\t%prog showconfig\n"
                       ]
     server_modes = []
     if supports_server:
@@ -961,6 +962,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
             write_runner_shell_script(script, False)
             return 0
+        elif mode == "showconfig":
+            return run_showconfig(options, args)
         else:
             error_cb("invalid mode '%s'" % mode)
             return 1
@@ -1710,6 +1713,33 @@ def run_list(error_cb, opts, extra_args):
         state = dotxpra.get_server_state(sockpath)
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
     return 0
+
+def run_showconfig(options, args):
+    from xpra.colorstreamhandler import ColorStreamHandler
+    from xpra.log import Logger, NOPREFIX_FORMAT
+    from logging import Formatter
+    csh = ColorStreamHandler(sys.stdout)
+    csh.setFormatter(Formatter(NOPREFIX_FORMAT))
+    setloghandler(csh)
+    log = Logger("util")
+    if args:
+        log.warn("extra command arguments ignored")
+    log.info("Default Configuration:")
+    from xpra.scripts.config import get_defaults
+    d = get_defaults()
+    NODEFAULTS = ["socket-dirs", "env", "xvfb"]
+    marker = object()
+    for k in sorted(d.keys()):
+        dv = d[k]
+        cv = getattr(options, name_to_field(k), marker)
+        if cv==marker:
+            continue    #virtual field with no command line equivallent, don't show it
+        if cv!=dv and k not in NODEFAULTS:
+            if dv==["all"]:
+                dv = "all"
+            log.warn("%-20s= %-32s  (default=%s)", k, cv, dv)
+        else:
+            log.info("%-20s= %s", k, cv)
 
 
 if __name__ == "__main__":
