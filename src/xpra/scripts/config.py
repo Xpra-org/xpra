@@ -37,6 +37,7 @@ DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 POSIX = os.name=="posix"
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
+PYTHON3 = sys.version_info[0]>=3
 
 ENCRYPTION_CIPHERS = []
 try:
@@ -387,7 +388,7 @@ def get_defaults():
         username = get_username()
     except:
         username = ""
-    if WIN32 or OSX:
+    if WIN32 or OSX or PYTHON3:
         xvfb = ""
     elif XDUMMY:
         xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER)

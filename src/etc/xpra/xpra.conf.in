@@ -347,7 +347,7 @@ mdns = %(mdns)s
 # Forward client dbus rpc requests:
 # (requires client configuration)
 #dbus-proxy = no
-dbus-proxy = yes
+dbus-proxy = %(dbus_proxy)s
 
 # Input methods
 # To disable input method completely:

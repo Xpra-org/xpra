@@ -780,6 +780,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
+    #FIXME: we should probably get these values from the default config instead
     SUBS = {'xvfb_command'   : " ".join(xvfb_command),
             'ssh_command'    : DEFAULT_SSH_COMMAND,
             'remote_logging' : bstr(OSX or WIN32),
@@ -790,6 +791,7 @@ def build_xpra_conf(install_dir):
             'socket_dirs'    : "\nsocket-dirs = ".join(socket_dirs),
             'log_dir'        : get_default_log_dir(),
             'mdns'           : bstr(not WIN32),
+            'dbus_proxy'     : bstr(not OSX and not WIN32),
             'pulseaudio'     : bstr(not OSX and not WIN32)}
     conf = template % SUBS
     #get conf dir for install, without stripping the build root
