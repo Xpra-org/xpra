@@ -218,7 +218,18 @@ compression_level = 1
 #packet-encoders = all
 packet-encoders = rencode, bencode, yaml
 
-# Socket directory:
+# Log files:
+#log-dir = ~/.xpra
+#log-dir = /tmp
+log-dir = %(log_dir)s
+
+# Socket directories (may be specified more than once):
+#socket-dirs = /tmp
+#socket-dirs = ~/.xpra
+#socket-dirs = /var/run/xpra
+socket-dirs = %(socket_dirs)s
+
+# Socket directory (overrides socket-dirs):
 #socket-dir = /tmp
 #socket-dir = ~/.xpra
 
