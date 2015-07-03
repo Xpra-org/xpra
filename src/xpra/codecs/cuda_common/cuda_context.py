@@ -68,7 +68,9 @@ def init_all_devices():
     DEVICE_INFO = {}
     log("CUDA driver version=%s", driver.get_driver_version())
     ngpus = driver.Device.count()
-    log.info("CUDA %s / PyCUDA %s, found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
+    if ngpus==0:
+        log.info("CUDA %s / PyCUDA %s, no devices found", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT)
+        return DEVICES
     da = driver.device_attribute
     cf = driver.ctx_flags
     for i in range(ngpus):
@@ -83,21 +85,25 @@ def init_all_devices():
                 log.warn("skipping device %s (cannot map host memory)", device_info(device))
                 continue
             context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-            log("   created context=%s", context)
-            log("   api version=%s", context.get_api_version())
-            free, total = driver.mem_get_info()
-            log("   memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
-            log("   multi-processors: %s, clock rate: %s", device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
-            log("   max block sizes: (%s, %s, %s)", device.get_attribute(da.MAX_BLOCK_DIM_X), device.get_attribute(da.MAX_BLOCK_DIM_Y), device.get_attribute(da.MAX_BLOCK_DIM_Z))
-            log("   max grid sizes: (%s, %s, %s)", device.get_attribute(da.MAX_GRID_DIM_X), device.get_attribute(da.MAX_GRID_DIM_Y), device.get_attribute(da.MAX_GRID_DIM_Z))
-            max_width = device.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
-            max_height = device.get_attribute(da.MAXIMUM_TEXTURE2D_HEIGHT)
-            log("   maximum texture size: %sx%s", max_width, max_height)
-            log("   max pitch: %s", device.get_attribute(da.MAX_PITCH))
-            SMmajor, SMminor = device.compute_capability()
-            compute = (SMmajor<<4) + SMminor
-            log("   compute capability: %#x (%s.%s)", compute, SMmajor, SMminor)
             try:
+                log("   created context=%s", context)
+                log("   api version=%s", context.get_api_version())
+                free, total = driver.mem_get_info()
+                log("   memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+                log("   multi-processors: %s, clock rate: %s", device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
+                log("   max block sizes: (%s, %s, %s)", device.get_attribute(da.MAX_BLOCK_DIM_X), device.get_attribute(da.MAX_BLOCK_DIM_Y), device.get_attribute(da.MAX_BLOCK_DIM_Z))
+                log("   max grid sizes: (%s, %s, %s)", device.get_attribute(da.MAX_GRID_DIM_X), device.get_attribute(da.MAX_GRID_DIM_Y), device.get_attribute(da.MAX_GRID_DIM_Z))
+                max_width = device.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
+                max_height = device.get_attribute(da.MAXIMUM_TEXTURE2D_HEIGHT)
+                log("   maximum texture size: %sx%s", max_width, max_height)
+                log("   max pitch: %s", device.get_attribute(da.MAX_PITCH))
+                SMmajor, SMminor = device.compute_capability()
+                compute = (SMmajor<<4) + SMminor
+                log("   compute capability: %#x (%s.%s)", compute, SMmajor, SMminor)
+                if i==0:
+                    #we print the list info "header" from inside the loop
+                    #so that the log output is bunched up together
+                    log.info("CUDA %s / PyCUDA %s, found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
                 DEVICES.append(i)
                 log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free/total, SMmajor, SMminor)
             finally:
