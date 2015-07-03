@@ -776,7 +776,7 @@ def build_xpra_conf(install_dir):
     from xpra.scripts.config import print_env
     env = "\n".join(print_env(*x) for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
-    from xpra.platform.features import DEFAULT_SSH_COMMAND
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
@@ -785,6 +785,7 @@ def build_xpra_conf(install_dir):
             'remote_logging' : bstr(OSX or WIN32),
             'env'            : env,
             'has_displayfd'  : bstr(has_displayfd),
+            'pulseaudio_command' : DEFAULT_PULSEAUDIO_COMMAND,
             'conf_dir'       : conf_dir,
             'socket_dirs'    : "\nsocket-dirs = ".join(socket_dirs),
             'log_dir'        : get_default_log_dir(),

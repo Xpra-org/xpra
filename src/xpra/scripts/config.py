@@ -380,14 +380,16 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV, CAN_DAEMONIZE
     from xpra.platform.paths import get_download_dir, get_default_log_dir
     try:
         from xpra.platform.info import get_username
         username = get_username()
     except:
         username = ""
-    if XDUMMY:
+    if WIN32 or OSX:
+        xvfb = ""
+    elif XDUMMY:
         xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER)
     else:
         xvfb = get_Xvfb_command()
@@ -439,14 +441,14 @@ def get_defaults():
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
                     "auto-refresh-delay": 0.15,
-                    "daemon"            : True,
+                    "daemon"            : CAN_DAEMONIZE,
                     "use-display"       : False,
                     "displayfd"         : DISPLAYFD,
-                    "fake-xinerama"     : True,
+                    "fake-xinerama"     : not OSX and not WIN32,
                     "tray"              : True,
                     "clipboard"         : True,
-                    "pulseaudio"        : True,
-                    "dbus-proxy"        : POSIX and not OSX,
+                    "pulseaudio"        : not OSX and not WIN32,
+                    "dbus-proxy"        : not OSX and not WIN32,
                     "mmap"              : True,
                     "mmap-group"        : False,
                     "speaker"           : ["disabled", "on"][has_sound_support],
@@ -457,7 +459,7 @@ def get_defaults():
                     "cursors"           : True,
                     "bell"              : True,
                     "notifications"     : True,
-                    "xsettings"         : POSIX and not OSX,
+                    "xsettings"         : not OSX and not WIN32,
                     "system-tray"       : True,
                     "sharing"           : False,
                     "delay-tray"        : False,

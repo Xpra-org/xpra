@@ -318,7 +318,7 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({"use-display"   : False,
                 "xvfb"          : '',
-                "fake-xinerama" : False})
+                "fake-xinerama" : defaults.fake_xinerama})
     if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
@@ -347,9 +347,9 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="dbus_proxy", default=defaults.dbus_proxy,
                       help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
     else:
-        ignore({"pulseaudio"            : False,
-                "pulseaudio-command"    : "",
-                "dbus-proxy"            : False})
+        ignore({"pulseaudio"            : defaults.pulseaudio,
+                "pulseaudio-command"    : defaults.pulseaudio_command,
+                "dbus-proxy"            : defaults.dbus_proxy})
 
     group = optparse.OptionGroup(parser, "Server Controlled Features",
                 "These options can be used to turn certain features on or off, "
@@ -593,7 +593,7 @@ def do_parse_cmdline(cmdline, defaults):
                           help="When creating the server unix domain socket, what file access mode to use (default: '%default')")
     else:
         ignore({"mmap-group"            : False,
-                "socket-permissions"    : 0o600})
+                "socket-permissions"    : defaults.socket_permissions})
 
     replace_option("--enable-pings", "--pings=yes")
     group.add_option("--pings", action="store", metavar="yes|no",
@@ -1620,21 +1620,33 @@ def run_showconfig(options, args):
     csh.setFormatter(Formatter(NOPREFIX_FORMAT))
     setloghandler(csh)
     log = Logger("util")
-    if args:
-        log.warn("extra command arguments ignored")
-    log.info("Default Configuration:")
     from xpra.scripts.config import dict_to_validated_config, print_env
     d = dict_to_validated_config({})
     fixup_options(d)
-    NODEFAULTS = ["socket-dirs"]
-    VIRTUALS = ["mode"]
+    VIRTUAL = ["mode"]       #no such option! (it's a virtual one for the launch by config files)
+    #hide irrelevant options:
+    HIDDEN = []
+    if not "all" in args:
+        #this logic probably belongs somewhere else:
+        OSX = sys.platform.startswith("darwin")
+        WIN32 = sys.platform.startswith("win")
+        if OSX or WIN32:
+            #these options don't make sense on win32 or osx:
+            HIDDEN += ["socket-dirs", "socket-dir",
+                       "wm-name", "pulseaudio-command", "pulseaudio", "xvfb", "input-method",
+                       "socket-permissions", "fake-xinerama", "dbus-proxy", "xsettings",
+                       "exit-with-children", "start-new-commands", "start", "start-child"]
+        if WIN32:
+            #"exit-ssh"?
+            HIDDEN += ["lpadmin", "daemon", "use-display", "displayfd", "mmap-group", "mdns"]
+        if not OSX:
+            HIDDEN += ["dock-icon", "swap-keys"]
     def cookit(k, def_vals):
         #the env values have comments in them,
         #which are not read back! (so we skip them when comparing)
         if k=="env" and def_vals:
             return [print_env(*defs).lstrip("env = ") for defs in def_vals if not print_env(*defs).startswith("#")]
         return def_vals
-    marker = object()
     def vstr(v):
         #just used to quote all string values
         if type(v)==str:
@@ -1643,18 +1655,18 @@ def run_showconfig(options, args):
             return ", ".join(vstr(x) for x in v)
         return str(v)
     for opt in sorted(OPTION_TYPES.keys()):
-        if opt in VIRTUALS:
+        if opt in VIRTUAL:
+            continue
+        if args:
+            if ("all" not in args) and (opt not in args):
+                continue
+        elif opt in HIDDEN:
             continue
         k = name_to_field(opt)
         dv = getattr(d, k)
+        cv = getattr(options, k, dv)
         dv = cookit(k, dv)
-        cv = getattr(options, k, marker)
-        if cv==marker:
-            continue    #virtual field with no command line equivallent, don't show it
-        if cv!=dv and k not in NODEFAULTS:
-            #disp_dv = dv
-            #if dv==["all"]:
-            #    disp_dv = "all"
+        if cv!=dv:
             log.warn("%-20s  (used)   = %-32s  %s", opt, vstr(cv), type(cv))
             log.warn("%-20s (default) = %-32s  %s", opt, vstr(dv), type(dv))
         else:

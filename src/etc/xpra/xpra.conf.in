@@ -371,10 +371,7 @@ input-method=none
 pulseaudio = %(pulseaudio)s
 
 # pulseaudio server start command:
-pulseaudio-command = pulseaudio --start --daemonize=false --system=false \
-                --exit-idle-time=-1 -n --load=module-suspend-on-idle \
-                --load=module-null-sink --load=module-native-protocol-unix \
-                --log-level=2 --log-target=stderr
+pulseaudio-command = %(pulseaudio_command)s
 
 # Virtual display command:
 # - Old Xvfb option:
