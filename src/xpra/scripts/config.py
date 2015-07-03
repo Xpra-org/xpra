@@ -717,18 +717,12 @@ def fixup_compression(options):
     if cstr=="none":
         compressors = []
     elif cstr=="all":
-        compressors = compression.get_enabled_compressors()
+        compressors = compression.PERFORMANCE_ORDER
     else:
         compressors = _nodupes(cstr)
         unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
         if unknown:
             warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
-    for c in compression.ALL_COMPRESSORS:
-        enabled = c in compression.get_enabled_compressors() and c in compressors
-        setattr(compression, "use_%s" % c, enabled)
-    if not compression.get_enabled_compressors():
-        #force compression level to zero since we have no compressors available:
-        options.compression_level = 0
     options.compressors = compressors
 
 def fixup_packetencoding(options):
@@ -736,18 +730,12 @@ def fixup_packetencoding(options):
     from xpra.net import packet_encoding
     pestr = _csvstr(options.packet_encoders)
     if pestr=="all":
-        packet_encoders = packet_encoding.get_enabled_encoders()
+        packet_encoders = packet_encoding.PERFORMANCE_ORDER
     else:
         packet_encoders = _nodupes(pestr)
         unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
         if unknown:
             warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
-    for pe in packet_encoding.ALL_ENCODERS:
-        enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
-        setattr(packet_encoding, "use_%s" % pe, enabled)
-    #verify that at least one encoder is available:
-    if not packet_encoding.get_enabled_encoders():
-        raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
     options.packet_encoders = packet_encoders
 
 def fixup_options(options):

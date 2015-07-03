@@ -806,6 +806,21 @@ def configure_logging(options, mode):
             dump_frames()
         signal.signal(signal.SIGUSR1, sigusr1)
 
+def configure_network(options):
+    from xpra.net import compression, packet_encoding
+    for c in compression.ALL_COMPRESSORS:
+        enabled = c in compression.get_enabled_compressors() and c in options.compressors
+        setattr(compression, "use_%s" % c, enabled)
+    if not compression.get_enabled_compressors():
+        #force compression level to zero since we have no compressors available:
+        options.compression_level = 0
+    for pe in packet_encoding.ALL_ENCODERS:
+        enabled = pe in packet_encoding.get_enabled_encoders() and pe in options.packet_encoders
+        setattr(packet_encoding, "use_%s" % pe, enabled)
+    #verify that at least one encoder is available:
+    if not packet_encoding.get_enabled_encoders():
+        raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
+
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
@@ -813,6 +828,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         warn("\nWarning: running as root")
 
     configure_logging(options, mode)
+    configure_network(options)
 
     try:
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
@@ -1639,8 +1655,8 @@ def run_showconfig(options, args):
             #disp_dv = dv
             #if dv==["all"]:
             #    disp_dv = "all"
-            log.warn("%-20s  (used)   = %-32s  (%s)", opt, vstr(cv), type(cv))
-            log.warn("%-20s (default) = %-32s  (%s)", opt, vstr(dv), type(dv))
+            log.warn("%-20s  (used)   = %-32s  %s", opt, vstr(cv), type(cv))
+            log.warn("%-20s (default) = %-32s  %s", opt, vstr(dv), type(dv))
         else:
             log.info("%-20s           = %s", opt, vstr(cv))
 

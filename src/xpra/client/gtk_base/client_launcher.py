@@ -42,7 +42,7 @@ from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, set_use_tray_workaround, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
-from xpra.scripts.main import connect_to, make_client
+from xpra.scripts.main import connect_to, make_client, configure_network
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 log = Logger("launcher")
@@ -756,6 +756,9 @@ def main():
         has_file = len(args) == 1
         if has_file:
             app.update_options_from_file(args[0])
+            #the compressors and packet encoders cannot be changed from the UI
+            #so apply them now:
+            configure_network(app.config)
         debug = fixup_debug_option(app.config.debug)
         if debug:
             for x in debug.split(","):
