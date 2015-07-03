@@ -7,6 +7,9 @@
 import sys
 #defaults which may be overriden by platform_import:
 LOCAL_SERVERS_SUPPORTED = sys.version_info[0]<3
+XDUMMY = False
+XDUMMY_WRAPPER = False
+DISPLAYFD = False
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
@@ -20,23 +23,27 @@ CLIPBOARD_NATIVE_CLASS = None
 UI_THREAD_POLLING = 0
 OPEN_COMMAND = "xdg-open"
 
+DEFAULT_ENV = []
+
 DEFAULT_SSH_COMMAND = "ssh -x"
 DEFAULT_PULSEAUDIO_COMMAND = "pulseaudio --start --daemonize=false --system=false " + \
                                     "--exit-idle-time=-1 -n --load=module-suspend-on-idle " + \
                                     "--load=module-null-sink --load=module-native-protocol-unix "+ \
                                     "--log-level=2 --log-target=stderr"
-DEFAULT_XVFB_COMMAND = "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY"
 GOT_PASSWORD_PROMPT_SUGGESTION = ""
 
 
 _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
+                "DISPLAYFD",
+                "XDUMMY",
+                "XDUMMY_WRAPPER",
                 "SHADOW_SUPPORTED",
                 "CAN_DAEMONIZE",
                 "MMAP_SUPPORTED",
                 "SYSTEM_TRAY_SUPPORTED",
-                "DEFAULT_PULSEAUDIO_COMMAND",
-                "DEFAULT_XVFB_COMMAND",
+                "DEFAULT_ENV",
                 "DEFAULT_SSH_COMMAND",
+                "DEFAULT_PULSEAUDIO_COMMAND",
                 "GOT_PASSWORD_PROMPT_SUGGESTION",
                 "CLIPBOARDS",
                 "CLIPBOARD_WANT_TARGETS",

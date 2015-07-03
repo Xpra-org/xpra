@@ -23,6 +23,8 @@ from xpra.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
+    InitException, InitInfo, InitExit, \
+    fixup_debug_option, fixup_options, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
@@ -72,15 +74,6 @@ if supports_server:
     except:
         supports_server = False
 
-
-class InitException(Exception):
-    pass
-class InitInfo(Exception):
-    pass
-class InitExit(Exception):
-    def __init__(self, status, msg):
-        self.status = status
-        Exception.__init__(self, msg)
 
 #this parse doesn't exit when it encounters an error,
 #allowing us to deal with it better and show a UI message if needed.
@@ -132,114 +125,6 @@ def main(script_file, cmdline):
         platform_clean()
 
 
-def fixup_debug_option(value):
-    """ backwards compatible parsing of the debug option, which used to be a boolean """
-    if not value:
-        return ""
-    value = str(value)
-    if value.strip().lower() in ("yes", "true", "on", "1"):
-        return "all"
-    if value.strip().lower() in ("no", "false", "off", "0"):
-        return ""
-    #if we're here, the value should be a CSV list of categories
-    return value
-
-def _csvstr(value):
-    if type(value) in (tuple, list):
-        return ",".join(str(x).lower().strip() for x in value)
-    elif type(value)==str:
-        return value.strip().lower()
-    raise Exception("don't know how to convert %s to a csv list!" % type(value))
-
-def _nodupes(s):
-    from xpra.util import remove_dupes
-    return remove_dupes(x.strip().lower() for x in s.split(","))
-
-def fixup_video_all_or_none(options):
-    from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
-    from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
-    from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
-    vestr   = _csvstr(options.video_encoders)
-    cscstr  = _csvstr(options.csc_modules)
-    vdstr   = _csvstr(options.video_decoders)
-    def getlist(strarg, help_txt, all_list):
-        if strarg=="help":
-            raise InitInfo("the following %s may be available: %s" % (help_txt, ", ".join(all_list)))
-        elif strarg=="none":
-            return []
-        elif strarg=="all":
-            return all_list
-        else:
-            return _nodupes(strarg)
-    options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
-    options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
-    options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
-
-def fixup_socketdirs(options):
-    if not options.socket_dirs:
-        from xpra.platform.paths import get_socket_dirs
-        options.socket_dirs = get_socket_dirs()
-    elif type(options.socket_dirs)==str:
-        options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
-    else:
-        assert type(options.socket_dirs) in (list, tuple)
-        options.socket_dirs = [v for x in options.socket_dirs for v in x.split(os.path.pathsep)]
-
-def fixup_encodings(options):
-    from xpra.codecs.loader import PREFERED_ENCODING_ORDER
-    RENAME = {"jpg" : "jpeg"}
-    if options.encoding:
-        options.encoding = RENAME.get(options.encoding, options.encoding)
-    estr = _csvstr(options.encodings)
-    if estr=="all":
-        #replace with an actual list
-        options.encodings = PREFERED_ENCODING_ORDER
-        return
-    encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
-    if "rgb" in encodings:
-        if "rgb24" not in encodings:
-            encodings.append("rgb24")
-        if "rgb32" not in encodings:
-            encodings.append("rgb32")
-    options.encodings = encodings
-
-def fixup_compression(options):
-    #packet compression:
-    from xpra.net import compression
-    cstr = _csvstr(options.compressors)
-    if cstr=="none":
-        compressors = []
-    elif cstr=="all":
-        compressors = compression.get_enabled_compressors()
-    else:
-        compressors = _nodupes(cstr)
-        unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
-        if unknown:
-            warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
-    for c in compression.ALL_COMPRESSORS:
-        enabled = c in compression.get_enabled_compressors() and c in compressors
-        setattr(compression, "use_%s" % c, enabled)
-    if not compression.get_enabled_compressors():
-        #force compression level to zero since we have no compressors available:
-        options.compression_level = 0
-
-def fixup_packetencoding(options):
-    #packet encoding
-    from xpra.net import packet_encoding
-    pestr = _csvstr(options.packet_encoders)
-    if pestr=="all":
-        packet_encoders = packet_encoding.get_enabled_encoders()
-    else:
-        packet_encoders = _nodupes(pestr)
-        unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
-        if unknown:
-            warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
-    for pe in packet_encoding.ALL_ENCODERS:
-        enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
-        setattr(packet_encoding, "use_%s" % pe, enabled)
-    #verify that at least one encoder is available:
-    if not packet_encoding.get_enabled_encoders():
-        raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
 
 def do_replace_option(cmdline, oldoption, newoption):
     if oldoption in cmdline:
@@ -787,11 +672,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     #special case for things stored as lists, but command line option is a CSV string:
     #and may have "none" or "all" special values
-    fixup_encodings(options)
-    fixup_compression(options)
-    fixup_packetencoding(options)
-    fixup_video_all_or_none(options)
-    fixup_socketdirs(options)
+    fixup_options(options)
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
@@ -1717,6 +1598,7 @@ def run_list(error_cb, opts, extra_args):
 def run_showconfig(options, args):
     from xpra.colorstreamhandler import ColorStreamHandler
     from xpra.log import Logger, NOPREFIX_FORMAT
+    from xpra.util import nonl
     from logging import Formatter
     csh = ColorStreamHandler(sys.stdout)
     csh.setFormatter(Formatter(NOPREFIX_FORMAT))
@@ -1725,21 +1607,42 @@ def run_showconfig(options, args):
     if args:
         log.warn("extra command arguments ignored")
     log.info("Default Configuration:")
-    from xpra.scripts.config import get_defaults
-    d = get_defaults()
-    NODEFAULTS = ["socket-dirs", "env", "xvfb"]
+    from xpra.scripts.config import dict_to_validated_config, print_env
+    d = dict_to_validated_config({})
+    fixup_options(d)
+    NODEFAULTS = ["socket-dirs"]
+    VIRTUALS = ["mode"]
+    def cookit(k, def_vals):
+        #the env values have comments in them,
+        #which are not read back! (so we skip them when comparing)
+        if k=="env" and def_vals:
+            return [print_env(*defs).lstrip("env = ") for defs in def_vals if not print_env(*defs).startswith("#")]
+        return def_vals
     marker = object()
-    for k in sorted(d.keys()):
-        dv = d[k]
-        cv = getattr(options, name_to_field(k), marker)
+    def vstr(v):
+        #just used to quote all string values
+        if type(v)==str:
+            return "'%s'" % nonl(v)
+        if type(v) in (tuple, list) and len(v)>0:
+            return ", ".join(vstr(x) for x in v)
+        return str(v)
+    for opt in sorted(OPTION_TYPES.keys()):
+        if opt in VIRTUALS:
+            continue
+        k = name_to_field(opt)
+        dv = getattr(d, k)
+        dv = cookit(k, dv)
+        cv = getattr(options, k, marker)
         if cv==marker:
             continue    #virtual field with no command line equivallent, don't show it
         if cv!=dv and k not in NODEFAULTS:
-            if dv==["all"]:
-                dv = "all"
-            log.warn("%-20s= %-32s  (default=%s)", k, cv, dv)
+            #disp_dv = dv
+            #if dv==["all"]:
+            #    disp_dv = "all"
+            log.warn("%-20s  (used)   = %-32s  (%s)", opt, vstr(cv), type(cv))
+            log.warn("%-20s (default) = %-32s  (%s)", opt, vstr(dv), type(dv))
         else:
-            log.info("%-20s= %s", k, cv)
+            log.info("%-20s           = %s", opt, vstr(cv))
 
 
 if __name__ == "__main__":

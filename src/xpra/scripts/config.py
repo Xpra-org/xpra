@@ -20,6 +20,17 @@ def debug(*args):
     #can be overriden
     pass
 
+
+class InitException(Exception):
+    pass
+class InitInfo(Exception):
+    pass
+class InitExit(Exception):
+    def __init__(self, status, msg):
+        self.status = status
+        Exception.__init__(self, msg)
+
+
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
@@ -42,19 +53,36 @@ except:
     has_sound_support = False
 
 
+def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpra/xorg.conf"):
+    if use_wrapper:
+        Xorg = "xpra_Xdummy"
+    else:
+        Xorg = "Xorg"
+    return [Xorg,
+          "-noreset",
+          "-nolisten", "tcp",
+          "+extension", "GLX",
+          "+extension", "RANDR",
+          "+extension", "RENDER",
+          "-logfile", "%s/Xorg.${DISPLAY}.log" % log_dir,
+          "-config", xorg_conf]
+
+def get_Xvfb_command():
+    return ["Xvfb",
+           "+extension", "Composite",
+           "-screen", "0", "5760x2560x24+32",
+           "-nolisten", "tcp",
+           "-noreset",
+           "-auth", "$XAUTHORITY"]
+
+
 def OpenGL_safety_check():
     #Ubuntu 12.04 will just crash on you if you try:
-    distro = ""
-    if hasattr(python_platform, "linux_distribution"):
-        distro = python_platform.linux_distribution()
-    if distro and len(distro)==3 and distro[0]=="Ubuntu":
-        ur = distro[1]  #ie: "12.04"
-        try:
-            rnum = [int(x) for x in ur.split(".")]  #ie: [12, 4]
-            if rnum<=[12, 4]:
-                return "Ubuntu %s is too buggy" % ur
-        except:
-            pass
+    from xpra.os_util import is_Ubuntu, getUbuntuVersion
+    if is_Ubuntu():
+        rnum = getUbuntuVersion()
+        if rnum<=[12, 4]:
+            return "Ubuntu %s is too buggy" % rnum
     #try to detect VirtualBox:
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
@@ -352,13 +380,18 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_XVFB_COMMAND
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV
     from xpra.platform.paths import get_download_dir, get_default_log_dir
     try:
         from xpra.platform.info import get_username
         username = get_username()
     except:
         username = ""
+    if XDUMMY:
+        xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER)
+    else:
+        xvfb = get_Xvfb_command()
+
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
@@ -379,7 +412,7 @@ def get_defaults():
                     "encryption-keyfile": "",
                     "tcp-encryption-keyfile": "",
                     "ssh"               : DEFAULT_SSH_COMMAND,
-                    "xvfb"              : DEFAULT_XVFB_COMMAND,
+                    "xvfb"              : " ".join(xvfb),
                     "socket-dir"        : "",
                     "log-dir"           : get_default_log_dir(),
                     "log-file"          : "$DISPLAY.log",
@@ -408,7 +441,7 @@ def get_defaults():
                     "auto-refresh-delay": 0.15,
                     "daemon"            : True,
                     "use-display"       : False,
-                    "displayfd"         : False,
+                    "displayfd"         : DISPLAYFD,
                     "fake-xinerama"     : True,
                     "tray"              : True,
                     "clipboard"         : True,
@@ -459,7 +492,7 @@ def get_defaults():
                     "bind-tcp"          : [],
                     "start"             : [],
                     "start-child"       : [],
-                    "env"               : [],
+                    "env"               : DEFAULT_ENV,
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:
@@ -484,6 +517,11 @@ def parse_bool(k, v):
     else:
         warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
         return None
+
+def print_env(k, v=None):
+    if v is None:
+        return k
+    return "env = %s=%s" % (k,v)
 
 def print_bool(k, v, true_str='yes', false_str='no'):
     if type(v)==type(None):
@@ -586,7 +624,7 @@ def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation=
     defaults = read_xpra_defaults()
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
-def dict_to_validated_config(d, extras_defaults={}, extras_types={}, extras_validation={}):
+def dict_to_validated_config(d={}, extras_defaults={}, extras_types={}, extras_validation={}):
     options = get_defaults().copy()
     options.update(extras_defaults)
     #parse config:
@@ -599,6 +637,125 @@ def dict_to_validated_config(d, extras_defaults={}, extras_types={}, extras_vali
     for k,v in options.items():
         setattr(config, name_to_field(k), v)
     return config
+
+
+def fixup_debug_option(value):
+    """ backwards compatible parsing of the debug option, which used to be a boolean """
+    if not value:
+        return ""
+    value = str(value)
+    if value.strip().lower() in ("yes", "true", "on", "1"):
+        return "all"
+    if value.strip().lower() in ("no", "false", "off", "0"):
+        return ""
+    #if we're here, the value should be a CSV list of categories
+    return value
+
+def _csvstr(value):
+    if type(value) in (tuple, list):
+        return ",".join(str(x).lower().strip() for x in value)
+    elif type(value)==str:
+        return value.strip().lower()
+    raise Exception("don't know how to convert %s to a csv list!" % type(value))
+
+def _nodupes(s):
+    from xpra.util import remove_dupes
+    return remove_dupes(x.strip().lower() for x in s.split(","))
+
+def fixup_video_all_or_none(options):
+    from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
+    from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
+    from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
+    vestr   = _csvstr(options.video_encoders)
+    cscstr  = _csvstr(options.csc_modules)
+    vdstr   = _csvstr(options.video_decoders)
+    def getlist(strarg, help_txt, all_list):
+        if strarg=="help":
+            raise InitInfo("the following %s may be available: %s" % (help_txt, ", ".join(all_list)))
+        elif strarg=="none":
+            return []
+        elif strarg=="all":
+            return all_list
+        else:
+            return _nodupes(strarg)
+    options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
+    options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
+    options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
+
+def fixup_socketdirs(options):
+    if not options.socket_dirs:
+        from xpra.platform.paths import get_socket_dirs
+        options.socket_dirs = get_socket_dirs()
+    elif type(options.socket_dirs)==str:
+        options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
+    else:
+        assert type(options.socket_dirs) in (list, tuple)
+        options.socket_dirs = [v for x in options.socket_dirs for v in x.split(os.path.pathsep)]
+
+def fixup_encodings(options):
+    from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+    RENAME = {"jpg" : "jpeg"}
+    if options.encoding:
+        options.encoding = RENAME.get(options.encoding, options.encoding)
+    estr = _csvstr(options.encodings)
+    if estr=="all":
+        #replace with an actual list
+        options.encodings = PREFERED_ENCODING_ORDER
+        return
+    encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
+    if "rgb" in encodings:
+        if "rgb24" not in encodings:
+            encodings.append("rgb24")
+        if "rgb32" not in encodings:
+            encodings.append("rgb32")
+    options.encodings = encodings
+
+def fixup_compression(options):
+    #packet compression:
+    from xpra.net import compression
+    cstr = _csvstr(options.compressors)
+    if cstr=="none":
+        compressors = []
+    elif cstr=="all":
+        compressors = compression.get_enabled_compressors()
+    else:
+        compressors = _nodupes(cstr)
+        unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
+        if unknown:
+            warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
+    for c in compression.ALL_COMPRESSORS:
+        enabled = c in compression.get_enabled_compressors() and c in compressors
+        setattr(compression, "use_%s" % c, enabled)
+    if not compression.get_enabled_compressors():
+        #force compression level to zero since we have no compressors available:
+        options.compression_level = 0
+    options.compressors = compressors
+
+def fixup_packetencoding(options):
+    #packet encoding
+    from xpra.net import packet_encoding
+    pestr = _csvstr(options.packet_encoders)
+    if pestr=="all":
+        packet_encoders = packet_encoding.get_enabled_encoders()
+    else:
+        packet_encoders = _nodupes(pestr)
+        unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
+        if unknown:
+            warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
+    for pe in packet_encoding.ALL_ENCODERS:
+        enabled = pe in packet_encoding.get_enabled_encoders() and pe in packet_encoders
+        setattr(packet_encoding, "use_%s" % pe, enabled)
+    #verify that at least one encoder is available:
+    if not packet_encoding.get_enabled_encoders():
+        raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
+    options.packet_encoders = packet_encoders
+
+def fixup_options(options):
+    fixup_encodings(options)
+    fixup_compression(options)
+    fixup_packetencoding(options)
+    fixup_video_all_or_none(options)
+    fixup_socketdirs(options)
 
 
 def main():

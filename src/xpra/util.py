@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import binascii
 from xpra.os_util import strtobytes, bytestostr
 import traceback
@@ -493,7 +492,3 @@ def nonl(x):
 
 def xor(s1,s2):
     return ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(s1,s2))
-
-
-def is_unity():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "unity"

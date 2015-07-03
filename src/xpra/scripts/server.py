@@ -18,7 +18,8 @@ import select
 import time
 import traceback
 
-from xpra.scripts.main import TCP_NODELAY, warn, InitException
+from xpra.scripts.main import TCP_NODELAY, warn
+from xpra.scripts.config import InitException
 from xpra.os_util import SIGNAMES
 from xpra.dotxpra import DotXpra, norm_makepath
 

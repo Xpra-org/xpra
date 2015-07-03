@@ -4,8 +4,24 @@
 # later version. See the file COPYING for details.
 
 #don't bother trying to forward system tray with Ubuntu's "unity":
-from xpra.util import is_unity
+from xpra.os_util import is_unity, is_Ubuntu, is_Fedora
 SYSTEM_TRAY_SUPPORTED = not is_unity()
+#this is only our best guess
+#there is more logic in setup.py, but it requires more effort too:
+XDUMMY = not is_Ubuntu()
+DISPLAYFD = not is_Ubuntu()
+XDUMMY_WRAPPER = is_Fedora()
+
+DEFAULT_ENV = [
+             ("#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:", ),
+             ("UBUNTU_MENUPROXY",           ""),
+             ("QT_X11_NO_NATIVE_MENUBAR",   "1"),
+             ("#fix for MainSoft's MainWin buggy window management:", ),
+             ("MWNOCAPTURE",                "true"),
+             ("MWNO_RIT",                   "true"),
+             ("MWWM",                       "allwm"),
+             ]
+
 DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 CLIPBOARDS=["CLIPBOARD", "PRIMARY", "SECONDARY"]

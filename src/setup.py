@@ -697,7 +697,8 @@ def detect_xorg_setup(install_dir=None):
         has_displayfd = False
 
     def Xvfb():
-        return ("Xvfb +extension Composite -screen 0 5760x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", has_displayfd, False)
+        from xpra.scripts.config import get_Xvfb_command
+        return (get_Xvfb_command(), has_displayfd, False)
 
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
@@ -705,14 +706,6 @@ def detect_xorg_setup(install_dir=None):
 
     def Xorg_suid_check():
         xorg_conf = os.path.join(get_conf_dir(install_dir), "xorg.conf")
-        Xorg_args = " ".join(["-noreset",
-                              "-nolisten", "tcp",
-                              "+extension", "GLX",
-                              "+extension", "RANDR",
-                              "+extension", "RENDER",
-                              "-logfile", "${HOME}/.xpra/Xorg.${DISPLAY}.log",
-                              "-config", xorg_conf])
-
         if Xdummy_wrapper_ENABLED is not None:
             #honour what was specified:
             use_wrapper = Xdummy_wrapper_ENABLED
@@ -735,11 +728,8 @@ def detect_xorg_setup(install_dir=None):
                     use_wrapper = True
                 else:
                     use_wrapper = False
-        if use_wrapper:
-            return ("xpra_Xdummy "+Xorg_args, has_displayfd, True)
-        else:
-            print("using Xdummy directly")
-            return ("Xorg "+Xorg_args, has_displayfd, False)
+        from xpra.scripts.config import get_Xdummy_command
+        return (get_Xdummy_command(use_wrapper, xorg_conf=xorg_conf), has_displayfd, use_wrapper)
 
     if Xdummy_ENABLED is False:
         return Xvfb()
@@ -780,30 +770,17 @@ def build_xpra_conf(install_dir):
     xvfb_command, has_displayfd, _ = detect_xorg_setup(install_dir)
     with open("etc/xpra/xpra.conf.in", "r") as f_in:
         template  = f_in.read()
-    env_strs = []
-    if os.name=="posix":
-        env_strs += [
-             ("#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:", ),
-             ("UBUNTU_MENUPROXY",           ""),
-             ("QT_X11_NO_NATIVE_MENUBAR",   "1"),
-             ("#fix for MainSoft's MainWin buggy window management:", ),
-             ("MWNOCAPTURE",                "true"),
-             ("MWNO_RIT",                   "true"),
-             ("MWWM",                       "allwm"),
-                    ]
-    def envstr(k, v=None):
-        if v is None:
-            return k
-        return "env = %s=%s" % (k,v)
+    from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
         return ["no", "yes"][int(b)]
-    env = "\n".join(envstr(*x) for x in env_strs)
+    from xpra.scripts.config import print_env
+    env = "\n".join(print_env(*x) for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
-    SUBS = {'xvfb_command'   : xvfb_command,
+    SUBS = {'xvfb_command'   : " ".join(xvfb_command),
             'ssh_command'    : DEFAULT_SSH_COMMAND,
             'remote_logging' : bstr(OSX or WIN32),
             'env'            : env,

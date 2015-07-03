@@ -73,7 +73,7 @@ def init_gdk_display_source():
     cdef cGdkDisplay* gdk_display
     cdef Display * x11_display
     if not gtk.gdk.display_get_default():
-        from xpra.scripts.main import InitException
+        from xpra.scripts.config import InitException
         raise InitException("cannot access the display")
     root_window = gtk.gdk.get_default_root_window()
     assert root_window, "cannot get the root window"

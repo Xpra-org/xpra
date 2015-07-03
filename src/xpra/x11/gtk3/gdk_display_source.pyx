@@ -42,7 +42,7 @@ def init_gdk_display_source():
     from gi.repository import Gdk
     gdk_display = gdk_display_get_default()
     if not gdk_display:
-        from xpra.scripts.main import InitException
+        from xpra.scripts.config import InitException
         raise InitException("cannot access the display")
     #this next line actually ensures Gdk is initialized, somehow
     root = Gdk.get_default_root_window()
