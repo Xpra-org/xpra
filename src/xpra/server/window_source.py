@@ -112,7 +112,7 @@ class WindowSource(object):
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
         self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
-        self.full_frames_only = encoding_options.boolget("full_frames_only")
+        self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
         ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg"))     #default encodings for auto-refresh
         if self.webp_leaks:
             ropts.remove("webp")                        #don't use webp if the client is going to leak with it!
@@ -407,7 +407,7 @@ class WindowSource(object):
         self.statistics.reset()
         self.suspended = False
         self.refresh(window, {"quality" : 100})
-        if not window.is_OR() and not window.is_tray():
+        if not self.is_OR and not self.is_tray:
             self.send_window_icon(window)
 
     def refresh(self, window, options={}):
@@ -550,7 +550,7 @@ class WindowSource(object):
     def do_set_client_properties(self, properties):
         self.maximized = properties.boolget("maximized", False)
         self.client_refresh_encodings = properties.strlistget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
-        self.full_frames_only = properties.boolget("encoding.full_frames_only", self.full_frames_only)
+        self.full_frames_only = self.is_tray or properties.boolget("encoding.full_frames_only", self.full_frames_only)
         self.supports_transparency = HAS_ALPHA and properties.boolget("encoding.transparency", self.supports_transparency)
         self.encodings = properties.strlistget("encodings", self.encodings)
         self.core_encodings = properties.strlistget("encodings.core", self.core_encodings)
@@ -627,7 +627,7 @@ class WindowSource(object):
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
-        self._rgb_auto_threshold = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR)*2))
+        self._rgb_auto_threshold = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR or self.is_tray)*2))
         self.get_best_encoding = self.get_best_encoding_impl()
         log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, small_as_rgb=%s, get_best_encoding=%s",
                         force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, self.get_best_encoding)
@@ -1123,7 +1123,7 @@ class WindowSource(object):
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
         if exclude_region is None:
-            if self.is_tray or self.full_frames_only:
+            if self.full_frames_only:
                 send_full_window_update()
                 return
 
@@ -1192,7 +1192,7 @@ class WindowSource(object):
 
     def must_encode_full_frame(self, window, encoding):
         #WindowVideoSource overrides this method
-        return self.full_frames_only or self.is_tray
+        return self.full_frames_only
 
 
     def free_image_wrapper(self, image):

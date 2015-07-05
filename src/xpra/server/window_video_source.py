@@ -368,7 +368,7 @@ class WindowVideoSource(WindowSource):
 
         #calculate the threshold for using video vs small regions:
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
-                   1 + int(self.is_OR)*2,                       #OR windows tend to be static
+                   1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
                    max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
                    1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
                    )
@@ -644,7 +644,7 @@ class WindowVideoSource(WindowSource):
 
 
     def must_encode_full_frame(self, window, encoding):
-        return self.full_frames_only or self.is_tray or (encoding in self.video_encodings) or not self.non_video_encodings
+        return self.full_frames_only or (encoding in self.video_encodings) or not self.non_video_encodings
 
 
     def update_encoding_options(self, force_reload=False):
