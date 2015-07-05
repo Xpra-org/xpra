@@ -130,7 +130,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #decide if the window type is POPUP or NORMAL
         if self._override_redirect:
             return True
-        window_types = metadata.get("window-type", [])
+        window_types = metadata.strlistget("window-type", [])
         popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
         metalog("popup_types(%s)=%s", window_types, popup_types)
         if popup_types:
@@ -149,7 +149,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return bool(decorations)
         #older servers don't tell us if we need decorations, so take a guess:
         #skip decorations for any non-normal non-dialog window that is transient for another window:
-        window_types = metadata.get("window-type", [])
+        window_types = metadata.strlistget("window-type", [])
         if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
             return False
         undecorated_types = list(UNDECORATED_TYPE_HINTS.intersection(window_types))
