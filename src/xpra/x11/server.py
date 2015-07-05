@@ -195,7 +195,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         ### Create the WM object
         self._wm = Wm(self.clobber, self.wm_name)
         self._wm.connect("new-window", self._new_window_signaled)
-        self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
         add_catchall_receiver("xpra-motion-event", self)
