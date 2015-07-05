@@ -347,7 +347,7 @@ class Wm(gobject.GObject):
             with xsync:
                 self.do_manage_client(gdkwindow)
         except Exception as e:
-            if LOG_MANAGE_FAILURES:
+            if LOG_MANAGE_FAILURES or e not in (Unmanageable, ):
                 l = log.warn
             else:
                 l = log
