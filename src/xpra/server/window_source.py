@@ -136,7 +136,7 @@ class WindowSource(object):
         self.is_tray = window.is_tray()
         self.has_alpha = window.has_alpha()
         self.window_dimensions = 0, 0
-        self.fullscreen = window.get_property("fullscreen")
+        self.fullscreen = not self.is_tray and window.get_property("fullscreen")
         self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ServerSource sets defaults with the client's scaling.control value
         self.scaling = None
         self.maximized = False          #set by the client!
