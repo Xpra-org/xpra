@@ -299,16 +299,19 @@ class BaseWindowModel(CoreX11WindowModel):
                 group_leader = xid, None
         self._updateprop("group-leader", group_leader)
         self._updateprop("attention-requested", wm_hints.get("urgency", False))
-
         _input = wm_hints.get("input")
         metalog("wm_hints.input = %s", _input)
         #we only set this value once:
         #(input_field always starts as True, and we then set it to an int)
-        if self._input_field is True and _input is not None:
+        if self._input_field is True or _input is not None:
             #keep the value as an int to differentiate from the start value:
-            self._input_field = int(_input)
-            if bool(self._input_field):
-                self.notify("can-focus")
+            self._input_field = int(_input or 0)
+            self._update_can_focus()
+
+    def _update_can_focus(self, *args):
+        can_focus = bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
+        self._updateprop("can-focus", can_focus)
+
 
     _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({

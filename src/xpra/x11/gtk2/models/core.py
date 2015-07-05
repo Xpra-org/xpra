@@ -262,6 +262,12 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         #initial sync:
         for cb in self._py_property_handlers.values():
             cb(self)
+        #this one is special, and overriden in BaseWindow too:
+        self.managed_connect("notify::protocols", self._update_can_focus)
+        
+    def _update_can_focus(self, *args):
+        can_focus = "WM_TAKE_FOCUS" in self.get_property("protocols")
+        self._updateprop("can-focus", can_focus)
 
     def _read_initial_X11_properties(self):
         """ This is called within an XSync context,
@@ -413,9 +419,6 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         x, y, w, h, b = self._geometry
         return (x, y, w + 2*b, h + 2*b)
 
-    def do_get_property_can_focus(self, name):
-        assert name == "can-focus"
-        return bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
 
     def get_position(self):
         return self.do_get_property_geometry()[:2]

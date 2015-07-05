@@ -609,10 +609,6 @@ class WindowModel(BaseWindowModel):
         iconlog("get_default_window_icon()=%s", surf)
         return surf
 
-    def do_get_property_can_focus(self, name):
-        assert name == "can-focus"
-        return bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
-
     def get_wm_state(self, prop):
         state_names = self._state_properties.get(prop)
         assert state_names, "invalid window state %s" % prop
