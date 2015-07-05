@@ -440,10 +440,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         wid = X11ServerBase._add_new_window_common(self, window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
-        window.managed_connect("raised", self._raised_window)
-        window.managed_connect("initiate-moveresize", self._initiate_moveresize)
         window.managed_connect("grab", self._window_grab)
         window.managed_connect("ungrab", self._window_ungrab)
+        if not window.is_tray():
+            window.managed_connect("raised", self._raised_window)
+            window.managed_connect("initiate-moveresize", self._initiate_moveresize)
         return wid
 
     def _add_new_window(self, window):
@@ -676,7 +677,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.remove_window(wid, window)
 
     def _contents_changed(self, window, event):
-        if window.is_OR() or self._desktop_manager.visible(window):
+        if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):
             self._damage(window, event.x, event.y, event.width, event.height)
 
 
