@@ -246,6 +246,8 @@ cdef extern from "X11/Xlib.h":
     Status XGetWMNormalHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return)
     XWMHints *XGetWMHints(Display *display, Window w)
 
+    Status XGetWMProtocols(Display *display, Window w, Atom **protocols_return, int *count_return)
+
 
 ###################################
 # Composite
@@ -943,6 +945,18 @@ cdef class X11WindowBindings(X11CoreBindings):
             return None
         return x, y, width, height, border_width, depth
 
+    def getParent(self, Window xwindow):
+        cdef Window root = 0, parent = 0
+        cdef Window *children = NULL
+        cdef unsigned int nchildren = 0
+        if not XQueryTree(self.display, xwindow, &root, &parent, &children, &nchildren):
+            return 0
+        if nchildren > 0 and children != NULL:
+            XFree(children)
+        if parent == XNone:
+            return 0
+        return parent
+
     def getSizeHints(self, Window xwindow):
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
@@ -998,3 +1012,14 @@ cdef class X11WindowBindings(X11CoreBindings):
             hints["urgency"] = True
         XFree(wm_hints)
         return hints
+
+    def XGetWMProtocols(self, Window xwindow):
+        cdef Atom *protocols_return
+        cdef int count_return
+        cdef int i = 0
+        protocols = []
+        if XGetWMProtocols(self.display, xwindow, &protocols_return, &count_return):
+            while i<count_return:
+                protocols.append(self.XGetAtomName(protocols_return[i]))
+                i += 1
+        return protocols
