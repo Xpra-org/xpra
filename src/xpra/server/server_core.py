@@ -45,6 +45,7 @@ from xpra.util import typedict, updict, repr_ellipsized, \
 main_thread = threading.current_thread()
 
 MAX_CONCURRENT_CONNECTIONS = 20
+SIMULATE_SERVER_HELLO_ERROR = os.environ.get("XPRA_SIMULATE_SERVER_HELLO_ERROR", "0")=="1"
 
 
 def get_server_info():
@@ -597,6 +598,8 @@ class ServerCore(object):
                 return
             #continue processing hello packet:
             try:
+                if SIMULATE_SERVER_HELLO_ERROR:
+                    raise Exception("Simulating a server error")
                 self.hello_oked(proto, packet, c, auth_caps)
             except ClientException as e:
                 log.error("error setting up connection for %s: %s", proto, e)
