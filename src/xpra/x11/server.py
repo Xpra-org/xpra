@@ -529,7 +529,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 wid = self._add_new_window_common(window)
                 raw_window.set_data(WINDOW_MODEL_KEY, wid)
                 window.call_setup()
-                window.connect("notify::geometry", self._or_window_geometry_changed)
+                window.managed_connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
         except Unmanageable as e:
             if window:
