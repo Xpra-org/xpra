@@ -1737,7 +1737,7 @@ if x11_ENABLED:
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 if gtk_x11_ENABLED:
     toggle_packages(PYTHON3, "xpra.x11.gtk3")
-    toggle_packages(not PYTHON3, "xpra.x11.gtk2")
+    toggle_packages(not PYTHON3, "xpra.x11.gtk2", "xpra.x11.gtk2.models")
     if PYTHON3:
         #GTK3 display source:
         cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
