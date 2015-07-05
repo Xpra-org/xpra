@@ -72,11 +72,8 @@ class DesktopManager(gtk.Widget):
         s.geom = [x, y, w, h]
         s.resize_counter = 0
         self._models[model] = s
-        model.connect("unmanaged", self._unmanaged)
-        model.connect("ownership-election", self._elect_me)
-        def new_geom(window_model, *args):
-            log("new_geom(%s,%s)", window_model, args)
-        model.connect("notify::geometry", new_geom)
+        model.managed_connect("unmanaged", self._unmanaged)
+        model.managed_connect("ownership-election", self._elect_me)
         model.ownership_election()
 
     def window_geometry(self, model):
@@ -436,12 +433,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _add_new_window_common(self, window):
         windowlog("adding window %s", window)
         for prop in window.get_dynamic_property_names():
-            window.connect("notify::%s" % prop, self._update_metadata)
+            window.managed_connect("notify::%s" % prop, self._update_metadata)
         wid = X11ServerBase._add_new_window_common(self, window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("grab", self._window_grab)
         window.managed_connect("ungrab", self._window_ungrab)
+        window.managed_connect("bell", self._bell_signaled)
         if not window.is_tray():
             window.managed_connect("raised", self._raised_window)
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)
@@ -453,13 +451,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         x, y, _, _, _ = window.corral_window.get_geometry()
         windowlog("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
-        window.connect("notify::geometry", self._window_resized_signaled)
-        window.connect("notify::iconic", self._iconic_changed)
+        window.managed_connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
-
-    def _iconic_changed(self, window, pspec):
-        #only defined for debugging purposes
-        log("_iconic_changed(%s, %s) iconic=%s, shown=%s", window, pspec, window.get_property("iconic"), self._desktop_manager.is_shown(window))
 
 
     def _window_resized_signaled(self, window, *args):

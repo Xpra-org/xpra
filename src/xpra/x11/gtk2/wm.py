@@ -194,8 +194,6 @@ class Wm(gobject.GObject):
         # Public use:
         # A new window has shown up:
         "new-window": one_arg_signal,
-        # X11 bell event:
-        "bell": one_arg_signal,
         "show-desktop": one_arg_signal,
         # You can emit this to cause the WM to quit, or the WM may
         # spontaneously raise it if another WM takes over the display.  By
@@ -318,16 +316,6 @@ class Wm(gobject.GObject):
         log("enableCursors(%s)" % on)
         X11Keyboard.selectCursorChange(on)
 
-    def do_xpra_xkb_event(self, event):
-        log("wm.do_xpra_xkb_event(%r)" % event)
-        if event.type!="bell":
-            log.error("wm.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
-            return
-        self.do_bell_event(event)
-
-    def do_bell_event(self, event):
-        log("wm.do_bell_event(%s)", event)
-        self.emit("bell", event)
 
     def do_get_property(self, pspec):
         if pspec.name == "windows":
@@ -360,9 +348,6 @@ class Wm(gobject.GObject):
             log("Window disappeared on us, never mind")
             return
         win.connect("unmanaged", self._handle_client_unmanaged)
-        def bell_event(window_model, event):
-            self.do_bell_event(event)
-        win.connect("bell", bell_event)
         self._windows[gdkwindow] = win
         self._windows_in_order.append(gdkwindow)
         self.notify("windows")
