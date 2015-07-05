@@ -596,12 +596,12 @@ class ServerBase(ServerCore):
     def _process_exit_server(self, proto, packet):
         log.info("Exiting response to request")
         self.cleanup_all_protocols(SERVER_EXIT)
-        self.timeout_add(1000, self.clean_quit, ServerCore.EXITING_CODE)
+        self.timeout_add(500, self.clean_quit, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
         self.cleanup_all_protocols(SERVER_SHUTDOWN)
-        self.timeout_add(1000, self.clean_quit)
+        self.timeout_add(500, self.clean_quit)
 
     def force_disconnect(self, proto):
         self.cleanup_protocol(proto)

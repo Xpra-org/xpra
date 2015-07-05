@@ -1512,12 +1512,17 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
 def run_stopexit(mode, error_cb, opts, extra_args):
     assert "gtk" not in sys.modules
 
-    def show_final_state(display_desc):
+    def show_final_state(exit_code, display_desc):
         #this is for local sockets only!
         display = display_desc["display"]
         sockdir = display_desc["socket_dir"]
         sockdir = DotXpra(sockdir)
         sockfile = get_sockpath(display_desc, error_cb)
+        print("exit-code=%s" % exit_code)
+        if exit_code==0:
+            #client exited normally, probably worked
+            #so we give the server just a bit of time to cleanup:
+            time.sleep(0.75)
         for _ in range(6):
             final_state = sockdir.get_server_state(sockfile, 1)
             if final_state is DotXpra.LIVE:
@@ -1553,7 +1558,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if app:
             app.cleanup()
     if display_desc["local"]:
-        show_final_state(display_desc)
+        show_final_state(app.exit_code, display_desc)
     else:
         print("Sent shutdown command")
     return  e
