@@ -122,11 +122,10 @@ class WindowBackingBase(object):
 
 
     def get_encoding_properties(self):
-        rgb_modes = self.RGB_MODES
         return {
-                 "encodings.rgb_formats"    : rgb_modes,
+                 "encodings.rgb_formats"    : self.RGB_MODES,
                  "encoding.transparency"    : self._alpha_enabled,
-                 "encoding.full_csc_modes"  : self._get_full_csc_modes(rgb_modes),
+                 "encoding.full_csc_modes"  : self._get_full_csc_modes(self.RGB_MODES),
                  }
 
     def _get_full_csc_modes(self, rgb_modes):

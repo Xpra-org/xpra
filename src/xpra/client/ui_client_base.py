@@ -206,6 +206,8 @@ class UIXpraClient(XpraClientBase):
         self.server_dbus_proxy = False
         self.start_new_commands = False
         self.server_window_frame_extents = False
+        self.rgb_formats = []
+        self.full_csc_modes = {}
 
         self.client_supports_opengl = False
         self.client_supports_notifications = False
@@ -1077,19 +1079,15 @@ class UIXpraClient(XpraClientBase):
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
 
-        #note: this is mostly for old servers, with newer ones we send the properties
-        #again (and more accurately) once the window is instantiated.
-        #figure out the CSC modes supported:
-        #these are the RGB modes we want (the ones we can paint with):
-        rgb_formats = ["RGB", "RGBX"]
-        if not sys.platform.startswith("win") and not sys.platform.startswith("darwin"):
-            #only win32 and osx cannot handle transparency
-            rgb_formats.append("RGBA")
-        capabilities["encodings.rgb_formats"] = rgb_formats
+        #these are the defaults - when we instantiate a window,
+        #we can send different values as part of the map event
+        #these are the RGB modes we want (the ones we are expected to be able to paint with):
+        self.rgb_formats = ["RGB", "RGBX", "RGBA"]
+        capabilities["encodings.rgb_formats"] = self.rgb_formats
         #figure out which CSC modes (usually YUV) can give us those RGB modes:
-        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
-        log("supported full csc_modes=%s", full_csc_modes)
-        capabilities["encoding.full_csc_modes"] = full_csc_modes
+        self.full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*self.rgb_formats)
+        log("supported full csc_modes=%s", self.full_csc_modes)
+        capabilities["encoding.full_csc_modes"] = self.full_csc_modes
 
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = True
