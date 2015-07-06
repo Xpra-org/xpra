@@ -34,7 +34,7 @@ class DotXpra(object):
     def __init__(self, sockdir=None, sockdirs=[], actual_username=""):
         if sockdir:
             sockdir = osexpand(sockdir, actual_username)
-            sockdirs = []
+            sockdirs = sockdirs
         elif sockdirs:
             sockdir = sockdirs[0]
         else:
