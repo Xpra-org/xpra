@@ -76,13 +76,15 @@ class AvahiPublishers:
 			self.publishers.append(AvahiPublisher(service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
 
 	def start(self):
-		log("starting: %s", self.publishers)
+		log("avahi:starting: %s", self.publishers)
+		if not self.publishers:
+			return
 		all_err = True
 		for publisher in self.publishers:
 			if publisher.start():
 				all_err = False
 		if all_err:
-			log.info("you may want to disable mdns support to avoid this")
+			log.warn(" you may want to disable mdns support to avoid this")
 
 	def stop(self):
 		log("stopping: %s", self.publishers)
