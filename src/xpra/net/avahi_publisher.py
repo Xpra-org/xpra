@@ -18,6 +18,7 @@ XPRA_MDNS_TYPE = '_xpra._tcp.'
 from xpra.log import Logger
 log = Logger("network", "mdns")
 
+from xpra.dbus.common import init_system_bus
 from xpra.net.net_util import get_iface, if_nametoindex, if_indextoname
 
 SHOW_INTERFACE = True			#publishes the name of the interface we broadcast from
@@ -54,6 +55,12 @@ class AvahiPublishers:
 
 	def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict={}):
 		self.publishers = []
+		try:
+			bus = init_system_bus()
+		except Exception as e:
+			log.warn("failed to connect to the system dbus: %s", e)
+			log.warn(" either start a dbus session or disable mdns support")
+			return
 		for host, port in listen_on:
 			iface_index = get_interface_index(host)
 			log("iface_index(%s)=%s", host, iface_index)
@@ -73,7 +80,7 @@ class AvahiPublishers:
 					host = socket.gethostbyaddr(host)[0]
 				except:
 					pass
-			self.publishers.append(AvahiPublisher(service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
+			self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
 
 	def start(self):
 		log("avahi:starting: %s", self.publishers)
@@ -84,7 +91,7 @@ class AvahiPublishers:
 			if publisher.start():
 				all_err = False
 		if all_err:
-			log.warn(" you may want to disable mdns support to avoid this")
+			log.warn(" you may want to disable mdns support to avoid this warning")
 
 	def stop(self):
 		log("stopping: %s", self.publishers)
@@ -94,8 +101,9 @@ class AvahiPublishers:
 
 class AvahiPublisher:
 
-	def __init__(self, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text="", interface=avahi.IF_UNSPEC):
-		log("AvahiPublisher%s", (name, port, stype, domain, host, text, interface))
+	def __init__(self, bus, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text="", interface=avahi.IF_UNSPEC):
+		log("AvahiPublisher%s", (bus, name, port, stype, domain, host, text, interface))
+		self.bus = bus
 		self.name = name
 		self.stype = stype
 		self.domain = domain
@@ -110,14 +118,8 @@ class AvahiPublisher:
 
 	def start(self):
 		try:
-			bus = dbus.SystemBus()
-		except Exception as e:
-			log.warn("failed to connect to system dbus: %s", e)
-			return False
-
-		try:
-			server = dbus.Interface(bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
-			g = dbus.Interface(bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
+			server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
+			g = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
 		except Exception as e:
 			log.warn("failed to connect to avahi's dbus interface: %s", e)
 			return False
