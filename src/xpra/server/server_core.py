@@ -371,7 +371,7 @@ class ServerCore(object):
         else:
             reason = SERVER_SHUTDOWN
         protocols = self.get_all_protocols()
-        self.cleanup_protocols(protocols, reason, False)
+        self.cleanup_protocols(protocols, reason)
         self.do_cleanup()
         self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
@@ -380,6 +380,10 @@ class ServerCore(object):
         #allow just a bit of time for the protocol packet flush
         time.sleep(0.1)
 
+
+    def cleanup_all_protocols(self, reason):
+        protocols = self.get_all_protocols()
+        self.cleanup_protocols(protocols, reason)
 
     def get_all_protocols(self):
         return list(self._potential_protocols)
