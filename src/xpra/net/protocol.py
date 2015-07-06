@@ -270,8 +270,8 @@ class Protocol(object):
                     return
                 self._source_has_more.clear()
                 self._add_packet_to_queue(*self._get_packet_cb())
-        except:
-            self._internal_error("error in network packet write/format", True)
+        except Exception as e:
+            self._internal_error("error in network packet write/format", e, exc_info=True)
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
         if has_more:
@@ -512,10 +512,11 @@ class Protocol(object):
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except ConnectionClosedException as e:
             if not self._closed:
-                self._internal_error("%s connection %s closed: %s" % (name, self._conn, e))
+                #ConnectionClosedException means the warning has been logged already
+                self._connection_lost("%s connection %s closed" % (name, self._conn))
         except (OSError, IOError, socket_error) as e:
             if not self._closed:
-                self._internal_error("%s connection %s reset: %s" % (name, self._conn, e), exc_info=e.args[0] not in ABORT)
+                self._internal_error("%s connection %s reset" % (name, self._conn), e, exc_info=e.args[0] not in ABORT)
         except:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
@@ -566,8 +567,14 @@ class Protocol(object):
             return
         self.input_raw_packetcount += 1
 
-    def _internal_error(self, message="", exc_info=False):
-        log.error("internal error: %s", message, exc_info=exc_info)
+    def _internal_error(self, message="", exc=None, exc_info=False):
+        #log exception info with last log message
+        ei = exc_info
+        if exc and exc:
+            ei = None
+        log.error("internal error: %s", message, exc_info=ei)
+        if exc:
+            log.error(" %s", exc, exc_info=exc_info)
         self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False):
@@ -612,8 +619,8 @@ class Protocol(object):
         log("read_parse_thread_loop starting")
         try:
             self.do_read_parse_thread_loop()
-        except:
-            self._internal_error("error in network packet reading/parsing", True)
+        except Exception as e:
+            self._internal_error("error in network packet reading/parsing", e, exc_info=True)
 
     def do_read_parse_thread_loop(self):
         """

@@ -1138,7 +1138,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             """ if ssh dies, we don't need to try to read/write from its sockets """
             e = child.poll()
             if e is not None:
-                error_message = "cannot %s using %s: the SSH process has terminated with exit code=%s" % (action, display_desc["full_ssh"], e)
+                error_message = "cannot %s using SSH" % action
                 if debug_cb:
                     debug_cb(error_message)
                 if ssh_fail_cb:
@@ -1147,11 +1147,14 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                     display_desc["ssh_abort"] = True
                     from xpra.log import Logger
                     log = Logger()
-                    log.error("The SSH process has terminated with exit code %s", e)
                     if conn.input_bytecount==0 and conn.output_bytecount==0:
+                        cmd_info = " ".join(display_desc["full_ssh"])
                         log.error("Connection to the xpra server via SSH failed for: %s", display_name)
-                        log.error(" the command line used was: %s", cmd)
-                        log.error(" check your username, hostname, display number, etc")
+                        log.error(" check your username, hostname, display number, firewall, etc")
+                    else:
+                        log.error("The SSH process has terminated with exit code %s", e)
+                    log.error(" the command line used was:")
+                    log.error(" %s", cmd_info)
                 raise ConnectionClosedException(error_message)
         def stop_tunnel():
             if os.name=="posix":

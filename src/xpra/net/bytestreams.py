@@ -195,7 +195,7 @@ class TwoFileConnection(Connection):
         log("%s.close() done", self)
 
     def __repr__(self):
-        return "TwoFileConnection(%s)" % str(self.target)
+        return "Pipe(%s)" % str(self.target)
 
     def get_info(self):
         d = Connection.get_info(self)
