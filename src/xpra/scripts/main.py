@@ -1521,7 +1521,6 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         sockdir = display_desc["socket_dir"]
         sockdir = DotXpra(sockdir)
         sockfile = get_sockpath(display_desc, error_cb)
-        print("exit-code=%s" % exit_code)
         if exit_code==0:
             #client exited normally, probably worked
             #so we give the server just a bit of time to cleanup:
