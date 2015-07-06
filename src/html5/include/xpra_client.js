@@ -443,7 +443,7 @@ XpraClient.prototype._get_encodings = function() {
 
 XpraClient.prototype._make_hello = function() {
 	return {
-		"version"					: "0.15.0",
+		"version"					: "0.16.0",
 		"platform"					: this._guess_platform(),
 		"platform.name"				: this._guess_platform_name(),
 		"platform.processor"		: this._guess_platform_processor(),
