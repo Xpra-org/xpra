@@ -388,6 +388,11 @@ cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
 cdef class X11WindowBindings(X11CoreBindings):
 
+    cdef object has_xshape
+
+    def __cinit__(self):
+        self.has_xshape = None
+
     def __repr__(self):
         return "X11WindowBindings(%s)" % self.display_name
 
@@ -516,16 +521,22 @@ cdef class X11WindowBindings(X11CoreBindings):
     ###################################
     def displayHasXShape(self):
         cdef int event_base = 0, ignored = 0
-        if not XShapeQueryExtension(self.display, &event_base, &ignored):
-            log.warn("X11 extension XShape not available")
-            return False
-        log("X11 extension XShape event_base=%i", event_base)
         cdef int cmajor, cminor
-        if not XShapeQueryVersion(self.display, &cmajor, &cminor):
-            log.warn("XShape version query failed")
-            return False
-        log("found X11 extension XShape with version %i.%i", cmajor, cminor)
-        return True
+        if self.has_xshape is not None:
+            pass
+        elif not XShapeQueryExtension(self.display, &event_base, &ignored):
+            log.warn("X11 extension XShape not available")
+            self.has_xshape = False
+        else:
+            log("X11 extension XShape event_base=%i", event_base)
+            if not XShapeQueryVersion(self.display, &cmajor, &cminor):
+                log.warn("XShape version query failed")
+                self.has_xshape = False
+            else:
+                log("found X11 extension XShape with version %i.%i", cmajor, cminor)
+                self.has_xshape = True
+        log("displayHasXShape()=%s", self.has_xshape)
+        return self.has_xshape
 
     def XShapeSelectInput(self, Window window):
         cdef int ShapeNotifyMask = 1

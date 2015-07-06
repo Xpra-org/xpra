@@ -201,6 +201,8 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite = CompositeHelper(self.client_window, False, USE_XSHM)
             with xsync:
                 self._composite.setup()
+                if X11Window.displayHasXShape():
+                    X11Window.XShapeSelectInput(self.xid)
         except XError as e:
             remove_event_receiver(self.client_window, self)
             log("%s %#x does not support compositing: %s", self._MODELTYPE, self.xid, e)

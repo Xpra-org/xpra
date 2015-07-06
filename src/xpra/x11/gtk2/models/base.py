@@ -158,8 +158,6 @@ class BaseWindowModel(CoreX11WindowModel):
     def __init__(self, client_window):
         super(BaseWindowModel, self).__init__(client_window)
         self._input_field = True            # The WM_HINTS input field
-        if X11Window.displayHasXShape():
-            X11Window.XShapeSelectInput(self.xid)
 
 
     def _read_initial_X11_properties(self):
