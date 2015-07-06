@@ -50,7 +50,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, CLIENT_EXIT
+from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, CLIENT_EXIT
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -971,62 +971,70 @@ class UIXpraClient(XpraClientBase):
             except:
                 pass
         capabilities.update({
+            #generic server flags:
+            "notify-startup-complete"   : True,
             "wants_events"              : True,
             "randr_notify"              : True,
+            #mouse and cursors:
             "compressible_cursors"      : True,
             "mouse.echo"                : MOUSE_ECHO,
             "mouse.initial-position"    : self.get_mouse_position(),
-            "clipboard"                 : self.client_supports_clipboard,
-            "clipboard.notifications"   : self.client_supports_clipboard,
-            "clipboard.selections"      : CLIPBOARDS,
-            #buggy osx clipboards:
-            "clipboard.want_targets"    : CLIPBOARD_WANT_TARGETS,
-            #buggy osx and win32 clipboards:
-            "clipboard.greedy"          : CLIPBOARD_GREEDY,
-            "clipboard.set_enabled"     : True,
-            "notifications"             : self.client_supports_notifications,
+            "named_cursors"             : False,
             "cursors"                   : self.client_supports_cursors,
-            "bell"                      : self.client_supports_bell,
-            "vrefresh"                  : get_vrefresh(),
             "double_click.time"         : get_double_click_time(),
             "double_click.distance"     : get_double_click_distance(),
-            "sound.server_driven"       : True,
-            "encoding.scaling.control"  : self.scaling,
-            "encoding.client_options"   : True,
-            "encoding_client_options"   : True,
-            "encoding.csc_atoms"        : True,
-            #TODO: check for csc support (swscale only?)
-            "encoding.video_subregion"  : True,
-            "encoding.video_reinit"     : True,
-            "encoding.video_scaling"    : True,
-            #separate plane is only supported by avcodec2:
-            "encoding.video_separateplane"  : get_codec("dec_avcodec") is None and get_codec("dec_avcodec2") is not None,
-            "encoding.webp_leaks"       : False,
-            "encoding.transparency"     : self.has_transparency(),
-            "rgb24zlib"                 : True,
-            "encoding.rgb24zlib"        : True,
-            "named_cursors"             : False,
+            #features:
+            "notifications"             : self.client_supports_notifications,
+            "bell"                      : self.client_supports_bell,
+            "vrefresh"                  : get_vrefresh(),
             "share"                     : self.client_supports_sharing,
-            "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             "windows"                   : self.windows_enabled,
-            "window.raise"              : True,
-            #only implemented on posix with the gtk client:
-            "window.initiate-moveresize": False,
             "show-desktop"              : True,
-            "raw_window_icons"          : True,
             "system_tray"               : self.client_supports_system_tray,
-            "xsettings-tuple"           : True,
+            #window meta data and handling:
             "generic_window_types"      : True,
             "server-window-move-resize" : True,
             "server-window-resize"      : True,
-            "window.resize-counter"     : True,
-            "notify-startup-complete"   : True,
+            #encoding related:
+            "raw_window_icons"          : True,
             "generic-rgb-encodings"     : True,
+            "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
+            #sound:
+            "sound.server_driven"       : True,
             "av-sync"                   : self.av_sync,
-            #start at 0 and rely on sound-control packets to set the correct value:
-            "av-sync.delay.default"     : 0,
+            "av-sync.delay.default"     : 0,    #start at 0 and rely on sound-control packets to set the correct value
+            })
+        updict(capabilities, "window", {
+            "raise"                     : True,
+            #only implemented on posix with the gtk client:
+            "initiate-moveresize"       : False,
+            "resize-counter"            : True,
+            })
+        updict(capabilities, "clipboard", {
+            ""                          : self.client_supports_clipboard,
+            "notifications"             : self.client_supports_clipboard,
+            "selections"                : CLIPBOARDS,
+            #buggy osx clipboards:
+            "want_targets"              : CLIPBOARD_WANT_TARGETS,
+            #buggy osx and win32 clipboards:
+            "greedy"                    : CLIPBOARD_GREEDY,
+            "set_enabled"               : True,
+            })
+        updict(capabilities, "encoding", {
+            "scaling.control"           : self.scaling,
+            "client_options"            : True,
+            "csc_atoms"                 : True,
+            #TODO: check for csc support (swscale only?)
+            "video_subregion"           : True,
+            "video_reinit"              : True,
+            "video_scaling"             : True,
+            #separate plane is only supported by avcodec2:
+            "video_separateplane"       : get_codec("dec_avcodec2") is not None,
+            "webp_leaks"                : False,
+            "transparency"              : self.has_transparency(),
+            "rgb24zlib"                 : True,
             })
         if self.dpi>0:
             #command line (or config file) override supplied:
@@ -1137,7 +1145,6 @@ class UIXpraClient(XpraClientBase):
                                          receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
                 except Exception:
                     pass
-            from xpra.util import updict
             updict(capabilities, "sound", sound_caps)
             soundlog("sound capabilities: %s", sound_caps)
         except ImportError as e:
