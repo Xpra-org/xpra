@@ -112,10 +112,10 @@ def main(script_file, cmdline):
             command_info("%s" % e)
             return 0
         except InitException as e:
-            command_error("xpra initialization error: %s" % e)
+            command_error("xpra initialization error:\n %s" % e)
             return 1
         except AssertionError as e:
-            command_error("xpra initialization error: %s" % e)
+            command_error("xpra initialization error:\n %s" % e)
             traceback.print_tb(sys.exc_info()[2])
             return 1
         except Exception:
@@ -1075,9 +1075,12 @@ def single_display_match(dir_servers, error_cb):
 
 
 def _socket_connect(sock, endpoint, description, dtype):
-    sock.connect(endpoint)
+    from xpra.net.bytestreams import SocketConnection, pretty_socket
+    try:
+        sock.connect(endpoint)
+    except Exception as e:
+        raise InitException("failed to connect to '%s' : %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
-    from xpra.net.bytestreams import SocketConnection
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
 
 def connect_or_fail(display_desc):
