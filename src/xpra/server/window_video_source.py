@@ -74,12 +74,9 @@ class WindowVideoSource(WindowSource):
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
-        #default for clients that don't specify "csc_modes":
-        #(0.10 onwards should have specified csc_modes or full_csc_modes)
-        self.csc_modes = ("YUV420P", "YUV422P", "YUV444P")
         #for 0.12 onwards: per encoding lists:
         self.full_csc_modes = {}
-        self.parse_csc_modes(self.encoding_options.listget("csc_modes", default_value=None), self.encoding_options.dictget("full_csc_modes", default_value=None))
+        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
 
         self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
@@ -122,7 +119,6 @@ class WindowVideoSource(WindowSource):
         self.supports_video_reinit = False
         self.supports_video_subregion = False
 
-        self.csc_modes = []
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.video_encodings = []
         self.non_video_encodings = []
@@ -154,7 +150,6 @@ class WindowVideoSource(WindowSource):
             "supports_video_scaling"    : self.supports_video_scaling,
             "supports_video_reinit"     : self.supports_video_reinit,
             "supports_video_subregion"  : self.supports_video_subregion,
-            "csc_modes"                 : self.csc_modes,
             }
         for enc, csc_modes in (self.full_csc_modes or {}).items():
             info["csc_modes.%s" % enc] = csc_modes
@@ -265,10 +260,8 @@ class WindowVideoSource(WindowSource):
             self._video_encoder = None
 
 
-    def parse_csc_modes(self, csc_modes, full_csc_modes):
+    def parse_csc_modes(self, full_csc_modes):
         #only override if values are specified:
-        if csc_modes is not None and type(csc_modes) in (list, tuple):
-            self.csc_modes = csc_modes
         if full_csc_modes is not None and type(full_csc_modes)==dict:
             self.full_csc_modes = full_csc_modes
 
@@ -281,7 +274,7 @@ class WindowVideoSource(WindowSource):
 
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
-        self.parse_csc_modes(properties.listget("encoding.csc_modes", default_value=None), properties.dictget("encoding.full_csc_modes", default_value=None))
+        self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
         self.uses_swscale = properties.boolget("encoding.uses_swscale", self.uses_swscale)
@@ -294,8 +287,8 @@ class WindowVideoSource(WindowSource):
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
         except:
             self.edge_encoding = None
-        log("do_set_client_properties(%s) csc_modes=%s, full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
-            properties, self.csc_modes, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.edge_encoding, self.scaling_control)
+        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
+            properties, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         return self.get_best_encoding_video
@@ -768,9 +761,9 @@ class WindowVideoSource(WindowSource):
 
         #these are the CSC modes the client can handle for this encoding:
         #we must check that the output csc mode for each encoder is one of those
-        supported_csc_modes = self.full_csc_modes.get(encoding, self.csc_modes)
+        supported_csc_modes = self.full_csc_modes.get(encoding)
         if not supported_csc_modes:
-            scorelog("get_video_pipeline_options: no supported csc modes for %s / %s", encoding, self.csc_modes)
+            scorelog("get_video_pipeline_options: no supported csc modes for %s", encoding)
             return []
         encoder_specs = self.video_helper.get_encoder_specs(encoding)
         if not encoder_specs:
@@ -1206,7 +1199,7 @@ class WindowVideoSource(WindowSource):
                 return False
         enc_start = time.time()
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
-        dst_formats = self.full_csc_modes.get(encoder_spec.encoding, self.csc_modes)
+        dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
         ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, self.encoding_options)
         #record new actual limits:

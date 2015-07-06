@@ -98,7 +98,7 @@ class ClientWindowBase(ClientWidgetBase):
     def setup_window(self):
         self.new_backing(*self._size)
         #tell the server about the encoding capabilities of this backing instance:
-        #"rgb_formats", "full_csc_modes", "csc_modes":
+        #"rgb_formats", "full_csc_modes":
         self._client_properties.update(self._backing.get_encoding_properties())
 
 

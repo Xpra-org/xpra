@@ -127,7 +127,6 @@ class WindowBackingBase(object):
                  "encodings.rgb_formats"    : rgb_modes,
                  "encoding.transparency"    : self._alpha_enabled,
                  "encoding.full_csc_modes"  : self._get_full_csc_modes(rgb_modes),
-                 "encoding.csc_modes"       : self._get_csc_modes(rgb_modes)
                  }
 
     def _get_full_csc_modes(self, rgb_modes):
@@ -140,14 +139,6 @@ class WindowBackingBase(object):
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         log("_get_full_csc_modes(%s)=%s (target_rgb_modes=%s)", rgb_modes, full_csc_modes, target_rgb_modes)
         return full_csc_modes
-
-    def _get_csc_modes(self, rgb_modes):
-        #as above, but for older servers: less detailed than "full" csc modes info
-        csc_modes = []
-        for modes in self._get_full_csc_modes(rgb_modes).values():
-            csc_modes += modes
-        csc_modes = list(set(csc_modes))
-        return csc_modes
 
 
     def unpremultiply(self, img_data):
