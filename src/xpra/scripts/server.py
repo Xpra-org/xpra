@@ -749,6 +749,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
     clobber   = upgrading or opts.use_display
+    start_vfb = not shadowing and not proxying and not clobber
 
     if upgrading or shadowing:
         #there should already be one running
@@ -792,6 +793,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     script = xpra_runner_shell_script(xpra_file, os.getcwd(), opts.socket_dir)
+    
+    if start_vfb or opts.daemon:
+        #we will probably need a log dir
+        #either for the vfb, or for our own log file
+        log_dir = os.path.expanduser(opts.log_dir)
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir, 0o700)
 
     stdout = sys.stdout
     stderr = sys.stderr
@@ -802,7 +810,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
             opts.password_file = os.path.abspath(opts.password_file)
         # At this point we may not know the display name,
         # so log_filename0 may point to a temporary file which we will rename later
-        log_filename0 = select_log_file(opts.log_dir, opts.log_file, display_name)
+        log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
         logfd = open_log_file(log_filename0)
         assert logfd > 2
         stdout, stderr = daemonize(logfd)
@@ -855,7 +863,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     # Start the Xvfb server first to get the display_name if needed
     xvfb = None
     xvfb_pid = None
-    if not shadowing and not proxying and not clobber:
+    if start_vfb:
         try:
             xvfb, display_name = start_Xvfb(opts.xvfb, display_name)
         except OSError as e:
@@ -866,7 +874,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         os.environ["DISPLAY"] = display_name
 
     if opts.daemon:
-        log_filename1 = select_log_file(opts.log_dir, opts.log_file, display_name)
+        log_filename1 = select_log_file(log_dir, opts.log_file, display_name)
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             os.rename(log_filename0, log_filename1)
