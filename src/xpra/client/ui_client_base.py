@@ -1023,6 +1023,7 @@ class UIXpraClient(XpraClientBase):
             "set_enabled"               : True,
             })
         updict(capabilities, "encoding", {
+            "flush"                     : True,
             "scaling.control"           : self.scaling,
             "client_options"            : True,
             "csc_atoms"                 : True,

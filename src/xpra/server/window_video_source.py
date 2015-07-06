@@ -596,7 +596,7 @@ class WindowVideoSource(WindowSource):
         #send this using the video encoder:
         video_options = options.copy()
         video_options["av-sync"] = True
-        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options)
+        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0)
 
         #now substract this region from the rest:
         trimmed = []
@@ -626,21 +626,20 @@ class WindowVideoSource(WindowSource):
         send_nonvideo(regions=trimmed, encoding=None, exclude_region=actual_vr)
 
 
-    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
+    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options, flush=None):
         #now figure out if we need to send edges separately:
         if coding in self.video_encodings:
             dw = w - (w & self.width_mask)
             dh = h - (h & self.height_mask)
         else:
             dw, dh = 0, 0
-        WindowSource.process_damage_region(self, damage_time, window, x, y, w-dw, h-dh, coding, options)
-        if not self.edge_encoding:
+        if self.edge_encoding:
             #we can't send the edges, no big deal
-            return
-        if dw>0:
-            WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, self.edge_encoding, options)
-        if dh>0:
-            WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, self.edge_encoding, options)
+            if dw>0:
+                WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1)
+            if dh>0:
+                WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, self.edge_encoding, options, flush=1)
+        WindowSource.process_damage_region(self, damage_time, window, x, y, w-dw, h-dh, coding, options, flush=flush)
 
 
     def must_encode_full_frame(self, window, encoding):

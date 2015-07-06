@@ -212,6 +212,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.paint_spinner = False
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
+        self.pending_fbo_paint = []
 
         GTKWindowBacking.__init__(self, wid, window_alpha)
         self.init_gl_config(window_alpha)
@@ -443,9 +444,16 @@ class GLWindowBackingBase(GTKWindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self, x, y, w, h):
+    def present_fbo(self, x, y, w, h, flush=None):
         if not self.paint_screen:
             return
+        log("present_fbo: adding %s to pending paint list", (x, y, w, h))
+        self.pending_fbo_paint.append((x, y, w, h))
+        #if the flush flag is missing, or with the special value 0, actually do the paint:
+        if flush is None or flush==0:
+            self.do_present_fbo()
+
+    def do_present_fbo(self):
         self.gl_marker("Presenting FBO on screen")
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -460,10 +468,15 @@ class GLWindowBackingBase(GTKWindowBacking):
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
         ww, wh = self.size
+
         if self.glconfig.is_double_buffered():
             #refresh the whole window:
-            x, y = 0, 0
-            w, h = ww, wh
+            rectangles = ((0, 0, ww, wh), )
+        else:
+            #paint just the rectangles we have accumulated:
+            rectangles = self.pending_fbo_paint
+            self.pending_fbo_paint = []
+        log("painting %s", rectangles)
 
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
@@ -472,16 +485,18 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+
         glBegin(GL_QUADS)
-        #note how we invert coordinates..
-        glTexCoord2i(x, wh-y)
-        glVertex2i(x, y)            #top-left of window viewport
-        glTexCoord2i(x, wh-y-h)
-        glVertex2i(x, y+h)          #bottom-left of window viewport
-        glTexCoord2i(x+w, wh-y-h)
-        glVertex2i(x+w, y+h)        #bottom-right of window viewport
-        glTexCoord2i(x+w, wh-y)
-        glVertex2i(x+w, y)          #top-right of window viewport
+        for x,y,w,h in rectangles:
+            #note how we invert coordinates..
+            glTexCoord2i(x, wh-y)
+            glVertex2i(x, y)            #top-left of window viewport
+            glTexCoord2i(x, wh-y-h)
+            glVertex2i(x, y+h)          #bottom-left of window viewport
+            glTexCoord2i(x+w, wh-y-h)
+            glVertex2i(x+w, y+h)        #bottom-right of window viewport
+            glTexCoord2i(x+w, wh-y)
+            glVertex2i(x+w, y)          #top-right of window viewport
         glEnd()
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -521,7 +536,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.unset_rgb_paint_state()
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
-        log("%s.present_fbo() done", self)
+        log("%s.do_present_fbo() done", self)
 
     def gl_show(self):
         if self.glconfig.is_double_buffered():
@@ -655,18 +670,18 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
 
             # Present update to screen
-            self.present_fbo(x, y, width, height)
+            self.present_fbo(x, y, width, height, options.get("flush"))
             # present_fbo has reset state already
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)
         img.clone_pixel_data()
-        self.idle_add(self.gl_paint_planar, options.get("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
+        self.idle_add(self.gl_paint_planar, options.get("flush"), options.get("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
 
-    def gl_paint_planar(self, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
+    def gl_paint_planar(self, flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
-        log("gl_paint_planar%s", (img, x, y, enc_width, enc_height, width, height, callbacks))
+        log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
             pixel_format = img.get_pixel_format()
             assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
@@ -689,7 +704,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 self.paint_box(encoding, False, x, y, width, height)
                 # Present it on screen
-                self.present_fbo(x, y, width, height)
+                self.present_fbo(x, y, width, height, flush)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)

@@ -113,6 +113,7 @@ class WindowSource(object):
         self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
+        self.supports_flush = encoding_options.get("flush")
         ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg"))     #default encodings for auto-refresh
         if self.webp_leaks:
             ropts.remove("webp")                        #don't use webp if the client is going to leak with it!
@@ -1179,15 +1180,20 @@ class WindowSource(object):
                     self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
                     return
 
-        #we're processing a number of regions separately:
-        for region in regions:
+        #we're processing a number of regions separately,
+        #start by figuring out which encoding will get used, and shortcut out if this needs to be a full window update
+        i_reg_enc = []
+        for i,region in enumerate(regions):
             actual_encoding = get_encoding(region.width*region.height)
             if self.must_encode_full_frame(window, actual_encoding):
-                #we may have sent regions already - which is now wasted, oh well..
                 self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
                 #we can stop here (full screen update will include the other regions)
                 return
-            self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options)
+            i_reg_enc.append((i, region, actual_encoding))
+
+        #reversed so that i=0 is last for flushing
+        for i, region, actual_encoding in reversed(i_reg_enc):
+            self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i)
 
 
     def must_encode_full_frame(self, window, encoding):
@@ -1206,7 +1212,7 @@ class WindowSource(object):
             self.idle_add(image.free)
 
 
-    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
+    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options, flush=None):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -1242,7 +1248,7 @@ class WindowSource(object):
         now = time.time()
         log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
-        item = (window, damage_time, w, h, now, self.wid, image, coding, sequence, options)
+        item = (window, damage_time, w, h, now, self.wid, image, coding, sequence, options, flush)
         av_sync = options.get("av-sync", False)
         av_delay = self.av_sync_delay*int(av_sync)
         if not av_sync:
@@ -1303,13 +1309,13 @@ class WindowSource(object):
         self.timeout_add(first_due, self.call_in_encode_thread, self.encode_from_queue)
 
 
-    def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, wid, image, coding, sequence, options):
+    def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, wid, image, coding, sequence, options, flush):
         """ This function is called from the damage data thread!
             Extra care must be taken to prevent access to X11 functions on window.
         """
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
-            packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options)
+            packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options, flush)
         finally:
             self.free_image_wrapper(image)
             del image
@@ -1569,7 +1575,7 @@ class WindowSource(object):
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
 
 
-    def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
+    def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options, flush):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -1707,6 +1713,8 @@ class WindowSource(object):
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), md5)
         #actual network packet:
+        if self.supports_flush and flush is not None:
+            client_options["flush"] = flush
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %5.1f%% (%5iKB to %5iKB), delta=%5i, client_options=%s",
