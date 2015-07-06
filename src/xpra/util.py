@@ -472,8 +472,13 @@ def std(s, extras="-,./: "):
         s = s.decode("latin1")
     except:
         pass
+    def c(v):
+        try:
+            return chr(v)
+        except:
+            return str(v)
     def f(v):
-        return str.isalnum(str(v)) or v in extras
+        return str.isalnum(c(v)) or v in extras
     return "".join(filter(f, s))
 
 def alnum(s):
@@ -481,9 +486,14 @@ def alnum(s):
         s = s.encode("latin1")
     except:
         pass
+    def c(v):
+        try:
+            return chr(v)
+        except:
+            return str(v)
     def f(v):
-        return str.isalnum(str(v))
-    return "".join(filter(f, s))
+        return str.isalnum(c(v))
+    return "".join(c(v) for v in filter(f, s))
 
 def nonl(x):
     if x is None:
