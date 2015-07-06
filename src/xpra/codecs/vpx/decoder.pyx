@@ -105,7 +105,7 @@ IF ENABLE_VP9:
     if VPX_DECODER_ABI_VERSION>=9:
         vp9_cs.append("YUV444P")
     else:
-        log.warn("libvpx ABI version %s is too old: disabling VP9 YUV444P support")
+        log.warn("libvpx ABI version %s is too old: disabling VP9 YUV444P support", VPX_DECODER_ABI_VERSION)
     COLORSPACES["vp9"] = vp9_cs
 
 
