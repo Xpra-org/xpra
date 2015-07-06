@@ -154,6 +154,10 @@ BuildArch: noarch
 %description common
 This package contains the files which are common to both the Python 2 and Python 3 xpra packages.
 
+%pre common
+getent group xpra > /dev/null || groupadd -r xpra
+
+
 #optional python3 package:
 %if %{with_python3}
 %package -n python3-xpra
@@ -257,6 +261,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 /usr/lib/cups/backend/xpraforwarder
+/usr/lib/tmpfiles.d/xpra.conf
 %dir %{_sysconfdir}/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf

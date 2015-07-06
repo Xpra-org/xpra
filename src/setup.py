@@ -1599,6 +1599,8 @@ else:
         #always include the wrapper in case we need it later:
         #(we remove it during the 'install' step below if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")
+        #not supported by all distros, but doesn't hurt to install it anyway:
+        add_data_files("lib/tmpfiles.d", ["tmpfiles.d/xpra.conf"])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:

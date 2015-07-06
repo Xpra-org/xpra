@@ -15,6 +15,7 @@ recursive-include xdg *
 recursive-include cups *
 recursive-include icons *
 recursive-include scripts *
+recursive-include tmpfiles.d *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
