@@ -1191,6 +1191,9 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         sockpath = get_sockpath(display_desc, sockpathfail_cb)
         try:
             conn = _socket_connect(sock, sockpath, display_name, dtype)
+            #now that we know it:
+            if "socket_dir" not in display_desc:
+                display_desc["socket_dir"] = os.path.dirname(sockpath)
         except Exception as e:
             raise InitException("cannot connect to %s: %s" % (sockpath, e))
         conn.timeout = SOCKET_TIMEOUT
