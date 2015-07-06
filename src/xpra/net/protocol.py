@@ -256,7 +256,7 @@ class Protocol(object):
     def source_has_more(self):
         self._source_has_more.set()
         #start the format thread:
-        if not self._write_format_thread:
+        if not self._write_format_thread and not self._closed:
             from xpra.make_thread import make_thread
             self._write_format_thread = make_thread(self._write_format_thread_loop, "format")
             self._write_format_thread.start()
@@ -609,7 +609,7 @@ class Protocol(object):
 
     def read_queue_put(self, data):
         #start the parse thread if needed:
-        if not self._read_parser_thread:
+        if not self._read_parser_thread and not self._closed:
             from xpra.make_thread import make_thread
             self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse")
             self._read_parser_thread.start()
@@ -844,8 +844,9 @@ class Protocol(object):
                 def packet_queued(*args):
                     #if we're here, we have the lock and the packet is in the write queue
                     log("flush_then_close: packet_queued() closed=%s", self._closed)
-                    #check every 100ms
-                    self.timeout_add(100, wait_for_packet_sent)
+                    if wait_for_packet_sent():
+                        #check again every 100ms
+                        self.timeout_add(100, wait_for_packet_sent)
                 self._add_chunks_to_queue(chunks, start_send_cb=None, end_send_cb=packet_queued)
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
@@ -935,11 +936,18 @@ class Protocol(object):
         #the format thread will exit since closed is set too:
         self._source_has_more.set()
         #make the threads exit by adding the empty marker:
+        exit_queue = Queue()
+        for _ in range(10):     #just 2 should be enough!
+            exit_queue.put(None)
         try:
-            self._write_queue.put_nowait(None)
+            owq = self._write_queue
+            self._write_queue = exit_queue
+            owq.put_nowait(None)
         except:
             pass
         try:
-            self._read_queue.put_nowait(None)
+            orq = self._read_queue
+            self._read_queue = exit_queue
+            orq.put_nowait(None)
         except:
             pass

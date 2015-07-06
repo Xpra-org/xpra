@@ -34,7 +34,7 @@ class Worker_Thread(Thread):
             return
         if force:
             if self.items.qsize()>0:
-                log.warn("Worker_Thread.stop(%s) %s items in work queue will not run!", force, self.items.qsize())
+                log.warn("Worker stop: %s items in the queue will not be run!", self.items.qsize())
             self.exit = True
         else:
             if self.items.qsize()>0:
@@ -52,6 +52,7 @@ class Worker_Thread(Thread):
         while not self.exit:
             item = self.items.get()
             if item is None:
+                self.exit = True
                 break
             try:
                 debug("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
@@ -59,7 +60,6 @@ class Worker_Thread(Thread):
             except:
                 log.error("Worker_Thread.run() error on %s", item, exc_info=True)
         debug("Worker_Thread.run() ended")
-        self.exit = True
 
 #only one worker thread for now:
 singleton = None

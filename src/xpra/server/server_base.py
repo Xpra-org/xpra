@@ -639,10 +639,8 @@ class ServerBase(ServerCore):
                 netlog.info("xpra client disconnected.")
                 self.reset_server_timeout(True)
 
-    def cleanup_all_protocols(self, reason, force=False):
-        protocols = list(self._potential_protocols) + list(self._server_sources.keys())
-        self.do_cleanup_all_protocols(protocols, reason, force)
-
+    def get_all_protocols(self):
+        return list(self._potential_protocols) + list(self._server_sources.keys())
 
 
     def is_timedout(self, protocol):

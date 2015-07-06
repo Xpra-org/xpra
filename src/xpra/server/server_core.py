@@ -131,6 +131,7 @@ class ServerCore(object):
         self._when_ready = []
         self.child_reaper = None
 
+        self._closing = False
         self._upgrading = False
         #networking bits:
         self._potential_protocols = []
@@ -275,6 +276,7 @@ class ServerCore(object):
     def signal_quit(self, signum, frame):
         sys.stdout.write("\n")
         sys.stdout.flush()
+        self._closing = True
         log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
@@ -283,6 +285,7 @@ class ServerCore(object):
 
     def clean_quit(self, upgrading=False):
         log("clean_quit(%s)", upgrading)
+        self._closing = True
         #ensure the reaper doesn't call us again:
         if self.child_reaper:
             def noop():
@@ -292,6 +295,7 @@ class ServerCore(object):
         self.cleanup()
         def quit_timer(*args):
             log.debug("quit_timer()")
+            stop_worker(True)
             self.quit(upgrading)
         #if from a signal, just force quit:
         stop_worker()
@@ -304,6 +308,9 @@ class ServerCore(object):
             os_util.force_quit()
         self.timeout_add(5000, force_quit)
         log("clean_quit(..) quit timers scheduled")
+        self.log_exit_state()
+
+    def log_exit_state(self):
         frames = sys._current_frames()
         log("clean_quit() after cleanup, found %s frames:", len(frames))
         for i,(fid,frame) in enumerate(frames.items()):
@@ -363,9 +370,10 @@ class ServerCore(object):
             reason = SERVER_EXIT
         else:
             reason = SERVER_SHUTDOWN
-        self.cleanup_all_protocols(reason, False)
+        protocols = self.get_all_protocols()
+        self.cleanup_protocols(protocols, reason, False)
         self.do_cleanup()
-        self.cleanup_all_protocols(reason, True)
+        self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
 
     def do_cleanup(self):
@@ -373,10 +381,10 @@ class ServerCore(object):
         time.sleep(0.1)
 
 
-    def cleanup_all_protocols(self, reason, force=False):
-        self.do_cleanup_all_protocols(reason, force)
+    def get_all_protocols(self):
+        return list(self._potential_protocols)
 
-    def do_cleanup_all_protocols(self, protocols, reason, force=False):
+    def cleanup_protocols(self, protocols, reason, force=False):
         netlog("do_cleanup_all_protocols(%s, %s, %s)", protocols, reason, force)
         for protocol in protocols:
             if force:
@@ -389,13 +397,16 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def _new_connection(self, listener, *args):
+        if self._closing:
+            netlog.warn("ignoring new connection during shutdown") 
+            return False
         socktype = self.socket_types.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
         sock, address = listener.accept()
         if len(self._potential_protocols)>=self._max_connections:
             netlog.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
-            return  True
+            return True
         try:
             peername = sock.getpeername()
         except:
