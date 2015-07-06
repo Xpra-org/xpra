@@ -50,9 +50,9 @@ def do_get_icon_dir():
 def do_get_socket_dirs():
     SOCKET_DIRS = ["~/.xpra"]   #the old default
     #added in 0.16, support for /run:
-    if os.path.exists("/run/user") and os.path.isdir("/run/user"):
+    if os.path.exists("/var/run/user") and os.path.isdir("/var/run/user"):
         #private, per user: /run/user/1000/xpra
-        SOCKET_DIRS.append("/run/user/$UID/xpra")
+        SOCKET_DIRS.append("/var/run/user/$UID/xpra")
         #for shared sockets:
-        SOCKET_DIRS.append("/run/xpra")
+        SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
