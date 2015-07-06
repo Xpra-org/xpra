@@ -14,8 +14,9 @@ def DBUS_Notifier_factory():
     try:
         return DBUS_Notifier()
     except Exception as e:
-        log.error("failed to instantiate the dbus notification handler: %s", e)
-        log.warn("disable notifications to avoid this error")
+        log.warn("failed to instantiate the dbus notification handler:")
+        log.warn(" %s", e)
+        log.warn(" disable notifications to avoid this warning")
         return None
 
 class DBUS_Notifier(NotifierBase):
