@@ -209,7 +209,11 @@ class subprocess_callee(object):
         command = bytestostr(packet[0])
         if command==Protocol.CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
-            self.stop()
+            self.net_stop()
+            return
+        elif command==Protocol.GIBBERISH:
+            log("gibberish received: %s", repr_ellipsized(packet))
+            self.net_stop()
             return
         #make it easier to hookup signals to methods:
         attr = command.replace("-", "_")
@@ -272,6 +276,7 @@ class subprocess_caller(object):
         self.large_packets = []
         #hook a default packet handlers:
         self.connect(Protocol.CONNECTION_LOST, self.connection_lost)
+        self.connect(Protocol.GIBBERISH, self.gibberish)
 
 
     def connect(self, signal, cb, *args):
@@ -350,6 +355,10 @@ class subprocess_caller(object):
 
     def connection_lost(self, *args):
         log("connection_lost%s", args)
+        self.stop()
+
+    def gibberish(self, *args):
+        log("gibberish%s", args)
         self.stop()
 
 
