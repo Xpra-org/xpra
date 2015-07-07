@@ -206,8 +206,8 @@ class UIXpraClient(XpraClientBase):
         self.server_dbus_proxy = False
         self.start_new_commands = False
         self.server_window_frame_extents = False
-        self.rgb_formats = []
-        self.full_csc_modes = {}
+        #what we told the server about our encoding defaults:
+        self.encoding_defaults = {}
 
         self.client_supports_opengl = False
         self.client_supports_notifications = False
@@ -1061,36 +1061,32 @@ class UIXpraClient(XpraClientBase):
             control_commands.append("enable_"+x)
         capabilities["control_commands"] = control_commands
         log("control_commands=%s", control_commands)
-        for k,v in codec_versions.items():
-            capabilities["encoding.%s.version" % k] = v
+
+        encoding_caps = {}
         if self.encoding:
-            capabilities["encoding"] = self.encoding
+            encoding_caps[""] = self.encoding
+        for k,v in codec_versions.items():
+            encoding_caps["%s.version" % k] = v
         if self.quality>0:
-            capabilities.update({
-                         "jpeg"             : self.quality,
-                         "quality"          : self.quality,
-                         "encoding.quality" : self.quality
-                         })
+            encoding_caps["quality"] = self.quality
         if self.min_quality>0:
-            capabilities["encoding.min-quality"] = self.min_quality
+            encoding_caps["min-quality"] = self.min_quality
         if self.speed>=0:
-            capabilities["speed"] = self.speed
-            capabilities["encoding.speed"] = self.speed
+            encoding_caps["speed"] = self.speed
         if self.min_speed>=0:
-            capabilities["encoding.min-speed"] = self.min_speed
+            encoding_caps["min-speed"] = self.min_speed
 
         #these are the defaults - when we instantiate a window,
         #we can send different values as part of the map event
         #these are the RGB modes we want (the ones we are expected to be able to paint with):
-        self.rgb_formats = ["RGB", "RGBX", "RGBA"]
-        capabilities["encodings.rgb_formats"] = self.rgb_formats
+        rgb_formats = ["RGB", "RGBX", "RGBA"]
+        encoding_caps["rgb_formats"] = rgb_formats
         #figure out which CSC modes (usually YUV) can give us those RGB modes:
-        self.full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*self.rgb_formats)
-        log("supported full csc_modes=%s", self.full_csc_modes)
-        capabilities["encoding.full_csc_modes"] = self.full_csc_modes
+        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
+        log("supported full csc_modes=%s", full_csc_modes)
+        encoding_caps["full_csc_modes"] = full_csc_modes
 
-        log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
-        capabilities["encoding.uses_swscale"] = True
+        encoding_caps["uses_swscale"] = True
         if "h264" in self.get_core_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for I420/YUV420P
@@ -1111,13 +1107,19 @@ class UIXpraClient(XpraClientBase):
                 if profile:
                     #send as both old and new names:
                     for h264_name in ("x264", "h264"):
-                        capabilities["encoding.%s.%s.profile" % (h264_name, old_csc_name)] = profile
-                        capabilities["encoding.%s.%s.profile" % (h264_name, csc_name)] = profile
-            log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
+                        encoding_caps["%s.%s.profile" % (h264_name, old_csc_name)] = profile
+                        encoding_caps["%s.%s.profile" % (h264_name, csc_name)] = profile
+            log("x264 encoding options: %s", str([(k,v) for k,v in encoding_caps.items() if k.startswith("x264.")]))
         iq = max(self.min_quality, self.quality)
         if iq<0:
             iq = 70
-        capabilities["encoding.initial_quality"] = iq
+        encoding_caps["initial_quality"] = iq
+        log("encoding capabilities: %s", encoding_caps)
+        updict(capabilities, "encoding", encoding_caps)
+        self.encoding_defaults = encoding_caps
+        #hack: workaround namespace issue ("encodings" vs "encoding"..)
+        capabilities["encodings.rgb_formats"] = rgb_formats
+
         sound_caps = {}
         try:
             import xpra.sound
