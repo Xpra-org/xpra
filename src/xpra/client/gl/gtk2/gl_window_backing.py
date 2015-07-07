@@ -31,6 +31,8 @@ class GLPixmapBacking(GLWindowBackingBase):
         return gtkgl.widget_get_gl_drawable(self._backing)
 
     def gl_expose_event(self, glarea, event):
+        if not self.paint_screen:
+            return
         context = self.gl_context()
         log("%s.gl_expose_event(%s, %s) context=%s", self, glarea, event, context)
         if not context:
