@@ -21,6 +21,7 @@ from xpra.x11.gtk2.tray import get_tray_window, SystemTray
 from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
 from xpra.x11.gtk2.gdk_bindings import (
                                add_catchall_receiver,       #@UnresolvedImport
+                               remove_catchall_receiver,    #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
@@ -321,6 +322,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._tray.cleanup()
             self._tray = None
         X11ServerBase.do_cleanup(self)
+        remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
         if self._wm:

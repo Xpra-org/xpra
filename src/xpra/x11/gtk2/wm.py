@@ -16,9 +16,9 @@ from xpra.x11.gtk2.selection import ManagerSelection
 from xpra.x11.gtk2.world_window import WorldWindow
 from xpra.x11.gtk2.window import WindowModel, Unmanageable, configure_bits
 from xpra.x11.gtk2.gdk_bindings import (
-               add_event_receiver,                          #@UnresolvedImport
-               add_catchall_receiver,                       #@UnresolvedImport
-               get_children,                                #@UnresolvedImport
+               add_event_receiver,                              #@UnresolvedImport
+               add_catchall_receiver, remove_catchall_receiver, #@UnresolvedImport
+               get_children,                                    #@UnresolvedImport
                )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
@@ -409,6 +409,7 @@ class Wm(gobject.GObject):
         self.cleanup()
 
     def cleanup(self):
+        remove_catchall_receiver("xpra-client-message-event", self)
         for win in list(self._windows.itervalues()):
             win.unmanage(True)
 

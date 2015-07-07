@@ -841,6 +841,14 @@ def add_catchall_receiver(signal, handler):
     catchall_receivers.setdefault(signal, []).append(handler)
     log("add_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
+def remove_catchall_receiver(signal, handler):
+    global catchall_receivers
+    try:
+        receivers = catchall_receivers.get(signal).remove(handler)
+    except:
+        pass
+    log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
+
 cdef _maybe_send_event(DEBUG, window, signal, event):
     handlers = window.get_data(_ev_receiver_key)
     hinfo = ""
