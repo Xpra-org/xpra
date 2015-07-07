@@ -330,6 +330,12 @@ class ServerBase(ServerCore):
         if not self.pulseaudio:
             return
         started_at = time.time()
+        def pulseaudio_warning():
+            soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
+            soundlog.warn(" usually, only a single pulseaudio instance can be running for each user account,")
+            soundlog.warn(" and one may be running already")
+            soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
+            soundlog.warn(" or use the 'pulseaudio=no' option")
         def pulseaudio_ended(proc):
             soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s", proc, self.pulseaudio_proc, proc.returncode)
             if self.pulseaudio_proc is None:
@@ -337,10 +343,7 @@ class ServerBase(ServerCore):
                 return
             elapsed = time.time()-started_at
             if elapsed<2:
-                soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
-                soundlog.warn(" usually, only a single pulseaudio instance can be running for each user account, and one may be running already")
-                soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
-                soundlog.warn(" or use the 'pulseaudio=no' option")
+                self.timeout_add(1000, pulseaudio_warning)
             else:
                 soundlog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
