@@ -474,7 +474,7 @@ XpraClient.prototype._make_hello = function() {
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
-		"encoding.full_csc_modes"   : {"h264" : ["YUV420P"]},
+		"encoding.full_csc_modes"	: {"h264" : ["YUV420P"]},
 		"encoding.x264.YUV420P.profile"	: "baseline",
 		//sound (not yet):
 		"sound.receive"				: true,
@@ -632,8 +632,8 @@ XpraClient.prototype._sound_start_receiving = function() {
 	try {
 		this.audio_ctx = AV.Player.fromXpraSource();
 	} catch(e) {
-	    console.error('Could not start audio player:', e);
-	    return;
+		console.error('Could not start audio player:', e);
+		return;
 	}
 	this.audio_ctx.play();
 	this.protocol.send(["sound-control", "start", "wav"]);
@@ -739,7 +739,7 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 	var wid = packet[1],
 		metadata = packet[2],
 		win = ctx.id_to_window[wid];
-    win.update_metadata(metadata);
+	win.update_metadata(metadata);
 }
 
 XpraClient.prototype._process_lost_window = function(packet, ctx) {
