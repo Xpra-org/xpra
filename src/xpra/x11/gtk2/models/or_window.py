@@ -36,7 +36,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         # So double check now, *after* putting in our request:
         if not X11Window.is_mapped(self.xid):
             raise Unmanageable("window already unmapped")
-        ch = self._composite.get_property("contents-handle")
+        ch = self._composite.get_contents_handle()
         if ch is None:
             raise Unmanageable("failed to get damage handle")
 

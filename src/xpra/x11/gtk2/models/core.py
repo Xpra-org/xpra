@@ -325,10 +325,10 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def uses_XShm(self):
         c = self._composite
-        return c and c.get_property("shm-handle") is not None
+        return c and c.get_shm_handle() is not None
 
     def get_image(self, x, y, width, height, logger=log.debug):
-        handle = self._composite.get_property("contents-handle")
+        handle = self._composite.get_contents_handle()
         if handle is None:
             logger("get_image(..) pixmap is None for window %#x", self.xid)
             return  None
@@ -336,7 +336,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         #try XShm:
         try:
             #logger("get_image(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
-            shm = self._composite.get_property("shm-handle")
+            shm = self._composite.get_shm_handle()
             #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
                 with xsync:

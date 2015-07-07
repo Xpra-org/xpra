@@ -40,13 +40,6 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         "xpra-reparent-event": one_arg_signal,
         }
 
-    __gproperties__ = {
-        "contents-handle": (gobject.TYPE_PYOBJECT,
-                            "", "", gobject.PARAM_READABLE),
-        "shm-handle": (gobject.TYPE_PYOBJECT,
-                            "", "", gobject.PARAM_READABLE),
-        }
-
     # This may raise XError.
     def __init__(self, window, already_composited, use_shm=False):
         super(CompositeHelper, self).__init__()
@@ -69,7 +62,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         xwin = self._window.xid
         if not self._already_composited:
             X11Window.XCompositeRedirectWindow(xwin)
-        _, _, _, _, self._border_width = X11Window.geometry_with_border(xwin)
+        self._border_width = X11Window.geometry_with_border(xwin)[-1]
         self.invalidate_pixmap()
         self._damage_handle = X11Window.XDamageCreate(xwin)
         log("CompositeHelper.setup() damage handle(%#x)=%#x", xwin, self._damage_handle)
@@ -123,7 +116,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             for w in listening:
                 remove_event_receiver(w, self)
 
-    def do_get_property_shm_handle(self, name):
+    def get_shm_handle(self):
         if not self._use_shm or not CompositeHelper.XShmEnabled:
             return None
         if self._shm_handle and self._shm_handle.get_size()!=self._window.get_size():
@@ -149,7 +142,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                 CompositeHelper.XShmEnabled = False
         return self._shm_handle
 
-    def do_get_property_contents_handle(self, name):
+    def get_contents_handle(self):
         if self._window is None:
             #shortcut out
             return  None
@@ -212,6 +205,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                     self._listening_to = listening
             trap.swallow_synced(set_pixmap)
         return self._contents_handle
+
 
     def do_xpra_unmap_event(self, event):
         self.invalidate_pixmap()
