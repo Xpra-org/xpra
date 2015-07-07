@@ -229,7 +229,8 @@ log-dir = %(log_dir)s
 #socket-dirs = /var/run/xpra
 socket-dirs = %(socket_dirs)s
 
-# Socket directory (overrides socket-dirs):
+# Where to create new sockets
+# (otherwise the first "socket-dirs" is used)
 #socket-dir = /tmp
 #socket-dir = ~/.xpra
 
