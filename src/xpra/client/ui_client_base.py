@@ -1580,7 +1580,8 @@ class UIXpraClient(XpraClientBase):
         if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
             #looks like we're on the same machine, verify it's a different user:
             if self._remote_uuid==get_user_uuid():
-                log.warn("cannot start sound: identical user environment as the server (loop)")
+                log.warn("cannot start sound:")
+                log.warn(" identical user environment as the server (loop)")
                 return
 
         ss = self.sound_source
