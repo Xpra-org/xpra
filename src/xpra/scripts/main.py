@@ -1525,8 +1525,8 @@ def run_stopexit(mode, error_cb, opts, extra_args):
     def show_final_state(exit_code, display_desc):
         #this is for local sockets only!
         display = display_desc["display"]
-        sockdir = display_desc.get("socket_dir")
-        sockdirs = display_desc.get("socket_dirs")
+        sockdir = display_desc.get("socket_dir", "")
+        sockdirs = display_desc.get("socket_dirs", [])
         sockdir = DotXpra(sockdir, sockdirs)
         sockfile = get_sockpath(display_desc, error_cb)
         if exit_code==0:
