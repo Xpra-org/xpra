@@ -226,7 +226,9 @@ class subprocess_callee(object):
             self.net_stop()
             return
         elif command==Protocol.GIBBERISH:
-            log("gibberish received: %s", repr_ellipsized(packet))
+            log.warn("gibberish received:")
+            log.warn(" %s", repr_ellipsized(packet[1], limit=80))
+            log.warn(" stopping")
             self.net_stop()
             return
         #make it easier to hookup signals to methods:
@@ -234,14 +236,17 @@ class subprocess_callee(object):
         if self.method_whitelist is not None and attr not in self.method_whitelist:
             log.warn("invalid command: %s (not in whitelist: %s)", attr, self.method_whitelist)
             return
-        method = getattr(self.wrapped_object, attr, None)
+        wo = self.wrapped_object
+        if not wo:
+            log("wrapped object is no more, ignoring method call '%s'", attr)
+            return
+        method = getattr(wo, attr, None)
         if not method:
-            if self.wrapped_object is not None:
-                log.warn("unknown command: '%s'", attr)
-                log.warn(" packet: '%s'", repr_ellipsized(str(packet)))
+            log.warn("unknown command: '%s'", attr)
+            log.warn(" packet: '%s'", repr_ellipsized(str(packet)))
             return
         if DEBUG_WRAPPER:
-            log("calling %s.%s%s", self.wrapped_object, attr, str(tuple(packet[1:]))[:128])
+            log("calling %s.%s%s", wo, attr, str(tuple(packet[1:]))[:128])
         glib.idle_add(method, *packet[1:])
         INJECT_FAULT(proto)
 
@@ -373,7 +378,8 @@ class subprocess_caller(object):
         self.stop()
 
     def gibberish(self, *args):
-        log("gibberish%s", args)
+        log.warn("%s stopping on gibberish:", self.description)
+        log.warn(" %s", repr_ellipsized(args[1], limit=80))
         self.stop()
 
 
