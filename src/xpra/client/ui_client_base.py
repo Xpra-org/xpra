@@ -932,9 +932,9 @@ class UIXpraClient(XpraClientBase):
             if self.keyboard_helper.xkbmap_layout:
                 kb_info["layout"] = self.keyboard_helper.xkbmap_layout
             if len(kb_info)==0:
-                log.info("using default keyboard settings")
+                log.info(" using default keyboard settings")
             else:
-                log.info("detected keyboard: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))
+                log.info(" detected keyboard: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))
 
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
