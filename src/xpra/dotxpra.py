@@ -83,9 +83,14 @@ class DotXpra(object):
     def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
         sd = {}
         dirs = [self._sockdir]+[x for x in self._sockdirs if x!=self._sockdir]
+        seen = set()
         for d in dirs:
             if not d or not os.path.exists(d):
                 continue
+            real_dir = os.path.realpath(d)
+            if real_dir in seen:
+                continue
+            seen.add(real_dir)
             #ie: "~/.xpra/HOSTNAME-"
             base = os.path.join(d, PREFIX)
             potential_sockets = glob.glob(base + "*")
