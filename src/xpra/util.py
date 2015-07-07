@@ -243,6 +243,21 @@ class typedict(dict):
         return aslist
 
 
+def parse_scaling_value(v):
+    if not v:
+        return None
+    values = v.replace("/", ":").replace(",", ":").split(":", 1)
+    values = [int(x) for x in values]
+    for x in values:
+        assert x>0, "invalid scaling value %s" % x
+    if len(values)==1:
+        ret = 1, values[0]
+    else:
+        assert values[0]<=values[1], "cannot upscale"
+        ret = values[0], values[1]
+    return ret
+
+
 def log_screen_sizes(root_w, root_h, sizes):
     try:
         do_log_screen_sizes(root_w, root_h, sizes)

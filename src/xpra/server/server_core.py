@@ -39,6 +39,7 @@ from xpra.net.crypto import new_cipher_caps
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.server.proxy import XpraProxy
+from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
 from xpra.util import typedict, updict, repr_ellipsized, \
         SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
@@ -156,9 +157,7 @@ class ServerCore(object):
         self.server_idle_timeout = 0
         self.server_idle_timer = None
 
-        #control mode:
-        self.control_commands = ["hello"]
-
+        self.init_control_commands()
         self.init_packet_handlers()
         self.init_aliases()
         sanity_checks()
@@ -268,6 +267,12 @@ class ServerCore(object):
             self._aliases[i] = key
             self._reverse_aliases[key] = i
             i += 1
+
+    def init_control_commands(self):
+        self.control_commands = {"hello"    : HelloCommand(),
+                                 "debug"    : DebugControl()}
+        help_command = HelpCommand(self.control_commands)
+        self.control_commands["help"] = help_command
 
 
     def reaper_quit(self):
@@ -609,7 +614,7 @@ class ServerCore(object):
             command_req = c.strlistget("command_request")
             if len(command_req)>0:
                 #call from UI thread:
-                self.idle_add(self.handle_command_request, proto, command_req)
+                self.idle_add(self.handle_command_request, proto, *command_req)
                 return
             #continue processing hello packet:
             try:
@@ -739,36 +744,36 @@ class ServerCore(object):
         pass
 
 
-    def handle_command_request(self, proto, args):
+    def handle_command_request(self, proto, *args):
         """ client sent a command request as part of the hello packet """
-        try:
-            assert len(args)>0
-            command = args[0]
-            error = 0
-            if command not in self.control_commands:
-                commandlog.warn("invalid command: '%s' (must be one of: %s)", command, ", ".join(self.control_commands))
-                error = 6
-                response = "invalid command"
-            else:
-                error, response = self.do_handle_command_request(command, args[1:])
-        except Exception as e:
-            commandlog.error("error processing command %s", command, exc_info=True)
-            error = 127
-            response = "error processing command: %s" % e
-        hello = {"command_response"  : (error, response)}
+        assert len(args)>0
+        code, response = self.process_control_command(*args)
+        hello = {"command_response"  : (code, response)}
         proto.send_now(("hello", hello))
 
-    def do_handle_command_request(self, command, args):
-        """ this may get called by:
-            * handle_command_request from a hello packet
-            * _process_command_request from a dedicated packet
-            it is overriden in subclasses.
-        """
-        if command=="hello":
-            return 0, "hello"
-        elif command=="help":
-            return 0, "control supports: %s" % (", ".join(self.control_commands))
-        return 9, "invalid command '%s'" % command
+    def process_control_command(self, *args):
+        assert len(args)>0
+        name = args[0]
+        try:
+            command = self.control_commands.get(name)
+            commandlog("process_control_command control_commands[%s]=%s", name, command)
+            if not command:
+                commandlog.warn("invalid command: '%s' (must be one of: %s)", name, ", ".join(self.control_commands))
+                return 6, "invalid command"
+            commandlog("process_control_command calling %s%s", command.run, args[1:])
+            v = command.run(*args[1:])
+            return 0, v
+        except ControlError as e:
+            commandlog.error("error %s processing command %s", e.code, name)
+            msgs = [" %s" % e]
+            if e.help:
+                msgs.append(" '%s': %s" % (name, e.help))
+            for msg in msgs:
+                commandlog.error(msg)
+            return e.code, "\n".join(msgs)
+        except Exception as e:
+            commandlog.error("error processing command %s", name, exc_info=True)
+            return 127, "error processing command: %s" % e
 
 
     def accept_client(self, proto, c):

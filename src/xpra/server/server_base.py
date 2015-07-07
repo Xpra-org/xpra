@@ -25,6 +25,7 @@ windowlog = Logger("window")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
+from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
@@ -128,19 +129,6 @@ class ServerBase(ServerCore):
         self.lossless_mode_encodings = []
         self.default_encoding = None
 
-        #control mode:
-        self.control_commands = ["hello", "help",
-                    "debug",
-                    "encoding", "auto-refresh",
-                    "quality", "min-quality", "speed", "min-speed",
-                    "compression", "encoder", "refresh",
-                    "sound-output",
-                    "scaling", "scaling-control",
-                    "suspend", "resume", "name", "ungrab",
-                    "key", "focus", "workspace", "idle-timeout", "server-idle-timeout",
-                    "client", "start", "start-child",
-                    "send-file", "print"]
-
         self.init_encodings()
         self.init_packet_handlers()
         self.init_aliases()
@@ -229,6 +217,7 @@ class ServerBase(ServerCore):
         self.init_pulseaudio()
         self.init_notification_forwarder()
         self.init_dbus_helper()
+        #self.init_dbus_server()
 
         #video init: default to ALL if not specified
         video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
@@ -487,7 +476,7 @@ class ServerBase(ServerCore):
             "logging":                              self._process_logging,
             "command_request":                      self._process_command_request,
             "printers":                             self._process_printers,
-                                          }
+          }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
             #windows:
@@ -537,6 +526,52 @@ class ServerBase(ServerCore):
         packet_types += list(self._authenticated_ui_packet_handlers.keys())
         self.do_init_aliases(packet_types)
 
+    def init_control_commands(self):
+        super(ServerBase, self).init_control_commands()
+        from xpra.util import parse_scaling_value
+        def from0to100(v):
+            try:
+                v = int(v)
+                assert v>=0 and v<=100
+                return v
+            except:
+                raise ValueError("value must be between 0 and 100 inclusive")
+        for cmd in (
+            ArgsControlCommand("focus",                 "give focus to the window id",      validation=[int]),
+            #window source:
+            ArgsControlCommand("suspend",               "suspend screen updates",           max_args=0),
+            ArgsControlCommand("resume",                "resume screen updates",            max_args=0),
+            ArgsControlCommand("ungrab",                "cancels any grabs",                max_args=0),
+            #server globals:
+            ArgsControlCommand("idle-timeout",          "set the idle tiemout",             validation=[int]),
+            ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
+            ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),
+            ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
+            #network and transfers:
+            ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=3),
+            ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3),
+            ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
+            ArgsControlCommand("encoder",               "sets the packet encoder",          min_args=1, max_args=1),
+            #session and clients:
+            ArgsControlCommand("client",                "forwards a control command to the client(s)", min_args=1),
+            ArgsControlCommand("name",                  "set the session name",             min_args=1, max_args=1),
+            ArgsControlCommand("key",                   "press or unpress a key",           min_args=1, max_args=2),
+            ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1),
+            #windows:
+            ArgsControlCommand("workspace",             "move a window to a different workspace", min_args=2, max_args=2, validation=[int, int]),
+            ArgsControlCommand("scaling-control",       "set the scaling-control aggressiveness (from 0 to 100)", min_args=1, validation=[from0to100]),
+            ArgsControlCommand("scaling",               "set a specific scaling value",     min_args=1, validation=[parse_scaling_value]),
+            ArgsControlCommand("auto-refresh",          "set a specific auto-refresh value", min_args=1, validation=[float]),
+            ArgsControlCommand("refresh",               "refresh some or all windows",      min_args=0),
+            ArgsControlCommand("encoding",              "picture encoding",                 min_args=1, max_args=1),
+            ):
+            cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
+            self.control_commands[cmd.name] = cmd
+        #encoding bits:
+        for name in ("quality", "min-quality", "speed", "min-speed"):
+            fn = getattr(self, "control_command_%s" % name.replace("-", "_"))
+            self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, max_args=1, validation=[from0to100])
+
 
     def run(self):
         if self.send_pings:
@@ -559,10 +594,14 @@ class ServerBase(ServerCore):
         try:
             proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
             self.add_process(proc, name, child_cmd, ignore=ignore, callback=callback)
-            if ignore:
-                log("started child '%s' with pid %s (ignored)", child_cmd, proc.pid)
+            if type(child_cmd) in (list, tuple):
+                info = " ".join(child_cmd)
             else:
-                log.info("started child '%s' with pid %s", child_cmd, proc.pid)
+                info = str(child_cmd)
+            if ignore:
+                log("started command '%s' with pid %s (ignored)", info, proc.pid)
+            else:
+                log.info("started command '%s' with pid %s", info, proc.pid)
             return proc
         except OSError as e:
             log.error("Error spawning child '%s': %s\n" % (child_cmd, e))
@@ -1013,399 +1052,278 @@ class ServerBase(ServerCore):
         ss.set_printers(printers)
 
 
+    #########################################
+    # Control Commands
+    #########################################
+
     def _process_command_request(self, proto, packet):
         """ client sent a command request through its normal channel """
         assert len(packet)>=2, "invalid command request packet (too small!)"
-        command = packet[1]
-        args = packet[2:]
+        #packet[0] = "control"
+        #this may end up calling do_handle_command_request via the adapter
+        code, msg = self.process_control_command(*packet[1:])
+        commandlog("command request returned: %s (%s)", code, msg)
+
+
+    def control_command_focus(self, wid):
+        assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
+        self._focus(None, wid, None)
+        return "gave focus to window %s" % wid
+
+    def control_command_suspend(self):
+        for csource in list(self._server_sources.values()):
+            csource.suspend(True, self._id_to_window)
+        return "suspended %s clients" % len(self._server_sources)
+
+    def control_command_resume(self):
+        for csource in list(self._server_sources.values()):
+            csource.resume(True, self._id_to_window)
+        return "resumed %s clients" % len(self._server_sources)
+
+    def control_command_ungrab(self):
+        for csource in list(self._server_sources.values()):
+            csource.pointer_ungrab(-1)
+        return "ungrabbed %s clients" % len(self._server_sources)
+
+    def control_command_idle_timeout(self, t):
+        self.idle_timeout = t
+        for csource in list(self._server_sources.values()):
+            csource.idle_timeout = t
+            csource.schedule_idle_timeout()
+        return "idle-timeout set to %s" % t
+
+    def control_command_server_idle_timeout(self, t):
+        self.server_idle_timeout = t
+        reschedule = len(self._server_sources)==0
+        self.reset_server_timeout(reschedule)
+        return "server-idle-timeout set to %s" % t
+
+    def control_command_start(self, *args):
+        return self.do_control_command_start(True, *args)
+    def control_command_start_child(self, *args):
+        return self.do_control_command_start(False, *args)
+    def do_control_command_start(self, ignore, *args):
+        if not self.start_new_commands:
+            raise ControlError("this feature is currently disabled")
+        proc = self.start_child(" ".join(args), args, ignore)
+        if not proc:
+            raise ControlError("failed to start new child command %s" % str(args))
+        return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
+
+    def _control_get_sources(self, client_uuids_str, attr=None):
+        #find the client uuid specified as a string:
+        if client_uuids_str=="UI":
+            sources = [ss for ss in self._server_sources.values() if ss.ui_client]
+            client_uuids = [ss.uuid for ss in sources]
+            notfound = []
+        elif client_uuids_str=="*":
+            sources = self._server_sources.values()
+            client_uuids = [ss.uuid for ss in sources]
+        else:
+            client_uuids = client_uuids_str.split(",")
+            sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
+            notfound = [x for x in client_uuids if x not in [ss.uuid for ss in sources]]
+            if notfound:
+                commandlog.warn("client connection not found for uuid(s): %s", notfound)
+        return sources
+
+    def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
+        actual_filename = os.path.abspath(os.path.expanduser(filename))
+        if not os.path.exists(actual_filename):
+            return ControlError("file '%s' does not exist" % filename)
+        openit = str(openit).lower() in ("open", "true", "1")
+        #find the client uuid specified:
+        sources = self._control_get_sources(client_uuids)
+        if not sources:
+            return ControlError("no clients found matching: %s" % client_uuids)
+        for ss in sources:
+            if ss.file_transfer:
+                ss.send_file(filename, False, openit, ss, maxbitrate)
+            else:
+                log.warn("cannot send file, client %s does not support file transfers!", ss)
+        return "file transfer to %s initiated" % client_uuids
+
+    def control_command_print(self, filename, printer, client_uuids, maxbitrate=0, title="", *options_strs):
+        actual_filename = os.path.abspath(os.path.expanduser(filename))
         try:
-            code, msg = self.do_handle_command_request(command, args)
-            commandlog("command request %s returned: %s (%s)", command, code, msg)
-        except:
-            commandlog.error("error processing command %s", command, exc_info=True)
+            stat = os.stat(actual_filename)
+            printlog("os.stat(%s)=%s", actual_filename, stat)
+        except os.error:
+            printlog("os.stat(%s)", actual_filename, exc_info=True)
+        if not os.path.exists(actual_filename):
+            raise ControlError("file '%s' does not exist" % filename)
+        sources = self._control_get_sources(client_uuids)
+        if not sources:
+            return ControlError("no clients found matching: %s" % client_uuids)
+        #parse options into a dict:
+        options = {}
+        for arg in options_strs:
+            argp = arg.split("=", 1)
+            if len(argp)==2 and len(argp[0])>0:
+                options[argp[0]] = argp[1]
+        for ss in sources:
+            if ss.printing:
+                ss.send_file(actual_filename, True, True, ss, maxbitrate, printer, title, options)
+            else:
+                printlog.warn("client %s does not support printing!", ss)
+        return "printing to %s initiated" % client_uuids
 
-    def do_handle_command_request(self, command, args):
-        #note: this may get called from handle_command_request or from _process_command_request
-        commandlog("handle_command_request(%s, %s)", command, args)
-        def argn_err(argn):
-            return 4, "invalid number of arguments, '%s' expects: %s" % (command, argn)
-        def arg_err(msg):
-            return 5, "invalid argument for '%s': %s" % (command, msg)
-        def success():
-            return 0, "%s success" % command
+    def control_command_compression(self, compression):
+        c = compression.lower()
+        from xpra.net import compression
+        opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
+        if c not in opts:
+            return ControlError("compressor argument must be one of: %s" % (", ".join(opts)))
+        for cproto in list(self._server_sources.keys()):
+            cproto.enable_compressor(c)
+        self.all_send_client_command("enable_%s" % c)
+        return "compressors set to %s" % compression
 
-        sources = list(self._server_sources.values())
-        protos = list(self._server_sources.keys())
-        def forward_all_clients(client_command):
-            """ forwards the command to all clients """
-            for source in sources:
-                """ forwards to *the* client, if there is *one* """
-                if client_command[0] not in source.control_commands:
-                    commandlog.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
-                    return  False
+    def control_command_encoder(self, encoder):
+        e = encoder.lower()
+        from xpra.net import packet_encoding
+        opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
+        if e not in opts:
+            return ControlError("encoder argument must be one of: %s" % (", ".join(opts)))
+        for cproto in list(self._server_sources.keys()):
+            cproto.enable_encoder(e)
+        self.all_send_client_command("enable_%s" % e)
+        return "encoders set to %s" % encoder
+
+
+    def all_send_client_command(self, *client_command):
+        """ forwards the command to all clients """
+        for source in list(self._server_sources.values()):
+            """ forwards to *the* client, if there is *one* """
+            if client_command[0] not in source.control_commands:
+                commandlog.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
+            else:
                 source.send_client_command(*client_command)
 
-        def for_all_window_sources(wids, callback):
-            for csource in sources:
-                for wid in wids:
-                    window = self._id_to_window.get(wid)
-                    ws = csource.window_sources.get(wid)
-                    if window and ws:
-                        callback(ws, wid, window)
+    def control_command_client(self, *args):
+        self.all_send_client_command(*args)
+        return "client control command '%s' forwarded to clients" % str(args)
 
-        def get_wids_from_args(args):
-            #converts all the remaining args to window ids
-            if len(args)==0 or len(args)==1 and args[0]=="*":
-                #default to all if unspecified:
-                return self._id_to_window.keys()
+    def control_command_name(self, name):
+        self.session_name = name
+        commandlog.info("changed session name: %s", self.session_name)
+        #self.all_send_client_command("name", name)    not supported by any clients, don't bother!
+        return "session name set to %s" % name
+ 
+    def _control_windowsources_from_args(self, *args):
+        #converts the args to valid window ids,
+        #then returns all the window sources for those wids
+        if len(args)==0 or len(args)==1 and args[0]=="*":
+            #default to all if unspecified:
+            wids = list(self._id_to_window.keys())
+        else:
             wids = []
             for x in args:
                 try:
                     wid = int(x)
-                    if wid in self._id_to_window:
-                        wids.append(wid)
-                    else:
-                        commandlog("window id %s does not exist", wid)
                 except:
-                    raise Exception("invalid window id: %s" % x)
-            return wids
+                    raise ControlError("invalid window id: %s" % x)
+                if wid in self._id_to_window:
+                    wids.append(wid)
+                else:
+                    commandlog("window id %s does not exist", wid)
+        wss = {}
+        for csource in list(self._server_sources.values()):
+            for wid in wids:
+                ws = csource.window_sources.get(wid)
+                window = self._id_to_window.get(wid)
+                if window and ws:
+                    wss[ws] = window
+        return wss
 
-        def get_sources(client_uuids_str, attr=None):
-            #find the client uuid specified:
-            if client_uuids_str=="UI":
-                sources = [ss for ss in self._server_sources.values() if ss.ui_client]
-                client_uuids = [ss.uuid for ss in sources]
-                notfound = []
-            elif client_uuids_str=="*":
-                sources = self._server_sources.values()
-                client_uuids = [ss.uuid for ss in sources]
-            else:
-                client_uuids = client_uuids_str.split(",")
-                sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
-                notfound = [x for x in client_uuids if x not in [ss.uuid for ss in sources]]
-                if notfound:
-                    commandlog.warn("client connection not found for uuid(s): %s", notfound)
-            if attr:
-                attrerr = [x for x in client_uuids if (x not in notfound and not getattr(ss, attr))]
-                if attrerr:
-                    commandlog.warn("client connections do not support %s: %s", attr, attrerr)
-            return sources
+    def _set_encoding_property(self, name, value, *wids):
+        for ws in self._control_windowsources_from_args(*wids).keys():
+            fn = getattr(ws, "set_%s" % name.replace("-", "_"))   #ie: "set_quality"
+            fn(value)
+        #now also update the defaults:
+        for csource in list(self._server_sources.values()):
+            csource.default_encoding_options[name] = value
+        return "%s set to %i" % (name, value)
 
-        #handle commands that either don't require a client,
-        #or can work on more than one connected client:
-        if command in ("help", "hello"):
-            #generic case:
-            return ServerCore.do_handle_command_request(self, command, args)
-        elif command=="debug":
-            def debug_usage():
-                return arg_err("usage: 'debug enable|disable category' or 'debug status'")
-            if len(args)==1 and args[0]=="status":
-                from xpra.log import get_all_loggers
-                return 0, "logging is enabled for: %s" % str(list([str(x) for x in get_all_loggers() if x.is_debug_enabled()]))
-            if len(args)<2:
-                return debug_usage()
-            log_cmd = args[0]
-            if log_cmd not in ("enable", "disable"):
-                return debug_usage()
-            categories = args[1:]
-            from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
-            if log_cmd=="enable":
-                add_debug_category(*categories)
-                loggers = enable_debug_for(*categories)
-            else:
-                assert log_cmd=="disable"
-                add_disabled_category(*categories)
-                loggers = disable_debug_for(*categories)
-            log.info("%sd debugging for: %s", log_cmd, loggers)
-            return 0, "logging %sd for %s" % (log_cmd, " + ".join(categories))
-        elif command=="name":
-            if len(args)!=1:
-                return argn_err(1)
-            self.session_name = args[0]
-            commandlog.info("changed session name: %s", self.session_name)
-            forward_all_clients(["name"])
-            return 0, "session name set"
-        elif command=="compression":
-            if len(args)!=1:
-                return argn_err(1)
-            c = args[0].lower()
-            from xpra.net import compression
-            opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
-            if c in opts:
-                for cproto in protos:
-                    cproto.enable_compressor(c)
-                forward_all_clients(["enable_%s" % c])
-                return success()
-            return arg_err("must be one of: %s" % (", ".join(opts)))
-        elif command=="encoder":
-            if len(args)!=1:
-                return argn_err(1)
-            e = args[0].lower()
-            from xpra.net import packet_encoding
-            opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
-            if e in opts:
-                for cproto in protos:
-                    cproto.enable_encoder(e)
-                forward_all_clients(["enable_%s" % e])
-                return success()
-            return arg_err("must be one of: %s" % (", ".join(opts)))
-        elif command=="sound-output":
-            if len(args)<1:
-                return arg_err("more than 1")
-            msg = []
-            for csource in sources:
-                msg.append("%s : %s" % (csource, csource.sound_control(*args)))
-            return 0, ", ".join(msg)
-        elif command=="suspend":
-            for csource in sources:
-                csource.suspend(True, self._id_to_window)
-            return 0, "suspended %s clients" % len(sources)
-        elif command=="resume":
-            for csource in sources:
-                csource.resume(True, self._id_to_window)
-            return 0, "resumed %s clients" % len(sources)
-        elif command=="ungrab":
-            for csource in sources:
-                csource.pointer_ungrab(-1)
-            return 0, "ungrabbed %s clients" % len(sources)
-        elif command=="encoding":
-            if len(args)<1:
-                return argn_err(1)
-            encoding = args[0]
-            strict = None       #means no change
+    def control_command_quality(self, quality, *wids):
+        return self._set_encoding_property("quality", quality)
+    def control_command_min_quality(self, min_quality, *wids):
+        return self._set_encoding_property("min-quality", min_quality)
+    def control_command_speed(self, speed, *wids):
+        return self._set_encoding_property("speed", speed)
+    def control_command_min_speed(self, min_speed, *wids):
+        return self._set_encoding_property("min-speed", min_speed)
+
+    def control_command_auto_refresh(self, auto_refresh, *wids):
+        delay = int(float(auto_refresh)*1000.0)      # ie: 0.5 -> 500 (milliseconds)
+        for ws in self._control_windowsources_from_args(*wids).keys():
+            ws.set_auto_refresh_delay(auto_refresh)
+        return "auto-refresh delay set to %sms for windows %s" % (delay, wids)
+
+    def control_command_refresh(self, *wids):
+        for ws, window in self._control_windowsources_from_args(*wids).items():
+            ws.full_quality_refresh(window, {})
+        return "refreshed windows %s" % str(wids)
+
+    def control_command_scaling_control(self, scaling_control, *wids):
+        for ws, window in self._control_windowsources_from_args(*wids).items():
+            ws.set_scaling_control(scaling_control)
+            ws.refresh(window)
+        return "scaling-control set to %s on windows %s" % (scaling_control, wids)
+
+    def control_command_scaling(self, scaling, *wids):
+        for ws, window in self._control_windowsources_from_args(*wids).items():
+            ws.set_scaling(scaling)
+            ws.refresh(window)
+        return "scaling set to %s on windows %s" % (str(scaling), wids)
+
+    def control_command_encoding(self, encoding, *args):
+        strict = None       #means no change
+        if len(args)>0 and args[0] in ("strict", "nostrict"):
+            #remove "strict" marker
+            strict = args[0]=="strict"
             args = args[1:]
-            if len(args)>0 and args[0] in ("strict", "nostrict"):
-                #remove "strict" marker
-                strict = args[0]=="strict"
-                args = args[1:]
-            wids = get_wids_from_args(args)
-            def set_new_encoding(ws, wid, window):
-                ws.set_new_encoding(encoding, strict)
-            for_all_window_sources(wids, set_new_encoding)
-            #now also do a refresh:
-            def refresh(ws, wid, window):
-                ws.refresh(window, {})
-            for_all_window_sources(wids, refresh)
-            return 0, "set encoding to %s%s for %s windows" % (encoding, ["", " (strict)"][int(strict or 0)], len(wids))
-        elif command=="auto-refresh":
-            if len(args)<1:
-                return argn_err(1)
-            try:
-                delay = int(float(args[0])*1000.0)      # ie: 0.5 -> 500 (milliseconds)
-            except:
-                raise Exception("failed to parse delay string '%s' as a number" % args[0])
-            wids = get_wids_from_args(args[1:])
-            def set_auto_refresh_delay(ws, wid, window):
-                ws.set_auto_refresh_delay(delay)
-            for_all_window_sources(wids, set_auto_refresh_delay)
-            return 0, "set auto-refresh delay to %sms for %s windows" % (delay, len(wids))
-        elif command=="refresh":
-            wids = get_wids_from_args(args)
-            def full_quality_refresh(ws, wid, window):
-                ws.full_quality_refresh(window, {})
-            for_all_window_sources(wids, full_quality_refresh)
-            return 0, "refreshed %s window for %s clients" % (len(wids), len(sources))
-        elif command=="scaling-control":
-            if len(args)==0:
-                return argn_err("2: scaling-control value and window ids (or '*')")
-            try:
-                scaling_control = int(args[0])
-                assert 0<=scaling_control<=100, "value must be between 0 and 100"
-            except Exception as e:
-                return 11, "invalid scaling value %s: %s" % (args[1], e)
-            wids = get_wids_from_args(args[1:])
-            def set_scaling_control(ws, wid, window):
-                ws.set_scaling_control(scaling_control)
-                ws.refresh(window)
-            for_all_window_sources(wids, set_scaling_control)
-            return 0, "scaling-control set to %s on window %s for %s clients" % (scaling_control, wids, len(sources))
-        elif command=="scaling":
-            if len(args)==0:
-                return argn_err("2: scaling value and window ids (or '*')")
-            from xpra.server.window_video_source import parse_scaling_value
-            try:
-                scaling = parse_scaling_value(args[0])
-            except:
-                return 11, "invalid scaling value %s" % args[1]
-            wids = get_wids_from_args(args[1:])
-            def set_scaling(ws, wid, window):
-                ws.set_scaling(scaling)
-                ws.refresh(window)
-            for_all_window_sources(wids, set_scaling)
-            return 0, "scaling set to %s on window %s for %s clients" % (str(scaling), wids, len(sources))
-        elif command in ("quality", "min-quality", "speed", "min-speed"):
-            if len(args)==0:
-                return argn_err(1)
-            try:
-                v = int(args[0])
-            except:
-                v = -9999999
-            if v<0 or v>100:
-                return 11, "invalid quality or speed value (must be a number between 0 and 100): %s" % args[0]
-            def set_value(ws, wid, window):
-                if command=="quality":
-                    ws.set_quality(v)
-                elif command=="min-quality":
-                    ws.set_min_quality(v)
-                elif command=="speed":
-                    ws.set_speed(v)
-                elif command=="min-speed":
-                    ws.set_min_speed(v)
-                else:
-                    assert False, "invalid command: %s" % command
-            wids = get_wids_from_args(args[1:])
-            for_all_window_sources(wids, set_value)
-            #update the default encoding options
-            #so new windows will also inherit those settings:
-            for csource in sources:
-                csource.default_encoding_options[command] = v
-            return 0, "%s set to %s on windows %s for %s clients" % (command, v, wids, len(sources))
-        elif command=="key":
-            if len(args) not in (1, 2):
-                return argn_err("1 or 2")
-            key = args[0]
-            try:
-                if key.startswith("0x"):
-                    keycode = int(key, 16)
-                else:
-                    keycode = int(key)
-                assert keycode>0 and keycode<=255
-            except:
-                raise Exception("invalid keycode specified: '%s' (must be a number between 1 and 255)" % key)
-            press = True
-            if len(args)==2:
-                if args[1] in ("1", "press"):
-                    press = True
-                elif args[1] in ("0", "unpress"):
-                    press = False
-                else:
-                    return arg_err("if present, the second argument must be one of: %s", ("1", "press", "0", "unpress"))
-            self.fake_key(keycode, press)
-            return 0, "%spressed key %s" % (["un", ""][int(press)], keycode)
-        elif command=="focus":
-            if len(args)!=1:
-                return argn_err(1)
-            wid = int(args[0])
-            self._focus(None, wid, None)
-            return 0, "gave focus to window %s" % wid
-        elif command=="idle-timeout":
-            if len(args)!=1:
-                return argn_err(1)
-            t = int(args[0])
-            self.idle_timeout = t
-            for csource in sources:
-                csource.idle_timeout = t
-                csource.schedule_idle_timeout()
-            return 0, "idle-timeout set to %s" % t
-        elif command=="server-idle-timeout":
-            if len(args)!=1:
-                return argn_err(1)
-            t = int(args[0])
-            self.server_idle_timeout = t
-            reschedule = len(self._server_sources)==0
-            self.reset_server_timeout(reschedule)
-            return 0, "server-idle-timeout set to %s" % t
-        elif command=="workspace":
-            if len(args)!=2:
-                return argn_err(2)
-            wid = int(args[0])
-            workspace = int(args[1])
-            window = self._id_to_window.get(wid)
-            if not window:
-                return arg_err("window %s does not exist", wid)
-            if "workspace" not in window.get_property_names():
-                return arg_err("cannot set workspace on window %s", window)
-            if workspace<0:
-                return arg_err("invalid workspace value: %s", workspace)
-            window.set_property("workspace", workspace)
-            return 0, "window %s moved to workspace %s" % (wid, workspace)
-        elif command=="client":
-            if len(args)==0:
-                return argn_err("at least 1")
-            client_command = args
-            count = 0
-            for source in sources:
-                if client_command[0] in source.control_commands:
-                    count += 1
-                    source.send_client_command(*client_command)
-                else:
-                    commandlog.warn("client %s does not support client command %s", source, client_command[0])
-            return 0, "client control command '%s' forwarded to %s clients" % (client_command[0], count)
-        elif command in ("start", "start-child"):
-            if not self.start_new_commands:
-                return 1, "this feature is currently disabled"
-            if len(args)==0:
-                return argn_err("at least 1")
-            ignore = command=="start"
-            cmd = args
-            proc = self.start_child(" ".join(cmd), cmd, ignore)
-            if not proc:
-                return 1, "failed to start new child command %s" % str(cmd)
-            return 0, "new child started"
-        elif command=="send-file":
-            #ie: send-file filename open|noopen client_uuids maxbitrate
-            if len(args)!=4:
-                return argn_err(4)
-            filename = os.path.abspath(os.path.expanduser(args[0]))
-            if not os.path.exists(filename):
-                return arg_err("file '%s' does not exist" % filename)
-            openit = args[1] in ("open", "true", "1")
-            #find the client uuid specified:
-            client_uuids = args[2]
-            sources = get_sources(client_uuids, "file_transfer")
-            if not sources:
-                return arg_err("no clients found matching: %s" % client_uuids)
-            maxbitrate = args[3]
-            for ss in sources:
-                assert ss.file_transfer
-                ss.send_file(filename, False, openit, ss, maxbitrate)
-            return 0, "file transfer to %s initiated" % client_uuids
-        elif command=="print":
-            #ie: print filename printer client_uuids maxbitrate title *options
-            if len(args)<4:
-                return argn_err("at least 4")
-            filename = os.path.abspath(os.path.expanduser(args[0]))
-            def exec_command(command, env=os.environ.copy()):
-                #print("exec_command(%s)" % command)
-                import subprocess
-                PIPE = subprocess.PIPE
-                proc = subprocess.Popen(command, stdout=PIPE, stderr=PIPE, env=env, shell=True)
-                out,err = proc.communicate()
-                printlog("returncode(%s)=%s", command, proc.returncode)
-                printlog("stdout=%s" % out)
-                printlog("stderr=%s" % err)
-                return proc.returncode
-            #exec_command("ls -laZ %s" % filename)
-            try:
-                stat = os.stat(filename)
-                printlog("os.stat(%s)=%s", filename, stat)
-            except os.error as e:
-                printlog("os.stat(%s)", filename, exc_info=True)
-            if not os.path.exists(filename):
-                return arg_err("file '%s' does not exist" % filename)
-            printer = args[1]
-            #find the client uuid specified:
-            client_uuids = args[2]
-            sources = get_sources(client_uuids, "printing")
-            if not sources:
-                return arg_err("no clients found matching: %s" % client_uuids)
-            maxbitrate = args[3]
-            title = ""
-            options = {}
-            if len(args)>=5:
-                title = args[4]
-            if len(args)>=6:
-                for arg in args[5:]:
-                    argp = arg.split("=", 1)
-                    if len(argp)==2 and len(argp[0])>0:
-                        options[argp[0]] = argp[1]
-            for ss in sources:
-                ss = sources[0]
-                assert ss.printing
-                ss.send_file(filename, True, True, ss, maxbitrate, printer, title, options)
-            return 0, "printing to %s initiated" % client_uuids
-        else:
-            return ServerCore.do_handle_command_request(self, command, args)
+        wids = args
+        for ws, window in self._control_windowsources_from_args(*wids).items():
+            ws.set_new_encoding(encoding, strict)
+            ws.refresh(window, {})
+        return 0, "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
+
+
+    def control_command_key(self, keycode_str, press = True):
+        try:
+            if keycode_str.startswith("0x"):
+                keycode = int(keycode_str, 16)
+            else:
+                keycode = int(keycode_str)
+            assert keycode>0 and keycode<=255
+        except:
+            raise ControlError("invalid keycode specified: '%s' (must be a number between 1 and 255)" % keycode_str)
+        if press is not True:
+            if press in ("1", "press"):
+                press = True
+            elif press in ("0", "unpress"):
+                press = False
+            else:
+                return ControlError("if present, the press argument must be one of: %s", ("1", "press", "0", "unpress"))
+        self.fake_key(keycode, press)
+
+    def control_command_sound_output(self, *args):
+        msg = []
+        for csource in list(self._server_sources.values()):
+            msg.append("%s : %s" % (csource, csource.sound_control(*args)))
+        return ", ".join(msg)
+
+    def control_command_workspace(self, wid, workspace):
+        window = self._id_to_window.get(wid)
+        if not window:
+            return ControlError("window %s does not exist", wid)
+        if "workspace" not in window.get_property_names():
+            return ControlError("cannot set workspace on window %s", window)
+        if workspace<0:
+            return ControlError("invalid workspace value: %s", workspace)
+        window.set_property("workspace", workspace)
+        return "window %s moved to workspace %s" % (wid, workspace)
 
 
     def send_screenshot(self, proto):

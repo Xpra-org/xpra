@@ -15,7 +15,7 @@ from xpra.server.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SP
 from xpra.server.region import merge_all            #@UnresolvedImport
 from xpra.server.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import updict
+from xpra.util import updict, parse_scaling_value
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
@@ -38,21 +38,6 @@ if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not i
     FORCE_CSC_MODE = ""
 FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
-def parse_scaling_value(v):
-    scalinglog("parse_scaling_value(%s)", v)
-    if not v:
-        return None
-    values = v.replace("/", ":").replace(",", ":").split(":", 1)
-    values = [int(x) for x in values]
-    for x in values:
-        assert x>0, "invalid scaling value %s" % x
-    if len(values)==1:
-        ret = 1, values[0]
-    else:
-        assert values[0]<=values[1], "cannot upscale"
-        ret = values[0], values[1]
-    scalinglog("parse_scaling_value(%s)=%s", v, ret)
-    return ret
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
 VIDEO_SUBREGION = os.environ.get("XPRA_VIDEO_SUBREGION", "1")=="1"

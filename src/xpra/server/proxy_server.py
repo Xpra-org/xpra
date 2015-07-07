@@ -17,6 +17,7 @@ log = Logger("proxy")
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized
 from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
+from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.make_thread import make_thread
@@ -50,7 +51,8 @@ class ProxyServer(ServerCore):
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
-        self.control_commands = ["hello", "stop"]
+        self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display", self.handle_stop_command, min_args=1, max_args=1)
+
         #ensure we cache the platform info before intercepting SIGCHLD
         #as this will cause a fork and SIGCHLD to be emitted:
         from xpra.version_util import get_platform_info
@@ -75,10 +77,7 @@ class ProxyServer(ServerCore):
         self.main_loop = glib.MainLoop()
         self.main_loop.run()
 
-    def do_handle_command_request(self, command, args):
-        assert command=="stop"
-        if len(args)!=1:
-            return 4, "invalid number of arguments, usage: 'xpra control stop DISPLAY'"
+    def handle_stop_command(self, *args):
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)
         for process, v in self.processes.items():
@@ -87,8 +86,8 @@ class ProxyServer(ServerCore):
                 pid = process.pid
                 log.info("stop command: found process %s with pid %s for display %s, sending it 'stop' request", process, pid, display)
                 mq.put("stop")
-                return 0, "stopped proxy process with pid %s" % pid
-        return 14, "no proxy found for display %s" % display
+                return "stopped proxy process with pid %s" % pid
+        raise ControlError("no proxy found for display %s" % display)
 
 
     def stop_all_proxies(self):
