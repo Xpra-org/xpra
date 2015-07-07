@@ -347,7 +347,7 @@ class Wm(gobject.GObject):
         except Unmanageable:
             log("Window disappeared on us, never mind")
             return
-        win.connect("unmanaged", self._handle_client_unmanaged)
+        win.managed_connect("unmanaged", self._handle_client_unmanaged)
         self._windows[gdkwindow] = win
         self._windows_in_order.append(gdkwindow)
         self.notify("windows")
