@@ -87,7 +87,7 @@ UNDECORATED_TYPE_HINTS = set((
                     "SPLASHSCREEN",
                     "UTILITY",
                     "DOCK",
-                    #"DESKTOP",
+                    "DESKTOP",
                     "DROPDOWN_MENU",
                     "POPUP_MENU",
                     "TOOLTIP",
