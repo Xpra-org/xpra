@@ -16,6 +16,16 @@ gobject = import_gobject()
 gobject.threads_init()
 glib = import_glib()
 
+FAULT_RATE = int(os.environ.get("XPRA_SOUND_FAULT_INJECTION_RATE", "0"))
+_counter = 0
+def inject_fault():
+    global FAULT_RATE
+    if FAULT_RATE<=0:
+        return False
+    global _counter
+    _counter += 1
+    return (_counter % FAULT_RATE)==0
+
 
 class SoundPipeline(gobject.GObject):
 
@@ -68,6 +78,9 @@ class SoundPipeline(gobject.GObject):
             info["codec_mode"] = self.codec_mode
         if self.bitrate>0:
             info["speaker.bitrate"] = self.bitrate
+        if inject_fault():
+            info["INJECTING_NONE_FAULT"] = None
+            log.warn("injecting None fault: get_info()=%s", info)
         return info
 
     def setup_pipeline_and_bus(self, elements):
