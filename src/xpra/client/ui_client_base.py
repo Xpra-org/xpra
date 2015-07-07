@@ -63,6 +63,8 @@ UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
 
+PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
+
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
@@ -106,6 +108,7 @@ class UIXpraClient(XpraClientBase):
         #draw thread:
         self._draw_queue = None
         self._draw_thread = None
+        self._draw_counter = 0
 
         #statistics and server info:
         self.server_start_time = -1
@@ -2039,6 +2042,11 @@ class UIXpraClient(XpraClientBase):
                 decode_time = -1
                 paintlog("record_decode_time(%s) decoding error on wid=%s, %s: %sx%s", success, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
+        self._draw_counter += 1
+        if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:
+            log.warn("injecting paint fault for %s draw packet %i", coding, self._draw_counter)
+            self.idle_add(record_decode_time, False)
+            return
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
         except KeyboardInterrupt:
