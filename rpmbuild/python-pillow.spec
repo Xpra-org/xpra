@@ -28,7 +28,7 @@
 
 
 Name:           python-pillow
-Version:        2.8.2
+Version:        2.9.0
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
@@ -271,6 +271,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Tue Jul 07 2015 Antoine Martin <antoine@devloop.org.uk - 2.9.0-1
+- new upstream release
+
 * Wed Jun 10 2015 Antoine Martin <antoine@devloop.org.uk - 2.8.2-1
 - new upstream release
 
