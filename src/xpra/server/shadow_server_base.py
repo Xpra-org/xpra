@@ -178,9 +178,9 @@ class ShadowServerBase(object):
 
     def do_parse_screen_info(self, ss):
         try:
-            log.info("client root window size is %sx%s", *ss.desktop_size)
+            log.info(" client root window size is %sx%s", *ss.desktop_size)
         except:
-            log.info("unknown client desktop size")
+            log.info(" unknown client desktop size")
         return self.get_root_window_size()
 
     def _process_desktop_size(self, proto, packet):

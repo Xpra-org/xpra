@@ -76,13 +76,15 @@ def init_all_devices():
     for i in range(ngpus):
         device = None
         context = None
+        devinfo = "gpu %i" % i
         try:
             device = driver.Device(i)
-            log(" + testing device %s: %s", i, device_info(device))
-            DEVICE_INFO[i] = device_info(device)
+            devinfo = device_info(device)
+            log(" + testing device %s: %s", i, devinfo)
+            DEVICE_INFO[i] = devinfo
             host_mem = device.get_attribute(da.CAN_MAP_HOST_MEMORY)
             if not host_mem:
-                log.warn("skipping device %s (cannot map host memory)", device_info(device))
+                log.warn("skipping device %s (cannot map host memory)", devinfo)
                 continue
             context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
             try:
@@ -109,7 +111,7 @@ def init_all_devices():
             finally:
                 context.pop()
         except Exception as e:
-            log.error("error on device %s: %s", (device or i), e)
+            log.error("error on device %s: %s", devinfo, e)
     return DEVICES
 
 def get_devices():

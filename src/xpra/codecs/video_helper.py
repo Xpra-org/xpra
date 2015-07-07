@@ -255,8 +255,9 @@ class VideoHelper(object):
                     try:
                         self.init_video_encoder_option(mod)
                         break
-                    except:
-                        log.warn("init_video_encoders_options() cannot add %s encoder", mod, exc_info=True)
+                    except Exception as e:
+                        log("init_video_encoder_option(%s) error", mod, exc_info=True)
+                        log.warn("Warning: cannot load %s video encoder: %s", mod, e)
             except Exception as e:
                 log.warn("init_video_encoders_options() cannot add %s encoder: %s", x, e)
         log("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
@@ -274,7 +275,6 @@ class VideoHelper(object):
             self._cleanup_modules.append(encoder_module)
         except Exception as e:
             log("exception in %s module %s initialization %s: %s", encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
-            log.warn("Warning: %s video encoder failed: %s", encoder_type, e)
             raise
         encodings = encoder_module.get_encodings()
         log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)

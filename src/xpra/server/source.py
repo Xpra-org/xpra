@@ -626,13 +626,14 @@ class ServerSource(object):
 
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
-        msg = "%s %s client version %s" % (std(self.client_type), platform_name(self.client_platform, self.client_release), std(self.client_version))
+        log.info("%s %s client version %s", std(self.client_type), platform_name(self.client_platform, self.client_release), std(self.client_version))
+        msg = ""
         if self.hostname:
             msg += " connected from '%s'" % std(self.hostname)
         if self.username:
             msg += " as '%s'" % std(self.username)
             if self.name:
-                msg += " ('%s')" % std(self.name)
+                msg += " - '%s'" % std(self.name)
         log.info(msg)
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
@@ -742,10 +743,10 @@ class ServerSource(object):
                     self.mmap_client_token = new_token
 
         if self.mmap_size>0:
-            mmaplog.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
+            mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
-            elog.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
+            elog.info(" using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
 
     def parse_proxy_video(self):
         from xpra.codecs.enc_proxy.encoder import Encoder

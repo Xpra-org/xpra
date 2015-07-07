@@ -945,7 +945,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["desktop.names"] = desktop_names
         capabilities["desktop_size"] = [root_w, root_h]
         ss = self.get_screen_sizes()
-        log.info("desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
+        log.info(" desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
         log_screen_sizes(root_w, root_h, ss)
         capabilities["screen_sizes"] = ss
         self._last_screen_settings = (root_w, root_h, ss, ndesktops, desktop_names)
