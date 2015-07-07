@@ -37,6 +37,19 @@ if sys.version > '3':
     JOIN_TYPES = (bytes, )
 
 
+FAULT_RATE = int(os.environ.get("XPRA_PROTOCOL_FAULT_INJECTION_RATE", "0"))
+if FAULT_RATE>0:
+    _counter = 0
+    def INJECT_FAULT(p):
+        global _counter
+        _counter += 1
+        if (_counter % FAULT_RATE)==0:
+            log.warn("injecting fault in %s", p)
+            p.raw_write("Protocol JUNK! added by fault injection code")
+else:
+    def INJECT_FAULT(p):
+        pass
+
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 
 READ_BUFFER_SIZE = int(os.environ.get("XPRA_READ_BUFFER_SIZE", 65536))
@@ -260,6 +273,7 @@ class Protocol(object):
             from xpra.make_thread import make_thread
             self._write_format_thread = make_thread(self._write_format_thread_loop, "format")
             self._write_format_thread.start()
+        INJECT_FAULT(self)
 
     def _write_format_thread_loop(self):
         log("write_format_thread_loop starting")
@@ -327,6 +341,10 @@ class Protocol(object):
             counter += 1
         self._write_queue.put(items)
         self.output_packetcount += 1
+
+    def raw_write(self, contents, start_cb=None, end_cb=None):
+        """ Warning: this bypasses the compression and packet encoder! """
+        self._write_queue.put(((contents, start_cb, end_cb), ))
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -793,6 +811,7 @@ class Protocol(object):
                 self.input_packetcount += 1
                 log("processing packet %s", packet_type)
                 self._process_packet_cb(self, packet)
+                INJECT_FAULT(self)
 
     def flush_then_close(self, last_packet, done_callback=None):
         """ Note: this is best effort only

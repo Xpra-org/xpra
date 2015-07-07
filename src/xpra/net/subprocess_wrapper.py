@@ -36,6 +36,19 @@ HEXLIFY_PACKETS = os.environ.get("XPRA_HEXLIFY_PACKETS", "0")=="1"
 #avoids showing a new console window on win32:
 WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
 
+FAULT_RATE = int(os.environ.get("XPRA_WRAPPER_FAULT_INJECTION_RATE", "0"))
+if FAULT_RATE>0:
+    _counter = 0
+    def INJECT_FAULT(p):
+        global _counter
+        _counter += 1
+        if (_counter % FAULT_RATE)==0:
+            log.warn("injecting fault in %s", p)
+            p.raw_write("Wrapper JUNK! added by fault injection code")
+else:
+    def INJECT_FAULT(p):
+        pass
+
 
 #this allows us to use the gtk main loop instead:
 #import gtk
@@ -197,6 +210,7 @@ class subprocess_callee(object):
         p = self.protocol
         if p:
             p.source_has_more()
+        INJECT_FAULT(p)
 
     def get_packet(self):
         try:
@@ -229,6 +243,7 @@ class subprocess_callee(object):
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", self.wrapped_object, attr, str(tuple(packet[1:]))[:128])
         glib.idle_add(method, *packet[1:])
+        INJECT_FAULT(proto)
 
 
 def exec_kwargs():
@@ -374,12 +389,14 @@ class subprocess_caller(object):
         p = self.protocol
         if p:
             p.source_has_more()
+        INJECT_FAULT(p)
 
     def process_packet(self, proto, packet):
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
         signal_name = bytestostr(packet[0])
         self._fire_callback(signal_name, packet[1:])
+        INJECT_FAULT(proto)
 
     def _fire_callback(self, signal_name, extra_args=[]):
         callbacks = self.signal_callbacks.get(signal_name)
