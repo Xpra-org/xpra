@@ -60,6 +60,20 @@ else:
 #        gtk.main_quit()
 mainloop = glib.MainLoop
 
+def setup_fastencoder_nocompression(protocol):
+    from xpra.net.packet_encoding import get_enabled_encoders, PERFORMANCE_ORDER
+    encoders = get_enabled_encoders(PERFORMANCE_ORDER)
+    assert len(encoders)>0, "no packet encoders available!?"
+    for encoder in encoders:
+        try:
+            protocol.enable_encoder(encoder)
+            log("protocol using %s", encoder)
+            break
+        except Exception as e:
+            log("failed to enable %s: %s", encoder, e)
+    #we assume this is local, so no compression:
+    protocol.enable_compressor("none")
+
 
 class subprocess_callee(object):
     """
@@ -149,12 +163,7 @@ class subprocess_callee(object):
         conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.net_stop)
         conn.timeout = 0
         protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
-        from xpra.net.packet_encoding import get_enabled_encoders
-        encoders = get_enabled_encoders()
-        log("make_protocol found enabled encoders=%s", encoders)
-        assert len(encoders)>0, "no packet encoders available!?"
-        protocol.enable_encoder(encoders[0])
-        protocol.enable_compressor("none")
+        setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol
 
@@ -314,21 +323,16 @@ class subprocess_caller(object):
         self.protocol = self.make_protocol()
         self.protocol.start()
 
+    def abort_test(self, action):
+        if self.process.poll():
+            raise Exception("cannot %s: subprocess has terminated" % action)
+
     def make_protocol(self):
         #make a connection using the process stdin / stdout
-        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=None, target=self.description, info=self.description, close_cb=self.subprocess_exit)
+        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=self.abort_test, target=self.description, info=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
         protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
-        from xpra.net.packet_encoding import get_enabled_encoders, PERFORMANCE_ORDER
-        for encoder in get_enabled_encoders(PERFORMANCE_ORDER):
-            try:
-                protocol.enable_encoder(encoder)
-                log("protocol using %s", encoder)
-                break
-            except Exception as e:
-                log("failed to enable %s: %s", encoder, e)
-        #we assume this is local, so no compression:
-        protocol.enable_compressor("none")
+        setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol
 
