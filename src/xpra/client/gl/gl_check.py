@@ -393,7 +393,10 @@ def do_check_GL_support(min_texture_size, force_enable):
                 m = m.replace("accelerators", "").replace("accelerator", "").strip()
                 missing_accelerators.append(m)
                 continue
-            log.info(msg)
+            elif msg.startswith("Using accelerated"):
+                log(msg)
+            else:
+                log.info(msg)
         if missing_accelerators:
             log.info("OpenGL accelerate missing: %s", ", ".join(missing_accelerators))
 
