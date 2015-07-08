@@ -27,7 +27,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import thread, get_hex_uuid
+from xpra.os_util import thread, get_hex_uuid, livefds
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
     repr_ellipsized
 from xpra.child_reaper import reaper_cleanup
@@ -40,7 +40,8 @@ if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
 
-DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
+DETECT_MEMLEAKS = os.environ.get("XPRA_DETECT_MEMLEAKS", "0")=="1"
+DETECT_FDLEAKS = os.environ.get("XPRA_DETECT_FDLEAKS", "0")=="1"
 MAX_CONCURRENT_CONNECTIONS = 20
 
 
@@ -133,7 +134,7 @@ class ServerBase(ServerCore):
         self.init_packet_handlers()
         self.init_aliases()
 
-        if DETECT_LEAKS:
+        if DETECT_MEMLEAKS:
             from xpra.util import detect_leaks
             detailed = []
             #example: warning, uses ugly direct import:
@@ -144,6 +145,17 @@ class ServerBase(ServerCore):
             #    pass
             print_leaks = detect_leaks(log, detailed)
             self.timeout_add(10*1000, print_leaks)
+        self.fds = livefds()
+        if DETECT_FDLEAKS:
+            self.timeout_add(10, self.print_fds)
+
+    def print_fds(self):
+        fds = livefds()
+        newfds = fds-self.fds
+        self.fds = fds
+        log.info("print_fds() new fds=%s (total=%s)", newfds, len(fds))
+        return True
+
 
     def idle_add(self, *args, **kwargs):
         raise NotImplementedError()

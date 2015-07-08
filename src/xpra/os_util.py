@@ -195,6 +195,21 @@ def force_quit(status=1):
     os._exit(status)
 
 
+def livefds():
+    live = set()
+    try:
+        MAXFD = os.sysconf("SC_OPEN_MAX")
+    except:
+        MAXFD = 256
+    for fd in range(0, MAXFD):
+        try:
+            s = os.fstat(fd)
+            if s:
+                live.add(fd)
+        except:
+            continue
+    return live
+
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
 #http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
 #used by the sound code to get rid of the stupid gst warning below:
