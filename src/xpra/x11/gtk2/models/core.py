@@ -144,7 +144,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         "xpra-focus-out-event"          : one_arg_signal,
         }
 
-    _property_names         = ["xid", "has-alpha", "client-machine", "pid", "title", "role", "command", "class-instance", "shape", "frame"]
+    _property_names         = ["xid", "has-alpha", "client-machine", "pid", "title", "role", "command", "class-instance", "shape"]
     _dynamic_property_names = ["title", "command", "shape"]
     _initial_x11_properties = ["_NET_WM_PID", "WM_CLIENT_MACHINE",
                                "WM_NAME", "_NET_WM_NAME",        #_NET_WM_NAME is redundant, as it calls the same handler as "WM_NAME"
