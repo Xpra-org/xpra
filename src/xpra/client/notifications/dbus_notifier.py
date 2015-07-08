@@ -15,7 +15,10 @@ def DBUS_Notifier_factory():
         return DBUS_Notifier()
     except Exception as e:
         log.warn("failed to instantiate the dbus notification handler:")
-        log.warn(" %s", e)
+        if str(e).startswith("org.freedesktop.DBus.Error.ServiceUnknown:"):
+            log.warn(" you may need to start a notification service for 'org.freedesktop.Notifications'")
+        else:
+            log.warn(" %s", e)
         log.warn(" disable notifications to avoid this warning")
         return None
 
