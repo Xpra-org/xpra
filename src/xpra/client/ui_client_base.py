@@ -64,6 +64,7 @@ AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
 
 PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
+PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
 
 
 PYTHON3 = sys.version_info[0] == 3
@@ -2045,7 +2046,8 @@ class UIXpraClient(XpraClientBase):
         self._draw_counter += 1
         if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:
             log.warn("injecting paint fault for %s draw packet %i", coding, self._draw_counter)
-            self.idle_add(record_decode_time, False)
+            if PAINT_FAULT_TELL:
+                self.idle_add(record_decode_time, False)
             return
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
