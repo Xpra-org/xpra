@@ -112,7 +112,7 @@ class GTK2_Notifier(NotifierBase):
 
 class Popup(gtk.Window):
     def __init__(self, stack, title, message, callback, image):
-        log(None, stack, title, message, callback, image)
+        log("Popup%s", (stack, title, message, callback, image))
         self.stack = stack
         gtk.Window.__init__(self)
 
@@ -173,7 +173,7 @@ class Popup(gtk.Window):
             button.set_relief(gtk.RELIEF_NORMAL)
             def popup_cb_clicked(*args):
                 self.hide_notification()
-                log(None, *args)
+                log("popup_cb_clicked%s", args)
                 cb()
             button.connect("clicked", popup_cb_clicked)
             alignment = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
@@ -191,6 +191,8 @@ class Popup(gtk.Window):
         self.show_all()
         self.w, self.h = self.size_request()
         self.move(self.get_x(self.w), self.get_y(self.h))
+        self.wait_timer = None
+        self.fade_out_timer = None
         self.fade_in_timer = gobject.timeout_add(100, self.fade_in)
         #ensure we dont show it in the taskbar:
         self.window.set_skip_taskbar_hint(True)
@@ -220,7 +222,7 @@ class Popup(gtk.Window):
 
     def reposition(self, offset, stack):
         """Move the notification window down, when an older notification is removed"""
-        log(None, offset, stack)
+        log("reposition(%s, %s)", offset, stack)
         new_offset = self.h + offset
         self.move(self.get_x(self.w), self.get_y(new_offset))
         return new_offset
@@ -230,6 +232,7 @@ class Popup(gtk.Window):
         opacity += 0.15
         if opacity >= 1:
             self.wait_timer = gobject.timeout_add(1000, self.wait)
+            self.fade_in_timer = None
             return False
         self.set_opacity(opacity)
         return True
@@ -241,6 +244,7 @@ class Popup(gtk.Window):
             self.counter.set_markup(str("<b>%s</b>" % self.timeout))
         if self.timeout == 0:
             self.fade_out_timer = gobject.timeout_add(100, self.fade_out)
+            self.wait_timer = None
             return False
         return True
 
@@ -250,6 +254,7 @@ class Popup(gtk.Window):
         if opacity <= 0:
             self.in_progress = False
             self.hide_notification()
+            self.fade_out_timer = None  #redundant
             return False
         self.set_opacity(opacity)
         return True
@@ -261,10 +266,12 @@ class Popup(gtk.Window):
     def hide_notification(self, *args):
         """Destroys the notification and tells the stack to move the
         remaining notification windows"""
-        log(None, *args)
+        log("hide_notification%s", args)
         for timer in ("fade_in_timer", "fade_out_timer", "wait_timer"):
-            if hasattr(self, timer):
-                gobject.source_remove(getattr(self, timer))
+            v = getattr(self, timer)
+            if v:
+                setattr(self, timer, None)
+                gobject.source_remove(v)
         self.destroy()
         self.destroy_cb(self)
 
