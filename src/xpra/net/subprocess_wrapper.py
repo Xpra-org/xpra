@@ -324,7 +324,8 @@ class subprocess_caller(object):
         self.protocol.start()
 
     def abort_test(self, action):
-        if self.process.poll():
+        p = self.process
+        if p is None or p.poll():
             raise Exception("cannot %s: subprocess has terminated" % action)
 
     def make_protocol(self):
