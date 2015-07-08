@@ -93,6 +93,8 @@ class DesktopManager(gtk.Widget):
             model.set_property("iconic", False)
 
     def is_shown(self, model):
+        if model.is_OR() or model.is_tray():
+            return True
         return self._models[model].shown
 
     def configure_window(self, win, x, y, w, h, resize_counter=0):

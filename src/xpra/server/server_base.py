@@ -2120,7 +2120,7 @@ class ServerBase(ServerCore):
         for wid, window in wid_windows.items():
             if window is None or not window.is_managed():
                 continue
-            if not window.is_OR() and not self.is_shown(window):
+            if not self.is_shown(window):
                 log("window is no longer shown, ignoring buffer refresh which would fail")
                 continue
             ss.refresh(wid, window, opts)
