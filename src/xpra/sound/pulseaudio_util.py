@@ -29,13 +29,14 @@ try:
     if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
         from xpra.sound import pulseaudio_none_util as _pulseaudio_util
     else:
-        if os.environ.get("XPRA_USE_PACTL", "0")=="1":
-            raise ImportError("environment override: not using palib")
-        from xpra.sound import pulseaudio_palib_util as _pulseaudio_util
+        if os.environ.get("XPRA_USE_PALIB", "0")=="1":
+            from xpra.sound import pulseaudio_palib_util as _pulseaudio_util
+        else:
+            from xpra.sound import pulseaudio_pactl_util as  _pulseaudio_util       #@Reimport
 except ImportError as e:
     #fallback forks a process and parses the output:
-    log.warn("palib not available, using legacy pactl fallback")
-    from xpra.sound import pulseaudio_pactl_util as  _pulseaudio_util       #@Reimport
+    log("using pulseaudio none fallback")
+    from xpra.sound import pulseaudio_none_util as _pulseaudio_util
 
 get_info                = _pulseaudio_util.get_info
 has_pa                  = _pulseaudio_util.has_pa
