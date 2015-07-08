@@ -6,8 +6,8 @@
 from xpra.log import Logger
 log = Logger("gtk", "client")
 
-import os
-if os.name=="posix":
+import os, sys
+if os.name=="posix" and not sys.platform.startswith("darwin"):
     try:
         from xpra.x11.gtk2 import gdk_display_source
     except ImportError:
