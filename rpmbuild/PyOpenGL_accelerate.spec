@@ -8,8 +8,8 @@
 %endif
 
 Name:           PyOpenGL-accelerate
-Version:        3.1.0
-Release:        2%{?dist}
+Version:        3.1.1a1
+Release:        1%{?dist}
 Summary:        Acceleration code for PyOpenGL
 License:        BSD
 Group:          System Environment/Libraries
@@ -81,6 +81,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Jul 12 2014 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1
+- Force rebuild to workaround breakage caused by Fedora packaging differences
+- Use new alpha build (no issues found so far)
+
 * Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> 3.1.0-2
 - Add Python3 package
 

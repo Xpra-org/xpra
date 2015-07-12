@@ -9,12 +9,12 @@
 %define with_python3 1
 %endif
 
-%global VERSION 3.1.0
+%global VERSION 3.1.1a1
 %global RPMVERSION %{VERSION}final
 
 Name:           PyOpenGL
 Version:        %{RPMVERSION}
-Release:        3%{?dist}
+Release:        1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 Group:          System Environment/Libraries
@@ -121,6 +121,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Jul 12 2014 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1
+- Force rebuild to workaround breakage caused by Fedora packaging differences
+- Use new alpha build (no issues found so far)
+
 * Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 3.1.0final-3
 - fixed Tk package dependencies
 
