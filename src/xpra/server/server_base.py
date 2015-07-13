@@ -1548,8 +1548,7 @@ class ServerBase(ServerCore):
         for prop in window.get_property_names():
             if prop=="icon" or prop is None:
                 continue
-            metadata = make_window_metadata(window, prop,
-                                            get_transient_for=self.get_transient_for)
+            metadata = make_window_metadata(window, prop, get_transient_for=self.get_transient_for)
             info.update(metadata)
         if "size-constraints" in info:
             size_constraints = info["size-constraints"]
