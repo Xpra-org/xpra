@@ -16,18 +16,19 @@
 %endif
 
 Name:           python-lz4
-Version:        0.7.0
-Release:        2%{?dist}
+Version:        0.8.0.rc1
+Release:        1%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://pypi.python.org/packages/source/l/lz4/lz4-%{version}.tar.gz
+Source:         https://www.xpra.org/src/python-lz4-%{version}.tar.xz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
+BuildRequires:  lz4-devel
+Requires: 		lz4
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
-Patch1:         lz4_add_version.patch
 
 %description
 This package provides Python2 bindings for the lz4 compression library
@@ -43,19 +44,13 @@ This package provides Python3 bindings for the lz4 compression library
 http://code.google.com/p/lz4/ by Yann Collet.
 %endif
 
-#FIXME: this is fugly
-%if %(egrep -q 'Fedora release 2|CentOS Linux release 7|RedHat Linux release 7' /etc/redhat-release && echo 0 || echo 1)
-%debug_package
-%endif
-
 %prep
-%setup -q -n lz4-%{version}
+%setup -q -n python-lz4-%{version}
 #only needed on centos (a fairly brutal solution):
 %if 0%{?fedora:1}
 #should work... until things get out of sync again
 %else
 %patch0 -p1
-%patch1 -p1
 %endif
 
 %if 0%{?with_python3}
@@ -95,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jul 13 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.8.0.rc1-1
+- Pre-release testing
+
 * Sat Jun 27 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.7.0-2
 - Add version information to package
 
