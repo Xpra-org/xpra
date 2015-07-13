@@ -248,7 +248,10 @@ def create_tcp_socket(host, iport):
 def setup_tcp_socket(host, iport):
     from xpra.log import Logger
     log = Logger("network")
-    tcp_socket = create_tcp_socket(host, iport)
+    try:
+        tcp_socket = create_tcp_socket(host, iport)
+    except Exception as e:
+        raise InitException("failed to setup TCP socket on %s:%s %s" % (host, iport, e))
     def cleanup_tcp_socket():
         log.info("closing tcp socket %s:%s", host, iport)
         try:
@@ -840,19 +843,15 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
 
     mdns_recs = []
     sockets = []
-    try:
-        # Initialize the TCP sockets before the display,
-        # That way, errors won't make us kill the Xvfb
-        # (which may not be ours to kill at that point)
-        bind_tcp = parse_bind_tcp(opts.bind_tcp)
-        for host, iport in bind_tcp:
-            socket = setup_tcp_socket(host, iport)
-            sockets.append(socket)
+    # Initialize the TCP sockets before the display,
+    # That way, errors won't make us kill the Xvfb
+    # (which may not be ours to kill at that point)
+    bind_tcp = parse_bind_tcp(opts.bind_tcp)
+    for host, iport in bind_tcp:
+        socket = setup_tcp_socket(host, iport)
+        sockets.append(socket)
         if opts.mdns:
             mdns_recs.append(("tcp", bind_tcp))
-    except Exception as e:
-        log.error("cannot start server: failed to setup sockets: %s", e)
-        return 1
 
     # Do this after writing out the shell script:
     if display_name[0] != 'S':
