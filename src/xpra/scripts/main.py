@@ -84,6 +84,21 @@ class ModifiedOptionParser(optparse.OptionParser):
         raise InitExit(status, msg)
 
 
+def fixup_defaults(defaults):
+    for k in ("debug", "encoding", "sound-source", "microphone-codec", "speaker-codec"):
+        fn = k.replace("-", "_")
+        v = getattr(defaults, fn)
+        if "help" in v:
+            if os.environ.get("XPRA_SKIP_UI", "0")=="0":
+                #skip-ui: we're running in subprocess, don't bother spamming stderr
+                sys.stderr.write(("Warning: invalid 'help' option found in '%s' configuration\n" % k) +
+                             " this should only be used as a command line argument\n")
+            if k in ("encoding", "debug", "sound-source"):
+                setattr(defaults, fn, "")
+            else:
+                v.remove("help")
+
+
 def main(script_file, cmdline):
     from xpra.platform import init as platform_init, clean as platform_clean, command_error, command_info, get_main_fallback
     if len(cmdline)==1:
@@ -95,6 +110,7 @@ def main(script_file, cmdline):
         platform_init("Xpra")
         try:
             defaults = make_defaults_struct()
+            fixup_defaults(defaults)
             options, args = do_parse_cmdline(cmdline, defaults)
             if not args:
                 raise InitExit(-1, "xpra: need a mode")
@@ -154,7 +170,6 @@ def ignore_options(args, options):
         for r in remove:
             while r in args:
                 args.remove(r)
-        
 
 def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
