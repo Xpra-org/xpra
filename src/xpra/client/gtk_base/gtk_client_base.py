@@ -14,7 +14,7 @@ gdk = import_gdk()
 
 
 from xpra.log import Logger
-log = Logger("gtk", "main")
+log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 screenlog = Logger("gtk", "client", "screen")

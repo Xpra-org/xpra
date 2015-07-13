@@ -107,30 +107,135 @@ def set_global_logging_handler(h):
     global_logging_handler = h
     return saved
 
+#the order will be preserved with Python 2.7 onwards:
+try:
+    from collections import OrderedDict
+except:
+    OrderedDict = dict
 
-KNOWN_FILTERS = ["auth", "cairo", "client", "clipboard", "codec", "loader", "video",
-                 "score", "encoding", "scaling", "delta",
-                 "subregion", "regiondetect", "regionrefresh", "refresh", "compress", "mouse",
-                 "error", "verbose",
-                 #codecs:
-                 "csc", "cuda", "cython", "opencl", "swscale",
-                 "decoder", "avcodec", "libav", "vpx", "nvenc", "proxy",
-                 "x264", "webp",
-                 "gobject", "gtk", "main", "util", "dbus",
-                 "window", "icon", "info", "launcher", "mdns", "cursor",
-                 "mmap", "network", "protocol", "crypto", "encoder", "stats",
-                 "notify", "xsettings", "grab", "xshm", "shape", "workspace",
-                 "sound", "av-sync",
-                 "printing", "file", "events",
-                 "opengl",
-                 "osx", "win32",
-                 "paint", "platform", "import",
-                 "posix",
-                 "keyboard", "pointer", "focus", "metadata", "state", "screen",
-                 "server", "command", "timeout",
-                 "shadow",
-                 "test",
-                 "x11", "bindings", "core", "randr", "ximage", "focus", "tray", "xor"]
+STRUCT_KNOWN_FILTERS = OrderedDict([
+    ("Client", OrderedDict([
+                ("client"       , "All client code"),
+                ("paint"        , "Client window paint code"),
+                ("cairo"        , "Cairo paint code used with the GTK3 client"),
+                ("opengl"       , "Client OpenGL rendering"),
+                ("events"       , "System and window events"),
+                ("info"         , "About and Session info dialogs"),
+                ("launcher"     , "The client launcher program"),
+                ])),
+    ("General", OrderedDict([
+                ("clipboard"    , "All clipboard operations"),
+                ("notify"       , "Notification forwarding"),
+                ("tray"         , "System Tray forwarding"),
+                ("printing"     , "Printing"),
+                ("file"         , "File transfers"),
+                ("keyboard"     , "Keyboard mapping and key event handling"),
+                ("screen"       , "Screen and workarea dimension"),
+                ("xsettings"    , "XSettings synchronization"),
+                ("dbus"         , "DBUS calls"),
+                ])),
+    ("Window", OrderedDict([
+                ("window"       , "All window code"),
+                ("shape"        , "Window shape forwarding (XShape)"),
+                ("focus"        , "Window focus"),
+                ("workspace"    , "Window workspace synchronization"),
+                ("metadata"     , "Window metadata"),
+                ("state"        , "Window state"),
+                ("icon"         , "Window icons"),
+                ])),
+    ("Encoding", OrderedDict([
+                ("codec"        , "FIXME: only nvenc4 and nvenc5, loader and video helper"),
+                ("loader"       , "Pixel compression codec loader"),
+                ("video"        , "Video codecs"),
+                ("score"        , "Video pipeline scoring and selection"),
+                ("encoding"     , "Server side encoding selection and compression"),
+                ("scaling"      , "Scaling: automatic scaling calculations"),
+                ("delta"        , "Delta pre-compression"),
+                ("xor"          , "XOR delta pre-compression"),
+                ("subregion"    , "Video subregion processing"),
+                ("regiondetect" , "Video region detection"),
+                ("regionrefresh", "Video region refresh"),
+                ("refresh"      , "Refresh of lossy screen updates"),
+                ("compress"     , "Pixel compression (non video)"),
+                ])),
+    ("Codec", OrderedDict([
+                #codecs:
+                ("csc"          , "Colourspace conversion codecs"),
+                ("cuda"         , "CUDA device access (nvenc)"),
+                ("cython"       , "Cython CSC module"),
+                ("opencl"       , "OpenCL CSC module"),
+                ("swscale"      , "swscale CSC module"),
+                ("decoder"      , "All decoders"),
+                ("encoder"      , "All encoders"),
+                ("avcodec"      , "avcodec decoder"),
+                ("libav"        , "libav common code (swscale and avcodec)"),
+                ("vpx"          , "libvpx encoder and decoder"),
+                ("nvenc"        , "nvenc encoder (all versions)"),
+                ("x264"         , "libx264 encoder"),
+                ("webp"         , "libwebp encoder and decoder"),
+                ])),
+    ("Pointer", OrderedDict([
+                ("mouse"        , "Mouse motion"),
+                ("cursor"       , "Mouse cursor shape"),
+                ])),
+    ("Misc", OrderedDict([
+                #libraries
+                ("gtk"          , "All GTK code: bindings, client, etc"),
+                ("util"         , "All utility functions"),
+                ("gobject"      , "Command line clients"),
+                #server bits:
+                ("test"         , "Test code"),
+                ("verbose"      , "Very verbose flag"),
+                #specific applications:
+                ])),
+    ("Network", OrderedDict([
+                #internal / network:
+                ("network"      , "All network code"),
+                ("mmap"         , "mmap transfers"),
+                ("protocol"     , "Packet input and output (formatting, parsing, sending and receiving)"),
+                ("crypto"       , "Encryption"),
+                ("auth"         , "Authentication"),
+                ])),
+    ("Server", OrderedDict([
+                #Server:
+                ("server"       , "All server code"),
+                ("proxy"        , "Proxy server"),
+                ("shadow"       , "Shadow server"),
+                ("command"      , "Server control channel"),
+                ("timeout"      , "Server timeouts"),
+                #server features:
+                ("mdns"         , "mDNS session publishing"),
+                #server internals:
+                ("stats"        , "Server statistics"),
+                ("grab"         , "Window grabs"),
+                ("xshm"         , "XShm pixel capture"),
+                ])),
+    ("Sound", OrderedDict([
+                ("sound"        , "All sound"),
+                ("av-sync"      , "Audio-video sync"),
+                ])),
+    ("X11", OrderedDict([
+                ("x11"          , "All X11 code"),
+                ("bindings"     , "X11 Cython bindings"),
+                ("core"         , "X11 core bindings"),
+                ("randr"        , "X11 RandR bindings"),
+                ("ximage"       , "X11 XImage bindings"),
+                ("error"        , "X11 errors"),
+                ])),
+    ("Platform", OrderedDict([
+                ("platform"     , "All platform support code"),
+                ("import"       , "Platform support import code"),
+                ("osx"          , "Mac OS X platform support code"),
+                ("win32"        , "Microsoft Windows platform support code"),
+                ("posix"        , "Posix platform code"),
+                ])),
+    ])
+
+#flatten it:
+KNOWN_FILTERS = OrderedDict()
+for category, d in STRUCT_KNOWN_FILTERS.items():
+    for k,v in d.items():
+        KNOWN_FILTERS[k] = v
 
 
 # A wrapper around 'logging' with some convenience stuff.  In particular:

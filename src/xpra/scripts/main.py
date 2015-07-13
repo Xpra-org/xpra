@@ -651,13 +651,18 @@ def do_parse_cmdline(cmdline, defaults):
                 setattr(options, fieldname, bv)
 
     #process "help" arguments early:
-    from xpra.log import KNOWN_FILTERS
+    from xpra.log import STRUCT_KNOWN_FILTERS
     options.debug = fixup_debug_option(options.debug)
     if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
             if cat=="help":
-                raise InitInfo("known logging filters (there may be others): %s" % ", ".join(KNOWN_FILTERS))
+                h = []
+                for category, d in STRUCT_KNOWN_FILTERS.items():
+                    h.append("%s:" % category)
+                    for k,v in d.items():
+                        h.append(" * %-16s: %s" % (k,v))
+                raise InitInfo("known logging filters: \n%s" % "\n".join(h))
     if options.sound_source=="help":
         from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
