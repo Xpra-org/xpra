@@ -36,9 +36,18 @@ try:
             return level | LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
     lz4_version = lz4_VERSION
+    assert lz4_version>="0.7", "python-lz4 version %s is older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715" % lz4_version
+    #now try to check the underlying "liblz4" version
+    #which is only available with python-lz4 0.8.0 onwards:
     if hasattr(lz4, "LZ4_VERSION"):
+        try:
+            from distutils.version import LooseVersion
+        except ImportError:
+            pass
+        else:
+            #last known security issue:
+            assert LooseVersion(lz4.LZ4_VERSION)>=LooseVersion("r119"), "lz4 version %s is vulnerable and should not be used, see CVE-2014-4715" % lz4.LZ4_VERSION
         lz4_version += "-"+lz4.LZ4_VERSION
-    assert lz4_version>="0.7", "versions older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715"
 except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
