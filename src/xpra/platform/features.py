@@ -32,6 +32,11 @@ DEFAULT_PULSEAUDIO_COMMAND = "pulseaudio --start --daemonize=false --system=fals
                                     "--log-level=2 --log-target=stderr"
 GOT_PASSWORD_PROMPT_SUGGESTION = ""
 
+if sys.version<'3':
+    CLIENT_MODULES = ["xpra.client.gtk2.client"]
+else:
+    CLIENT_MODULES = ["xpra.client.gtk3.client"]
+
 
 _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "DISPLAYFD",
@@ -49,7 +54,8 @@ _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "CLIPBOARD_WANT_TARGETS",
                 "CLIPBOARD_GREEDY",
                 "CLIPBOARD_NATIVE_CLASS",
-                "UI_THREAD_POLLING"]
+                "UI_THREAD_POLLING",
+                "CLIENT_MODULES"]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,
                 *_features_list_)

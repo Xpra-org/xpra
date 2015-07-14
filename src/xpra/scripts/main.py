@@ -1325,14 +1325,13 @@ def run_client(error_cb, opts, extra_args, mode):
     return do_run_client(app)
 
 def make_client(error_cb, opts):
-    if sys.version<'3':
-        client_module = "xpra.client.gtk2.client"
-    else:
-        client_module = "xpra.client.gtk3.client"
-    toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
-    if toolkit_module is None:
-        error_cb("could not load %s" % client_module)
-    return toolkit_module.XpraClient()
+    from xpra.platform.features import CLIENT_MODULES
+    for client_module in CLIENT_MODULES:
+        #ie: "xpra.client.gtk2.client"
+        toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
+        if toolkit_module:
+            return toolkit_module.XpraClient()
+    error_cb("could not load %s" % ", ".join(CLIENT_MODULES))
 
 def do_run_client(app):
     try:
