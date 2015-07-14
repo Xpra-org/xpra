@@ -175,7 +175,7 @@ def get_info():
             devices = get_pa_device_options(monitors, io, log_errors=False)
             for d,name in devices.items():
                 info["device.%s" % d] = name
-            i += 1
+                i += 1
     info["devices"] = i
     return info
 
