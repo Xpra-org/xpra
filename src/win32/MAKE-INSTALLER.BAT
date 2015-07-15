@@ -110,7 +110,12 @@ ECHO ****** PYTHON2: py2exe + gtk2
 ECHO ****** setting pygtk and pygst environment variables
 SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
 SET GTK=%PYGTK%\runtime
-SET GSTREAMER=C:\Program Files\OSSBuild\GStreamer\v0.10.7
+SET GSTREAMER="%ProgramFiles%\OSSBuild\GStreamer\v0.10.7"
+IF EXIST "%ProgramFiles(x86)%\OSSBuild\GStreamer\v0.10.7" (
+    SET GSTREAMER="%ProgramFiles(x86)%\OSSBuild\GStreamer\v0.10.7"
+)
+REM remove quotes:
+SET GSTREAMER=%GSTREAMER:"=%
 SET PYGST=%GSTREAMER%\sdk\bindings\python\v2.7\lib\site-packages\gst-0.10
 SET PYGSTDLL=%GSTREAMER%\sdk\bindings\python\v2.7\lib\gstreamer-0.10
 SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;%GSTREAMER%\lib\site-packages
@@ -186,8 +191,8 @@ ECHO ****** Adding TortoisePlink
 REM "These are the versions currently used by TortoisePlink.exe: VC 2012 redist.."
 COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" dist\ > NUL
 COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" dist\ > NUL
-COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" dist\Plink.exe > NUL
-COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\ > NUL
+COPY /B /Y /V %TORTOISESVN%\bin\TortoisePlink.exe dist\Plink.exe > NUL
+COPY /B /Y /V %TORTOISESVN%\Putty-LICENSE.txt dist\ > NUL
 
 
 if "%DO_ZIP%"=="1" (
@@ -208,7 +213,7 @@ if "%DO_INSTALLER%"=="1" (
 	ECHO ****** Creating the installer using InnoSetup:
 	COPY /Y win32\xpra.iss xpra.iss > NUL
 	ECHO "%INNOSETUP%" xpra.iss ^> innosetup.log
-	"%INNOSETUP%" xpra.iss > innosetup.log
+	%INNOSETUP% xpra.iss > innosetup.log
 	if %errorlevel% NEQ 0 (
 		ECHO "InnoSetup error"
 		GOTO ERROR
