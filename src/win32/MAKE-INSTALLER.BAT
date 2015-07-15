@@ -12,13 +12,25 @@ if "%PYTHON%"=="" (
 	REM DEFAULT to Python 2.7:
 	SET PYTHON=C:\Python34
 	SET PYTHON=C:\Python27
-	SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
+	SET VC="%ProgramFiles%\Microsoft Visual Studio 9.0\VC"
+	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC" (
+		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC"
+	)
 )
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET PYTHONPATH=.;%PYTHONPATH%
-SET INNOSETUP=C:\Program Files\Inno Setup 5\ISCC.exe
-SET TORTOISESVN=C:\Program Files\TortoiseSVN
-SET ZIP7=C:\Program Files\7-Zip\7z.exe
+SET INNOSETUP="%ProgramFiles%\Inno Setup 5\ISCC.exe"
+IF EXIST "%ProgramFiles(x86)%\Inno Setup 5\ISCC.exe" (
+	SET INNOSETUP="%ProgramFiles(x86)%\Inno Setup 5\ISCC.exe"
+)
+SET TORTOISESVN="%ProgramFiles%\TortoiseSVN"
+IF EXIST "%ProgramFiles(x86)%\TortoiseSVN" (
+	SET TORTOISESVN="%ProgramFiles(x86)%\TortoiseSVN"
+)
+SET ZIP7="%ProgramFiles%\7-Zip\7z.exe"
+IF EXIST "%ProgramFiles(x86)%\7-Zip\7z.exe" (
+	SET ZIP7="%ProgramFiles(x86)%\7-Zip\7z.exe"
+)
 SET SVNVERSION_EXE=svnversion
 SET EXTRA_VERSION=
 SET BUILD_DIR=build
@@ -70,11 +82,11 @@ RMDIR /S /Q %BUILD_DIR% dist Output Temp 2> NUL
 DEL /Q Xpra_Setup*.exe 2> NUL
 DEL /Q cx_freeze-xpra.log build-xpra.log py2exe-xpra.log innosetup.log 2> NUL
 
-if NOT "%VC%"=="" (
+if NOT %VC%=="" (
 	if "%VSINSTALLDIR%"=="" (
 		ECHO ***************************************************************
 		ECHO ****** load Visual Studio env
-		CALL "%VC%\bin\vcvars32.bat"
+		CALL %VC%\bin\vcvars32.bat
 	)
 )
 

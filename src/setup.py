@@ -54,7 +54,7 @@ cmdclass = {}
 scripts = []
 
 
-WIN32 = sys.platform.startswith("win")
+WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
 OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0] == 3
 
@@ -1343,7 +1343,10 @@ if WIN32:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
-            GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
+            if os.path.exists("C:\\Program Files (x86)\\Ghostgum\\gsview"):
+                GSVIEW = "C:\\Program Files (x86)\\Ghostgum\\gsview"
+            else:
+                GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
             GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files\\gs"
             GHOSTSCRIPT = None
             for x in reversed(sorted(os.listdir(GHOSTSCRIPT_PARENT_DIR))):
