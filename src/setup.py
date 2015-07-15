@@ -148,7 +148,7 @@ csc_cython_ENABLED      = True
 if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")    
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
-    nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.0_sdk"
+    nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.1_sdk"
     nvenc4_ENABLED          = os.path.exists(nvenc4_sdk)
     nvenc5_ENABLED          = os.path.exists(nvenc5_sdk)
 else:
@@ -1246,7 +1246,7 @@ if WIN32:
                               "excludes"       : excludes,
                               "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll", "propsys.dll",
                                 #exclude the msys DLLs, as py2exe builds should be using MSVC
-                                "msys-2.0.dll", "msys-gcc_s-1.dll"],
+                                "msys-2.0.dll", "msys-gcc_s-1.dll", "MSVCP90.dll"],
                              }
             if not zip_ENABLED:
                 #the filename is actually ignored because we specify "skip_archive"
@@ -1446,12 +1446,16 @@ if WIN32:
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
         elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
+            if "pycuda" not in external_includes:
+                external_includes.append("pycuda")
             if "nvenc4" in pkgs_options[0]:
                 nvenc_path = nvenc4_sdk
+                nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
+                nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
             else:
                 nvenc_path = nvenc5_sdk
-            nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
-            nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
+                nvenc_include_dir       = nvenc_path + "\\Samples\\common\\inc"
+                nvenc_core_include_dir  = nvenc_path + "\\Samples\\common\\inc"     #FIXME!
             #let's not use crazy paths, just copy the dll somewhere that makes sense:
             nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
             nvenc_lib_names         = []    #not linked against it, we use dlopen!
@@ -1840,7 +1844,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
-toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common")
+toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
 if nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
