@@ -17,6 +17,12 @@ if "%PYTHON%"=="" (
 	SET VC="%ProgramFiles%\Microsoft Visual Studio 9.0\VC"
 	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC" (
 		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC"
+		SET CL_VERSION=2008
+	)
+	SET VC="%ProgramFiles%\Microsoft Visual Studio 10.0\VC"
+	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC" (
+		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC"
+		SET CL_VERSION=2010
 	)
 )
 SET PYTHON_EXE=%PYTHON%\python.exe

@@ -145,11 +145,17 @@ dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fa
 # * wheezy: 53.35
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 csc_cython_ENABLED      = True
-nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
-nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
+if WIN32:
+    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")    
+    nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
+    nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.0_sdk"
+    nvenc4_ENABLED          = os.path.exists(nvenc4_sdk)
+    nvenc5_ENABLED          = os.path.exists(nvenc5_sdk)
+else:
+    nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
+    nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
 cuda_ENABLED            = nvenc4_ENABLED or nvenc5_ENABLED
-#elif os.path.exists("C:\\nvenc_3.0_windows_sdk")
-#...
+
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
 
@@ -911,8 +917,6 @@ def glob_recurse(srcdir):
 
 #*******************************************************************************
 if WIN32:
-    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
-
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
@@ -962,18 +966,6 @@ if WIN32:
         vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
     else:
         vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
-    #cuda:
-    cuda_path = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5"
-    cuda_include_dir    = os.path.join(cuda_path, "include")
-    cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
-    cuda_bin_dir        = os.path.join(cuda_path, "bin")
-    #nvenc:
-    nvenc_path = WIN32_BUILD_LIB_PREFIX + "nvenc_3.0_windows_sdk"
-    nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
-    nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
-    #let's not use crazy paths, just copy the dll somewhere that makes sense:
-    nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
-    nvenc_lib_names         = []    #not linked against it, we use dlopen!
 
     # Same for PyGTK / GTK3:
     # http://www.pygtk.org/downloads.html
@@ -1395,6 +1387,9 @@ if WIN32:
         if kw.get("optimize"):
             add_to_keywords(kw, 'extra_compile_args', "/Ox")
             del kw["optimize"]
+        if kw.get("ignored_flags"):
+            #we don't handle this keyword here yet..
+            del kw["ignored_flags"]
         #always add the win32 include dirs for VC,
         #so codecs can find the inttypes.h and stdint.h:
         win32_include_dir = os.path.join(os.getcwd(), "win32")
@@ -1451,13 +1446,28 @@ if WIN32:
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
         elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
+            if "nvenc4" in pkgs_options[0]:
+                nvenc_path = nvenc4_sdk
+            else:
+                nvenc_path = nvenc5_sdk
+            nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
+            nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
+            #let's not use crazy paths, just copy the dll somewhere that makes sense:
+            nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
+            nvenc_lib_names         = []    #not linked against it, we use dlopen!
+
+            #cuda:
+            cuda_include_dir    = os.path.join(cuda_path, "include")
+            cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
+            cuda_bin_dir        = os.path.join(cuda_path, "bin")
+
             add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
                          [cuda_lib_dir],
                          nvenc_lib_names)
-            add_data_files('', ["%s/nvcc.exe" % cuda_bin_dir, "%s/nvlink.exe" % cuda_bin_dir])
             #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
-            add_data_files('', ["%s/nvcuda.dll" % cuda_bin_dir])
-            add_data_files('', ["%s/nvencodeapi.dll" % nvenc_bin_dir])
+            #assume 32-bit for now:
+            #add_data_files('', ["C:\\Windows\System32\nvcuda.dll"])
+            #add_data_files('', ["%s/nvencodeapi.dll" % nvenc_bin_dir])
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -1834,11 +1844,26 @@ toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common")
 if nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
-    options = [os.path.join(x, "nvcc") for x in os.environ.get("PATH", "").split(os.path.pathsep)]+["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
+    path_options = os.environ.get("PATH", "").split(os.path.pathsep)
+    if WIN32:
+        nvcc_exe = "nvcc.exe"
+        #FIXME: we try to use SDK 6.5 x86 first!
+        #(so that we can build on 32-bit envs)
+        path_options = [
+                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.5\\bin",
+                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.0\\bin",
+                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5\\bin",
+                         "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.5\\bin",
+                         "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.0\\bin",
+                         ] + path_options
+    else:
+        nvcc_exe = "nvcc"
+        path_options += ["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
+    options = [os.path.join(x, nvcc_exe) for x in path_options]
     try:
-        code, out, err = get_status_output(["which", "nvcc"])
+        code, out, err = get_status_output(["which", nvcc_exe])
         if code==0:
-            options.insert(0, out)
+            options.append(0, out)
     except:
         pass
     for filename in options:
@@ -1855,6 +1880,9 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
             print("found CUDA compiler: %s%s" % (nvcc, version))
             break
     assert nvcc is not None, "cannot find nvcc compiler!"
+    if WIN32:
+        cuda_path = os.path.dirname(nvcc)           #strip nvcc.exe
+        cuda_path = os.path.dirname(cuda_path)      #strip /bin/
     #first compile the cuda kernels
     #(using the same cuda SDK for both nvenc modules for now..)
     #TODO:
@@ -1876,9 +1904,15 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
                #"-gencode=arch=compute_52,code=compute_52",
                "-c", cuda_src,
                "-o", cuda_bin]
+        CL_VERSION = os.environ.get("CL_VERSION")
+        if CL_VERSION:
+            cmd += ["--use-local-env", "--cl-version", CL_VERSION]
+            #-ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe"
+            cmd += ["--machine", "32"]
         for arch, code in ((30, 30), (35, 35), (50, 50)):
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
+        print(" %s" % " ".join("'%s'" % x for x in cmd))
         c, stdout, stderr = get_status_output(cmd)
         if c!=0:
             print("Error: failed to compile CUDA kernel %s" % kernel)
