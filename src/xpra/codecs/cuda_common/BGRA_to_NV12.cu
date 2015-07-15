@@ -62,8 +62,8 @@ extern "C" __global__ void BGRA_to_NV12(uint8_t *srcImage, int src_w, int src_h,
         }
 
         //write 1 U and 1 V pixel:
-        float_t u = 0;
-        float_t v = 0;
+        float u = 0;
+        float v = 0;
         for (j=0; j<4; j++) {
             u += -0.148 * R[j] - 0.291 * G[j] + 0.439 * B[j] + 128;
             v +=  0.439 * R[j] - 0.368 * G[j] - 0.071 * B[j] + 128;
