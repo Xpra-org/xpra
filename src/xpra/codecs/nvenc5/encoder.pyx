@@ -1046,11 +1046,7 @@ def get_spec(encoding, colorspace):
     return cs
 
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
-#(in a python2.4 compatible way... convoluted)
-def phex(v):
-    return hex(v).lstrip("0x")
-MODULE_VERSION = 0
-PRETTY_VERSION = [int(x, 16) for x in phex(NVENCAPI_VERSION)]+[MODULE_VERSION]
+PRETTY_VERSION = [int(NVENCAPI_VERSION)//16, int(NVENCAPI_VERSION)%16, 0]
 
 def get_version():
     return ".".join((str(x) for x in PRETTY_VERSION))
