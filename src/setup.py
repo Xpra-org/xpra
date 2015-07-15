@@ -1858,7 +1858,7 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
                          ] + path_options
     else:
         nvcc_exe = "nvcc"
-        path_options += ["/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc"]
+        path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     try:
         code, out, err = get_status_output(["which", nvcc_exe])
