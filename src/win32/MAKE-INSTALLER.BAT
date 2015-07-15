@@ -203,8 +203,8 @@ if "%DO_ZIP%"=="1" (
 	DEL %ZIP_FILENAME% > NUL
 	ECHO XCOPY /S /I /X /Q dist %ZIP_DIR%
 	XCOPY /S /I /X /Q dist %ZIP_DIR%
-	ECHO "%ZIP7%" a -r %ZIP_FILENAME% %ZIP_DIR% ^> NUL
-	"%ZIP7%" a -r %ZIP_FILENAME% %ZIP_DIR% > NUL
+	ECHO %ZIP7% a -r %ZIP_FILENAME% %ZIP_DIR% ^> NUL
+	%ZIP7% a -r %ZIP_FILENAME% %ZIP_DIR% > NUL
 	dir %ZIP_FILENAME%
 )
 
@@ -212,7 +212,7 @@ if "%DO_INSTALLER%"=="1" (
 	ECHO ***************************************************************
 	ECHO ****** Creating the installer using InnoSetup:
 	COPY /Y win32\xpra.iss xpra.iss > NUL
-	ECHO "%INNOSETUP%" xpra.iss ^> innosetup.log
+	ECHO %INNOSETUP% xpra.iss ^> innosetup.log
 	%INNOSETUP% xpra.iss > innosetup.log
 	if %errorlevel% NEQ 0 (
 		ECHO "InnoSetup error"

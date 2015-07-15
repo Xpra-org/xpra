@@ -1252,7 +1252,9 @@ if WIN32:
                               "packages"       : packages,
                               "includes"       : external_includes,
                               "excludes"       : excludes,
-                              "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll", "propsys.dll"],
+                              "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll", "propsys.dll",
+                                #exclude the msys DLLs, as py2exe builds should be using MSVC
+                                "msys-2.0.dll", "msys-gcc_s-1.dll"],
                              }
             if not zip_ENABLED:
                 #the filename is actually ignored because we specify "skip_archive"
