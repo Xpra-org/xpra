@@ -911,6 +911,8 @@ def glob_recurse(srcdir):
 
 #*******************************************************************************
 if WIN32:
+    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
+
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
@@ -923,23 +925,21 @@ if WIN32:
     #ffmpeg is needed for both swscale and x264:
     libffmpeg_path = ""
     if dec_avcodec2_ENABLED:
-        libffmpeg_path = "C:\\ffmpeg2-win32-bin"
+        libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
     else:
         if csc_swscale_ENABLED:
-            for p in ("C:\\ffmpeg2-win32-bin", "C:\\ffmpeg-win32-bin"):
-                if os.path.exists(p):
-                    libffmpeg_path = p
-            assert libffmpeg_path is not None, "no ffmpeg found, cannot use csc_swscale"
+            libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
+            assert os.path.exists(libffmpeg_path), "no ffmpeg found, cannot use csc_swscale"
     libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
     libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
     libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
     #x265
-    x265_path ="C:\\x265"
+    x265_path = WIN32_BUILD_LIB_PREFIX + "x265"
     x265_include_dir    = x265_path
     x265_lib_dir        = x265_path
     x265_bin_dir        = x265_path
     #x264 (direct from build dir.. yuk - sorry!):
-    x264_path ="C:\\x264"
+    x264_path = WIN32_BUILD_LIB_PREFIX + "x264"
     x264_include_dir    = os.path.join(x264_path, "include")
     x264_lib_dir        = os.path.join(x264_path, "lib")
     x264_bin_dir        = os.path.join(x264_path, "bin")
@@ -949,7 +949,7 @@ if WIN32:
     #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     #but we use something more generic, without the version numbers:
     vpx_path = ""
-    for p in ("C:\\vpx-1.4", "C:\\vpx-1.3"):
+    for p in (WIN32_BUILD_LIB_PREFIX + "vpx-1.4", WIN32_BUILD_LIB_PREFIX + "vpx-1.3"):
         if os.path.exists(p) and os.path.isdir(p):
             vpx_path = p
             break
@@ -968,7 +968,7 @@ if WIN32:
     cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
     cuda_bin_dir        = os.path.join(cuda_path, "bin")
     #nvenc:
-    nvenc_path = "C:\\nvenc_3.0_windows_sdk"
+    nvenc_path = WIN32_BUILD_LIB_PREFIX + "nvenc_3.0_windows_sdk"
     nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
     nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
     #let's not use crazy paths, just copy the dll somewhere that makes sense:
@@ -1011,7 +1011,7 @@ if WIN32:
         gtk2_include_dir        = os.path.join(GTK_INCLUDE_DIR, "gtk-2.0")
 
         #webp:
-        webp_path = "C:\\libwebp-windows-x86"
+        webp_path = WIN32_BUILD_LIB_PREFIX + "libwebp-windows-x86"
         webp_include_dir    = webp_path+"\\include"
         webp_lib_dir        = webp_path+"\\lib"
         webp_bin_dir        = webp_path+"\\bin"
@@ -1280,7 +1280,7 @@ if WIN32:
             # pywin32, etc...)
             # This is where I keep them, you will obviously need to change this value
             # or make sure you also copy them there:
-            C_DLLs = "C:\\"
+            C_DLLs = WIN32_BUILD_LIB_PREFIX
             check_md5sums({
                C_DLLs+"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest"  : "37f44d535dcc8bf7a826dfa4f5fa319b",
                C_DLLs+"Microsoft.VC90.CRT/msvcm90.dll"                  : "4a8bc195abdc93f0db5dab7f5093c52f",
@@ -1297,10 +1297,6 @@ if WIN32:
             add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
             if webp_ENABLED and not PYTHON3:
                 #add the webp DLL to the output:
-                #And since 0.2.1, you have to compile the DLL yourself..
-                #the path after installing may look like this:
-                #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
-                #but we use something more generic, without the version numbers:
                 add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
             if enc_x264_ENABLED:
                 add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
@@ -1347,7 +1343,10 @@ if WIN32:
                 GSVIEW = "C:\\Program Files (x86)\\Ghostgum\\gsview"
             else:
                 GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
-            GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files\\gs"
+            if os.path.exists("C:\\Program Files (x86)\\gs"):
+                GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files (x86)\\gs"
+            else:
+                GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files\\gs"
             GHOSTSCRIPT = None
             for x in reversed(sorted(os.listdir(GHOSTSCRIPT_PARENT_DIR))):
                 f = os.path.join(GHOSTSCRIPT_PARENT_DIR, x)
@@ -1377,7 +1376,7 @@ if WIN32:
     #the win32 py-gi installers don't have development headers for pycairo
     #so we hardcode them here instead...
     #(until someone fixes the win32 builds properly)
-    PYCAIRO_DIR = "C:\\pycairo-1.10.0"
+    PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
     def pycairo_pkgconfig(*pkgs_options, **ekw):
         if "pycairo" in pkgs_options:
             kw = pkgconfig("cairo", **ekw)
