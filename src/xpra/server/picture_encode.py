@@ -204,7 +204,7 @@ PIL_conv_noalpha = {
 def rgb_reformat(image, rgb_formats, supports_transparency):
     """ convert the RGB pixel data into a format supported by the client """
     #need to convert to a supported format!
-    global PIL
+    PIL = get_codec("PIL")
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
