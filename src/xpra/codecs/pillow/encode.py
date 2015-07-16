@@ -150,5 +150,6 @@ def selftest(full=False):
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), binascii.hexlify(cdata))
         except Exception as e:
-            log.warn("Pillow error saving %s with quality=%s, speed=%s, alpha=%s: %s", encoding, q, s, alpha, e, exc_info=True)
-            ENCODINGS.remove(e)
+            log.warn("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
+            log.warn(" %s", e, exc_info=True)
+            ENCODINGS.remove(encoding)

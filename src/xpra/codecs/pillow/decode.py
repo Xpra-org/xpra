@@ -75,5 +75,6 @@ def selftest(full=False):
                     datainfo = cdata.encode("unicode_escape").decode()
                 except:
                     datainfo = str(hexdata)
-            log.warn("Pillow error decoding %s with data=%s..: %s", encoding, datainfo[:16], e)
+            log.warn("Pillow error decoding %s with data=%s..", encoding, datainfo[:16], e)
+            log.warn(" %s", e)
             ENCODINGS.remove(encoding)
