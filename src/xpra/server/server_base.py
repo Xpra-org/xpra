@@ -269,9 +269,9 @@ class ServerBase(ServerCore):
         log("init_encodings() adding video encodings: %s", ve)
         add_encodings(ve)  #ie: ["vp8", "h264"]
         #Pithon Imaging Libary:
-        PIL = get_codec("PIL")
-        if PIL:
-            pil_encs = get_PIL_encodings(PIL)
+        enc_pillow = get_codec("enc_pillow")
+        if enc_pillow:
+            pil_encs = enc_pillow.get_encodings()
             add_encodings(pil_encs)
             #Note: webp will only be enabled if we have a Python-PIL fallback
             #(either "webp" or "png")

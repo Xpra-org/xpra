@@ -48,9 +48,9 @@ from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import webp_encode, rgb_encode, PIL_encode, mmap_encode, mmap_send
+from xpra.server.picture_encode import webp_encode, rgb_encode, mmap_encode, mmap_send
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
-from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS, get_PIL_encodings
+from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
 
 
@@ -202,9 +202,11 @@ class WindowSource(object):
     def init_encoders(self):
         self._encoders["rgb24"] = self.rgb_encode
         self._encoders["rgb32"] = self.rgb_encode
-        for x in get_PIL_encodings(get_codec("PIL")):
-            if x in self.server_core_encodings:
-                self._encoders[x] = self.PIL_encode
+        enc_pillow = get_codec("enc_pillow")
+        if enc_pillow:
+            for x in enc_pillow.get_encodings():
+                if x in self.server_core_encodings:
+                    self._encoders[x] = self.pillow_encode
         #prefer this one over PIL supplied version:
         if "webp" in self.server_core_encodings:
             self._encoders["webp"] = self.webp_encode
@@ -1583,7 +1585,7 @@ class WindowSource(object):
             ready for sending by the network layer.
 
             * 'mmap' will use 'mmap_send' + 'mmap_encode' - always if available, otherwise:
-            * 'jpeg' and 'png' are handled by 'PIL_encode'.
+            * 'jpeg' and 'png' are handled by 'pillow_encode'.
             * 'webp' uses 'webp_encode'
             * 'h264', 'h265', 'vp8' and 'vp9' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode'
@@ -1743,13 +1745,15 @@ class WindowSource(object):
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
                           self.rgb_zlib, self.rgb_lz4, self.rgb_lzo)
 
-    def PIL_encode(self, coding, image, options):
+    def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        return PIL_encode(coding, image, q, s, self.supports_transparency)
+        enc_pillow = get_codec("enc_pillow")
+        assert enc_pillow
+        return enc_pillow.encode(coding, image, q, s, self.supports_transparency)
 
     def mmap_encode(self, coding, image, options):
         return mmap_encode(coding, image, options)

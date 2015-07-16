@@ -111,6 +111,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
 
     if encoders:
         show += list(ENCODER_CODECS)
+        codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
+        add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
+
         codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
         add_codec_version("enc_webp", "xpra.codecs.webp.encode")
 
@@ -140,6 +143,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
 
     if decoders:
         show += list(DECODER_CODECS)
+        codec_import_check("dec_pillow", "Pillow decoder", "xpra.codecs.pillow", "xpra.codecs.pillow.decode", "decode")
+        add_codec_version("dec_pillow", "xpra.codecs.pillow.decode")
+
         codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
         add_codec_version("dec_webp", "xpra.codecs.webp.decode")
 
@@ -186,8 +192,8 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl"
-ENCODER_CODECS = "PIL", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5"
-DECODER_CODECS = "PIL", "dec_vpx", "dec_webp", "dec_avcodec2"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5"
+DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
@@ -271,14 +277,7 @@ def main():
             print("* %s : %s" % (name.ljust(20), f))
             if mod and verbose:
                 try:
-                    if name=="PIL":
-                        #special case for PIL which can be used for both encoding and decoding:
-                        from xpra.codecs.codec_constants import get_PIL_encodings, get_PIL_decodings
-                        e = get_PIL_encodings(mod)
-                        print("                         ENCODE: %s" % ", ".join(e))
-                        d = get_PIL_decodings(mod)
-                        print("                         DECODE: %s" % ", ".join(d))
-                    elif name.find("csc")>=0:
+                    if name.find("csc")>=0:
                         cs = list(mod.get_input_colorspaces())
                         for c in list(cs):
                             cs += list(mod.get_output_colorspaces(c))

@@ -169,6 +169,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("encoder"      , "All encoders"),
                 ("avcodec"      , "avcodec decoder"),
                 ("libav"        , "libav common code (swscale and avcodec)"),
+                ("pillow"       , "Pillow encoder and decoder"),
                 ("vpx"          , "libvpx encoder and decoder"),
                 ("nvenc"        , "nvenc encoder (all versions)"),
                 ("x264"         , "libx264 encoder"),

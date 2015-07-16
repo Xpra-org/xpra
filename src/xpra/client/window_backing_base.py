@@ -14,7 +14,6 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict
-from xpra.codecs.codec_constants import get_PIL_decodings
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr
@@ -81,8 +80,10 @@ class WindowBackingBase(object):
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
-        PIL = get_codec("PIL")
-        self._PIL_encodings = get_PIL_decodings(PIL)
+        self._PIL_encodings = []
+        PIL = get_codec("dec_pillow")
+        if PIL:
+            self._PIL_encodings = PIL.get_encodings()
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False

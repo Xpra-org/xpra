@@ -130,6 +130,7 @@ printing_ENABLED        = True
 enc_proxy_ENABLED       = True
 enc_x264_ENABLED        = True          #too important to detect
 enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
+pillow_ENABLED          = True
 webp_ENABLED            = pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
 vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
 #ffmpeg 2 onwards:
@@ -171,7 +172,7 @@ rebuild_ENABLED         = True
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265",
             "nvenc4", "nvenc5", "cuda",
-            "vpx", "webp",
+            "vpx", "webp", "pillow",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython",
             "memoryview",
@@ -247,6 +248,8 @@ if "clean" not in sys.argv:
         print("Warning: client is enabled but none of the client toolkits are!?")
     if not client_ENABLED and not server_ENABLED:
         print("Warning: you probably want to build at least the client or server!")
+    if not pillow_ENABLED:
+        print("Warning: including Python Pillow is VERY STRONGLY recommended")
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)
@@ -257,8 +260,8 @@ if "clean" not in sys.argv:
 
 external_includes = ["Crypto", "Crypto.Cipher",
                      "hashlib",
-                     "PIL", "PIL.Image", "PIL.WebPImagePlugin",
                      "ctypes", "platform"]
+
 if gtk3_ENABLED:
     external_includes += ["gi"]
 elif gtk2_ENABLED or x11_ENABLED:
@@ -1958,6 +1961,10 @@ if enc_x265_ENABLED:
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
                 **x265_pkgconfig))
+
+toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
+if pillow_ENABLED:
+    external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:

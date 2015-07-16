@@ -30,7 +30,7 @@ class GTK2WindowBacking(GTKWindowBacking):
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        if USE_PIL and has_codec("PIL"):
+        if USE_PIL and has_codec("dec_pillow"):
             return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
         #gdk needs UI thread:
         self.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)

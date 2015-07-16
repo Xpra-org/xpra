@@ -12,19 +12,13 @@ log = Logger("window", "compress")
 
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba  #@UnresolvedImport
-from xpra.os_util import StringIOClass
-from xpra.codecs.loader import get_codec, get_codec_version
-from xpra.codecs.codec_constants import get_PIL_encodings
+from xpra.codecs.loader import get_codec
 from xpra.os_util import memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
     mmap_write = None               #no mmap
 
-
-PIL = get_codec("PIL")
-PIL_VERSION = get_codec_version("PIL")
-PIL_can_optimize = PIL_VERSION>="2.2"
 
 #give warning message just once per key then ignore:
 encoding_warnings = set()
@@ -70,11 +64,12 @@ def webp_encode(coding, image, rgb_formats, supports_transparency, quality, spee
             client_options["has_alpha"] = True
         return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
     #fallback to PIL
-    log("using PIL fallback for webp: enc_webp=%s, stride=%s, pixel format=%s", enc_webp, stride, image.get_pixel_format())
-    encs = get_PIL_encodings(PIL)
-    for x in ("webp", "png"):
-        if x in encs:
-            return PIL_encode(x, image, quality, speed, supports_transparency)
+    enc_pillow = get_codec("enc_pillow")
+    if enc_pillow:
+        log("using PIL fallback for webp: enc_webp=%s, stride=%s, pixel format=%s", enc_webp, stride, image.get_pixel_format())
+        for x in ("webp", "png"):
+            if x in enc_pillow.get_encodings():
+                return enc_pillow.encode(x, image, quality, speed, supports_transparency)
     raise Exception("BUG: cannot use 'webp' encoding and none of the PIL fallbacks are available!")
 
 
@@ -150,102 +145,6 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, options, width, height, stride, bpp
-
-
-def PIL_encode(coding, image, quality, speed, supports_transparency):
-    assert PIL is not None, "Python PIL is not available"
-    pixel_format = image.get_pixel_format()
-    w = image.get_width()
-    h = image.get_height()
-    rgb = {
-           "XRGB"   : "RGB",
-           "BGRX"   : "RGB",
-           "RGBA"   : "RGBA",
-           "BGRA"   : "RGBA",
-           }.get(pixel_format, pixel_format)
-    bpp = 32
-    #remove transparency if it cannot be handled:
-    try:
-        pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
-        #PIL cannot use the memoryview directly:
-        pixels = memoryview_to_bytes(pixels)
-        #it is safe to use frombuffer() here since the convert()
-        #calls below will not convert and modify the data in place
-        #and we save the compressed data then discard the image
-        im = PIL.Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
-        if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
-            im = im.convert("RGB")
-            rgb = "RGB"
-            bpp = 24
-    except Exception:
-        log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), rgb, exc_info=True)
-        raise
-    buf = StringIOClass()
-    client_options = {}
-    #only optimize with Pillow>=2.2 and when speed is zero
-    if coding in ("jpeg", "webp"):
-        q = int(min(99, max(1, quality)))
-        kwargs = im.info
-        kwargs["quality"] = q
-        client_options["quality"] = q
-        if coding=="jpeg" and PIL_can_optimize and speed<70:
-            #(optimizing jpeg is pretty cheap and worth doing)
-            kwargs["optimize"] = True
-            client_options["optimize"] = True
-        im.save(buf, coding.upper(), **kwargs)
-    else:
-        assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
-        if coding in ("png/L", "png/P") and supports_transparency and rgb=="RGBA":
-            #grab alpha channel (the last one):
-            #we use the last channel because we know it is RGBA,
-            #otherwise we should do: alpha_index= image.getbands().index('A')
-            alpha = im.split()[-1]
-            #convert to simple on or off mask:
-            #set all pixel values below 128 to 255, and the rest to 0
-            def mask_value(a):
-                if a<=128:
-                    return 255
-                return 0
-            mask = PIL.Image.eval(alpha, mask_value)
-        else:
-            #no transparency
-            mask = None
-        if coding=="png/L":
-            im = im.convert("L", palette=PIL.Image.ADAPTIVE, colors=255)
-            bpp = 8
-        elif coding=="png/P":
-            #I wanted to use the "better" adaptive method,
-            #but this does NOT work (produces a black image instead):
-            #im.convert("P", palette=Image.ADAPTIVE)
-            im = im.convert("P", palette=PIL.Image.WEB, colors=255)
-            bpp = 8
-        if mask:
-            # paste the alpha mask to the color of index 255
-            im.paste(255, mask)
-        kwargs = im.info
-        if mask is not None:
-            client_options["transparency"] = 255
-            kwargs["transparency"] = 255
-        if PIL_can_optimize and speed==0:
-            #optimizing png is very rarely worth doing
-            kwargs["optimize"] = True
-            client_options["optimize"] = True
-        #level can range from 0 to 9, but anything above 5 is way too slow for small gains:
-        #76-100   -> 1
-        #51-76    -> 2
-        #etc
-        level = max(1, min(5, (125-speed)/25))
-        kwargs["compress_level"] = level
-        client_options["compress_level"] = level
-        #default is good enough, no need to override, other options:
-        #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
-        #kwargs["compress_type"] = PIL.Image.DEFAULT_STRATEGY
-        im.save(buf, "PNG", **kwargs)
-    log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
-    data = buf.getvalue()
-    buf.close()
-    return coding, compression.Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
 
 def argb_swap(image, rgb_formats, supports_transparency):
