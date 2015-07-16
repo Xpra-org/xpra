@@ -76,5 +76,5 @@ def selftest(full=False):
                 except:
                     datainfo = str(hexdata)
             log.warn("Pillow error decoding %s with data=%s..", encoding, datainfo[:16])
-            log.warn(" %s", e)
+            log.warn(" %s", e, exc_info=True)
             ENCODINGS.remove(encoding)
