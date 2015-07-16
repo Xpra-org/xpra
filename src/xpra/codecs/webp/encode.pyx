@@ -26,6 +26,7 @@ cdef extern from "stdlib.h":
 
 cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int get_buffer_api_version()
 
 cdef extern from "webp/encode.h":
 
@@ -271,12 +272,31 @@ ERROR_TO_NAME = {
                 VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
                 }
 
+PRESETS = {
+           WEBP_PRESET_DEFAULT      : "default",
+           WEBP_PRESET_PICTURE      : "picture",
+           WEBP_PRESET_PHOTO        : "photo",
+           WEBP_PRESET_DRAWING      : "drawing",
+           WEBP_PRESET_ICON         : "icon",
+           WEBP_PRESET_TEXT         : "text",
+           }
+PRESET_NAME_TO_CONSTANT = {}
+for k,v in PRESETS.items():
+    PRESET_NAME_TO_CONSTANT[v] = k
+
 IMAGE_HINT = {
               WEBP_HINT_DEFAULT     : "default",
               WEBP_HINT_PICTURE     : "picture",
               WEBP_HINT_PHOTO       : "photo",
               WEBP_HINT_GRAPH       : "graph",
               }
+HINT_NAME_TO_CONSTANT = {}
+for k,v in IMAGE_HINT.items():
+    HINT_NAME_TO_CONSTANT[v] = k
+
+DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "graph").lower(), WEBP_HINT_GRAPH)
+DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "text").lower(), WEBP_PRESET_TEXT)
+PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
 
 
 def get_encodings():
@@ -286,6 +306,19 @@ def get_version():
     cdef int version = WebPGetEncoderVersion()
     log("WebPGetEncoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
+
+def get_info():
+    return  {
+            "version"       : get_version(),
+            "encodings"     : get_encodings(),
+            "buffer_api"    : get_buffer_api_version(),
+            "threading"     : USE_THREADS,
+            "image-hint"    : DEFAULT_IMAGE_HINT,
+            "image-hints"   : IMAGE_HINT.values(),
+            "preset"        : DEFAULT_PRESET,
+            "preset-small"  : PRESET_SMALL,
+            "presets"       : PRESETS.values(),
+            }
 
 def webp_check(int ret):
     if ret==0:
@@ -333,10 +366,9 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     cdef WebPConfig config
     cdef int ret
     cdef int i, c
-    #presets: DEFAULT, PICTURE, PHOTO, DRAWING, ICON, TEXT
-    cdef WebPPreset preset = WEBP_PRESET_TEXT
+    cdef WebPPreset preset = DEFAULT_PRESET
     if width*height<8192:
-        preset = WEBP_PRESET_ICON
+        preset = PRESET_SMALL
 
     i = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
     assert i==0, "failed to get buffer from pixel object: %s (returned %s)" % (type(pixels), i)
@@ -366,8 +398,7 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     config.alpha_compression = has_alpha
     config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
     config.alpha_quality = quality * int(has_alpha)
-    #hints: DEFAULT, PICTURE, PHOTO, GRAPH
-    config.image_hint = WEBP_HINT_GRAPH
+    config.image_hint = DEFAULT_IMAGE_HINT
     config.thread_level = USE_THREADS
     config.partitions = 3
     config.partition_limit = max(0, min(100, 100-quality))

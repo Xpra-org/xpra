@@ -21,6 +21,7 @@ cdef extern from "../../buffers/memalign.h":
 
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
+    int get_buffer_api_version()
 
 cdef extern from "webp/decode.h":
 
@@ -143,6 +144,12 @@ def get_version():
     cdef int version = WebPGetDecoderVersion()
     log("WebPGetDecoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
+
+def get_info():
+    return  {
+            "version"      : get_version(),
+            "encodings"    : get_encodings(),
+            "buffer_api"   : get_buffer_api_version()}
 
 def webp_check(int ret):
     if ret==0:
