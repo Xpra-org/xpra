@@ -1100,7 +1100,7 @@ def _socket_connect(sock, endpoint, description, dtype):
     try:
         sock.connect(endpoint)
     except Exception as e:
-        raise InitException("failed to connect to '%s' : %s" % (pretty_socket(endpoint), e))
+        raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
 
