@@ -599,4 +599,5 @@ cdef class Encoder:
 def selftest(full=False):
     from xpra.codecs.codec_checks import testencoder
     from xpra.codecs.vpx import encoder
-    testencoder(encoder, full)
+    global CODECS
+    CODECS = testencoder(encoder, full)

@@ -630,4 +630,5 @@ def selftest(full=False):
     global CODECS
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
+    global CODECS
     CODECS = testdecoder(decoder, full)

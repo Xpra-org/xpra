@@ -505,4 +505,4 @@ cdef class Encoder:
 def selftest(full=False):
     from xpra.codecs.codec_checks import testencoder
     from xpra.codecs.enc_x265 import encoder
-    testencoder(encoder, full)
+    assert testencoder(encoder, full)
