@@ -126,11 +126,14 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     status, out = pactl_output(False, "list")
     if status!=0 or not out:
         return  {}
+    return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices, log_errors)
+
+def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True):
     device_class = None
     device_description = None
     name = None
     devices = {}
-    for line in out.splitlines():
+    for line in pactl_list_output.splitlines():
         if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
             if name and device_class:
                 if name in ignored_devices:
@@ -181,8 +184,22 @@ def get_info():
 
 
 def main():
+    from xpra.os_util import load_binary_file
     if "-v" in sys.argv:
         log.enable_debug()
+        sys.argv.remove("-v")
+    if len(sys.argv)>1:
+        for filename in sys.argv[1:]:
+            if not os.path.exists(filename):
+                log.warn("file argument '%s' does not exist, igoring", filename)
+                continue
+            data = load_binary_file(filename)
+            devices = do_get_pa_device_options(data, True, False)
+            log.info("%s devices found in '%s'", len(devices), filename)
+            for d in devices:
+                log.info("* %s", d)
+        return
+
     i = get_info()
     for k in sorted(i):
         log.info("%s : %s", k.ljust(64), i[k])
