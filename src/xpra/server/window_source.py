@@ -1686,7 +1686,7 @@ class WindowSource(object):
                     try:
                         bucket = lpd.index(None)
                         deltalog("delta: found empty bucket %i", bucket)
-                    except:
+                    except ValueError:
                         #find a bucket which has not been used recently
                         t = 0
                         bucket = 0
@@ -1704,7 +1704,7 @@ class WindowSource(object):
                 totals[1] = totals[1] + w*h
                 deltalog("delta: client options=%s (for region %s)", client_options, (x, y, w, h))
         encoding = coding
-        if INTEGRITY_HASH:
+        if INTEGRITY_HASH and coding!="mmap":
             #could be a compressed wrapper or just raw bytes:
             try:
                 v = data.data
