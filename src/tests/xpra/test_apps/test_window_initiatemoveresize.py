@@ -41,7 +41,7 @@ def main():
 
 	def initiate(x_root, y_root, direction, button, source_indication):
 		print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
-		from xpra.x11.gtk_x11 import gdk_display_source
+		from xpra.x11.gtk2 import gdk_display_source
 		assert gdk_display_source
 		from xpra.x11.bindings.core_bindings import X11CoreBindings					#@UnresolvedImport
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport

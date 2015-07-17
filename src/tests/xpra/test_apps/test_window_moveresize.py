@@ -32,7 +32,7 @@ def main():
 	hbox.pack_start(x11_btn, expand=False, fill=False, padding=10)
 	def moveresize_X11(*args):
 		new_x, new_y, new_width, new_height = get_new_geometry()
-		from xpra.x11.gtk_x11 import gdk_display_source
+		from xpra.x11.gtk2 import gdk_display_source
 		assert gdk_display_source
 		from xpra.gtk_common.gobject_compat import get_xid
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport

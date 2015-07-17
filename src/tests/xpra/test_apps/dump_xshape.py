@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from xpra.x11.gtk_x11 import gdk_display_source
+from xpra.x11.gtk2 import gdk_display_source
 assert gdk_display_source
 from xpra.x11.bindings.window_bindings import X11WindowBindings, SHAPE_KIND #@UnresolvedImport
 X11Window = X11WindowBindings()

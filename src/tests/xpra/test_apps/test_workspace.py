@@ -8,7 +8,7 @@ pygtk.require('2.0')
 import gtk
 from gtk import gdk
 
-from xpra.x11.gtk_x11 import gdk_display_source
+from xpra.x11.gtk2 import gdk_display_source
 assert gdk_display_source
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.gtk_x11.send_wm import send_wm_workspace

@@ -78,7 +78,7 @@ class GTKKeyboardHelper(KeyboardHelper):
 
 def main():
     #use gtk as display source:
-    from xpra.x11.gtk_x11 import gdk_display_source
+    from xpra.x11.gtk2 import gdk_display_source
     assert gdk_display_source
     from xpra.util import nonl
     from xpra.platform import init as platform_init
