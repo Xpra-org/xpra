@@ -96,9 +96,12 @@ class Win32EventListener(object):
             try:
                 win32gui.DestroyWindow(self.hwnd)
             except Exception as e:
-                log.warn("error during win32 events cleanup: %s", e)
+                log.warn("error during win32 events cleanup of event window instance: %s", e)
             self.hwnd = None
-            win32gui.UnregisterClass(self.wc.lpszClassName, None)
+            try:
+                win32gui.UnregisterClass(self.wc.lpszClassName, None)
+            except:
+                log.warn("error during win32 events cleanup of event window class: %s", e)
 
     def stop_win32_session_events(self):
         if not self.old_win32_proc:
