@@ -27,6 +27,7 @@ log = Logger("x11", "window")
 metalog = Logger("x11", "window", "metadata")
 shapelog = Logger("x11", "window", "shape")
 grablog = Logger("x11", "window", "grab")
+framelog = Logger("x11", "window", "frame")
 
 
 X11Window = X11WindowBindings()
@@ -514,13 +515,14 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._sync_frame()
     def _sync_frame(self, *args):
         v = self.get_property("frame")
+        framelog("sync_frame: frame(%#x)=%s", self.xid, v)
         if not v and (not self.is_OR() and not self.is_tray()):
             root = self.client_window.get_screen().get_root_window()
             v = prop_get(root, "DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
         if not v:
             #default for OR, or if we don't have any other value:
             v = (0, 0, 0, 0)
-        metalog("sync_frame: setting _NET_FRAME_EXTENTS=%s on %#x", v, self.xid)
+        framelog("sync_frame: setting _NET_FRAME_EXTENTS=%s on %#x", v, self.xid)
         with xswallow:
             prop_set(self.client_window, "_NET_FRAME_EXTENTS", ["u32"], v)
 
@@ -649,7 +651,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.request_close()
             return True
         elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
-            log("_NET_REQUEST_FRAME_EXTENTS")
+            framelog("_NET_REQUEST_FRAME_EXTENTS")
             self._handle_frame_changed()
             return True
         #not handled:

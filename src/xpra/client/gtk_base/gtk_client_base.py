@@ -18,6 +18,7 @@ log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 screenlog = Logger("gtk", "client", "screen")
+framelog = Logger("gtk", "client", "frame")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -26,7 +27,7 @@ from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
-            get_default_root_window, \
+            get_default_root_window, get_xwindow, \
             INTERP_BILINEAR, WINDOW_TOPLEVEL
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
@@ -77,6 +78,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.frame_request_window.realize()
         with xsync:
             win = self.frame_request_window.get_window()
+            framelog("setup_frame_request_windows() window=%#x", get_xwindow(win))
             send_wm_request_frame_extents(root, win)
 
     def run(self):
@@ -205,6 +207,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         root = self.get_root_window()
         with xsync:
             win = window.get_window()
+            framelog("request_frame_extents(%s) xid=%#x", window, get_xwindow(win))
             send_wm_request_frame_extents(root, win)
 
     def get_frame_extents(self, window):
@@ -212,7 +215,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         x, y = window.get_position()
         w, h = window.get_size()
         v = get_window_frame_size(x, y, w, h)
-        log("get_window_frame_size%s=%s", (x, y, w, h), v)
+        framelog("get_window_frame_size%s=%s", (x, y, w, h), v)
         if v:
             #(OSX does give us these values via Quartz API)
             return v
@@ -223,7 +226,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         gdkwin = window.get_window()
         assert gdkwin
         v = prop_get(gdkwin, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
-        log("get_frame_extents(%s)=%s", window.get_title(), v)
+        framelog("get_frame_extents(%s)=%s", window.get_title(), v)
         return v
 
     def get_window_frame_sizes(self):
@@ -234,6 +237,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 l, _, t, _ = v
                 wfs["frame"] = v
                 wfs["offset"] = (l, t)
+        framelog("get_window_frame_sizes()=%s", wfs)
         return wfs
 
 

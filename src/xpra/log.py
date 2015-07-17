@@ -142,6 +142,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("metadata"     , "Window metadata"),
                 ("state"        , "Window state"),
                 ("icon"         , "Window icons"),
+                ("frame"        , "Window frame")
                 ])),
     ("Encoding", OrderedDict([
                 ("codec"        , "FIXME: only nvenc4 and nvenc5, loader and video helper"),

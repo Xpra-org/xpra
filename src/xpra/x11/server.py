@@ -44,6 +44,7 @@ traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
+framelog = Logger("x11", "frame")
 
 import xpra
 from xpra.util import nonl, typedict
@@ -374,7 +375,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def parse_hello_ui_window_settings(self, ss, c):
-        log("parse_hello_ui_window_settings: ", ss.window_frame_sizes)
+        framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", ss.window_frame_sizes)
         frame = None
         if ss.window_frame_sizes:
             frame = ss.window_frame_sizes.intlistget("frame")

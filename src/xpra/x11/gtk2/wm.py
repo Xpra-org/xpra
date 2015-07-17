@@ -29,6 +29,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
 screenlog = Logger("x11", "window", "screen")
+framelog = Logger("x11", "window", "frame")
 
 
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
@@ -300,6 +301,7 @@ class Wm(gobject.GObject):
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
 
     def set_default_frame_extents(self, v):
+        framelog("set_default_frame_extents(%s)", v)
         if not v or len(v)!=4:
             v = (0, 0, 0, 0)
         self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
