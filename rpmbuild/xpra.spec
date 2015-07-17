@@ -75,6 +75,8 @@
 #Fedora 22+ have PyOpenGL... and they include PyOpenGL-accelerate bindings. PITA for us.
 %if 0%{?fedora} >= 22
 %define requires_opengl , PyOpenGL, pygtkglext, numpy
+#note: probably not working since we don't have gtkglext?
+%define py3requires_opengl , python3-PyOpenGL, numpy
 %endif
 
 
