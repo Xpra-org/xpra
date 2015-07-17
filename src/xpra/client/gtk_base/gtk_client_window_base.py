@@ -343,6 +343,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         pass
 
 
+    def set_command(self, command):
+        metalog("set_command(%s) (type=%s)", command, type(command))
+        if type(command)!=unicode:
+            v = bytestostr(command)
+            try:
+                v = v.decode("utf8")
+            except:
+                pass
+        prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
+
     def set_class_instance(self, wmclass_name, wmclass_class):
         if not self.is_realized():
             #Warning: window managers may ignore the icons we try to set
@@ -476,15 +486,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if HAS_X11_BINDINGS:
             #now it is realized, we can set WM_COMMAND (for X11 clients only)
             command = self._metadata.strget("command")
-            v = command
-            if type(command)!=unicode:
-                v = bytestostr(command)
-                try:
-                    v = v.decode("utf8")
-                except:
-                    pass
-            log("realize() command=%s (%s)", v, type(v))
-            prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
+            if command:
+                self.set_command(command)
+            #and request frame extents if the window manager supports it
             self._client.request_frame_extents(self)
 
 

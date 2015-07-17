@@ -312,6 +312,12 @@ class ClientWindowBase(ClientWidgetBase):
         if b"shape" in metadata:
             self.set_shape(metadata.dictget("shape"))
 
+        if b"command" in metadata:
+            self.set_command(metadata.strget("command"))
+
+
+    def set_command(self, command):
+        pass
 
     def set_class_instance(self, wmclass_name, wmclass_class):
         pass
