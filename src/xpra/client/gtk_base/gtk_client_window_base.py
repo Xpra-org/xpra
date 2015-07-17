@@ -342,6 +342,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #(used by the win32 platform workarounds)
         pass
 
+
+    def set_class_instance(self, wmclass_name, wmclass_class):
+        if not self.is_realized():
+            #Warning: window managers may ignore the icons we try to set
+            #if the wm_class value is set and matches something somewhere undocumented
+            #(if the default is used, you cannot override the window icon)
+            self.set_wmclass(wmclass_name, wmclass_class)
+
     def set_shape(self, shape):
         shapelog("set_shape(%s)", shape)
         if not HAS_X11_BINDINGS:

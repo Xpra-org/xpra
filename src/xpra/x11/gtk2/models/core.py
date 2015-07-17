@@ -146,9 +146,9 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
 
     #things that we expose:
-    _property_names         = ["xid", "has-alpha", "client-machine", "pid", "title", "role", "command", "class-instance", "shape"]
+    _property_names         = ["xid", "has-alpha", "client-machine", "pid", "title", "role", "command", "shape", "class-instance", "protocols"]
     #exposed and changing (should be watched for notify signals):
-    _dynamic_property_names = ["title", "command", "shape"]
+    _dynamic_property_names = ["title", "command", "shape", "class-instance", "protocols"]
     #should not be exported to the clients:
     _internal_property_names = ["frame", "allowed-actions"]
     _initial_x11_properties = ["_NET_WM_PID", "WM_CLIENT_MACHINE",

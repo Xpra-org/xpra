@@ -135,7 +135,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     #the properties below are not actually exported to the client (yet?)
     #it was just easier to handle them here
     #(convert to a type that can be encoded for xpra info):
-    elif propname == "state":
+    elif propname in ("state", "protocols"):
         return {"state" : list(raw() or [])}
     elif propname == "allowed-actions":
         return {"allowed-actions" : list(raw())}

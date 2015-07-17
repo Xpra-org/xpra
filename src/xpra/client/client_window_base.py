@@ -147,11 +147,6 @@ class ClientWindowBase(ClientWidgetBase):
     def update_metadata(self, metadata):
         metalog("update_metadata(%s)", metadata)
         self._metadata.update(metadata)
-        if not self.is_realized():
-            #Warning: window managers may ignore the icons we try to set
-            #if the wm_class value is set and matches something somewhere undocumented
-            #(if the default is used, you cannot override the window icon)
-            self.set_wmclass(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
         try:
             self.set_metadata(metadata)
         except Exception:
@@ -159,6 +154,11 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_metadata(self, metadata):
         metalog("set_metadata(%s)", metadata)
+        #WARNING: "class-instance" needs to go first because others may realize the window
+        #(and GTK doesn't set the "class-instance" once the window is realized)
+        if b"class-instance" in metadata:
+            self.set_class_instance(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
+
         if b"title" in metadata:
             try:
                 title = bytestostr(self._client.title).replace("\0", "")
@@ -311,6 +311,10 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"shape" in metadata:
             self.set_shape(metadata.dictget("shape"))
+
+
+    def set_class_instance(self, wmclass_name, wmclass_class):
+        pass
 
     def set_shape(self, shape):
         log("set_shape(%s) not implemented", shape)
