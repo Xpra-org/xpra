@@ -131,10 +131,6 @@ class WindowModel(BaseWindowModel):
                               "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
                               "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
                               "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]
-    _scrub_x11_properties   = BaseWindowModel._scrub_x11_properties + [
-                              "WM_STATE",
-                              #"_NET_WM_STATE",    # "..it should leave the property in place when it is shutting down"
-                              "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS"]
     _MODELTYPE = "Window"
 
     def __init__(self, parking_window, client_window):

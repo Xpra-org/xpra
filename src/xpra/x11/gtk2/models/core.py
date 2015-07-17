@@ -151,7 +151,10 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
                                "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE"]
     _DEFAULT_NET_WM_ALLOWED_ACTIONS = []
     _MODELTYPE = "Core"
-    _scrub_x11_properties       = []
+    _scrub_x11_properties       = [
+                              "WM_STATE",
+                              #"_NET_WM_STATE",    # "..it should leave the property in place when it is shutting down"
+                              "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS"]
 
     def __init__(self, client_window):
         log("new window %#x", client_window.xid)
