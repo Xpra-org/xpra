@@ -349,6 +349,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if the wm_class value is set and matches something somewhere undocumented
             #(if the default is used, you cannot override the window icon)
             self.set_wmclass(wmclass_name, wmclass_class)
+        elif HAS_X11_BINDINGS:
+            xid = get_xid(self.get_window())
+            with xsync:
+                X11Window.setClassHint(xid, wmclass_class, wmclass_name)
+                log.info("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
     def set_shape(self, shape):
         shapelog("set_shape(%s)", shape)
