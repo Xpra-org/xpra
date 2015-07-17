@@ -34,7 +34,6 @@ from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
-from xpra.codecs.codec_constants import get_PIL_encodings
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -1549,6 +1548,9 @@ class ServerBase(ServerCore):
             if prop=="icon" or prop is None:
                 continue
             metadata = make_window_metadata(window, prop, get_transient_for=self.get_transient_for)
+            info.update(metadata)
+        for prop in window.get_internal_property_names():
+            metadata = make_window_metadata(window, prop)
             info.update(metadata)
         if "size-constraints" in info:
             size_constraints = info["size-constraints"]

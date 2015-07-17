@@ -54,37 +54,39 @@ AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
+    def raw():
+        return window.get_property(propname)
     if propname in ("title", "icon-title", "command"):
-        v = window.get_property(propname)
+        v = raw()
         if v is None:
             return {propname: ""}
         return {propname: v.encode("utf-8")}
     elif propname in ("pid", "workspace", "bypass-compositor"):
-        v = window.get_property(propname)
+        v = raw()
         assert v is not None, "%s is None!" % propname
         if v<0 or (v==WORKSPACE_UNSET and propname=="workspace"):
             #meaningless
             return {}
         return {propname : v}
     elif propname == "size-hints":
-        hints = window.get_property("size-hints")
+        hints = raw()
         if not hints:
             return {}
         return {"size-constraints": hints}
     elif propname == "strut":
-        strut = window.get_property("strut")
+        strut = raw()
         if not strut:
             strut = {}
         else:
             strut = strut.todict()
         return {"strut": strut}
     elif propname == "class-instance":
-        c_i = window.get_property("class-instance")
+        c_i = raw()
         if c_i is None:
             return {}
         return {"class-instance": [x.encode("utf-8") for x in c_i]}
     elif propname == "client-machine":
-        client_machine = window.get_property("client-machine")
+        client_machine = raw()
         if client_machine is None:
             import socket
             client_machine = socket.gethostname()
@@ -100,25 +102,25 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         return {}
     elif propname in ("window-type", "shape"):
         #always send unchanged:
-        return {propname : window.get_property(propname)}
+        return {propname : raw()}
     elif propname in ("iconic", "fullscreen", "maximized", "decorations", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
         #always send these when requested
-        return {propname : bool(window.get_property(propname))}
+        return {propname : bool(raw())}
     elif propname in ("has-alpha", "override-redirect", "tray"):
-        v = window.get_property(propname)
+        v = raw()
         if v is False:
             #save space: all these properties are assumed false if unspecified
             return {}
         return {propname : v}
     elif propname in ("role", "opacity", "fullscreen-monitors"):
-        v = window.get_property(propname)
+        v = raw()
         if v is None or v=="":
             return {}
         return {propname : v}
     elif propname == "xid":
-        return {"xid" : hex(window.get_property("xid") or 0)}
+        return {"xid" : hex(raw() or 0)}
     elif propname == "group-leader":
-        gl = window.get_property("group-leader")
+        gl = raw()
         if not gl or not get_window_id:
             return  {}
         xid, gdkwin = gl
@@ -130,6 +132,18 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             if glwid:
                 p["group-leader-wid"] = glwid
         return p
+    #the properties below are not actually exported to the client (yet?)
+    #it was just easier to handle them here
+    #(convert to a type that can be encoded for xpra info):
+    elif propname == "state":
+        return {"state" : list(raw() or [])}
+    elif propname == "allowed-actions":
+        return {"allowed-actions" : list(raw())}
+    elif propname == "frame":
+        frame = raw()
+        if not frame:
+            return {}
+        return {"frame" : list(frame)}
     raise Exception("unhandled property name: %s" % propname)
 
 

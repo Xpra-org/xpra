@@ -138,6 +138,7 @@ class BaseWindowModel(CoreX11WindowModel):
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "attention-requested",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
+    _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
                               "WM_TRANSIENT_FOR",
                               "_NET_WM_WINDOW_TYPE",

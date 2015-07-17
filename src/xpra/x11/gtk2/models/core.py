@@ -144,8 +144,12 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         "xpra-focus-out-event"          : one_arg_signal,
         }
 
+    #things that we expose:
     _property_names         = ["xid", "has-alpha", "client-machine", "pid", "title", "role", "command", "class-instance", "shape"]
+    #exposed and changing (should be watched for notify signals):
     _dynamic_property_names = ["title", "command", "shape"]
+    #should not be exported to the clients:
+    _internal_property_names = ["frame", "allowed-actions"]
     _initial_x11_properties = ["_NET_WM_PID", "WM_CLIENT_MACHINE",
                                "WM_NAME", "_NET_WM_NAME",        #_NET_WM_NAME is redundant, as it calls the same handler as "WM_NAME"
                                "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE"]
@@ -443,6 +447,10 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
     def get_dynamic_property_names(self):
         """ The properties that may change over time """
         return self._dynamic_property_names
+
+    def get_internal_property_names(self):
+        """ The properties that should not be exposed to the client """
+        return self._internal_property_names
 
     def _updateprop(self, name, value):
         """ Updates the property and fires notify(),

@@ -23,6 +23,7 @@ class RootWindowModel(object):
         self.window = root_window
         self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon"]
         self.dynamic_property_names = []
+        self.internal_property_names = []
 
     def is_managed(self):
         return True
@@ -56,6 +57,9 @@ class RootWindowModel(object):
 
     def get_dynamic_property_names(self):
         return self.dynamic_property_names
+
+    def get_internal_property_names(self):
+        return self.internal_property_names
 
     def get_generic_os_name(self):
         for k,v in {"linux"     : "linux",
