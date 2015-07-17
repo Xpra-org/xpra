@@ -8,11 +8,6 @@ log = Logger("encoder", "pillow")
 
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
-assert PIL is not None and Image is not None, "failed to load Pillow"
-
-from xpra.codecs.codec_constants import get_PIL_decodings
-
-ENCODINGS = get_PIL_decodings(PIL)
 
 
 def get_version():
@@ -21,8 +16,21 @@ def get_version():
 def get_type():
     return "pillow"
 
+def do_get_encodings():
+    log("PIL.Image.OPEN=%s", Image.OPEN)
+    encodings = []
+    for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
+        #strip suffix (so "png/L" -> "png")
+        stripped = encoding.split("/")[0].upper()
+        if stripped in Image.OPEN:
+            encodings.append(encoding)
+    log("do_get_encodings()=%s", encodings)
+    return encodings
+
 def get_encodings():
     return ENCODINGS
+
+ENCODINGS = do_get_encodings()
 
 def get_info():
     return  {

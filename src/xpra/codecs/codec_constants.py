@@ -9,40 +9,6 @@ from xpra.log import Logger
 log = Logger("util")
 
 
-def do_get_PIL_codings(PIL, attr="SAVE"):
-    if PIL is None:
-        return []
-    pi = PIL.Image
-    import os
-    if os.environ.get("PIL_DEBUG", "0")=="1":
-        log.info("enabling PIL.DEBUG")
-        pi.DEBUG = 1
-    pi.init()
-    avalue = getattr(pi, attr)
-    log("PIL.Image.%s=%s", attr, avalue)
-    encodings = []
-    test_options = ["png", "png/L", "png/P", "jpeg", "webp"]
-    if attr=="OPEN":
-        try:
-            assert pi.PILLOW_VERSION>='2.8', "version %s leaks memory with webp" % pi.PILLOW_VERSION
-        except Exception as e:
-            log("Pillow support for opening webp images has been disabled: %s", e)
-            test_options.remove("webp")
-    for encoding in test_options:
-        #strip suffix (so "png/L" -> "png")
-        stripped = encoding.split("/")[0].upper()
-        if stripped in avalue:
-            encodings.append(encoding)
-    log("do_get_PIL_codings(%s, %s)=%s", PIL, attr, encodings)
-    return encodings
-
-def get_PIL_encodings(PIL):
-    return do_get_PIL_codings(PIL, "SAVE")
-
-def get_PIL_decodings(PIL):
-    return do_get_PIL_codings(PIL, "OPEN")
-
-
 #value: how much smaller the output is
 LOSSY_PIXEL_FORMATS = {"YUV420P" : 2,
                        "YUV422P" : 1.5
@@ -193,14 +159,9 @@ def main():
         import sys
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
-
-        try:
-            from PIL import Image   #@UnresolvedImport @UnusedImport
-            import PIL              #@UnresolvedImport
-        except:
-            PIL = None
-        print("PIL encodings: %s" % ", ".join(get_PIL_encodings(PIL)))
-        print("PIL decodings: %s" % ", ".join(get_PIL_decodings(PIL)))
+        log.info("LOSSY_PIXEL_FORMATS=%s", LOSSY_PIXEL_FORMATS)
+        log.info("PIXEL_SUBSAMPLING=%s", PIXEL_SUBSAMPLING)
+        log.info("RGB_FORMATS=%s", RGB_FORMATS)
     finally:
         #this will wait for input on win32:
         clean()

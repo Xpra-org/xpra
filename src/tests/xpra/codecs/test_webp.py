@@ -12,25 +12,18 @@ import binascii
 from io import BytesIO
 
 from xpra.codecs.webp.encode import compress, get_version   #@UnresolvedImport
-from xpra.server.picture_encode import PIL_encode
-from xpra.codecs.codec_constants import get_PIL_encodings
-from xpra.codecs.image_wrapper import ImageWrapper
 import PIL.Image            #@UnresolvedImport
 
 
 def do_test_encode(rgb_data, w, h, N=10, Q=[50], S=[0, 1, 2, 3, 4, 5, 6], has_alpha=False):
     #buf = "\0" * (w*h*4)
     #buf = get_source_data(w*h*4)
-    image = ImageWrapper(0, 0, w, h, rgb_data, "BGRA", 32, w*4, planes=ImageWrapper.PACKED, thread_safe=True)
     def webp(q, s):
         return compress(rgb_data, w, h, quality=q, speed=s, has_alpha=has_alpha)
     def PIL_webp(q, s):
-        data = PIL_encode("webp", image, quality, speed, has_alpha)
-        return data[1]
+        raise NotImplementedError("fixme!")
 
     TESTS = {"webp" : webp}
-    if "webp" in get_PIL_encodings(PIL):
-        TESTS["PIL"] = PIL_webp
 
     for name,encode in TESTS.items():
         for q in Q:
