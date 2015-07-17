@@ -67,7 +67,8 @@ def exec_lpadmin(args):
             log.warn("lpadmin failed and returned error code: %s", returncode)
             log.warn("you may want to check that this user has the required permissions for using this command")
     cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)
-    assert proc.poll() in (None, 0)
+    if proc.poll() not in (None, 0):
+        raise Exception("lpadmin command '%s' failed and returned %s" % (command, proc.poll()))
 
 
 def sanitize_name(name):
