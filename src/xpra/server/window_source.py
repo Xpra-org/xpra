@@ -1615,7 +1615,12 @@ class WindowSource(object):
             #hackish: pass data to mmap_encode using "options":
             coding = "mmap"         #changed encoding!
             options["mmap_data"] = mmap_info
-        #if client supports delta pre-compression for this encoding, use it if we can:
+        #use delta pre-compression for this encoding if:
+        #* client must support delta (at least one bucket)
+        #* encoding must be one that supports delta (usually rgb24/rgb32 or png)
+        #* size is worth xoring (too small is pointless, too big is too expensive)
+        #* the pixel format is supported by the client
+        # (if we have to rgb_reformat the buffer, it really complicates things)
         elif self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size and \
             pixel_format in self.rgb_formats:
             #this may save space (and lower the cost of xoring):
@@ -1627,6 +1632,7 @@ class WindowSource(object):
             dpixels = memoryview_to_bytes(dpixels)
             dlen = len(dpixels)
             store = sequence
+            deltalog("delta available for %s and %i %s pixels on wid=%i", coding, isize, pixel_format, wid)
             for i, dr in enumerate(list(self.delta_pixel_data)):
                 if dr is None:
                     continue
@@ -1720,8 +1726,8 @@ class WindowSource(object):
             client_options["flush"] = flush
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
-        compresslog("compress: %5.1fms for %4ix%-4i pixels using %5s with ratio %5.1f%% (%5iKB to %5iKB), delta=%5i, client_options=%s",
-                 (end-start)*1000.0, w, h, coding, 100.0*csize/psize, psize/1024, csize/1024, delta, client_options)
+        compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=-%5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
+                 (end-start)*1000.0, w, h, wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1

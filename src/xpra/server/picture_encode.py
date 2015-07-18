@@ -80,6 +80,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
+        log("rgb_encode reformatting because %s not in %s", pixel_format, rgb_formats)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
         #get the new format:
