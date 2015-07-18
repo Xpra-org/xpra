@@ -68,14 +68,12 @@
 %endif
 %endif
 
+%if 0%{?fedora}
 #the only distro to provide py3k cups bindings:
-%if 0%{?fedora} >= 21
 %define py3requires_printing , python3-cups
-%endif
-#Fedora 22+ have PyOpenGL... and they include PyOpenGL-accelerate bindings. PITA for us.
-%if 0%{?fedora} >= 22
+#Fedora now has PyOpenGL... and they include PyOpenGL-accelerate bindings. PITA for us.
 %define requires_opengl , PyOpenGL, pygtkglext, numpy
-#note: probably not working since we don't have gtkglext?
+#note: probably not working since we don't have gtkglext for Python3?
 %define py3requires_opengl , python3-PyOpenGL, numpy
 %endif
 
