@@ -168,20 +168,23 @@ class WindowBackingBase(object):
                                 (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
         delta = options.intget("delta", -1)
         bucket = options.intget("bucket", 0)
+        rgb_format = options.strget("rgb_format")
         rgb_data = img_data
         if delta>=0:
             assert bucket>=0 and bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
             if self._delta_pixel_data[bucket] is None:
                 raise Exception("delta region bucket %s references pixmap data we do not have!" % bucket)
-            lwidth, lheight, seq, ldata = self._delta_pixel_data[bucket]
-            assert width==lwidth and height==lheight and delta==seq, "delta bucket %s data does not match: expected %s but got %s" % (bucket, (width, height, delta), (lwidth, lheight, seq))
+            lwidth, lheight, lrgb_format, seq, ldata = self._delta_pixel_data[bucket]
+            assert width==lwidth and height==lheight and delta==seq, \
+                "delta bucket %s data does not match: expected %s but got %s" % (bucket, (width, height, delta), (lwidth, lheight, seq))
+            assert lrgb_format==rgb_format, "delta region uses %s format, was expecting %s" % (rgb_format, lrgb_format)
             deltalog("delta: xoring with bucket %i", bucket)
             rgb_data = xor_str(img_data, ldata)
         #store new pixels for next delta:
         store = options.intget("store", -1)
         if store>=0:
             deltalog("delta: storing sequence %i in bucket %i", store, bucket)
-            self._delta_pixel_data[bucket] =  width, height, store, rgb_data
+            self._delta_pixel_data[bucket] =  width, height, rgb_format, store, rgb_data
         return rgb_data
 
 
