@@ -422,7 +422,7 @@ class WindowVideoSource(WindowSource):
             self.cleanup_codecs()
 
 
-    def full_quality_refresh(self, window, damage_options):
+    def full_quality_refresh(self, window, damage_options={}):
         #override so we reset the video region on full quality refresh
         self.video_subregion.reset()
         WindowSource.full_quality_refresh(self, window, damage_options)
@@ -449,10 +449,10 @@ class WindowVideoSource(WindowSource):
         return q
 
 
-    def client_decode_error(self, error):
-        WindowSource.client_decode_error(self, error)
+    def client_decode_error(self, window, error):
         #maybe the stream is now corrupted..
         self.cleanup_codecs()
+        WindowSource.client_decode_error(self, window, error)
 
 
     def get_refresh_exclude(self):

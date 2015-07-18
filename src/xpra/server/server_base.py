@@ -2070,7 +2070,8 @@ class ServerBase(ServerCore):
             wid, width, height, decode_time = packet[2:6]
             ss = self._server_sources.get(proto)
             if ss:
-                ss.client_ack_damage(packet_sequence, wid, width, height, decode_time)
+                window = self._id_to_window.get(wid)
+                ss.client_ack_damage(packet_sequence, wid, window, width, height, decode_time)
             if decode_time<0:
                 #an error occurred, try to refresh:
                 ss.cancel_damage(wid)
