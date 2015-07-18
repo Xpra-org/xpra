@@ -162,18 +162,13 @@ except:
 
 
 # Texture number assignment
-#  1 = Y plane
-#  2 = U plane
-#  3 = V plane
-#  4 = RGB updates
-#  5 = FBO texture (guaranteed up-to-date window contents)
 # The first four are used to update the FBO,
 # the FBO is what is painted on screen.
 TEX_Y = 0
 TEX_U = 1
 TEX_V = 2
 TEX_RGB = 3
-TEX_FBO = 4
+TEX_FBO = 4         #FBO texture (guaranteed up-to-date window contents)
 
 # Shader number assignment
 YUV2RGB_SHADER = 0
@@ -330,13 +325,17 @@ class GLWindowBackingBase(GTKWindowBacking):
         # Create and assign fragment programs
         self.shaders = [ 1, 2 ]
         glGenProgramsARB(2, self.shaders)
-        for progid, progstr in ((YUV2RGB_SHADER, YUV2RGB_shader), (RGBP2RGB_SHADER, RGBP2RGB_shader)):
+        for name, progid, progstr in (("YUV2RGB", YUV2RGB_SHADER, YUV2RGB_shader), ("RGBP2RGB", RGBP2RGB_SHADER, RGBP2RGB_shader)):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
             glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
             err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
             if err:
                 #FIXME: maybe we should do something else here?
-                log.error(err)
+                log.error("OpenGL shader %s failed:", name)
+                log.error(" %s", err)
+                raise Exception("OpenGL shader %s setup failure: %s" % (name, err))
+            else:
+                log("%s shader initialized", name)
 
     def gl_context(self):
         if not self._backing:
