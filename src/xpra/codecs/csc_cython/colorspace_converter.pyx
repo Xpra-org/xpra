@@ -116,7 +116,7 @@ class CythonImageWrapper(ImageWrapper):
 
 DEF STRIDE_ROUNDUP = 16
 
-#Pre-calculate some coefficients and defined them as constants
+#Pre-calculate some coefficients and define them as constants
 #We use integer calculations so everything is multipled by 2**16
 #To get the result as a byte, we just bitshift:
 DEF shift = 16
@@ -367,13 +367,19 @@ cdef class ColorspaceConverter:
         Y = output_image + self.offsets[0]
         U = output_image + self.offsets[1]
         V = output_image + self.offsets[2]
+
         #copy to local variables (ensures C code will be optimized correctly)
         Ystride = self.dst_strides[0]
         Ustride = self.dst_strides[1]
         Vstride = self.dst_strides[2]
+        cdef unsigned int src_width = self.src_width
+        cdef unsigned int src_height = self.src_height
+        cdef unsigned int dst_width = self.dst_width
+        cdef unsigned int dst_height = self.dst_height
+
         #we process 4 pixels at a time:
-        workw = roundup(self.dst_width/2, 2)
-        workh = roundup(self.dst_height/2, 2)
+        workw = roundup(dst_width/2, 2)
+        workh = roundup(dst_height/2, 2)
         #from now on, we can release the gil:
         #log("work: %sx%s from %sx%s, RGB indexes: %s", workw, workh, self.dst_width, self.dst_height, (BGRA_R, BGRA_G, BGRA_B))
         with nogil:
@@ -389,9 +395,9 @@ cdef class ColorspaceConverter:
                     for i in range(4):
                         dx = i%2
                         dy = i/2
-                        if x*2+dx<self.dst_width and y*2+dy<self.dst_height:
-                            sx = (x*2+dx)*self.src_width/self.dst_width
-                            sy = (y*2+dy)*self.src_height/self.dst_height
+                        if x*2+dx<dst_width and y*2+dy<dst_height:
+                            sx = (x*2+dx)*src_width/dst_width
+                            sy = (y*2+dy)*src_height/dst_height
                             o = sy*input_stride + sx*4
                             R = input_image[o + BGRA_R]
                             G = input_image[o + BGRA_G]
@@ -420,7 +426,7 @@ cdef class ColorspaceConverter:
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
+        out_image = CythonImageWrapper(0, 0, dst_width, dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
 
@@ -460,6 +466,10 @@ cdef class ColorspaceConverter:
         Ystride = input_strides[0]
         Ustride = input_strides[1]
         Vstride = input_strides[2]
+        cdef unsigned int src_width = self.src_width
+        cdef unsigned int src_height = self.src_height
+        cdef unsigned int dst_width = self.dst_width
+        cdef unsigned int dst_height = self.dst_height
 
         assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0
         assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
@@ -472,25 +482,25 @@ cdef class ColorspaceConverter:
         output_image = <unsigned char*> xmemalign(self.buffer_size)
 
         #we process 4 pixels at a time:
-        workw = roundup(self.dst_width/2, 2)
-        workh = roundup(self.dst_height/2, 2)
+        workw = roundup(dst_width/2, 2)
+        workh = roundup(dst_height/2, 2)
         #from now on, we can release the gil:
         with nogil:
             for y in range(workh):
                 for x in range(workw):
-                    #assert x*2<=self.src_width and y*2<=self.src_height
+                    #assert x*2<=src_width and y*2<=src_height
                     #read U and V for the next 4 pixels:
-                    sx = x*self.src_width/self.dst_width
-                    sy = y*self.src_height/self.dst_height
+                    sx = x*src_width/dst_width
+                    sy = y*src_height/dst_height
                     U = Ubuf[sy*Ustride + sx] - Uc
                     V = Vbuf[sy*Vstride + sx] - Vc
                     #now read up to 4 Y values and write an RGBX pixel for each:
                     for i in range(4):
                         dx = i%2
                         dy = i/2
-                        if x*2+dx<self.dst_width and y*2+dy<self.dst_height:
-                            sx = (x*2+dx)*self.src_width/self.dst_width
-                            sy = (y*2+dy)*self.src_height/self.dst_height
+                        if x*2+dx<dst_width and y*2+dy<dst_height:
+                            sx = (x*2+dx)*src_width/dst_width
+                            sy = (y*2+dy)*src_height/dst_height
                             Y = Ybuf[sy*Ystride + sx] - Yc
                             o = ((y*2) + dy)*stride + ((x*2) + dx)*4
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
@@ -503,7 +513,7 @@ cdef class ColorspaceConverter:
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
+        out_image = CythonImageWrapper(0, 0, dst_width, dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
 
@@ -545,6 +555,10 @@ cdef class ColorspaceConverter:
         Gstride = input_strides[Gsrc]
         Bstride = input_strides[Bsrc]
         stride = self.dst_strides[0]
+        cdef unsigned int src_width = self.src_width
+        cdef unsigned int src_height = self.src_height
+        cdef unsigned int dst_width = self.dst_width
+        cdef unsigned int dst_height = self.dst_height
 
         assert object_as_buffer(planes[Rsrc], <const void**> &Rbuf, &buf_len)==0
         assert buf_len>=Rstride*image.get_height(), "buffer for R plane is too small: %s bytes, expected at least %s" % (buf_len, Rstride*image.get_height())
@@ -558,14 +572,14 @@ cdef class ColorspaceConverter:
 
         #from now on, we can release the gil:
         with nogil:
-            for y in range(self.dst_height):
+            for y in range(dst_height):
                 o = stride*y
-                sy = y*self.src_height/self.dst_height
+                sy = y*src_height/dst_height
                 Rptr  = Rbuf + (sy * Rstride)
                 Gptr  = Gbuf + (sy * Gstride)
                 Bptr  = Bbuf + (sy * Bstride)
-                for x in range(self.dst_width):
-                    sx = x*self.src_width/self.dst_width
+                for x in range(dst_width):
+                    sx = x*src_width/dst_width
                     output_image[o+Rdst] = Rptr[sx]
                     output_image[o+Gdst] = Gptr[sx]
                     output_image[o+Bdst] = Bptr[sx]
@@ -577,7 +591,7 @@ cdef class ColorspaceConverter:
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
+        out_image = CythonImageWrapper(0, 0, dst_width, dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
         out_image.cython_buffer = <unsigned long> output_image
         return out_image
 
