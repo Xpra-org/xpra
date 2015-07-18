@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
 from gtk import gdk
 import cairo
 
@@ -79,13 +78,7 @@ class PixmapBacking(GTK2WindowBacking):
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        #log.info("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, self._backing.get_depth())
-        #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         rgba = memoryview_to_bytes(self.unpremultiply(img_data))
-        pixbuf = gdk.pixbuf_new_from_data(rgba, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
-        cr = self._backing.cairo_create()
-        cr.rectangle(x, y, width, height)
-        cr.set_source_pixbuf(pixbuf, x, y)
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.paint()
+        gc = self._backing.new_gc()
+        self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, rgba, rowstride)
         return True
