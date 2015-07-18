@@ -344,6 +344,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def set_command(self, command):
+        if not self.is_realized() or not HAS_X11_BINDINGS:
+            #if we don't have bindings, can't be done
+            #when the window is realized, this will be called again
+            return
         metalog("set_command(%s) (type=%s)", command, type(command))
         if type(command)!=unicode:
             v = bytestostr(command)
