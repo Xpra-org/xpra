@@ -65,6 +65,8 @@ cdef uint8_t RGBX_G = byteorder(1)
 cdef uint8_t RGBX_B = byteorder(2)
 cdef uint8_t RGBX_X = byteorder(3)
 
+log("csc_cython: byteorder(BGRA)=%s", (BGRA_B, BGRA_G, BGRA_R, BGRA_A))
+log("csc_cython: byteorder(RGBX)=%s", (RGBX_R, RGBX_G, RGBX_B, RGBX_X))
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
@@ -169,7 +171,7 @@ DEF BU = 0
 DEF BV = 132186     #2.017    * 2**16
 
 
-cdef unsigned char clamp(long v) nogil:
+cdef inline unsigned char clamp(const long v) nogil:
     if v<=0:
         return 0
     elif v>=max_clamp:
