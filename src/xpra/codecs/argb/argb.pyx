@@ -36,7 +36,7 @@ def argb_to_rgba(buf):
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgba(cbuf, cbuf_len)
 
-cdef argbdata_to_rgba(const unsigned char* argb, int argb_len):
+cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
     if argb_len <= 0:
         return None
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
@@ -59,7 +59,7 @@ def argb_to_rgb(buf):
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgb(cbuf, cbuf_len)
 
-cdef argbdata_to_rgb(const unsigned char *argb, int argb_len):
+cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
     if argb_len <= 0:
         return None
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
@@ -85,7 +85,7 @@ def bgra_to_rgb(buf):
     assert object_as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgb(bgra_buf, bgra_buf_len)
 
-cdef bgradata_to_rgb(const unsigned char* bgra, int bgra_len):
+cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
     if bgra_len <= 0:
         return None
     assert bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
@@ -112,7 +112,7 @@ def bgra_to_rgba(buf):
     assert object_as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgba(bgra_buf2, bgra_buf_len2)
 
-cdef bgradata_to_rgba(const unsigned char* bgra, int bgra_len):
+cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
     if bgra_len <= 0:
         return None
     assert bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
