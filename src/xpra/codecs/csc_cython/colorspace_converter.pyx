@@ -41,32 +41,27 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 #precalculate indexes in native endianness:
-BYTEORDER = struct.pack("=BBBB", 0, 1, 2, 3)
-def byteorder(v):
-    for i in range(4):
-        bv = BYTEORDER[i]
-        if type(bv)==str:
-            #old versions of python: byte value is in fact a character (str)
-            bv = ord(bv)
-        if bv==v:
-            return i
-    raise Exception("cannot find byteorder for %s" % v)
-cdef uint8_t BGRA_B = byteorder(0)
-cdef uint8_t BGRA_G = byteorder(1)
-cdef uint8_t BGRA_R = byteorder(2)
-cdef uint8_t BGRA_A = byteorder(3)
-cdef uint8_t BGRX_R = BGRA_R
-cdef uint8_t BGRX_G = BGRA_G
-cdef uint8_t BGRX_B = BGRA_B
-cdef uint8_t BGRX_X = BGRA_A
-
-cdef uint8_t RGBX_R = byteorder(0)
-cdef uint8_t RGBX_G = byteorder(1)
-cdef uint8_t RGBX_B = byteorder(2)
-cdef uint8_t RGBX_X = byteorder(3)
-
+cdef uint8_t BGRA_B, BGRA_G, BGRA_R, BGRA_A
+cdef uint8_t BGRX_R, BGRX_G, BGRX_B, BGRX_X
+cdef uint8_t BGR_R, BGR_G, BGR_B
+cdef uint8_t RGBX_R, RGBX_G, RGBX_B, RGBX_X
+cdef uint8_t RGB_R, RGB_G, RGB_B
+import sys
+if sys.byteorder=="little":
+    BGRA_B, BGRA_G, BGRA_R, BGRA_A = 2, 1, 0, 3
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 2, 1, 0, 3
+    BGR_R, BGR_G, BGR_B = 2, 1, 0
+    RGB_R, RGB_G, RGB_B = 2, 1, 0
+else:
+    BGRA_B, BGRA_G, BGRA_R, BGRA_A = 3, 0, 1, 2
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 0, 1, 2
+    BGR_R, BGR_G, BGR_B = 0, 1, 2
+    RGB_R, RGB_G, RGB_B = 0, 1, 2
+    
 log("csc_cython: byteorder(BGRA)=%s", (BGRA_B, BGRA_G, BGRA_R, BGRA_A))
+log("csc_cython: byteorder(BGR)=%s", (BGR_B, BGR_G, BGR_R))
 log("csc_cython: byteorder(RGBX)=%s", (RGBX_R, RGBX_G, RGBX_B, RGBX_X))
+log("csc_cython: byteorder(RGB)=%s", (RGB_R, RGB_G, RGB_B))
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
