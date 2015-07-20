@@ -66,7 +66,7 @@ cdef uint8_t RGBX_B = byteorder(2)
 cdef uint8_t RGBX_X = byteorder(3)
 
 
-COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
+COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
 CSC_CYTHON_VERSION = [0, 3]
 
@@ -234,19 +234,23 @@ cdef class ColorspaceConverter:
             self.buffer_size = self.offsets[2] + (self.dst_strides[2] * (self.dst_height/2+1))
 
             self.convert_image_function = self.BGRX_to_YUV420P
-        elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX"):
-            #4 bytes per pixel:
-            self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
+        elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
+            #3 or 4 bytes per pixel:
+            self.dst_strides[0] = roundup(self.dst_width*len(dst_format), STRIDE_ROUNDUP)
             self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
             self.offsets[0] = 0
             #output buffer ends after 1 line of padding:
-            self.buffer_size = self.dst_sizes[0] + roundup(dst_width*4, STRIDE_ROUNDUP)
+            self.buffer_size = self.dst_sizes[0] + roundup(dst_width*len(dst_format), STRIDE_ROUNDUP)
 
             if dst_format=="RGBX":
                 self.convert_image_function = self.YUV420P_to_RGBX
-            else:
-                assert dst_format=="BGRX"
+            elif dst_format=="BGRX":
                 self.convert_image_function = self.YUV420P_to_BGRX
+            elif dst_format=="RGB":
+                self.convert_image_function = self.YUV420P_to_RGB
+            else:
+                assert dst_format=="BGR"
+                self.convert_image_function = self.YUV420P_to_BGR
         elif src_format=="GBRP" and dst_format in ("RGBX", "BGRX"):
             #4 bytes per pixel:
             self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
@@ -432,12 +436,18 @@ cdef class ColorspaceConverter:
 
 
     def YUV420P_to_RGBX(self, image):
-        return self.do_YUV420P_to_RGB(image, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
+        return self.do_YUV420P_to_RGB(image, 4, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
+
+    def YUV420P_to_RGB(self, image):
+        return self.do_YUV420P_to_RGB(image, 3, RGBX_R, RGBX_G, RGBX_B, 0)
 
     def YUV420P_to_BGRX(self, image):
-        return self.do_YUV420P_to_RGB(image, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
+        return self.do_YUV420P_to_RGB(image, 4, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
 
-    cdef do_YUV420P_to_RGB(self, image, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
+    def YUV420P_to_BGR(self, image):
+        return self.do_YUV420P_to_RGB(image, 3, BGRX_R, BGRX_G, BGRX_B, 0)
+
+    cdef do_YUV420P_to_RGB(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
         cdef unsigned int x,y,i,o,dx,dy         #@DuplicatedSignature
@@ -502,11 +512,12 @@ cdef class ColorspaceConverter:
                             sx = (x*2+dx)*src_width/dst_width
                             sy = (y*2+dy)*src_height/dst_height
                             Y = Ybuf[sy*Ystride + sx] - Yc
-                            o = ((y*2) + dy)*stride + ((x*2) + dx)*4
+                            o = ((y*2) + dy)*stride + ((x*2) + dx) * Bpp
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
                             output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
-                            output_image[o + Xindex] = 255
+                            if Bpp==4:
+                                output_image[o + Xindex] = 255
 
         rgb = memory_as_pybuffer(<void *> output_image, self.dst_sizes[0], True)
         elapsed = time.time()-start
