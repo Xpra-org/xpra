@@ -437,7 +437,7 @@ cdef class ColorspaceConverter:
     def YUV420P_to_BGRX(self, image):
         return self.do_YUV420P_to_RGB(image, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
 
-    cdef do_YUV420P_to_RGB(self, image, uint8_t Rindex, uint8_t Gindex, uint8_t Bindex, uint8_t Xindex):
+    cdef do_YUV420P_to_RGB(self, image, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
         cdef unsigned int x,y,i,o,dx,dy         #@DuplicatedSignature
@@ -524,8 +524,8 @@ cdef class ColorspaceConverter:
     def GBRP_to_BGRX(self, image):
         return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_B, RGBX_G, RGBX_R, RGBX_X)
 
-    cdef do_RGBP_to_RGB(self, image, uint8_t Rsrc, uint8_t Gsrc, uint8_t Bsrc,
-                                     uint8_t Rdst, uint8_t Gdst, uint8_t Bdst, uint8_t Xdst):
+    cdef do_RGBP_to_RGB(self, image, const uint8_t Rsrc, const uint8_t Gsrc, const uint8_t Bsrc,
+                                     const uint8_t Rdst, const uint8_t Gdst, const uint8_t Bdst, const uint8_t Xdst):
         cdef Py_ssize_t buf_len = 0             #
         cdef unsigned char *output_image        #@DuplicatedSignature
         cdef unsigned int x,y,i,o,sum           #@DuplicatedSignature
