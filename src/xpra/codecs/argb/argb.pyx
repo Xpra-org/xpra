@@ -198,7 +198,9 @@ def unpremultiply_argb(buf):
 
 
 #precalculate indexes in native endianness:
-tmp = str(struct.pack("=BBBB", 0, 1, 2, 3))
+tmp = str(struct.pack("=L", 0 + 1*(2**8) + 2*(2**16) + 3*(2**24)))
+#little endian will give 0, 1, 2, 3
+#big endian should give 3, 2, 1, 0 (untested)
 cdef int B = tmp.find('\0')
 cdef int G = tmp.find('\1')
 cdef int R = tmp.find('\2')
