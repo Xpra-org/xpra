@@ -207,6 +207,8 @@ cdef extern from "x264.h":
         x264_sei_t extra_sei#In: arbitrary user SEI (e.g subtitles, AFDs)
         void *opaque        #private user data. copied from input to output frames.
 
+    void x264_picture_init(x264_picture_t *pic)
+
     int x264_param_default_preset(x264_param_t *param, const char *preset, const char *tune)
     int x264_param_apply_profile(x264_param_t *param, const char *profile)
     void x264_encoder_parameters(x264_t *context, x264_param_t *param)
@@ -565,8 +567,8 @@ cdef class Encoder:
         istrides = image.get_rowstride()
         assert pixels, "failed to get pixels from %s" % image
 
-        memset(&pic_out, 0, sizeof(x264_picture_t))
-        memset(&pic_in, 0, sizeof(x264_picture_t))
+        x264_picture_init(&pic_out)
+        x264_picture_init(&pic_in)
 
         if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
             assert len(pixels)>0
