@@ -10,6 +10,7 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
+LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
 
 
 from xpra.util import nonl
@@ -63,6 +64,26 @@ cdef extern from "x264.h":
     int X264_CSP_BGR
     int X264_CSP_BGRA
     int X264_CSP_RGB
+
+    #enum nal_unit_type_e
+    int NAL_UNKNOWN
+    int NAL_SLICE
+    int NAL_SLICE_DPA
+    int NAL_SLICE_DPB
+    int NAL_SLICE_DPC
+    int NAL_SLICE_IDR
+    int NAL_SEI
+    int NAL_SPS
+    int NAL_PPS
+    int NAL_AUD
+    int NAL_FILLER
+
+    #enum nal_priority_e
+    int NAL_PRIORITY_DISPOSABLE
+    int NAL_PRIORITY_LOW
+    int NAL_PRIORITY_HIGH
+    int NAL_PRIORITY_HIGHEST
+
 
     const char * const *x264_preset_names
 
@@ -208,6 +229,28 @@ cdef int get_preset_for_speed(int speed):
 #the x264 quality option ranges from 0 (best) to 51 (lowest)
 cdef float get_x264_quality(int pct):
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
+
+
+NAL_TYPES = {
+    NAL_UNKNOWN     : "unknown",
+    NAL_SLICE       : "slice",
+    NAL_SLICE_DPA   : "slice-dpa",
+    NAL_SLICE_DPB   : "slice-dpb",
+    NAL_SLICE_DPC   : "slice-dpc",
+    NAL_SLICE_IDR   : "slice-idr",
+    NAL_SEI         : "sei",
+    NAL_SPS         : "sps",
+    NAL_PPS         : "pps",
+    NAL_AUD         : "aud",
+    NAL_FILLER      : "filler",
+    }
+
+NAL_PRIORITIES = {
+    NAL_PRIORITY_DISPOSABLE : "disposable",
+    NAL_PRIORITY_LOW        : "low",
+    NAL_PRIORITY_HIGH       : "high",
+    NAL_PRIORITY_HIGHEST    : "highest",
+    }
 
 
 cdef char *PROFILE_BASELINE = "baseline"
@@ -535,6 +578,12 @@ cdef class Encoder:
         if frame_size < 0:
             log.error("x264 encoding error: frame_size is invalid!")
             return None
+        log("x264 encode frame %i returned: %i nals, frame size=%i", self.frames, i_nals, frame_size)
+        if LOG_NALS:
+            for i in range(i_nals):
+                log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%#x",
+                         i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <unsigned long> nals[i].p_payload, nals[i].i_payload)
+            #log.info("x264 nal %s: %s", i, (<char *>nals[i].p_payload)[:64])
         out = <char *>nals[0].p_payload
         cdata = out[:frame_size]
         self.bytes_out += frame_size
