@@ -1539,7 +1539,7 @@ class WindowSource(object):
         self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent)
 
-    def damage_packet_acked(self, window, damage_packet_sequence, width, height, decode_time):
+    def damage_packet_acked(self, window, damage_packet_sequence, width, height, decode_time, message):
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (provided by the client itself)
@@ -1553,7 +1553,7 @@ class WindowSource(object):
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         elif decode_time<0:
-            self.client_decode_error(window, decode_time)
+            self.client_decode_error(window, decode_time, message)
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
         if pending is None:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
@@ -1572,8 +1572,8 @@ class WindowSource(object):
         if not self._damage_delayed:
             self.soft_expired = 0
 
-    def client_decode_error(self, window, error):
-        log.warn("client_decode_error: %s", error)
+    def client_decode_error(self, window, error, message):
+        log.warn("client_decode_error: %s (%s)", message, error)
         self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]

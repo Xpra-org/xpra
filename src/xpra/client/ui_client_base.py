@@ -1989,8 +1989,8 @@ class UIXpraClient(XpraClientBase):
     def _process_draw(self, packet):
         self._draw_queue.put(packet)
 
-    def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time):
-        self.send_now("damage-sequence", packet_sequence, wid, width, height, decode_time)
+    def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time, message=""):
+        self.send_now("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
 
     def _draw_thread_loop(self):
         while self.exit_code is None:
@@ -2033,7 +2033,7 @@ class UIXpraClient(XpraClientBase):
         options = typedict(options)
         paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
-        def record_decode_time(success):
+        def record_decode_time(success, message=""):
             if success:
                 end = time.time()
                 decode_time = int(end*1000*1000-start*1000*1000)
@@ -2043,20 +2043,20 @@ class UIXpraClient(XpraClientBase):
             else:
                 decode_time = -1
                 paintlog("record_decode_time(%s) decoding error on wid=%s, %s: %sx%s", success, wid, coding, width, height)
-            self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
+            self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, message)
         self._draw_counter += 1
         if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:
-            log.warn("injecting paint fault for %s draw packet %i", coding, self._draw_counter)
+            log.warn("injecting paint fault for %s draw packet %i, sequence number=%i", coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
-                self.idle_add(record_decode_time, False)
+                self.idle_add(record_decode_time, False, "fault injection for %s draw packet %i, sequence number=%i" % (coding, self._draw_counter, packet_sequence))
             return
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception as e:
             log.error("draw error", exc_info=True)
-            self.idle_add(record_decode_time, False)
+            self.idle_add(record_decode_time, False, str(e))
             raise
 
     def _process_cursor(self, packet):

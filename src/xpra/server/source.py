@@ -1745,7 +1745,7 @@ class ServerSource(object):
         ws = self.make_window_source(wid, window)
         ws.damage(window, x, y, w, h, damage_options)
 
-    def client_ack_damage(self, damage_packet_sequence, wid, window, width, height, decode_time):
+    def client_ack_damage(self, damage_packet_sequence, wid, window, width, height, decode_time, message):
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (which is provided by the client)
@@ -1759,7 +1759,7 @@ class ServerSource(object):
             self.statistics.client_decode_time.append((wid, time.time(), width*height, decode_time))
         ws = self.window_sources.get(wid)
         if ws:
-            ws.damage_packet_acked(window, damage_packet_sequence, width, height, decode_time)
+            ws.damage_packet_acked(window, damage_packet_sequence, width, height, decode_time, message)
             self.may_recalculate(wid)
 
 #

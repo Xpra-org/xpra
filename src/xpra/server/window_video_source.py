@@ -449,10 +449,10 @@ class WindowVideoSource(WindowSource):
         return q
 
 
-    def client_decode_error(self, window, error):
+    def client_decode_error(self, window, error, message):
         #maybe the stream is now corrupted..
         self.cleanup_codecs()
-        WindowSource.client_decode_error(self, window, error)
+        WindowSource.client_decode_error(self, window, error, message)
 
 
     def get_refresh_exclude(self):
