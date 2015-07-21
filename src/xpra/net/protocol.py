@@ -454,10 +454,15 @@ class Protocol(object):
         min_comp_size = MIN_COMPRESS_SIZE
         for i in range(1, len(packet)):
             item = packet[i]
+            if item is None:
+                raise TypeError("invalid None value in %s packet at index %s: %s" % (packet[0], i))
             ti = type(item)
             if ti in (int, long, bool, dict, list, tuple):
                 continue
-            l = len(item)
+            try:
+                l = len(item)
+            except TypeError as e:
+                raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e))
             if ti==Uncompressed:
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
