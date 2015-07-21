@@ -109,8 +109,8 @@ def testencoding(encoder_module, encoding, full):
                 e.init_context(W, H, cs_in, [cs_out], encoding, W, H, (1,1), {})
                 image = make_test_image(cs_in, W, H)
                 data, meta = e.compress_image(image)
-                assert len(data)>0
-                assert meta is not None
+                assert len(data)>0, "no compressed data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
+                assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
                 #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
                 #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
@@ -121,14 +121,14 @@ def testencoding(encoder_module, encoding, full):
                         out = e.compress_image()
                     except:
                         out = None
-                    assert out is None
+                    assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                     for w,h in ((W*2, H//2), (W//2, H**2)):
                         try:
                             image = make_test_image(cs_in, w, h)
                             out = e.compress_image()
                         except:
                             out = None
-                        assert out is None
+                        assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
             finally:
                 e.clean()
 
@@ -144,9 +144,9 @@ def testcsc(csc_module, full):
                 image = make_test_image(cs_in, W, H)
                 out = e.convert_image(image)
                 #print("convert_image(%s)=%s" % (image, out))
-                assert out.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
-                assert out.get_height()==H, "expected image of height %s but got %s" % (H, image.get_height())
-                assert out.get_pixel_format()==cs_out
+                assert out.get_width()==W, "expected image of width %s but got %s" % (W, out.get_width())
+                assert out.get_height()==H, "expected image of height %s but got %s" % (H, out.get_height())
+                assert out.get_pixel_format()==cs_out, "expected pixel format %s but got %s" % (cs_out, out.get_pixel_format())
                 if full:
                     for w,h in ((W*2, H//2), (W//2, H**2)):
                         try:

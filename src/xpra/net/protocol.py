@@ -322,9 +322,9 @@ class Protocol(object):
                 else:
                     padded = data+padding
                 actual_size = payload_size + len(padding)
-                assert len(padded)==actual_size
+                assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
-                assert len(data)==actual_size
+                assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
                 log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
             if proto_flags & FLAGS_NOHEADER:
                 #for plain/text packets (ie: gibberish response)
@@ -350,7 +350,7 @@ class Protocol(object):
         """ look for None values which may have caused the packet to fail encoding """
         if type(packet)!=list:
             return
-        assert len(packet)>0
+        assert len(packet)>0, "invalid packet: %s" % packet
         tree = ["'%s' packet" % packet[0]]
         self.do_verify_packet(tree, packet)
 
@@ -704,7 +704,7 @@ class Protocol(object):
                         #no cipher, no padding:
                         padding = None
                         payload_size = data_size
-                    assert payload_size>0
+                    assert payload_size>0, "invalid payload size: %" % payload_size
                     read_buffer = read_buffer[8:]
 
                     if payload_size>self.max_packet_size:
@@ -933,7 +933,7 @@ class Protocol(object):
         #to ensure that no packets get lost.
         #The caller must call wait_for_io_threads_exit() to ensure that this
         #class is no longer reading from the connection before it can re-use it
-        assert not self._closed
+        assert not self._closed, "cannot steal a closed connection"
         if read_callback:
             self._read_queue_put = read_callback
         conn = self._conn
