@@ -1577,7 +1577,8 @@ class WindowSource(object):
         self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
-        self.idle_add(self.full_quality_refresh, window)
+        if window:
+            self.idle_add(self.full_quality_refresh, window)
 
 
     def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options, flush):
