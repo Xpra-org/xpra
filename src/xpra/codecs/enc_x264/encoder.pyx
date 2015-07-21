@@ -84,6 +84,13 @@ cdef extern from "x264.h":
     int NAL_PRIORITY_HIGH
     int NAL_PRIORITY_HIGHEST
 
+    #frame type
+    int X264_TYPE_AUTO              # Let x264 choose the right type
+    int X264_TYPE_IDR
+    int X264_TYPE_I
+    int X264_TYPE_P
+    int X264_TYPE_BREF
+    int X264_TYPE_B
 
     const char * const *x264_preset_names
 
@@ -230,6 +237,14 @@ cdef int get_preset_for_speed(int speed):
 cdef float get_x264_quality(int pct):
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
 
+SLICE_TYPES = {
+    X264_TYPE_AUTO  : "auto",
+    X264_TYPE_IDR   : "IDR",
+    X264_TYPE_I     : "I",
+    X264_TYPE_P     : "P",
+    X264_TYPE_BREF  : "BREF",
+    X264_TYPE_B     : "B",
+    }
 
 NAL_TYPES = {
     NAL_UNKNOWN     : "unknown",
@@ -578,7 +593,8 @@ cdef class Encoder:
         if frame_size < 0:
             log.error("x264 encoding error: frame_size is invalid!")
             return None
-        log("x264 encode frame %i returned: %i nals, frame size=%i", self.frames, i_nals, frame_size)
+        slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
+        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes", self.frames, slice_type, i_nals, frame_size)
         if LOG_NALS:
             for i in range(i_nals):
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%#x",
@@ -592,7 +608,8 @@ cdef class Encoder:
                 "frame"     : self.frames,
                 "pts"       : pic_out.i_pts,
                 "quality"   : min(99, quality),
-                "speed"     : speed}
+                "speed"     : speed,
+                "type"      : slice_type}
         #accounting:
         end = time.time()
         self.time += end-start
