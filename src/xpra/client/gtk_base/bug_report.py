@@ -27,6 +27,7 @@ from xpra.scripts.config import read_xpra_defaults
 from xpra.client.gtk_base.about import about
 from xpra.platform.paths import get_icon_dir
 from xpra.platform.info import get_user_info
+from xpra.os_util import StringIOClass
 from xpra.util import nonl, updict, strtobytes
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
@@ -143,6 +144,20 @@ class BugReport(object):
             take_screenshot_fn = take_screenshot
         except:
             log("failed to load platfrom specific screenshot code", exc_info=True)
+        if not take_screenshot_fn:
+            #try with Pillow:
+            try:
+                from PIL import ImageGrab           #@UnresolvedImport
+                def pillow_imagegrab_screenshot():
+                    img = ImageGrab.grab()
+                    out = StringIOClass()
+                    img.save(out, format="PNG")
+                    v = out.getvalue()
+                    out.close()
+                    return (img.width, img.height, "png", img.width*3, v)
+                take_screenshot_fn = pillow_imagegrab_screenshot
+            except Exception as e:
+                log("cannot use Pillow's ImageGrab: %s", e)
         if not take_screenshot_fn:
             #default: gtk screen capture
             try:

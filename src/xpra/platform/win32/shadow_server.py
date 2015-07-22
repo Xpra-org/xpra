@@ -14,10 +14,12 @@ from xpra.util import AdHocStruct
 log = Logger("shadow", "win32")
 shapelog = Logger("shape")
 
-from xpra.server.gtk_root_window_model import GTKRootWindowModel
+from PIL import ImageGrab
+from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server.shadow_server_base import ShadowServerBase
+from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
+from xpra.codecs.image_wrapper import ImageWrapper
 
 NOEVENT = object()
 BUTTON_EVENTS = {
@@ -37,10 +39,10 @@ BUTTON_EVENTS = {
 SEAMLESS = os.environ.get("XPRA_WIN32_SEAMLESS", "0")=="1"
 
 
-class Win32RootWindowModel(GTKRootWindowModel):
+class Win32RootWindowModel(RootWindowModel):
 
     def __init__(self, root):
-        GTKRootWindowModel.__init__(self, root)
+        RootWindowModel.__init__(self, root)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
@@ -67,7 +69,7 @@ class Win32RootWindowModel(GTKRootWindowModel):
         if signal=="notify::shape":
             self.shape_notify.append((cb, args))
         else:
-            GTKRootWindowModel.connect(self, signal, cb, *args)
+            RootWindowModel.connect(self, signal, cb, *args)
 
     def get_shape_rectangles(self, logit=False):
         #get the list of windows
@@ -146,12 +148,37 @@ class Win32RootWindowModel(GTKRootWindowModel):
             shape = {"Bounding.rectangles" : self.rectangles}
             #provide clip rectangle? (based on workspace area?)
             return shape
-        return GTKRootWindowModel.get_property(self, prop)
+        return RootWindowModel.get_property(self, prop)
+
+
+    def get_root_window_size(self):
+        w = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+        h = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        return w, h
+
+
+    def get_image(self, x, y, width, height, logger=None):
+        img = ImageGrab.grab(bbox=(x, y, x+width, y+height))
+        data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
+        pixels = data_fn("raw", "BGRX")
+        stride = img.width*4
+        return ImageWrapper(0, 0, img.width, img.height, pixels, "BGRX", 24, stride, planes=ImageWrapper.PACKED, thread_safe=True)
+
+    def take_screenshot(self):
+        log("taking screenshot using %s", ImageGrab.grab)
+        img = ImageGrab.grab()
+        out = StringIOClass()
+        img.save(out, format="PNG")
+        screenshot = (img.width, img.height, "png", img.width*3, out.getvalue())
+        out.close()
+        return screenshot
 
 
 class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def __init__(self):
+        #TODO: root should be a wrapper for the win32 system metrics bits?
+        #(or even not bother passing root to ShadowServerBase?
         import gtk.gdk
         ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
         GTKServerBase.__init__(self)
