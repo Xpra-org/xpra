@@ -19,27 +19,49 @@ import collections
 # The following variables will all need to be edited to match
 # the tests that you are charting
 #----------------------------------------------------------------
+#
+# vpx is now vp8
+# x264 is now h264
+#
+# TODO 
+# -- Move the legend into the chart title area 
+# -- Abbreviate the app names so they fit on the chart
+# -- Update the documentation to describe how to use multiple unique
+#    directories containing files with same key, instead of one directory
+#    and files with unique keys.
+#
 
 # Location of the data files
-data_dir = "/home/nickc/xtests/logs"
+base_dir = "/home/nickc/xtests/logs/0.15.0"
 
 # Data file prefix
-prefix = "h264_glx"
+prefix = "all_tests_40"
+#prefix = "h264_glx"
 
-rev_1 = "8585"
-rev_2 = "9638"
+# Result subdirectories
+#subs = ["0.15.0", "8585_1", "8585_2", "8585_3"]
+subs = ["hv", "h1", "h2", "h3"]
 
 # id is the actual id string used in the data file name
+# dir is an optional subdirectory within the base_dir where the data is stored
 # display is how that parameter should be displayed in the charts
-params = [{"id": rev_1, "display": "r" + rev_1},
-          {"id": rev_2, "display": "r" + rev_2}]
+#params = [
+#    {"id": "9612", "dir": subs[0], "display": "0"},
+#    {"id": "9612", "dir": subs[1], "display": "1"},
+#    {"id": "9612", "dir": subs[2], "display": "2"},
+#    {"id": "9612", "dir": subs[3], "display": "3"}
+#]
+params = [
+    {"id": "8585", "display": "8585"},
+    {"id": "9612", "display": "9612"}
+]
 
 # The description will be shown on the output page
-description = 'Comparison of r' + rev_1 + ' and r' + rev_2
+description = '8585 (Feb) with 9612 (Jun), all tests run, all results showing.'
 
 # Each file name's 'rep' value is the sequence number of that
 # data file, when results of multiple files should be averaged
-reps = 9     # Number of data files in this set
+reps = 9     # Number of data files in each set
 
 #----------------------------------------------------------------
 # Set any of the values in the following lists to 1 in order to
@@ -47,10 +69,10 @@ reps = 9     # Number of data files in this set
 #
 apps = {"glxgears": 1,
         "glxspheres": 1,
-        "moebiusgears": 0,
-        "polytopes": 0,
+        "moebiusgears": 1,
+        "polytopes": 1,
         "x11perf": 0,
-        "xterm": 0,
+        "xterm": 1,
         "gtkperf": 0}
 
 metrics = {"Regions/s": 1,
@@ -84,12 +106,13 @@ metrics = {"Regions/s": 1,
            "Avg Speed": 0,
            "Max Speed": 0}
 
-encodings = {"png": 0,
-             "rgb24": 0,
-             "jpeg": 0,
+encodings = {"png": 1,
+             "rgb24": 1,
+             "jpeg": 1,
              "h264": 1,
-             "vp8": 0,
-             "vp9": 0}
+             "vp8": 1,
+             "vp9": 0,
+             "mmap": 1}
 
 header_dupes = []
 headers = {}
@@ -107,8 +130,8 @@ def ftree():
     return collections.defaultdict(float)
 
 # Create test map -- schema:
-# {metric: {encoding: {param: {app: {rep: avg_value}}}}}
-def accumulate_values(file_name, rep, param):
+# {metric: {encoding: {id: {app: {rep: avg_value}}}}}
+def accumulate_values(file_name, rep, param, uniqueId):
     rownum = 0
     rgb_count = 0
     rgb_values = None
@@ -122,12 +145,19 @@ def accumulate_values(file_name, rep, param):
             app = get_value(row, "Test Command")
             if (apps[app] == 1):
                 encoding = get_value(row, "Encoding")
+                # x264 is now h264
+                if (encoding == 'x264'):
+                    encoding = 'h264'
+                # vpx is now vp8
+                if (encoding == 'vpx'):
+                    encoding = 'vp8'
+
                 if (encodings[encoding] == 1):
                     if (encoding == ENCODING_RGB24):
                         if (rgb_values is None):
                             rgb_values = ftree()
                             rgb_count = 0
-                   
+
                     for metric in metrics:
                         if (metrics[metric] == 1):
                             row_value = float(get_metric(row, metric))
@@ -137,13 +167,14 @@ def accumulate_values(file_name, rep, param):
                                 else:
                                     rgb_values[metric] = row_value
                             else:
-                                tests[metric][encoding][param['id']][app][rep] = row_value
+                                tests[metric][encoding][uniqueId][app][rep] = row_value
+
                     if (encoding == ENCODING_RGB24):
                         rgb_count += 1
                         if (rgb_count == 3):
                             for metric in metrics:
                                 if (metrics[metric] == 1):
-                                    tests[metric][encoding][param['id']][app][rep] = rgb_values[metric] / 3
+                                    tests[metric][encoding][uniqueId][app][rep] = rgb_values[metric] / 3
                             rgb_count = 0
                             rgb_values = None
         rownum += 1
@@ -155,7 +186,19 @@ def write_html():
         if (apps[app] == 1):
             app_count += 1
 
-    ofile = open("test_perf_charts.html", "w")
+    chart_count = 0
+    for encoding in encodings.keys():
+        if (encodings[encoding] == 1):
+            chart_count += 1
+    box_height = 0
+    if (chart_count < 4):
+        box_height = 400
+    elif (chart_count < 7):
+        box_height = 800
+    elif (chart_count < 10):
+        box_height = 1200
+
+    ofile = open("charts.html", "w")
     ofile.write('<!DOCTYPE html>\n')
     ofile.write('<html>\n')
     ofile.write('<head>\n')
@@ -168,8 +211,8 @@ def write_html():
     ofile.write('  <script language="javascript" type="text/javascript" src="js/jquery.flot.orderbars_mod.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript" src="js/xpra.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript">\n')
-    ofile.write('    var options = {canvas:true, grid: {margin: {top:50}, hoverable: true}, series: {bars: {show: true, barWidth: 0.15}}, '
-                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#89A54E", "#4572A7"]};\n')
+    ofile.write('    var options = {canvas:true, grid: {margin: {top:50}, hoverable: true}, series: {bars: {show: true, barWidth: 0.08}}, '
+                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#D4CBC3"]};\n')
 
     m_index = 0
     m_names = []
@@ -190,8 +233,13 @@ def write_html():
                     value = value / actual_reps
                     ofile.write('["' + app + '", ' + str(value) + '], ')
                 ofile.write('];' + '\n')
-            ofile.write('    var d'+str(m_index)+'_'+encoding+' = [{label: "'+param_names[0]+'", data: e'+str(m_index)+'_'+encoding+'_'+param_ids[0]+
-                        ', bars:{order:0}}, {label: "'+param_names[1]+'", data: e'+str(m_index)+'_'+encoding+'_'+param_ids[1]+', bars:{order:1}}];\n')
+            varStr = '    var d' + str(m_index) + '_' + encoding + ' = ['
+            for i in range(0, len(param_ids)):
+                if (i > 0):
+                    varStr += ','
+                varStr += '{label: "' + param_names[i] + '", data: e' + str(m_index) + '_' + encoding + '_' + param_ids[i] + ', bars:{order:' + str(i) + '}}'
+            varStr += '];\n'
+            ofile.write(varStr)
         m_index += 1
 
     chart_index = 0
@@ -212,10 +260,10 @@ def write_html():
             title_index += 1
 
     for mx in range(0, m_index):
-        ofile.write('$("#metric_link_'+str(mx)+'").click(function() {$("#metric_list").scrollTop(400*'+str(mx)+');});')
+        ofile.write('$("#metric_link_'+str(mx)+'").click(function() {$("#metric_list").scrollTop(' + str(box_height) + '*'+str(mx)+');});')
     ofile.write('    });\n')
-
     ofile.write('  </script>\n')
+    ofile.write('  <style>.metric_box {height: ' + str(box_height) + 'px}</style>\n')
     ofile.write('</head>\n')
     ofile.write('<body>\n')
     ofile.write('  <div id="page">\n')
@@ -223,7 +271,7 @@ def write_html():
     ofile.write('      <div id="header">\n')
     ofile.write('        <h2>Xpra Performance Results</h2>\n')
     ofile.write('        <h3>' + description + '</h3>\n')
-    ofile.write('        <div id="help_text">Click a metric on the right to locate it in the results.</div>\n')
+    ofile.write('        <div id="help_text">Click a metric to locate it in the results.</div>\n')
     ofile.write('      </div>\n')
 
     ofile.write('      <div id="select_box">\n')
@@ -268,6 +316,11 @@ def get_metric(row, label):
         cell = '0'
     return cell.strip()
 
+def sanitize(dirName):
+    # Make the directory name valid as a javascript variable
+    newName = dirName.replace('.', '_')
+    return newName
+
 def get_headers(row):
     index = 0
     for column in row:
@@ -286,16 +339,27 @@ def print_headers():
 def main():
     for param in params:
         param_id = param_name = param['id']
+        if ('dir' in param.keys()):
+            param_id = sanitize(param['dir'])
         if ('display' in param.keys()):
             param_name = param['display']
         param_ids.append(param_id)
         param_names.append(param_name)
 
     for param in params:
+        uniqueId = param['id']
+        if ('dir' in param.keys()):
+            uniqueId = sanitize(param['dir'])
+
         for rep in range(0, reps):
-            file_name = data_dir + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
-            accumulate_values(file_name, rep, param)
+            if ('dir' in param.keys()):
+                file_name = base_dir + '/' + param['dir'] + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
+            else:
+                file_name = base_dir + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
+            #print file_name
+            accumulate_values(file_name, rep, param, uniqueId)
     write_html()
+    print('\nCreated: charts.html\n')
 
 if __name__ == "__main__":
     main()
