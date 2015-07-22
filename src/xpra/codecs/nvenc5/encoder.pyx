@@ -1109,12 +1109,12 @@ cpdef get_BGRA2YUV444(int device_id):
 
 
 cdef class Encoder:
-    cdef int width
-    cdef int height
-    cdef int input_width
-    cdef int input_height
-    cdef int encoder_width
-    cdef int encoder_height
+    cdef unsigned int width
+    cdef unsigned int height
+    cdef unsigned int input_width
+    cdef unsigned int input_height
+    cdef unsigned int encoder_width
+    cdef unsigned int encoder_height
     cdef object src_format
     cdef object dst_formats
     cdef object scaling
@@ -1134,9 +1134,9 @@ cdef class Encoder:
     cdef object kernel_name
     cdef object max_block_sizes
     cdef object max_grid_sizes
-    cdef long max_threads_per_block
-    cdef long free_memory
-    cdef long total_memory
+    cdef unsigned long max_threads_per_block
+    cdef uint64_t free_memory
+    cdef uint64_t total_memory
     #NVENC:
     cdef NV_ENCODE_API_FUNCTION_LIST *functionList               #@DuplicatedSignature
     cdef void *context
@@ -1145,9 +1145,9 @@ cdef class Encoder:
     cdef object inputBuffer
     cdef object cudaInputBuffer
     cdef object cudaOutputBuffer
-    cdef int inputPitch                     #note: this isn't the pitch (aka rowstride) we actually use!
-                                            #just the value returned from the allocation call
-    cdef int outputPitch
+    cdef unsigned int inputPitch                    #note: this isn't the pitch (aka rowstride) we actually use!
+                                                    #just the value returned from the allocation call
+    cdef unsigned int outputPitch
     cdef void *bitstreamBuffer
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
@@ -1160,8 +1160,8 @@ cdef class Encoder:
     cdef unsigned long frames
     cdef unsigned long index
     cdef object last_frame_times
-    cdef unsigned long long bytes_in
-    cdef unsigned long long bytes_out
+    cdef uint64_t bytes_in
+    cdef uint64_t bytes_out
 
     cdef object __weakref__
 
