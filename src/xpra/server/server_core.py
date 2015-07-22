@@ -894,7 +894,8 @@ class ServerCore(object):
                 netlog("process packet %s", packet_type)
                 handler(proto, packet)
                 return
-            netlog.error("unknown or invalid packet type: '%s' from %s", packet_type, proto)
+            if not self._closing:
+                netlog.error("unknown or invalid packet type: '%s' from %s", packet_type, proto)
             proto.close()
         except KeyboardInterrupt:
             raise
