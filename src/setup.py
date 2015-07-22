@@ -1916,7 +1916,15 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
             cmd += ["--use-local-env", "--cl-version", CL_VERSION]
             #-ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe"
             cmd += ["--machine", "32"]
-        for arch, code in ((30, 30), (35, 35), (50, 50)):
+        if WIN32:
+            cmd += ["-I%s" % os.path.abspath("win32")]
+        comp_code_options = [(30, 30), (35, 35)]
+        #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
+        if version>="6":
+            comp_code_options.append((50, 50))
+        if version>="6.5":
+            comp_code_options.append((52, 52))
+        for arch, code in comp_code_options:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
         print(" %s" % " ".join("'%s'" % x for x in cmd))
