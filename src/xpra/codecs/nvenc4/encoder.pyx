@@ -798,17 +798,19 @@ cuCtxGetCurrent = None
 def init_nvencode_library():
     global NvEncodeAPICreateInstance, cuCtxGetCurrent
     IF NV_WINDOWS:
+        load = ctypes.WinDLL
         nvenc_libname = "nvencodeapi.dll"
-        cuda_libname = "libcuda.dll"
+        cuda_libname = "nvcuda.dll"
     ELSE:
         #assert os.name=="posix"
+        load = ctypes.cdll.LoadLibrary
         nvenc_libname = "libnvidia-encode.so"
         cuda_libname = "libcuda.so"
     #CUDA:
     log("init_nvencode_library() will try to load %s", cuda_libname)
     try:
-        x = ctypes.cdll.LoadLibrary(cuda_libname)
-        log("init_nvencode_library() %s=%s", cuda_libname, x)
+        x = load(cuda_libname)
+        log("init_nvencode_library() %s(%s)=%s", load, cuda_libname, x)
     except Exception as e:
         raise Exception("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e))
     cuCtxGetCurrent = x.cuCtxGetCurrent
@@ -818,8 +820,8 @@ def init_nvencode_library():
     #nvidia-encode:
     log("init_nvencode_library() will try to load %s", nvenc_libname)
     try:
-        x = ctypes.cdll.LoadLibrary(nvenc_libname)
-        log("init_nvencode_library() %s=%s", nvenc_libname, x)
+        x = load(nvenc_libname)
+        log("init_nvencode_library() %s(%s)=%s", nvenc_libname, x)
     except Exception as e:
         raise Exception("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e))
     NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance

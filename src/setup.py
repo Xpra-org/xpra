@@ -1926,8 +1926,10 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
             print(stdout or "")
             print(stderr or "")
             sys.exit(1)
-    add_data_files("share/xpra/cuda",
-                   ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
+    CUDA_BIN = "share/xpra/cuda"
+    if WIN32:
+        CUDA_BIN = "CUDA"
+    add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
     for nvenc_version, _nvenc_version_enabled in {4 : nvenc4_ENABLED,
                                                   5 : nvenc5_ENABLED}.items():
         if not _nvenc_version_enabled:

@@ -105,7 +105,8 @@ def init_all_devices():
                 if i==0:
                     #we print the list info "header" from inside the loop
                     #so that the log output is bunched up together
-                    log.info("CUDA %s / PyCUDA %s, found %s device(s):", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus)
+                    log.info("CUDA %s / PyCUDA %s, found %s device%s:",
+                             ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus, ["","s"][int(ngpus!=1)])
                 DEVICES.append(i)
                 log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free/total, SMmajor, SMminor)
             finally:
