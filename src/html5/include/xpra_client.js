@@ -26,6 +26,9 @@ function XpraClient(container) {
 	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
+	// encryption
+	this.encryption = false;
+	this.encryption_caps = null;
 	// hello
 	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
@@ -203,8 +206,10 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 		packet_type = packet[0];
 		console.log("received a " + packet_type + " packet");
 		fn = ctx.packet_handlers[packet_type];
-		if (fn==undefined)
+		if (fn==undefined) {
 			console.error("no packet handler for "+packet_type+"!");
+			console.log(packet);
+		}
 		else
 			fn(packet, ctx);
 	}
@@ -370,6 +375,20 @@ XpraClient.prototype._guess_platform = function() {
 	return "unknown";
 }
 
+XpraClient.prototype._get_hex_uuid = function() {
+	var s = [];
+    var hexDigits = "0123456789abcdef";
+    for (var i = 0; i < 36; i++) {
+        s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+    }
+    s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
+    s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
+    s[8] = s[13] = s[18] = s[23] = "-";
+
+    var uuid = s.join("");
+    return uuid;
+}
+
 XpraClient.prototype._get_keyboard_layout = function() {
 	//IE:
 	//navigator.systemLanguage
@@ -441,8 +460,24 @@ XpraClient.prototype._get_encodings = function() {
 	}
 }
 
+XpraClient.prototype._new_cipher_caps = function() {
+	if(this.encryption) {
+		this.encryption_caps =  {
+			// encryption stuff
+			"cipher"					: this.encryption,
+			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
+			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
+	        "cipher.key_stretch_iterations"	: 1000,
+		}
+		// set caps in protocol too
+		return this.encryption_caps;
+	} else {
+		return false;
+	}
+}
+
 XpraClient.prototype._make_hello = function() {
-	return {
+	var hello = {
 		"version"					: "0.16.0",
 		"platform"					: this._guess_platform(),
 		"platform.name"				: this._guess_platform_name(),
@@ -509,6 +544,14 @@ XpraClient.prototype._make_hello = function() {
 		"named_cursors"				: false,
 		"argv"						: [window.location.href],
 	};
+
+	if(this.encryption) {
+		for (var attr in this._new_cipher_caps()) {
+			hello[attr] = this.encryption_caps[attr];
+		}
+	}
+
+	return hello;
 }
 
 /*

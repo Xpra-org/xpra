@@ -171,7 +171,13 @@ XpraProtocol.prototype._process = function() {
 
 	var proto_flags = buf[1];
 	if (proto_flags!=0) {
-		throw "we cannot handle any protocol flags yet, sorry";
+		// check for crypto protocol flag
+		if (proto_flags & 0x2) {
+			debug("got crypto packet");
+			// now do something with it
+		} else {
+			throw "we can't handle this protocol flag yet, sorry";
+		}
 	}
 	var level = buf[2];
 	var index = buf[3];
