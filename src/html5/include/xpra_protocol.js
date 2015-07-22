@@ -264,7 +264,8 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 	importScripts('websock.js',
 		'bencode.js',
 		'inflate.min.js',
-		'lz4.min.js');
+		'lz4.min.js',
+		'forge.min.js');
 	// make protocol instance
 	var protocol = new XpraProtocol();
 	// we create a custom packet handler which posts packet as a message
