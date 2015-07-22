@@ -21,6 +21,7 @@ function XpraClient(container) {
 	this.port = null;
 	this.ssl = null;
 	// some client stuff
+	this.capabilities = {};
 	this.OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
 	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
@@ -29,6 +30,10 @@ function XpraClient(container) {
 	// encryption
 	this.encryption = false;
 	this.encryption_caps = null;
+	this.encryption_key = null;
+	// authentication
+	this.authentication = false;
+	this.authentication_key = null;
 	// hello
 	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
@@ -460,24 +465,26 @@ XpraClient.prototype._get_encodings = function() {
 	}
 }
 
-XpraClient.prototype._new_cipher_caps = function() {
-	if(this.encryption) {
-		this.encryption_caps =  {
-			// encryption stuff
-			"cipher"					: this.encryption,
-			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
-			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
-	        "cipher.key_stretch_iterations"	: 1000,
-		}
-		// set caps in protocol too
-		return this.encryption_caps;
-	} else {
-		return false;
+XpraClient.prototype._update_capabilities = function(appendobj) {
+	for (var attr in appendobj) {
+		this.capabilities[attr] = appendobj[attr];
 	}
 }
 
-XpraClient.prototype._make_hello = function() {
-	var hello = {
+XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
+	// make the base hello
+	this._make_hello_base()
+	// handle a challenge if we need to
+	// finish the hello
+	this._make_hello()
+	// send the packet
+	console.log("sending hello");
+	this.protocol.send(["hello", this.capabilities]);
+}
+
+XpraClient.prototype._make_hello_base = function() {
+	this._update_capabilities({
+		// version and platform
 		"version"					: "0.16.0",
 		"platform"					: this._guess_platform(),
 		"platform.name"				: this._guess_platform_name(),
@@ -485,6 +492,34 @@ XpraClient.prototype._make_hello = function() {
 		"platform.platform"			: navigator.appVersion,
 		"namespace"			 		: true,
 		"client_type"		   		: "HTML5",
+        "encoding.generic" 			: true,
+        "username" 					: "html5user",
+        "argv" 						: [window.location.href],
+        "digest" 					: ["hmac"],
+        //compression bits:
+		"zlib"						: true,
+		"lz4"						: true,
+		"lzo"						: false,
+		"compression_level"	 		: 1,
+		// packet encoders
+		"rencode" 					: false,
+		"bencode"					: true,
+		"yaml"						: false,
+    });
+
+    if(this.encryption) {
+    	this._update_capabilities({
+			// encryption stuff
+			"cipher"					: this.encryption,
+			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
+			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
+	        "cipher.key_stretch_iterations"	: 1000,
+		});
+	}
+}
+
+XpraClient.prototype._make_hello = function() {
+	this._update_capabilities({
 		"share"						: false,
 		"auto_refresh_delay"		: 500,
 		"randr_notify"				: true,
@@ -515,11 +550,7 @@ XpraClient.prototype._make_hello = function() {
 		"sound.receive"				: true,
 		"sound.send"				: false,
 		"sound.decoders"			: ["wav"],
-		//compression bits:
-		"zlib"						: true,
-		"lz4"						: true,
-		"lzo"						: false,
-		"compression_level"	 		: 1,
+		// encoding stuff
 		"compressible_cursors"		: true,
 		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
@@ -543,15 +574,10 @@ XpraClient.prototype._make_hello = function() {
 		//we cannot handle this (GTK only):
 		"named_cursors"				: false,
 		"argv"						: [window.location.href],
-	};
-
-	if(this.encryption) {
-		for (var attr in this._new_cipher_caps()) {
-			hello[attr] = this.encryption_caps[attr];
-		}
-	}
-
-	return hello;
+		// printing
+		"file-transfer" 			: false,
+        "printing" 					: false,
+	});
 }
 
 /*
@@ -687,9 +713,8 @@ XpraClient.prototype._sound_start_receiving = function() {
  */
 
 XpraClient.prototype._process_open = function(packet, ctx) {
-	console.log("sending hello");
-	var hello = ctx._make_hello();
-	ctx.protocol.send(["hello", hello]);
+	// call the send_hello function
+	ctx._send_hello();
 }
 
 XpraClient.prototype._process_close = function(packet, ctx) {
