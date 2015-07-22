@@ -1879,11 +1879,14 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
         code, out, err = get_status_output([filename, "--version"])
         if code==0:
             nvcc = filename
-            version = ""
             out = out.decode('utf-8')
             vpos = out.rfind(", V")
             if vpos>0:
-                version = "  version %s" % out[vpos+3:].strip("\n")
+                version = out[vpos+3:].strip("\n")
+                version_str = "  version %s" % version
+            else:
+                version = "0"
+                version_str = ""
             print("found CUDA compiler: %s%s" % (nvcc, version))
             break
     assert nvcc is not None, "cannot find nvcc compiler!"
