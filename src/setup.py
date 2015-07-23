@@ -160,6 +160,7 @@ cuda_ENABLED            = nvenc4_ENABLED or nvenc5_ENABLED
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
 
+annotate_ENABLED        = False
 warn_ENABLED            = True
 strict_ENABLED          = True
 PIC_ENABLED             = not WIN32     #ming32 moans that it is always enabled already
@@ -182,7 +183,7 @@ SWITCHES = ["enc_x264", "enc_x265",
             "gtk2", "gtk3", "html5",
             "sound", "opengl", "printing",
             "rebuild",
-            "warn", "strict", "shadow", "debug", "PIC",
+            "annotate", "warn", "strict", "shadow", "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
 if WIN32:
     SWITCHES.append("zip")
@@ -867,10 +868,12 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra.conf in build (see #891):
                    "build/etc/xpra/xpra.conf"]
-    if WIN32:
-        #on win32, the build creates ".pyd" files, clean those too:
-        for x in list(CLEAN_FILES):
-            if x.endswith(".c"):
+    for x in list(CLEAN_FILES):
+        if x.endswith(".c"):
+            #clean the Cython annotated html files:
+            CLEAN_FILES.append(x[:-2]+".html")
+            if WIN32:
+                #on win32, the build creates ".pyd" files, clean those too:
                 CLEAN_FILES.append(x[:-2]+".pyd")
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
@@ -1701,6 +1704,9 @@ if printing_ENABLED and os.name=="posix":
     cups_backend_dir = os.path.join(sys.prefix, "lib", "cups", "backend")
     add_data_files(cups_backend_dir, ["cups/xpraforwarder"])
 
+if annotate_ENABLED:
+    from Cython.Compiler import Options
+    Options.annotate = True
 
 
 #*******************************************************************************
