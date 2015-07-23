@@ -1423,7 +1423,8 @@ cdef class Encoder:
             context_pointer = <unsigned long> (&self.cuda_context_ptr)
             result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
             assert result==0, "failed to get current cuda context"
-            log("cuCtxGetCurrent() cuda context pointer=%#x", <unsigned long> self.cuda_context_ptr)
+            if DEBUG_API:
+                log("cuCtxGetCurrent() cuda context pointer=%#x", <unsigned long> self.cuda_context_ptr)
         finally:
             self.cuda_context.pop()
 
@@ -1441,7 +1442,8 @@ cdef class Encoder:
         assert params!=NULL
         try:
             self.init_params(codec, params)
-            log("nvEncInitializeEncoder using encode=%s", codecstr(codec))
+            if DEBUG_API:
+                log("nvEncInitializeEncoder using encode=%s", codecstr(codec))
             with nogil:
                 r = self.functionList.nvEncInitializeEncoder(self.context, params)
             raiseNVENC(r, "initializing encoder")
@@ -1552,7 +1554,8 @@ cdef class Encoder:
         registerResource.height = self.encoder_height
         registerResource.pitch = self.outputPitch
         registerResource.bufferFormat = self.bufferFmt
-        log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
+        if DEBUG_API:
+            log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
         with nogil:
             r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
         raiseNVENC(r, "registering CUDA input buffer")
@@ -1565,7 +1568,8 @@ cdef class Encoder:
         #this is the uncompressed size - must be big enough for the compressed stream:
         createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3/2)
         createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
-        log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
+        if DEBUG_API:
+            log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
         with nogil:
             r = self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams)
         raiseNVENC(r, "creating output buffer")
@@ -1703,7 +1707,8 @@ cdef class Encoder:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
             log("cuda_clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
-            log("nvEncUnregisterResource(%#x)", <unsigned long> self.inputHandle)
+            if DEBUG_API:
+                log("nvEncUnregisterResource(%#x)", <unsigned long> self.inputHandle)
             with nogil:
                 r = self.functionList.nvEncUnregisterResource(self.context, self.inputHandle)
             raiseNVENC(r, "unregistering CUDA input buffer")
@@ -1722,13 +1727,15 @@ cdef class Encoder:
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
                 log("cuda_clean() destroying output bitstream buffer %#x", <unsigned long> self.bitstreamBuffer)
-                log("nvEncDestroyBitstreamBuffer(%#x)", <unsigned long> self.bitstreamBuffer)
+                if DEBUG_API:
+                    log("nvEncDestroyBitstreamBuffer(%#x)", <unsigned long> self.bitstreamBuffer)
                 with nogil:
                     r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
                 raiseNVENC(r, "destroying output buffer")
                 self.bitstreamBuffer = NULL
             log("cuda_clean() destroying encoder %#x", <unsigned long> self.context)
-            log("nvEncDestroyEncoder(%#x)", <unsigned long> self.context)
+            if DEBUG_API:
+                log("nvEncDestroyEncoder(%#x)", <unsigned long> self.context)
             with nogil:
                 r = self.functionList.nvEncDestroyEncoder(self.context)
             raiseNVENC(r, "destroying context")
@@ -1819,7 +1826,8 @@ cdef class Encoder:
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
-        log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
+        if DEBUG_API:
+            log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
         with nogil:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
@@ -1943,7 +1951,8 @@ cdef class Encoder:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
         mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
         mapInputResource.registeredResource  = self.inputHandle
-        log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
+        if DEBUG_API:
+            log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
         with nogil:
             r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
         raiseNVENC(r, "mapping input resource")
@@ -1990,7 +1999,8 @@ cdef class Encoder:
             picParams.rcParams.averageBitRate = self.target_bitrate
             picParams.rcParams.maxBitRate = self.max_bitrate
 
-            log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
+            if DEBUG_API:
+                log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
             with nogil:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
@@ -2002,7 +2012,8 @@ cdef class Encoder:
             lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
-            log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
+            if DEBUG_API:
+                log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
             with nogil:
                 r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
             raiseNVENC(r, "locking output buffer")
@@ -2013,11 +2024,13 @@ cdef class Encoder:
             self.bytes_out += size
             data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
         finally:
-            log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
+            if DEBUG_API:
+                log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
             with nogil:
                 r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
             raiseNVENC(r, "unlocking output buffer")
-            log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
+            if DEBUG_API:
+                log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
             with nogil:
                 r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
             raiseNVENC(r, "unmapping input resource")
@@ -2102,7 +2115,8 @@ cdef class Encoder:
                         encConfig = &presetConfig.presetCfg
                         if DEBUG_API:
                             log("presetConfig.presetCfg=%s", <unsigned long> encConfig)
-                        log("* %-20s frameIntervalP=%i, gopLength=%-10i", preset_name or "unknown!", encConfig.frameIntervalP, encConfig.gopLength)
+                        gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
+                        log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
                     finally:
                         free(presetConfig)
                 if preset_name is None:
@@ -2125,7 +2139,8 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         profiles = {}
-        log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &profileCount)
+        if DEBUG_API:
+            log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &profileCount)
         with nogil:
             r = self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount)
         raiseNVENC(r, "getting profile count")
@@ -2135,7 +2150,8 @@ cdef class Encoder:
         assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
-            log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", codecstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
+            if DEBUG_API:
+                log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", codecstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount)
             raiseNVENC(r, "getting encode profiles")
@@ -2264,7 +2280,8 @@ cdef class Encoder:
         #get NVENC function pointers:
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-        log("NvEncodeAPICreateInstance(%#x)", <unsigned long> self.functionList)
+        if DEBUG_API:
+            log("NvEncodeAPICreateInstance(%#x)", <unsigned long> self.functionList)
         r = NvEncodeAPICreateInstance(<unsigned long> self.functionList)
         raiseNVENC(r, "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
@@ -2278,7 +2295,8 @@ cdef class Encoder:
         params.apiVersion = NVENCAPI_VERSION
         cstr = <unsigned char*> &params
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
-        log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
+        if DEBUG_API:
+            log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
