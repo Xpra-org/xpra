@@ -36,11 +36,11 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 MIN_COMPUTE = 0x30
 
-YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
-LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
-DEBUG_API = int(os.environ.get("XPRA_NVENC_DEBUG_API", "0")=="1")
+cdef int YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
+cdef int LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
+cdef int DEBUG_API = int(os.environ.get("XPRA_NVENC_DEBUG_API", "0")=="1")
 
-QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
+cdef int QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 
 
 cdef inline int MIN(int a, int b):

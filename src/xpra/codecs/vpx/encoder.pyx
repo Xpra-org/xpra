@@ -22,14 +22,14 @@ except:
         cpus = multiprocessing.cpu_count()
     except:
         pass
-VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1))
+cdef int VPX_THREADS = int(os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1)))
 
 include "constants.pxi"
 
-ENABLE_VP9_YUV444 = False
+cdef int ENABLE_VP9_YUV444 = False
 IF ENABLE_VP9:
     ENABLE_VP9_YUV444 = os.environ.get("XPRA_VP9_YUV444", "1")=="1"
-ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
+cdef int ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
 
 
 cdef inline int MIN(int a, int b):

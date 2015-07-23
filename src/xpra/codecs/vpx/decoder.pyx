@@ -11,7 +11,17 @@ from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
 
-VPX_THREADS = os.environ.get("XPRA_VPX_THREADS", "2")
+#sensible default:
+cpus = 2
+try:
+    cpus = os.cpu_count()
+except:
+    try:
+        import multiprocessing
+        cpus = multiprocessing.cpu_count()
+    except:
+        pass
+cdef int VPX_THREADS = int(os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1)))
 
 include "constants.pxi"
 
