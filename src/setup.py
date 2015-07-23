@@ -1870,12 +1870,14 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
         nvcc_exe = "nvcc"
         path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
-    try:
-        code, out, err = get_status_output(["which", nvcc_exe])
-        if code==0:
-            options.append(0, out)
-    except:
-        pass
+    if not WIN32:
+        #prefer the one we find on the $PATH, if any:
+        try:
+            code, out, err = get_status_output(["which", nvcc_exe])
+            if code==0:
+                options.append(0, out)
+        except:
+            pass
     for filename in options:
         if not os.path.exists(filename):
             continue
@@ -1886,11 +1888,11 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
             vpos = out.rfind(", V")
             if vpos>0:
                 version = out[vpos+3:].strip("\n")
-                version_str = "  version %s" % version
+                version_str = " version %s" % version
             else:
                 version = "0"
-                version_str = ""
-            print("found CUDA compiler: %s%s" % (nvcc, version))
+                version_str = " unknown version!"
+            print("found CUDA compiler: %s%s" % (nvcc, version_str))
             break
     assert nvcc is not None, "cannot find nvcc compiler!"
     if WIN32:
@@ -1928,7 +1930,7 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
         if version>="6":
             comp_code_options.append((50, 50))
-        if version>="6.5":
+        if version>="7":
             comp_code_options.append((52, 52))
         for arch, code in comp_code_options:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
