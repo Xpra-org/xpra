@@ -8,8 +8,18 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
-LOG_CONFIG = os.environ.get("XPRA_WEBP_LOG_CONFIG", "0")=="1"
-USE_THREADS = os.environ.get("XPRA_WEBP_THREADING", "1")=="1"
+cdef int LOG_CONFIG = os.environ.get("XPRA_WEBP_LOG_CONFIG", "0")=="1"
+cdef int USE_THREADS = os.environ.get("XPRA_WEBP_THREADING", "1")=="1"
+
+
+cdef inline int MIN(int a, int b):
+    if a<=b:
+        return a
+    return b
+cdef inline int MAX(int a, int b):
+    if a>=b:
+        return a
+    return b
 
 
 from libc.stdint cimport uint8_t, uint32_t
@@ -294,9 +304,9 @@ HINT_NAME_TO_CONSTANT = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
 
-DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "graph").lower(), WEBP_HINT_GRAPH)
-DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "text").lower(), WEBP_PRESET_TEXT)
-PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
+cdef WebPPreset DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "graph").lower(), WEBP_HINT_GRAPH)
+cdef WebPPreset DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "text").lower(), WEBP_PRESET_TEXT)
+cdef WebPPreset PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
 
 
 def get_encodings():
@@ -312,7 +322,7 @@ def get_info():
             "version"       : get_version(),
             "encodings"     : get_encodings(),
             "buffer_api"    : get_buffer_api_version(),
-            "threading"     : USE_THREADS,
+            "threading"     : bool(USE_THREADS),
             "image-hint"    : DEFAULT_IMAGE_HINT,
             "image-hints"   : IMAGE_HINT.values(),
             "preset"        : DEFAULT_PRESET,
@@ -360,23 +370,23 @@ cdef get_config_info(WebPConfig *config):
             }
 
 
-def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=False):
+def compress(pixels, int width, int height, int stride=0, int quality=50, int speed=50, has_alpha=False):
     cdef uint8_t *pic_buf
     cdef Py_ssize_t pic_buf_len = 0
     cdef WebPConfig config
-    cdef int ret
-    cdef int i, c
     cdef WebPPreset preset = DEFAULT_PRESET
     if width*height<8192:
         preset = PRESET_SMALL
 
-    i = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
-    assert i==0, "failed to get buffer from pixel object: %s (returned %s)" % (type(pixels), i)
+    cdef int ret = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
+    assert ret==0, "failed to get buffer from pixel object: %s (returned %s)" % (type(pixels), ret)
     log("webp.compress(%s bytes, %s, %s, %s, %s, %s, %s) buf=%#x", len(pixels), width, height, stride, quality, speed, has_alpha, <unsigned long> pic_buf)
-    c = (stride or (width*4)) * height
+    cdef int c = (stride or (width*4)) * height
     assert pic_buf_len>=c, "pixel buffer is too small: expected at least %s bytes but got %s" % (c, pic_buf_len)
 
-    if not has_alpha:
+    cdef int i
+    cdef int alpha_int = int(has_alpha)
+    if alpha_int>0:
         #ensure webp will not decide to encode the alpha channel
         #(this is stupid: we should be able to pass a flag instead)
         i = 3
@@ -394,14 +404,14 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
         config.quality = fclamp(100-speed)
     else:
         config.quality = fclamp(quality)
-    config.method = max(0, min(6, 6-speed/16))
-    config.alpha_compression = has_alpha
-    config.alpha_filtering = max(0, min(2, speed/50)) * int(has_alpha)
-    config.alpha_quality = quality * int(has_alpha)
+    config.method = MAX(0, MIN(6, 6-speed/16))
+    config.alpha_compression = alpha_int
+    config.alpha_filtering = MAX(0, MIN(2, speed/50)) * alpha_int
+    config.alpha_quality = quality * alpha_int
     config.image_hint = DEFAULT_IMAGE_HINT
     config.thread_level = USE_THREADS
     config.partitions = 3
-    config.partition_limit = max(0, min(100, 100-quality))
+    config.partition_limit = MAX(0, MIN(100, 100-quality))
 
     log("webp.compress config: lossless=%s, quality=%s, method=%s, alpha=%s,%s,%s", config.lossless, config.quality, config.method,
                     config.alpha_compression, config.alpha_filtering, config.alpha_quality)
@@ -435,8 +445,8 @@ def compress(pixels, width, height, stride=0, quality=50, speed=50, has_alpha=Fa
     cdata = memory_writer.mem[:memory_writer.size]
     free(memory_writer.mem)
     WebPPictureFree(&pic)
-    log("webp.compress ratio=%i%%", 100*memory_writer.size/c)
-    if LOG_CONFIG:
+    log("webp.compress ratio=%i%%", 100*memory_writer.size//c)
+    if LOG_CONFIG>0:
         log("webp.compress used config: %s", get_config_info(&config))
     return cdata
 

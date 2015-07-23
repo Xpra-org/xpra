@@ -8,14 +8,13 @@ import os
 import time
 
 from xpra.log import Logger
+from xpra.codecs.dec_avcodec2.decoder import av_enum
 log = Logger("csc", "swscale")
 
 from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import codec_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
-
-include "constants.pxi"
 
 
 cdef extern from "../../buffers/buffers.h":
@@ -40,6 +39,25 @@ cdef extern from "libavcodec/version.h":
     int LIBSWSCALE_VERSION_MINOR
     int LIBSWSCALE_VERSION_MICRO
 
+cdef extern from "libavutil/pixfmt.h":
+    unsigned int AV_PIX_FMT_YUV420P
+    unsigned int AV_PIX_FMT_YUV422P
+    unsigned int AV_PIX_FMT_YUV444P
+    unsigned int AV_PIX_FMT_RGB24
+    unsigned int AV_PIX_FMT_0RGB
+    unsigned int AV_PIX_FMT_BGR0
+    unsigned int AV_PIX_FMT_ARGB
+    unsigned int AV_PIX_FMT_BGRA
+    unsigned int AV_PIX_FMT_GBRP
+    unsigned int AV_PIX_FMT_RGB24
+    unsigned int AV_PIX_FMT_BGR24
+    unsigned int SWS_ACCURATE_RND
+    unsigned int SWS_BICUBIC
+    unsigned int SWS_BICUBLIN
+    unsigned int SWS_BILINEAR
+    unsigned int SWS_FAST_BILINEAR
+    unsigned int SWS_FULL_CHR_H_INT
+
 cdef extern from "libavcodec/avcodec.h":
     AVPixelFormat PIX_FMT_NONE
 
@@ -47,6 +65,12 @@ ctypedef void SwsContext
 cdef extern from "libswscale/swscale.h":
     ctypedef struct SwsFilter:
         pass
+    unsigned int SWS_ACCURATE_RND
+    unsigned int SWS_BICUBIC
+    unsigned int SWS_BICUBLIN
+    unsigned int SWS_BILINEAR
+    unsigned int SWS_FAST_BILINEAR
+    unsigned int SWS_FULL_CHR_H_INT
 
     SwsContext *sws_getContext(int srcW, int srcH, AVPixelFormat srcFormat,
                                 int dstW, int dstH, AVPixelFormat dstFormat,
@@ -83,23 +107,19 @@ cdef class CSCPixelFormat:
 COLORSPACES = []
 #keeping this array in scope ensures the strings don't go away!
 FORMAT_OPTIONS = [
-    ("AV_PIX_FMT_RGB24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"  ),
-    ("AV_PIX_FMT_BGR24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"  ),
-    ("AV_PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
-    ("AV_PIX_FMT_BGR0",     (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
-    ("AV_PIX_FMT_ARGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
-    ("AV_PIX_FMT_BGRA",     (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
-    ("AV_PIX_FMT_YUV420P",  (1, 0.5, 0.5, 0),   (1, 0.5, 0.5, 0),   "YUV420P"),
-    ("AV_PIX_FMT_YUV422P",  (1, 0.5, 0.5, 0),   (1, 1, 1, 0),       "YUV422P"),
-    ("AV_PIX_FMT_YUV444P",  (1, 1, 1, 0),       (1, 1, 1, 0),       "YUV444P"),
-    ("AV_PIX_FMT_GBRP",     (1, 1, 1, 0),       (1, 1, 1, 0),       "GBRP"   )
+    ("RGB24",   AV_PIX_FMT_RGB24,      (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"  ),
+    ("BGR24",   AV_PIX_FMT_BGR24,      (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"  ),
+    ("0RGB",    AV_PIX_FMT_0RGB,       (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
+    ("BGR0",    AV_PIX_FMT_BGR0,       (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
+    ("ARGB",    AV_PIX_FMT_ARGB,       (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
+    ("BGRA",    AV_PIX_FMT_BGRA,       (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
+    ("YUV420P", AV_PIX_FMT_YUV420P,    (1, 0.5, 0.5, 0),   (1, 0.5, 0.5, 0),   "YUV420P"),
+    ("YUV422P", AV_PIX_FMT_YUV422P,    (1, 0.5, 0.5, 0),   (1, 1, 1, 0),       "YUV422P"),
+    ("YUV444P", AV_PIX_FMT_YUV444P,    (1, 1, 1, 0),       (1, 1, 1, 0),       "YUV444P"),
+    ("GBRP",    AV_PIX_FMT_GBRP,       (1, 1, 1, 0),       (1, 1, 1, 0),       "GBRP"   )
      ]
 FORMATS = {}
-for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
-    av_enum = constants.get(av_enum_name)
-    if av_enum is None:
-        log("av pixel mode %s is not available", av_enum_name)
-        continue
+for av_enum_name, av_enum, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
     log("av_enum(%s)=%s", av_enum_name, av_enum)
     FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name.encode("latin1"), width_mult, height_mult, pix_fmt.encode("latin1"))
     if pix_fmt not in COLORSPACES:
@@ -129,27 +149,19 @@ cdef class SWSFlags:
 
 
 #keeping this array in scope ensures the strings don't go away!
-FLAGS_OPTIONS = [
-            (30, ("SWS_BICUBIC", ), []),
-            (40, ("SWS_BICUBLIN", ), []),
-            (60, ("SWS_BILINEAR", ), []),
-            (80, ("SWS_FAST_BILINEAR", ), []),
-        ]
-cdef int flags                                          #@DuplicatedSignature
+FLAGS_OPTIONS = (
+            (30, (SWS_BICUBIC, ), "BICUBIC"),
+            (40, (SWS_BICUBLIN, ), "BICUBLIN"),
+            (60, (SWS_BILINEAR, ), "BILINEAR"),
+            (80, (SWS_FAST_BILINEAR, ), "FAST_BILINEAR"),
+        )
 FLAGS = []
-for speed, flags_strs, bin_flags in FLAGS_OPTIONS:
-    flags = 0
-    for flags_str in flags_strs:
-        flag_val = constants.get(flags_str)
-        if flag_val is None:
-            log.warn("av flag %s is missing!", flags_str)
-            continue
-        log("%s=%s", flags_str, flag_val)
-        flags |= flag_val
-        for flag in flags_strs:
-            bin_flags.append(flag.encode())
-    log("%s=%s", flags_strs, flags)
-    FLAGS.append((speed, SWSFlags(flags, bin_flags)))
+for speed, flags, flag_str in FLAGS_OPTIONS:
+    flag_value = 0
+    for flag in flags:
+        flag_value |= flag
+    log("%s=%s", speed, flag_value)
+    FLAGS.append((speed, SWSFlags(flag_value, flag_str)))
 log("swscale flags: %s", FLAGS)
 
 
@@ -177,8 +189,11 @@ cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
 
 def get_swscale_flags_strs(int flags):
     strs = []
-    for flag in ("SWS_BICUBIC", "SWS_BICUBLIN", "SWS_FAST_BILINEAR", "SWS_ACCURATE_RND"):
-        flag_value = constants.get(flag, 0)
+    for flag_value, flag_name in {
+                SWS_BICUBIC         : "BICUBIC",
+                SWS_BICUBLIN        : "BICUBLIN",
+                SWS_FAST_BILINEAR   : "FAST_BILINEAR",
+                SWS_ACCURATE_RND    : "ACCURATE_RND"}.items():
         if (flag_value & flags)>0:
             strs.append(flag)
     return strs

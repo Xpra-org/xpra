@@ -13,6 +13,7 @@ from collections import deque
 
 import pycuda
 from pycuda import driver
+from pycuda.driver import memcpy_htod
 from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger, updict
@@ -38,6 +39,16 @@ YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
 LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
 
 QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
+
+
+cdef inline int MIN(int a, int b):
+    if a<=b:
+        return a
+    return b
+cdef inline int MAX(int a, int b):
+    if a>=b:
+        return a
+    return b
 
 
 cdef extern from "string.h":
@@ -696,7 +707,54 @@ cdef extern from "nvEncodeAPI.h":
         PNVENCRECONFIGUREENCODER        nvEncReconfigureEncoder
         void*                           reserved2[285]                  #[in]:  Reserved and must be set to NULL
 
-include "constants.pxi"
+    #constants:
+    unsigned int NVENCAPI_VERSION
+    unsigned int NV_ENCODE_API_FUNCTION_LIST_VER
+    unsigned int NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
+    unsigned int NV_ENC_INITIALIZE_PARAMS_VER
+    unsigned int NV_ENC_PRESET_CONFIG_VER
+    unsigned int NV_ENC_CONFIG_VER
+    unsigned int NV_ENC_CREATE_INPUT_BUFFER_VER
+    unsigned int NV_ENC_CREATE_BITSTREAM_BUFFER_VER
+    unsigned int NV_ENC_CAPS_PARAM_VER
+    unsigned int NV_ENC_LOCK_INPUT_BUFFER_VER
+    unsigned int NV_ENC_LOCK_BITSTREAM_VER
+    unsigned int NV_ENC_PIC_PARAMS_VER
+    unsigned int NV_ENC_RC_PARAMS_VER
+    unsigned int NV_ENC_REGISTER_RESOURCE_VER
+    unsigned int NV_ENC_MAP_INPUT_RESOURCE_VER
+    unsigned int NVENC_INFINITE_GOPLENGTH
+    unsigned int NV_ENC_SUCCESS
+    unsigned int NV_ENC_ERR_NO_ENCODE_DEVICE
+    unsigned int NV_ENC_ERR_UNSUPPORTED_DEVICE
+    unsigned int NV_ENC_ERR_INVALID_ENCODERDEVICE
+    unsigned int NV_ENC_ERR_INVALID_DEVICE
+    unsigned int NV_ENC_ERR_DEVICE_NOT_EXIST
+    unsigned int NV_ENC_ERR_INVALID_PTR
+    unsigned int NV_ENC_ERR_INVALID_EVENT
+    unsigned int NV_ENC_ERR_INVALID_PARAM
+    unsigned int NV_ENC_ERR_INVALID_CALL
+    unsigned int NV_ENC_ERR_OUT_OF_MEMORY
+    unsigned int NV_ENC_ERR_ENCODER_NOT_INITIALIZED
+    unsigned int NV_ENC_ERR_UNSUPPORTED_PARAM
+    unsigned int NV_ENC_ERR_LOCK_BUSY
+    unsigned int NV_ENC_ERR_NOT_ENOUGH_BUFFER
+    unsigned int NV_ENC_ERR_INVALID_VERSION
+    unsigned int NV_ENC_ERR_MAP_FAILED
+    unsigned int NV_ENC_ERR_NEED_MORE_INPUT
+    unsigned int NV_ENC_ERR_ENCODER_BUSY
+    unsigned int NV_ENC_ERR_EVENT_NOT_REGISTERD
+    unsigned int NV_ENC_ERR_GENERIC
+    unsigned int NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY
+    unsigned int NV_ENC_ERR_UNIMPLEMENTED
+    unsigned int NV_ENC_ERR_RESOURCE_REGISTER_FAILED
+    unsigned int NV_ENC_ERR_RESOURCE_NOT_REGISTERED
+    unsigned int NV_ENC_ERR_RESOURCE_NOT_MAPPED
+    unsigned int NV_ENC_CAPS_MB_PER_SEC_MAX
+    unsigned int NV_ENC_CAPS_SUPPORT_YUV444_ENCODE
+    unsigned int NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE
+    unsigned int NV_ENC_RECONFIGURE_PARAMS_VER
+
 
 NV_ENC_STATUS_TXT = {
     NV_ENC_SUCCESS : "This indicates that API call returned with no errors.",
@@ -794,11 +852,11 @@ cuCtxGetCurrent = None
 
 def init_nvencode_library():
     global NvEncodeAPICreateInstance, cuCtxGetCurrent
-    IF NV_WINDOWS:
+    if sys.platform.startswith("win"):
         load = ctypes.WinDLL
         nvenc_libname = "nvencodeapi.dll"
         cuda_libname = "nvcuda.dll"
-    ELSE:
+    else:
         #assert os.name=="posix"
         load = ctypes.cdll.LoadLibrary
         nvenc_libname = "libnvidia-encode.so"
@@ -1769,19 +1827,17 @@ cdef class Encoder:
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         cdef size_t size
-        cdef int input_size
-        cdef int x, y, image_stride, stride
-        cdef int w, h
+        cdef unsigned int x, y, stride
         cdef int i
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         start = time.time()
         log("compress_image(%s, %s)", image, options)
-        w = image.get_width()
-        h = image.get_height()
+        cdef unsigned int w = image.get_width()
+        cdef unsigned int h = image.get_height()
         pixels = image.get_pixels()
-        image_stride = image.get_rowstride()
-        input_size = self.inputPitch * self.input_height
+        cdef unsigned int image_stride = image.get_rowstride()
+        cdef unsigned long input_size = self.inputPitch * self.input_height
         assert pixels, "failed to get pixels from %s" % image
         assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
@@ -1818,11 +1874,11 @@ cdef class Encoder:
                 buf[x:x+stride] = pixels[y:y+stride]
 
         #copy input buffer to CUDA buffer:
-        driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
+        memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
         self.bytes_in += input_size
         log("compress_image(..) input buffer copied to device")
 
-        #FIXME: find better values and validate against max_block/max_grid:
+        cdef uint8_t dx, dy
         if self.pixel_format=="NV12":
             #(these values are derived from the kernel code - which we should know nothing about here..)
             #divide each dimension by 2 since we process 4 pixels at a time:
@@ -1833,18 +1889,21 @@ cdef class Encoder:
         else:
             raise Exception("bug: invalid pixel format '%s'" % self.pixel_format)
 
+        #FIXME: find better values and validate against max_block/max_grid:
         #calculate grids/blocks:
         #a block is a group of threads: (blockw * blockh) threads
         #a grid is a group of blocks: (gridw * gridh) blocks
-        blockw, blockh = 16, 16
-        gridw = max(1, w/blockw/dx)
+        cdef uint32_t blockw = 16
+        cdef uint32_t blockh = 16
+        cdef uint32_t gridw = MAX(1, w//(blockw*dx))
+        cdef uint32_t gridh = MAX(1, h//(blockh*dy))
+        #if dx or dy made us round down, add one:
         if gridw*dx*blockw<w:
             gridw += 1
-        gridh = max(1, h/blockh/dy)
-        #if dy made us round down, add one:
         if gridh*dy*blockh<h:
             gridh += 1
-        in_w, in_h = self.input_width, self.input_height
+        cdef unsigned int in_w = self.input_width
+        cdef unsigned int in_h = self.input_height
         if self.scaling!=(1,1):
             #scaling so scale exact dimensions, not padded input dimensions:
             in_w, in_h = w, h

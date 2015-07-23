@@ -257,7 +257,8 @@ class VideoHelper(object):
                         break
                     except Exception as e:
                         log("init_video_encoder_option(%s) error", mod, exc_info=True)
-                        log.warn("Warning: cannot load %s video encoder: %s", mod, e)
+                        log.warn("Warning: cannot load %s video encoder:", mod)
+                        log.warn(" %s", e)
             except Exception as e:
                 log.warn("init_video_encoders_options() cannot add %s encoder: %s", x, e)
         log("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)

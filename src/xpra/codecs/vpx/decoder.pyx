@@ -197,9 +197,9 @@ class VPXImageWrapper(ImageWrapper):
 cdef class Decoder:
 
     cdef vpx_codec_ctx_t *context
-    cdef int width
-    cdef int height
-    cdef int max_threads
+    cdef unsigned int width
+    cdef unsigned int height
+    cdef unsigned int max_threads
     cdef vpx_img_fmt_t pixfmt
     cdef object dst_format
     cdef object encoding
@@ -287,6 +287,9 @@ cdef class Decoder:
         cdef object image
         cdef void *padded_buf
         cdef Py_ssize_t plane_len = 0
+        cdef uint8_t dx, dy
+        cdef unsigned int height
+        cdef int stride
         assert self.context!=NULL
 
         assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
@@ -305,7 +308,7 @@ cdef class Decoder:
         pixels = []
         divs = get_subsampling_divs(self.get_colorspace())
         image = VPXImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 3)
-        for i in (0, 1, 2):
+        for i in range(3):
             _, dy = divs[i]
             if dy==1:
                 height = self.height

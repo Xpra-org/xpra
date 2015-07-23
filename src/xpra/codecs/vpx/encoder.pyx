@@ -32,6 +32,16 @@ IF ENABLE_VP9:
 ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
 
 
+cdef inline int MIN(int a, int b):
+    if a<=b:
+        return a
+    return b
+cdef inline int MAX(int a, int b):
+    if a>=b:
+        return a
+    return b
+
+
 from libc.stdint cimport int64_t
 
 cdef extern from "string.h":
@@ -535,18 +545,18 @@ cdef class Encoder:
         if self.frames==0:
             flags |= VPX_EFLAG_FORCE_KF
         #deadline based on speed (also affects quality...)
-        cdef long deadline
+        cdef int deadline
         if self.speed<10 or self.quality>=90:
             deadline = VPX_DL_BEST_QUALITY
         elif self.speed>=100:
             deadline = VPX_DL_REALTIME
         else:
-            deadline = max(2, int(VPX_DL_GOOD_QUALITY * (90-self.speed) / 100.0))
+            deadline = MAX(2, VPX_DL_GOOD_QUALITY * (90-self.speed) // 100)
         if self.encoding=="vp9":
             #NEVER use 0 (VPX_DL_BEST_QUALITY) with vp9:
-            deadline = max(1, deadline)
+            deadline = MAX(1, deadline)
         #cap the deadline at 250ms, which is already plenty
-        deadline = min(250, deadline)
+        deadline = MIN(250, deadline)
         start = time.time()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
@@ -578,10 +588,10 @@ cdef class Encoder:
         self.speed = pct
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
-        range = 8*(1+int(self.encoding=="vp8"))
+        cdef int range = 8*(1+int(self.encoding=="vp8"))
         #note: we don't use the full range since the percentages are mapped to -30 to +70
-        cdef int value = int((pct-30)*2*range/100)
-        value = min(range, max(-range, value))
+        cdef int value = (pct-30)*2*range//100
+        value = MIN(range, MAX(-range, value))
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):

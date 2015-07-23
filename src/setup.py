@@ -160,7 +160,7 @@ cuda_ENABLED            = nvenc4_ENABLED or nvenc5_ENABLED
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
 
-annotate_ENABLED        = False
+annotate_ENABLED        = True
 warn_ENABLED            = True
 strict_ENABLED          = True
 PIC_ENABLED             = not WIN32     #ming32 moans that it is always enabled already
@@ -845,9 +845,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/vpx/constants.pxi",
                    "xpra/codecs/nvenc4/encoder.c",
-                   "xpra/codecs/nvenc4/constants.pxi",
                    "xpra/codecs/nvenc5/encoder.c",
-                   "xpra/codecs/nvenc5/constants.pxi",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
@@ -859,7 +857,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/webp/decode.c",
                    "xpra/codecs/dec_avcodec2/decoder.c",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
-                   "xpra/codecs/csc_swscale/constants.pxi",
                    "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
@@ -1957,7 +1954,6 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
             cuda = "cuda-%s" % cuda_ENABLED
         except:
             cuda = "cuda"
-        make_constants("xpra", "codecs", nvencmodule, "constants", NV_WINDOWS=int(WIN32))
         nvenc_pkgconfig = pkgconfig(nvencmodule, cuda, ignored_flags=["-l", "-L"])
         #don't link against libnvidia-encode, we load it dynamically:
         libraries = nvenc_pkgconfig.get("libraries", [])
@@ -2026,7 +2022,6 @@ if dec_avcodec2_ENABLED:
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
-    make_constants("xpra", "codecs", "csc_swscale", "constants")
     swscale_pkgconfig = pkgconfig("swscale", "avutil")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"]+membuffers_c,
