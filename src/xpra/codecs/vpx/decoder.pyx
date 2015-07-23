@@ -280,7 +280,6 @@ cdef class Decoder:
     def decompress_image(self, input, options):
         cdef vpx_image_t *img
         cdef vpx_codec_iter_t iter = NULL
-        cdef const uint8_t *frame = input
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef vpx_codec_err_t ret
