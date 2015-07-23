@@ -704,7 +704,7 @@ class Protocol(object):
                         #no cipher, no padding:
                         padding = None
                         payload_size = data_size
-                    assert payload_size>0, "invalid payload size: %" % payload_size
+                    assert payload_size>0, "invalid payload size: %i" % payload_size
                     read_buffer = read_buffer[8:]
 
                     if payload_size>self.max_packet_size:
