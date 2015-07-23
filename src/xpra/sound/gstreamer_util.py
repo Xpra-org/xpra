@@ -29,6 +29,7 @@ def get_queue_time(default_value=450, prefix=""):
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "0")=="1"
+MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
 
 
 NAME_TO_SRC_PLUGIN = {
@@ -360,6 +361,13 @@ def get_pulse_defaults(remote):
     if len(monitor_devices)==0:
         log.error("could not detect any Pulseaudio monitor devices - sound forwarding is disabled")
         return    None
+    if len(monitor_devices)>1 and MONITOR_DEVICE_NAME:
+        monitor_devices = dict((k,v) for k,v in monitor_devices.items() if k.find(MONITOR_DEVICE_NAME)>=0 or v.find(MONITOR_DEVICE_NAME)>0)
+        if len(monitor_devices)==0:
+            log.warn("Pulseaudio monitor device name filter '%s' did not match any devices", MONITOR_DEVICE_NAME)
+            return None
+        elif len(monitor_devices)>1:
+            log.warn("Pulseaudio monitor device name filter '%s' matched %i devices", MONITOR_DEVICE_NAME, len(monitor_devices))
     #default to first one:
     monitor_device, monitor_device_name = monitor_devices.items()[0]
     if len(monitor_devices)>1:
@@ -370,7 +378,9 @@ def get_pulse_defaults(remote):
             WARNED_MULTIPLE_DEVICES = True
             log.warn("found more than one audio monitor device:")
             for k,v in monitor_devices.items():
-                log.warn(" * %s (\"%s\")", v, k)
+                log.warn(" * %s", v)
+                log.warn("   %s", k)
+            log.warn(" use the environment variable XPRA_MONITOR_DEVICE_NAME to select a specific one")
         if default_monitor in monitor_devices:
             monitor_device = default_monitor
             monitor_device_name = monitor_devices.get(default_monitor)
