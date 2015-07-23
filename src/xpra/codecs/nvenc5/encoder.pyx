@@ -37,6 +37,7 @@ MIN_COMPUTE = 0x30
 
 YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
 LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
+DEBUG_API = int(os.environ.get("XPRA_NVENC_DEBUG_API", "0")=="1")
 
 QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 
@@ -871,7 +872,7 @@ def init_nvencode_library():
     cuCtxGetCurrent = x.cuCtxGetCurrent
     cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
     cuCtxGetCurrent.argtypes = [POINTER(CUcontext)] # CUcontext *pctx
-    log("init_nvencode_library() %s.cuCtxGetCurrent=%s", cuda_libname, cuCtxGetCurrent)
+    log("init_nvencode_library() %s.cuCtxGetCurrent=%s", os.path.splitext(cuda_libname)[0], cuCtxGetCurrent)
     #nvidia-encode:
     log("init_nvencode_library() will try to load %s", nvenc_libname)
     try:
@@ -1430,19 +1431,21 @@ cdef class Encoder:
             raiseNVENC(r, "initializing encoder")
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
-            self.dump_caps(codec)
+            self.dump_caps(self.codec_name, codec)
             self.init_buffers()
         finally:
             if params.encodeConfig!=NULL:
                 free(params.encodeConfig)
             free(params)
 
-    cdef dump_caps(self, GUID codec):
+    cdef dump_caps(self, codec_name, GUID codec):
         #test all caps:
+        caps = {}
         for cap, descr in CAPS_NAMES.items():
             if cap!=NV_ENC_CAPS_EXPOSED_COUNT:
                 v = self.query_encoder_caps(codec, cap)
-                log("%s=%s", descr, v)
+                caps[descr] = v
+        log("caps(%s)=%s", codec_name, caps)
 
     cdef NV_ENC_INITIALIZE_PARAMS *init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
         #caller must free the config!
@@ -2036,7 +2039,8 @@ cdef class Encoder:
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
-        log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
+        if DEBUG_API:
+            log.info("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
         r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
@@ -2049,20 +2053,22 @@ cdef class Encoder:
         cdef GUID* preset_GUIDs
         cdef GUID preset_GUID
         cdef NV_ENC_PRESET_CONFIG *presetConfig
-        cdef NV_ENC_CONFIG encConfig
+        cdef NV_ENC_CONFIG *encConfig
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         presets = {}
-        log("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
+        if DEBUG_API:
+            log.info("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
         with nogil:
             r = self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount)
         raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
-        log("%s presets:", presetCount)
+        log("found %s preset%s:", presetCount, ["","s"][int(presetCount!=1)])
         assert presetCount<2**8
         preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
         assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
         try:
-            log("nvEncGetEncodePresetGUIDs(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
+            if DEBUG_API:
+                log("nvEncGetEncodePresetGUIDs(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount)
             raiseNVENC(r, "getting encode presets")
@@ -2071,13 +2077,15 @@ cdef class Encoder:
             for x in range(presetCount):
                 preset_GUID = preset_GUIDs[x]
                 preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
-                log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
+                if DEBUG_API:
+                    log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
                 presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
                 if presetConfig!=NULL:
                     try:
-                        encConfig = presetConfig.presetCfg
-                        #log("presetConfig.presetCfg=%s", <unsigned long> encConfig)
-                        log("   gopLength=%s, frameIntervalP=%s", encConfig.gopLength, encConfig.frameIntervalP)
+                        encConfig = &presetConfig.presetCfg
+                        if DEBUG_API:
+                            log("presetConfig.presetCfg=%s", <unsigned long> encConfig)
+                        log("* %-20s frameIntervalP=%i, gopLength=%-10i", preset_name or "unknown!", encConfig.frameIntervalP, encConfig.gopLength)
                     finally:
                         free(presetConfig)
                 if preset_name is None:
@@ -2088,7 +2096,8 @@ cdef class Encoder:
                 log.warn("nvenc: found some unknown presets: %s", ", ".join(unknowns))
         finally:
             free(preset_GUIDs)
-        log("query_presets(%s)=%s", codecstr(encode_GUID), presets)
+        if DEBUG_API:
+            log("query_presets(%s)=%s", codecstr(encode_GUID), presets)
         return presets
 
     cdef object query_profiles(self, GUID encode_GUID):
@@ -2132,16 +2141,18 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         input_formats = {}
-        log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &inputFmtCount)
+        if DEBUG_API:
+            log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &inputFmtCount)
         with nogil:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
-        log("%s input format types:", inputFmtCount)
+        log("%s input format type%s:", inputFmtCount, ["","s"][int(inputFmtCount!=1)])
         assert inputFmtCount>0 and inputFmtCount<2**8
         inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
         assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
         try:
-            log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
+            if DEBUG_API:
+                log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
             with nogil:
                 r = self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount)
             raiseNVENC(r, "getting input formats")
@@ -2169,7 +2180,8 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val)
         raiseNVENC(r, "getting encode caps for %s" % CAPS_NAMES.get(caps_type, caps_type))
-        log("query_encoder_caps(%s, %s) %s=%s", codecstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
+        if DEBUG_API:
+            log("query_encoder_caps(%s, %s) %s=%s", codecstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
     cdef query_codecs(self, full_query=False):
@@ -2179,17 +2191,19 @@ cdef class Encoder:
         cdef GUID encode_GUID
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
-        log("nvEncGetEncodeGUIDCount(%#x)", <unsigned long> &GUIDCount)
+        if DEBUG_API:
+            log("nvEncGetEncodeGUIDCount(%#x)", <unsigned long> &GUIDCount)
         with nogil:
             r = self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount)
         raiseNVENC(r, "getting encoder count")
-        log("found %s encode GUIDs", GUIDCount)
+        log("found %i encoder%s:", GUIDCount, ["","s"][int(GUIDCount!=1)])
         assert GUIDCount<2**8
         encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
         assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
         codecs = {}
         try:
-            log("nvEncGetEncodeGUIDs(%#x, %i, %#x)", <unsigned long> encode_GUIDs, GUIDCount, <unsigned long> &GUIDRetCount)
+            if DEBUG_API:
+                log("nvEncGetEncodeGUIDs(%#x, %i, %#x)", <unsigned long> encode_GUIDs, GUIDCount, <unsigned long> &GUIDRetCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodeGUIDs(self.context, encode_GUIDs, GUIDCount, &GUIDRetCount)
             raiseNVENC(r, "getting list of encode GUIDs")
@@ -2197,7 +2211,7 @@ cdef class Encoder:
             for x in range(GUIDRetCount):
                 encode_GUID = encode_GUIDs[x]
                 codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
-                log("[%s] %s : %s", x, codec_name, guidstr(encode_GUID))
+                log("[%s] %s", x, codec_name)
                 codecs[codec_name] = guidstr(encode_GUID)
 
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
@@ -2205,7 +2219,7 @@ cdef class Encoder:
                 async = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
                 log(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
                 rate_countrol = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
-                log(" rate control: %s", rate_countrol)
+                log(" rate control:   %s", rate_countrol)
 
                 if full_query:
                     presets = self.query_presets(encode_GUID)
@@ -2218,7 +2232,7 @@ cdef class Encoder:
                     log("  input formats=%s", input_formats)
         finally:
             free(encode_GUIDs)
-        log("codecs=%s", codecs)
+        log("codecs=%s", codecs.keys())
         return codecs
 
 
