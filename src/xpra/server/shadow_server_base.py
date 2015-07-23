@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import socket
 
@@ -14,7 +15,7 @@ from xpra.net.compression import Compressed
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.util import prettify_plug_name, DONE
 
-DEFAULT_DELAY = 50              #50ms refresh
+REFRESH_DELAY = int(os.environ.get("XPRA_SHADOW_REFRESH_DELAY", "50"))
 
 
 class RootWindowModel(object):
@@ -152,7 +153,7 @@ class ShadowServerBase(object):
     def watch_keymap_changes(self):
         pass
 
-    def start_refresh(self, delay=DEFAULT_DELAY):
+    def start_refresh(self, delay=REFRESH_DELAY):
         self.timeout_add(delay, self.refresh)
 
     def timeout_add(self, *args):
