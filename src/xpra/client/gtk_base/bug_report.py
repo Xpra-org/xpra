@@ -36,8 +36,13 @@ log = Logger("util")
 class BugReport(object):
 
     def init(self, show_about=True, get_server_info=None, opengl_info=None, includes={}):
+        self.show_about = show_about
         self.get_server_info = get_server_info
+        self.opengl_info = opengl_info
         self.includes = includes
+        self.setup_window()
+
+    def setup_window(self):
         self.window = gtk.Window()
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 300)
@@ -56,7 +61,7 @@ class BugReport(object):
         # Title
         hbox = gtk.HBox(False, 0)
         icon_pixbuf = self.get_icon("xpra.png")
-        if icon_pixbuf and show_about:
+        if icon_pixbuf and self.show_about:
             logo_button = gtk.Button("")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
@@ -102,9 +107,9 @@ class BugReport(object):
             from xpra.sound.gstreamer_util import get_info as get_sound_info
         except:
             get_sound_info = None
-        if opengl_info:
+        if self.opengl_info:
             def get_gl_info():
-                return opengl_info
+                return self.opengl_info
         else:
             try:
                 from xpra.client.gl.gl_check import check_support
@@ -219,7 +224,9 @@ class BugReport(object):
 
     def show(self):
         log("show()")
-        self.window.show()
+        if not self.window:
+            self.setup_window()
+        self.window.show_all()
         self.window.present()
 
     def hide(self):
@@ -229,6 +236,7 @@ class BugReport(object):
     def close(self, *args):
         log("close%s", args)
         self.hide()
+        self.window = None
 
     def destroy(self, *args):
         log("destroy%s", args)
