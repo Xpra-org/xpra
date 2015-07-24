@@ -760,8 +760,11 @@ class ServerSource(object):
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
-            elog.info(" using %s as primary encoding, also available:", self.encoding)
-            elog.info("  %s", ", ".join(others))
+            elog.info(" using %s as primary encoding%s", self.encoding, [""," also available:"][int(len(others)>0)])
+            if others:
+                elog.info("  %s", ", ".join(others))
+            else:
+                elog.warn("  no other encodings are available!")
 
     def parse_proxy_video(self):
         from xpra.codecs.enc_proxy.encoder import Encoder
