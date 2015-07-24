@@ -544,7 +544,10 @@ class ClientExtras(object):
 
     def setup_console_event_listener(self, enable=True):
         try:
-            result = win32api.SetConsoleCtrlHandler(self.handle_console_event, int(enable))
+            v = self.handle_console_event
+            if not enable:
+                v = None
+            result = win32api.SetConsoleCtrlHandler(v, int(enable))
             if result == 0:
                 log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
                 return False
