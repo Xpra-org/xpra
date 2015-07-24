@@ -36,10 +36,11 @@ def getChildReaper(quit_cb=None):
 
 def reaper_cleanup():
     global singleton
-    if not singleton:
+    s = singleton
+    if not s:
         return
-    singleton.reap()
-    singleton.poll()
+    s.reap()
+    s.poll()
     singleton = None
 
 
