@@ -13,6 +13,8 @@ import numpy
 import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 
+from xpra.os_util import memoryview_to_bytes
+
 PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
 PREFERRED_DEVICE_NAME = os.environ.get("XPRA_OPENCL_DEVICE_NAME", "")
 PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
@@ -709,12 +711,12 @@ class ColorspaceConverter(object):
         input_images = []
         for i in range(3):
             _, y_div = divs[i]
-            plane = pixels[i]
+            plane = memoryview_to_bytes(pixels[i])
             if type(plane)==str:
                 flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
             else:
                 flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
-            shape = strides[i], self.src_height/y_div
+            shape = strides[i], self.src_height//y_div
             iimage = pyopencl.Image(self.context, flags, iformat, shape=shape, hostbuf=plane)
             input_images.append(iimage)
 
@@ -769,8 +771,9 @@ class ColorspaceConverter(object):
         #input image:
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
         shape = (stride//4, self.src_height)
-        log("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
-        if type(pixels)==str:
+        log("convert_image() type=%s, input image format=%s, shape=%s, work size: local=%s, global=%s", type(pixels), iformat, shape, localWorkSize, globalWorkSize)
+        idata = memoryview_to_bytes(pixels)
+        if type(idata)==str:
             #str is not a buffer, so we have to copy the data
             #alternatively, we could copy it first ourselves using this:
             #pixels = numpy.fromstring(pixels, dtype=numpy.byte).data
@@ -778,7 +781,7 @@ class ColorspaceConverter(object):
             flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
         else:
             flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
-        iimage = pyopencl.Image(self.context, flags, iformat, shape=shape, hostbuf=pixels)
+        iimage = pyopencl.Image(self.context, flags, iformat, shape=shape, hostbuf=idata)
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize,
                       iimage, numpy.int32(self.src_width), numpy.int32(self.src_height),
