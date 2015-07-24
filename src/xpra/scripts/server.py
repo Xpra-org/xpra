@@ -761,7 +761,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     #get the display name:
     if shadowing and len(extra_args)==0:
         from xpra.scripts.main import guess_X11_display
-        display_name = guess_X11_display(opts.socket_dir)
+        display_name = guess_X11_display(opts.socket_dir, opts.socket_dirs)
     elif upgrading and len(extra_args)==0:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
