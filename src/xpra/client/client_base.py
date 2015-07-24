@@ -722,7 +722,7 @@ class XpraClientBase(object):
 
     def _process_send_file(self, packet):
         #send-file basefilename, printit, openit, filesize, 0, data)
-        from xpra.platform.features import DOWNLOAD_PATH
+        from xpra.platform.paths import get_download_dir
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:11]
         filelog("received file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         options = typedict(options)
@@ -741,7 +741,7 @@ class XpraClientBase(object):
             assert digest==u.hexdigest(), "invalid file digest %s (expected %s)" % (u.hexdigest(), digest)
 
         #make sure we use a filename that does not exist already:
-        wanted_filename = os.path.abspath(os.path.join(os.path.expanduser(DOWNLOAD_PATH), os.path.basename(basefilename)))
+        wanted_filename = os.path.abspath(os.path.join(get_download_dir(), os.path.basename(basefilename)))
         EXTS = {"application/postscript"    : "ps",
                 "application/pdf"           : "pdf",
                 }
