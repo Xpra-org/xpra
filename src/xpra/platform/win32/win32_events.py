@@ -90,6 +90,7 @@ class Win32EventListener(object):
             l.remove(callback)
 
     def cleanup(self):
+        log("Win32EventListener.cleanup()")
         self.event_callback = {}
         self.stop_win32_session_events()
         if self.hwnd:
@@ -104,6 +105,7 @@ class Win32EventListener(object):
                 log.warn("error during win32 events cleanup of event window class: %s", e)
 
     def stop_win32_session_events(self):
+        log("stop_win32_session_events() old win32 proc=%s", self.old_win32_proc)
         if not self.old_win32_proc:
             return
         try:
