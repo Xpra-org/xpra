@@ -7,14 +7,15 @@
 import os
 import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
+import win32ui          #@UnresolvedImport
 import win32gui         #@UnresolvedImport
 import win32process     #@UnresolvedImport
+
 from xpra.log import Logger
 from xpra.util import AdHocStruct
 log = Logger("shadow", "win32")
 shapelog = Logger("shape")
 
-from PIL import ImageGrab
 from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
@@ -158,15 +159,49 @@ class Win32RootWindowModel(RootWindowModel):
 
 
     def get_image(self, x, y, width, height, logger=None):
-        img = ImageGrab.grab(bbox=(x, y, x+width, y+height))
-        data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
-        pixels = data_fn("raw", "BGRX")
-        stride = img.width*4
-        return ImageWrapper(0, 0, img.width, img.height, pixels, "BGRX", 24, stride, planes=ImageWrapper.PACKED, thread_safe=True)
+        desktop_wnd = win32gui.GetDesktopWindow()
+        dx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+        dy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+        dw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+        dh = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        #clamp rectangle requested to the virtual desktop size:
+        if x<dx:
+            width -= x-dx
+            x = dx
+        if y<dy:
+            height -= y-dy
+            y = dy
+        if width>dw:
+            width = dw
+        if height>dh:
+            height = dh
+        ddc, cdc, bitmap = None, None, None
+        try:
+            ddc = win32gui.GetWindowDC(desktop_wnd)
+            assert ddc, "cannot get a drawing context from the desktop window %s" % desktop_wnd
+            cdc = win32ui.CreateDCFromHandle(ddc)
+            assert cdc, "cannot get a compatible drawing context from the desktop drawing context %s" % ddc
+            memdc = cdc.CreateCompatibleDC()
+            bitmap = win32ui.CreateBitmap()
+            bitmap.CreateCompatibleBitmap(cdc, width, height)
+            memdc.SelectObject(bitmap)
+            memdc.BitBlt((0, 0), (width, height), cdc, (x, y), win32con.SRCCOPY)
+            pixels = bitmap.GetBitmapBits(True)
+        finally:
+            pass
+        assert pixels, "no pixels returned from GetBitmapBits"
+        return ImageWrapper(0, 0, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
 
     def take_screenshot(self):
-        log("taking screenshot using %s", ImageGrab.grab)
-        img = ImageGrab.grab()
+        from PIL import Image
+        x = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+        y = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+        w = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)        
+        h = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        image = self.get_image(x, y, w, h)
+        assert image.get_width()==w and image.get_height()==h
+        assert image.get_pixel_format()=="BGRX"
+        img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", "BGRX", 0, 1)
         out = StringIOClass()
         img.save(out, format="PNG")
         screenshot = (img.width, img.height, "png", img.width*3, out.getvalue())
@@ -232,3 +267,21 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         info["features.shadow"] = True
         info["server.type"] = "Python/gtk2/win32-shadow"
         return info
+
+
+def main():
+    from xpra.platform import init, clean
+    try:
+        init("Shadow-Test", "Shadow Server Screen Capture Test")
+        rwm = Win32RootWindowModel(None)
+        pngdata = rwm.take_screenshot()
+        FILENAME = "screenshot.png"
+        with open(FILENAME , "wb") as f:
+            f.write(pngdata[4])
+        print("saved screenshot as %s" % FILENAME)
+    finally:
+        #this will wait for input on win32:
+        clean()
+
+if __name__ == "__main__":
+    main()
