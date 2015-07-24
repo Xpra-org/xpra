@@ -168,7 +168,7 @@ class XpraClientBase(object):
             signal.signal(signal.SIGINT, deadly_signal)
             signal.signal(signal.SIGTERM, deadly_signal)
             self.signal_cleanup()
-            self.timeout_add(0, self.disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
+            self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
         if sys.version_info[0]<3:
             #breaks GTK3..
             signal.signal(signal.SIGINT, app_signal)
@@ -181,7 +181,7 @@ class XpraClientBase(object):
             self.exit_on_signal = True
             self.idle_add(self.disconnect_and_quit, exit_code, reason)
             self.idle_add(self.quit, exit_code)
-            self.exit()
+            self.idle_add(self.exit)
             return
         #warning: this will run cleanup code from the signal handler
         self.disconnect_and_quit(exit_code, reason)
@@ -203,7 +203,7 @@ class XpraClientBase(object):
             return
         def protocol_closed():
             log("disconnect_and_quit: protocol_closed()")
-            self.quit(exit_code)
+            self.idle_add(self.quit, exit_code)
         if p:
             p.flush_then_close(["disconnect", reason], done_callback=protocol_closed)
         self.timeout_add(1000, self.quit, exit_code)

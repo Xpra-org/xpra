@@ -271,7 +271,7 @@ class Protocol(object):
         #start the format thread:
         if not self._write_format_thread and not self._closed:
             from xpra.make_thread import make_thread
-            self._write_format_thread = make_thread(self._write_format_thread_loop, "format")
+            self._write_format_thread = make_thread(self._write_format_thread_loop, "format", daemon=True)
             self._write_format_thread.start()
         INJECT_FAULT(self)
 
@@ -280,10 +280,11 @@ class Protocol(object):
         try:
             while not self._closed:
                 self._source_has_more.wait()
-                if self._closed:
+                gpc = self._get_packet_cb
+                if self._closed or not gpc:
                     return
                 self._source_has_more.clear()
-                self._add_packet_to_queue(*self._get_packet_cb())
+                self._add_packet_to_queue(*gpc())
         except Exception as e:
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
@@ -634,7 +635,7 @@ class Protocol(object):
         #start the parse thread if needed:
         if not self._read_parser_thread and not self._closed:
             from xpra.make_thread import make_thread
-            self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse")
+            self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse", daemon=True)
             self._read_parser_thread.start()
         self._read_queue.put(data)
 
@@ -957,9 +958,10 @@ class Protocol(object):
 
     def terminate_queue_threads(self):
         log("terminate_queue_threads()")
-        #the format thread will exit since closed is set too:
+        #the format thread will exit:
+        self._get_packet_cb = None
         self._source_has_more.set()
-        #make the threads exit by adding the empty marker:
+        #make all the queue based threads exit by adding the empty marker:
         exit_queue = Queue()
         for _ in range(10):     #just 2 should be enough!
             exit_queue.put(None)
