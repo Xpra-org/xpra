@@ -150,6 +150,24 @@ class ApplicationWindow:
             image.set_from_pixbuf(icon_pixbuf)
             logo_button.set_image(image)
             hbox.pack_start(logo_button, expand=False, fill=False)
+        icon_pixbuf = self.get_icon("bugs.png")
+        self.bug_tool = None
+        if icon_pixbuf:
+            bug_button = gtk.Button("")
+            settings = bug_button.get_settings()
+            settings.set_property('gtk-button-images', True)
+            def bug(*args):
+                if self.bug_tool==None:
+                    from xpra.client.gtk_base.bug_report import BugReport
+                    self.bug_tool = BugReport()
+                    self.bug_tool.init(show_about=False)
+                self.bug_tool.show()
+            bug_button.connect("clicked", bug)
+            bug_button.set_tooltip_text("Bug Report")
+            image = gtk.Image()
+            image.set_from_pixbuf(icon_pixbuf)
+            bug_button.set_image(image)
+            hbox.pack_start(bug_button, expand=False, fill=False)
         label = gtk.Label("Connect to xpra server")
         label.modify_font(pango.FontDescription("sans 14"))
         hbox.pack_start(label, expand=True, fill=True)
