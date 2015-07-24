@@ -517,13 +517,14 @@ class ClientExtras(object):
             log.error("cannot register focus and power callbacks: %s", e)
 
     def cleanup(self):
+        log("ClientExtras.cleanup()")
         if self._console_handler_registered:
             self._console_handler_registered = False
             self.setup_console_event_listener(False)
-        log("ClientExtras.cleanup() ended")
         el = get_win32_event_listener(False)
         if el:
             el.cleanup()
+        log("ClientExtras.cleanup() ended")
         #self.client = None
 
     def activateapp(self, wParam, lParam):
@@ -547,6 +548,7 @@ class ClientExtras(object):
             v = self.handle_console_event
             if not enable:
                 v = None
+            log("calling win32api.SetConsoleCtrlHandler(%s, %s)", v, enable)
             result = win32api.SetConsoleCtrlHandler(v, int(enable))
             if result == 0:
                 log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
@@ -603,7 +605,7 @@ def main():
         ClientExtras(fake_client, None)
 
         import gobject
-        gobject.threads_init()
+        gobject.threads_init()      #@UndefinedVariable
 
         log.info("Event loop is running")
         loop = gobject.MainLoop()
