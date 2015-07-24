@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import time
 import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
 import win32ui          #@UnresolvedImport
@@ -44,6 +45,8 @@ class Win32RootWindowModel(RootWindowModel):
 
     def __init__(self, root):
         RootWindowModel.__init__(self, root)
+        self.metrics = None
+        self.ddc, self.cdc, self.memdc, self.bitmap = None, None, None, None
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
@@ -157,13 +160,22 @@ class Win32RootWindowModel(RootWindowModel):
         h = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
         return w, h
 
-
-    def get_image(self, x, y, width, height, logger=None):
-        desktop_wnd = win32gui.GetDesktopWindow()
+    def get_metrics(self):
         dx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
         dy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
         dw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
         dh = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        return dx, dy, dw, dh
+
+    def get_image(self, x, y, width, height, logger=None):
+        start = time.time()
+        desktop_wnd = win32gui.GetDesktopWindow()
+        metrics = self.get_metrics()
+        if self.metrics is None or self.metrics!=metrics:
+            #new metrics, start from scratch:
+            self.metrics = metrics
+            self.ddc, self.cdc, self.memdc, self.bitmap = None, None, None, None
+        dx, dy, dw, dh = metrics
         #clamp rectangle requested to the virtual desktop size:
         if x<dx:
             width -= x-dx
@@ -175,29 +187,35 @@ class Win32RootWindowModel(RootWindowModel):
             width = dw
         if height>dh:
             height = dh
-        ddc, cdc, bitmap = None, None, None
         try:
-            ddc = win32gui.GetWindowDC(desktop_wnd)
-            assert ddc, "cannot get a drawing context from the desktop window %s" % desktop_wnd
-            cdc = win32ui.CreateDCFromHandle(ddc)
-            assert cdc, "cannot get a compatible drawing context from the desktop drawing context %s" % ddc
-            memdc = cdc.CreateCompatibleDC()
-            bitmap = win32ui.CreateBitmap()
-            bitmap.CreateCompatibleBitmap(cdc, width, height)
-            memdc.SelectObject(bitmap)
-            memdc.BitBlt((0, 0), (width, height), cdc, (x, y), win32con.SRCCOPY)
-            pixels = bitmap.GetBitmapBits(True)
+            if not self.ddc:
+                self.ddc = win32gui.GetWindowDC(desktop_wnd)
+                assert self.ddc, "cannot get a drawing context from the desktop window %s" % desktop_wnd
+                self.cdc = win32ui.CreateDCFromHandle(self.ddc)
+                assert self.cdc, "cannot get a compatible drawing context from the desktop drawing context %s" % self.ddc
+                self.memdc = self.cdc.CreateCompatibleDC()
+                self.bitmap = win32ui.CreateBitmap()
+                self.bitmap.CreateCompatibleBitmap(self.cdc, width, height)
+            self.memdc.SelectObject(self.bitmap)
+            select_time = time.time()
+            log("get_image up to SelectObject took %ims", (select_time-start)*1000)
+            self.memdc.BitBlt((0, 0), (width, height), self.cdc, (x, y), win32con.SRCCOPY)
+            bitblt_time = time.time()
+            log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
+            pixels = self.bitmap.GetBitmapBits(True)
+            log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
         finally:
             pass
         assert pixels, "no pixels returned from GetBitmapBits"
-        return ImageWrapper(0, 0, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
+        v = ImageWrapper(0, 0, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
+        if logger==None:
+            logger = log
+        log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
+        return v
 
     def take_screenshot(self):
         from PIL import Image
-        x = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
-        y = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
-        w = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)        
-        h = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        x, y, w, h = self.get_metrics()
         image = self.get_image(x, y, w, h)
         assert image.get_width()==w and image.get_height()==h
         assert image.get_pixel_format()=="BGRX"
