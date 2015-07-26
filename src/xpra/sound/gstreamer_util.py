@@ -89,7 +89,7 @@ CODEC_OPTIONS = [
 CODECS = {}
 
 #these encoders require an "audioconvert" element:
-ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", )
+ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
 #options we use to tune for low latency:
 ENCODER_DEFAULT_OPTIONS = {
             "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
