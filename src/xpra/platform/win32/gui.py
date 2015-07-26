@@ -593,6 +593,12 @@ def main():
             log.enable_debug()
             win32_event_logger.enable_debug()
 
+        import gobject
+        gobject.threads_init()      #@UndefinedVariable
+
+        log.info("Event loop is running")
+        loop = gobject.MainLoop()
+
         def suspend():
             log.info("suspend event")
         def resume():
@@ -602,13 +608,11 @@ def main():
         fake_client.suspend = suspend
         fake_client.resume = resume
         fake_client.keyboard_helper = None
+        def signal_quit(*args):
+            loop.quit()
+        fake_client.signal_disconnect_and_quit = signal_quit
         ClientExtras(fake_client, None)
 
-        import gobject
-        gobject.threads_init()      #@UndefinedVariable
-
-        log.info("Event loop is running")
-        loop = gobject.MainLoop()
         try:
             loop.run()
         except KeyboardInterrupt:
