@@ -486,7 +486,7 @@ def get_window_frame_sizes():
         log.warn("failed to get window frame size information: %s", e)
         return None
 
-def get_virtualscreenmetrics(self):
+def get_virtualscreenmetrics():
     dx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
     dy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
     dw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
