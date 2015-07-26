@@ -12,22 +12,13 @@ import signal
 from xpra.platform.gui import init as gui_init
 gui_init()
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango, is_gtk3
-
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
-gobject = import_gobject()
-gobject.threads_init()
 pango = import_pango()
-
 
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
-from xpra.scripts.config import read_xpra_defaults
-from xpra.client.gtk_base.about import about
-from xpra.platform.paths import get_icon_dir
-from xpra.platform.info import get_user_info
-from xpra.os_util import StringIOClass
 from xpra.util import nonl, updict, strtobytes
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
@@ -62,6 +53,7 @@ class BugReport(object):
         hbox = gtk.HBox(False, 0)
         icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf and self.show_about:
+            from xpra.client.gtk_base.about import about
             logo_button = gtk.Button("")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
@@ -122,6 +114,8 @@ class BugReport(object):
         from xpra.platform.gui import get_info as get_gui_info
         from xpra.version_util import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
+            from xpra.platform.info import get_user_info
+            from xpra.scripts.config import read_xpra_defaults
             d = {
                     "argv"          : sys.argv,
                     "path"          : sys.path,
@@ -153,6 +147,7 @@ class BugReport(object):
             #try with Pillow:
             try:
                 from PIL import ImageGrab           #@UnresolvedImport
+                from xpra.os_util import StringIOClass
                 def pillow_imagegrab_screenshot():
                     img = ImageGrab.grab()
                     out = StringIOClass()
@@ -257,6 +252,7 @@ class BugReport(object):
 
 
     def get_icon(self, icon_name):
+        from xpra.platform.paths import get_icon_dir
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
             return pixbuf_new_from_file(icon_filename)
@@ -337,6 +333,10 @@ def main():
     from xpra.platform import init as platform_init
     from xpra.platform.gui import ready as gui_ready
     platform_init("Xpra-Bug-Report", "Xpra Bug Report")
+
+    from xpra.gtk_common.gobject_compat import import_gobject
+    gobject = import_gobject()
+    gobject.threads_init()
 
     #logging init:
     if "-v" in sys.argv:
