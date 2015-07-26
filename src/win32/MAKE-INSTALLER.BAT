@@ -90,7 +90,7 @@ ECHO ***************************************************************
 ECHO ****** Clearing build directory
 RMDIR /S /Q %BUILD_DIR% dist Output Temp 2> NUL
 DEL /Q Xpra_Setup*.exe 2> NUL
-DEL /Q cx_freeze-xpra.log build-xpra.log py2exe-xpra.log innosetup.log 2> NUL
+DEL /Q win32\cx_freeze-xpra.log win32\build-xpra.log win32\py2exe-xpra.log win32\innosetup.log 2> NUL
 
 if NOT %VC%=="" (
 	if "%VSINSTALLDIR%"=="" (
@@ -102,10 +102,10 @@ if NOT %VC%=="" (
 
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
-ECHO %PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% ^> build-xpra.log
-%PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% > build-xpra.log
+ECHO %PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% ^> win32\build-xpra.log
+%PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% > win32\build-xpra.log
 if %errorlevel% NEQ 0 (
-	ECHO "build error, see build-xpra.log"
+	ECHO "build error, see win32\build-xpra.log"
 	GOTO ERROR
 )
 
@@ -130,10 +130,10 @@ SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PY
 SET PATH=%PATH%;%GSTREAMER%\sdk\bin;%GSTREAMER%\bin
 SET PY2EXE_ARGS=%BUILD_ARGS%
 IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%BUILD_ARGS% -x
-ECHO %PYTHON_EXE% -OO setup.py py2exe %COMPILER_ARGS% %PY2EXE_ARGS% ^> py2exe-xpra.log
-%PYTHON_EXE% -OO setup.py py2exe %COMPILER_ARGS% %PY2EXE_ARGS% > py2exe-xpra.log
+ECHO %PYTHON_EXE% -OO setup.py py2exe %COMPILER_ARGS% %PY2EXE_ARGS% ^> win32\py2exe-xpra.log
+%PYTHON_EXE% -OO setup.py py2exe %COMPILER_ARGS% %PY2EXE_ARGS% > win32\py2exe-xpra.log
 if %errorlevel% NEQ 0 (
-	ECHO "py2exe error, see py2exe-xpra.log"
+	ECHO "py2exe error, see win32\py2exe-xpra.log"
 	GOTO ERROR
 )
 
@@ -180,8 +180,8 @@ GOTO MAKEINSTALLER
 
 :PYTHON3
 SET EXTRA_VERSION=-GTK3-py%PYTHON_MAJOR_VERSION%%PYTHON_MINOR_VERSION%
-ECHO %PYTHON_EXE% -OO setup.py install_exe ^> cx_freeze-install.log
-%PYTHON_EXE% -OO setup.py install_exe -d dist > cx_freeze-install.log
+ECHO %PYTHON_EXE% -OO setup.py install_exe ^> win32\cx_freeze-xpra.log
+%PYTHON_EXE% -OO setup.py install_exe -d dist > win32\cx_freeze-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "cx_freeze error, see cx_freeze-install.log"
 	GOTO ERROR
@@ -220,8 +220,8 @@ if "%DO_INSTALLER%"=="1" (
 	ECHO ***************************************************************
 	ECHO ****** Creating the installer using InnoSetup:
 	COPY /Y win32\xpra.iss xpra.iss > NUL
-	ECHO %INNOSETUP% xpra.iss ^> innosetup.log
-	%INNOSETUP% xpra.iss > innosetup.log
+	ECHO %INNOSETUP% xpra.iss ^> win32\innosetup.log
+	%INNOSETUP% xpra.iss > win32\innosetup.log
 	if %errorlevel% NEQ 0 (
 		ECHO "InnoSetup error"
 		GOTO ERROR
