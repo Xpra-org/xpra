@@ -21,6 +21,7 @@ from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
+from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.codecs.image_wrapper import ImageWrapper
 
 NOEVENT = object()
@@ -160,17 +161,10 @@ class Win32RootWindowModel(RootWindowModel):
         h = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
         return w, h
 
-    def get_metrics(self):
-        dx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
-        dy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
-        dw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
-        dh = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
-        return dx, dy, dw, dh
-
     def get_image(self, x, y, width, height, logger=None):
         start = time.time()
         desktop_wnd = win32gui.GetDesktopWindow()
-        metrics = self.get_metrics()
+        metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
             self.metrics = metrics
@@ -214,8 +208,8 @@ class Win32RootWindowModel(RootWindowModel):
         return v
 
     def take_screenshot(self):
-        from PIL import Image
-        x, y, w, h = self.get_metrics()
+        from PIL import Image               #@UnresolvedImport
+        x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
         assert image.get_width()==w and image.get_height()==h
         assert image.get_pixel_format()=="BGRX"
