@@ -1388,7 +1388,7 @@ cdef class Encoder:
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
             log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
             #allocate CUDA output buffer (on device):
-            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3/plane_size_div, 16)
+            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3//plane_size_div, 16)
             log("CUDA Output Buffer=%#x, pitch=%s", int(self.cudaOutputBuffer), self.outputPitch)
             #allocate input buffer on host:
             self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
@@ -1492,8 +1492,8 @@ cdef class Encoder:
             config.frameIntervalP = 1
             config.gopLength = NVENC_INFINITE_GOPLENGTH
             #0=max quality, 63 lowest quality
-            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
-            qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
+            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)//100))
+            qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)//100))
             if self.lossless:
                 config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1
                 #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
@@ -1550,7 +1550,7 @@ cdef class Encoder:
         memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
         createBitstreamBufferParams.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER
         #this is the uncompressed size - must be big enough for the compressed stream:
-        createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3/2)
+        createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3//2)
         createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
         if DEBUG_API:
             log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
@@ -1596,7 +1596,7 @@ cdef class Encoder:
             info.update({
                 "bytes_in"  : self.bytes_in,
                 "bytes_out" : self.bytes_out,
-                "ratio_pct" : int(100.0 * self.bytes_out / b)})
+                "ratio_pct" : int(100.0 * self.bytes_out // b)})
         if self.preset_name:
             info["preset"] = self.preset_name
         cdef double t = self.time
@@ -1920,14 +1920,11 @@ cdef class Encoder:
             in_w, in_h = w, h
 
         csc_start = time.time()
-        self.kernel(self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
+        args = (self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
                self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
-               numpy.int32(w), numpy.int32(h),
-               block=(blockw,blockh,1), grid=(gridw, gridh))
-        log("calling %s%s", self.kernel, (self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
-               self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
-               numpy.int32(w), numpy.int32(h),
-               (blockw,blockh,1), (gridw, gridh)))
+               numpy.int32(w), numpy.int32(h))
+        log("calling %s%s with block=%s, grid=%s", self.kernel, args, (blockw,blockh,1), (gridw, gridh))
+        self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         csc_end = time.time()
         log("compress_image(..) kernel %s executed - CSC took %.1f ms", self.kernel_name, (csc_end - csc_start)*1000.0)
 
