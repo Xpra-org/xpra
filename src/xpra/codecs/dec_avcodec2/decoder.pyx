@@ -7,9 +7,6 @@ import weakref
 from xpra.log import Logger
 log = Logger("decoder", "avcodec")
 
-#some consumers need a writeable buffer (ie: OpenCL...)
-READ_ONLY = False
-
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
@@ -585,7 +582,7 @@ cdef class Decoder:
                     size = height * stride
                     outsize += size
 
-                    out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, READ_ONLY))
+                    out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, True))
                     strides.append(stride)
                     log("decompress_image() read back yuv plane %s: %s bytes", i, size)
             else:
@@ -593,7 +590,7 @@ cdef class Decoder:
                 #RGB mode: "out" is a single buffer
                 strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
                 outsize = self.codec_ctx.height * strides
-                out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, READ_ONLY)
+                out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, True)
                 nplanes = 0
                 log("decompress_image() read back rgb buffer: %s bytes", outsize)
 

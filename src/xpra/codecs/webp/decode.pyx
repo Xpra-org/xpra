@@ -179,7 +179,7 @@ cdef class WebpBufferWrapper:
 
     def get_pixels(self):
         assert self.buffer_ptr>0, "WebpBufferWrapper has already been freed!"
-        return memory_as_pybuffer(<void *> self.buffer_ptr, self.size, False)
+        return memory_as_pybuffer(<void *> self.buffer_ptr, self.size, True)
 
     def free(self):                             #@DuplicatedSignature
         if self.buffer_ptr!=0:
