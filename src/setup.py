@@ -1308,7 +1308,7 @@ if WIN32:
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
         add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-        add_gui_exe("xpra/client/gtk_base/bug_report.py",   "bugs.ico",         "Bug_Report")
+        add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
         add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
         if not PYTHON3:
             #these need porting..

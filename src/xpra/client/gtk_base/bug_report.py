@@ -7,7 +7,6 @@
 
 import os.path
 import sys
-import signal
 
 from xpra.platform.gui import init as gui_init
 gui_init()
@@ -20,7 +19,7 @@ pango = import_pango()
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
 from xpra.util import nonl, updict, strtobytes
-from xpra.log import Logger, enable_debug_for
+from xpra.log import Logger
 log = Logger("util")
 
 
@@ -327,43 +326,3 @@ class BugReport(object):
                 zf.writestr(info, s, compress_type=zipfile.ZIP_DEFLATED)
         finally:
             zf.close()
-
-
-def main():
-    from xpra.platform import init as platform_init
-    from xpra.platform.gui import ready as gui_ready
-    platform_init("Xpra-Bug-Report", "Xpra Bug Report")
-
-    from xpra.gtk_common.gobject_compat import import_gobject
-    gobject = import_gobject()
-    gobject.threads_init()
-
-    #logging init:
-    if "-v" in sys.argv:
-        enable_debug_for("util")
-
-    from xpra.os_util import SIGNAMES
-    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-    gtk_main_quit_on_fatal_exceptions_enable()
-
-    app = BugReport()
-    app.close = app.quit
-    app.init(True)
-    def app_signal(signum, frame):
-        print("")
-        log.info("got signal %s", SIGNAMES.get(signum, signum))
-        app.quit()
-    signal.signal(signal.SIGINT, app_signal)
-    signal.signal(signal.SIGTERM, app_signal)
-    try:
-        gui_ready()
-        app.show()
-        app.run()
-    except KeyboardInterrupt:
-        pass
-    return 0
-
-
-if __name__ == "__main__":
-    v = main()
-    sys.exit(v)
