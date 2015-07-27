@@ -180,7 +180,15 @@ class SoundPipeline(gobject.GObject):
             self.pipeline.set_state(gst.STATE_NULL)
             err, details = message.parse_error()
             log.error("pipeline error: %s", err)
-            log.error(" %s", details)
+            try:
+                #prettify (especially on win32):
+                p = details.find("\\Source\\")
+                if p>0:
+                    details = details[p+len("\\Source\\"):]
+                for d in details.split(": "):
+                    log.error(" %s", d.strip())
+            except:
+                log.error(" %s", details)
             self.state = "error"
             self.idle_emit("error", str(err))
         elif t == gst.MESSAGE_TAG:
