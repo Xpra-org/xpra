@@ -27,12 +27,12 @@ function XpraClient(container) {
 	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
+	this.username = "html5user";
 	// encryption
 	this.encryption = false;
 	this.encryption_caps = null;
 	this.encryption_key = null;
 	// authentication
-	this.authentication = false;
 	this.authentication_key = null;
 	// hello
 	this.HELLO_TIMEOUT = 2000;
@@ -66,6 +66,7 @@ function XpraClient(container) {
 		'open': this._process_open,
 		'close': this._process_close,
 		'disconnect': this._process_disconnect,
+		'challenge': this._process_challenge,
 		'startup-complete': this._process_startup_complete,
 		'hello': this._process_hello,
 		'ping': this._process_ping,
@@ -380,6 +381,17 @@ XpraClient.prototype._guess_platform = function() {
 	return "unknown";
 }
 
+XpraClient.prototype._xor_string = function(stra, strb) {
+	var result = "";
+	if(stra.length != strb.length) {
+		throw "strings must be equal length";
+	}
+	for(i=0; i<stra.length; i++) {
+	    result += String.fromCharCode(stra[i].charCodeAt(0) ^ strb[i].charCodeAt(0));
+	}
+	return result;
+}
+
 XpraClient.prototype._get_hex_uuid = function() {
 	var s = [];
     var hexDigits = "0123456789abcdef";
@@ -388,7 +400,11 @@ XpraClient.prototype._get_hex_uuid = function() {
     }
     s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
     s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
-    s[8] = s[13] = s[18] = s[23] = "-";
+    // remove dashes
+    s.splice(8, 1);
+    s.splice(13, 1);
+    s.splice(18, 1);
+    s.splice(23, 1);
 
     var uuid = s.join("");
     return uuid;
@@ -473,16 +489,31 @@ XpraClient.prototype._update_capabilities = function(appendobj) {
 
 XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	// make the base hello
-	this._make_hello_base()
+	this._make_hello_base();
 	// handle a challenge if we need to
-	// finish the hello
-	this._make_hello()
+	if((this.authentication_key) && (!challenge_response)) {
+		console.log("sending partial hello");
+	} else {
+		console.log("sending hello");
+		// finish the hello
+		this._make_hello();
+	}
+	if(challenge_response) {
+		this._update_capabilities({
+			"challenge_response": challenge_response
+		});
+		if(client_salt) {
+			this._update_capabilities({
+				"challenge_client_salt" : client_salt
+			});
+		}
+	}
 	// send the packet
-	console.log("sending hello");
 	this.protocol.send(["hello", this.capabilities]);
 }
 
 XpraClient.prototype._make_hello_base = function() {
+	this.capabilities = {};
 	this._update_capabilities({
 		// version and platform
 		"version"					: "0.16.0",
@@ -493,7 +524,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"namespace"			 		: true,
 		"client_type"		   		: "HTML5",
         "encoding.generic" 			: true,
-        "username" 					: "html5user",
+        "username" 					: this.username,
         "argv" 						: [window.location.href],
         "digest" 					: ["hmac"],
         //compression bits:
@@ -787,6 +818,34 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx._sound_start_receiving();
 	}
 	
+}
+
+XpraClient.prototype._process_challenge = function(packet, ctx) {
+	console.log("process challenge")
+	if ((!ctx.authentication_key) || (ctx.authentication_key == "")) {
+		ctx.callback_close("No password specified for authentication challenge");
+	}
+	var digest = "hmac";
+	var salt = packet[1];
+	var client_can_salt = packet.length >= 4;
+	var client_salt = null;
+	var challenge_response = null;
+	if (client_can_salt) {
+		digest = packet[3];
+		client_salt = ctx._get_hex_uuid()+ctx._get_hex_uuid();
+		salt = ctx._xor_string(salt, client_salt);
+	}
+	if (digest == "hmac") {
+		var hmac = forge.hmac.create();
+		hmac.start('md5', ctx.authentication_key);
+		hmac.update(salt);
+		challenge_response = hmac.digest().toHex();
+	} else if (digest == "xor") {
+		ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption");
+	} else {
+		ctx.callback_close("server requested an unsupported digest " + digest);
+	}
+	ctx._send_hello(challenge_response, client_salt);
 }
 
 XpraClient.prototype._process_ping = function(packet, ctx) {

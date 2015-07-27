@@ -184,6 +184,8 @@
 			$(document).ready(function() {
 
 				// look at url parameters
+				var username = window.location.getParameter("username") || null;
+				var password = window.location.getParameter("password") || null;
 				var sound = window.location.getParameter("sound") || null;
 				var encoding = window.location.getParameter("encoding") || null;
 				var debug = window.location.getParameter("debug") || false;
@@ -210,6 +212,14 @@
 			    // experimental sound support
 			    if(sound) {
 			    	client.audio_enabled = true;
+			    }
+
+			    // check for username and password
+			    if(username) {
+			    	client.username = username;
+			    }
+			    if(password) {
+			    	client.authentication_key = password;
 			    }
 
 			    // attach a callback for when client closes
