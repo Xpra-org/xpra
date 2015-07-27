@@ -173,15 +173,16 @@ class SoundPipeline(gobject.GObject):
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
-            log.info("sound source EOS")
+            log.info("EOS")
             self.state = "stopped"
             self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_ERROR:
             self.pipeline.set_state(gst.STATE_NULL)
             err, details = message.parse_error()
-            log.error("sound source pipeline error: %s / %s", err, details)
+            log.error("pipeline error: %s", err)
+            log.error(" %s", details)
             self.state = "error"
-            self.idle_emit("error", details)
+            self.idle_emit("error", err)
         elif t == gst.MESSAGE_TAG:
             try:
                 #Gst 0.10:
