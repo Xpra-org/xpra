@@ -803,7 +803,7 @@ def configure_logging(options, mode):
     else:
         #a bit naughty here, but it's easier to let xpra.log initialize
         #the logging system every time, and just undo things here..
-        setloghandler(logging.StreamHandler(sys.stdout))
+        setloghandler(logging.StreamHandler(sys.stderr))
 
     from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
     if options.debug:
