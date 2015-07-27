@@ -143,6 +143,7 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
 			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
 	        "cipher.key_stretch_iterations"	: 1000,
+	        "cipher.block_size"			: 32,
 		};
 	}
 	// detect websocket in webworker support and degrade gracefully
@@ -192,8 +193,8 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	uri += ":" + this.port;
 	// do open
 	this.protocol.open(uri);
-	// copy over the encryption caps
-	this.protocol.set_encryption_caps(this.encryption_caps);
+	// copy over the encryption caps with the key for recieved data
+	this.protocol.set_cipher_in(this.encryption_caps, this.encryption_key);
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {

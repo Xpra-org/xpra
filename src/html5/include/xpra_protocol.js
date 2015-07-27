@@ -66,8 +66,8 @@ XpraProtocolWorkerHost.prototype.set_packet_handler = function(callback, ctx) {
 	this.packet_ctx = ctx;
 }
 
-XpraProtocolWorkerHost.prototype.set_encryption_caps = function(caps) {
-	this.worker.postMessage({'c': 'z', 'p': caps});
+XpraProtocolWorkerHost.prototype.set_cipher_in = function(caps, key) {
+	this.worker.postMessage({'c': 'z', 'p': caps, 'k': key});
 }
 
 
@@ -79,7 +79,7 @@ function XpraProtocol() {
 	this.packet_ctx = null;
 	this.websocket = null;
 	this.raw_packets = [];
-	this.encryption_caps = null;
+	this.cipher_in = null;
 	this.mode = 'binary';  // Current WebSocket mode: 'binary', 'base64'
     this.rQ = [];          // Receive queue
     this.rQi = 0;          // Receive queue index
@@ -162,8 +162,10 @@ XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
 	this.packet_ctx = ctx;
 }
 
-XpraProtocol.prototype.set_encryption_caps = function(caps) {
-	this.encryption_caps = caps;
+XpraProtocol.prototype.set_cipher_in = function(caps, key) {
+	this.cipher_in = caps;
+	// stretch the password
+	this.cipher_in['secret'] = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], caps['cipher.block_size']);
 }
 
 XpraProtocol.prototype._buffer_peek = function(bytes) {
@@ -192,13 +194,11 @@ XpraProtocol.prototype._process = function() {
 	var proto_flags = buf[1];
 	if (proto_flags!=0) {
 		// check for crypto protocol flag
-		if (proto_flags & 0x2) {
-			debug("got crypto packet");
-			// now do something with it
-		} else {
+		if (!(proto_flags & 0x2)) {
 			throw "we can't handle this protocol flag yet, sorry";
 		}
 	}
+
 	var level = buf[2];
 	var index = buf[3];
 	var packet_size = 0;
@@ -206,6 +206,12 @@ XpraProtocol.prototype._process = function() {
 		//debug("size header["+i+"]="+buf[4+i]);
 		packet_size = packet_size*0x100;
 		packet_size += buf[4+i];
+	}
+	// work out padding if necessary
+	if (proto_flags & 0x2) {
+		var block_size = this.cipher_in['cipher.block_size'];
+		var padding = (block_size - packet_size % block_size);
+		packet_size += padding;
 	}
 	//debug("packet_size="+packet_size+", level="+level+", index="+index);
 
@@ -221,6 +227,11 @@ XpraProtocol.prototype._process = function() {
 	this._buffer_shift(8);
 	//debug("got a full packet, shifting off "+packet_size);
 	var packet_data = this._buffer_shift(packet_size);
+
+	// decrypt if needed
+	if (proto_flags & 0x2) {
+		throw "decryption not implemented";
+	}
 
 	//decompress it if needed:
 	if (level!=0) {
@@ -303,7 +314,7 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 			protocol.send(data.p);
 			break;
 		case 'z':
-			protocol.set_encryption_caps(data.p);
+			protocol.set_cipher_in(data.p, data.k);
 			break;
 		case 'c':
 			// close the connection
