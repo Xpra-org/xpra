@@ -1332,8 +1332,8 @@ cdef class Encoder:
         v, u = self.scaling
         self.input_width = roundup(width, 32)
         self.input_height = roundup(height, 32)
-        self.encoder_width = roundup(width*v/u, 32)
-        self.encoder_height = roundup(height*v/u, 32)
+        self.encoder_width = roundup(width*v//u, 32)
+        self.encoder_height = roundup(height*v//u, 32)
         self.src_format = src_format
         self.dst_formats = dst_formats
         self.codec_name = "H264"
@@ -1345,12 +1345,6 @@ cdef class Encoder:
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
         start = time.time()
-
-        plane_size_div = 1
-        if not YUV444_ENABLED or "YUV444P" not in dst_formats:
-            #we don't need as much memory reserved with NV12 / YUV420:
-            #1 full Y plane and 2 U+V planes subsampled by 4:
-            plane_size_div = 2
 
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
@@ -2092,7 +2086,9 @@ cdef class Encoder:
         self.frames += 1
         self.last_frame_times.append((start, end))
         self.time += end-start
-        log("compress_image(..) returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms", size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
+        log("compress_image(..) %s %s returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms",
+            get_type(), get_version(),
+            size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
         return data, client_options
 
 
