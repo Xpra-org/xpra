@@ -273,6 +273,7 @@ def exec_kwargs():
 def exec_env(blacklist=["LS_COLORS", ]):
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
+    env["XPRA_FORCE_COLOR_LOG"] = "1"
     #let's make things more complicated than they should be:
     #on win32, the environment can end up containing unicode, and subprocess chokes on it
     for k,v in env.items():
