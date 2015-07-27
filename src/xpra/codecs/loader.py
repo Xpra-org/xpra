@@ -33,7 +33,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         try:
             __import__(top_module, {}, {}, [])
         except ImportError as e:
-            log(" cannot import %s (%s): %s", name, description, e)
+            log("failed to import %s (%s)", description, name)
             log("", exc_info=True)
             codec_errors[name] = e
             return None
@@ -55,7 +55,8 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
             l = log.warn
             if name in NOWARN:
                 l = log.debug
-            l(" cannot import %s (%s): %s", name, description, e)
+            l("failed to import %s (%s)", description, name)
+            l(" %s", e)
             log("", exc_info=True)
     except Exception as e:
         codec_errors[name] = e
@@ -92,7 +93,7 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
         log("", exc_info=True)
     except Exception as e:
         log.warn("error during codec import: %s", e)
-        log("", exc_info=True)
+        log.warn("", exc_info=True)
     return None
 
 

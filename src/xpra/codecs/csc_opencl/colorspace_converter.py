@@ -13,6 +13,7 @@ import numpy
 import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 
+from xpra.util import updict
 from xpra.os_util import memoryview_to_bytes
 
 PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
@@ -464,31 +465,38 @@ def get_type():
 def get_version():
     return pyopencl.version.VERSION
 
-def get_info():
-    global selected_device, selected_platform, context, KERNELS_DEFS
+def get_pyopencl_info():
     info = {"version"               : pyopencl.version.VERSION,
             "version.text"          : pyopencl.VERSION_TEXT,
-            "version.status"        : pyopencl.VERSION_STATUS,
+            }
+    if pyopencl.VERSION_STATUS:
+            info["version.status"] = pyopencl.VERSION_STATUS
+    return info
+
+def get_info():
+    global selected_device, selected_platform, context, KERNELS_DEFS
+    info = {
             "version.cl_header"     : pyopencl.get_cl_header_version(),
             "opengl"                : pyopencl.have_gl(),
             #"kernels"               : KERNELS_DEFS.keys()
             }
+    updict(info, "pyopencl", get_pyopencl_info())
     if selected_platform:
-        info.update({
-            "platform.name"         : selected_platform.name,
-            "platform.vendor"       : selected_platform.vendor,
-            "platform.devices"      : len(selected_platform.get_devices()),
+        updict(info, "platform", {
+            "name"          : selected_platform.name,
+            "vendor"        : selected_platform.vendor,
+            "devices"       : len(selected_platform.get_devices()),
             })
     if selected_device:
         if hasattr(selected_device, "opencl_c_version"):
             info["device.opencl_c_version"] = getattr(selected_device, "opencl_c_version")
-        info.update({
-            "device.type"           : device_type(selected_device),
-            "device.name"           : selected_device.name.strip(),
-            "device.version"        : selected_device.version,
-            "device.max_work_group_size"        : selected_device.max_work_group_size,
-            "device.max_work_item_dimensions"   : selected_device.max_work_item_dimensions,
-            "device.max_work_item_sizes"        : selected_device.max_work_item_sizes})
+        updict(info, "device", {
+            "type"                      : device_type(selected_device),
+            "name"                      : selected_device.name.strip(),
+            "version"                   : selected_device.version,
+            "max_work_group_size"       : selected_device.max_work_group_size,
+            "max_work_item_dimensions"  : selected_device.max_work_item_dimensions,
+            "max_work_item_sizes"       : selected_device.max_work_item_sizes})
     return info
 
 
@@ -831,6 +839,8 @@ class ColorspaceConverter(object):
 
 
 def selftest(full=False):
+    if pyopencl.version.VERSION[0]<2015:
+        raise ImportError("PyOpenCL version %s is too old, use 2015 or later" % pyopencl.VERSION_TEXT)
     from xpra.codecs.codec_checks import testcsc
     from xpra.codecs.csc_opencl import colorspace_converter
     testcsc(colorspace_converter, full)

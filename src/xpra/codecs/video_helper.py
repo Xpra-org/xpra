@@ -267,8 +267,8 @@ class VideoHelper(object):
         encoder_module = get_codec(encoder_name)
         log("init_video_encoder_option(%s) module=%s", encoder_name, encoder_module)
         if not encoder_module:
-            log.warn("video encoder '%s' could not be loaded:", encoder_name)
-            log.warn(" %s", get_codec_error(encoder_name))
+            log("video encoder '%s' could not be loaded:", encoder_name)
+            log(" %s", get_codec_error(encoder_name))
             return
         encoder_type = encoder_module.get_type()
         try:
@@ -308,7 +308,8 @@ class VideoHelper(object):
         csc_module = get_codec(csc_name)
         log("init_csc_option(%s) module=%s", csc_name, csc_module)
         if csc_module is None:
-            log.warn("csc module %s could not be loaded: %s", csc_name, get_codec_error(csc_name))
+            log("csc module %s could not be loaded:", csc_name)
+            log(" %s", get_codec_error(csc_name))
             return
         csc_type = csc_module.get_type()
         try:
@@ -344,7 +345,8 @@ class VideoHelper(object):
         decoder_module = get_codec(decoder_name)
         log("init_video_decoder_option(%s) module=%s", decoder_name, decoder_module)
         if not decoder_module:
-            log.warn("video decoder %s could not be loaded: %s", decoder_name, get_codec_error(decoder_name))
+            log("video decoder %s could not be loaded:", decoder_name)
+            log(" %s", get_codec_error(decoder_name))
             return
         encoder_type = decoder_module.get_type()
         try:
