@@ -1227,9 +1227,12 @@ class WindowVideoSource(WindowSource):
             supported_csc_modes = self.full_csc_modes.get(encoding)
             encoder_specs = self.video_helper.get_encoder_specs(encoding)
             specs = []
+            ecsc = []
             for csc in supported_csc_modes:
                 if csc not in encoder_specs:
                     continue
+                if csc not in ecsc:
+                    ecsc.append(csc)
                 for especs in encoder_specs.get(csc):
                     if especs not in specs:
                         specs.append(especs)
@@ -1237,7 +1240,7 @@ class WindowVideoSource(WindowSource):
             log.error(" all encoders: %s", ", ".join(list(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
             log.error(" supported CSC modes: %s", ", ".join(supported_csc_modes))
             log.error(" supported encoders: %s", ", ".join([es.codec_type for es in specs]))
-            log.error(" encoders CSC modes: %s", ", ".join([es.codec_type for es in specs]))
+            log.error(" encoders CSC modes: %s", ", ".join(ecsc))
             log.error(" force csc: %s, mode: %s", FORCE_CSC, FORCE_CSC_MODE)
             #find one that is not video:
             fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
