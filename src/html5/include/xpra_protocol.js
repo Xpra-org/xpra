@@ -118,6 +118,13 @@ XpraProtocol.prototype.close = function() {
 	this.websocket.close();
 }
 
+XpraProtocol.prototype.terminate = function() {
+	// if this is called here we are not in a worker, so
+	// do nothing
+	return;
+}
+
+
 XpraProtocol.prototype.send = function(packet) {
 	//debug("send worker:"+packet);
 	var bdata = bencode(packet);
