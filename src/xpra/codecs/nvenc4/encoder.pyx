@@ -18,7 +18,8 @@ from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger, updict
 from xpra.os_util import _memoryview
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, get_pycuda_info, device_info, reset_state, \
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
+                get_cuda_info, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -1201,6 +1202,7 @@ cdef class Encoder:
     cdef object driver
     cdef int cuda_device_id
     cdef object cuda_info
+    cdef object pycuda_info
     cdef object cuda_device_info
     cdef object cuda_device
     cdef object cuda_context
@@ -1367,7 +1369,8 @@ cdef class Encoder:
             log("init_cuda cuda_device=%s (%s)", d, device_info(d))
             self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
             log("init_cuda cuda_context=%s", self.cuda_context)
-            self.cuda_info = get_pycuda_info()
+            self.cuda_info = get_cuda_info()
+            self.pycuda_info = get_pycuda_info()
             self.cuda_device_info = {
                 "device.name"       : d.name(),
                 "device.pci_bus_id" : d.pci_bus_id(),
@@ -1603,6 +1606,7 @@ cdef class Encoder:
                 "scaling"           : self.scaling})
         updict(info, "cuda", self.cuda_device_info)
         updict(info, "cuda", self.cuda_info)
+        updict(info, "pycuda", self.pycuda_info)
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:
@@ -1675,6 +1679,7 @@ cdef class Encoder:
         self.driver = 0
         self.cuda_device_id = -1
         self.cuda_info = None
+        self.pycuda_info = None
         self.cuda_device_info = None
         self.cuda_device = None
         self.kernel = None
@@ -2002,7 +2007,7 @@ cdef class Encoder:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
             encode_end = time.time()
-            log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
+            log("compress_image(..) encoded in %.1f ms, info=%s", (encode_end-csc_end)*1000.0, self.get_info())
 
             #lock output buffer:
             memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))

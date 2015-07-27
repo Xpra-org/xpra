@@ -47,8 +47,11 @@ def get_pycuda_info():
     init_all_devices()
     return {"version"               : pycuda.VERSION,
             "version.text"          : pycuda.VERSION_TEXT,
-            "version.status"        : pycuda.VERSION_STATUS,
-            "driver.version"        : driver.get_version(),
+            "version.status"        : pycuda.VERSION_STATUS}
+
+def get_cuda_info():
+    init_all_devices()
+    return {"driver.version"        : driver.get_version(),
             "driver.driver_version" : driver.get_driver_version()}
 
 
@@ -223,6 +226,7 @@ def main():
         log.enable_debug()
 
     log.info("pycuda_info: %s" % get_pycuda_info())
+    log.info("cuda_info: %s" % get_cuda_info())
 
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
