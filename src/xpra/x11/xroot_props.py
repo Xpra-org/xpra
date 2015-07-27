@@ -42,11 +42,18 @@ class XRootPropWatcher(gobject.GObject):
                     cleanup_x11_filter()
             except Exception as e:
                 log.error("failed to remove x11 event filter: %s", e)
-            try:
-                with xsync:
-                    cleanup_all_event_receivers()
-            except Exception as e:
-                log.error("failed to remove event receivers: %s", e)
+            #try a few times:
+            #errors happen because windows are being destroyed
+            #(even more so when we cleanup)
+            #and we don't really care too much about this
+            for l in (log, log, log, log, log.warn):
+                try:
+                    with xsync:
+                        cleanup_all_event_receivers()
+                        #all went well, we're done
+                        return
+                except Exception as e:
+                    l("failed to remove event receivers: %s", e)
 
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
