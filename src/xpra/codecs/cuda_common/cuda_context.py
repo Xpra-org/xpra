@@ -45,9 +45,11 @@ def get_pycuda_version():
 
 def get_pycuda_info():
     init_all_devices()
-    return {"version"               : pycuda.VERSION,
-            "version.text"          : pycuda.VERSION_TEXT,
-            "version.status"        : pycuda.VERSION_STATUS}
+    i = {"version"               : pycuda.VERSION,
+         "version.text"          : pycuda.VERSION_TEXT}
+    if pycuda.VERSION_STATUS:
+        i["version.status"] = pycuda.VERSION_STATUS
+    return i
 
 def get_cuda_info():
     init_all_devices()
