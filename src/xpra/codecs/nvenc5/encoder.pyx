@@ -1801,8 +1801,8 @@ cdef class Encoder:
 
     def set_encoding_quality(self, quality):
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
-        log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
         if self.quality!=quality:
+            log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
             if quality<LOSSLESS_THRESHOLD:
                 #edge resistance:
                 raw_delta = quality-self.quality
@@ -1937,7 +1937,7 @@ cdef class Encoder:
         #copy input buffer to CUDA buffer:
         memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
         self.bytes_in += input_size
-        log("compress_image(..) input buffer copied to device")
+        log("compress_image(..) %i bytes of input buffer copied to device", input_size)
 
         cdef uint8_t dx, dy
         if self.pixel_format=="NV12":
@@ -1976,7 +1976,7 @@ cdef class Encoder:
         log("calling %s%s with block=%s, grid=%s", self.kernel, args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         csc_end = time.time()
-        log("compress_image(..) kernel %s executed - CSC took %.1f ms", self.kernel_name, (csc_end - csc_start)*1000.0)
+        log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (csc_end - csc_start)*1000.0)
 
         #map buffer so nvenc can access it:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
@@ -1987,7 +1987,8 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
         raiseNVENC(r, "mapping input resource")
-        log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
+        if DEBUG_API:
+            log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
 
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
@@ -2043,7 +2044,7 @@ cdef class Encoder:
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             if DEBUG_API:
-                log("nvEncLockBitstream(%#x)", <unsigned long> &lockOutputBuffer)
+                log("nvEncLockBitstream(%#x) bitstreamBufferPtr=%#x", <unsigned long> &lockOutputBuffer, <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
             with nogil:
                 r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
             raiseNVENC(r, "locking output buffer")
