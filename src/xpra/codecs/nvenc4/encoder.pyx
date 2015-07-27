@@ -965,7 +965,7 @@ if CLIENT_KEYS_STR:
 
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
-    "790CDC88-4522-4D7B-9425-BDA9975F7603"  : "unknown",        #found with driver 346.35 on Linux
+    "790CDC88-4522-4D7B-9425-BDA9975F7603"  : "HEVC",        #only defined in SDK5
     }
 
 cdef codecstr(GUID guid):
@@ -2246,7 +2246,10 @@ cdef class Encoder:
             for x in range(GUIDRetCount):
                 encode_GUID = encode_GUIDs[x]
                 codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
-                log("[%s] %s", x, codec_name)
+                if not codec_name:
+                    log("[%s] unknown codec GUID: %s", x, guidstr(encode_GUID))
+                else:
+                    log("[%s] %s", x, codec_name)
                 codecs[codec_name] = guidstr(encode_GUID)
 
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)

@@ -233,6 +233,14 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PARAMS_RC_2_PASS_VBR         #Multi pass VBR
         NV_ENC_PARAMS_RC_CBR2               #(deprecated)
 
+    ctypedef enum NV_ENC_HEVC_CUSIZE:
+        NV_ENC_HEVC_CUSIZE_AUTOSELECT
+        NV_ENC_HEVC_CUSIZE_8x8
+        NV_ENC_HEVC_CUSIZE_16x16
+        NV_ENC_HEVC_CUSIZE_32x32
+        NV_ENC_HEVC_CUSIZE_64x64
+
+
     ctypedef struct NV_ENC_LOCK_BITSTREAM:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_LOCK_BITSTREAM_VER.
         uint32_t    doNotWait           #[in]: If this flag is set, the NvEncodeAPI interface will return buffer pointer even if operation is not completed. If not set, the call will block until operation completes.
@@ -314,6 +322,7 @@ cdef extern from "nvEncodeAPI.h":
 
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
+    GUID NV_ENC_CODEC_HEVC_GUID
 
     #Profiles:
     GUID NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
@@ -324,6 +333,8 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
     GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
     GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
+
+    GUID NV_ENC_HEVC_PROFILE_MAIN_GUID
 
     #Presets:
     GUID NV_ENC_PRESET_DEFAULT_GUID
@@ -451,9 +462,46 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved1[271]      #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
+    ctypedef struct NV_ENC_CONFIG_HEVC:
+        uint32_t    level               #[in]: Specifies the level of the encoded bitstream.
+        uint32_t    tier                #[in]: Specifies the level tier of the encoded bitstream.
+        NV_ENC_HEVC_CUSIZE minCUSize    #[in]: Specifies the minimum size of luma coding unit.
+        NV_ENC_HEVC_CUSIZE maxCUSize    #[in]: Specifies the maximum size of luma coding unit. Currently NVENC SDK only supports maxCUSize equal to NV_ENC_HEVC_CUSIZE_32x32.
+        uint32_t    useConstrainedIntraPred             #[in]: Set 1 to enable constrained intra prediction.
+        uint32_t    disableDeblockAcrossSliceBoundary   #[in]: Set 1 to disable in loop filtering across slice boundary.
+        uint32_t    outputBufferingPeriodSEI            #[in]: Set 1 to write SEI buffering period syntax in the bitstream
+        uint32_t    outputPictureTimingSEI              #[in]: Set 1 to write SEI picture timing syntax in the bitstream
+        uint32_t    outputAUD                           #[in]: Set 1 to write Access Unit Delimiter syntax.
+        uint32_t    enableLTR                           #[in]: Set 1 to enable use of long term reference pictures for inter prediction.
+        uint32_t    disableSPSPPS                       #[in]: Set 1 to disable VPS,SPS and PPS signalling in the bitstream.
+        uint32_t    repeatSPSPPS                        #[in]: Set 1 to output VPS,SPS and PPS for every IDR frame.
+        uint32_t    enableIntraRefresh                  #[in]: Set 1 to enable gradual decoder refresh or intra refresh. If the GOP structure uses B frames this will be ignored
+        uint32_t    reserved                            #[in]: Reserved bitfields.
+        uint32_t    idrPeriod                           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
+        uint32_t    intraRefreshPeriod                  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set. Requires enableIntraRefresh to be set.
+                                                        #Will be disabled if NV_ENC_CONFIG::gopLength is not set to NVENC_INFINITE_GOPLENGTH.
+        uint32_t    intraRefreshCnt                     #[in]: Specifies the length of intra refresh in number of frames for periodic intra refresh. This value should be smaller than intraRefreshPeriod
+        uint32_t    maxNumRefFramesInDPB                #[in]: Specifies the maximum number of references frames in the DPB.
+        uint32_t    ltrNumFrames                        #[in]: Specifies the maximum number of long term references can be used for prediction
+        uint32_t    vpsId                               #[in]: Specifies the VPS id of the video parameter set. Currently reserved and must be set to 0.
+        uint32_t    spsId                               #[in]: Specifies the SPS id of the sequence header. Currently reserved and must be set to 0.
+        uint32_t    ppsId                               #[in]: Specifies the PPS id of the picture header. Currently reserved and must be set to 0.
+        uint32_t    sliceMode                           #[in]: This parameter in conjunction with sliceModeData specifies the way in which the picture is divided into slices
+                                                        #sliceMode = 0 CTU based slices, sliceMode = 1 Byte based slices, sliceMode = 2 CTU row based slices, sliceMode = 3, numSlices in Picture
+                                                        #When sliceMode == 0 and sliceModeData == 0 whole picture will be coded with one slice
+        uint32_t    sliceModeData                       #[in]: Specifies the parameter needed for sliceMode. For:
+                                                        #sliceMode = 0, sliceModeData specifies # of CTUs in each slice (except last slice)
+                                                        #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
+                                                        #sliceMode = 2, sliceModeData specifies # of CTU rows in each slice (except last slice)
+                                                        #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
+        uint32_t    maxTemporalLayersMinus1             #[in]: Specifies the max temporal layer used for hierarchical coding. 
+        uint32_t    reserved1[246]                      #[in]: Reserved and must be set to 0.
+        void*       reserved2[64]                       #[in]: Reserved and must be set to NULL
+
     ctypedef struct NV_ENC_CODEC_CONFIG:
-        NV_ENC_CONFIG_H264  h264Config  #[in]: Specifies the H.264-specific encoder configuration
-        uint32_t            reserved[256]       #[in]: Reserved and must be set to 0
+        NV_ENC_CONFIG_H264  h264Config                  #[in]: Specifies the H.264-specific encoder configuration
+        NV_ENC_CONFIG_HEVC  hevcConfig                  #[in]: Specifies the HEVC-specific encoder configuration. Currently unsupported and must not to be used.
+        uint32_t            reserved[256];              #[in]: Reserved and must be set to 0
 
     ctypedef struct NV_ENC_RC_PARAMS:
         uint32_t    version
@@ -949,7 +997,7 @@ test_parse()
 
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
-    "790CDC88-4522-4D7B-9425-BDA9975F7603"  : "unknown",        #found with driver 346.35 on Linux
+    guidstr(NV_ENC_CODEC_HEVC_GUID)         : "HEVC",
     }
 
 cdef codecstr(GUID guid):
@@ -968,6 +1016,9 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
         #new in SDK v4:
         guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
+        },
+    guidstr(NV_ENC_CODEC_HEVC_GUID) : {
+        guidstr(NV_ENC_HEVC_PROFILE_MAIN_GUID)              : "main",
         },
     }
 
@@ -2229,7 +2280,10 @@ cdef class Encoder:
             for x in range(GUIDRetCount):
                 encode_GUID = encode_GUIDs[x]
                 codec_name = CODEC_GUIDS.get(guidstr(encode_GUID))
-                log("[%s] %s", x, codec_name)
+                if not codec_name:
+                    log("[%s] unknown codec GUID: %s", x, guidstr(encode_GUID))
+                else:
+                    log("[%s] %s", x, codec_name)
                 codecs[codec_name] = guidstr(encode_GUID)
 
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
