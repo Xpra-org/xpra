@@ -28,6 +28,7 @@ function XpraClient(container) {
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
 	this.username = "html5user";
+	this.disconnect_reason = null;
 	// encryption
 	this.encryption = false;
 	this.encryption_caps = null;
@@ -180,7 +181,8 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {
-		me.callback_close("Did not receive hello before timeout reached, not an Xpra server?");
+		me.disconnect_reason = "Did not receive hello before timeout reached, not an Xpra server?";
+		me.close();
 	}, this.HELLO_TIMEOUT);
 }
 
@@ -749,16 +751,25 @@ XpraClient.prototype._process_open = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_close = function(packet, ctx) {
+	// terminate the worker
+	ctx.protocol.terminate();
 	// call the client's close callback
-	ctx.callback_close();
+	ctx.callback_close(ctx.disconnect_reason);
+	// clear the reason
+	ctx.disconnect_reason = null;
 }
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
+	// clear the timer if we are waiting for a hello
 	if(ctx.hello_timer) {
 		clearTimeout(ctx.hello_timer);
 		ctx.hello_timer = null;
 	}
-	ctx.callback_close("Disconnect: "+packet[1]+", "+packet[2]);
+	// save the disconnect reason
+	ctx.disconnect_reason = packet[1];
+	// post a close request to the protocol
+	// this will eventually raise a close packet processed above
+	ctx.close();
 }
 
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {

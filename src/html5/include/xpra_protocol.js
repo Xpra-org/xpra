@@ -53,6 +53,10 @@ XpraProtocolWorkerHost.prototype.close = function() {
 	this.worker.postMessage({'c': 'c'});
 }
 
+XpraProtocolWorkerHost.prototype.terminate = function() {
+	this.worker.postMessage({'c': 't'});
+}
+
 XpraProtocolWorkerHost.prototype.send = function(packet) {
 	this.worker.postMessage({'c': 's', 'p': packet});
 }
@@ -283,8 +287,11 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 			protocol.send(data.p)
 			break;
 		case 'c':
-			// terminate the worker
+			// close the connection
 			protocol.close();
+			break;
+		case 't':
+			// terminate the worker
 			self.close();
 			break;
 		default:
