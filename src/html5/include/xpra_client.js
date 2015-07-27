@@ -131,6 +131,20 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 	this.host = host;
 	this.port = port;
 	this.ssl = ssl;
+	// check we have enough information for encryption
+	if(this.encryption) {
+		if((!this.encryption_key) || (this.encryption_key == "")) {
+			this.callback_close("no key specified for encryption");
+			return;
+		}
+		// set the encryption caps now
+		this.encryption_caps = {
+			"cipher"					: this.encryption,
+			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
+			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
+	        "cipher.key_stretch_iterations"	: 1000,
+		};
+	}
 	// detect websocket in webworker support and degrade gracefully
 	if(window.Worker) {
 		console.log("we have webworker support");
@@ -178,6 +192,8 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	uri += ":" + this.port;
 	// do open
 	this.protocol.open(uri);
+	// copy over the encryption caps
+	this.protocol.set_encryption_caps(this.encryption_caps);
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {
@@ -541,13 +557,7 @@ XpraClient.prototype._make_hello_base = function() {
     });
 
     if(this.encryption) {
-    	this._update_capabilities({
-			// encryption stuff
-			"cipher"					: this.encryption,
-			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
-			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
-	        "cipher.key_stretch_iterations"	: 1000,
-		});
+    	this._update_capabilities(this.encryption_caps);
 	}
 }
 

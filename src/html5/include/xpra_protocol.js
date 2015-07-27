@@ -66,6 +66,10 @@ XpraProtocolWorkerHost.prototype.set_packet_handler = function(callback, ctx) {
 	this.packet_ctx = ctx;
 }
 
+XpraProtocolWorkerHost.prototype.set_encryption_caps = function(caps) {
+	this.worker.postMessage({'c': 'z', 'p': caps});
+}
+
 
 /*
 The main Xpra wire protocol
@@ -75,6 +79,7 @@ function XpraProtocol() {
 	this.packet_ctx = null;
 	this.websocket = null;
 	this.raw_packets = [];
+	this.encryption_caps = null;
 	this.mode = 'binary';  // Current WebSocket mode: 'binary', 'base64'
     this.rQ = [];          // Receive queue
     this.rQi = 0;          // Receive queue index
@@ -155,6 +160,10 @@ XpraProtocol.prototype.send = function(packet) {
 XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
 	this.packet_handler = callback;
 	this.packet_ctx = ctx;
+}
+
+XpraProtocol.prototype.set_encryption_caps = function(caps) {
+	this.encryption_caps = caps;
 }
 
 XpraProtocol.prototype._buffer_peek = function(bytes) {
@@ -291,7 +300,10 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 			protocol.open(data.u);
 			break;
 		case 's':
-			protocol.send(data.p)
+			protocol.send(data.p);
+			break;
+		case 'z':
+			protocol.set_encryption_caps(data.p);
 			break;
 		case 'c':
 			// close the connection

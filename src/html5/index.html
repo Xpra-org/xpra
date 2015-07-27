@@ -193,6 +193,8 @@
 				var submit = window.location.getParameter("submit") || null;
 				var server = window.location.getParameter("server") || window.location.hostname;
 				var port = window.location.getParameter("port") || window.location.port;
+				var encryption = window.location.getParameter("encryption") || null;
+				var key = window.location.getParameter("key") || null;
 
 				// create the client
 			    var client = new XpraClient('screen');
@@ -220,6 +222,14 @@
 			    }
 			    if(password) {
 			    	client.authentication_key = password;
+			    }
+
+			    // check for encryption parameters
+			    if(encryption) {
+			    	client.encryption = encryption;
+			    	if(key) {
+			    		client.encryption_key = key;
+			    	}
 			    }
 
 			    // attach a callback for when client closes
