@@ -182,7 +182,7 @@ class SoundPipeline(gobject.GObject):
             log.error("pipeline error: %s", err)
             log.error(" %s", details)
             self.state = "error"
-            self.idle_emit("error", err)
+            self.idle_emit("error", str(err))
         elif t == gst.MESSAGE_TAG:
             try:
                 #Gst 0.10:
