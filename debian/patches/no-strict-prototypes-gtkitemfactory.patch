@@ -1,0 +1,16 @@
+Description: Debian has buggy gtk headers, so we have to disable strict checking
+ Author: Antoine Martin <antoine@devloop.org.uk>
+
+Index: setup.py
+===================================================================
+--- a/setup.py	2015-07-28 23:55:25.938738710 +0700
++++ b/setup.py	2015-07-28 23:54:52.197427488 +0700
+@@ -613,7 +613,7 @@
+                 eifd = ["-Werror",
+                         #needed on Debian and Ubuntu to avoid this error:
+                         #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
+-                        #"-Wno-error=strict-prototypes",
++                        "-Wno-error=strict-prototypes",
+                         ]
+             for eif in eifd:
+                 add_to_keywords(kw, 'extra_compile_args', eif)

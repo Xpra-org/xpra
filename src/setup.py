@@ -610,7 +610,11 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         "-Wno-unused-function",
                         "-Wno-sometimes-uninitialized"]
             else:
-                eifd = ["-Werror"]
+                eifd = ["-Werror",
+                        #needed on Debian and Ubuntu to avoid this error:
+                        #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
+                        #"-Wno-error=strict-prototypes",
+                        ]
             for eif in eifd:
                 add_to_keywords(kw, 'extra_compile_args', eif)
     if PIC_ENABLED and not is_msvc():
