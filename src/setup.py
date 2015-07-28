@@ -104,6 +104,10 @@ def check_pyopencl_AMD():
         pass
     return True
 
+def is_msvc():
+    #ugly: assume we want to use visual studio if we find the env var:
+    return os.environ.get("VCINSTALLDIR") is not None
+
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
@@ -150,8 +154,12 @@ if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")    
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
     nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.1_sdk"
-    nvenc4_ENABLED          = os.path.exists(nvenc4_sdk)
-    nvenc5_ENABLED          = os.path.exists(nvenc5_sdk)
+    try:
+        import pycuda
+    except:
+        pycuda = None
+    nvenc4_ENABLED          = pycuda and os.path.exists(nvenc4_sdk) and is_msvc()
+    nvenc5_ENABLED          = pycuda and os.path.exists(nvenc5_sdk) and is_msvc()
 else:
     nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
     nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
@@ -523,10 +531,6 @@ def make_constants(*paths, **kwargs):
             print("(re)generating %s (%s):" % (pxi_file, reason))
         make_constants_pxi(constants_file, pxi_file, **kwargs)
 
-
-def is_msvc():
-    #ugly: assume we want to use visual studio if we find the env var:
-    return os.environ.get("VCINSTALLDIR") is not None
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):

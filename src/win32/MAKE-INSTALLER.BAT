@@ -17,16 +17,13 @@ IF EXIST "MAKE-INSTALLER.BAT" CD ..
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 if "%PYTHON%"=="" (
 	REM DEFAULT to Python 2.7:
-	SET PYTHON=C:\Python34
 	SET PYTHON=C:\Python27
-	SET VC="%ProgramFiles%\Microsoft Visual Studio 9.0\VC"
 	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC" (
-		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC"
+		SET VC=%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC
 		SET CL_VERSION=2008
 	)
-	SET VC="%ProgramFiles%\Microsoft Visual Studio 10.0\VC"
 	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC" (
-		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC"
+		SET VC=%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC
 		SET CL_VERSION=2010
 	)
 )
