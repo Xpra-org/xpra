@@ -604,7 +604,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             if os.environ.get("CC", "").find("clang")>=0:
                 #clang emits too many warnings with cython code,
                 #so we can't enable Werror
-                eifd = ["-Werror=implicit-function-declaration",
+                eifd = ["-Werror",
                         "-Wno-unneeded-internal-declaration",
                         "-Wno-unknown-attributes",
                         "-Wno-unused-function",
