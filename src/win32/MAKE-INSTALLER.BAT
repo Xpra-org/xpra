@@ -2,7 +2,7 @@ ECHO OFF
 SET ARGS=%*
 set DIR=%CD%
 
-SETLOCAL
+SETLOCAL EnableExtensions EnableDelayedExpansion
 
 SET XPRA_WIN32_BUILD_LIB_PREFIX=C:\
 IF EXIST "E:\Xpra-Build-Libs\" (
@@ -18,15 +18,24 @@ REM "*********CHANGE THESE BEFORE RUNNING**************"
 if "%PYTHON%"=="" (
 	REM DEFAULT to Python 2.7:
 	SET PYTHON=C:\Python27
+)
+if "%VC%"=="" (
+    SET VC="%ProgramFiles%\Microsoft Visual Studio 9.0\VC"
 	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC" (
-		SET VC=%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC
+		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC"
 		SET CL_VERSION=2008
 	)
+	IF EXIST "%ProgramFiles%\Microsoft Visual Studio 10.0\VC" (
+		SET VC="%ProgramFiles%\Microsoft Visual Studio 10.0\VC"
+		SET CL_VERSION=2010
+	)
 	IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC" (
-		SET VC=%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC
+		SET VC="%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC"
 		SET CL_VERSION=2010
 	)
 )
+SET VC=%VC:"=%
+
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET PYTHONPATH=.;%PYTHONPATH%
 SET INNOSETUP="%ProgramFiles%\Inno Setup 5\ISCC.exe"
@@ -96,7 +105,7 @@ if NOT "%VC%"=="" (
 	if "%VSINSTALLDIR%"=="" (
 		ECHO ***************************************************************
 		ECHO ****** load Visual Studio env
-		CALL %VC%\bin\vcvars32.bat
+		CALL "%VC%\bin\vcvars32.bat"
 	)
 )
 
