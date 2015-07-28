@@ -103,7 +103,9 @@ def select_device():
     log_platforms_info()
     #try to choose a platform and device using *our* heuristics / env options:
     options = {}
+    log("select_device() environment preferred DEVICE_NAME=%s, DEVICE_TYPE=%s, DEVICE_PLATFORM=%s", PREFERRED_DEVICE_NAME, PREFERRED_DEVICE_TYPE, PREFERRED_DEVICE_PLATFORM)
     for platform in opencl_platforms:
+        log("evaluating platform=%s", platform.name)
         if platform.name.startswith("AMD") and not AMD_WARNING_SHOWN:
             log.warn("Warning: the AMD OpenCL is loaded, it is known to interfere with signal delivery!")
             log.warn(" please consider disabling OpenCL or removing the AMD icd")
@@ -116,6 +118,7 @@ def select_device():
                     log("ignoring unsupported platform/device: %s / %s", platform.name, d.name)
                     continue
                 dtype = device_type(d)
+                log("evaluating device type=%s, name=%s", dtype, d.name)
                 if is_cuda:
                     score = 0
                 elif dtype==PREFERRED_DEVICE_TYPE:
@@ -123,16 +126,18 @@ def select_device():
                 else:
                     score = 10
 
-                if not is_cuda:
-                    if len(PREFERRED_DEVICE_NAME)>0 and d.name.find(PREFERRED_DEVICE_NAME)>=0:
-                        score += 50
-                    if len(PREFERRED_DEVICE_PLATFORM)>0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0:
-                        score += 50
+                if len(PREFERRED_DEVICE_NAME)>0 and d.name.find(PREFERRED_DEVICE_NAME)>=0:
+                    score += 50
+                if len(PREFERRED_DEVICE_PLATFORM)>0 and str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0:
+                    score += 50
 
                 #Intel SDK does not work (well?) on AMD CPUs
                 #and CUDA has problems doing YUV to RGB..
-                if (platform.name.startswith("Intel") and d.name.startswith("AMD")) or is_cuda:
-                    score = max(0, score - 20)
+                if platform.name.startswith("Intel"):
+                    if d.name.find("AMD")>=0 or is_cuda:
+                        score = max(0, score - 20)
+                    elif d.name.find("Intel")>=0:
+                        score += 10
 
                 options.setdefault(score, []).append((d, platform))
     log("best device/platform options: %s", options)
@@ -166,7 +171,7 @@ def select_device():
     log.warn("OpenCL Error: failed to find a working platform and device combination... trying with pyopencl's 'create_some_context'")
     context = pyopencl.create_some_context(interactive=False)
     devices = context.get_info(pyopencl.context_info.DEVICES)
-    log.info("chosen context has %s device(s):", len(devices))
+    log.info("chosen context has %s devices:", len(devices))
     for d in devices:
         log_device_info(d)
     assert len(devices)==1, "we only handle a single device at a time, sorry!"
