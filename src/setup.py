@@ -591,13 +591,18 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         else:
             add_to_keywords(kw, 'extra_compile_args', "-Wall")
             add_to_keywords(kw, 'extra_link_args', "-Wall")
-    if strict_ENABLED and not is_msvc():
-        #these are almost certainly real errors since our code is "clean":
-        if get_gcc_version()>=[4, 4]:
-            eifd = "-Werror=implicit-function-declaration"
+    if strict_ENABLED:
+        if is_msvc():
+            add_to_keywords(kw, 'extra_compile_args', "/wd4005")    #macro redifined with vpx vs stdint.h
+            add_to_keywords(kw, 'extra_compile_args', "/WX")
+            add_to_keywords(kw, 'extra_link_args', "/WX")
         else:
-            eifd = "-Werror-implicit-function-declaration"
-        add_to_keywords(kw, 'extra_compile_args', eifd)
+            #these are almost certainly real errors since our code is "clean":
+            if get_gcc_version()>=[4, 4]:
+                eifd = "-Werror=implicit-function-declaration"
+            else:
+                eifd = "-Werror-implicit-function-declaration"
+            add_to_keywords(kw, 'extra_compile_args', eifd)
     if PIC_ENABLED and not is_msvc():
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
@@ -1393,6 +1398,10 @@ if WIN32:
         if kw.get("ignored_flags"):
             #we don't handle this keyword here yet..
             del kw["ignored_flags"]
+        if strict_ENABLED:
+            add_to_keywords(kw, 'extra_compile_args', "/WX")
+            add_to_keywords(kw, 'extra_link_args', "/WX")
+
         #always add the win32 include dirs for VC,
         #so codecs can find the inttypes.h and stdint.h:
         win32_include_dir = os.path.join(os.getcwd(), "win32")
@@ -1441,6 +1450,7 @@ if WIN32:
                          [x265_lib_dir],
                          ["libx265"])
         elif "vpx" in pkgs_options[0]:
+            add_to_keywords(kw, 'extra_compile_args', "/wd4005")    #macro redifined with vpx vs stdint.h
             add_keywords([vpx_bin_dir], [vpx_include_dir],
                          [vpx_lib_dir],
                          vpx_lib_names, nocmt=True)
