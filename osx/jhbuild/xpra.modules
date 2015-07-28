@@ -144,9 +144,9 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
-    <branch module="/pub/x264/snapshots/x264-snapshot-20141218-2245-stable.tar.bz2"
-			version="20141218-2245-stable"
-                        hash="md5:f82e4f39453ba8f25a9b614a96741ee3"
+    <branch module="/pub/x264/snapshots/x264-snapshot-20150727-2245-stable.tar.bz2"
+			version="20150727-2245-stable"
+                        hash="md5:839cb78e0d43085a66ed67ad2897439a"
             repo="download.videolan.org"/>
   </autotools>
 
@@ -170,9 +170,9 @@
 --disable-filter=atrim --disable-filter=null
 --disable-programs --disable-avfilter --disable-doc"
              autogen-sh="configure">
-    <branch module="/releases/ffmpeg-2.7.1.tar.bz2"
-            version="2.7.1"
-            hash="md5:f159c6d7eed8546b23e1a17325cbf1f8"
+    <branch module="/releases/ffmpeg-2.7.2.tar.bz2"
+            version="2.7.2"
+            hash="md5:7eb2140bab9f0a8669b65b50c8e4cfb5"
             repo="ffmpeg.org"/>
   </autotools>
 
@@ -236,9 +236,9 @@
   </autotools>
 
   <autotools id="mpfr" autogen-sh="configure">
-    <branch module="/mpfr-current/mpfr-3.1.2.tar.bz2"
-                        hash="md5:ee2c3ac63bf0c2359bf08fc3ee094c19"
-			version="3.1.2" repo="www.mpfr.org">
+    <branch module="/mpfr-current/mpfr-3.1.3.tar.bz2"
+                        hash="md5:5fdfa3cfa5c86514ee4a241a1affa138"
+			version="3.1.3" repo="www.mpfr.org">
     </branch>
     <dependencies>
       <dep package="gmplib"/>
