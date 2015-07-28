@@ -16,7 +16,7 @@ from pycuda import driver
 from pycuda.driver import memcpy_htod
 from pycuda.compiler import compile
 
-from xpra.util import AtomicInteger, updict
+from xpra.util import AtomicInteger, updict, engs
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -2126,7 +2126,7 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount)
         raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
-        log("found %s preset%s:", presetCount, ["","s"][int(presetCount!=1)])
+        log("found %s preset%s:", presetCount, engs(presetCount))
         assert presetCount<2**8
         preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
         assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
@@ -2213,7 +2213,7 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
-        log("%s input format type%s:", inputFmtCount, ["","s"][int(inputFmtCount!=1)])
+        log("%s input format type%s:", inputFmtCount, engs(inputFmtCount))
         assert inputFmtCount>0 and inputFmtCount<2**8
         inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
         assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
@@ -2263,7 +2263,7 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount)
         raiseNVENC(r, "getting encoder count")
-        log("found %i encoder%s:", GUIDCount, ["","s"][int(GUIDCount!=1)])
+        log("found %i encoder%s:", GUIDCount, engs(GUIDCount))
         assert GUIDCount<2**8
         encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
         assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)

@@ -13,7 +13,7 @@ import numpy
 import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 
-from xpra.util import updict
+from xpra.util import updict, engs
 from xpra.os_util import memoryview_to_bytes
 
 PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
@@ -63,13 +63,13 @@ def log_device_info(device):
     log("max_work_item_sizes=%s", device.max_work_item_sizes)
 
 def log_platforms_info():
-    log("found %s OpenCL platforms:", len(opencl_platforms))
+    log("found %s OpenCL platform%s:", len(opencl_platforms), engs(opencl_platforms))
     for platform in opencl_platforms:
         devices = platform.get_devices()
         p = "*"
         if not is_supported(platform.name):
             p = "-"
-        log("%s %s - %s devices:", p, platform_info(platform), len(devices))
+        log("%s %s - %s device%s:", p, platform_info(platform), len(devices), engs(devices))
         for d in devices:
             p = "-"
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT) and is_supported(platform.name):
@@ -140,7 +140,7 @@ def select_device():
                         score += 10
 
                 options.setdefault(score, []).append((d, platform))
-    log("best device/platform options: %s", options)
+    log("best device/platform option%s: %s", engs(options), options)
     for score in reversed(sorted(options.keys())):
         for d, p in options.get(score):
             try:
@@ -171,7 +171,7 @@ def select_device():
     log.warn("OpenCL Error: failed to find a working platform and device combination... trying with pyopencl's 'create_some_context'")
     context = pyopencl.create_some_context(interactive=False)
     devices = context.get_info(pyopencl.context_info.DEVICES)
-    log.info("chosen context has %s devices:", len(devices))
+    log.info("chosen context has %s device%s:", len(devices), engs(devices))
     for d in devices:
         log_device_info(d)
     assert len(devices)==1, "we only handle a single device at a time, sorry!"
