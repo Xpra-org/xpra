@@ -128,7 +128,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         #76-100   -> 1
         #51-76    -> 2
         #etc
-        level = max(1, min(5, (125-speed)/25))
+        level = max(1, min(5, (125-speed)//25))
         kwargs["compress_level"] = level
         client_options["compress_level"] = level
         #default is good enough, no need to override, other options:
