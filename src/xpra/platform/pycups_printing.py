@@ -20,7 +20,14 @@ ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
 LPADMIN = "lpadmin"
 FORWARDER_BACKEND = "xpraforwarder"
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
-PPD_FILE = os.environ.get("XPRA_PPD_FILE", "/usr/share/cups/model/CUPS-PDF.ppd")
+PPD_FILE = ""
+for ppd_file_option in ["/usr/share/cups/model/CUPS-PDF.ppd",       #used on Fedora and others
+                        "/usr/share/ppd/cups-pdf/CUPS-PDF.ppd",     #used on Ubuntu
+                        ]:
+    if os.path.exists(ppd_file_option):
+        PPD_FILE = ppd_file_option
+        break
+PPD_FILE = os.environ.get("XPRA_PPD_FILE", PPD_FILE)
 
 #PRINTER_PREFIX = "Xpra:"
 ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
