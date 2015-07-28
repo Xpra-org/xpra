@@ -95,7 +95,7 @@ RMDIR /S /Q %BUILD_DIR% dist Output Temp 2> NUL
 DEL /Q Xpra_Setup*.exe 2> NUL
 DEL /Q win32\cx_freeze-xpra.log win32\build-xpra.log win32\py2exe-xpra.log win32\innosetup.log 2> NUL
 
-if NOT %VC%=="" (
+if NOT "%VC%"=="" (
 	if "%VSINSTALLDIR%"=="" (
 		ECHO ***************************************************************
 		ECHO ****** load Visual Studio env
