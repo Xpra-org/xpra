@@ -304,7 +304,7 @@ HINT_NAME_TO_CONSTANT = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
 
-cdef WebPPreset DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "graph").lower(), WEBP_HINT_GRAPH)
+cdef WebPImageHint DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "graph").lower(), WEBP_HINT_GRAPH)
 cdef WebPPreset DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "text").lower(), WEBP_PRESET_TEXT)
 cdef WebPPreset PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
 
