@@ -134,15 +134,10 @@ cdef inline int roundup(int n, int m):
 
 cdef class SWSFlags:
     cdef int flags
-    cdef char* flags_strs[3]
-    def __init__(self, int flags, flags_str):           #@DuplicatedSignature
+    cdef object flags_strs
+    def __init__(self, int flags, flags_strs):          #@DuplicatedSignature
         self.flags = flags
-        cdef int i = 0
-        for i in range(3):
-            if i<len(flags_str):
-                self.flags_strs[i] = flags_str[i]
-            else:
-                self.flags_strs[i] = NULL
+        self.flags_strs = flags_strs
 
     def get_flags(self):
         return self.flags
@@ -150,18 +145,18 @@ cdef class SWSFlags:
 
 #keeping this array in scope ensures the strings don't go away!
 FLAGS_OPTIONS = (
-            (30, (SWS_BICUBIC, ), "BICUBIC"),
-            (40, (SWS_BICUBLIN, ), "BICUBLIN"),
-            (60, (SWS_BILINEAR, ), "BILINEAR"),
-            (80, (SWS_FAST_BILINEAR, ), "FAST_BILINEAR"),
+            (30, (SWS_BICUBIC, ),       ("BICUBIC", )),
+            (40, (SWS_BICUBLIN, ),      ("BICUBLIN", )),
+            (60, (SWS_BILINEAR, ),      ("BILINEAR", )),
+            (80, (SWS_FAST_BILINEAR, ), ("FAST_BILINEAR", )),
         )
 FLAGS = []
-for speed, flags, flag_str in FLAGS_OPTIONS:
+for speed, flags, flag_strs in FLAGS_OPTIONS:
     flag_value = 0
     for flag in flags:
         flag_value |= flag
     log("%s=%s", speed, flag_value)
-    FLAGS.append((speed, SWSFlags(flag_value, flag_str)))
+    FLAGS.append((speed, SWSFlags(flag_value, flag_strs)))
 log("swscale flags: %s", FLAGS)
 
 

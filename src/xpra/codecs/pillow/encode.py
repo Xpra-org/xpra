@@ -6,7 +6,7 @@
 from xpra.log import Logger
 log = Logger("encoder", "pillow")
 
-from xpra.os_util import StringIOClass
+from xpra.os_util import BytesIOClass
 from xpra.os_util import memoryview_to_bytes
 from xpra.net import compression
 
@@ -74,7 +74,7 @@ def encode(coding, image, quality, speed, supports_transparency):
     except Exception:
         log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), rgb, exc_info=True)
         raise
-    buf = StringIOClass()
+    buf = BytesIOClass()
     client_options = {}
     #only optimize with Pillow>=2.2 and when speed is zero
     if coding in ("jpeg", "webp"):
