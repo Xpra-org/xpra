@@ -601,12 +601,18 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             add_to_keywords(kw, 'extra_compile_args', "/WX")
             add_to_keywords(kw, 'extra_link_args', "/WX")
         else:
-            #these are almost certainly real errors since our code is "clean":
-            if get_gcc_version()>=[4, 4]:
-                eifd = "-Werror=implicit-function-declaration"
+            if os.environ.get("CC", "").find("clang")>=0:
+                #clang emits too many warnings with cython code,
+                #so we can't enable Werror
+                eifd = ["-Werror=implicit-function-declaration",
+                        "-Wno-unneeded-internal-declaration",
+                        "-Wno-unknown-attributes",
+                        "-Wno-unused-function",
+                        "-Wno-sometimes-uninitialized"]
             else:
-                eifd = "-Werror-implicit-function-declaration"
-            add_to_keywords(kw, 'extra_compile_args', eifd)
+                eifd = ["-Werror"]
+            for eif in eifd:
+                add_to_keywords(kw, 'extra_compile_args', eif)
     if PIC_ENABLED and not is_msvc():
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
@@ -1807,8 +1813,9 @@ if client_ENABLED and PYTHON3:
                 ))
 
 add_packages("xpra.codecs.argb")
+argb_pkgconfig = pkgconfig()
 cython_add(Extension("xpra.codecs.argb.argb",
-            ["xpra/codecs/argb/argb.pyx", buffers_c]))
+            ["xpra/codecs/argb/argb.pyx", buffers_c], **argb_pkgconfig))
 
 
 #build tests, but don't install them:
