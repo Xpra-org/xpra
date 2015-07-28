@@ -1350,8 +1350,8 @@ cdef class Encoder:
         return False
 
     cdef init_cuda(self):
-        cdef int plane_size_div
-        cdef int max_input_stride
+        cdef unsigned int plane_size_div
+        cdef unsigned int max_input_stride
         cdef int result
 
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
@@ -1397,7 +1397,7 @@ cdef class Encoder:
 
             #allocate CUDA input buffer (on device) 32-bit RGB
             #(and make it bigger just in case - subregions from XShm can have a huge rowstride):
-            max_input_stride = max(2560, self.input_width)*4
+            max_input_stride = MAX(2560, self.input_width)*4
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
             log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
             #allocate CUDA output buffer (on device):
@@ -1614,15 +1614,15 @@ cdef class Encoder:
         if self.preset_name:
             info["preset"] = self.preset_name
         cdef double t = self.time
+        info["total_time_ms"] = int(self.time*1000.0)
         if self.frames>0 and t>0:
             pps = float(self.width) * float(self.height) * float(self.frames) / t
-            info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
-        t = self.total_memory
-        if t>0:
-            info["free_memory"] = int(self.free_memory)
-            info["total_memory"] = int(self.total_memory)
-            info["free_memory_pct"] = int(100.0*self.free_memory/t)
+        info["free_memory"] = int(self.free_memory)
+        info["total_memory"] = int(self.total_memory)
+        cdef uint64_t m = self.total_memory
+        if m>0:
+            info["free_memory_pct"] = int(100.0*self.free_memory/m)
         #calculate fps:
         cdef int f = 0
         cdef double now = time.time()
@@ -1854,7 +1854,7 @@ cdef class Encoder:
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         cdef size_t size
         cdef unsigned int x, y, stride
-        cdef int i
+        cdef unsigned int i
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         start = time.time()
@@ -1883,7 +1883,7 @@ cdef class Encoder:
         else:
             #this is a numpy.ndarray type:
             buf = self.inputBuffer.data
-        cdef long pix_len = len(pixels)
+        cdef unsigned long pix_len = len(pixels)
         if image_stride<=self.inputPitch:
             stride = image_stride
             assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)

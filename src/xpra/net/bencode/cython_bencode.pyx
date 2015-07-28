@@ -37,8 +37,8 @@ else:
         return x
 
 
-cdef int find(const char *p, char c, int start, size_t len):
-    cdef int pos = start
+cdef int find(const unsigned char *p, char c, unsigned int start, size_t len):
+    cdef unsigned int pos = start
     while pos<len:
         if p[pos]==c:
             return pos
@@ -48,7 +48,7 @@ cdef int find(const char *p, char c, int start, size_t len):
 
 # Decoding functions
 
-cdef decode_int(const char *x, int f, int l):
+cdef decode_int(const unsigned char *x, unsigned int f, int l):
     f += 1
     cdef int newf = find(x, 'e', f, l)
     cdef object n
@@ -64,7 +64,7 @@ cdef decode_int(const char *x, int f, int l):
         raise ValueError("leading zeroes are not allowed")
     return (n, newf+1)
 
-cdef decode_string(const char *x, int f, int l):
+cdef decode_string(const unsigned char *x, unsigned int f, int l):
     cdef int colon = find(x, ':', f, l)
     cdef int slen
     assert colon>=0, "colon not found in string size header"
@@ -81,11 +81,11 @@ cdef decode_string(const char *x, int f, int l):
     colon += 1
     return (x[colon:colon+slen], colon+slen)
 
-cdef decode_unicode(const char *x, int f, int l):
+cdef decode_unicode(const unsigned char *x, unsigned int f, int l):
     xs, fs = decode_string(x, f+1, l)
     return (xs.decode("utf8"), fs)
 
-cdef decode_list(const char *x, int f, int l):
+cdef decode_list(const unsigned char *x, unsigned int f, int l):
     cdef object r = []
     f += 1
     cdef object v
@@ -94,7 +94,7 @@ cdef decode_list(const char *x, int f, int l):
         r.append(v)
     return (r, f + 1)
 
-cdef decode_dict(const char *x, int f, int l):
+cdef decode_dict(const unsigned char *x, unsigned int f, int l):
     cdef object r = {}
     cdef object k
     cdef object v               #dict value
@@ -110,7 +110,7 @@ cdef decode_dict(const char *x, int f, int l):
 
 
 #cdef const char *DIGITS = '0123456789'
-cdef decode(const char *x, int f, size_t l, char *what):
+cdef decode(const unsigned char *x, unsigned int f, size_t l, unsigned char *what):
     assert f<l, "cannot decode past the end of the string!"
     cdef char c = x[f]
     if c=='l':
@@ -128,10 +128,10 @@ cdef decode(const char *x, int f, size_t l, char *what):
 
 def bdecode(x):
     xs = b(x)
-    cdef const char *s
+    cdef const unsigned char *s
     cdef Py_ssize_t l
     assert object_as_buffer(xs, <const void **> &s, &l)==0, "failed to convert %s to a buffer" % type(x)
-    cdef int f = 0
+    cdef unsigned int f = 0
     try:
         return decode(s, f, l, "bencoded string")
     except (IndexError, KeyError):
