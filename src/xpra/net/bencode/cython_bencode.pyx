@@ -128,8 +128,8 @@ cdef decode(const unsigned char *x, unsigned int f, size_t l, unsigned char *wha
 
 def bdecode(x):
     xs = b(x)
-    cdef const unsigned char *s
-    cdef Py_ssize_t l
+    cdef const unsigned char *s = NULL
+    cdef Py_ssize_t l = 0
     assert object_as_buffer(xs, <const void **> &s, &l)==0, "failed to convert %s to a buffer" % type(x)
     cdef unsigned int f = 0
     try:
