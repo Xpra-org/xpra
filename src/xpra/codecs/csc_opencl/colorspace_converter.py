@@ -787,7 +787,9 @@ class ColorspaceConverter(object):
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
         shape = (stride//4, self.src_height)
         log("convert_image() type=%s, input image format=%s, shape=%s, work size: local=%s, global=%s", type(pixels), iformat, shape, localWorkSize, globalWorkSize)
-        idata = memoryview_to_bytes(pixels)
+        idata = pixels
+        if type(idata)==_memoryview:
+            idata = memoryview_to_bytes(idata)
         if type(idata)==str:
             #str is not a buffer, so we have to copy the data
             #alternatively, we could copy it first ourselves using this:
