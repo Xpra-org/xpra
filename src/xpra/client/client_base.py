@@ -480,8 +480,8 @@ class XpraClientBase(object):
             #TODO: use some key stretching algorigthm? (meh)
             salt = xor(salt, client_salt)
         if digest=="hmac":
-            import hmac
-            challenge_response = hmac.HMAC(password, salt).hexdigest()
+            import hmac, hashlib
+            challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
         elif digest=="xor":
             #don't send XORed password unencrypted:
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:

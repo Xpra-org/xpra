@@ -12,7 +12,7 @@
 import binascii
 import os.path
 import sys
-import hmac
+import hmac, hashlib
 
 from xpra.os_util import get_hex_uuid
 from xpra.util import xor
@@ -170,7 +170,7 @@ class Authenticator(object):
             log.error("username '%s' does not exist in password file '%s'", self.username, password_file or "")
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
-        verify = hmac.HMAC(fpassword, salt).hexdigest()
+        verify = hmac.HMAC(fpassword, salt, digestmod=hashlib.md5).hexdigest()
         log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(salt), verify)
         if hasattr(hmac, "compare_digest"):
             eq = hmac.compare_digest(verify, challenge_response)
