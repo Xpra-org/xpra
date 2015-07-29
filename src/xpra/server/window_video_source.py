@@ -257,6 +257,14 @@ class WindowVideoSource(WindowSource):
             self.cleanup_codecs()
         WindowSource.set_new_encoding(self, encoding, strict)
 
+    def update_encoding_selection(self, encoding=None, exclude=[]):
+        #override so we don't use encodings that don't have valid csc modes:
+        for x in self.video_encodings:
+            if not self.full_csc_modes.get(x):
+                exclude.append(x)
+                log.warn("client does not support any csc modes with %s", x)
+        WindowSource.update_encoding_selection(self, encoding, exclude)
+
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))

@@ -598,10 +598,10 @@ class WindowSource(object):
         self.update_encoding_selection(encoding)
 
 
-    def update_encoding_selection(self, encoding=None):
+    def update_encoding_selection(self, encoding=None, exclude=[]):
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
-        common_encodings = [x for x in self._encoders.keys() if x in self.core_encodings]
+        common_encodings = [x for x in self._encoders.keys() if x in self.core_encodings and x not in exclude]
         #"rgb" is a pseudo encoding and needs special code:
         if "rgb24" in  common_encodings or "rgb32" in common_encodings:
             common_encodings.append("rgb")
