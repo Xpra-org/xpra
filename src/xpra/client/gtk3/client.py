@@ -77,6 +77,9 @@ class XpraClient(GTKXpraClient):
         if not sys.platform.startswith("win"):
             GTKXpraClient.set_windows_cursor(self, windows, cursor_data)
 
+    def get_mouse_position(self):
+        #with GTK3, we can get None values!
+        return [x or 0 for x in self.get_root_window().get_pointer()[:2]]
 
     def get_root_size(self):
         if WIN32:
