@@ -744,7 +744,8 @@ class XpraClientBase(object):
             assert digest==u.hexdigest(), "invalid file digest %s (expected %s)" % (u.hexdigest(), digest)
 
         #make sure we use a filename that does not exist already:
-        wanted_filename = os.path.abspath(os.path.join(get_download_dir(), os.path.basename(basefilename)))
+        dd = os.path.expanduser(get_download_dir())
+        wanted_filename = os.path.abspath(os.path.join(dd, os.path.basename(basefilename)))
         EXTS = {"application/postscript"    : "ps",
                 "application/pdf"           : "pdf",
                 }
