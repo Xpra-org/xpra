@@ -647,12 +647,12 @@ class ServerBase(ServerCore):
 
 
     def _process_exit_server(self, proto, packet):
-        log.info("Exiting response to request")
+        log.info("Exiting in response to client request")
         self.cleanup_all_protocols(SERVER_EXIT)
         self.timeout_add(500, self.clean_quit, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, proto, packet):
-        log.info("Shutting down in response to request")
+        log.info("Shutting down in response to client request")
         self.cleanup_all_protocols(SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
 
