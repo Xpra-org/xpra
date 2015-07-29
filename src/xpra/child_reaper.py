@@ -149,6 +149,7 @@ class ChildReaper(object):
             procinfo.returncode = process.poll()
             procinfo.dead = procinfo.returncode is not None
             cb = procinfo.callback
+            log("add_dead_process returncode=%s, dead=%s, callback=%s", procinfo.returncode, procinfo.dead, cb)
             if procinfo.dead and procinfo.process and cb:
                 procinfo.callback = None
                 cb(procinfo.process)
@@ -172,6 +173,7 @@ class ChildReaper(object):
             self.check()
 
     def reap(self):
+        self.poll()
         while os.name=="posix":
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
