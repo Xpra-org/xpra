@@ -76,6 +76,9 @@ class XpraClientBase(object):
             self.defaults_init()
 
     def defaults_init(self):
+        log("XpraClientBase.defaults_init() os.environ:")
+        for k,v in os.environ.items():
+            log(" %s=%s", k, nonl(v))
         #client state:
         self.exit_code = None
         self.exit_on_signal = False
