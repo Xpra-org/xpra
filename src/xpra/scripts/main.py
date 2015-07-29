@@ -1085,7 +1085,7 @@ def single_display_match(dir_servers, error_cb):
         error_cb("there are multiple servers running in multiple locations, please specify")
     assert len(dir_servers)==1, "len(dir_servers)=%s" % len(dir_servers)
     #ie: [(LIVE, "desktop-10", "/tmp/desktop-10"), ]
-    sockdir, servers = dir_servers.items()[0]
+    sockdir, servers = list(dir_servers.items())[0]
     assert len(servers)>0
     if len(servers) > 1:
         error_cb("there are multiple servers running in %s, please specify" % sockdir)
