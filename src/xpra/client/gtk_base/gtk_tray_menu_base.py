@@ -7,6 +7,7 @@
 import sys
 import os
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
+from xpra.codecs.enc_x264.encoder import bytestostr
 gtk = import_gtk()
 glib = import_glib()
 
@@ -830,7 +831,7 @@ class GTKTrayMenuBase(object):
         layout,layouts,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
         full_layout_list = False
         if len(layouts)>1:
-            log.info("keyboard layouts: %s", b",".join(layouts))
+            log.info("keyboard layouts: %s", u",".join(bytestostr(x) for x in layouts))
             auto = kbitem("Auto", "Auto", "", True)
             self.layout_submenu.append(auto)
             if layout:
