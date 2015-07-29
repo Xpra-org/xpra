@@ -7,6 +7,8 @@
 # this used to be implemented using a gtk.gdk.Rectangle
 # but we don't want its union() behaviour which can be too expensive
 
+#cython: boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True, always_allow_keywords=False
+
 
 #what I want is a real macro!
 cdef inline int MIN(int a, int b):
@@ -24,7 +26,7 @@ cdef class rectangle:
     cdef readonly int x, y, width, height
     cdef readonly long hash
 
-    def __init__(self, int x, int y, int w, int h):
+    def __init__(self, const int x, const int y, const int w, const int h):
         assert w>=0 and h>=0
         self.x = x
         self.y = y
@@ -41,7 +43,7 @@ cdef class rectangle:
     def __repr__(self):
         return "R(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
 
-    def __richcmp__(self, other, op):
+    def __richcmp__(self, object other, const int op):
         if type(other)!=rectangle:
             raise Exception("cannot compare rectangle and %s" % type(other))
         cdef rectangle o = other
@@ -60,7 +62,7 @@ cdef class rectangle:
         else:
             raise Exception("invalid richcmp operator: %s" % op)
 
-    def intersects(self, int x, int y, int w, int h):
+    def intersects(self, const int x, const int y, const int w, const int h):
         cdef int  ix = MAX(self.x, x)
         cdef int  iw = MIN(self.x+self.width, x+w) - ix
         if iw<=0:
@@ -72,7 +74,7 @@ cdef class rectangle:
     def intersects_rect(self, rectangle rect):
         return self.intersects(rect.x, rect.y, rect.width, rect.height)
 
-    def intersection(self, int x, int y, int w, int h):
+    def intersection(self, const int x, const int y, const int w, const int h):
         """ returns the rectangle containing the intersection with the given area,
             or None
         """
@@ -88,14 +90,14 @@ cdef class rectangle:
         return self.intersection(rect.x, rect.y, rect.width, rect.height)
 
 
-    def contains(self, int x, int y, int w, int h):
+    def contains(self, const int x, const int y, const int w, const int h):
         return self.x<=x and self.y<=y and self.x+self.width>=x+w and self.y+self.height>=y+h
 
     def contains_rect(self, rectangle rect):
         return self.contains(rect.x, rect.y, rect.width, rect.height)
 
 
-    def substract(self, int x, int y, int w, int h):
+    def substract(self, const int x, const int y, const int w, const int h):
         """ returns the rectangle(s) remaining when
             one substracts the given rectangle from it, or None if nothing remains
         """
@@ -142,7 +144,7 @@ cdef class rectangle:
         return rectangle(self.x, self.y, self.width, self.height)
 
 
-def contains(object regions, int x, int y, int w, int h):       #@DuplicatedSignature
+def contains(object regions, const int x, const int y, const int w, const int h):       #@DuplicatedSignature
     cdef int x2 = x+w
     cdef int y2 = y+h
     return any(True for r in regions if (x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height)))
@@ -179,7 +181,7 @@ def remove_rectangle(object regions, rectangle region):
     cdef int w = region.width           #
     cdef int h = region.height          #
     cdef int l = len(copy)
-    cdef rectangle r                    #
+    cdef rectangle r
     for r in copy:
         regions += r.substract(x, y, w, h)
 
