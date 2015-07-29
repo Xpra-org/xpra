@@ -140,7 +140,7 @@ class Win32EventListener(object):
 
     def MyWndProc(self, hWnd, msg, wParam, lParam):
         callbacks = self.event_callbacks.get(msg)
-        event_name = KNOWN_WM_EVENTS.get(msg, msg)
+        event_name = KNOWN_WM_EVENTS.get(msg, hex(msg))
         log("callbacks for event %s: %s", event_name, callbacks)
         if hWnd==self.hwnd:
             if callbacks:
@@ -156,7 +156,17 @@ class Win32EventListener(object):
             #elif msg==win32con.WM_ACTIVATEAPP:
             #    log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
             else:
-                log.warn("unexpected message: %s / %s / %s", event_name, wParam, lParam)
+                if (msg>=0 and msg<=win32con.WM_USER) or msg>0xFFFF:
+                    ut = "reserved system"
+                elif msg>=win32con.WM_USER and msg<=0x7FFF:
+                    ut = "WM_USER"
+                elif msg>=0x8000 and msg<=0xBFFF:
+                    ut = "WM_APP"
+                elif msg>=0xC000 and msg<=0xFFFF:
+                    ut = "string"
+                else:
+                    ut = "/ unexpected"
+                log.warn("unknown %s message: %s / %s / %s", ut, event_name, wParam, lParam)
         else:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
         # Pass all messages to the original WndProc
