@@ -1224,7 +1224,7 @@ class WindowVideoSource(WindowSource):
 
         if not self.check_pipeline(encoding, w, h, src_format):
             #just for diagnostics:
-            supported_csc_modes = self.full_csc_modes.get(encoding)
+            supported_csc_modes = self.full_csc_modes.get(encoding, [])
             encoder_specs = self.video_helper.get_encoder_specs(encoding)
             specs = []
             ecsc = []
@@ -1233,7 +1233,7 @@ class WindowVideoSource(WindowSource):
                     continue
                 if csc not in ecsc:
                     ecsc.append(csc)
-                for especs in encoder_specs.get(csc):
+                for especs in encoder_specs.get(csc, []):
                     if especs not in specs:
                         specs.append(especs)
             log.error("Error: failed to setup a video pipeline for %s encoding with source format %s", encoding, src_format)
