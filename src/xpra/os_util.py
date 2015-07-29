@@ -276,8 +276,16 @@ def find_lib_ldconfig(libname):
 
     pattern = r'^\s+lib%s\.[^\s]+ \(%s(?:,.*?)?\) => (.*lib%s[^\s]+)' % (libname, arch, libname)
 
+    #try to find ldconfig first, which may not be on the $PATH
+    #(it isn't on Debian..)
+    ldconfig = "ldconfig"
+    for d in ("/sbin", "/usr/sbin"):
+        t = os.path.join(d, "ldconfig")
+        if os.path.exists(t):
+            ldconfig = t
+            break
     import subprocess
-    p = subprocess.Popen(["ldconfig", "-p"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen([ldconfig, "-p"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data = p.communicate()[0]
 
     libpath = re.search(pattern, data, re.MULTILINE)
