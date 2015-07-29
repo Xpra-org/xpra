@@ -26,7 +26,7 @@ except Exception as e:
 
 
 #allows us to skip some printers we don't want to export
-SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer").split(",")
+SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
 
 
 #emulate pycups job id

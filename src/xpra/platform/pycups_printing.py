@@ -59,7 +59,7 @@ def validate_setup():
     return True
 
 
-def exec_lpadmin(args):
+def exec_lpadmin(args, success_cb=None):
     command = shlex.split(LPADMIN)+args
     def preexec():
         os.setsid()
@@ -68,11 +68,16 @@ def exec_lpadmin(args):
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()
-    def check_returncode(proc):
-        returncode = proc.returncode
-        if returncode is not None and returncode!=0:
+    def check_returncode(proc_cb):
+        returncode = proc.poll()
+        log("returncode(%s)=%s", command, returncode)
+        if returncode!=0:
             log.warn("lpadmin failed and returned error code: %s", returncode)
-            log.warn("you may want to check that this user has the required permissions for using this command")
+            log.warn(" you may want to check that this user has all the required permissions")
+            if LPADMIN!="lpadmin":
+                log.warn(" for running: '%s'", LPADMIN)
+        elif success_cb:
+            success_cb()
     cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)
     if proc.poll() not in (None, 0):
         raise Exception("lpadmin command '%s' failed and returned %s" % (command, proc.poll()))
@@ -84,7 +89,7 @@ def sanitize_name(name):
     valid_chars = "-_.:%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in name if c in valid_chars)
 
-def add_printer(name, options, info, location, attributes={}):
+def add_printer(name, options, info, location, attributes={}, success_cb=None):
     log("add_printer(%s, %s)", name, options)
     command = ["-p", PRINTER_PREFIX+sanitize_name(name),
                "-E",
@@ -98,7 +103,7 @@ def add_printer(name, options, info, location, attributes={}):
     else:
         command += ["-o", "raw"]
     log("pycups_printing adding printer: %s", command)
-    exec_lpadmin(command)
+    exec_lpadmin(command, success_cb=success_cb)
 
 def remove_printer(name):
     log("remove_printer(%s)", name)

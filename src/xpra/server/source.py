@@ -1446,43 +1446,66 @@ class ServerSource(object):
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             printlog("not adding local printers")
             return
-        from xpra.platform.pycups_printing import add_printer, remove_printer
-        for k in self.printers:
-            if k not in printers:
+        from xpra.platform.pycups_printing import remove_printer
+        #remove the printers no longer defined
+        #or those whose definition has changed (and we will re-add them):
+        for k in list(self.printers.keys()):
+            cpd = self.printers.get(k)
+            npd = printers.get(k)
+            if cpd==npd:
+                #unchanged: make sure we don't try adding it again:
                 try:
-                    remove_printer(k)
-                except Exception as e:
-                    printlog.warn("failed to remove printer %s: %s", k, e)
-        location = "via xpra"
-        if self.hostname:
-            location = "on %s (via xpra)" % self.hostname
+                    del printers[k]
+                except:
+                    pass
+                continue
+            if npd is None:
+                printlog("printer %s no longer exists", k)
+            else:
+                printlog("printer %s has been modified:", k)
+                printlog(" was %s", cpd)
+                printlog(" now %s", npd)
+            #remove it:
+            try:
+                del self.printers[k]
+                remove_printer(k)
+            except Exception as e:
+                printlog.warn("failed to remove printer %s: %s", k, e)
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
         from xpra.dotxpra import osexpand
         attributes = {"display"         : os.environ.get("DISPLAY"),
                       "source"          : self.uuid,
                       "socket-dir"      : osexpand(self.socket_dir)}
-        for k,v in printers.items():
-            if k in self.printers:
-                #remove existing definition:
-                try:
-                    remove_printer(k)
-                except Exception as e:
-                    printlog.warn("failed to remove previous definition for printer %s: %s", k, e)
-            info = v.get("printer-info", "")
-            attrs = attributes.copy()
-            attrs["remote-printer"] = k
-            attrs["remote-device-uri"] = v.get("device-uri")
-            try:
-                add_printer(k, v, info, location, attrs)
-            except Exception as e:
-                printlog.warn("failed to add printer %s: %s", k, e)
-        self.printers = printers
+        for k,props in printers.items():
+            if k not in self.printers:
+                self.setup_printer(k, props, attributes)
+
+    def setup_printer(self, name, props, attributes):
+        from xpra.platform.pycups_printing import add_printer
+        info = props.get("printer-info", "")
+        attrs = attributes.copy()
+        attrs["remote-printer"] = name
+        attrs["remote-device-uri"] = props.get("device-uri")
+        location = "via xpra"
+        if self.hostname:
+            location = "on %s (via xpra)" % self.hostname
+        try:
+            def printer_added():
+                #once the printer has been added, register it in the list
+                #(so it will be removed on exit)
+                printlog.info("the remote printer '%s' has been configured", name)
+                self.printers[name] = props
+            add_printer(name, props, info, location, attrs, success_cb=printer_added)
+        except Exception as e:
+            printlog.warn("failed to add printer %s: %s", name, e)
+            self.add_printer_failed(name)
 
     def remove_printers(self):
-        for k in self.printers:
+        printers = self.printers.copy()
+        self.printers = {}
+        for k in printers:
             from xpra.platform.pycups_printing import remove_printer
             remove_printer(k)
-        self.printers = {}
 
 
     def send_file(self, filename, mimetype, data, printit, openit, options={}):
