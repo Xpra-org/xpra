@@ -1502,7 +1502,6 @@ class ServerSource(object):
             add_printer(name, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
             printlog.warn("failed to add printer %s: %s", name, e)
-            self.add_printer_failed(name)
 
     def remove_printers(self):
         printers = self.printers.copy()
