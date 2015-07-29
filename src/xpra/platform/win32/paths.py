@@ -77,6 +77,7 @@ def do_get_download_dir():
         DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
         if not os.path.exists(DOWNLOAD_PATH):
             DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "Downloads")
+    return DOWNLOAD_PATH
 
 
 def do_get_socket_dirs():
