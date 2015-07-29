@@ -38,34 +38,24 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # packet encoder:
 		,python-rencode
 #depend on lz4 for those that have it, lzo otherwise:
-#wheezy:	,python-lzo
 #jessie:	,python-lz4
-#sid:		,python-lz4
+#stretch:	,python-lz4
 #trusty:	,python-lzo
-#utopic:	,python-lzo
-#vivid:		,python-lzo
+#vivid:		,python-lz4
 #if you use Ubuntu, you will "want" this mess:
-#precise:	,python-appindicator
 #trusty:	,python-appindicator
-#utopic:	,python-appindicator
 #vivid:		,python-appindicator
 Recommends:
         libswscale2
 #version specific values (sigh), uncomment the one you need:
 #x264
-#precise:	,libx264-120
-#saucy:		,libx264-123
-#trusty:	,libx264-142
-#utopic:	,libx264-142
-#vivid:		,libx264-142
-#wheezy:	,libx264-123
 #jessie:	,libx264-142
-#sid:		,libx264-142
+#stretch:	,libx264-146
+#trusty:	,libx264-142
+#vivid:		,libx264-142
 #webp
-#wheezy ships the outdated and buggy libwebp2 (do not use)
 #jessie:	,libwebp5
-#sid:		,libwebp5
-#saucy:		,libwebp4
+#stretch:	,libwebp5
 #trusty:	,libwebp5
 #utopic:	,libwebp5
 #vivid:		,libwebp5
@@ -80,17 +70,14 @@ Recommends:
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):
-#wheezy:	,python-lz4
 #jessie:	,python-lzo
-#sid:		,python-lzo
+#stretch:	,python-lzo
 #trusty:	,python-lz4
-#utopic:	,python-lz4
-#vivid:		,python-lz4
+#vivid:		,python-lzo
 #for html5 support:
 #jessie:	,websockify
-#sid:		,websockify
+#stretch:	,websockify
 #trusty:	,websockify
-#utopic:	,websockify
 #vivid:		,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
@@ -111,10 +98,10 @@ Suggests: openssh-server
 # only useful when connecting using a JSON / YAML only client:
 		,python-yaml
 #nvenc support requires pycuda (and its huge list of dependencies!)
-#utopic:	,python-pycuda
-#vivid:		,python-pycuda
-#jessie:	,python-pycuda
-#sid:		,python-pycuda
+#and the nvencode library:
+#vivid:		,python-pycuda, libnvidia-encode1
+#jessie:	,python-pycuda, libnvidia-encode1
+#stretch:	,python-pycuda, libnvidia-encode1
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
