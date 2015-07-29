@@ -123,6 +123,7 @@ BuildRequires: libXfixes-devel
 BuildRequires: libXcomposite-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXrandr-devel
+BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
 BuildRequires: %{libwebp}-devel
 BuildRequires: x264-xpra-devel

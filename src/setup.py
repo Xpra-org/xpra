@@ -1780,7 +1780,7 @@ if x11_ENABLED:
 
     cython_add(Extension("xpra.x11.bindings.window_bindings",
                 ["xpra/x11/bindings/window_bindings.pyx"],
-                **pkgconfig("xtst", "xfixes", "xcomposite", "xdamage")
+                **pkgconfig("xtst", "xfixes", "xcomposite", "xdamage", "xext")
                 ))
     cython_add(Extension("xpra.x11.bindings.ximage",
                 ["xpra/x11/bindings/ximage.pyx", buffers_c],
