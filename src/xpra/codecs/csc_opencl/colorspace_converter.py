@@ -20,7 +20,7 @@ PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
 PREFERRED_DEVICE_NAME = os.environ.get("XPRA_OPENCL_DEVICE_NAME", "")
 PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
 
-NVIDIA_YUV2RGB = os.environ.get("XPRA_OPENCL_NVIDIA_YUV2RGB", "0")=="1"
+OPENCL_YUV2RGB = os.environ.get("XPRA_OPENCL_YUV2RGB", "0")=="1"
 
 AMD_WARNING_SHOWN = not os.environ.get("XPRA_AMD_WARNING", "1")=="1"
 
@@ -195,7 +195,7 @@ for rgb_mode, channel_order_name in (
                   ("RGB" ,  "RGB"),    #pyopencl.channel_order.RGB
                   ):
     if not hasattr(pyopencl.channel_order, channel_order_name):
-        log("this build does not have support for %s", channel_order_name)
+        log.warn("this PyOpenCL build does not support %s", channel_order_name)
         continue
     channel_order = getattr(pyopencl.channel_order, channel_order_name)
     IN_CHANNEL_ORDER.append((rgb_mode, channel_order))
@@ -231,8 +231,8 @@ def gen_yuv_to_rgb():
 
     YUV_to_RGB_KERNELS = {}
 
-    if selected_platform and selected_platform.name and selected_platform.name.find("CUDA")>=0 and not NVIDIA_YUV2RGB:
-        log.warn("CUDA device detected, YUV to RGB disabled")
+    if not OPENCL_YUV2RGB:
+        log.warn("OpenCL YUV to RGB is disabled")
         return {}
 
     #for YUV to RGB support we need to be able to handle the channel_order in WRITE_ONLY mode
@@ -251,8 +251,7 @@ def gen_yuv_to_rgb():
             found_rgb.add(dst_rgb_mode)
 
     for rgb_mode, channel_order in IN_CHANNEL_ORDER:
-        #why do we discard RGBX download mode? because it doesn't work, don't ask me why
-        if not has_image_format(sif, channel_order, pyopencl.channel_type.UNSIGNED_INT8) or rgb_mode=="RGBX":
+        if not has_image_format(sif, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
             log("YUV 2 RGB: channel order %s is not supported directly in WRITE_ONLY + UNSIGNED_INT8 mode", CHANNEL_ORDER_TO_STR.get(channel_order))
             missing.append((rgb_mode, channel_order))
             continue
@@ -569,7 +568,11 @@ class ColorspaceConverter(object):
         self.program = program
         self.queue = pyopencl.CommandQueue(self.context)
         fm = pyopencl.filter_mode.NEAREST
-        self.sampler = pyopencl.Sampler(self.context, False, pyopencl.addressing_mode.CLAMP_TO_EDGE, fm)
+        try:
+            self.sampler = pyopencl.Sampler(self.context, False, pyopencl.addressing_mode.CLAMP_TO_EDGE, fm)
+        except Exception as e:
+            #this fails with POCL:
+            raise Exception("failed to create CLAMP_TO_EDGE + NEAREST OpenCL Sampler: %s" % e)
         k_def = KERNELS_DEFS.get((self.src_format, self.dst_format))
         assert k_def, "no kernel found for %s to %s" % (self.src_format, self.dst_format)
         self.kernel_function_name, _, self.channel_order, src = k_def
@@ -724,6 +727,7 @@ class ColorspaceConverter(object):
         input_images = []
         for i in range(3):
             _, y_div = divs[i]
+            shape = strides[i], self.src_height//y_div
             plane = pixels[i]
             if type(plane)==_memoryview:
                 plane = memoryview_to_bytes(plane)
@@ -731,13 +735,12 @@ class ColorspaceConverter(object):
                 flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
             else:
                 flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
-            shape = strides[i], self.src_height//y_div
             iimage = pyopencl.Image(self.context, flags, iformat, shape=shape, hostbuf=plane)
             input_images.append(iimage)
 
         #output image:
         oformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNORM_INT8)
-        oimage = pyopencl.Image(self.context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
+        oimage = pyopencl.Image(self.context, mem_flags.WRITE_ONLY | mem_flags.ALLOC_HOST_PTR, oformat, shape=(self.dst_width, self.dst_height))
 
         kernelargs += input_images + [numpy.int32(self.src_width), numpy.int32(self.src_height),
                        numpy.int32(self.dst_width), numpy.int32(self.dst_height),
@@ -747,17 +750,18 @@ class ColorspaceConverter(object):
         log("convert_image(%s) calling %s%s after upload took %.1fms",
               image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
-        self.queue.finish()
-        #free input images:
-        for iimage in input_images:
-            iimage.release()
         kend = time.time()
         log("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
         out_array = numpy.empty(self.dst_width*self.dst_height*4, dtype=numpy.byte)
-        pyopencl.enqueue_read_image(self.queue, oimage, (0, 0), (self.dst_width, self.dst_height), out_array)
+        log("out array=%s", out_array)
+        pyopencl.enqueue_copy(self.queue, out_array, oimage, origin=(0,0), region=(self.dst_width,self.dst_height))
         self.queue.finish()
         log("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
+        #free input images:
+        for iimage in input_images:
+            iimage.release()
+        oimage.release()
         self.time += time.time()-start
         self.frames += 1
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, self.dst_width*4, planes=ImageWrapper.PACKED)
@@ -824,9 +828,6 @@ class ColorspaceConverter(object):
         kstart = time.time()
         log("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
-        self.queue.finish()
-        #free input image:
-        iimage.release()
         kend = time.time()
         log("%s took %.1fms", self.kernel_function_name, 1000.0*(kend-kstart))
 
@@ -835,12 +836,13 @@ class ColorspaceConverter(object):
         for i in range(3):
             out_array = numpy.empty(out_sizes[i], dtype=numpy.byte)
             pixels.append(out_array.data)
-            pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array, is_blocking=False)
+            pyopencl.enqueue_copy(self.queue, out_array, out_buffers[i], is_blocking=False)
         readstart = time.time()
         log("queue read events took %.1fms (3 planes of size %s, with strides=%s)", 1000.0*(readstart-kend), out_sizes, strides)
         self.queue.finish()
         readend = time.time()
         log("wait for read events took %.1fms", 1000.0*(readend-readstart))
+        iimage.release()
         #free output buffers:
         for out_buf in out_buffers:
             out_buf.release()
