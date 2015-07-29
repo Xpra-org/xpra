@@ -37,6 +37,7 @@ if CLIPBOARDS_ENV is not None:
 
 
 TEST_DROP_CLIPBOARD_REQUESTS = int(os.environ.get("XPRA_TEST_DROP_CLIPBOARD", "0"))
+STORE_ON_EXIT = os.environ.get("XPRA_CLIPBOARD_STORE_ON_EXIT", "1")=="1"
 
 _discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
 if _discard_target_strs_ is not None:
@@ -457,7 +458,7 @@ class ClipboardProxy(gtk.Invisible):
         return info
 
     def cleanup(self):
-        if not self._have_token:
+        if not self._have_token and STORE_ON_EXIT:
             self._clipboard.store()
         self.destroy()
 
