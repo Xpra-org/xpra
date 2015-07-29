@@ -196,8 +196,8 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
             MDNS_WARNING = True
             from xpra.log import Logger
             log = Logger("mdns")
-            log.error("failed to load the mdns avahi publisher: %s", e)
-            log.error("either fix your installation or use the '--no-mdns' flag")
+            log.warn("Warning: failed to load the mdns avahi publisher: %s", e)
+            log.warn(" either fix your installation or use the 'mdns=no' option")
         return
     d = text_dict.copy()
     d["mode"] = mode
