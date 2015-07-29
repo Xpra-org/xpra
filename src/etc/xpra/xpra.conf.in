@@ -74,9 +74,9 @@ file-size-limit = 10
 printing = yes
 
 # To manage printers:
-#lpadmin = /usr/bin/lpadmin
+#lpadmin = lpadmin
 #lpadmin = sudo lpadmin
-lpadmin = lpadmin
+lpadmin = /usr/sbin/lpadmin
 
 # How to open filee:
 #open-command = xdg-open
