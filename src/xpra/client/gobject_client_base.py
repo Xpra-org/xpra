@@ -354,9 +354,6 @@ class ExitXpraClient(CommandConnectClient):
         return capabilities
 
     def do_command(self):
-        if not self.server_capabilities.boolget("exit_server"):
-            self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support exit command")
-            return
         gobject.idle_add(self.send, "exit-server")
 
 
