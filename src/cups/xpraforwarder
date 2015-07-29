@@ -60,8 +60,16 @@ def exec_command(command, env=os.environ.copy(), shell=True):
 	info("stderr=%s" % err)
 	return proc.returncode
 
-def xpra_print(socket_dir, display, filename, mimetype, source, title, printer, no_copies, print_options):
-	command = ["xpra", "--socket-dir=%s" % socket_dir, "print", display, filename, mimetype, source, title, printer, no_copies, print_options]
+def xpra_print(socket_path, socket_dir, display, filename, mimetype, source, title, printer, no_copies, print_options):
+	if socket_path:
+		#use direct connection to a given socket path:
+		command = ["xpra", "print", "socket:%s" % socket_path]
+	else:
+		#use the display and hope we can find its corresponding socket:
+		command = ["xpra", "print", display]
+		if socket_dir:
+			command.append("--socket-dir=%s" % socket_dir)
+	command += [filename, mimetype, source, title, printer, no_copies, print_options]
 	#in this case, running as root cannot be avoided, so skip the warning:
 	#(using "su" causes even more problems)
 	env = os.environ.copy()
@@ -101,17 +109,18 @@ def do_main():
 			return default_value
 		assert len(v)==1
 		return v[0]
+	socket_path = aget("socket-path", None)
 	display = aget("display", os.environ.get("DISPLAY"))
-	socket_dir = aget("socket-dir", "/tmp")
+	socket_dir = aget("socket-dir", None)
 	printer = aget("remote-printer", "")
 	source = aget("source", "")
 	if not source:
 		raise Exception("Device URI: client source uuid is missing")
 	if not display:
 		raise Exception("Device URI: display number not specified!")
-	info("xpra display: %s" % display)
+	info("xpra display: %s, socket-path: %s" % (display, socket_path))
 
-	xpra_print(socket_dir, display, filename, "application/postscript", source, title, printer, no_copies, print_options)
+	xpra_print(socket_path, socket_dir, display, filename, "application/postscript", source, title, printer, no_copies, print_options)
 
 
 def main():

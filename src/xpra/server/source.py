@@ -168,7 +168,7 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir,
+                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir, main_socket_path,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap, av_sync,
@@ -179,7 +179,7 @@ class ServerSource(object):
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir,
+                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir, main_socket_path,
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap, av_sync,
@@ -205,6 +205,7 @@ class ServerSource(object):
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
         self.socket_dir = socket_dir
+        self.main_socket_path = main_socket_path
         #pass it to window source:
         WindowSource.staticinit(idle_add, timeout_add, source_remove)
         self.get_transient_for = get_transient_for
@@ -1476,6 +1477,9 @@ class ServerSource(object):
         attributes = {"display"         : os.environ.get("DISPLAY"),
                       "source"          : self.uuid,
                       "socket-dir"      : osexpand(self.socket_dir)}
+        #if we can, tell it exactly where to connect:
+        if self.main_socket_path:
+            attributes["socket-path"] = self.main_socket_path
         for k,props in printers.items():
             if k not in self.printers:
                 self.setup_printer(k, props, attributes)

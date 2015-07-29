@@ -259,7 +259,7 @@ def setup_tcp_socket(host, iport):
         except:
             pass
     _cleanups.append(cleanup_tcp_socket)
-    return "tcp", tcp_socket
+    return "tcp", tcp_socket, (host, iport)
 
 def parse_bind_tcp(bind_tcp):
     tcp_sockets = set()
@@ -334,7 +334,7 @@ def setup_local_socket(socket_dir, socket_dirs, display_name, clobber, mmap_grou
         except:
             pass
     _cleanups.append(cleanup_socket)
-    return ("unix-domain", sock), cleanup_socket
+    return ("unix-domain", sock, sockpath), cleanup_socket
 
 
 def get_free_tcp_port():
