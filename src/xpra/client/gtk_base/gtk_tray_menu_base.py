@@ -830,7 +830,7 @@ class GTKTrayMenuBase(object):
         layout,layouts,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
         full_layout_list = False
         if len(layouts)>1:
-            log.info("keyboard layouts: %s", ",".join(layouts))
+            log.info("keyboard layouts: %s", b",".join(layouts))
             auto = kbitem("Auto", "Auto", "", True)
             self.layout_submenu.append(auto)
             if layout:

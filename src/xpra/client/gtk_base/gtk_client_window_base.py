@@ -349,6 +349,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #when the window is realized, this will be called again
             return
         metalog("set_command(%s) (type=%s)", command, type(command))
+        v = command
         if type(command)!=unicode:
             v = bytestostr(command)
             try:
