@@ -6,5 +6,6 @@ usr/share/applications/xpra_launcher.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml
 usr/share/xpra/icons/*.png
 usr/share/xpra/www/*
+usr/share/xpra/cuda/*
 etc/xpra/xorg.conf
 etc/xpra/xpra.conf
