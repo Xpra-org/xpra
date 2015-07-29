@@ -619,8 +619,8 @@ XpraClient.prototype._make_hello = function() {
 		"named_cursors"				: false,
 		"argv"						: [window.location.href],
 		// printing
-		"file-transfer" 			: false,
-        "printing" 					: false,
+		"file-transfer" 			: true,
+        "printing" 					: true,
 	});
 }
 
@@ -839,7 +839,13 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	if(ctx.audio_enabled) {
 		ctx._sound_start_receiving();
 	}
-	
+	var printers = {
+		"HTLM5 client": {
+			"printer-info": "Print to PDF in client browser",
+			"printer-make-and-model": "HTML5 client version"
+		}
+	};
+	ctx.protocol.send(["printers", printers]);
 }
 
 XpraClient.prototype._process_challenge = function(packet, ctx) {
