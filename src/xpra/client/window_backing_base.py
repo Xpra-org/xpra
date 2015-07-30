@@ -22,6 +22,7 @@ from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_plac
 
 DELTA_BUCKETS = int(os.environ.get("XPRA_DELTA_BUCKETS", "5"))
 INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
+WEBP_PILLOW = os.environ.get("XPRA_WEBP_PILLOW", "0")=="1"
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
@@ -241,6 +242,9 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         dec_webp = get_codec("dec_webp")
+        if not dec_webp or WEBP_PILLOW:
+            #if webp is enabled, then Pillow should be able to take care of it:
+            return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
         has_alpha = options.get("has_alpha", False)
         buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.get("rgb_format"))
         #replace with the actual rgb format we get from the decoder:
