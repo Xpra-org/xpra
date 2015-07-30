@@ -31,7 +31,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #jessie:,xserver-xorg-video-dummy
 #stretch:,xserver-xorg-video-dummy
 #trusty:,xvfb
-#vivid: ,Xvfb
+#vivid: ,xvfb
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
