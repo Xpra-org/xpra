@@ -20,6 +20,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
 
+from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.scripts.config import ENCRYPTION_CIPHERS
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
@@ -76,6 +77,7 @@ class XpraClientBase(object):
             self.defaults_init()
 
     def defaults_init(self):
+        getChildReaper()
         log("XpraClientBase.defaults_init() os.environ:")
         for k,v in os.environ.items():
             log(" %s=%s", k, nonl(v))
@@ -386,6 +388,7 @@ class XpraClientBase(object):
 
 
     def cleanup(self):
+        reaper_cleanup()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
@@ -773,7 +776,8 @@ class XpraClientBase(object):
             os.write(fd, file_data)
         finally:
             os.close(fd)
-        filelog.info("downloaded %s bytes to %s file %s", filesize, mimetype, filename)
+        filelog.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "unknown"), ["", " for printing"][int(printit)])
+        filelog.info(" %s", filename)
         if printit:
             printer = options.strget("printer")
             title   = options.strget("title")
@@ -786,11 +790,7 @@ class XpraClientBase(object):
             self._print_file(filename, printer, title, safe_print_options)
             return
         elif openit:
-            #run the command in a new thread
-            #so we can block waiting for the subprocess to exit
-            #(ensures that we do reap the process)
-            import thread
-            thread.start_new_thread(self._open_file, (filename, ))
+            self._open_file(filename)
 
     def _print_file(self, filename, printer, title, options):
         import time
@@ -823,21 +823,16 @@ class XpraClientBase(object):
             self.timeout_add(10000, check_printing_finished)
 
     def _open_file(self, filename):
-        import subprocess
-        PIPE = subprocess.PIPE
-        process = subprocess.Popen([self.open_command, filename], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        out, err = process.communicate()
-        r = process.wait()
-        filelog.info("opened file %s with %s, exit code: %s", filename, self.open_command, r)
-        if r!=0:
-            l = filelog.warn
-        else:
-            l = filelog
-        if out:
-            l("stdout=%s", nonl(out)[:512])
-        if err:
-            l("stderr=%s", nonl(err)[:512])
-
+        import subprocess, shlex
+        command = shlex.split(self.open_command)+[filename]
+        proc = subprocess.Popen(command)
+        cr = getChildReaper()
+        def open_done(*args):
+            returncode = proc.poll()
+            log("open_done: command %s has ended, returncode=%s", command, returncode)
+            if returncode!=0:
+                log.warn("Warning: failed to open the downloaded file using %s", self.open_command)
+        cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
 
     def _process_gibberish(self, packet):
         (_, message, data) = packet
