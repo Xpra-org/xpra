@@ -27,7 +27,11 @@ Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
-        ,xserver-xorg-video-dummy
+#we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
+#jessie:,xserver-xorg-video-dummy
+#stretch:,xserver-xorg-video-dummy
+#trusty:,xvfb
+#vivid: ,Xvfb
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
