@@ -8,8 +8,7 @@ import time
 import gobject
 gobject.threads_init()
 
-from xpra.server.region import rectangle        #@UnresolvedImport (cython)
-from xpra.server.region import add_rectangle, remove_rectangle, merge_all, contains_rect
+from xpra.server.region import rectangle, add_rectangle, remove_rectangle, merge_all, contains_rect #@UnresolvedImport (cython)
 
 
 #collected with the server "-d encoding"
