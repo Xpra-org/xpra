@@ -32,5 +32,4 @@ override_dh_builddeb:
 # Ubuntu messes up the cups backend permissions, fix it:
 override_dh_fixperms:
 	dh_fixperms
-	chmod 700 debian/$(PACKAGE)/usr/lib/cups/backend/xpraforwarder
-	#find debian/ -type f -name "xpraforwarder" -print0 | xargs -0 chmod 700 
+	chmod 700 debian/xpra/usr/lib/cups/backend/xpraforwarder
