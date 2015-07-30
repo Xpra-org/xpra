@@ -7,11 +7,11 @@
 import sys
 import os
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
-from xpra.codecs.enc_x264.encoder import bytestostr
 gtk = import_gtk()
 glib = import_glib()
 
 from xpra.util import CLIENT_EXIT
+from xpra.os_util import bytestostr
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, BUTTON_PRESS_MASK
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
