@@ -4,20 +4,20 @@ Description: libav10 compatibility, different patch for no0RGB
 
 Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
 ===================================================================
---- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 10103)
+--- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 10156)
 +++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	(working copy)
 @@ -44,8 +44,8 @@
-     unsigned int AV_PIX_FMT_YUV422P
-     unsigned int AV_PIX_FMT_YUV444P
-     unsigned int AV_PIX_FMT_RGB24
--    unsigned int AV_PIX_FMT_0RGB
--    unsigned int AV_PIX_FMT_BGR0
-+    #unsigned int AV_PIX_FMT_0RGB
-+    #unsigned int AV_PIX_FMT_BGR0
-     unsigned int AV_PIX_FMT_ARGB
-     unsigned int AV_PIX_FMT_BGRA
-     unsigned int AV_PIX_FMT_GBRP
-@@ -109,8 +109,8 @@
+     AVPixelFormat AV_PIX_FMT_YUV422P
+     AVPixelFormat AV_PIX_FMT_YUV444P
+     AVPixelFormat AV_PIX_FMT_RGB24
+-    AVPixelFormat AV_PIX_FMT_0RGB
+-    AVPixelFormat AV_PIX_FMT_BGR0
++    #AVPixelFormat AV_PIX_FMT_0RGB
++    #AVPixelFormat AV_PIX_FMT_BGR0
+     AVPixelFormat AV_PIX_FMT_ARGB
+     AVPixelFormat AV_PIX_FMT_BGRA
+     AVPixelFormat AV_PIX_FMT_GBRP
+@@ -107,8 +107,8 @@
  FORMAT_OPTIONS = [
      ("RGB24",   AV_PIX_FMT_RGB24,      (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"  ),
      ("BGR24",   AV_PIX_FMT_BGR24,      (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"  ),
