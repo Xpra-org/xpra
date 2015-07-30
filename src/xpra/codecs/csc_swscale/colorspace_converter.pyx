@@ -40,26 +40,24 @@ cdef extern from "libavcodec/version.h":
     int LIBSWSCALE_VERSION_MICRO
 
 cdef extern from "libavutil/pixfmt.h":
-    unsigned int AV_PIX_FMT_YUV420P
-    unsigned int AV_PIX_FMT_YUV422P
-    unsigned int AV_PIX_FMT_YUV444P
-    unsigned int AV_PIX_FMT_RGB24
-    unsigned int AV_PIX_FMT_0RGB
-    unsigned int AV_PIX_FMT_BGR0
-    unsigned int AV_PIX_FMT_ARGB
-    unsigned int AV_PIX_FMT_BGRA
-    unsigned int AV_PIX_FMT_GBRP
-    unsigned int AV_PIX_FMT_RGB24
-    unsigned int AV_PIX_FMT_BGR24
+    AVPixelFormat AV_PIX_FMT_YUV420P
+    AVPixelFormat AV_PIX_FMT_YUV422P
+    AVPixelFormat AV_PIX_FMT_YUV444P
+    AVPixelFormat AV_PIX_FMT_RGB24
+    AVPixelFormat AV_PIX_FMT_0RGB
+    AVPixelFormat AV_PIX_FMT_BGR0
+    AVPixelFormat AV_PIX_FMT_ARGB
+    AVPixelFormat AV_PIX_FMT_BGRA
+    AVPixelFormat AV_PIX_FMT_GBRP
+    AVPixelFormat AV_PIX_FMT_RGB24
+    AVPixelFormat AV_PIX_FMT_BGR24
+    AVPixelFormat AV_PIX_FMT_NONE
     unsigned int SWS_ACCURATE_RND
     unsigned int SWS_BICUBIC
     unsigned int SWS_BICUBLIN
     unsigned int SWS_BILINEAR
     unsigned int SWS_FAST_BILINEAR
     unsigned int SWS_FULL_CHR_H_INT
-
-cdef extern from "libavcodec/avcodec.h":
-    AVPixelFormat PIX_FMT_NONE
 
 ctypedef void SwsContext
 cdef extern from "libswscale/swscale.h":
@@ -418,11 +416,11 @@ cdef class ColorspaceConverter:
             self.context = NULL
         self.src_width = 0
         self.src_height = 0
-        self.src_format_enum = PIX_FMT_NONE
+        self.src_format_enum = AV_PIX_FMT_NONE
         self.src_format = ""
         self.dst_width = 0
         self.dst_height = 0
-        self.dst_format_enum = PIX_FMT_NONE
+        self.dst_format_enum = AV_PIX_FMT_NONE
         self.dst_format = ""
         self.frames = 0
         self.time = 0

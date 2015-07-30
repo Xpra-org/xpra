@@ -34,9 +34,6 @@ cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size)
 
 
-ctypedef long AVPixelFormat
-
-
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
 
@@ -50,18 +47,18 @@ cdef extern from "libavcodec/version.h":
 
 #why can't we define this inside the avcodec.h section? (beats me)
 ctypedef unsigned int AVCodecID
+ctypedef long AVPixelFormat
 
 cdef extern from "libavcodec/avcodec.h":
-
-    int AV_PIX_FMT_YUV420P
-    int AV_PIX_FMT_YUV422P
-    int AV_PIX_FMT_YUV444P
-    int AV_PIX_FMT_RGB24
-    int AV_PIX_FMT_0RGB
-    int AV_PIX_FMT_BGR0
-    int AV_PIX_FMT_ARGB
-    int AV_PIX_FMT_BGRA
-    int AV_PIX_FMT_GBRP
+    AVPixelFormat AV_PIX_FMT_YUV420P
+    AVPixelFormat AV_PIX_FMT_YUV422P
+    AVPixelFormat AV_PIX_FMT_YUV444P
+    AVPixelFormat AV_PIX_FMT_RGB24
+    AVPixelFormat AV_PIX_FMT_0RGB
+    AVPixelFormat AV_PIX_FMT_BGR0
+    AVPixelFormat AV_PIX_FMT_ARGB
+    AVPixelFormat AV_PIX_FMT_BGRA
+    AVPixelFormat AV_PIX_FMT_GBRP
 
     int CODEC_FLAG2_FAST
 
@@ -89,7 +86,7 @@ cdef extern from "libavcodec/avcodec.h":
         int flags2
         int refcounted_frames
 
-    AVPixelFormat PIX_FMT_NONE
+    AVPixelFormat AV_PIX_FMT_NONE
     AVCodecID AV_CODEC_ID_H264
     AVCodecID AV_CODEC_ID_H265
     AVCodecID AV_CODEC_ID_VP8
@@ -315,8 +312,8 @@ cdef class Decoder:
         if not self.colorspace:
             log.error("invalid pixel format: %s", colorspace)
             return  False
-        self.pix_fmt = FORMAT_TO_ENUM.get(colorspace, PIX_FMT_NONE)
-        if self.pix_fmt==PIX_FMT_NONE:
+        self.pix_fmt = FORMAT_TO_ENUM.get(colorspace, AV_PIX_FMT_NONE)
+        if self.pix_fmt==AV_PIX_FMT_NONE:
             log.error("invalid pixel format: %s", colorspace)
             return  False
         self.actual_pix_fmt = self.pix_fmt
