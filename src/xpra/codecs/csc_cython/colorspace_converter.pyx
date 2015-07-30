@@ -478,11 +478,11 @@ cdef class ColorspaceConverter:
         cdef unsigned int dst_width = self.dst_width
         cdef unsigned int dst_height = self.dst_height
 
-        assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0
+        assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
         assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
-        assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0
+        assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
         assert buf_len>=Ustride*image.get_height()/2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
-        assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0
+        assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
         assert buf_len>=Vstride*image.get_height()/2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
 
         #allocate output buffer:
