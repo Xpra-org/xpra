@@ -27,7 +27,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import thread, get_hex_uuid, livefds
+from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
     repr_ellipsized
 from xpra.child_reaper import reaper_cleanup
@@ -1144,18 +1144,19 @@ class ServerBase(ServerCore):
     def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
         actual_filename = os.path.abspath(os.path.expanduser(filename))
         if not os.path.exists(actual_filename):
-            return ControlError("file '%s' does not exist" % filename)
+            raise ControlError("file '%s' does not exist" % filename)
         openit = str(openit).lower() in ("open", "true", "1")
         #find the client uuid specified:
         sources = self._control_get_sources(client_uuids)
         if not sources:
-            return ControlError("no clients found matching: %s" % client_uuids)
+            raise ControlError("no clients found matching: %s" % client_uuids)
+        data = load_binary_file(actual_filename)
         for ss in sources:
             if ss.file_transfer:
-                ss.send_file(filename, False, openit, ss, maxbitrate)
+                ss.send_file(filename, "", data, False, openit)
             else:
                 log.warn("cannot send file, client %s does not support file transfers!", ss)
-        return "file transfer to %s initiated" % client_uuids
+        return "file transfer of '%s' to %s initiated" % (filename, client_uuids)
 
     def control_command_print(self, filename, printer, client_uuids, maxbitrate=0, title="", *options_strs):
         actual_filename = os.path.abspath(os.path.expanduser(filename))
@@ -1168,7 +1169,7 @@ class ServerBase(ServerCore):
             raise ControlError("file '%s' does not exist" % filename)
         sources = self._control_get_sources(client_uuids)
         if not sources:
-            return ControlError("no clients found matching: %s" % client_uuids)
+            raise ControlError("no clients found matching: %s" % client_uuids)
         #parse options into a dict:
         options = {}
         for arg in options_strs:
@@ -1187,7 +1188,7 @@ class ServerBase(ServerCore):
         from xpra.net import compression
         opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
         if c not in opts:
-            return ControlError("compressor argument must be one of: %s" % (", ".join(opts)))
+            raise ControlError("compressor argument must be one of: %s" % (", ".join(opts)))
         for cproto in list(self._server_sources.keys()):
             cproto.enable_compressor(c)
         self.all_send_client_command("enable_%s" % c)
@@ -1198,7 +1199,7 @@ class ServerBase(ServerCore):
         from xpra.net import packet_encoding
         opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
         if e not in opts:
-            return ControlError("encoder argument must be one of: %s" % (", ".join(opts)))
+            raise ControlError("encoder argument must be one of: %s" % (", ".join(opts)))
         for cproto in list(self._server_sources.keys()):
             cproto.enable_encoder(e)
         self.all_send_client_command("enable_%s" % e)
@@ -1319,7 +1320,7 @@ class ServerBase(ServerCore):
             elif press in ("0", "unpress"):
                 press = False
             else:
-                return ControlError("if present, the press argument must be one of: %s", ("1", "press", "0", "unpress"))
+                raise ControlError("if present, the press argument must be one of: %s", ("1", "press", "0", "unpress"))
         self.fake_key(keycode, press)
 
     def control_command_sound_output(self, *args):
@@ -1331,11 +1332,11 @@ class ServerBase(ServerCore):
     def control_command_workspace(self, wid, workspace):
         window = self._id_to_window.get(wid)
         if not window:
-            return ControlError("window %s does not exist", wid)
+            raise ControlError("window %s does not exist", wid)
         if "workspace" not in window.get_property_names():
-            return ControlError("cannot set workspace on window %s", window)
+            raise ControlError("cannot set workspace on window %s", window)
         if workspace<0:
-            return ControlError("invalid workspace value: %s", workspace)
+            raise ControlError("invalid workspace value: %s", workspace)
         window.set_property("workspace", workspace)
         return "window %s moved to workspace %s" % (wid, workspace)
 
