@@ -681,13 +681,14 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         except:
             pass
         #read new xshape:
-        v = self._read_xshape()
-        if cur_shape==v:
-            shapelog("xshape unchanged")
-            return
-        v["serial"] = int(event.serial)
-        shapelog("xshape updated with serial %#x", event.serial)
-        self._internal_set_property("shape", v)
+        with xswallow:
+            v = self._read_xshape()
+            if cur_shape==v:
+                shapelog("xshape unchanged")
+                return
+            v["serial"] = int(event.serial)
+            shapelog("xshape updated with serial %#x", event.serial)
+            self._internal_set_property("shape", v)
 
 
     def do_xpra_xkb_event(self, event):
