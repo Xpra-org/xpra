@@ -1817,7 +1817,7 @@ if client_ENABLED and PYTHON3:
                 ))
 
 add_packages("xpra.codecs.argb")
-argb_pkgconfig = pkgconfig()
+argb_pkgconfig = pkgconfig(optimize=3)
 cython_add(Extension("xpra.codecs.argb.argb",
             ["xpra/codecs/argb/argb.pyx", buffers_c], **argb_pkgconfig))
 
@@ -1858,7 +1858,7 @@ if clipboard_ENABLED:
 
 cython_add(Extension("xpra.codecs.xor.cyxor",
             ["xpra/codecs/xor/cyxor.pyx"]+membuffers_c,
-            **pkgconfig()))
+            **pkgconfig(optimize=3)))
 
 if server_ENABLED:
     add_modules("xpra.server.stats")
@@ -2059,7 +2059,7 @@ if csc_swscale_ENABLED:
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
-    csc_cython_pkgconfig = pkgconfig()
+    csc_cython_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
                 ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
                 **csc_cython_pkgconfig))
