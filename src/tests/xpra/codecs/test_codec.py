@@ -67,9 +67,9 @@ def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=
     Yxd, Yyd = Ydivs
     Uxd, Uyd = Udivs
     Vxd, Vyd = Vdivs
-    Ysize = w*h/Yxd/Yyd
-    Usize = w*h/Uxd/Uyd
-    Vsize = w*h/Vxd/Vyd
+    Ysize = w*h//Yxd//Yyd
+    Usize = w*h//Uxd//Uyd
+    Vsize = w*h//Vxd//Vyd
     def make_buffer(size):
         if populate:
             return bytearray(get_source_data(size))
@@ -82,7 +82,7 @@ def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=
         pixels = (str(Ydata), str(Udata), str(Vdata))
     else:
         pixels = (Ydata, Udata, Vdata)
-    strides = (w/Yxd, w/Uxd, w/Vxd)
+    strides = (w//Yxd, w//Uxd, w//Vxd)
     end = time.time()
     if DEBUG:
         print("make_planar_input%s took %.1fms" % ((src_format, w, h, use_strings, populate), end-start))
