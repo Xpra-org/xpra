@@ -501,7 +501,7 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_CODEC_CONFIG:
         NV_ENC_CONFIG_H264  h264Config                  #[in]: Specifies the H.264-specific encoder configuration
         NV_ENC_CONFIG_HEVC  hevcConfig                  #[in]: Specifies the HEVC-specific encoder configuration. Currently unsupported and must not to be used.
-        uint32_t            reserved[256];              #[in]: Reserved and must be set to 0
+        uint32_t            reserved[256]               #[in]: Reserved and must be set to 0
 
     ctypedef struct NV_ENC_RC_PARAMS:
         uint32_t    version
