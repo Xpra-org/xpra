@@ -321,7 +321,8 @@ class Protocol(object):
                 if padding_size==0:
                     padded = data
                 else:
-                    padded = data+(" "*padding_size)
+                    # pad byte value is number of padding bytes added
+                    padded = data+(chr(padding_size)*padding_size)
                 actual_size = payload_size + padding_size
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
@@ -744,12 +745,15 @@ class Protocol(object):
                                 return list(bytearray(s))
                             except:
                                 return list(str(s))
-                        padtext = " "*padding_size
+                        # pad byte value is number of padding bytes added
+                        padtext = chr(padding_size)*padding_size
                         if not data.endswith(padtext):
-                            log("decryption failed: string does not end with '%s': %s (%s) -> %s (%s)",
-                            padtext, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
-                            self._internal_error("encryption error (wrong key?)")
-                            return
+                            old_padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
+                            if not data.endswith(old_padding):
+                                log("decryption failed: string does not end with '%s' or '%s': %s (%s) -> %s (%s)",
+                                padtext, old_padding, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
+                                self._internal_error("encryption error (wrong key?)")
+                                return
                         data = data[:-padding_size]
                 #uncompress if needed:
                 if compression_level>0:
