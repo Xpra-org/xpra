@@ -570,6 +570,27 @@ class GLWindowBackingBase(GTKWindowBacking):
             glDisable(GL_LINE_STIPPLE)
 
 
+    def pixels_for_upload(self, img_data):
+        #prepare the pixel buffer for upload:
+        t = type(img_data)
+        if t==memoryview_type:
+            if not zerocopy_upload:
+                #not safe, make a copy :(
+                return "copy:memoryview_to_bytes", img_data.tobytes()
+            return "zerocopy:memoryview", img_data
+        elif t in (str, buffer_type) and zerocopy_upload:
+            #we can zerocopy if we wrap it:
+            return "zerocopy:buffer-as-memoryview", memoryview_type(img_data)
+        elif t!=str:
+            if hasattr(img_data, "raw"):
+                return "zerocopy:mmap", img_data.raw
+            #everything else.. copy to bytes (aka str):
+            return "copy:str(%s)" % t, str(img_data)
+        else:
+            #str already
+            return  "copy:str", img_data
+
+
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         return self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options)
 
@@ -584,29 +605,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             return False
 
         #TODO: move this code up to the decode thread section
-        #prepare the pixel buffer for upload:
-        t = type(img_data)
-        if t==memoryview_type:
-            if not zerocopy_upload:
-                #not safe, make a copy :(
-                img_data = memoryview_to_bytes(img_data)
-                upload = "copy:memoryview_to_bytes"
-            else:
-                upload = "zerocopy:memoryview"
-        elif t in (str, buffer_type) and zerocopy_upload:
-            #we can zerocopy if we wrap it:
-            img_data = memoryview_type(img_data)
-            upload = "zerocopy:memoryview", t
-        elif t!=str:
-            if hasattr(img_data, "raw"):
-                img_data = img_data.raw
-                upload = "zerocopy:mmap"
-            else:
-                #everything else.. copy to bytes (aka str):
-                img_data = str(img_data)
-                upload = "copy:str", t
-        else:
-            upload = "copy:str"
+        upload, img_data = self.pixels_for_upload(img_data)
 
         with context:
             self.gl_init()
@@ -744,8 +743,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
-            pixel_data = img_data[index]
-            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data))
+            upload, pixel_data = self.pixels_for_upload(img_data[index])
+            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data), upload)
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width//div_w, height//div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
