@@ -54,7 +54,6 @@ for x in _DEFAULT_BOX_COLORS.keys():
     BOX_COLORS[x] = get_fcolor(x)
 
 
-from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
