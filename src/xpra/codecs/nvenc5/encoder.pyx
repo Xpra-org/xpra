@@ -1456,7 +1456,7 @@ cdef class Encoder:
             result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
             if DEBUG_API:
                 log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <unsigned long> self.cuda_context_ptr)
-            assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %i" % CUDA_ERRORS_INFO.get(result, result)
+            assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
         finally:
             self.cuda_context.pop()
 

@@ -1417,11 +1417,10 @@ cdef class Encoder:
 
             #get the CUDA context (C pointer):
             #a bit of magic to pass a cython pointer to ctypes:
-            context_pointer = <unsigned long> (&self.cuda_context_ptr)
-            result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
+            result = cuCtxGetCurrent(ctypes.cast(<unsigned long> &self.cuda_context_ptr, POINTER(ctypes.c_void_p)))
             if DEBUG_API:
                 log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <unsigned long> self.cuda_context_ptr)
-            assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %i" % CUDA_ERRORS_INFO.get(result, result)
+            assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
         finally:
             self.cuda_context.pop()
 
