@@ -31,8 +31,9 @@ function XpraClient(container) {
 	this.disconnect_reason = null;
 	// encryption
 	this.encryption = false;
-	this.encryption_caps = null;
 	this.encryption_key = null;
+	this.cipher_in_caps = null;
+	this.cipher_out_caps = null;
 	// authentication
 	this.authentication_key = null;
 	// hello
@@ -138,7 +139,7 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 			return;
 		}
 		// set the encryption caps now
-		this.encryption_caps = {
+		this.cipher_in_caps = {
 			"cipher"					: this.encryption,
 			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
 			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
@@ -194,7 +195,7 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	// do open
 	this.protocol.open(uri);
 	// copy over the encryption caps with the key for recieved data
-	this.protocol.set_cipher_in(this.encryption_caps, this.encryption_key);
+	this.protocol.set_cipher_in(this.cipher_in_caps, this.encryption_key);
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {
@@ -558,7 +559,7 @@ XpraClient.prototype._make_hello_base = function() {
     });
 
     if(this.encryption) {
-    	this._update_capabilities(this.encryption_caps);
+    	this._update_capabilities(this.cipher_in_caps);
 	}
 }
 
@@ -849,7 +850,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_challenge = function(packet, ctx) {
-	console.log("process challenge")
+	console.log("process challenge");
 	if ((!ctx.authentication_key) || (ctx.authentication_key == "")) {
 		ctx.callback_close("No password specified for authentication challenge");
 	}
