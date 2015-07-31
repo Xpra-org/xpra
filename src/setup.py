@@ -163,7 +163,6 @@ if WIN32:
 else:
     nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
     nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
-cuda_ENABLED            = nvenc4_ENABLED or nvenc5_ENABLED
 
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
@@ -180,7 +179,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265",
-            "nvenc4", "nvenc5", "cuda",
+            "nvenc4", "nvenc5",
             "vpx", "webp", "pillow",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython",
@@ -1979,12 +1978,7 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
         if not _nvenc_version_enabled:
             continue
         nvencmodule = "nvenc%s" % nvenc_version
-        try:
-            assert int(cuda_ENABLED.split(".")[0])>1
-            cuda = "cuda-%s" % cuda_ENABLED
-        except:
-            cuda = "cuda"
-        nvenc_pkgconfig = pkgconfig(nvencmodule, cuda, ignored_flags=["-l", "-L"])
+        nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
         #don't link against libnvidia-encode, we load it dynamically:
         libraries = nvenc_pkgconfig.get("libraries", [])
         if "nvidia-encode" in libraries:
