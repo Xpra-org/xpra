@@ -65,7 +65,7 @@ log("csc_cython: byteorder(RGB)=%s", (RGB_R, RGB_G, RGB_B))
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 
-CSC_CYTHON_VERSION = [0, 3]
+CSC_CYTHON_VERSION = [1]
 
 
 def init_module():
