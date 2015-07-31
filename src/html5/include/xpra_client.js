@@ -144,7 +144,6 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
 			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
 	        "cipher.key_stretch_iterations"	: 1000,
-	        "cipher.block_size"			: 32,
 		};
 	}
 	// detect websocket in webworker support and degrade gracefully
@@ -853,6 +852,14 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	console.log("process challenge");
 	if ((!ctx.authentication_key) || (ctx.authentication_key == "")) {
 		ctx.callback_close("No password specified for authentication challenge");
+	}
+	if(ctx.encryption) {
+		if(packet.length >=3) {
+			ctx.cipher_out_caps = packet[2];
+			ctx.protocol.set_cipher_out(ctx.cipher_out_caps, ctx.encryption_key);
+		} else {
+			ctx.callback_close("challenge does not contain encryption details to use for the response");
+		}
 	}
 	var digest = "hmac";
 	var salt = packet[1];

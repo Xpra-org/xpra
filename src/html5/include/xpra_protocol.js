@@ -70,6 +70,11 @@ XpraProtocolWorkerHost.prototype.set_cipher_in = function(caps, key) {
 	this.worker.postMessage({'c': 'z', 'p': caps, 'k': key});
 }
 
+XpraProtocolWorkerHost.prototype.set_cipher_out = function(caps, key) {
+	this.worker.postMessage({'c': 'x', 'p': caps, 'k': key});
+}
+
+
 
 /*
 The main Xpra wire protocol
@@ -81,6 +86,7 @@ function XpraProtocol() {
 	this.raw_packets = [];
 	this.cipher_in = null;
 	this.cipher_in_block_size = null;
+	this.cipher_out = null;
 	this.mode = 'binary';  // Current WebSocket mode: 'binary', 'base64'
     this.rQ = [];          // Receive queue
     this.rQi = 0;          // Receive queue index
@@ -164,12 +170,21 @@ XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
 }
 
 XpraProtocol.prototype.set_cipher_in = function(caps, key) {
-	this.cipher_in_block_size = caps['cipher.block_size'];
+	this.cipher_in_block_size = 32;
 	// stretch the password
-	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], caps['cipher.block_size']);
+	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_in_block_size);
 	// start the cipher
 	this.cipher_in = forge.cipher.createDecipher('AES-CBC', secret);
 	this.cipher_in.start({iv: caps['cipher.iv']});
+}
+
+XpraProtocol.prototype.set_cipher_out = function(caps, key) {
+	this.cipher_out_block_size = 32;
+	// stretch the password
+	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_out_block_size);
+	// start the cipher
+	this.cipher_out = forge.cipher.createCipher('AES-CBC', secret);
+	this.cipher_out.start({iv: caps['cipher.iv']});
 }
 
 XpraProtocol.prototype._buffer_peek = function(bytes) {
@@ -316,6 +331,9 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 			break;
 		case 's':
 			protocol.send(data.p);
+			break;
+		case 'x':
+			protocol.set_cipher_out(data.p, data.k);
 			break;
 		case 'z':
 			protocol.set_cipher_in(data.p, data.k);
