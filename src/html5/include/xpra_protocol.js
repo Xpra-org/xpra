@@ -80,6 +80,7 @@ function XpraProtocol() {
 	this.websocket = null;
 	this.raw_packets = [];
 	this.cipher_in = null;
+	this.cipher_in_block_size = null;
 	this.mode = 'binary';  // Current WebSocket mode: 'binary', 'base64'
     this.rQ = [];          // Receive queue
     this.rQi = 0;          // Receive queue index
@@ -163,9 +164,12 @@ XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
 }
 
 XpraProtocol.prototype.set_cipher_in = function(caps, key) {
-	this.cipher_in = caps;
+	this.cipher_in_block_size = caps['cipher.block_size'];
 	// stretch the password
-	this.cipher_in['secret'] = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], caps['cipher.block_size']);
+	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], caps['cipher.block_size']);
+	// start the cipher
+	this.cipher_in = forge.cipher.createDecipher('AES-CBC', secret);
+	this.cipher_in.start({iv: caps['cipher.iv']});
 }
 
 XpraProtocol.prototype._buffer_peek = function(bytes) {
@@ -209,8 +213,7 @@ XpraProtocol.prototype._process = function() {
 	}
 	// work out padding if necessary
 	if (proto_flags & 0x2) {
-		var block_size = this.cipher_in['cipher.block_size'];
-		var padding = (block_size - packet_size % block_size);
+		var padding = (this.cipher_in_block_size - packet_size % this.cipher_in_block_size);
 		packet_size += padding;
 	}
 	//debug("packet_size="+packet_size+", level="+level+", index="+index);
@@ -230,7 +233,8 @@ XpraProtocol.prototype._process = function() {
 
 	// decrypt if needed
 	if (proto_flags & 0x2) {
-		throw "decryption not implemented";
+		this.cipher_in.update(forge.util.createBuffer(uintToString(packet_data)));
+		packet_data = this.cipher_in.output.getBytes();
 	}
 
 	//decompress it if needed:
