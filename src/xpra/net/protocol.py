@@ -317,16 +317,16 @@ class Protocol(object):
             if self.cipher_out:
                 proto_flags |= FLAGS_CIPHER
                 #note: since we are padding: l!=len(data)
-                padding = (self.cipher_out_block_size - len(data) % self.cipher_out_block_size) * " "
-                if len(padding)==0:
+                padding_size = self.cipher_out_block_size - (len(data) % self.cipher_out_block_size)
+                if padding_size==0:
                     padded = data
                 else:
-                    padded = data+padding
-                actual_size = payload_size + len(padding)
+                    padded = data+(" "*padding_size)
+                actual_size = payload_size + padding_size
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
-                log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
+                log("sending %s bytes encrypted with %s padding", payload_size, padding_size)
             if proto_flags & FLAGS_NOHEADER:
                 #for plain/text packets (ie: gibberish response)
                 items.append((data, scb, ecb))
@@ -660,7 +660,7 @@ class Protocol(object):
         """
         read_buffer = None
         payload_size = -1
-        padding = None
+        padding_size = 0
         packet_index = 0
         compression_level = False
         raw_packets = {}
@@ -699,11 +699,11 @@ class Protocol(object):
                             log.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
                             self._invalid_header(read_buffer)
                             return
-                        padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
-                        payload_size = data_size + len(padding)
+                        padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
+                        payload_size = data_size + padding_size
                     else:
                         #no cipher, no padding:
-                        padding = None
+                        padding_size = 0
                         payload_size = data_size
                     assert payload_size>0, "invalid payload size: %i" % payload_size
                     read_buffer = read_buffer[8:]
@@ -736,20 +736,21 @@ class Protocol(object):
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & FLAGS_CIPHER:
-                    log("received %s encrypted bytes with %s padding", payload_size, len(padding))
+                    log("received %s encrypted bytes with %s padding", payload_size, padding_size)
                     data = self.cipher_in.decrypt(raw_string)
-                    if padding:
+                    if padding_size > 0:
                         def debug_str(s):
                             try:
                                 return list(bytearray(s))
                             except:
                                 return list(str(s))
-                        if not data.endswith(padding):
+                        padtext = " "*padding_size
+                        if not data.endswith(padtext):
                             log("decryption failed: string does not end with '%s': %s (%s) -> %s (%s)",
-                            padding, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
+                            padtext, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
                             self._internal_error("encryption error (wrong key?)")
                             return
-                        data = data[:-len(padding)]
+                        data = data[:-padding_size]
                 #uncompress if needed:
                 if compression_level>0:
                     try:
@@ -800,7 +801,7 @@ class Protocol(object):
                 if self._closed:
                     return
                 payload_size = -1
-                padding = None
+                padding_size = 0
                 #add any raw packets back into it:
                 if raw_packets:
                     for index,raw_data in raw_packets.items():
