@@ -28,10 +28,10 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
 #we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
-#jessie:	,xserver-xorg-video-dummy
-#stretch:	,xserver-xorg-video-dummy
-#trusty:	,xvfb
-#vivid:	,xvfb
+#jessie:        ,xserver-xorg-video-dummy
+#stretch:        ,xserver-xorg-video-dummy
+#trusty:        ,xvfb
+#vivid:        ,xvfb
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -40,29 +40,33 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # for PNG and JPEG support:
         ,python-imaging
 # packet encoder:
-		,python-rencode
+        ,python-rencode
 #depend on lz4 for those that have it, lzo otherwise:
-#jessie:	,python-lz4
-#stretch:	,python-lz4
-#trusty:	,python-lzo
-#vivid:		,python-lz4
+#jessie:        ,python-lz4
+#stretch:        ,python-lz4
+#trusty:        ,python-lzo
+#vivid:        ,python-lz4
+#wily:        ,python-lz4
 #if you use Ubuntu, you will "want" this mess:
-#trusty:	,python-appindicator
-#vivid:		,python-appindicator
+#trusty:        ,python-appindicator
+#vivid:        ,python-appindicator
+#wily:        ,python-appindicator
 Recommends:
         libswscale2
 #version specific values (sigh), uncomment the one you need:
 #x264
-#jessie:	,libx264-142
-#stretch:	,libx264-146
-#trusty:	,libx264-142
-#vivid:		,libx264-142
+#jessie:        ,libx264-142
+#stretch:        ,libx264-146
+#trusty:        ,libx264-142
+#vivid:        ,libx264-142
+#wily:        ,libx264-146
 #webp
-#jessie:	,libwebp5
-#stretch:	,libwebp5
-#trusty:	,libwebp5
-#utopic:	,libwebp5
-#vivid:		,libwebp5
+#jessie:        ,libwebp5
+#stretch:        ,libwebp5
+#trusty:        ,libwebp5
+#utopic:        ,libwebp5
+#vivid:        ,libwebp5
+#wily:        ,libwebp5
 # audio-related:
         ,gstreamer0.10-plugins-base
 #                 ^^ vorbis ^^
@@ -74,15 +78,17 @@ Recommends:
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):
-#jessie:	,python-lzo
-#stretch:	,python-lzo
-#trusty:	,python-lz4
-#vivid:		,python-lzo
+#jessie:        ,python-lzo
+#stretch:        ,python-lzo
+#trusty:        ,python-lz4
+#vivid:        ,python-lzo
+#wily:        ,python-lzo
 #for html5 support:
-#jessie:	,websockify
-#stretch:	,websockify
-#trusty:	,websockify
-#vivid:		,websockify
+#jessie:        ,websockify
+#stretch:        ,websockify
+#trusty:        ,websockify
+#vivid:        ,websockify
+#wily:        ,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
@@ -97,15 +103,16 @@ Suggests: openssh-server
 # for notifications forwarding:
         ,python-dbus
 # for publishing servers via mdns:
-		,python-avahi
-		,python-netifaces
+        ,python-avahi
+        ,python-netifaces
 # only useful when connecting using a JSON / YAML only client:
-		,python-yaml
+        ,python-yaml
 #nvenc support requires pycuda (and its huge list of dependencies!)
 #and the nvencode library:
-#vivid:		,python-pycuda, libnvidia-encode1
-#jessie:	,python-pycuda, libnvidia-encode1
-#stretch:	,python-pycuda, libnvidia-encode1
+#vivid:        ,python-pycuda, libnvidia-encode1
+#wily:        ,python-pycuda, libnvidia-encode1
+#jessie:        ,python-pycuda, libnvidia-encode1
+#stretch:        ,python-pycuda, libnvidia-encode1
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
