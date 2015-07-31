@@ -124,6 +124,13 @@ for av_enum_name, av_enum, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
         COLORSPACES.append(pix_fmt)
 log("swscale pixel formats: %s", FORMATS)
 log("colorspaces: %s", COLORSPACES)
+if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR)<(3, 1):
+    #avoid unaccelerated conversion, which also triggers a warning on Ubuntu / Debian:
+    YUV422P_SKIPLIST = ["RGB", "BGR", "BGRA"]
+    log.warn("Warning: swscale version %s is too old", ".".join((str(x) for x in (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO))))
+    log.warn(" disabling YUV422P to %s", ", ".join(YUV422P_SKIPLIST))
+else:
+    YUV422P_SKIPLIST = []
 
 
 cdef inline int roundup(int n, int m):
@@ -223,6 +230,8 @@ def get_output_colorspaces(input_colorspace):
         #these would cause a warning:
         #"No accelerated colorspace conversion found from yuv420p to gbrp."
         exclude.append("GBRP")
+    if input_colorspace=="YUV422P":
+        exclude += YUV422P_SKIPLIST
     return [x for x in COLORSPACES if x not in exclude]
 
 def get_spec(in_colorspace, out_colorspace):

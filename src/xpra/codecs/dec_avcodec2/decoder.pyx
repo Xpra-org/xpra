@@ -145,11 +145,13 @@ if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
     #this version definitely works (older versions may work too - untested):
     v = get_version()
     if v<(56, 26, 100):         #2.6.3
-        log.warn("libavcodec version %s is too old: disabling VP9", v)
+        log.warn("Warning: libavcodec version %s is too old", ".".join((str(x) for x in v)))
+        log.warn(" disabling VP9")
     else:
         VP9_CS = ["YUV420P"]
         if v<(56, 41, 100):     #2.7.1
-            log.warn("libavcodec version %s is too old: disabling VP9 YUV444P support", v)
+            log.warn("Warning: libavcodec version %s is too old", v)
+            log.warn(" disabling YUV444P support with VP9")
         else:
             VP9_CS.append("YUV444P")
     CODECS.append("vp9")
