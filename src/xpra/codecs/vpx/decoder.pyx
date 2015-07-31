@@ -23,6 +23,9 @@ except:
         pass
 cdef int VPX_THREADS = int(os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1)))
 
+cdef inline int roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
+
 include "constants.pxi"
 
 from libc.stdint cimport int64_t
@@ -227,7 +230,8 @@ cdef class Decoder:
         self.width = width
         self.height = height
         try:
-            self.max_threads = int(VPX_THREADS)
+            #no point having too many threads if the height is small, also avoids a warning:
+            self.max_threads = max(0, min(int(VPX_THREADS), roundup(height, 32)//32*2))
         except:
             self.max_threads = 1
         self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))

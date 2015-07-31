@@ -24,6 +24,9 @@ except:
         pass
 cdef int VPX_THREADS = int(os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1)))
 
+cdef inline int roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
+
 include "constants.pxi"
 
 cdef int ENABLE_VP9_YUV444 = False
@@ -345,7 +348,8 @@ cdef class Encoder:
         self.frames = 0
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
-            self.max_threads = max(0, min(32, int(options.get("threads", VPX_THREADS))))
+            #no point having too many threads if the height is small, also avoids a warning:
+            self.max_threads = max(0, min(int(options.get("threads", VPX_THREADS)), roundup(height, 32)//32*2, 32))
         except Exception as e:
             log.warn("error parsing number of threads: %s", e)
             self.max_threads = 2
