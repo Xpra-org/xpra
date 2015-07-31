@@ -126,7 +126,7 @@ log("swscale pixel formats: %s", FORMATS)
 log("colorspaces: %s", COLORSPACES)
 if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR)<(3, 1):
     #avoid unaccelerated conversion, which also triggers a warning on Ubuntu / Debian:
-    YUV422P_SKIPLIST = ["RGB", "BGR", "BGRA"]
+    YUV422P_SKIPLIST = ["RGB", "BGR", "BGRX"]
     log.warn("Warning: swscale version %s is too old", ".".join((str(x) for x in (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO))))
     log.warn(" disabling YUV422P to %s", ", ".join(YUV422P_SKIPLIST))
 else:
