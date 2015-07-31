@@ -20,7 +20,7 @@ from xpra.util import AtomicInteger, updict, engs
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
-                get_CUDA_function, record_device_failure, record_device_success
+                get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version
@@ -1454,9 +1454,9 @@ cdef class Encoder:
             #a bit of magic to pass a cython pointer to ctypes:
             context_pointer = <unsigned long> (&self.cuda_context_ptr)
             result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
-            assert result==0, "failed to get current cuda context"
             if DEBUG_API:
-                log("cuCtxGetCurrent() cuda context pointer=%#x", <unsigned long> self.cuda_context_ptr)
+                log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <unsigned long> self.cuda_context_ptr)
+            assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %i" % CUDA_ERRORS_INFO.get(result, result)
         finally:
             self.cuda_context.pop()
 
