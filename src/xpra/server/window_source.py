@@ -1730,7 +1730,7 @@ class WindowSource(object):
             client_options["flush"] = flush
         packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
-        compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=-%5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
+        compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
                  (end-start)*1000.0, w, h, wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
