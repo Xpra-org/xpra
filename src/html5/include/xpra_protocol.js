@@ -261,7 +261,10 @@ XpraProtocol.prototype._process = function() {
 	// decrypt if needed
 	if (proto_flags & 0x2) {
 		this.cipher_in.update(forge.util.createBuffer(uintToString(packet_data)));
-		packet_data = this.cipher_in.output.getBytes();
+		var decrypted = this.cipher_in.output.getBytes();
+		var packet_data = [];
+		for (var i=0; i<decrypted.length; i++)
+			packet_data.push(ord(decrypted[i]));
 	}
 
 	//decompress it if needed:

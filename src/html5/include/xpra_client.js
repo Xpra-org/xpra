@@ -558,8 +558,6 @@ XpraClient.prototype._make_hello_base = function() {
     	this._update_capabilities(this.cipher_in_caps);
     	// copy over the encryption caps with the key for recieved data
 		this.protocol.set_cipher_in(this.cipher_in_caps, this.encryption_key);
-		// encryption breakes compression for now
-		this._update_capabilities({"compression_level": 0});
 	}
 }
 
