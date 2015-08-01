@@ -2393,9 +2393,9 @@ def init_module():
     else:
         #we got license key error(s)
         if len(failed_keys)>0:
-            raise Exception("invalid license %s specified" % (["key", "keys"][len(failed_keys)>1]))
+            raise Exception("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
         else:
-            raise Exception("you must provide a license key")
+            raise Exception("you may need to provide a license key")
     log.info("NVENC v4 successfully initialized")
 
 def cleanup_module():
