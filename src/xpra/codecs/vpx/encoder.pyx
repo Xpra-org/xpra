@@ -549,7 +549,7 @@ cdef class Encoder:
         if self.frames==0:
             flags |= VPX_EFLAG_FORCE_KF
         #deadline based on speed (also affects quality...)
-        cdef int deadline
+        cdef unsigned long deadline
         if self.speed<10 or self.quality>=90:
             deadline = VPX_DL_BEST_QUALITY
         elif self.speed>=100:
@@ -560,7 +560,7 @@ cdef class Encoder:
             #NEVER use 0 (VPX_DL_BEST_QUALITY) with vp9:
             deadline = MAX(1, deadline)
         #cap the deadline at 250ms, which is already plenty
-        deadline = MIN(250, deadline)
+        deadline = MIN(250*1000, deadline)
         start = time.time()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
@@ -569,7 +569,7 @@ cdef class Encoder:
             log.error("%s codec encoding error %s: %s", self.encoding, ret, get_error_string(ret))
             return None
         end = time.time()
-        log("vpx_codec_encode for %s took %.1fms (deadline=%sms for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline/1000, self.speed, self.quality)
+        log("vpx_codec_encode for %s took %ims (deadline=%8.3fms for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline/1000.0, self.speed, self.quality)
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         end = time.time()
