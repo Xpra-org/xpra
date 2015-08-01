@@ -36,13 +36,13 @@ def argb_to_rgba(buf):
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgba(cbuf, cbuf_len)
 
-cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
+cdef argbdata_to_rgba(const unsigned char* argb, const unsigned int argb_len):
     if argb_len <= 0:
         return None
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     rgba = bytearray(argb_len)
     #number of pixels:
-    cdef int i = 0
+    cdef unsigned int i = 0
     while i < argb_len:
         rgba[i]    = argb[i+1]              #R
         rgba[i+1]  = argb[i+2]              #G
@@ -59,15 +59,15 @@ def argb_to_rgb(buf):
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgb(cbuf, cbuf_len)
 
-cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
+cdef argbdata_to_rgb(const unsigned char *argb, const unsigned int argb_len):
     if argb_len <= 0:
         return None
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     #number of pixels:
-    cdef int mi = argb_len/4                #@DuplicateSignature
+    cdef unsigned int mi = argb_len//4                #@DuplicateSignature
     #3 bytes per pixel:
     rgb = bytearray(mi*3)
-    cdef int i = 0                          #@DuplicateSignature
+    cdef unsigned int i = 0, di = 0                          #@DuplicateSignature
     while i < argb_len:
         rgb[di]   = argb[i+1]               #R
         rgb[di+1] = argb[i+2]               #G
@@ -80,21 +80,21 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
 def bgra_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
-    cdef unsigned char * bgra_buf           #@DuplicateSignature
-    cdef Py_ssize_t bgra_buf_len            #@DuplicateSignature
+    cdef unsigned char * bgra_buf = NULL    #@DuplicateSignature
+    cdef Py_ssize_t bgra_buf_len = 0        #@DuplicateSignature
     assert object_as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgb(bgra_buf, bgra_buf_len)
 
-cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
+cdef bgradata_to_rgb(const unsigned char* bgra, const unsigned int bgra_len):
     if bgra_len <= 0:
         return None
     assert bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #number of pixels:
-    cdef int mi = bgra_len/4                #@DuplicateSignature
+    cdef unsigned int mi = bgra_len//4                #@DuplicateSignature
     #3 bytes per pixel:
     rgb = bytearray(mi*3)
-    cdef int di = 0                         #@DuplicateSignature
-    cdef int si = 0                         #@DuplicateSignature
+    cdef unsigned int di = 0                         #@DuplicateSignature
+    cdef unsigned int si = 0                         #@DuplicateSignature
     while si < bgra_len:
         rgb[di]   = bgra[si+2]              #R
         rgb[di+1] = bgra[si+1]              #G
@@ -107,18 +107,18 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
 def bgra_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
-    cdef unsigned char * bgra_buf2
-    cdef Py_ssize_t bgra_buf_len2
+    cdef unsigned char * bgra_buf2 = NULL
+    cdef Py_ssize_t bgra_buf_len2 = 0
     assert object_as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgba(bgra_buf2, bgra_buf_len2)
 
-cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
+cdef bgradata_to_rgba(const unsigned char* bgra, const unsigned int bgra_len):
     if bgra_len <= 0:
         return None
     assert bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #same number of bytes:
     rgba = bytearray(bgra_len)
-    cdef int i = 0                      #@DuplicateSignature
+    cdef unsigned int i = 0                      #@DuplicateSignature
     while i < bgra_len:
         rgba[i]   = bgra[i+2]           #R
         rgba[i+1] = bgra[i+1]           #G
@@ -144,16 +144,16 @@ cdef do_premultiply_argb_in_place(unsigned int *buf, Py_ssize_t argb_len):
     cdef unsigned int argb
     assert sizeof(int) == 4
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    cdef int i
+    cdef unsigned int i
     for 0 <= i < argb_len / 4:
         argb = buf[i]
         a = (argb >> 24) & 0xff
         r = (argb >> 16) & 0xff
-        r = r * a / 255
+        r = r * a // 255
         g = (argb >> 8) & 0xff
-        g = g * a / 255
+        g = g * a // 255
         b = (argb >> 0) & 0xff
-        b = b * a / 255
+        b = b * a // 255
         buf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
 
 def unpremultiply_argb_in_place(buf):
@@ -172,19 +172,19 @@ cdef do_unpremultiply_argb_in_place(unsigned int * buf, Py_ssize_t buf_len):
     cdef unsigned int argb                          #@DuplicateSignature
     assert sizeof(int) == 4
     assert buf_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % buf_len
-    cdef int i                                      #@DuplicateSignature
-    for 0 <= i < buf_len / 4:
+    cdef unsigned int i                                      #@DuplicateSignature
+    for 0 <= i < buf_len // 4:
         argb = buf[i]
         a = (argb >> 24) & 0xff
         if a==0:
             buf[i] = 0
             continue
         r = (argb >> 16) & 0xff
-        r = r * 255 / a
+        r = r * 255 // a
         g = (argb >> 8) & 0xff
-        g = g * 255 / a
+        g = g * 255 // a
         b = (argb >> 0) & 0xff
-        b = b * 255 / a
+        b = b * 255 // a
         buf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
 
 def unpremultiply_argb(buf):
@@ -215,16 +215,16 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     assert argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     argb_out = bytearray(argb_len)
     cdef int i                                  #@DuplicateSignature
-    for 0 <= i < argb_len / 4:
+    for 0 <= i < argb_len // 4:
         argb = argb_in[i]
         a = (argb >> 24) & 0xff
         r = (argb >> 16) & 0xff
         g = (argb >> 8) & 0xff
         b = (argb >> 0) & 0xff
         if a!=0:
-            r = r * 255 / a
-            g = g * 255 / a
-            b = b * 255 / a
+            r = r * 255 // a
+            g = g * 255 // a
+            b = b * 255 // a
         else:
             r = 0
             g = 0
