@@ -22,8 +22,6 @@ TEST_COMPRESSED_DATA = {
     "vp9" : {"YUV420P" : binascii.unhexlify("8249834200017000f60038241c18000000200000047ffffffba9da00059fffffff753b413bffffffeea7680000"),
              "YUV444P" : binascii.unhexlify("a249834200002e001ec007048383000000040000223fffffeea76800c7ffffffeea7680677ffffff753b40081000")},
 }
-W = 24
-H = 16
 
 
 def make_test_image(pixel_format, w, h):
@@ -60,6 +58,8 @@ def testdecoder(decoder_module, full):
     return codecs
 
 def testdecoding(decoder_module, encoding, full):
+    W = 24
+    H = 16
     test_data_set = TEST_COMPRESSED_DATA.get(encoding)
     if not test_data_set:
         log("%s: no test data for %s", decoder_module.get_type(), encoding)
@@ -102,6 +102,9 @@ def testencoder(encoder_module, full):
     return codecs
 
 def testencoding(encoder_module, encoding, full):
+    #test a big bigger so we exercise more code:
+    W = 64
+    H = 32
     for cs_in in encoder_module.get_input_colorspaces(encoding):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
@@ -134,6 +137,8 @@ def testencoding(encoder_module, encoding, full):
 
 
 def testcsc(csc_module, full):
+    W = 24
+    H = 16
     for cs_in in csc_module.get_input_colorspaces():
         for cs_out in csc_module.get_output_colorspaces(cs_in):
             log("%s: testing %s / %s", csc_module.get_type(), cs_in, cs_out)

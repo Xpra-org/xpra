@@ -11,6 +11,7 @@ log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
+USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
 
 
 from xpra.util import nonl
@@ -163,6 +164,8 @@ cdef extern from "x264.h":
         int i_bframe_pyramid    #Keep some B-frames as references: 0=off, 1=strict hierarchical, 2=normal
         int b_open_gop
         int b_bluray_compat
+        #older x264 builds do not support this:
+        int b_opencl            #use OpenCL when available
 
         rc  rc                  #rate control
 
@@ -378,6 +381,7 @@ cdef class Encoder:
     cdef x264_t *context
     cdef int width
     cdef int height
+    cdef int opencl
     cdef object src_format
     cdef object profile
     cdef double time
@@ -402,6 +406,7 @@ cdef class Encoder:
         self.height = height
         self.quality = quality
         self.speed = speed
+        self.opencl = USE_OPENCL and width>=32 and height>=32
         self.preset = get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
@@ -435,11 +440,13 @@ cdef class Encoder:
         param.i_keyint_min = 999999
         param.b_intra_refresh = 0   #no intra refresh
         param.b_open_gop = 1        #allow open gop
+        param.b_opencl = self.opencl
         #param.p_log_private =
         x264_param_apply_profile(&param, self.profile)
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
         self.context = x264_encoder_open(&param)
+        log("x264 context=%#x, %7s %4ix%-4i opencl=%s", <unsigned long> self.context, self.src_format, self.width, self.height, bool(self.opencl))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     def clean(self):                        #@DuplicatedSignature
@@ -472,6 +479,7 @@ cdef class Encoder:
                      "frames"    : self.frames,
                      "width"     : self.width,
                      "height"    : self.height,
+                     "opencl"    : bool(self.opencl),
                      "speed"     : self.speed,
                      "quality"   : self.quality,
                      "src_format": self.src_format,
