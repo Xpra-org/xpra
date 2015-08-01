@@ -523,3 +523,9 @@ def engs(v):
         return ["","s"][int(len(v)!=1)]
     except:
         return ""
+
+def csv(v):
+    try:
+        return ", ".join(str(x) for x in v)
+    except:
+        return str(v)

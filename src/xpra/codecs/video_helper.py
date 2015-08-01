@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("codec", "video")
 
 from xpra.codecs.loader import get_codec, get_codec_error
+from xpra.util import csv
 
 
 NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", "4,5").split(",")]
@@ -146,7 +147,7 @@ class VideoHelper(object):
         self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
         self.video_decoders = filt("video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
         log("VideoHelper.set_modules(%s, %s, %s) video encoders=%s, csc=%s, video decoders=%s",
-            video_encoders, csc_modules, video_decoders, self.video_encoders, self.csc_modules, self.video_decoders)
+            csv(video_encoders), csv(csc_modules), csv(video_decoders), csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
 
     def cleanup(self):
         with self._lock:
@@ -246,11 +247,11 @@ class VideoHelper(object):
 
 
     def init_video_encoders_options(self):
-        log("init_video_encoders_options() will try video encoders: %s", self.video_encoders)
+        log("init_video_encoders_options() will try video encoders: %s", csv(self.video_encoders))
         for x in self.video_encoders:
             try:
                 mods = get_encoder_module_names(x)
-                log("init_video_encoders_options() modules for %s: %s", x, mods)
+                log("init_video_encoders_options() modules for %s: %s", x, csv(mods))
                 for mod in mods:
                     try:
                         self.init_video_encoder_option(mod)
@@ -261,7 +262,7 @@ class VideoHelper(object):
                         log.warn(" %s", e)
             except Exception as e:
                 log.warn("init_video_encoders_options() cannot add %s encoder: %s", x, e)
-        log("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
+        log("init_video_encoders_options() video encoder specs: %s", csv(self._video_encoder_specs))
 
     def init_video_encoder_option(self, encoder_name):
         encoder_module = get_codec(encoder_name)
@@ -278,10 +279,10 @@ class VideoHelper(object):
             log("exception in %s module %s initialization %s: %s", encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
             raise
         encodings = encoder_module.get_encodings()
-        log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, encodings)
+        log("init_video_encoder_option(%s) %s encodings=%s", encoder_module, encoder_type, csv(encodings))
         for encoding in encodings:
             colorspaces = encoder_module.get_input_colorspaces(encoding)
-            log("init_video_encoder_option(%s) %s input colorspaces(%s)=%s", encoder_module, encoder_type, encoding, colorspaces)
+            log("init_video_encoder_option(%s) %s input colorspaces(%s)=%s", encoder_module, encoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
                 self.add_encoder_spec(encoding, colorspace, spec)
@@ -291,18 +292,18 @@ class VideoHelper(object):
 
 
     def init_csc_options(self):
-        log("init_csc_options() will try csc modules: %s", self.csc_modules)
+        log("init_csc_options() will try csc modules: %s", csv(self.csc_modules))
         for x in self.csc_modules:
             try:
                 mod = get_csc_module_name(x)
                 self.init_csc_option(mod)
             except:
                 log.warn("init_csc_options() cannot add %s csc", x, exc_info=True)
-        log("init_csc_options() csc specs: %s", self._csc_encoder_specs)
+        log("init_csc_options() csc specs: %s", csv(self._csc_encoder_specs))
         for src_format, d in sorted(self._csc_encoder_specs.items()):
             log("%s - %s options:", src_format, len(d))
             for dst_format, specs in sorted(d.items()):
-                log(" * %s via: %s", dst_format, sorted(list(specs), key=lambda spec: spec.codec_type))
+                log(" * %s via: %s", dst_format, csv(sorted(list(specs), key=lambda spec: spec.codec_type)))
 
     def init_csc_option(self, csc_name):
         csc_module = get_codec(csc_name)
@@ -322,7 +323,7 @@ class VideoHelper(object):
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             out_cscs = csc_module.get_output_colorspaces(in_csc)
-            log("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, out_cscs)
+            log("init_csc_option(..) %s.get_output_colorspaces(%s)=%s", csc_module.get_type(), in_csc, csv(out_cscs))
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)
@@ -332,14 +333,14 @@ class VideoHelper(object):
 
 
     def init_video_decoders_options(self):
-        log("init_video_decoders_options() will try video decoders: %s", self.video_decoders)
+        log("init_video_decoders_options() will try video decoders: %s", csv(self.video_decoders))
         for x in self.video_decoders:
             try:
                 mod = get_decoder_module_name(x)
                 self.init_video_decoder_option(mod)
             except:
                 log.warn("init_video_decoders_options() cannot add %s decoder", x, exc_info=True)
-        log("init_video_decoders_options() video decoder specs: %s", self._video_decoder_specs)
+        log("init_video_decoders_options() video decoder specs: %s", csv(self._video_decoder_specs))
 
     def init_video_decoder_option(self, decoder_name):
         decoder_module = get_codec(decoder_name)
@@ -357,10 +358,10 @@ class VideoHelper(object):
             log.warn("cannot use %s module %s: %s", encoder_type, decoder_module, e, exc_info=True)
             return
         encodings = decoder_module.get_encodings()
-        log("init_video_decoder_option(%s) %s encodings=%s", decoder_module, encoder_type, encodings)
+        log("init_video_decoder_option(%s) %s encodings=%s", decoder_module, encoder_type, csv(encodings))
         for encoding in encodings:
             colorspaces = decoder_module.get_input_colorspaces(encoding)
-            log("init_video_decoder_option(%s) %s input colorspaces for %s: %s", decoder_module, encoder_type, encoding, colorspaces)
+            log("init_video_decoder_option(%s) %s input colorspaces for %s: %s", decoder_module, encoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
                 output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
                 log("init_video_decoder_option(%s) get_output_colorspace(%s, %s)=%s", decoder_name, encoding, colorspace, output_colorspace)
