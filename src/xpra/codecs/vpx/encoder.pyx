@@ -415,6 +415,8 @@ cdef class Encoder:
             if encoding=="vp9":
                 #disable periodic Q boost which causes latency spikes:
                 self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
+        self.do_set_encoding_speed(speed)
+        self.do_set_encoding_quality(quality)
 
 
     def codec_control(self, info, int attr, int value):
@@ -590,6 +592,9 @@ cdef class Encoder:
         if self.speed==pct:
             return
         self.speed = pct
+        self.do_set_encoding_speed(pct)
+
+    cdef do_set_encoding_speed(self, int pct):
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
         cdef int range = 8*(1+int(self.encoding=="vp8"))
@@ -602,6 +607,9 @@ cdef class Encoder:
         if self.quality==pct:
             return
         self.quality = pct
+        self.do_set_encoding_quality(pct)
+
+    cdef do_set_encoding_quality(self, int pct):
         self.update_cfg()
         IF ENABLE_VP9:
             if self.encoding=="vp9":
