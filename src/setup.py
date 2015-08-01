@@ -610,6 +610,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         "-Wno-sometimes-uninitialized"]
             else:
                 eifd = ["-Werror",
+                        #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
+                        #"-Wno-error=uninitialized",
                         #needed on Debian and Ubuntu to avoid this error:
                         #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
                         #"-Wno-error=strict-prototypes",

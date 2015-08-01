@@ -1,0 +1,11 @@
+--- a/setup.py	2015-08-01 10:40:16.402437080 +0700
++++ b/setup.py	2015-08-01 10:41:26.839043244 +0700
+@@ -611,7 +611,7 @@
+             else:
+                 eifd = ["-Werror",
+                         #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
+-                        #"-Wno-error=uninitialized",
++                        "-Wno-error=uninitialized",
+                         #needed on Debian and Ubuntu to avoid this error:
+                         #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
+                         #"-Wno-error=strict-prototypes",
