@@ -140,6 +140,19 @@ XpraProtocol.prototype.terminate = function() {
 XpraProtocol.prototype.send = function(packet) {
 	//debug("send worker:"+packet);
 	var bdata = bencode(packet);
+	var proto_flags = 0;
+	var payload_size = bdata.length;
+	// encryption
+	if(this.cipher_out) {
+		proto_flags = 0x2;
+		var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
+		for (var i = padding_size - 1; i >= 0; i--) {
+			bdata += String.fromCharCode(padding_size);
+		};
+		this.cipher_out.update(forge.util.createBuffer(bdata));
+		bdata = this.cipher_out.output.getBytes();
+	}
+	var actual_size = bdata.length;
 	//convert string to a byte array:
 	var cdata = [];
 	for (var i=0; i<bdata.length; i++)
@@ -151,15 +164,14 @@ XpraProtocol.prototype.send = function(packet) {
 		cdata = new Zlib.Deflate(cdata).compress();
 		level = 1;
 	}*/
-	var len = cdata.length;
 	//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-	var header = ["P".charCodeAt(0), 0, level, 0];
+	var header = ["P".charCodeAt(0), proto_flags, level, 0];
 	for (var i=3; i>=0; i--)
-		header.push((len >> (8*i)) & 0xFF);
+		header.push((payload_size >> (8*i)) & 0xFF);
 	//concat data to header, saves an intermediate array which may or may not have
 	//been optimised out by the JS compiler anyway, but it's worth a shot
 	header = header.concat(cdata);
-	//debug("send("+packet+") "+data.byteLength+" bytes in packet for: "+bdata.substring(0, 32)+"..");
+	//debug("send("+packet+") "+cdata.length+" bytes in packet for: "+bdata.substring(0, 32)+"..");
 	// put into buffer before send
 	this.websocket.send((new Uint8Array(header)).buffer);
 }
