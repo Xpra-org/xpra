@@ -138,13 +138,6 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 			this.callback_close("no key specified for encryption");
 			return;
 		}
-		// set the encryption caps now
-		this.cipher_in_caps = {
-			"cipher"					: this.encryption,
-			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
-			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
-	        "cipher.key_stretch_iterations"	: 1000,
-		};
 	}
 	// detect websocket in webworker support and degrade gracefully
 	if(window.Worker) {
@@ -193,8 +186,6 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	uri += ":" + this.port;
 	// do open
 	this.protocol.open(uri);
-	// copy over the encryption caps with the key for recieved data
-	this.protocol.set_cipher_in(this.cipher_in_caps, this.encryption_key);
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {
@@ -558,7 +549,17 @@ XpraClient.prototype._make_hello_base = function() {
     });
 
     if(this.encryption) {
+    	this.cipher_in_caps = {
+			"cipher"					: this.encryption,
+			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
+			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
+	        "cipher.key_stretch_iterations"	: 1000,
+		};
     	this._update_capabilities(this.cipher_in_caps);
+    	// copy over the encryption caps with the key for recieved data
+		this.protocol.set_cipher_in(this.cipher_in_caps, this.encryption_key);
+		// encryption breakes compression for now
+		this._update_capabilities({"compression_level": 0});
 	}
 }
 
@@ -795,6 +796,16 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.hello_timer = null;
 	}
 	var hello = packet[1];
+	// check for server encryption caps update
+	if(ctx.encryption) {
+		ctx.cipher_out_caps = {
+			"cipher"					: hello['cipher'],
+			"cipher.iv"					: hello['cipher.iv'],
+			"cipher.key_salt"			: hello['cipher.key_salt'],
+	        "cipher.key_stretch_iterations"	: hello['cipher.key_stretch_iterations'],
+		};
+		ctx.protocol.set_cipher_out(ctx.cipher_out_caps, ctx.encryption_key);
+	}
 	var version = hello["version"];
 	try {
 		var vparts = version.split(".");
