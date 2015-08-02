@@ -37,7 +37,6 @@ cdef extern from "string.h":
 
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
-    void* malloc(size_t __size)
     void free(void* mem)
 
 cdef extern from "sys/ipc.h":

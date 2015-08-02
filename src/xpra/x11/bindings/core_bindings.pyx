@@ -17,10 +17,6 @@ include "constants.pxi"
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-    void free(void* mem)
-
 cdef extern from "X11/Xutil.h":
     pass
 
