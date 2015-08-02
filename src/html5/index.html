@@ -102,6 +102,18 @@
 			.windowinfocus {
 				z-index: 10000;
 			}
+			.spinneroverlay {
+				width: 100%;
+				height: 100%;
+				display: none;
+				background-color: black;
+				opacity: 0.5;
+				position: absolute;
+			}
+			.spinnermiddle {
+				display: table-cell;
+				vertical-align: middle;
+			}
 			.ui-resizable-helper {
 				border: 2px dotted #00F;
 				z-index: 30000 !important;
@@ -117,6 +129,8 @@
 			.ui-resizable-nw { cursor: nw-resize; width: 9px; height: 9px; left: -5px; top: -5px; }
 			.ui-resizable-ne { cursor: ne-resize; width: 9px; height: 9px; right: -5px; top: -5px;}
 		</style>
+		
+		<link rel="stylesheet" href="include/spinner.css">
 
 		<script type="text/javascript" src="include/jquery.min.js"></script>
 		<script type="text/javascript" src="include/jqueryui.min.js"></script>

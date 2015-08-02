@@ -138,6 +138,10 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		}
 	}
 
+	// create the spinner overlay div
+	jQuery(this.div).prepend('<div id="spinner'+String(wid)+'" class="spinneroverlay"><div class="spinnermiddle"><div class="spinner"></div></div></div>');
+	this.spinnerdiv = jQuery('#spinner'+String(wid));
+
 	// listen for mouse wheel events on my window
 	jQuery(this.div).bind('mousewheel DOMMouseScroll', function (e) {
 		me.on_mousescroll(e);
@@ -165,6 +169,14 @@ XpraWindow.prototype._init_3d_canvas = function() {
 	this.offscreen_canvas = document.createElement("canvas");
 	this.updateCanvasGeometry();
 	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('webgl');
+}
+
+XpraWindow.prototype.set_spinner = function(state) {
+	if(state) {
+		this.spinnerdiv.hide();
+	} else {
+		this.spinnerdiv.css("display", "table");
+	}
 }
 
 XpraWindow.prototype.ensure_visible = function() {

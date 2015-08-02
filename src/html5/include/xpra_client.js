@@ -39,6 +39,11 @@ function XpraClient(container) {
 	// hello
 	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
+	// ping
+	this.PING_TIMEOUT = 60000;
+	this.ping_timer = null;
+	this.last_ping_echoed_time = 0;
+	this.server_ok = false;
 	// modifier keys
 	this.caps_lock = null;
 	this.alt_modifier = null;
@@ -72,6 +77,7 @@ function XpraClient(container) {
 		'startup-complete': this._process_startup_complete,
 		'hello': this._process_hello,
 		'ping': this._process_ping,
+		'ping_echo': this._process_ping_echo,
 		'new-window': this._process_new_window,
 		'new-override-redirect': this._process_new_override_redirect,
 		'window-metadata': this._process_window_metadata,
@@ -497,6 +503,45 @@ XpraClient.prototype._update_capabilities = function(appendobj) {
 	}
 }
 
+XpraClient.prototype._check_server_echo = function(ping_sent_time) {
+	var last = this.server_ok;
+	this.server_ok = this.last_ping_echoed_time >= ping_sent_time;
+	//console.log("check_server_echo", this.server_ok, "last", last, "last_time", this.last_ping_echoed_time, "this_this", ping_sent_time);
+	if(last != this.server_ok) {
+		if(!this.server_ok) {
+			console.log("server connection is not responding, drawing spinners...");
+		} else {
+			console.log("server connection is OK");
+		}
+		for (var win in this.id_to_window) {
+			this.id_to_window[win].set_spinner(this.server_ok);
+		}
+	}
+}
+
+XpraClient.prototype._check_echo_timeout = function(ping_time) {
+	if(this.last_ping_echoed_time < ping_time) {
+		// no point in telling the server here...
+		this.callback_close("server ping timeout, waited "+ this.PING_TIMEOUT +"ms without a response");
+	}
+}
+
+XpraClient.prototype._send_ping = function() {
+	console.log("sending ping");
+	var me = this;
+	var now_ms = Date.now();
+	this.protocol.send(["ping", now_ms]);
+	// add timeout to wait for ping timout
+	setTimeout(function () {
+		me._check_echo_timeout(now_ms);
+	}, this.PING_TIMEOUT);
+	// add timeout to detect temporary ping miss for spinners
+	var wait = 2000;
+	setTimeout(function () {
+		me._check_server_echo(now_ms);
+	}, wait);
+}
+
 XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	// make the base hello
 	this._make_hello_base();
@@ -775,6 +820,11 @@ XpraClient.prototype._process_disconnect = function(packet, ctx) {
 		clearTimeout(ctx.hello_timer);
 		ctx.hello_timer = null;
 	}
+	// stop the ping timer
+	if(ctx.ping_timer) {
+		clearTimeout(ctx.ping_timer);
+		ctx.ping_timer = null;
+	}
 	// save the disconnect reason
 	ctx.disconnect_reason = packet[1];
 	// post a close request to the protocol
@@ -848,6 +898,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	if(ctx.audio_enabled) {
 		ctx._sound_start_receiving();
 	}
+	// send our printer definition
 	var printers = {
 		"HTLM5 client": {
 			"printer-info": "Print to PDF in client browser",
@@ -855,6 +906,12 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	};
 	ctx.protocol.send(["printers", printers]);
+	// start sending our own pings
+	ctx._send_ping();
+	ctx.ping_timer = setInterval(function () {
+		ctx._send_ping();
+		return true;
+	}, 1000);
 }
 
 XpraClient.prototype._process_challenge = function(packet, ctx) {
@@ -897,6 +954,10 @@ XpraClient.prototype._process_ping = function(packet, ctx) {
 	var echotime = packet[1];
 	var l1=0, l2=0, l3=0;
 	ctx.protocol.send(["ping_echo", echotime, l1, l2, l3, 0]);
+}
+
+XpraClient.prototype._process_ping_echo = function(packet, ctx) {
+	ctx.last_ping_echoed_time = packet[1];
 }
 
 XpraClient.prototype._process_new_window = function(packet, ctx) {
