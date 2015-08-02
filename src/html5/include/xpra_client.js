@@ -911,7 +911,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.ping_timer = setInterval(function () {
 		ctx._send_ping();
 		return true;
-	}, 1000);
+	}, 10000);
 }
 
 XpraClient.prototype._process_challenge = function(packet, ctx) {
