@@ -958,6 +958,8 @@ XpraClient.prototype._process_ping = function(packet, ctx) {
 
 XpraClient.prototype._process_ping_echo = function(packet, ctx) {
 	ctx.last_ping_echoed_time = packet[1];
+	// make sure server goes OK immediately instead of waiting for next timeout
+	ctx._check_server_echo(0);
 }
 
 XpraClient.prototype._process_new_window = function(packet, ctx) {
