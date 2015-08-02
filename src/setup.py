@@ -608,7 +608,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         "-Wno-unknown-attributes",
                         "-Wno-unused-function",
                         "-Wno-sometimes-uninitialized"]
-            else:
+            elif get_gcc_version()>=[4, 4]:
                 eifd = ["-Werror",
                         #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
                         #"-Wno-error=uninitialized",
