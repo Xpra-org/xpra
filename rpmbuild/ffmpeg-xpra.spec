@@ -14,8 +14,9 @@ BuildRequires:	x264-xpra-devel
 BuildRequires:	yasm
 
 
-%if 0%{?fc19}
-BuildRequires: perl-podlators
+%if 0%{?fc24}
+#Fedora 24 seems to have problems with debug packages
+%define debug_package %{nil}
 %endif
 
 %description
