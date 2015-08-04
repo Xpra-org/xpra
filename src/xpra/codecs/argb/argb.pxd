@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-cdef argbdata_to_rgba(const unsigned char* argb, const unsigned int argb_len)
-cdef argbdata_to_rgb(const unsigned char *argb, const unsigned int argb_len)
-cdef bgradata_to_rgb(const unsigned char* bgra, const unsigned int bgra_len)
-cdef bgradata_to_rgba(const unsigned char* bgra, const unsigned int bgra_len)
+cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len)
+cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len)
+cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len)
+cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len)
