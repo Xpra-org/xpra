@@ -580,6 +580,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"client_type"		   		: "HTML5",
         "encoding.generic" 			: true,
         "username" 					: this.username,
+        "uuid"						: this._get_hex_uuid(),
         "argv" 						: [window.location.href],
         "digest" 					: ["hmac"],
         //compression bits:
