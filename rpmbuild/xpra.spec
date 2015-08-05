@@ -179,7 +179,7 @@ Requires: python3-rencode
 Requires: python3-pillow
 Requires: libfakeXinerama
 Requires: gtk3-immodule-xim
-Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
+Requires: xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 Requires: %{libvpx}
 Requires: %{libwebp}
 Requires: x264-xpra
