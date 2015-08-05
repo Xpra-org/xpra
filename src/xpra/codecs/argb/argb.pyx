@@ -200,13 +200,13 @@ def unpremultiply_argb(buf):
 
 
 #precalculate indexes in native endianness:
-tmp = str(struct.pack("=L", 0 + 1*(2**8) + 2*(2**16) + 3*(2**24)))
+tmp = struct.pack("=L", 0 + 1*(2**8) + 2*(2**16) + 3*(2**24))
 #little endian will give 0, 1, 2, 3
 #big endian should give 3, 2, 1, 0 (untested)
-cdef unsigned char B = tmp.find('\0')
-cdef unsigned char G = tmp.find('\1')
-cdef unsigned char R = tmp.find('\2')
-cdef unsigned char A = tmp.find('\3')
+cdef unsigned char B = tmp.index(b'\0')
+cdef unsigned char G = tmp.index(b'\1')
+cdef unsigned char R = tmp.index(b'\2')
+cdef unsigned char A = tmp.index(b'\3')
 
 cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     # cbuf contains non-premultiplied ARGB32 data in native-endian.
