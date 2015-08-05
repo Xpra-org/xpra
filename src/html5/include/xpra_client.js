@@ -900,7 +900,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	}
 	// send our printer definition
 	var printers = {
-		"HTLM5 client": {
+		"HTML5 client": {
 			"printer-info": "Print to PDF in client browser",
 			"printer-make-and-model": "HTML5 client version"
 		}
