@@ -380,7 +380,7 @@ cdef class XImageWrapper:
         #already uses a copy of the pixels
         return False
 
-    def restride(self, int newstride=0):
+    def restride(self, const int newstride=0):
         #NOTE: this must be called from the UI thread!
         cdef int rowstride = newstride
         if newstride==0:
@@ -411,7 +411,7 @@ cdef class XImageWrapper:
         #Note: we don't zero the buffer,
         #so if the newstride is bigger than oldstride, you get garbage..
         cdef int cpy_size = MIN(rowstride, oldstride)
-        for 0 <= ry < self.height:
+        for ry in range(self.height):
             memcpy(to, img_buf, rowstride)
             to += rowstride
             img_buf += oldstride
