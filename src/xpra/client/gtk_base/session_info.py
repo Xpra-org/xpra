@@ -389,7 +389,7 @@ class SessionInfo(gtk.Window):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
         self.show_tab(self.tabs[0][2])
-        self.set_size_request(-1, 480)
+        self.set_size_request(-1, -1)
         self.init_counters()
         self.populate()
         self.populate_all()
