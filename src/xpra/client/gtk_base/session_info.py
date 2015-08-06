@@ -14,7 +14,7 @@ import time
 import datetime
 
 from xpra.os_util import os_info, bytestostr
-from xpra.util import prettify_plug_name
+from xpra.util import prettify_plug_name, typedict
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
@@ -373,13 +373,17 @@ class SessionInfo(gtk.Window):
             if SHOW_PIXEL_STATS:
                 bandwidth_label += ",\nand number of pixels rendered"
             self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
-            self.connect("realize", self.populate_graphs)
             self.latency_graph = self.add_graph_button(None, self.save_graphs)
+            self.sound_queue_graph = self.add_graph_button(None, self.save_graphs)
+            self.connect("realize", self.populate_graphs)
         self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
         self.net_in_bytecount = deque(maxlen=N_SAMPLES+4)
         self.net_out_bytecount = deque(maxlen=N_SAMPLES+4)
         self.sound_in_bytecount = deque(maxlen=N_SAMPLES+4)
         self.sound_out_bytecount = deque(maxlen=N_SAMPLES+4)
+        self.sound_out_queue_min = deque(maxlen=N_SAMPLES+4)
+        self.sound_out_queue_max = deque(maxlen=N_SAMPLES+4)
+        self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -507,6 +511,14 @@ class SessionInfo(gtk.Window):
                 self.sound_in_bytecount.append(self.client.sound_in_bytecount)
             if self.client.sound_out_bytecount>0:
                 self.sound_out_bytecount.append(self.client.sound_out_bytecount)
+            ss = self.client.sound_sink
+            if ss:
+                info = ss.get_info()
+                if info:
+                    info = typedict(info)
+                    self.sound_out_queue_cur.append(info.intget("queue.cur"))
+                    self.sound_out_queue_min.append(info.intget("queue.min"))
+                    self.sound_out_queue_max.append(info.intget("queue.max"))
 
         #count pixels in the last second:
         since = time.time()-1
@@ -912,8 +924,9 @@ class SessionInfo(gtk.Window):
             return True
         start_x_offset = min(1.0, (time.time()-self.last_populate_time)*0.95)
         rect = box.get_allocation()
-        h = max(200, h-bh-20, rect.height-bh-20)
-        w = max(360, rect.width-20)
+        maxw, maxh = self.client.get_root_size()
+        h = min(maxh, max(200, h-bh-20, rect.height-bh-20))
+        w = min(maxw, max(360, rect.width-20))
         #bandwidth graph:
         labels, datasets = [], []
         if self.net_in_bytecount and self.net_out_bytecount:
@@ -944,38 +957,53 @@ class SessionInfo(gtk.Window):
 
         if labels and datasets:
             pixmap = make_graph_pixmap(datasets, labels=labels,
-                                       width=w, height=h/2,
+                                       width=w, height=h//3,
                                        title="Bandwidth", min_y_scale=10, rounding=10,
                                        start_x_offset=start_x_offset)
             self.bandwidth_graph.set_size_request(*pixmap.get_size())
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
-        if self.client.server_info_request:
-            pass
+
+        def norm_lists(items):
+            #ensures we always have exactly 20 values,
+            #(and skip if we don't have any)
+            values, labels = [], []
+            for l, name in items:
+                if len(l)==0:
+                    continue
+                l = list(l)
+                if len(l)<20:
+                    for _ in range(20-len(l)):
+                        l.insert(0, None)
+                values.append(l)
+                labels.append(name)
+            return values, labels
+
         #latency graph:
-        latency_graph_items = (
+        latency_values, latency_labels = norm_lists((
                                 (self.avg_ping_latency, "network"),
                                 (self.avg_batch_delay, "batch delay"),
                                 (self.avg_damage_out_latency, "encode&send"),
                                 (self.avg_decoding_latency, "decoding"),
                                 (self.avg_total, "frame total"),
-                                )
-        latency_graph_values = []
-        labels = []
-        for l, name in latency_graph_items:
-            if len(l)==0:
-                continue
-            l = list(l)
-            if len(l)<20:
-                for _ in range(20-len(l)):
-                    l.insert(0, None)
-            latency_graph_values.append(l)
-            labels.append(name)
-        pixmap = make_graph_pixmap(latency_graph_values, labels=labels,
-                                    width=w, height=h/2,
+                                ))
+        pixmap = make_graph_pixmap(latency_values, labels=latency_labels,
+                                    width=w, height=h//3,
                                     title="Latency (ms)", min_y_scale=10, rounding=25,
                                     start_x_offset=start_x_offset)
         self.latency_graph.set_size_request(*pixmap.get_size())
         self.latency_graph.set_from_pixmap(pixmap, None)
+        #sound queue graph:
+        queue_values, queue_labels = norm_lists((
+                             (self.sound_out_queue_max, "Max"),
+                             (self.sound_out_queue_cur, "Level"),
+                             (self.sound_out_queue_min, "Min"),
+                             ))
+        pixmap = make_graph_pixmap(queue_values, labels=queue_labels,
+                                    width=w, height=h//3,
+                                    title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
+                                    start_x_offset=start_x_offset)
+        self.sound_queue_graph.set_size_request(*pixmap.get_size())
+        self.sound_queue_graph.set_from_pixmap(pixmap, None)
         return True
 
     def save_graphs(self, *args):
@@ -996,7 +1024,7 @@ class SessionInfo(gtk.Window):
         if response == gtk.RESPONSE_OK:
             if len(filenames)==1:
                 filename = filenames[0]
-                pixmaps = [image.get_pixmap()[0] for image in [self.bandwidth_graph, self.latency_graph]]
+                pixmaps = [image.get_pixmap()[0] for image in [self.bandwidth_graph, self.latency_graph, self.sound_queue_graph]]
                 log("saving pixmaps %s and %s to %s", pixmaps, filename)
                 w, h = 0, 0
                 for pixmap in pixmaps:

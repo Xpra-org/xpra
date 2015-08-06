@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os, time
+import sys, os
 
-from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
+from xpra.sound.sound_pipeline import SoundPipeline, gobject, glib, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, MP3, CODECS, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 
@@ -46,11 +46,6 @@ if DEFAULT_SINK not in SINKS:
     DEFAULT_SINK = SINKS[0]
 QUEUE_SILENT = 0
 QUEUE_TIME = get_queue_time(450)
-QUEUE_MIN_TIME = get_queue_time(QUEUE_TIME//10//MS_TO_NS, "MIN")
-assert QUEUE_MIN_TIME<=QUEUE_TIME
-
-VARIABLE_MIN_QUEUE = os.environ.get("XPRA_VARIABLE_MIN_QUEUE", "1")=="1"
-
 
 GST_FORMAT_BUFFERS = 4
 
@@ -94,7 +89,7 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("volume name=volume volume=%s" % volume)
         queue_el = ["queue",
                     "name=queue",
-                    "min-threshold-time=%s" % QUEUE_MIN_TIME,
+                    "min-threshold-time=0",
                     "max-size-buffers=0",
                     "max-size-bytes=0",
                     "max-size-time=%s" % QUEUE_TIME,
@@ -131,14 +126,17 @@ class SoundSink(SoundPipeline):
     def queue_pushing(self, *args):
         ltime = self.queue.get_property("current-level-time")/MS_TO_NS
         log("queue pushing: level=%i", ltime)
-        self.queue_state = "pushing"
-        self.emit_info()
+        self.check_levels("pushing")
         return 0
 
     def queue_running(self, *args):
         ltime = self.queue.get_property("current-level-time")/MS_TO_NS
         log("queue running: level=%s", ltime)
-        if self.queue_state=="underrun" and VARIABLE_MIN_QUEUE:
+        self.check_levels("running")
+        return 0
+
+    def check_levels(self, new_state):
+        if self.queue_state=="underrun":
             #lift min time restrictions:
             self.queue.set_property("min-threshold-time", 0)
         elif self.queue_state == "overrun":
@@ -146,36 +144,63 @@ class SoundSink(SoundPipeline):
             qpct = min(QUEUE_TIME, clt)*100//QUEUE_TIME
             log("resetting max-size-time back to %ims (level=%ims, %i%%)", QUEUE_TIME//MS_TO_NS, clt//MS_TO_NS, qpct)
             self.queue.set_property("max-size-time", QUEUE_TIME)
-        self.queue_state = "running"
+        self.queue_state = new_state
         self.emit_info()
-        return 0
+
 
     def queue_underrun(self, *args):
+        if self.queue_state=="underrun" or self.queue_state=="starting":
+            return
         ltime = self.queue.get_property("current-level-time")/MS_TO_NS
-        log("queue underrun: level=%i", ltime)
-        if self.queue_state!="underrun" and VARIABLE_MIN_QUEUE:
-            #lift min time restrictions:
-            self.queue.set_property("min-threshold-time", QUEUE_MIN_TIME)
+        log("queue underrun: level=%i, previous state=%s", ltime, self.queue_state)
         self.queue_state = "underrun"
-        self.emit_info()
+        MIN_QUEUE = QUEUE_TIME//2
+        mts = self.queue.get_property("min-threshold-time")
+        if mts==MIN_QUEUE:
+            return 0
+        #set min time restrictions to fill up queue:
+        log("increasing the min-threshold-time to %ims", MIN_QUEUE//MS_TO_NS)
+        self.queue.set_property("min-threshold-time", MIN_QUEUE)
+        def restore():
+            if self.queue.get_property("min-threshold-time")==0:
+                log("min-threshold-time already restored!")
+                return False
+            ltime = self.queue.get_property("current-level-time")//MS_TO_NS
+            if ltime==0:
+                log("not restored! (still underrun: %ims)", ltime)
+                return True
+            log("resetting the min-threshold-time back to %ims", 0)
+            self.queue.set_property("min-threshold-time", 0)
+            self.queue_state = "running"
+            return False
+        glib.timeout_add(1000, restore)
         return 0
 
     def queue_overrun(self, *args):
+        if self.queue_state=="overrun":
+            return
         ltime = self.queue.get_property("current-level-time")//MS_TO_NS
-        pqs = self.queue_state
+        log("queue overrun: level=%i, previous state=%s", ltime, self.queue_state)
         self.queue_state = "overrun"
-        #no overruns for the first 2 seconds:
-        if ltime<QUEUE_TIME//MS_TO_NS//2*75//100:
-            elapsed = time.time()-self.start_time
-            log("queue overrun ignored: level=%i, elapsed time=%.1f", ltime, elapsed)
-            return 0
-        log("queue overrun: level=%i, previous state=%s", ltime//MS_TO_NS, pqs)
-        if pqs!="overrun":
-            log("halving the max-size-time to %ims", QUEUE_TIME//2//MS_TO_NS)
-            self.queue.set_property("max-size-time", QUEUE_TIME//2)
-            self.overruns += 1
-            self.emit("overrun", ltime)
-            self.emit_info()
+        REDUCED_QT = QUEUE_TIME//2
+        #empty the queue by reducing its max size:
+        log("queue overrun: halving the max-size-time to %ims", REDUCED_QT//MS_TO_NS)
+        self.queue.set_property("max-size-time", REDUCED_QT)
+        self.overruns += 1
+        self.emit("overrun", ltime)
+        def restore():
+            if self.queue.get_property("max-size-time")==QUEUE_TIME:
+                log("max-size-time already restored!")
+                return False
+            ltime = self.queue.get_property("current-level-time")//MS_TO_NS
+            if ltime>=REDUCED_QT:
+                log("max-size-time not restored! (still overrun: %ims)", ltime)
+                return True
+            log("raising the max-size-time back to %ims", QUEUE_TIME//MS_TO_NS)
+            self.queue.set_property("max-size-time", QUEUE_TIME)
+            self.queue_state = "running"
+            return False
+        glib.timeout_add(1000, restore)
         return 0
 
     def eos(self):
@@ -189,11 +214,13 @@ class SoundSink(SoundPipeline):
         info = SoundPipeline.get_info(self)
         if QUEUE_TIME>0:
             clt = self.queue.get_property("current-level-time")
+            qmax = self.queue.get_property("max-size-time")
+            qmin = self.queue.get_property("min-threshold-time")
             updict(info, "queue", {
-                "time"          : QUEUE_TIME//MS_TO_NS,
-                "min_time"      : QUEUE_MIN_TIME//MS_TO_NS,
-                "used_pct"      : min(QUEUE_TIME, clt)*100//QUEUE_TIME,
-                "used"          : clt//MS_TO_NS,
+                "min"           : qmin//MS_TO_NS,
+                "max"           : qmax//MS_TO_NS,
+                "cur"           : clt//MS_TO_NS,
+                "pct"           : min(QUEUE_TIME, clt)*100//qmax,
                 "overruns"      : self.overruns,
                 "state"         : self.queue_state})
         return info
@@ -201,6 +228,9 @@ class SoundSink(SoundPipeline):
     def add_data(self, data, metadata=None):
         if not self.src:
             log("add_data(..) dropped")
+            return
+        if self.queue_state=="overrun":
+            log("add_data(..) queue in overrun state, data dropped")
             return
         #having a timestamp causes problems with the queue and overruns:
         if "timestamp" in metadata:
@@ -239,7 +269,6 @@ gobject.type_register(SoundSink)
 
 
 def main():
-    import glib
     from xpra.platform import init, clean
     init("Sound-Record")
     try:
@@ -302,7 +331,7 @@ def main():
                 glib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True
-        gobject.timeout_add(1000, check_for_end)
+        glib.timeout_add(1000, check_for_end)
 
         glib_mainloop.run()
         return 0
