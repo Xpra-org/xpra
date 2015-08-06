@@ -4,6 +4,12 @@ import csv
 import collections
 
 #----------------------------------------------------------------
+# This is a specially modified chart generator that takes many
+# repetions of the same test and displays them all on each chart.
+#----------------------------------------------------------------
+
+#
+#----------------------------------------------------------------
 # The files this generator acts upon are the CSV files output
 # from one or more runs of test_measure_perf.py.
 #
@@ -35,45 +41,61 @@ import collections
 base_dir = "/home/nickc/xtests/logs"
 
 # Data file prefix
-prefix = "all_tests_40"
-#prefix = "h264_glx"
+prefix_all = "all_tests_40"
+prefix_glx = "h264_glx"
 
 # Result subdirectories
-#subs = ["0.15.0", "8585_1", "8585_2", "8585_3"]
-#subs = ["hv", "h1", "h2", "h3"]
-subs = ["8585_2", "9612_2"]
+subs_h = ["hv", "h1", "h2", "h3"]
+subs_8 = ["0.15.0", "8585_1", "8585_2", "8585_3"]
+subs_9 = ["0.15.0", "9612_1", "9612_2", "9612_3"]
 
 # id is the actual id string used in the data file name
 # dir is an optional subdirectory within the base_dir where the data is stored
 # display is how that parameter should be displayed in the charts
-#params = [
-#    {"id": "9612", "dir": subs[0], "display": "0"},
-#    {"id": "9612", "dir": subs[1], "display": "1"},
-#    {"id": "9612", "dir": subs[2], "display": "2"},
-#    {"id": "9612", "dir": subs[3], "display": "3"}
-#]
 params = [
-    {"id": "8585", "dir": subs[0], "display": "8585"},
-    {"id": "9612", "dir": subs[1], "display": "9612"}
+    {"id": "8585", "dir": subs_8[0], "display": "8585_all_0", "prefix": prefix_all},
+    {"id": "8585", "dir": subs_8[1], "display": "8585_all_1", "prefix": prefix_all},
+    {"id": "8585", "dir": subs_8[2], "display": "8585_all_2", "prefix": prefix_all},
+    {"id": "8585", "dir": subs_8[3], "display": "8585_all_3", "prefix": prefix_all},
+    {"id": "8585", "dir": subs_h[0], "display": "8585_glx_0", "prefix": prefix_glx},
+    {"id": "8585", "dir": subs_h[1], "display": "8585_glx_1", "prefix": prefix_glx},
+    {"id": "8585", "dir": subs_h[2], "display": "8585_glx_2", "prefix": prefix_glx},
+    {"id": "8585", "dir": subs_h[3], "display": "8585_glx_3", "prefix": prefix_glx},
+    {"id": "9612", "dir": subs_9[0], "display": "9612_all_0", "prefix": prefix_all},
+    {"id": "9612", "dir": subs_9[1], "display": "9612_all_1", "prefix": prefix_all},
+    {"id": "9612", "dir": subs_9[2], "display": "9612_all_2", "prefix": prefix_all},
+    {"id": "9612", "dir": subs_9[3], "display": "9612_all_3", "prefix": prefix_all},
+    {"id": "9612", "dir": subs_h[0], "display": "9612_glx_0", "prefix": prefix_glx},
+    {"id": "9612", "dir": subs_h[1], "display": "9612_glx_1", "prefix": prefix_glx},
+    {"id": "9612", "dir": subs_h[2], "display": "9612_glx_2", "prefix": prefix_glx},
+    {"id": "9612", "dir": subs_h[3], "display": "9612_glx_3", "prefix": prefix_glx}
 ]
+#params = [
+#    {"id": "8585", "display": "8585"},
+#    {"id": "9612", "display": "9612"}
+#]
 
 # The description will be shown on the output page
-description = 'July comparison of 8585 and 9612, all tests run, all results showing.'
+description = 'Results of every test run. The red bars are from the original 2 comparisons.'
 
 # Each file name's 'rep' value is the sequence number of that
 # data file, when results of multiple files should be averaged
 reps = 9     # Number of data files in each set
 
+# Options
+needReallyUniqueId = True
+showLegend = "false"
+
 #----------------------------------------------------------------
 # Set any of the values in the following lists to 1 in order to
 # include that test app, or metric column in the chart page.
 #
-apps = {"glxgears": 1,
+apps = {"glxgears": 0,
         "glxspheres": 1,
-        "moebiusgears": 1,
-        "polytopes": 1,
+        "moebiusgears": 0,
+        "polytopes": 0,
         "x11perf": 0,
-        "xterm": 1,
+        "xterm": 0,
         "gtkperf": 0}
 
 metrics = {"Regions/s": 1,
@@ -107,13 +129,13 @@ metrics = {"Regions/s": 1,
            "Avg Speed": 0,
            "Max Speed": 0}
 
-encodings = {"png": 1,
+encodings = {"png": 0,
              "rgb24": 0,
-             "jpeg": 1,
+             "jpeg": 0,
              "h264": 1,
-             "vp8": 1,
-             "vp9": 1,
-             "mmap": 1}
+             "vp8": 0,
+             "vp9": 0,
+             "mmap": 0}
 
 header_dupes = []
 headers = {}
@@ -212,8 +234,10 @@ def write_html():
     ofile.write('  <script language="javascript" type="text/javascript" src="js/jquery.flot.orderbars_mod.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript" src="js/xpra.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript">\n')
-    ofile.write('    var options = {canvas:true, grid: {margin: {top:50}, hoverable: true}, series: {bars: {show: true, barWidth: 0.08}}, '
-                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#D4CBC3"]};\n')
+    ofile.write('    var options = {canvas:true, grid: {margin: {top:50}, hoverable: true}, series: {bars: {show: true, barWidth: 0.5}}, legend: {show: ' + showLegend + '}, '
+                #' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, '
+                ' xaxis: {mode: "categories", tickLength: 0, min: -6, max: 6}, '
+                ' colors: ["#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#cc0000", "#787A40", "#9FBF8C", "#C8AB65"]};\n')
 
     m_index = 0
     m_names = []
@@ -342,6 +366,9 @@ def main():
         param_id = param_name = param['id']
         if ('dir' in param.keys()):
             param_id = sanitize(param['dir'])
+        if (needReallyUniqueId):
+            param_id = param['id'] + '_' + sanitize(param['dir']);
+
         if ('display' in param.keys()):
             param_name = param['display']
         param_ids.append(param_id)
@@ -352,12 +379,17 @@ def main():
         if ('dir' in param.keys()):
             uniqueId = sanitize(param['dir'])
 
+        if (needReallyUniqueId):
+            uniqueId = param['id'] + '_' + sanitize(param['dir']);
+
+        #file_name = base_dir + '/' + param['dir'] + '/' + param['prefix'] + '_' + param['id'] + '_x.csv'
+        #print file_name
+
         for rep in range(0, reps):
             if ('dir' in param.keys()):
-                file_name = base_dir + '/' + param['dir'] + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
+                file_name = base_dir + '/' + param['dir'] + '/' + param['prefix'] + '_' + param['id'] + '_' + str(rep+1) + '.csv'
             else:
-                file_name = base_dir + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
-            #print file_name
+                file_name = base_dir + '/' + param['prefix'] + '_' + param['id'] + '_' + str(rep+1) + '.csv'
             accumulate_values(file_name, rep, param, uniqueId)
     write_html()
     print('\nCreated: charts.html\n')
