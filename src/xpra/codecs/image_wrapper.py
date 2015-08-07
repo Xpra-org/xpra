@@ -6,6 +6,10 @@
 
 import time
 
+try:
+    memoryview_type = memoryview
+except:
+    memoryview_type = None
 
 class ImageWrapper(object):
 
@@ -106,16 +110,21 @@ class ImageWrapper(object):
         #some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
 
+    def clone_plane(self, plane):
+        if type(plane)==memoryview_type:
+            return plane.tobytes()
+        return plane[:]
+
     def clone_pixel_data(self):
         assert not self.freed, "image has already been freed!"
         if self.planes == 0:
             #no planes, simple buffer:
             assert self.pixels, "no pixels!"
-            self.pixels = self.pixels[:]
+            self.pixels = self.clone_plane(self.pixels)
         else:
             assert self.planes>0
             for i in range(self.planes):
-                self.pixels[i] = self.pixels[i][:]
+                self.pixels[i] = self.clone_plane(self.pixels[i])
         self.thread_safe = True
 
     def __del__(self):
