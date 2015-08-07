@@ -984,6 +984,8 @@ class SessionInfo(gtk.Window):
                 if len(l)<size:
                     for _ in range(size-len(l)):
                         l.insert(0, None)
+                else:
+                    l = l[:size]
                 values.append(l)
                 labels.append(name)
             return values, labels
