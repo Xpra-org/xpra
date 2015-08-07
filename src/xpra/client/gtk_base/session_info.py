@@ -17,7 +17,7 @@ from xpra.os_util import os_info, bytestostr
 from xpra.util import prettify_plug_name, typedict
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
-from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
+from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.scripts.config import python_platform
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, \
@@ -643,13 +643,12 @@ class SessionInfo(gtk.Window):
                 return state
             s = "%s: %s" % (state, sound_pipeline.codec_description)
             try:
-                pid = sound_pipeline.get_info().get("pid")
+                info = sound_pipeline.get_info()
+                pid = info.get("pid")
                 if pid:
                     s += " (pid=%s)" % pid
             except:
-                pass
-            #if sound_pipeline.bitrate>0:
-            #    s += " / %sbit/s" % std_unit(sound_pipeline.bitrate)
+                log.warn("error getting sound info", exc_info=True)
             return s
         def codec_info(enabled, codecs):
             if not enabled:
@@ -719,14 +718,14 @@ class SessionInfo(gtk.Window):
                 return {"state" : "inactive"}
             return prop.get_info()
         def set_sound_info(label, details, supported, prop):
-            p = get_sound_info(supported, prop)
-            label.set_text(p.get("state", ""))
+            d = typedict(get_sound_info(supported, prop))
+            label.set_text(d.strget("state", ""))
             if details:
-                d = p.get("queue.used", -1)
-                if d>=0:
-                    details.set_text(" (buffer: %sms)" % str(d).rjust(3))
-                else:
-                    details.set_text("")
+                s = ""
+                bitrate = d.intget("bitrate", 0)
+                if bitrate>0:
+                    s = "%sbit/s" % std_unit(bitrate)
+                details.set_text(s)
         set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
         set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 

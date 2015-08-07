@@ -233,6 +233,9 @@ class sound_subprocess_wrapper(subprocess_caller):
         log("info_update: %s", info)
         self.last_info = info
         self.last_info["time"] = int(time.time())
+        p = self.process
+        if p and not p.poll():
+            self.last_info["pid"] = p.pid
         self.codec_description = info.get("codec_description")
 
 

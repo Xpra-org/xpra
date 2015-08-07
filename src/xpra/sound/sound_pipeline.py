@@ -77,7 +77,7 @@ class SoundPipeline(gobject.GObject):
         if self.codec_mode:
             info["codec_mode"] = self.codec_mode
         if self.bitrate>0:
-            info["speaker.bitrate"] = self.bitrate
+            info["bitrate"] = self.bitrate
         if inject_fault():
             info["INJECTING_NONE_FAULT"] = None
             log.warn("injecting None fault: get_info()=%s", info)
