@@ -8,7 +8,7 @@ import os
 import sys
 import time
 
-from xpra.os_util import SIGNAMES
+from xpra.os_util import SIGNAMES, Queue
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, normv, \
@@ -17,6 +17,7 @@ from xpra.log import Logger
 log = Logger("sound")
 
 APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
+JITTER = int(os.environ.get("XPRA_SOUND_SOURCE_JITTER", "0"))
 
 
 class SoundSource(SoundPipeline):
@@ -63,6 +64,8 @@ class SoundSource(SoundPipeline):
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
+        if JITTER>0:
+            self.jitter_queue = Queue()
         try:
             #Gst 1.0:
             self.sink.connect("new-sample", self.on_new_sample)
@@ -96,7 +99,7 @@ class SoundSource(SoundPipeline):
         #info = sample.get_info()
         size = buf.get_size()
         data = buf.extract_dup(0, size)
-        return self.do_emit_buffer(data, {"timestamp"  : normv(buf.pts),
+        return self.emit_buffer(data, {"timestamp"  : normv(buf.pts),
                                    "duration"   : normv(buf.duration),
                                    })
 
@@ -122,12 +125,31 @@ class SoundSource(SoundPipeline):
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
         log("emit buffer: %s bytes, timestamp=%s", len(buf.data), buf.timestamp//MS_TO_NS)
-        return self.do_emit_buffer(buf.data, {
+        return self.emit_buffer(buf.data, {
                                        "caps"      : buf.get_caps().to_string(),
                                        "timestamp" : normv(buf.timestamp),
                                        "duration"  : normv(buf.duration)
                                        })
 
+    def emit_buffer(self, data, metadata={}):
+        if JITTER>0:
+            #will actually emit the buffer after a random delay
+            if self.jitter_queue.empty():
+                #queue was empty, schedule a timer to flush it
+                from random import randint
+                jitter = randint(1, JITTER)
+                from xpra.gtk_common.gobject_compat import import_glib
+                glib = import_glib()
+                glib.timeout_add(jitter, self.flush_jitter_queue)
+                log("emit_buffer: will flush jitter queue in %ims", jitter)
+            self.jitter_queue.put((data, metadata))
+            return 0
+        return self.do_emit_buffer(data, metadata)
+
+    def flush_jitter_queue(self):
+        while not self.jitter_queue.empty():
+            d,m = self.jitter_queue.get(False)
+            self.do_emit_buffer(d, m)
 
     def do_emit_buffer(self, data, metadata={}):
         self.buffer_count += 1
@@ -142,7 +164,6 @@ gobject.type_register(SoundSource)
 
 
 def main():
-    import glib
     from xpra.platform import init, clean
     init("Xpra-Sound-Source")
     try:
@@ -203,6 +224,8 @@ def main():
                     f.write(data)
                     f.flush()
 
+        from xpra.gtk_common.gobject_compat import import_glib
+        glib = import_glib()
         glib_mainloop = glib.MainLoop()
 
         ss.connect("new-buffer", new_buffer)
