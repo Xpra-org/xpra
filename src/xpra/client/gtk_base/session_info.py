@@ -374,16 +374,19 @@ class SessionInfo(gtk.Window):
                 bandwidth_label += ",\nand number of pixels rendered"
             self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
             self.latency_graph = self.add_graph_button(None, self.save_graphs)
-            self.sound_queue_graph = self.add_graph_button(None, self.save_graphs)
+            if SHOW_SOUND_STATS:
+                self.sound_queue_graph = self.add_graph_button(None, self.save_graphs)
+            else:
+                self.sound_queue_graph = None
             self.connect("realize", self.populate_graphs)
         self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
         self.net_in_bytecount = deque(maxlen=N_SAMPLES+4)
         self.net_out_bytecount = deque(maxlen=N_SAMPLES+4)
         self.sound_in_bytecount = deque(maxlen=N_SAMPLES+4)
         self.sound_out_bytecount = deque(maxlen=N_SAMPLES+4)
-        self.sound_out_queue_min = deque(maxlen=N_SAMPLES+4)
-        self.sound_out_queue_max = deque(maxlen=N_SAMPLES+4)
-        self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES+4)
+        self.sound_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
+        self.sound_out_queue_max = deque(maxlen=N_SAMPLES*10+4)
+        self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES*10+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -399,6 +402,8 @@ class SessionInfo(gtk.Window):
         self.populate_all()
         gobject.timeout_add(1000, self.populate)
         gobject.timeout_add(100, self.populate_tab)
+        if SHOW_SOUND_STATS:
+            gobject.timeout_add(100, self.populate_sound_stats)
         add_close_accel(self, self.destroy)
 
 
@@ -496,6 +501,20 @@ class SessionInfo(gtk.Window):
             icon = self.get_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)
 
+    def populate_sound_stats(self, *args):
+        #runs every 100ms
+        if self.is_closed:
+            return False
+        ss = self.client.sound_sink
+        if SHOW_SOUND_STATS and ss:
+            info = ss.get_info()
+            if info:
+                info = typedict(info)
+                self.sound_out_queue_cur.append(info.intget("queue.cur"))
+                self.sound_out_queue_min.append(info.intget("queue.min"))
+                self.sound_out_queue_max.append(info.intget("queue.max"))
+        return not self.is_closed
+
     def populate(self, *args):
         if self.is_closed:
             return False
@@ -511,14 +530,6 @@ class SessionInfo(gtk.Window):
                 self.sound_in_bytecount.append(self.client.sound_in_bytecount)
             if self.client.sound_out_bytecount>0:
                 self.sound_out_bytecount.append(self.client.sound_out_bytecount)
-            ss = self.client.sound_sink
-            if ss:
-                info = ss.get_info()
-                if info:
-                    info = typedict(info)
-                    self.sound_out_queue_cur.append(info.intget("queue.cur"))
-                    self.sound_out_queue_min.append(info.intget("queue.min"))
-                    self.sound_out_queue_max.append(info.intget("queue.max"))
 
         #count pixels in the last second:
         since = time.time()-1
@@ -962,7 +973,7 @@ class SessionInfo(gtk.Window):
             self.bandwidth_graph.set_size_request(*pixmap.get_size())
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
 
-        def norm_lists(items):
+        def norm_lists(items, size=N_SAMPLES):
             #ensures we always have exactly 20 values,
             #(and skip if we don't have any)
             values, labels = [], []
@@ -970,8 +981,8 @@ class SessionInfo(gtk.Window):
                 if len(l)==0:
                     continue
                 l = list(l)
-                if len(l)<20:
-                    for _ in range(20-len(l)):
+                if len(l)<size:
+                    for _ in range(size-len(l)):
                         l.insert(0, None)
                 values.append(l)
                 labels.append(name)
@@ -991,18 +1002,20 @@ class SessionInfo(gtk.Window):
                                     start_x_offset=start_x_offset)
         self.latency_graph.set_size_request(*pixmap.get_size())
         self.latency_graph.set_from_pixmap(pixmap, None)
-        #sound queue graph:
-        queue_values, queue_labels = norm_lists((
-                             (self.sound_out_queue_max, "Max"),
-                             (self.sound_out_queue_cur, "Level"),
-                             (self.sound_out_queue_min, "Min"),
-                             ))
-        pixmap = make_graph_pixmap(queue_values, labels=queue_labels,
-                                    width=w, height=h//3,
-                                    title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
-                                    start_x_offset=start_x_offset)
-        self.sound_queue_graph.set_size_request(*pixmap.get_size())
-        self.sound_queue_graph.set_from_pixmap(pixmap, None)
+
+        if SHOW_SOUND_STATS:
+            #sound queue graph:
+            queue_values, queue_labels = norm_lists((
+                                 (self.sound_out_queue_max, "Max"),
+                                 (self.sound_out_queue_cur, "Level"),
+                                 (self.sound_out_queue_min, "Min"),
+                                 ), N_SAMPLES*10)
+            pixmap = make_graph_pixmap(queue_values, labels=queue_labels,
+                                        width=w, height=h//3,
+                                        title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
+                                        start_x_offset=start_x_offset)
+            self.sound_queue_graph.set_size_request(*pixmap.get_size())
+            self.sound_queue_graph.set_from_pixmap(pixmap, None)
         return True
 
     def save_graphs(self, *args):
