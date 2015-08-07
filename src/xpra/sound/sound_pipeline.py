@@ -72,7 +72,6 @@ class SoundPipeline(gobject.GObject):
                 "bytes"             : self.byte_count,
                 "pipeline"          : self.pipeline_str,
                 "volume"            : self.get_volume(),
-                "pid"               : os.getpid(),
                 }
         if self.codec_mode:
             info["codec_mode"] = self.codec_mode
