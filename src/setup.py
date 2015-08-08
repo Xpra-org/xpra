@@ -154,6 +154,7 @@ if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")    
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
     nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.1_sdk"
+    nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
     try:
         import pycuda
     except:
@@ -880,6 +881,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
+                   "xpra/codecs/nvapi_version.c",
                    "xpra/server/stats/cystats.c",
                    "xpra/server/region.c",
                    "etc/xpra/xpra.conf",
@@ -1500,6 +1502,17 @@ if WIN32:
             #assume 32-bit for now:
             #add_data_files('', ["C:\\Windows\System32\nvcuda.dll"])
             #add_data_files('', ["%s/nvencodeapi.dll" % nvenc_bin_dir])
+        elif "nvapi" in pkgs_options[0]:
+            nvapi_include_dir       = nvapi_path
+            import struct
+            if struct.calcsize("P")==4:
+                nvapi_lib_names         = ["nvapi"]
+                nvapi_lib_dir           = os.path.join(nvapi_path, "x86")
+            else:
+                nvapi_lib_names         = ["nvapi64"]
+                nvapi_lib_dir           = os.path.join(nvapi_path, "amd64")
+
+            add_keywords([], [nvapi_include_dir], [nvapi_lib_dir], nvapi_lib_names)
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -1877,6 +1890,12 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
 toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
+if (nvenc4_ENABLED or nvenc5_ENABLED) and WIN32:
+    cython_add(Extension("xpra.codecs.nvapi_version",
+                ["xpra/codecs/nvapi_version.pyx"],
+                **pkgconfig("nvapi")
+                ))
+    
 if nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None

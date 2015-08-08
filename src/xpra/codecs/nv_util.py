@@ -7,25 +7,45 @@ import sys
 import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
+from xpra.util import pver
 
 
 def identify_nvidia_module_version():
     if os.name!="posix":
-        return None
-    from xpra.os_util import load_binary_file
-    v = load_binary_file("/proc/driver/nvidia/version")
-    if not v:
-        log.warn("Nvidia kernel module not installed?")
-        return []
-    KSTR = "Kernel Module"
-    p = v.find(KSTR)
-    if not p:
-        log.warn("unknown Nvidia kernel module version")
-        return []
-    v = v[p+len(KSTR):].strip().split(" ")[0]
+        if not sys.platform.startswith("win"):
+            log.warn("Warning: unable to identify the NVidia driver version on this platform")
+            return None
+        #try the nvapi call:
+        try:
+            from xpra.codecs.nvapi_version import get_driver_version    #@UnresolvedImport
+            v = get_driver_version()
+            log("NVAPI get_driver_version()=%s", v)
+        except Exception as e:
+            log.warn("failed to get the driver version through NVAPI:")
+            log.warn(" %s", e)
+    else:
+        from xpra.os_util import load_binary_file
+        v = load_binary_file("/proc/driver/nvidia/version")
+        if not v:
+            log.warn("Nvidia kernel module not installed?")
+            return []
+        KSTR = "Kernel Module"
+        p = v.find(KSTR)
+        if not p:
+            log.warn("unknown Nvidia kernel module version")
+            return []
+        v = v[p+len(KSTR):].strip().split(" ")[0]
+        v = v.split(".")
+    #only keep numeric values:
+    numver = []
     try:
-        numver = [int(x) for x in v.split(".")]
-        log.info("Nvidia kernel module version %s", v)
+        for x in v:
+            try:
+                numver.append(int(x))
+            except ValueError:
+                if len(numver)==0:
+                    raise
+        log.info("Nvidia driver version %s", pver(numver))
         return numver
     except Exception as e:
         log.warn("failed to parse Nvidia kernel module version '%s': %s", v, e)
