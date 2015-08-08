@@ -617,6 +617,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
                         #"-Wno-error=strict-prototypes",
                         ]
+            else:
+                #older versions of OSX ship an old gcc,
+                #not much we can do with this:
+                eifd = []
             for eif in eifd:
                 add_to_keywords(kw, 'extra_compile_args', eif)
     if PIC_ENABLED and not is_msvc():
