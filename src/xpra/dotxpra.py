@@ -20,7 +20,9 @@ def osexpand(s, actual_username=""):
         #replace "~/" with "~$actual_username/"
         s = "~%s/%s" % (actual_username, s[2:])
     v = os.path.expandvars(os.path.expanduser(s))
-    v = v.replace("$UID", str(os.getuid())).replace("$GID", str(os.getgid()))
+    if os.name=="posix":
+        v = v.replace("$UID", str(os.getuid()))
+        v = v.replace("$GID", str(os.getgid()))
     if len(actual_username)>0:
         v = v.replace("$USERNAME", actual_username)
     return v
