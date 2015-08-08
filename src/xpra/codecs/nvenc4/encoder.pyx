@@ -16,7 +16,7 @@ from pycuda import driver
 from pycuda.driver import memcpy_htod
 from pycuda.compiler import compile
 
-from xpra.util import AtomicInteger, updict, engs, csv
+from xpra.util import AtomicInteger, updict, engs, csv, pver
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -2322,7 +2322,12 @@ def init_module():
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     #this should log the kernel module version
-    get_nvidia_module_version()
+    v = get_nvidia_module_version()
+    if not v:
+        log.warn("unknown driver version")
+    elif v>=[350]:
+        log.warn("Warning: NVidia driver version %s may not work", pver(v))
+        log.warn(" recommended driver versions: up to 350 only")
 
     #load the library / DLL:
     init_nvencode_library()
