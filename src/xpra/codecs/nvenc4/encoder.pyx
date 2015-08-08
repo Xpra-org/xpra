@@ -16,7 +16,7 @@ from pycuda import driver
 from pycuda.driver import memcpy_htod
 from pycuda.compiler import compile
 
-from xpra.util import AtomicInteger, updict, engs
+from xpra.util import AtomicInteger, updict, engs, csv
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -1740,7 +1740,7 @@ cdef class Encoder:
             self.context = NULL
             global context_counter
             context_counter.decrease()
-            log("cuda_clean() (still %s contexts in use)", context_counter)
+            log("cuda_clean() (still %s context%s in use)", context_counter, engs(context_counter))
         self.cuda_context_ptr = <void *> 0
 
     def get_width(self):
@@ -2266,7 +2266,7 @@ cdef class Encoder:
                     log("  input formats=%s", input_formats)
         finally:
             free(encode_GUIDs)
-        log("codecs=%s", codecs.keys())
+        log("codecs=%s", csv(codecs.keys()))
         return codecs
 
 
@@ -2308,7 +2308,7 @@ cdef class Encoder:
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
-        log("success, encoder context=%#x (%s contexts in use)", <unsigned long> self.context, context_counter)
+        log("success, encoder context=%#x (%s context%s in use)", <unsigned long> self.context, context_counter, engs(context_counter))
 
 
 def init_module():

@@ -520,7 +520,11 @@ def xor(s1,s2):
 
 def engs(v):
     try:
-        return ["","s"][int(len(v)!=1)]
+        if type(v)==int:
+            l = v
+        else:
+            l = len(v)
+        return ["","s"][l!=1]
     except:
         return ""
 
