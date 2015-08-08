@@ -1364,7 +1364,9 @@ cdef class Encoder:
             self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
             log("init_cuda cuda_context=%s", self.cuda_context)
             self.cuda_info = get_cuda_info()
+            log("init_cuda cuda info=%s", self.cuda_info)
             self.pycuda_info = get_pycuda_info()
+            log("init_cuda pycuda info=%s", self.pycuda_info)
             self.cuda_device_info = {
                 "device.name"       : d.name(),
                 "device.pci_bus_id" : d.pci_bus_id(),
