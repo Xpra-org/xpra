@@ -287,6 +287,7 @@ class ServerSource(object):
         self.core_encodings = []
         self.rgb_formats = ["RGB"]
         self.encoding_options = typedict()
+        self.icons_encoding_options = typedict()
         self.default_encoding_options = typedict()
 
         self.window_sources = {}                    #WindowSource for each Window ID
@@ -696,8 +697,8 @@ class ServerSource(object):
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
         for k in c.keys():
-            if k.startswith("theme."):
-                self.encoding_options[k] = c[k]
+            if k.startswith("theme.") or  k.startswith("encoding.icons."):
+                self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c[k]
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
                 if stripped_k in ("transparency", "csc_atoms", "client_options",
@@ -714,6 +715,7 @@ class ServerSource(object):
                     v = c.get(k)
                 self.encoding_options[stripped_k] = v
         elog("encoding options: %s", self.encoding_options)
+        elog("icons encoding options: %s", self.icons_encoding_options)
 
         #handle proxy video: add proxy codec to video helper:
         pv = self.encoding_options.boolget("proxy.video")
@@ -1235,6 +1237,7 @@ class ServerSource(object):
             updict(info, prefix, d)
         up("encoding",      self.default_encoding_options)
         up("encoding",      self.encoding_options)
+        up("icons",         self.icons_encoding_options)
         up("connection",    self.protocol.get_info())
         up("av-sync",       {"client.delay"         : self.av_sync_delay,
                              "total"                : self.av_sync_delay_total,
@@ -1750,7 +1753,8 @@ class ServerSource(object):
                               self.av_sync, self.av_sync_delay,
                               self.video_helper,
                               self.server_core_encodings, self.server_encodings,
-                              self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
+                              self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.icons_encoding_options,
+                              self.rgb_formats,
                               self.default_encoding_options,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws

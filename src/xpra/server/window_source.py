@@ -79,7 +79,8 @@ class WindowSource(object):
                     av_sync, av_sync_delay,
                     video_helper,
                     server_core_encodings, server_encodings,
-                    encoding, encodings, core_encodings, encoding_options, rgb_formats,
+                    encoding, encodings, core_encodings, encoding_options, icons_encoding_options,
+                    rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
         # mmap:
@@ -107,6 +108,7 @@ class WindowSource(object):
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
+        self.icons_encoding_options = icons_encoding_options    #icon caps
         self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression (not to be confused with 'rgb24zlib'...)
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
@@ -165,10 +167,10 @@ class WindowSource(object):
         #for sending and batching window icon updates:
         self.window_icon_data = None
         self.send_window_icon_due = False
-        self.theme_default_icons = encoding_options.strlistget("theme.default.icons", [])
-        self.window_icon_greedy = encoding_options.boolget("icons.greedy", False)
-        self.window_icon_size = encoding_options.intpair("icons.size", (64, 64))
-        self.window_icon_max_size = encoding_options.intpair("icons.max_size", self.window_icon_size)
+        self.theme_default_icons = icons_encoding_options.strlistget("default.icons", [])
+        self.window_icon_greedy = icons_encoding_options.boolget("greedy", False)
+        self.window_icon_size = icons_encoding_options.intpair("size", (64, 64))
+        self.window_icon_max_size = icons_encoding_options.intpair("max_size", self.window_icon_size)
         self.window_icon_max_size = max(self.window_icon_max_size[0], 16), max(self.window_icon_max_size[1], 16)
         self.window_icon_size = min(self.window_icon_size[0], self.window_icon_max_size[0]), min(self.window_icon_size[1], self.window_icon_max_size[1])
         self.window_icon_size = max(self.window_icon_size[0], 16), max(self.window_icon_size[1], 16)
@@ -343,6 +345,7 @@ class WindowSource(object):
                  "auto-refresh"         : self.client_refresh_encodings,
                  "rgb_formats"          : self.rgb_formats,
                  })
+        up("icons", self.icons_encoding_options)
         idata = self.window_icon_data
         if idata:
             pixel_data, stride, w, h = idata
