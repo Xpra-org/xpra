@@ -1526,7 +1526,7 @@ class ServerSource(object):
         # * xpra info with queue and progress
         basefilename = os.path.basename(filename)
         filesize = len(data)
-        cdata = compressed_wrapper("file-data", data, level=5, lz4=self.lz4)
+        cdata = self.compressed_wrapper("file-data", data)
         self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
 
     def send_client_command(self, *args):
