@@ -1833,12 +1833,16 @@ class ServerSource(object):
             Must run until we hit the end of queue marker,
             to ensure all the queued items get called.
         """
-        while True:
+        while not self.is_closed():
             fn_and_args = self.encode_work_queue.get(True)
             if fn_and_args is None:
                 return              #empty marker
             try:
                 fn_and_args[0](*fn_and_args[1:])
             except Exception as e:
-                log.error("error processing damage data: %s", e, exc_info=True)
+                if self.is_closed():
+                    log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])
+                    log(" %s", e)
+                    return
+                log.error("Error during encoding:", exc_info=True)
             NOYIELD or time.sleep(0)
