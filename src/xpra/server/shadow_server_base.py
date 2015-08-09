@@ -26,6 +26,9 @@ class RootWindowModel(object):
         self.dynamic_property_names = []
         self.internal_property_names = []
 
+    def suspend(self):
+        pass
+
     def is_managed(self):
         return True
 
@@ -250,6 +253,7 @@ class ShadowServerBase(object):
         for ss in self._server_sources.values():
             ss.unmap_window(wid, window)
         self.mapped_at = None
+        self.root_window_model.suspend()
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]

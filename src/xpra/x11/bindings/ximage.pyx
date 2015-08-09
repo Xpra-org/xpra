@@ -507,12 +507,12 @@ cdef class XShmWrapper(object):
     def get_size(self):                                     #@DuplicatedSignature
         return self.width, self.height
 
-    def get_image(self, Pixmap xpixmap, int x, int y, int w, int h):
+    def get_image(self, Drawable drawable, int x, int y, int w, int h):
         assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"
         if self.closed:
             return None
         if x>=self.width or y>=self.height:
-            xshmlog("XShmWrapper.get_image%s position outside image dimensions %ix%i", (xpixmap, x, y, w, h), self.width, self.height)
+            xshmlog("XShmWrapper.get_image%s position outside image dimensions %ix%i", (drawable, x, y, w, h), self.width, self.height)
             return None
         #clamp size to image size:
         if x+w>self.width:
@@ -520,8 +520,8 @@ cdef class XShmWrapper(object):
         if y+h>self.height:
             h = self.height-y
         if not self.got_image:
-            if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
-                xshmlog("XShmWrapper.get_image(%#x, %i, %i, %i, %i) XShmGetImage failed!", xpixmap, x, y, w, h)
+            if not XShmGetImage(self.display, drawable, self.image, 0, 0, 0xFFFFFFFF):
+                xshmlog("XShmWrapper.get_image(%#x, %i, %i, %i, %i) XShmGetImage failed!", drawable, x, y, w, h)
                 return None
             self.got_image = True
         self.ref_count += 1
@@ -529,7 +529,7 @@ cdef class XShmWrapper(object):
         imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
         imageWrapper.set_free_callback(self.free_image_callback)
-        xshmdebug("XShmWrapper.get_image(%#x, %i, %i, %i, %i)=%s (ref_count=%i)", xpixmap, x, y, w, h, imageWrapper, self.ref_count)
+        xshmdebug("XShmWrapper.get_image(%#x, %i, %i, %i, %i)=%s (ref_count=%i)", drawable, x, y, w, h, imageWrapper, self.ref_count)
         return imageWrapper
 
     def discard(self):
@@ -725,8 +725,8 @@ cdef class XImageBindings(X11CoreBindings):
         xshm.init(self.display, xwindow, attrs.visual, attrs.width, attrs.height, attrs.depth)
         return xshm
 
-    def get_ximage(self, xpixmap, x, y, width, height):      #@DuplicatedSignature
-        return get_image(self.display, xpixmap, x, y, width, height)
+    def get_ximage(self, drawable, x, y, width, height):      #@DuplicatedSignature
+        return get_image(self.display, drawable, x, y, width, height)
 
     def get_xcomposite_pixmap(self, xwindow):
         return xcomposite_name_window_pixmap(self.display, xwindow)
