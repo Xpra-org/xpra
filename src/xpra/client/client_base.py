@@ -736,7 +736,12 @@ class XpraClientBase(object):
             assert self.printing
         else:
             assert self.file_transfer
-        assert filesize>0 and file_data
+        assert filesize>0, "invalid file size: %s" % filesize
+        assert file_data, "no data!"
+        if len(file_data)!=filesize:
+            log.error("Error: invalid data size for file %s", basefilename)
+            log.error(" received %s, expected %s", len(file_data), filesize)
+            return
         #check digest if present:
         digest = options.get("sha1")
         if digest:
@@ -744,7 +749,10 @@ class XpraClientBase(object):
             u = hashlib.sha1()
             u.update(file_data)
             filelog("sha1 digest: %s - expected: %s", u.hexdigest(), digest)
-            assert digest==u.hexdigest(), "invalid file digest %s (expected %s)" % (u.hexdigest(), digest)
+            if digest!=u.hexdigest():
+                log.error("Error: data does not match, invalid file digest for %s", basefilename)
+                log.error(" received %s, expected %s", u.hexdigest(), digest)
+                return
 
         #make sure we use a filename that does not exist already:
         dd = os.path.expanduser(get_download_dir())
