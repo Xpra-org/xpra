@@ -10,6 +10,7 @@ from xpra.sound.gstreamer_util import gst
 from xpra.log import Logger
 log = Logger("sound")
 
+from xpra.util import csv
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal
 gobject = import_gobject()
@@ -26,6 +27,11 @@ def inject_fault():
     _counter += 1
     return (_counter % FAULT_RATE)==0
 
+try:
+    MESSAGE_ELEMENT = gst.MESSAGE_ELEMENT
+except:
+    #gstreamer 1.x:
+    MESSAGE_ELEMENT = None
 
 class SoundPipeline(gobject.GObject):
 
@@ -190,14 +196,19 @@ class SoundPipeline(gobject.GObject):
                 log.error(" %s", details)
             self.state = "error"
             self.idle_emit("error", str(err))
-        elif t == gst.MESSAGE_TAG:
+        elif t == gst.MESSAGE_TAG or t == MESSAGE_ELEMENT:
             try:
-                #Gst 0.10:
                 assert message.structure is not None, "test for pygst / 0.10"
-                self.parse_message0(message)
+                #Gst 0.10: can handle both TAG and ELEMENT:
+                parse = self.parse_message0
             except:
-                #Gst 1.0:
-                self.parse_message1(message)
+                #Gst 1.0: can only handle tag messages for now:
+                parse = self.parse_message1
+            try:
+                parse(message)
+            except Exception as e:
+                log.warn("Warning: failed to parse gstreamer message:")
+                log.warn(" %s: %s", type(e), e)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
         elif t == gst.MESSAGE_STREAM_START:
@@ -259,6 +270,12 @@ class SoundPipeline(gobject.GObject):
                 log("mode: %s", mode)
                 self.codec_mode = mode
             found = True
+        if structure.has_field("type"):
+            if structure["type"]=="volume-changed":
+                log.info("volumes=%s", csv("%i%%" % (v*100/2**16) for v in structure["volumes"]))
+                found = True
+            else:
+                log.info("type=%s", structure["type"])
         if not found:
             #these, we know about, so we just log them:
             for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode", "container-format"):
@@ -266,7 +283,9 @@ class SoundPipeline(gobject.GObject):
                     v = structure[x]
                     log("tag message: %s = %s", x, v)
                     return      #handled
-            log.info("unknown sound pipeline tag message %s: %s", message, structure)
+            log.info("unknown sound pipeline message %s: %s", message, structure)
+            log.info(" %s", structure.keys())
+
 
     def parse_message1(self, message):
         #message parsing code for GStreamer 1.x
