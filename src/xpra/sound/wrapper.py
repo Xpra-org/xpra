@@ -14,7 +14,6 @@ log = Logger("sound")
 
 DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
 SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
-FAKE_OVERRUN = int(os.environ.get("XPRA_SOUND_FAKE_OVERRUN", "0"))
 FAKE_START_FAILURE = os.environ.get("XPRA_SOUND_FAKE_START_FAILURE", "0")=="1"
 FAKE_EXIT = int(os.environ.get("XPRA_SOUND_FAKE_EXIT", "0"))
 FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
@@ -96,13 +95,7 @@ class sound_play(sound_subprocess):
     def __init__(self, *pipeline_args):
         from xpra.sound.sink import SoundSink
         sound_pipeline = SoundSink(*pipeline_args)
-        sound_subprocess.__init__(self, sound_pipeline, ["add_data"], ["underrun", "overrun"])
-        if FAKE_OVERRUN>0:
-            def fake_overrun(*args):
-                wo = self.wrapped_object
-                if wo:
-                    wo.emit("overrun", 500)
-            glib.timeout_add(FAKE_OVERRUN*1000, fake_overrun)
+        sound_subprocess.__init__(self, sound_pipeline, ["add_data"], [])
 
 
 def run_sound(mode, error_cb, options, args):

@@ -959,8 +959,6 @@ class ServerSource(object):
                 def sound_sink_error(*args):
                     log.warn("stopping sound input because of error")
                     self.stop_receiving_sound()
-                def sound_sink_overrun(*args):
-                    log.warn("sound overrun")
                 from xpra.sound.wrapper import start_receiving_sound
                 ss = start_receiving_sound(codec)
                 if not ss:
@@ -968,7 +966,6 @@ class ServerSource(object):
                 self.sound_sink = ss
                 soundlog("sound_data(..) created sound sink: %s", self.sound_sink)
                 ss.connect("error", sound_sink_error)
-                ss.connect("overrun", sound_sink_overrun)
                 ss.start()
                 soundlog("sound_data(..) sound sink started")
             except Exception:
