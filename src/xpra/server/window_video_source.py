@@ -995,7 +995,10 @@ class WindowVideoSource(WindowSource):
         elif SCALING_HARDCODED:
             actual_scaling = tuple(SCALING_HARDCODED)
             scalinglog("using hardcoded scaling: %s", actual_scaling)
-        elif actual_scaling is None and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
+        elif actual_scaling is None and (width>max_w or height>max_h):
+            #most encoders can't deal with that!
+            actual_scaling = get_min_required_scaling()
+        elif actual_scaling is None and not self.is_shadow and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
             #full frames per second (measured in pixels vs window size):
             ffps = 0
@@ -1017,10 +1020,7 @@ class WindowVideoSource(WindowSource):
             qs = s>(q-er*10) and q<(70+er*15)
             #scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
 
-            if width>max_w or height>max_h:
-                #most encoders can't deal with that!
-                actual_scaling = get_min_required_scaling()
-            elif self.fullscreen and (qs or ffps>=max(2, 10-er*3)):
+            if self.fullscreen and (qs or ffps>=max(2, 10-er*3)):
                 actual_scaling = 1,3
             elif self.maximized and (qs or ffps>=max(2, 10-er*3)):
                 actual_scaling = 1,2

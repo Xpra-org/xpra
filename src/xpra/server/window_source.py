@@ -137,6 +137,7 @@ class WindowSource(object):
 
         self.is_OR = window.is_OR()
         self.is_tray = window.is_tray()
+        self.is_shadow = window.is_shadow()
         self.has_alpha = window.has_alpha()
         self.window_dimensions = 0, 0
         self.fullscreen = not self.is_tray and window.get_property("fullscreen")
@@ -252,6 +253,7 @@ class WindowSource(object):
         self.max_delta_size = MAX_DELTA_SIZE
         self.is_OR = False
         self.is_tray = False
+        self.is_shadow = False
         self.has_alpha = False
         self.window_dimensions = 0, 0
         self.fullscreen = False
@@ -633,7 +635,7 @@ class WindowSource(object):
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
-        self._rgb_auto_threshold = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR or self.is_tray)*2))
+        self._rgb_auto_threshold = int(MAX_PIXELS_PREFER_RGB * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
         self.get_best_encoding = self.get_best_encoding_impl()
         log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, small_as_rgb=%s, get_best_encoding=%s",
                         force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, self.get_best_encoding)
