@@ -292,6 +292,9 @@ class SoundPipeline(gobject.GObject):
         taglist = message.parse_tag()
         tags = [taglist.nth_tag_name(x) for x in range(taglist.n_tags())]
         log("bus message with tags=%s", tags)
+        if not tags:
+            #ignore it
+            return
         if "bitrate" in tags:
             new_bitrate = taglist.get_uint("bitrate")
             if new_bitrate[0] is True:
