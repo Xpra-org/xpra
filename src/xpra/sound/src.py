@@ -206,7 +206,7 @@ def main():
             from xpra.platform.paths import get_icon_filename
             f = get_icon_filename("xpra.png")
             from xpra.sound.pulseaudio_util import add_audio_tagging_env
-            add_audio_tagging_env(f)
+            add_audio_tagging_env(icon_path=f)
         except Exception as e:
             log.warn("failed to setup pulseaudio tagging: %s", e)
 

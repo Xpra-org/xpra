@@ -73,9 +73,9 @@ def exec_lpadmin(args, success_cb=None):
         log("returncode(%s)=%s", command, returncode)
         if returncode!=0:
             log.warn("lpadmin failed and returned error code: %s", returncode)
-            log.warn(" you may want to check that this user has all the required permissions")
-            if LPADMIN!="lpadmin":
-                log.warn(" for running: '%s'", LPADMIN)
+            from xpra.platform import get_username
+            log.warn(" verify that user '%s' has all the required permissions", get_username())
+            log.warn(" for running: '%s'", LPADMIN)
         elif success_cb:
             success_cb()
     cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)

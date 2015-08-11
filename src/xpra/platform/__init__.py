@@ -47,6 +47,10 @@ def do_clean():
     pass
 
 
+def _glib():
+    from xpra.gtk_common.gobject_compat import import_glib
+    return import_glib()
+
 #platforms can override this
 _prg_name = None
 def set_prgname(name):
@@ -57,8 +61,7 @@ def set_prgname(name):
 
 def do_set_prgname(name):
     try:
-        import glib
-        glib.set_prgname(name)
+        _glib().set_prgname(name)
     except:
         pass
 
@@ -77,8 +80,7 @@ def set_application_name(name):
 
 def do_set_application_name(name):
     try:
-        import glib
-        glib.set_application_name(name)
+        _glib().set_application_name(name)
     except:
         pass
 
@@ -92,6 +94,23 @@ def get_main_fallback():
     #when the user tries to run "xpra" without arguments
     #returns the function to run as fallback (or None)
     return None
+
+
+
+def get_username():
+    return do_get_username()
+
+def do_get_username():
+    try:
+        import pwd
+        return pwd.getpwuid(os.getuid()).pw_name
+    except:
+        try:
+            import getpass
+            return getpass.getuser()
+        except:
+            pass
+    return ""
 
 
 def platform_import(where, pm, required, *imports):
@@ -125,4 +144,4 @@ def platform_import(where, pm, required, *imports):
 
 platform_import(globals(), None, True, "do_init", "do_clean")
 platform_import(globals(), None, False, "do_set_prgname", "do_set_application_name",
-                "command_error", "command_info", "get_main_fallback")
+                "command_error", "command_info", "get_main_fallback", "do_get_username")

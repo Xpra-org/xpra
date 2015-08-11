@@ -339,10 +339,11 @@ class UIXpraClient(XpraClientBase):
         #audio tagging:
         if tray_icon_filename and os.path.exists(tray_icon_filename):
             try:
-                from xpra.sound.pulseaudio_util import add_audio_tagging_env
-                add_audio_tagging_env(tray_icon_filename)
+                from xpra.sound.pulseaudio_util import set_icon_path
+                set_icon_path(tray_icon_filename)
             except ImportError as e:
-                log("failed to set pulseaudio audio tagging: %s", e)
+                log.warn("Warning: failed to set pulseaudio tagging icon:")
+                log.warn(" %s", e)
 
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)

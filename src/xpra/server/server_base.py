@@ -30,6 +30,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
 from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
     repr_ellipsized
+from xpra.platform import get_username
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
@@ -344,17 +345,7 @@ class ServerBase(ServerCore):
         def pulseaudio_warning():
             soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
             soundlog.warn(" pulseaudio is limited to a single instance per user account,")
-            username = ""
-            try:
-                import pwd
-                username = pwd.getpwuid(os.getuid()).pw_name
-            except:
-                try:
-                    import getpass
-                    username = getpass.getuser()
-                except:
-                    pass
-            soundlog.warn(" and one may be running already for user '%s'", username)
+            soundlog.warn(" and one may be running already for user '%s'", get_username())
             soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
             soundlog.warn(" or use the 'pulseaudio=no' option")
         def pulseaudio_ended(proc):
@@ -414,10 +405,12 @@ class ServerBase(ServerCore):
             self.microphone_codecs = get_sound_codecs(False, False)
             self.supports_microphone = len(self.microphone_codecs)>0
         try:
-            from xpra.sound.pulseaudio_util import add_audio_tagging_env
-            add_audio_tagging_env()
+            from xpra.platform.paths import get_icon_filename
+            from xpra.sound.pulseaudio_util import set_icon_path
+            set_icon_path(get_icon_filename("xpra.png"))
         except Exception as e:
-            log("failed to set pulseaudio audio tagging: %s", e)
+            log.warn("Warning: failed to set pulseaudio tagging icon:")
+            log.warn(" %s", e)
 
     def init_clipboard(self):
         log("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)

@@ -10,17 +10,23 @@ import os.path
 from xpra.log import Logger
 log = Logger("sound")
 
+default_icon_path = None
+def set_icon_path(v):
+    global default_icon_path
+    default_icon_path = v
 
-def add_audio_tagging_env(icon_path=None):
+def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
     """
         This is called audio-tagging in PulseAudio, see:
         http://pulseaudio.org/wiki/ApplicationProperties
         http://0pointer.de/blog/projects/tagging-audio.html
     """
-    os.environ["PULSE_PROP_application.name"] = "xpra"
-    os.environ["PULSE_PROP_media.role"] = "music"
+    env_dict["PULSE_PROP_application.name"] = "xpra"
+    env_dict["PULSE_PROP_media.role"] = "music"
+    if not icon_path:
+        icon_path = default_icon_path
     if icon_path and os.path.exists(icon_path):
-        os.environ["PULSE_PROP_application.icon_name"] = icon_path
+        env_dict["PULSE_PROP_application.icon_name"] = icon_path
 
 
 #prefer the palib option which does everything in process:
