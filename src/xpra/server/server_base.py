@@ -343,8 +343,18 @@ class ServerBase(ServerCore):
         started_at = time.time()
         def pulseaudio_warning():
             soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
-            soundlog.warn(" usually, only a single pulseaudio instance can be running for each user account,")
-            soundlog.warn(" and one may be running already")
+            soundlog.warn(" pulseaudio is limited to a single instance per user account,")
+            username = ""
+            try:
+                import pwd
+                username = pwd.getpwuid(os.getuid()).pw_name
+            except:
+                try:
+                    import getpass
+                    username = getpass.getuser()
+                except:
+                    pass
+            soundlog.warn(" and one may be running already for user '%s'", username)
             soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
             soundlog.warn(" or use the 'pulseaudio=no' option")
         def pulseaudio_ended(proc):
