@@ -388,7 +388,12 @@ class GLWindowBackingBase(GTKWindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            try:
+                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            except Exception as e:
+                log.error("Error: cannot initialize %s texture: %ix%i", CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format), w, h)
+                log.error(" %s", e)
+                raise
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
