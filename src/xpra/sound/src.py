@@ -64,6 +64,7 @@ class SoundSource(SoundPipeline):
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
+        self.caps = None
         if JITTER>0:
             self.jitter_queue = Queue()
         try:
@@ -82,6 +83,13 @@ class SoundSource(SoundPipeline):
         SoundPipeline.cleanup(self)
         self.src_type = ""
         self.sink = None
+        self.caps = None
+
+    def get_info(self):
+        info = SoundPipeline.get_info(self)
+        if self.caps:
+            info["caps"] = self.caps.to_string()
+        return info
 
 
     def on_new_preroll1(self, appsink):
@@ -115,7 +123,7 @@ class SoundSource(SoundPipeline):
         return self.emit_buffer0(buf)
 
 
-    def emit_buffer0(self, buf, metadata={}):
+    def emit_buffer0(self, buf):
         """ convert pygst structure into something more generic for the wire """
         #none of the metadata is really needed at present, but it may be in the future:
         #metadata = {"caps"      : buf.get_caps().to_string(),
@@ -125,11 +133,14 @@ class SoundSource(SoundPipeline):
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
         log("emit buffer: %s bytes, timestamp=%s", len(buf.data), buf.timestamp//MS_TO_NS)
-        return self.emit_buffer(buf.data, {
-                                       "caps"      : buf.get_caps().to_string(),
-                                       "timestamp" : normv(buf.timestamp),
-                                       "duration"  : normv(buf.duration)
-                                       })
+        metadata = {
+                   "timestamp" : normv(buf.timestamp),
+                   "duration"  : normv(buf.duration)
+                   }
+        if not self.caps or self.caps.to_string()!=buf.get_caps():
+            self.caps = buf.get_caps()
+            metadata["caps"] = self.caps.to_string()
+        return self.emit_buffer(buf.data, metadata)
 
     def emit_buffer(self, data, metadata={}):
         if JITTER>0:
