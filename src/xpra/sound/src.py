@@ -88,7 +88,7 @@ class SoundSource(SoundPipeline):
     def get_info(self):
         info = SoundPipeline.get_info(self)
         if self.caps:
-            info["caps"] = self.caps.to_string()
+            info["caps"] = self.caps
         return info
 
 
@@ -123,6 +123,20 @@ class SoundSource(SoundPipeline):
         return self.emit_buffer0(buf)
 
 
+    def caps_to_dict(self, caps):
+        d = {}
+        try:
+            for cap in caps:
+                name = cap.get_name()
+                capd = {}
+                for k in cap.keys():
+                    capd[k] = cap[k]
+                d[name] = capd
+        except Exception as e:
+            log.error("Error parsing '%s':", caps)
+            log.error(" %s", e)
+        return d
+
     def emit_buffer0(self, buf):
         """ convert pygst structure into something more generic for the wire """
         #none of the metadata is really needed at present, but it may be in the future:
@@ -137,9 +151,10 @@ class SoundSource(SoundPipeline):
                    "timestamp" : normv(buf.timestamp),
                    "duration"  : normv(buf.duration)
                    }
-        if not self.caps or self.caps.to_string()!=buf.get_caps():
-            self.caps = buf.get_caps()
-            metadata["caps"] = self.caps.to_string()
+        d = self.caps_to_dict(buf.get_caps())
+        if not self.caps or self.caps!=d:
+            self.caps = d
+            metadata["caps"] = self.caps
         return self.emit_buffer(buf.data, metadata)
 
     def emit_buffer(self, data, metadata={}):
