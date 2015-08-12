@@ -80,7 +80,6 @@ class CairoBackingBase(GTKWindowBacking):
         gc = gdk_cairo_context(cairo.Context(self._backing))
         cairo_set_source_pixbuf(gc, pixbuf, x, y)
         gc.paint()
-        return True
 
     def cairo_paint_surface(self, img_surface, x, y):
         """ must be called from UI thread """
@@ -93,7 +92,6 @@ class CairoBackingBase(GTKWindowBacking):
         gc.set_operator(cairo.OPERATOR_OVER)
         gc.set_source_surface(img_surface, x, y)
         gc.paint()
-        return True
 
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
@@ -128,7 +126,8 @@ class CairoBackingBase(GTKWindowBacking):
         reader = BytesIOClass(png.getvalue())
         png.close()
         img = cairo.ImageSurface.create_from_png(reader)
-        return self.cairo_paint_surface(img, x, y)
+        self.cairo_paint_surface(img, x, y)
+        return True
 
 
     def cairo_draw(self, context):

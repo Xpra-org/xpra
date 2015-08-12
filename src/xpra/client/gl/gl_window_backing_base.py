@@ -691,8 +691,8 @@ class GLWindowBackingBase(GTKWindowBacking):
 
             context = self.gl_context()
             if not context:
-                log("%s._do_paint_rgb(..) not context!", self)
-                fire_paint_callbacks(callbacks, False)
+                log("%s._do_paint_rgb(..) no context!", self)
+                fire_paint_callbacks(callbacks, False, "failed to get a gl context")
                 return
             with context:
                 self.gl_init()
@@ -711,7 +711,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
-            fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, False, "gl_paint_planar error: %r" % e)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
         assert self.textures is not None, "no OpenGL textures!"

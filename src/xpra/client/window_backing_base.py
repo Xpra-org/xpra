@@ -55,10 +55,10 @@ def load_video_decoders():
     return VIDEO_DECODERS
 
 
-def fire_paint_callbacks(callbacks, success):
+def fire_paint_callbacks(callbacks, success, message=""):
     for x in callbacks:
         try:
-            x(success)
+            x(success, message)
         except KeyboardInterrupt:
             raise
         except:
@@ -276,12 +276,14 @@ class WindowBackingBase(object):
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception as e:
             if not self._backing:
-                log("paint error on closed backing ignored")
+                message = "paint error on closed backing ignored"
+                log(message)
             else:
                 log.error("do_paint_rgb24 error", exc_info=True)
-            fire_paint_callbacks(callbacks, False)
+                message = "do_paint_rgb24 error: %r" % e
+            fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
@@ -305,9 +307,9 @@ class WindowBackingBase(object):
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception as e:
             log.error("do_paint_rgb32 error", exc_info=True)
-            fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, False, "do_paint_rgb32 error: %r" % e)
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
@@ -345,14 +347,16 @@ class WindowBackingBase(object):
         assert decoder_module, "decoder module not found for %s" % coding
         with self._decoder_lock:
             if self._backing is None:
-                log("window %s is already gone!", self.wid)
-                fire_paint_callbacks(callbacks, False)
+                message = "window %s is already gone!" % self.wid
+                log(message)
+                fire_paint_callbacks(callbacks, False, message)
                 return  False
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc")
             if not input_colorspace:
-                log.error("csc mode is missing from the video options!")
-                fire_paint_callbacks(callbacks, False)
+                message = "csc mode is missing from the video options!"
+                log.error(message)
+                fire_paint_callbacks(callbacks, False, message)
                 return  False
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
@@ -383,7 +387,7 @@ class WindowBackingBase(object):
 
             img = self._video_decoder.decompress_image(img_data, options)
             if not img:
-                fire_paint_callbacks(callbacks, False)
+                fire_paint_callbacks(callbacks, False, "video decoder %s did not return an image", self._video_decoder)
                 log.error("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels using %s, options=%s",
                       self.wid, coding, len(img_data), width, height, self._video_decoder, options)
                 return False

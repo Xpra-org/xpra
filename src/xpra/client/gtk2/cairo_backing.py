@@ -41,7 +41,8 @@ class CairoBacking(CairoBackingBase):
             #cairo_stride = cairo.ImageSurface.format_stride_for_width(cairo_format, width)
             #log("cairo_stride=%s, stride=%s", cairo_stride, rowstride)
             img_surface = cairo.ImageSurface.create_for_data(img_data, cairo_format, width, height, rowstride)
-            return self.cairo_paint_surface(img_surface, x, y)
+            self.cairo_paint_surface(img_surface, x, y)
+            return True
 
         if rgb_format in ("RGBA", "RGBX", "RGB"):
             #with GTK2, we can use a pixbuf from RGB(A) pixels
@@ -51,7 +52,8 @@ class CairoBacking(CairoBackingBase):
             #Pixbuf cannot use the memoryview directly:
             img_data = memoryview_to_bytes(img_data)
             pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, has_alpha, 8, width, height, rowstride)
-            return self.cairo_paint_pixbuf(pixbuf, x, y)
+            self.cairo_paint_pixbuf(pixbuf, x, y)
+            return True
 
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
         return True

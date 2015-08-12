@@ -53,7 +53,7 @@ class GTK2WindowBacking(GTKWindowBacking):
         pixbuf = loader.get_pixbuf()
         if not pixbuf:
             log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
-            fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, False, "failed to load a pixbuf from %i bytes of %s data" % (len(img_data), coding))
             return  False
         raw_data = pixbuf.get_pixels()
         rowstride = pixbuf.get_rowstride()

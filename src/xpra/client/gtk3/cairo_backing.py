@@ -50,13 +50,13 @@ class CairoBacking(CairoBackingBase):
         if coding.startswith("png") or coding=="jpeg":
             def ui_paint_image():
                 if not self._backing:
-                    fire_paint_callbacks(callbacks, False)
+                    fire_paint_callbacks(callbacks, False, "no backing")
                     return
                 try:
                     if coding.startswith("png"):
                         reader = BytesIOClass(img_data)
                         img = cairo.ImageSurface.create_from_png(reader)
-                        success = self.cairo_paint_surface(img, x, y)
+                        self.cairo_paint_surface(img, x, y)
                     else:
                         assert coding=="jpeg"
                         pbl = GdkPixbuf.PixbufLoader()
@@ -64,11 +64,11 @@ class CairoBacking(CairoBackingBase):
                         pbl.close()
                         pixbuf = pbl.get_pixbuf()
                         del pbl
-                        success = self.cairo_paint_pixbuf(pixbuf, x, y)
-                except:
+                        self.cairo_paint_pixbuf(pixbuf, x, y)
+                    fire_paint_callbacks(callbacks, True)
+                except Exception as e:
                     log.error("cairo error during paint", exc_info=True)
-                    success = False
-                fire_paint_callbacks(callbacks, success)
+                    fire_paint_callbacks(callbacks, False, "cairo error during paint: %s" % e)
             GLib.idle_add(ui_paint_image)
             return
         #this will end up calling do_paint_rgb24 after converting the pixels to RGB
@@ -83,7 +83,8 @@ class CairoBacking(CairoBackingBase):
         if cairo_format==cairo.FORMAT_RGB24 and rgb_format=="RGB" and set_image_surface_data:
             img_surface = cairo.ImageSurface(cairo_format, width, height)
             set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
-            return self.cairo_paint_surface(img_surface, x, y)
+            self.cairo_paint_surface(img_surface, x, y)
+            return True
 
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
         return True

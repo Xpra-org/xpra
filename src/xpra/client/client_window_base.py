@@ -449,8 +449,8 @@ class ClientWindowBase(ClientWidgetBase):
             from xpra.client.window_backing_base import fire_paint_callbacks
             fire_paint_callbacks(callbacks, False)
             return
-        def after_draw_refresh(success):
-            plog("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
+        def after_draw_refresh(success, message=""):
+            plog("after_draw_refresh(%s, %s) %sx%s at %sx%s encoding=%s, options=%s", success, message, width, height, x, y, coding, options)
             if not success:
                 return
             backing = self._backing
