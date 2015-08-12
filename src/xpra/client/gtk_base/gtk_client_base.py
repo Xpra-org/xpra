@@ -22,7 +22,7 @@ framelog = Logger("gtk", "client", "frame")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import bytestostr, updict, DEFAULT_METADATA_SUPPORTED
+from xpra.util import bytestostr, updict, pver, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -57,6 +57,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.client_supports_opengl = False
         self.opengl_enabled = False
         self.opengl_props = {}
+        self.gl_texture_size_limit = 0
         #frame request hidden window:
         self.frame_request_window = None
         #group leader bits:
@@ -531,6 +532,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.client_supports_opengl = True
             #only enable opengl by default if force-enabled or if safe to do so:
             self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
+            self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
         except ImportError as e:
             opengllog.warn("OpenGL support could not be enabled:")
             opengllog.warn(" %s", e)
@@ -540,9 +542,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             opengllog.error(" %s", e, exc_info=True)
             self.opengl_props["info"] = str(e)
 
-    def get_client_window_classes(self, metadata, override_redirect):
-        log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
-        if self.GLClientWindowClass is None or not self.opengl_enabled:
+    def get_client_window_classes(self, w, h, metadata, override_redirect):
+        log("get_client_window_class(%i, %i, %s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", w, h, metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
+        if self.GLClientWindowClass is None or not self.opengl_enabled or w>self.gl_texture_size_limit or h>self.gl_texture_size_limit:
             return [self.ClientWindowClass]
         return [self.GLClientWindowClass, self.ClientWindowClass]
 

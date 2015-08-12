@@ -260,9 +260,11 @@ class UIXpraClient(XpraClientBase):
         if opts.max_size:
             try:
                 self.max_window_size = [int(x.strip()) for x in opts.max_size.split("x", 1)]
+                assert len(self.max_window_size)==2
             except:
-                pass
-        self.max_size = opts.max_size
+                #the main script does some checking, but we could be called from a config file launch
+                log.warn("Warning: invalid window max-size specified: %s", opts.max_size)
+                self.max_window_size = 0, 0
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
@@ -1898,7 +1900,7 @@ class UIXpraClient(XpraClientBase):
 
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties):
         metadata = typedict(metadata)
-        client_window_classes = self.get_client_window_classes(metadata, override_redirect)
+        client_window_classes = self.get_client_window_classes(w, h, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
         #prevents them from being pushed under other windows on OSX
@@ -1936,7 +1938,7 @@ class UIXpraClient(XpraClientBase):
         return None
 
 
-    def get_client_window_classes(self, metadata, override_redirect):
+    def get_client_window_classes(self, w, h, metadata, override_redirect):
         return [self.ClientWindowClass]
 
     def _process_new_window(self, packet):
