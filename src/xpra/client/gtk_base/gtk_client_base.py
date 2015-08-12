@@ -521,9 +521,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             __import__("xpra.client.gl.gtk_compat", {}, {}, [])
             gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
             opengllog("init_opengl: gl_check=%s", gl_check)
-            w, h = self.get_root_size()
-            min_texture_size = max(w, h)
-            self.opengl_props = gl_check.check_support(min_texture_size, force_enable=(enable_opengl is True))
+            self.opengl_props = gl_check.check_support(force_enable=(enable_opengl is True))
             opengllog("init_opengl: found props %s", self.opengl_props)
             GTK_GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.gl_client_window" % (2+int(is_gtk3()))
             opengllog("init_opengl: trying to load GL client window module '%s'", GTK_GL_CLIENT_WINDOW_MODULE)
@@ -533,13 +531,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #only enable opengl by default if force-enabled or if safe to do so:
             self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
+            if self.gl_texture_size_limit<4*1024:
+                opengllog.warn("OpenGL disabled: the texture size limit is too low (%s)", self.gl_texture_size_limit)
+                self.opengl_enabled = False
             self.GLClientWindowClass.MAX_TEXTURE_SIZE = self.gl_texture_size_limit
             mww, mwh = self.max_window_size
             opengllog("OpenGL: enabled=%s, texture-size-limit=%s, max-window-size=%s", self.opengl_enabled, self.gl_texture_size_limit, self.max_window_size)
             if self.opengl_enabled and self.gl_texture_size_limit<16*1024 and (mww==0 or mwh==0 or self.gl_texture_size_limit<mww or self.gl_texture_size_limit<mwh):
                 #log at warn level if the limit is low:
+                #(if we're likely to hit it - if the screen is as big or bigger)
+                w, h = self.get_root_size()
                 l = opengllog.info
-                if self.gl_texture_size_limit<=4*1024:
+                if w>=self.gl_texture_size_limit or h>=self.gl_texture_size_limit:
                     l = log.warn
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i", self.gl_texture_size_limit, self.gl_texture_size_limit)
                 l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))

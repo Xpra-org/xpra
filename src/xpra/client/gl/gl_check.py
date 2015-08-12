@@ -148,12 +148,12 @@ def check_functions(*functions):
 
 
 #sanity checks: OpenGL version and fragment program support:
-def check_GL_support(widget, min_texture_size=0, force_enable=False):
+def check_GL_support(widget, force_enable=False):
     from xpra.client.gl.gtk_compat import GLContextManager
     with GLContextManager(widget):
-        return do_check_GL_support(min_texture_size, force_enable)
+        return do_check_GL_support(force_enable)
 
-def do_check_GL_support(min_texture_size, force_enable):
+def do_check_GL_support(force_enable):
     props = {}
     try:
         #log redirection:
@@ -346,12 +346,7 @@ def do_check_GL_support(min_texture_size, force_enable):
             gl_check_error("unable to query max texture size: %s" % emsg)
             return props
 
-        if min_texture_size>texture_size:
-            gl_check_error("The texture size is too small: %s (%s required)" % (texture_size, min_texture_size))
-        elif min_texture_size>rect_texture_size:
-            gl_check_error("The rectangle texture size is too small: %s (%s required)" % (rect_texture_size, min_texture_size))
-        else:
-            log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
+        log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
         props["texture-size-limit"] = min(rect_texture_size, texture_size)
         return props
     finally:
@@ -416,7 +411,7 @@ def do_check_GL_support(min_texture_size, force_enable):
         restore_logger(clogger)
 
 
-def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
+def check_support(force_enable=False, check_colormap=False):
     #platform checks:
     from xpra.platform.gui import gl_check
     warning = gl_check()
@@ -469,7 +464,7 @@ def check_support(min_texture_size=0, force_enable=False, check_colormap=False):
         glarea.realize()
         gdk_window_process_all_updates()
 
-        gl_props = check_GL_support(glarea, min_texture_size, force_enable)
+        gl_props = check_GL_support(glarea, force_enable)
 
         if check_colormap:
             s = w.get_screen()
@@ -510,7 +505,7 @@ def main():
             log.error("ERROR: %s", msg)
             errors.append(msg)
         gl_check_error = log_error
-        props = check_support(0, True, verbose)
+        props = check_support(True, verbose)
         log.info("")
         if len(errors)>0:
             log.info("OpenGL errors:")
