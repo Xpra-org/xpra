@@ -1588,14 +1588,14 @@ class UIXpraClient(XpraClientBase):
         if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
             #looks like we're on the same machine, verify it's a different user:
             if self._remote_uuid==get_user_uuid():
-                log.warn("cannot start sound:")
-                log.warn(" identical user environment as the server (loop)")
+                soundlog.warn("cannot start sound:")
+                soundlog.warn(" identical user environment as the server (loop)")
                 return
 
         ss = self.sound_source
         if ss:
             if ss.get_state()=="active":
-                log.error("already sending sound!")
+                soundlog.error("already sending sound!")
                 return
             ss.start()
         elif not self.start_sound_source():
@@ -1731,7 +1731,7 @@ class UIXpraClient(XpraClientBase):
         if ss and ss.codec:
             #the mandatory "I've been naughty warning":
             #we use the "codec" field as guard to ensure we only print this warning once..
-            log.warn("the %s sound sink has stopped", ss.codec)
+            soundlog.warn("the %s sound sink has stopped", ss.codec)
             ss.codec = ""
         self.stop_receiving_sound()
 
@@ -1754,7 +1754,7 @@ class UIXpraClient(XpraClientBase):
             soundlog("%s sound sink started", codec)
             return True
         except Exception as e:
-            log.error("failed to start sound sink", exc_info=True)
+            soundlog.error("failed to start sound sink", exc_info=True)
             self.sound_sink_error(self.sound_sink, e)
             return False
 
@@ -1801,7 +1801,7 @@ class UIXpraClient(XpraClientBase):
             self.stop_receiving_sound(False)
             return
         if codec!=ss.codec:
-            log.error("sound codec change not supported! (from %s to %s)", ss.codec, codec)
+            soundlog.error("sound codec change not supported! (from %s to %s)", ss.codec, codec)
             ss.stop()
             return
         elif ss.get_state()=="stopped":
