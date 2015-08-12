@@ -65,6 +65,7 @@ class SoundSource(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
         self.caps = None
+        self.skipped_caps = set()
         if JITTER>0:
             self.jitter_queue = Queue()
         try:
@@ -130,7 +131,11 @@ class SoundSource(SoundPipeline):
                 name = cap.get_name()
                 capd = {}
                 for k in cap.keys():
-                    capd[k] = cap[k]
+                    v = cap[k]
+                    if type(v) in (str, int):
+                        capd[k] = cap[k]
+                    elif k not in self.skipped_caps:
+                        log("skipping %s cap key %s=%s of type %s", name, k, v, type(v))
                 d[name] = capd
         except Exception as e:
             log.error("Error parsing '%s':", caps)
@@ -170,6 +175,7 @@ class SoundSource(SoundPipeline):
                 log("emit_buffer: will flush jitter queue in %ims", jitter)
             self.jitter_queue.put((data, metadata))
             return 0
+        log("emit_buffer data=%s", type(data))
         return self.do_emit_buffer(data, metadata)
 
     def flush_jitter_queue(self):
