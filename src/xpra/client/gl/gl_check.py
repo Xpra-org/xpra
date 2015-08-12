@@ -212,12 +212,17 @@ def do_check_GL_support(min_texture_size, force_enable):
             pass
 
         from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
+        def fixstring(v):
+            try:
+                return str(v).strip()
+            except:
+                return str(v)
         for d,s,fatal in (("vendor",     GL_VENDOR,      True),
                           ("renderer",   GL_RENDERER,    True),
                           ("shading language version", GL_SHADING_LANGUAGE_VERSION, False)):
             try:
                 v = glGetString(s)
-                v = v.decode()
+                v = fixstring(v.decode())
                 log("%s: %s", d, v)
             except:
                 if fatal:
