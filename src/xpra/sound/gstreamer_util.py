@@ -76,9 +76,7 @@ WAVPACK = "wavpack"
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-            #(VORBIS      , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
-            #(VORBIS      , "vorbisenc",     None,       "vorbisdec",    None),
-            #(AAC         , "faac",          "oggmux",   "faad",         "aacparse"),
+            (VORBIS      , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
             (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
@@ -109,7 +107,7 @@ ENCODER_LATENCY = {
         SPEEX       : 500,
        }
 
-CODEC_ORDER = [MP3, FLAC, WAVPACK, WAV, OPUS, SPEEX]    #, VORBIS, AAC]
+CODEC_ORDER = [MP3, FLAC, WAVPACK, WAV, OPUS, SPEEX, VORBIS]    #AAC is untested
 
 
 gst = None
