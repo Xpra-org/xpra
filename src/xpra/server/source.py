@@ -792,7 +792,7 @@ class ServerSource(object):
     def start_sending_sound(self, codec, volume=1.0):
         soundlog("start_sending_sound(%s)", codec)
         if self.suspended:
-            log.warn("not starting sound as we are suspended")
+            soundlog.warn("not starting sound as we are suspended")
             return
         try:
             from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
@@ -800,8 +800,8 @@ class ServerSource(object):
             if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
                 #looks like we're on the same machine, verify it's a different user:
                 if self.uuid==get_user_uuid():
-                    log.warn("cannot start sound:")
-                    log.warn(" identical user environment as the server (loop)")
+                    soundlog.warn("cannot start sound:")
+                    soundlog.warn(" identical user environment as the server (loop)")
                     return
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
@@ -818,10 +818,10 @@ class ServerSource(object):
                 ss.connect("exit", self.sound_source_exit)
                 ss.start()
         except Exception as e:
-            log.error("error setting up sound: %s", e, exc_info=True)
+            soundlog.error("error setting up sound: %s", e, exc_info=True)
 
     def sound_source_exit(self, source, *args):
-        log("sound_source_exit(%s, %s)", source, args)
+        soundlog("sound_source_exit(%s, %s)", source, args)
         if source==self.sound_source:
             self.stop_sending_sound()
 
@@ -893,13 +893,13 @@ class ServerSource(object):
                 if len(args)>0:
                     delay = max(1, min(10*1000, int(args[0])))
                 step = 1.0/(delay/100.0)
-                log("sound_control fadein delay=%s, step=%1.f", delay, step)
+                soundlog("sound_control fadein delay=%s, step=%1.f", delay, step)
                 def fadein():
                     ss = self.sound_source
                     if not ss:
                         return False
                     volume = ss.get_volume()
-                    log("fadein() volume=%.1f", volume)
+                    soundlog("fadein() volume=%.1f", volume)
                     if volume<1.0:
                         volume = min(1.0, volume+step)
                         ss.set_volume(volume)
@@ -912,7 +912,7 @@ class ServerSource(object):
             if len(args)>0:
                 delay = max(1, min(10*1000, int(args[0])))
             step = 1.0/(delay/100.0)
-            log("sound_control fadeout delay=%s, step=%1.f", delay, step)
+            soundlog("sound_control fadeout delay=%s, step=%1.f", delay, step)
             def fadeout():
                 ss = self.sound_source
                 if not ss:
@@ -947,7 +947,7 @@ class ServerSource(object):
         if self.is_closed():
             return
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
-            log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
+            soundlog.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.cleanup()
             self.sound_sink = None
         if metadata.get("end-of-stream"):
@@ -957,7 +957,7 @@ class ServerSource(object):
         if not self.sound_sink:
             try:
                 def sound_sink_error(*args):
-                    log.warn("stopping sound input because of error")
+                    soundlog.warn("stopping sound input because of error")
                     self.stop_receiving_sound()
                 from xpra.sound.wrapper import start_receiving_sound
                 ss = start_receiving_sound(codec)
@@ -969,7 +969,7 @@ class ServerSource(object):
                 ss.start()
                 soundlog("sound_data(..) sound sink started")
             except Exception:
-                log.error("failed to setup sound", exc_info=True)
+                soundlog.error("failed to setup sound", exc_info=True)
                 return
         self.sound_sink.add_data(data, metadata)
 
