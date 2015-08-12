@@ -112,10 +112,10 @@ class ClientTray(ClientWidgetBase):
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
         log("%s.draw_region%s", self, (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 
-        def after_draw_update_tray(success):
-            log("%s.after_draw_update_tray(%s)", self, success)
+        def after_draw_update_tray(success, message=None):
+            log("%s.after_draw_update_tray(%s, %s)", self, success, message)
             if not success:
-                log.warn("after_draw_update_tray(%s) options=%s", success, options)
+                log.warn("after_draw_update_tray(%s, %s) options=%s", success, message, options)
                 return
             tray_data = self._backing.data
             if tray_data is None:
