@@ -77,6 +77,7 @@ WAVPACK = "wavpack"
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
             #(VORBIS      , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
+            #(VORBIS      , "vorbisenc",     None,       "vorbisdec",    None),
             #(AAC         , "faac",          "oggmux",   "faad",         "aacparse"),
             (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
@@ -108,8 +109,7 @@ ENCODER_LATENCY = {
         SPEEX       : 500,
        }
 
-CODEC_ORDER = [MP3, FLAC, WAVPACK, WAV] #, SPEEX, OPUS, VORBIS, AAC]
-#CODEC_ORDER = [MP3, FLAC, SPEEX]
+CODEC_ORDER = [MP3, FLAC, WAVPACK, WAV, OPUS, SPEEX]    #, VORBIS, AAC]
 
 
 gst = None
@@ -251,7 +251,11 @@ if has_gst:
                 log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
                 continue
             elif _gst_major_version==1:
-                log("skipping flac with Gstreamer 1.x to avoid obscure 'not-neogtiated' errors I do not have time for")
+                log("skipping flac with GStreamer 1.x to avoid obscure 'not-neogtiated' errors I do not have time for")
+                continue
+        elif encoding==OPUS:
+            if _gst_major_version<1:
+                log("skipping opus with GStreamer 0.10")
                 continue
         #verify we have all the elements needed:
         if has_plugins(*elements[1:]):
