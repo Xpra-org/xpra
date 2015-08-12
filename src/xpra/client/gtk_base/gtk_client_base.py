@@ -533,6 +533,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #only enable opengl by default if force-enabled or if safe to do so:
             self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
+            self.GLClientWindowClass.MAX_TEXTURE_SIZE = self.gl_texture_size_limit
+            mww, mwh = self.max_window_size
+            opengllog("OpenGL: enabled=%s, texture-size-limit=%s, max-window-size=%s", self.opengl_enabled, self.gl_texture_size_limit, self.max_window_size)
+            if self.opengl_enabled and self.gl_texture_size_limit<16*1024 and (mww==0 or mwh==0 or self.gl_texture_size_limit<mww or self.gl_texture_size_limit<mwh):
+                #log at warn level if the limit is low:
+                l = opengllog.info
+                if self.gl_texture_size_limit<=4*1024:
+                    l = log.warn
+                l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i", self.gl_texture_size_limit, self.gl_texture_size_limit)
+                l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
         except ImportError as e:
             opengllog.warn("OpenGL support could not be enabled:")
             opengllog.warn(" %s", e)
