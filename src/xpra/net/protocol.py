@@ -457,7 +457,7 @@ class Protocol(object):
         for i in range(1, len(packet)):
             item = packet[i]
             if item is None:
-                raise TypeError("invalid None value in %s packet at index %s: %s" % (packet[0], i))
+                raise TypeError("invalid None value in %s packet at index %s" % (packet[0], i))
             ti = type(item)
             if ti in (int, long, bool, dict, list, tuple):
                 continue
