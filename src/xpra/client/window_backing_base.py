@@ -282,7 +282,7 @@ class WindowBackingBase(object):
                 log(message)
             else:
                 log.error("do_paint_rgb24 error", exc_info=True)
-                message = "do_paint_rgb24 error: %r" % e
+                message = "do_paint_rgb24 error: %s" % e
             fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
@@ -309,7 +309,7 @@ class WindowBackingBase(object):
             raise
         except Exception as e:
             log.error("do_paint_rgb32 error", exc_info=True)
-            fire_paint_callbacks(callbacks, False, "do_paint_rgb32 error: %r" % e)
+            fire_paint_callbacks(callbacks, False, "do_paint_rgb32 error: %s" % e)
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")

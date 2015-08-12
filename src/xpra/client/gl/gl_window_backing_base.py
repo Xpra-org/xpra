@@ -63,6 +63,7 @@ from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContext
 from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, is_pyopengl_memoryview_safe
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
 from OpenGL import version as OpenGL_version
+from OpenGL.error import GLError
 from OpenGL.GL import \
     GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
@@ -709,9 +710,13 @@ class GLWindowBackingBase(GTKWindowBacking):
                 # Present it on screen
                 self.present_fbo(x, y, width, height, flush)
             fire_paint_callbacks(callbacks, True)
+            return
+        except GLError as e:
+            message = "gl_paint_planar error: %r" % e
         except Exception as e:
-            log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
-            fire_paint_callbacks(callbacks, False, "gl_paint_planar error: %r" % e)
+            message = "gl_paint_planar error: %s" % e
+        log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
+        fire_paint_callbacks(callbacks, False, message)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
         assert self.textures is not None, "no OpenGL textures!"
