@@ -391,10 +391,10 @@ class GLWindowBackingBase(GTKWindowBacking):
             try:
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             except Exception as e:
-                log.error("Error: cannot initialize %s texture: %ix%i", CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format), w, h)
+                log.error("Error: cannot initialize %ix%i %s texture", w, h, CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format))
                 log.error(" %r", e)
                 log("%s", self.gl_init, exc_info=True)
-                raise Exception("cannot initialize %s texture: %ix%i" % (CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format), w, h))
+                raise Exception("cannot initialize %ix%i %s texture: %r" % (w, h, CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format), e))
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
