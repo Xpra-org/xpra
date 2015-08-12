@@ -347,6 +347,7 @@ def do_check_GL_support(min_texture_size, force_enable):
             gl_check_error("The rectangle texture size is too small: %s (%s required)" % (rect_texture_size, min_texture_size))
         else:
             log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
+        props["texture-size-limit"] = min(rect_texture_size, texture_size)
         return props
     finally:
         for x in alogger.handlers[0].records:
