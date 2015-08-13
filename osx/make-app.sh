@@ -201,27 +201,27 @@ pushd ${CONTENTS_DIR}
 ln -sf Resources/lib Frameworks
 pushd Resources/lib
 echo "removing extra gstreamer dylib deps:"
-for x in "libgstbasevideo*" "libgstcdda*" \
-    "libgstcheck*" "libgstnetbuffer*" "libgstphotography*" \
-    "libgstrtp*" "libgstrtsp*" "libgstsdp*" "libgstsignalprocessor*" \
-    "libgstvideo*" \
+for x in basevideo cdda \
+    check netbuffer photography \
+    rtp rtsp sdp signalprocessor \
+    video \
     ; do
 	echo "* removing "$x
-	rm $x
+	rm libgst${x}*
 done
 echo "removing extra gstreamer plugins:"
 GST_PLUGIN_DIR=./gstreamer-0.10
 KEEP=./gstreamer-0.10.keep
 mkdir ${KEEP}
-for x in "libgstapp.*" "libgstaudio*" "libgstcoreelements*" \
-	"libgstfaac*" "libgstfaad*" \
-    "libgstflac*" "libgstlame*" "libgstmad*" "libgstmpegaudioparse*" \
-    "libgstpython*" \
-    "libgstogg*" "libgstoss*" "libgstosxaudio*" "libgstspeex*" \
-    "libgstvolume*" "libgstvorbis*" \
-    "libgstwav*"; do
+for x in app audio coreelements \
+	faac faad \
+    flac lame mad mpegaudioparse \
+    python \
+    ogg oss osxaudio speex gdp \
+    volume vorbis \
+    wav; do
 	echo "* keeping "$x
-	mv ${GST_PLUGIN_DIR}/$x ${KEEP}/
+	mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
 done
 rm -fr ${GST_PLUGIN_DIR}
 mv ${KEEP} ${GST_PLUGIN_DIR}
