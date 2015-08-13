@@ -259,9 +259,6 @@ class SoundSink(SoundPipeline):
         if not self.src:
             log("add_data(..) dropped")
             return
-        if self.queue_state=="overrun":
-            log("add_data(..) queue in overrun state, data dropped")
-            return
         #having a timestamp causes problems with the queue and overruns:
         if "timestamp" in metadata:
             del metadata["timestamp"]
