@@ -220,7 +220,7 @@ class SoundSink(SoundPipeline):
             log("ignoring overrun during startup")
             return
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        log.warn("overrun level=%ims", clt)
+        log("overrun level=%ims", clt)
         now = time.time()
         #grace period of recording overruns:
         #(because when we record an overrun, we lower the max-time,
