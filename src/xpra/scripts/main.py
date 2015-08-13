@@ -1430,12 +1430,14 @@ def guess_X11_display(socket_dir, socket_dirs):
         #since we are here to shadow,
         #assume we want to shadow a real X11 server,
         #so remove xpra's own displays to narrow things down:
-        sockdir = DotXpra(socket_dir, socket_dir)
+        sockdir = DotXpra(socket_dir, socket_dirs)
         results = sockdir.sockets()
         xpra_displays = [display for _, display in results]
         displays = list(set(displays)-set(xpra_displays))
-        assert len(displays)!=0, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % ", ".join(xpra_displays)
-    assert len(displays)==1, "too many live X11 displays to choose from: %s" % ", ".join(displays)
+        if len(displays)==0:
+            raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % ", ".join(xpra_displays))
+    if len(displays)!=1:
+        raise InitExit(1, "too many live X11 displays to choose from: %s" % ", ".join(displays))
     return displays[0]
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
