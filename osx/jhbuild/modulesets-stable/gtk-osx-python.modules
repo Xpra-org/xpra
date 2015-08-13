@@ -123,13 +123,12 @@
   </autotools>
 
 <!-- Cairographics have changed the name to py2cairo for python 2 holdouts. -->
-<!-- Needs ChangeLog to autoreconf -->
-  <autotools id="pycairo-python2.6" autogen-sh="autoreconf"
-	     supports-non-srcdir-builds="no">
+  <waf id="pycairo-python2.6">
     <branch module="py2cairo-1.10.0.tar.bz2" repo="cairographics.org"
             version="1.10.0"
 	    hash="sha1:2efa8dfafbd6b8e492adaab07231556fec52d6eb">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/py2cairo-changelog.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/py2cairo-python2.6-Dont-try-to-guess-arch.patch"
+             strip="1"/>
     </branch>
     <dependencies>
       <dep package="cairo"/>
@@ -138,7 +137,7 @@
       <dep package="python"/>
       <dep package="meta-gtk-osx-core"/>
     </after>
-  </autotools>
+  </waf>
 
 <!-- Pycairo-python3 for those who've made the leap. -->
   <waf id="pycairo-python3" autogen-sh="configure" python-command="python3">
