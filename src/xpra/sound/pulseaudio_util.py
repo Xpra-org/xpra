@@ -26,7 +26,7 @@ def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
     if not icon_path:
         icon_path = default_icon_path
     if icon_path and os.path.exists(icon_path):
-        env_dict["PULSE_PROP_application.icon_name"] = icon_path
+        env_dict["PULSE_PROP_application.icon_name"] = str(icon_path)
 
 
 #prefer the palib option which does everything in process:
