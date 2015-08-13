@@ -49,7 +49,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, CLIENT_EXIT
+from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, CLIENT_EXIT
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -152,8 +152,8 @@ class UIXpraClient(XpraClientBase):
                 self.microphone_allowed = len(self.microphone_codecs)>0
             except Exception as e:
                 soundlog("sound support unavailable: %s", e)
-        soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
-        soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
+        soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, csv(self.speaker_codecs))
+        soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, csv(self.microphone_codecs))
         self.av_sync = False
         #sound state:
         self.on_sink_ready = None
