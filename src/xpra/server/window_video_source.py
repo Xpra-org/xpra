@@ -810,7 +810,7 @@ class WindowVideoSource(WindowSource):
                 "BGRX" : "YUV444P"}.get(csc_mode, csc_mode)
 
 
-    def get_quality_score(self, csc_format, csc_spec, encoder_spec):
+    def get_quality_score(self, csc_format, csc_spec, encoder_spec, scaling):
         quality = encoder_spec.quality
         if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
             #account for subsampling (reduces quality):
@@ -833,10 +833,13 @@ class WindowVideoSource(WindowSource):
             #if the encoder quality is lower or close to min_quality
             #then it isn't very suitable:
             mqs = max(0, quality - mq)*100/max(1, 100-mq)
-            qscore = (qscore + mqs)/2.0
-        return qscore
+            qscore = (qscore + mqs)//2
+        #when downscaling, YUV420P should always win:
+        if csc_format=="YUV420P" and scaling!=(1, 1):
+            qscore *= 2.0
+        return int(qscore)
 
-    def get_speed_score(self, csc_spec, encoder_spec):
+    def get_speed_score(self, csc_spec, encoder_spec, scaling):
         #score based on speed:
         speed = encoder_spec.speed
         if csc_spec:
@@ -855,7 +858,7 @@ class WindowVideoSource(WindowSource):
         #then always favour fast encoders:
         sscore += speed
         sscore /= 2
-        return sscore
+        return int(sscore)
 
     def get_score(self, enc_in_format, csc_spec, encoder_spec, width, height, scaling):
         """
@@ -883,8 +886,8 @@ class WindowVideoSource(WindowSource):
             return None
         def clamp(v):
             return max(0, min(100, v))
-        qscore = clamp(self.get_quality_score(enc_in_format, csc_spec, encoder_spec))
-        sscore = clamp(self.get_speed_score(csc_spec, encoder_spec))
+        qscore = clamp(self.get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling))
+        sscore = clamp(self.get_speed_score(csc_spec, encoder_spec, scaling))
 
         #runtime codec adjustements:
         runtime_score = 100
