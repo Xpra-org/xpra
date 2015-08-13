@@ -30,7 +30,8 @@ def get_queue_time(default_value=450, prefix=""):
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "0")=="1"
 MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
-
+def force_enabled(codec_name):
+    return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 
 NAME_TO_SRC_PLUGIN = {
     "auto"          : "autoaudiosrc",
@@ -240,6 +241,8 @@ if has_gst:
         if encoding in CODECS:
             #we already have one for this encoding
             continue
+        if force_enabled(encoding):
+            log.info("sound codec %s force enabled", encoding)
         elif encoding==FLAC:
             #flac problems:
             if sys.platform.startswith("win") and _gst_major_version==0 and encoding==FLAC:
