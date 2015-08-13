@@ -935,8 +935,9 @@ class SessionInfo(gtk.Window):
         start_x_offset = min(1.0, (time.time()-self.last_populate_time)*0.95)
         rect = box.get_allocation()
         maxw, maxh = self.client.get_root_size()
-        h = min(maxh, max(200, h-bh-20, rect.height-bh-20))
+        ngraphs = 2+int(SHOW_SOUND_STATS)
         w = min(maxw, max(360, rect.width-20))
+        h = min(maxh, max(200, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
         #bandwidth graph:
         labels, datasets = [], []
         if self.net_in_bytecount and self.net_out_bytecount:
@@ -967,10 +968,10 @@ class SessionInfo(gtk.Window):
 
         if labels and datasets:
             pixmap = make_graph_pixmap(datasets, labels=labels,
-                                       width=w, height=h//3,
+                                       width=w, height=h,
                                        title="Bandwidth", min_y_scale=10, rounding=10,
                                        start_x_offset=start_x_offset)
-            self.bandwidth_graph.set_size_request(*pixmap.get_size())
+            self.bandwidth_graph.set_size_request(360, 200)
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
 
         def norm_lists(items, size=N_SAMPLES):
@@ -999,10 +1000,10 @@ class SessionInfo(gtk.Window):
                                 (self.avg_total, "frame total"),
                                 ))
         pixmap = make_graph_pixmap(latency_values, labels=latency_labels,
-                                    width=w, height=h//3,
+                                    width=w, height=h,
                                     title="Latency (ms)", min_y_scale=10, rounding=25,
                                     start_x_offset=start_x_offset)
-        self.latency_graph.set_size_request(*pixmap.get_size())
+        self.latency_graph.set_size_request(360, 200)
         self.latency_graph.set_from_pixmap(pixmap, None)
 
         if SHOW_SOUND_STATS:
@@ -1013,10 +1014,10 @@ class SessionInfo(gtk.Window):
                                  (self.sound_out_queue_min, "Min"),
                                  ), N_SAMPLES*10)
             pixmap = make_graph_pixmap(queue_values, labels=queue_labels,
-                                        width=w, height=h//3,
+                                        width=w, height=h,
                                         title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
                                         start_x_offset=start_x_offset)
-            self.sound_queue_graph.set_size_request(*pixmap.get_size())
+            self.sound_queue_graph.set_size_request(360, 200)
             self.sound_queue_graph.set_from_pixmap(pixmap, None)
         return True
 
