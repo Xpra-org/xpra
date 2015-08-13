@@ -514,8 +514,6 @@ class WindowModel(BaseWindowModel):
                        "max_size"       : "maximum-size",
                        "base_size"      : "base-size",
                        "resize_inc"     : "increment",
-                       "min_aspect"     : "minimum-aspect-ratio",
-                       "max_aspect"     : "maximum-aspect-ratio",
                        "win_gravity"    : "gravity",
                        }.get(k, k)] = v
         sanitize_size_hints(hints)
