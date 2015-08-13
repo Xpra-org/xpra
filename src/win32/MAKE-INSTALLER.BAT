@@ -158,7 +158,7 @@ FOR %%a in (a52 faa FLAC id3tag mad mp3lame ogg orc speex vorbis wav) DO (
 COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" dist\
 ECHO ****** Adding GStreamer Plugin DLLs
 MKDIR dist\gstreamer-0.10
-FOR %%a in (a52dec audiofx audioparsersbad audiorate audioresample audiotestsrc app coreelements flac lame mad ogg, mpegaudioparse speex volume vorbis wavpack waveenc wavparse) DO (
+FOR %%a in (a52dec audiofx audioparsersbad audiorate audioresample audiotestsrc app coreelements flac lame mad ogg gdp mpegaudioparse speex volume vorbis wavpack waveenc wavparse) DO (
 	COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgst%%a.dll" dist\gstreamer-0.10\
 )
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstaudio*.dll" dist\gstreamer-0.10\
