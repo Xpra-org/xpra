@@ -341,8 +341,9 @@ class subprocess_caller(object):
 
     def exec_subprocess(self):
         kwargs = exec_kwargs()
-        log("exec_subprocess() command=%s, kwargs=%s", self.command, kwargs)
-        proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=self.get_env(), **kwargs)
+        env = self.get_env()
+        log("exec_subprocess() command=%s, env=%s, kwargs=%s", self.command, env, kwargs)
+        proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=env, **kwargs)
         getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
