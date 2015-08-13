@@ -936,8 +936,11 @@ class SessionInfo(gtk.Window):
         rect = box.get_allocation()
         maxw, maxh = self.client.get_root_size()
         ngraphs = 2+int(SHOW_SOUND_STATS)
-        w = min(maxw, max(360, rect.width-20))
-        h = min(maxh, max(200, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
+        #the preferred size (which does not cause the window to grow too big):
+        W = 360
+        H = 160*3//ngraphs
+        w = min(maxw, max(W, rect.width-20))
+        h = min(maxh, max(H, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
         #bandwidth graph:
         labels, datasets = [], []
         if self.net_in_bytecount and self.net_out_bytecount:
@@ -971,7 +974,7 @@ class SessionInfo(gtk.Window):
                                        width=w, height=h,
                                        title="Bandwidth", min_y_scale=10, rounding=10,
                                        start_x_offset=start_x_offset)
-            self.bandwidth_graph.set_size_request(360, 200)
+            self.bandwidth_graph.set_size_request(W, H)
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
 
         def norm_lists(items, size=N_SAMPLES):
@@ -1003,7 +1006,7 @@ class SessionInfo(gtk.Window):
                                     width=w, height=h,
                                     title="Latency (ms)", min_y_scale=10, rounding=25,
                                     start_x_offset=start_x_offset)
-        self.latency_graph.set_size_request(360, 200)
+        self.latency_graph.set_size_request(W, H)
         self.latency_graph.set_from_pixmap(pixmap, None)
 
         if SHOW_SOUND_STATS:
@@ -1017,7 +1020,7 @@ class SessionInfo(gtk.Window):
                                         width=w, height=h,
                                         title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
                                         start_x_offset=start_x_offset)
-            self.sound_queue_graph.set_size_request(360, 200)
+            self.sound_queue_graph.set_size_request(W, H)
             self.sound_queue_graph.set_from_pixmap(pixmap, None)
         return True
 
