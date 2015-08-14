@@ -73,17 +73,22 @@ OPUS = "opus"
 SPEEX = "speex"
 WAVPACK = "wavpack"
 
-#format: encoder, formatter, decoder, parser
+#format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
+OGG_DELAY = 20*MS_TO_NS
+C_FORMAT = "oggmux"
+C_PARSER = "oggdemux"
+#C_FORMAT = "gdppay"
+#C_PARSER = "gdpdepay"
 CODEC_OPTIONS = [
             (VORBIS      , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
-            (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
+            (FLAC        , "flacenc",       C_FORMAT,   "flacdec",      C_PARSER),
             (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
             (WAV         , "wavenc",        None,       None,           "wavparse"),
-            (OPUS        , "opusenc",       "oggmux",   "opusdec",      "oggdemux"),
-            (SPEEX       , "speexenc",      "oggmux",   "speexdec",     "oggdemux"),
+            (OPUS        , "opusenc",       C_FORMAT,   "opusdec",      C_PARSER),
+            (SPEEX       , "speexenc",      C_FORMAT,   "speexdec",     C_PARSER),
             (WAVPACK     , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
             ]
 CODECS = {}
@@ -91,21 +96,33 @@ CODECS = {}
 #these encoders require an "audioconvert" element:
 ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
 #options we use to tune for low latency:
+OGG_DELAY = 20*MS_TO_NS
 ENCODER_DEFAULT_OPTIONS = {
             "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
             "wavpackenc"    : {"mode" : 1},     #"fast" (0 aka "very fast" is not supported)
             "flacenc"       : {"quality" : 0},  #"fast"
             "opusenc"       : {"cbr" : 0,
                                "complexity" : 0},
+                           }
+#we may want to review this if/when we implement UDP transport:
+GDPPAY_CRC = False
+MUXER_DEFAULT_OPTIONS = {
+            "oggmux"        : {"max-delay"      : OGG_DELAY,
+                               "max-page-delay" : OGG_DELAY,
+                               },
+            "gdppay"        : {"crc-header"    : int(GDPPAY_CRC),
+                               "crc-payload"   : int(GDPPAY_CRC),
+                               },
            }
+
 #based on the encoder options above:
 ENCODER_LATENCY = {
         MP3         : 250,
-        FLAC        : 150,
+        FLAC        : 50,
         WAV         : 0,
         WAVPACK     : 600,
-        OPUS        : 500,
-        SPEEX       : 500,
+        OPUS        : 0,
+        SPEEX       : 0,
        }
 
 CODEC_ORDER = [MP3, FLAC, WAVPACK, WAV, OPUS, SPEEX, VORBIS]    #AAC is untested

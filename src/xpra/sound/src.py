@@ -13,7 +13,7 @@ from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, normv, \
-                                MP3, CODECS, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
+                                MP3, CODECS, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -58,12 +58,13 @@ class SoundSource(SoundPipeline):
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
         encoder_str = plugin_str(encoder, codec_options or ENCODER_DEFAULT_OPTIONS.get(encoder, {}))
+        fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
         pipeline_els = [source_str]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
         pipeline_els.append("volume name=volume volume=%s" % volume)
         pipeline_els += [encoder_str,
-                        fmt,
+                        fmt_str,
                         APPSINK]
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
