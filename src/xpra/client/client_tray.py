@@ -119,7 +119,7 @@ class ClientTray(ClientWidgetBase):
                 return
             tray_data = self._backing.data
             if tray_data is None:
-                log.warn("TrayBacking does not have any pixel data!")
+                log.warn("tray backing for window %i does not have any pixel data!", self._backing.wid)
                 return
             self.idle_add(self.set_tray_icon, tray_data)
             self.idle_add(self.reconfigure)
@@ -167,11 +167,11 @@ class TrayBacking(GTKWindowBacking):
 
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        log("TrayBacking._do_paint_rgb24%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
+        log("TrayBacking(%i)._do_paint_rgb24%s", self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ["rgb24", width, height, rowstride, img_data[:]]
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        log("TrayBacking._do_paint_rgb32%s", ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
+        log("TrayBacking(%i)._do_paint_rgb32%s", self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ["rgb32", width, height, rowstride, img_data[:]]
         return True
