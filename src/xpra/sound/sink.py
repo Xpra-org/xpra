@@ -182,7 +182,7 @@ class SoundSink(SoundPipeline):
                 #from 100% down to 0% in 2 seconds after underrun:
                 now = time.time()
                 pct = max(0, int((self.last_underrun+2-now)*50))
-                mtt = min(50, pct*lrange//200)
+                mtt = min(50, pct*max(50, lrange)//200)
                 log("set_min_level pct=%2i, cmtt=%3i, mtt=%3i", pct, cmtt, mtt)
                 if cmtt!=mtt:
                     self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
