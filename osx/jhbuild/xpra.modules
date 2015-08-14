@@ -335,7 +335,7 @@
      <branch repo="pypi.python.org"
 	     module="/packages/source/l/lz4/lz4-0.7.0.tar.gz"
 	     version="0.7.0">
-     <patch file="http://xpra.org/svn/Xpra/trunk/rpmbuild/lz4_add_version.patch" strip="1" />
+     <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lz4_add_version.patch" strip="1" />
      </branch>
   </distutils>
 
