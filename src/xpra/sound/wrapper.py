@@ -9,6 +9,7 @@ import time
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, glib, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
 from xpra.util import AdHocStruct
+from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -104,8 +105,10 @@ def run_sound(mode, error_cb, options, args):
     """
     if mode=="_sound_record":
         subproc = sound_record
+        info = "record"
     elif mode=="_sound_play":
         subproc = sound_play
+        info = "play"
     elif mode=="_sound_query":
         if len(args)!=1:
             raise Exception("invalid number of arguments for sound query: %s (one subcommand required)" % len(args))
@@ -122,7 +125,8 @@ def run_sound(mode, error_cb, options, args):
         print("%s=%s" % (subcommand, ",".join(v)))
         return 0
     else:
-        raise Exception("unknown mode: %s" % mode)
+        log.error("unknown mode: %s" % mode)
+        return 1
     assert len(args)>=6, "not enough arguments"
 
     #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
@@ -145,6 +149,9 @@ def run_sound(mode, error_cb, options, args):
         ss = subproc(plugin, options, codecs, codec_options, volume)
         ss.start()
         return 0
+    except InitExit as e:
+        log.error("%s: %s", info, e)
+        return 1
     except Exception:
         log.error("run_sound%s error", (mode, error_cb, options, args), exc_info=True)
         return 1

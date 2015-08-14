@@ -14,6 +14,7 @@ from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, normv, \
                                 MP3, CODECS, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
+from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -44,10 +45,12 @@ class SoundSource(SoundPipeline):
                 default_src_options = {"device" : monitor_device}
             src_options = default_src_options
             src_options.update(src_options)
-        assert src_type in get_source_plugins(), "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins()))
+        if src_type not in get_source_plugins():
+            raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins())))
         matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
         log("SoundSource(..) found matching codecs %s", matching)
-        assert len(matching)>0, "no matching codecs between arguments %s and supported list %s" % (csv(codecs), csv(CODECS.keys()))
+        if not matching:
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(CODECS.keys())))
         codec = matching[0]
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)

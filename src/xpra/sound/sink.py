@@ -12,6 +12,7 @@ from xpra.sound.sound_pipeline import SoundPipeline, gobject, glib, one_arg_sign
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, MP3, CODECS, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 
+from xpra.scripts.config import InitExit
 from xpra.util import updict, csv
 from xpra.os_util import thread
 from xpra.log import Logger
@@ -67,10 +68,12 @@ class SoundSink(SoundPipeline):
     def __init__(self, sink_type=None, sink_options={}, codecs=CODECS, codec_options={}, volume=1.0):
         if not sink_type:
             sink_type = DEFAULT_SINK
-        assert sink_type in SINKS, "invalid sink: %s" % sink_type
+        if sink_type not in SINKS:
+            raise InitExit(1, "invalid sink: %s" % sink_type)
         matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
         log("SoundSink(..) found matching codecs %s", matching)
-        assert len(matching)>0, "no matching codecs between arguments %s and supported list %s" % (csv(codecs), csv(CODECS.keys()))
+        if not matching:
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(CODECS.keys())))
         codec = matching[0]
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
