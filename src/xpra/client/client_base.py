@@ -20,6 +20,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
 
+from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.scripts.config import ENCRYPTION_CIPHERS
@@ -275,6 +276,11 @@ class XpraClientBase(object):
                 hello["challenge"] = True
             else:
                 hello.update(self.make_hello())
+        except InitExit as e:
+            log.error("error preparing connection:")
+            log.error(" %s", e)
+            self.quit(EXIT_INTERNAL_ERROR)
+            return
         except Exception as e:
             log.error("error preparing connection: %s", e, exc_info=True)
             self.quit(EXIT_INTERNAL_ERROR)
@@ -532,7 +538,7 @@ class XpraClientBase(object):
             if key:
                 netlog("used XPRA_PASSWORD as encryption key")
         if key is None:
-            raise Exception("no encryption key")
+            raise InitExit(1, "no encryption key")
         return key.strip("\n\r")
 
     def load_password(self):

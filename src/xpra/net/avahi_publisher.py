@@ -113,7 +113,7 @@ class AvahiPublisher:
 		self.interface = interface
 		self.group = None
 
-	def __str__(self):
+	def __repr__(self):
 		return	"AvahiPublisher(%s %s:%s interface=%s)" % (self.name, self.host, self.port, self.interface)
 
 	def start(self):
