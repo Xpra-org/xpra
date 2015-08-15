@@ -224,11 +224,13 @@ class ServerCore(object):
             AUTH_MODULES["pam"] = pam_auth
         except Exception as e:
             authlog("cannot load pam auth: %s", e)
-        try:
-            from xpra.server.auth import win32_auth
-            AUTH_MODULES["win32"] = win32_auth
-        except Exception as e:
-            authlog("cannot load win32 auth: %s", e)
+        if sys.platform.startswith("win"):
+            try:
+                from xpra.server.auth import win32_auth
+                AUTH_MODULES["win32"] = win32_auth
+            except Exception as e:
+                authlog.error("Error: cannot load the MS Windows authentication module:")
+                authlog.error(" %s", e)
         auth_module = AUTH_MODULES.get(auth.lower())
         if not auth_module:
             raise Exception("cannot find authentication module '%s' (supported: %s)", auth, AUTH_MODULES.keys())
