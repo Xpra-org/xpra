@@ -475,14 +475,14 @@ class XpraClientBase(object):
         salt = packet[1]
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
-            server_cipher = packet[2]
+            server_cipher = typedict(packet[2])
             key = self.get_encryption_key()
             if key is None:
                 self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
                 return
             if not self.set_server_encryption(server_cipher, key):
                 return
-        digest = "hmac"
+        digest = b"hmac"
         client_can_salt = len(packet)>=4
         client_salt = None
         if client_can_salt:
@@ -490,11 +490,20 @@ class XpraClientBase(object):
             digest = packet[3]
             client_salt = get_hex_uuid()+get_hex_uuid()
             #TODO: use some key stretching algorigthm? (meh)
-            salt = xor(salt, client_salt)
-        if digest=="hmac":
+            try:
+                from xpra.codecs.xor.cyxor import xor_str
+                salt = xor_str(salt, client_salt)
+            except:
+                salt = xor(salt, client_salt)
+        if digest==b"hmac":
             import hmac, hashlib
+            try:
+                password = password.encode()
+                salt = salt.encode()
+            except:
+                pass
             challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
-        elif digest=="xor":
+        elif digest==b"xor":
             #don't send XORed password unencrypted:
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
                 self.warn_and_quit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest)
@@ -504,17 +513,15 @@ class XpraClientBase(object):
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest)
             return
         if digest:
-            log("%s(%s, %s)=%s", digest, password, salt, challenge_response)
+            log("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
         self.password_sent = True
         self.send_hello(challenge_response, client_salt)
 
-    def set_server_encryption(self, capabilities, key):
-        def get(key, default=None):
-            return capabilities.get(strtobytes(key), default)
-        cipher = get("cipher")
-        cipher_iv = get("cipher.iv")
-        key_salt = get("cipher.key_salt")
-        iterations = get("cipher.key_stretch_iterations")
+    def set_server_encryption(self, caps, key):
+        cipher = caps.strget("cipher")
+        cipher_iv = caps.strget("cipher.iv")
+        key_salt = caps.strget("cipher.key_salt")
+        iterations = caps.intget("cipher.key_stretch_iterations")
         if not cipher or not cipher_iv:
             self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
             return False
@@ -548,7 +555,10 @@ class XpraClientBase(object):
         password = load_binary_file(filename)
         if password is None:
             return None
-        password = password.strip("\n\r")
+        try:
+            password = password.decode("utf8").strip("\n\r")
+        except:
+            password = str(password)
         netlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
         return password
 

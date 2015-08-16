@@ -516,7 +516,12 @@ def nonl(x):
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
 def xor(s1,s2):
-    return ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(s1,s2))
+    def _ord(v):
+        try:
+            return ord(v)
+        except:
+            return int(v)
+    return ''.join(chr(_ord(a) ^ _ord(b)) for a,b in zip(s1,s2))
 
 def engs(v):
     try:
