@@ -18,7 +18,7 @@ from threading import Lock, Event
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.os_util import Queue, strtobytes
-from xpra.util import repr_ellipsized, updict
+from xpra.util import repr_ellipsized, updict, csv
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding
@@ -742,18 +742,21 @@ class Protocol(object):
                     if padding_size > 0:
                         def debug_str(s):
                             try:
-                                return list(bytearray(s))
+                                return binascii.hexlify(bytearray(s))
                             except:
-                                return list(str(s))
+                                return csv(list(str(s)))
                         # pad byte value is number of padding bytes added
                         padtext = chr(padding_size)*padding_size
                         if not data.endswith(padtext):
-                            old_padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
+                            old_padding = " "*padding_size
                             if not data.endswith(old_padding):
-                                log("decryption failed: string does not end with '%s' or '%s': %s (%s) -> %s (%s)",
-                                padtext, old_padding, debug_str(raw_string), type(raw_string), debug_str(data), type(data))
-                                self._internal_error("encryption error (wrong key?)")
-                                return
+                                actual_padding = data[-padding_size:]
+                                log.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
+                                log(" data does not end with bytes %s", debug_str(padtext))
+                                log(" or %s", debug_str(old_padding))
+                                log(" but with %s (%s)", debug_str(actual_padding), type(data))
+                                log(" decrypted data: %s", debug_str(data[:128]))
+                                return self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
                         data = data[:-padding_size]
                 #uncompress if needed:
                 if compression_level>0:
