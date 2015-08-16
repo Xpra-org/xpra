@@ -351,7 +351,7 @@ def query_sound_encoders():
     return query_sound("encoders")
 
 def query_sound_decoders():
-    return query_sound("encoders")
+    return query_sound("decoders")
 
 
 def get_sound_codecs(is_speaker, is_server):
