@@ -1440,9 +1440,24 @@ def guess_X11_display(socket_dir, socket_dirs):
         raise InitExit(1, "too many live X11 displays to choose from: %s" % ", ".join(displays))
     return displays[0]
 
+
+def no_gtk():
+    gtk = sys.modules.get("gtk")
+    if gtk is None:
+        #all good, not loaded
+        return
+    try:
+        assert gtk.ver is None
+    except:
+        #got an exception, probably using the gi bindings
+        #which insert a fake gtk module to trigger exceptions
+        return
+    raise Exception("the gtk module is already loaded: %s" % gtk)
+
+
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     from xpra.server.proxy import XpraProxy
-    assert "gtk" not in sys.modules
+    no_gtk()
     if mode in ("_proxy_start", "_shadow_start"):
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         #we must use a subprocess to avoid messing things up - yuk
@@ -1544,7 +1559,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     return  0
 
 def run_stopexit(mode, error_cb, opts, extra_args):
-    assert "gtk" not in sys.modules
+    no_gtk()
 
     def show_final_state(exit_code, display_desc):
         #this is for local sockets only!
@@ -1610,7 +1625,7 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
     sys.stdout.write("\n")
 
 def run_list(error_cb, opts, extra_args):
-    assert "gtk" not in sys.modules
+    no_gtk()
     if extra_args:
         error_cb("too many arguments for mode")
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)

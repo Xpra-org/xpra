@@ -18,7 +18,7 @@ import select
 import time
 import traceback
 
-from xpra.scripts.main import TCP_NODELAY, warn
+from xpra.scripts.main import TCP_NODELAY, warn, no_gtk
 from xpra.scripts.config import InitException
 from xpra.os_util import SIGNAMES
 from xpra.dotxpra import DotXpra, norm_makepath
@@ -683,7 +683,7 @@ def verify_display_ready(xvfb, display_name, shadowing):
         sys.stderr.write("%s\n" % e)
         return  None
     # Now we can safely load gtk and connect:
-    assert "gtk" not in sys.modules
+    no_gtk()
     import gtk.gdk          #@Reimport
     try:
         import glib
@@ -918,7 +918,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if not display:
             return 1
     elif not proxying:
-        assert "gtk" not in sys.modules
+        no_gtk()
         import gtk          #@Reimport
         assert gtk
 
