@@ -9,6 +9,8 @@ import time
 
 from xpra.log import Logger
 from xpra.codecs.dec_avcodec2.decoder import av_enum
+from xpra.codecs.codec_checks import do_testcsc
+from xpra.codecs.csc_cython import colorspace_converter
 log = Logger("csc", "swscale")
 
 from xpra.os_util import is_Ubuntu
@@ -215,10 +217,12 @@ def get_version():
     return (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 
 def get_info():
-    global COLORSPACES
+    global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {"version"   : get_version(),
             "buffer_api": get_buffer_api_version(),
-            "formats"   : COLORSPACES}
+            "formats"   : COLORSPACES,
+            "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
+            }
 
 def get_input_colorspaces():
     return COLORSPACES
@@ -234,13 +238,17 @@ def get_output_colorspaces(input_colorspace):
         exclude += YUV422P_SKIPLIST
     return [x for x in COLORSPACES if x not in exclude]
 
+
+#a safe guess, which we probe later on:
+MAX_WIDTH = 4096
+MAX_HEIGHT = 4096
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES)
     #setup cost is very low (usually less than 1ms!)
     #there are restrictions on dimensions (8x2 minimum!)
     #swscale can be used to scale (obviously)
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), setup_cost=20, min_w=8, min_h=2, can_scale=True)
+    return codec_spec(ColorspaceConverter, codec_type=get_type(), setup_cost=20, min_w=8, min_h=2, can_scale=True, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 MIN_SWSCALE_VERSION = (2, 1, 1)
@@ -526,7 +534,10 @@ cdef class ColorspaceConverter:
 
 
 def selftest(full=False):
-    from xpra.codecs.codec_checks import testcsc
+    global MAX_WIDTH, MAX_HEIGHT
+    from xpra.codecs.codec_checks import testcsc, get_csc_max_size
     from xpra.codecs.csc_swscale import colorspace_converter
     override_logger()
     testcsc(colorspace_converter, full)
+    MAX_WIDTH, MAX_HEIGHT = get_csc_max_size(colorspace_converter)
+    log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)

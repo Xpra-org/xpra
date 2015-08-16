@@ -267,10 +267,11 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 
 def get_info():
-    global CODECS
+    global CODECS, MAX_WIDTH, MAX_HEIGHT
     info = {"version"       : get_version(),
             "encodings"     : CODECS,
             "buffer_api"    : get_buffer_api_version(),
+            "max-size"      : (MAX_WIDTH, MAX_HEIGHT),
             "abi_version"   : get_abi_version(),
             "build_config"  : vpx_codec_build_config()}
     for k,v in COLORSPACES.items():
@@ -290,13 +291,16 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
     raise Exception("unsupported encoding: %s" % encoding)
 
 
+#a safe guess, which we probe later on:
+MAX_WIDTH = 4096
+MAX_HEIGHT = 4096
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
     #setup cost is reasonable (usually about 5ms)
     return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace],
-                            codec_class=Encoder, codec_type=get_type(), setup_cost=40)
+                            codec_class=Encoder, codec_type=get_type(), setup_cost=40, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
@@ -397,7 +401,7 @@ cdef class Encoder:
         if ret!=0:
             free(self.context)
             self.context = NULL
-            log.warn("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
+            log("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
             raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, bytestostr(vpx_codec_error(self.context))))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         cdef vpx_codec_err_t ctrl
@@ -619,7 +623,9 @@ cdef class Encoder:
 
 
 def selftest(full=False):
-    from xpra.codecs.codec_checks import testencoder
+    from xpra.codecs.codec_checks import testencoder, get_encoder_max_size
     from xpra.codecs.vpx import encoder
-    global CODECS
+    global CODECS, MAX_WIDTH, MAX_HEIGHT
     CODECS = testencoder(encoder, full)
+    MAX_WIDTH, MAX_HEIGHT = get_encoder_max_size(encoder, CODECS)
+    log("%s max dimensions: %ix%i", encoder, MAX_WIDTH, MAX_HEIGHT)

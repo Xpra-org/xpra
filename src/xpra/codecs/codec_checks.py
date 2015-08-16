@@ -102,9 +102,39 @@ def testencoder(encoder_module, full):
     return codecs
 
 def testencoding(encoder_module, encoding, full):
-    #test a big bigger so we exercise more code:
+    #test a bit bigger so we exercise more code:
     W = 64
     H = 32
+    do_testencoding(encoder_module, encoding, W, H, full)
+
+def get_encoder_max_size(encoder_module, encodings):
+    #probe to find the max dimensions:
+    #(it may go higher but we don't care as windows can't)
+    MAX_WIDTH = 512
+    for maxw in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
+        for encoding in encodings:
+            try:
+                do_testencoding(encoder_module, encoding, maxw, 64)
+                MAX_WIDTH = maxw
+            except Exception as e:
+                log("%s is limited to max width=%i :", encoder_module, MAX_WIDTH)
+                log(" %s", e)
+                break
+    MAX_HEIGHT = 512
+    for maxh in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
+        for encoding in encodings:
+            try:
+                do_testencoding(encoder_module, encoding, 64, maxh)
+                MAX_HEIGHT = maxh
+            except Exception as e:
+                log("%s is limited to max height=%i :", encoder_module, MAX_HEIGHT)
+                log(" %s", e)
+                break
+    log("%s max dimensions: %ix%i", encoder_module, MAX_WIDTH, MAX_HEIGHT)
+    return MAX_WIDTH, MAX_HEIGHT
+    
+
+def do_testencoding(encoder_module, encoding, W, H, full=False):
     for cs_in in encoder_module.get_input_colorspaces(encoding):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
@@ -139,6 +169,36 @@ def testencoding(encoder_module, encoding, full):
 def testcsc(csc_module, full):
     W = 24
     H = 16
+    return do_testcsc(csc_module, W, H, full)
+
+def get_csc_max_size(colorspace_converter):
+    #probe to find the max dimensions:
+    #(it may go higher but we don't care as windows can't)
+    MAX_WIDTH = 512
+    for maxw in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
+        try:
+            do_testcsc(colorspace_converter, maxw, 64)
+            MAX_WIDTH = maxw
+        except Exception as e:
+            log("%s is limited to max width=%i :", colorspace_converter, MAX_WIDTH)
+            log(" %s", e)
+            break
+    MAX_HEIGHT = 512
+    for maxh in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
+        try:
+            do_testcsc(colorspace_converter, 64, maxh)
+            MAX_HEIGHT = maxh
+        except Exception as e:
+            log("%s is limited to max height=%i :", colorspace_converter, MAX_HEIGHT)
+            log(" %s", e)
+            break
+    log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
+    return MAX_WIDTH, MAX_HEIGHT
+
+
+def do_testcsc(csc_module, W, H, full=False):
+    W = 24
+    H = 16
     for cs_in in csc_module.get_input_colorspaces():
         for cs_out in csc_module.get_output_colorspaces(cs_in):
             log("%s: testing %s / %s", csc_module.get_type(), cs_in, cs_out)
@@ -163,4 +223,3 @@ def testcsc(csc_module, full):
                             raise Exception("converting an image of a smaller size with %s should have failed, got %s instead" % (csc_module.get_type(), out))
             finally:
                 e.clean()
-
