@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -8,6 +9,43 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 from xpra.util import pver
+
+
+def get_nvml_driver_version():
+    try:
+        from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
+        try:
+            nvmlInit()
+            v = nvmlSystemGetDriverVersion()
+            log("nvmlSystemGetDriverVersion=%s", v)
+            return v.split(".")
+        except Exception as e:
+            log.warn("Warning: failed to query the NVidia kernel module version via NVML:")
+            log.warn(" %s", e)
+        finally:
+            nvmlShutdown()
+    except ImportError as e:
+        log("cannot use nvml to query the kernel module version:")
+        log(" %s", e)
+    return ""
+
+
+def get_proc_driver_version():
+    from xpra.os_util import load_binary_file
+    proc_file = "/proc/driver/nvidia/version"
+    v = load_binary_file(proc_file)
+    if not v:
+        log.warn("Warning: NVvidia kernel module not installed?")
+        log.warn(" cannot open '%s'", proc_file)
+        return ""
+    KSTR = "Kernel Module"
+    p = v.find(KSTR)
+    if not p:
+        log.warn("unknown NVidia kernel module version")
+        return ""
+    v = v[p+len(KSTR):].strip().split(" ")[0]
+    v = v.split(".")
+    return v
 
 
 def identify_nvidia_module_version():
@@ -24,18 +62,7 @@ def identify_nvidia_module_version():
             log.warn("failed to get the driver version through NVAPI:")
             log.warn(" %s", e)
     else:
-        from xpra.os_util import load_binary_file
-        v = load_binary_file("/proc/driver/nvidia/version")
-        if not v:
-            log.warn("Nvidia kernel module not installed?")
-            return []
-        KSTR = "Kernel Module"
-        p = v.find(KSTR)
-        if not p:
-            log.warn("unknown Nvidia kernel module version")
-            return []
-        v = v[p+len(KSTR):].strip().split(" ")[0]
-        v = v.split(".")
+        v = get_nvml_driver_version() or get_proc_driver_version()
     #only keep numeric values:
     numver = []
     try:
