@@ -123,7 +123,6 @@ def get_encoder_max_sizes(encoder_module):
 def get_encoder_max_size(encoder_module, encoding):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
-    log.enable_debug()
     def einfo():
         return "%s %s" % (encoder_module.get_type(), encoder_module.get_version())
     log("get_encoder_max_size%s", (encoder_module, encoding))
