@@ -317,9 +317,10 @@ def get_type():
     return "x264"
 
 def get_info():
-    global COLORSPACES
+    global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {"version"   : get_version(),
             "buffer_api": get_buffer_api_version(),
+            "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
             "formats"   : COLORSPACES.keys()}
 
 def get_encodings():
@@ -334,13 +335,21 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert input_colorspace in COLORSPACES
     return COLORSPACES[input_colorspace]
 
+if X264_BUILD<146:
+    #untested, but should be OK for 4k:
+    MAX_WIDTH = 4096
+    MAX_HEIGHT = 4096
+else:
+    MAX_WIDTH = 8192
+    MAX_HEIGHT = 8192
+
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
-                            codec_class=Encoder, codec_type=get_type(), speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE)
+                            codec_class=Encoder, codec_type=get_type(), speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 #maps a log level to one of our logger functions:
@@ -668,6 +677,11 @@ cdef class Encoder:
 
 
 def selftest(full=False):
-    from xpra.codecs.codec_checks import testencoder
+    from xpra.codecs.codec_checks import testencoder, get_encoder_max_sizes
     from xpra.codecs.enc_x264 import encoder
     assert testencoder(encoder, full)
+    #this is expensive, so don't run it unless "full" is set:
+    if full:
+        global MAX_WIDTH, MAX_HEIGHT
+        MAX_WIDTH, MAX_HEIGHT = get_encoder_max_sizes(encoder)
+        log("%s max dimensions: %ix%i", encoder, MAX_WIDTH, MAX_HEIGHT)

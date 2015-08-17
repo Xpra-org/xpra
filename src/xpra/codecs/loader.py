@@ -22,7 +22,8 @@ if sys.version > '3':
 #do not require the libraries to be installed
 NOWARN = ["nvenc4", "nvenc5", "opencl"]
 
-RUN_SELF_TESTS = True
+SELFTEST = os.environ.get("XPRA_CODEC_SELFTEST", "1")=="1"
+FULL_SELFTEST = os.environ.get("XPRA_CODEC_FULL_SELFTEST", "0")=="1"
 
 codec_errors = {}
 codecs = {}
@@ -44,8 +45,8 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 ic =  __import__(class_module, {}, {}, classname)
                 selftest = getattr(ic, "selftest", None)
                 log("%s.selftest=%s", name, selftest)
-                if RUN_SELF_TESTS and selftest:
-                    selftest()
+                if SELFTEST and selftest:
+                    selftest(FULL_SELFTEST)
                 #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 log(" found %s : %s", name, ic)
                 codecs[name] = ic

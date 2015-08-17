@@ -27,20 +27,25 @@ TEST_COMPRESSED_DATA = {
 def make_test_image(pixel_format, w, h):
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
+    #import time
+    #start = time.time()
     if pixel_format.startswith("YUV") or pixel_format=="GBRP":
         divs = get_subsampling_divs(pixel_format)
         ydiv = divs[0]  #always (1,1)
-        y = bytearray(b"\0" * (w*h//(ydiv[0]*ydiv[1])))
+        y = bytearray(w*h//(ydiv[0]*ydiv[1]))
         udiv = divs[1]
-        u = bytearray(b"\0" * (w*h//(udiv[0]*udiv[1])))
+        u = bytearray(w*h//(udiv[0]*udiv[1]))
         vdiv = divs[2]
-        v = bytearray(b"\0" * (w*h//(vdiv[0]*vdiv[1])))
+        v = bytearray(w*h//(vdiv[0]*vdiv[1]))
         image = ImageWrapper(0, 0, w, h, [y, u, v], pixel_format, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper._3_PLANES, thread_safe=True)
+        #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA"):
-        rgb_data = bytearray(b"\0" * (w*h*len(pixel_format)))
+        rgb_data = bytearray(w*h*len(pixel_format))
         image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, w*len(pixel_format), planes=ImageWrapper.PACKED, thread_safe=True)
+        #l = len(rgb_data)
     else:
         raise Exception("don't know how to create a %s image" % pixel_format)
+    #log("make_test_image%30s took %3ims for %6iMBytes", (pixel_format, w, h), 1000*(time.time()-start), l//1024//1024)
     return image
 
 
@@ -107,30 +112,61 @@ def testencoding(encoder_module, encoding, full):
     H = 32
     do_testencoding(encoder_module, encoding, W, H, full)
 
-def get_encoder_max_size(encoder_module, encodings):
+def get_encoder_max_sizes(encoder_module):
+    w, h = 16384, 16384
+    for encoding in encoder_module.get_encodings():
+        ew, eh = get_encoder_max_size(encoder_module, encoding)
+        w = min(w, ew)
+        h = min(h, eh)
+    return w, h
+    
+def get_encoder_max_size(encoder_module, encoding):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
-    MAX_WIDTH = 512
-    for maxw in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
-        for encoding in encodings:
-            try:
-                do_testencoding(encoder_module, encoding, maxw, 64)
-                MAX_WIDTH = maxw
-            except Exception as e:
-                log("%s is limited to max width=%i :", encoder_module, MAX_WIDTH)
-                log(" %s", e)
-                break
-    MAX_HEIGHT = 512
-    for maxh in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
-        for encoding in encodings:
-            try:
-                do_testencoding(encoder_module, encoding, 64, maxh)
-                MAX_HEIGHT = maxh
-            except Exception as e:
-                log("%s is limited to max height=%i :", encoder_module, MAX_HEIGHT)
-                log(" %s", e)
-                break
-    log("%s max dimensions: %ix%i", encoder_module, MAX_WIDTH, MAX_HEIGHT)
+    log.enable_debug()
+    def einfo():
+        return "%s %s" % (encoder_module.get_type(), encoder_module.get_version())
+    log("get_encoder_max_size%s", (encoder_module, encoding))
+    maxw = 512
+    for v in (512, 1024, 2048, 4096, 8192, 16384):
+        try:
+            do_testencoding(encoder_module, encoding, v, 64)
+            maxw = v
+        except Exception as e:
+            log("%s is limited to max width=%i for %s:", einfo(), maxw, encoding)
+            log(" %s", e)
+            break
+    log("%s max width=%i", einfo(), maxw)
+    maxh = 512
+    for v in (512, 1024, 2048, 4096, 8192, 16384):
+        try:
+            do_testencoding(encoder_module, encoding, 64, v)
+            maxh = v
+        except Exception as e:
+            log("%s is limited to max height=%i for %s:", einfo(), maxh, encoding)
+            log(" %s", e)
+            break
+    log("%s max height=%i", einfo(), maxh)
+    #now try combining width and height
+    #as there might be a lower limit based on the total number of pixels:
+    limit = min(maxw, maxh)
+    MAX_WIDTH = maxw
+    MAX_HEIGHT = maxh
+    for v in (512, 1024, 2048, 4096, 8192, 16384):
+        if v>=limit:
+            break
+        try:
+            w = min(maxw, v)
+            h = min(maxh, v)
+            do_testencoding(encoder_module, encoding, w, h)
+            log("%s can handle %ix%i for %s", einfo(), w, h, encoding)
+            MAX_WIDTH = w
+            MAX_HEIGHT = h
+        except Exception as e:
+            log("%s is limited to %ix%i for %s", einfo(), MAX_WIDTH, MAX_HEIGHT, encoding)
+            log(" %s", e)
+            break
+    log("%s max dimensions for %s: %ix%i", einfo(), encoding, MAX_WIDTH, MAX_HEIGHT)
     return MAX_WIDTH, MAX_HEIGHT
     
 
@@ -139,9 +175,10 @@ def do_testencoding(encoder_module, encoding, W, H, full=False):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
             try:
-                e.init_context(W, H, cs_in, [cs_out], encoding, W, H, (1,1), {})
+                e.init_context(W, H, cs_in, [cs_out], encoding, 50, 100, (1,1), {})
                 image = make_test_image(cs_in, W, H)
                 data, meta = e.compress_image(image)
+                del image
                 assert len(data)>0, "no compressed data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
