@@ -49,7 +49,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
 
     def client_type(self):
         #overriden in subclasses!
-        return "Python/GObject"
+        return "Python%s/GObject" % sys.version_info[0]
 
     def timeout(self, *args):
         log.warn("timeout!")
