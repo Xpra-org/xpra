@@ -66,12 +66,14 @@ def get_version_info():
              }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
-        props.update({
-                    "local_modifications"  : LOCAL_MODIFICATIONS,
-                    "revision"             : REVISION,
-                  })
-    except Exception as e:
+        props["local_modifications"]    = LOCAL_MODIFICATIONS
+        props["revision"]               = REVISION
+    except ImportError as e:
         log.warn("missing some source information: %s", e)
+    return props
+
+def get_version_info_full():
+    props = get_version_info()
     try:
         from xpra import build_info
         #rename these build info properties:

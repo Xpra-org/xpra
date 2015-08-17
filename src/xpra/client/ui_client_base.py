@@ -50,6 +50,7 @@ from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, CLIENT_EXIT
+from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -916,8 +917,12 @@ class UIXpraClient(XpraClientBase):
         pass
 
 
+    def get_version_info(self):
+        return get_version_info_full()
+
     def make_hello(self):
         capabilities = XpraClientBase.make_hello(self)
+        updict(capabilities, "platform",  get_platform_info())
         if self.readonly:
             #don't bother sending keyboard info, as it won't be used
             capabilities["keyboard"] = False
@@ -1033,6 +1038,7 @@ class UIXpraClient(XpraClientBase):
             "set_enabled"               : True,
             })
         updict(capabilities, "encoding", {
+            "b-frames"                  : True,
             "flush"                     : True,
             "scaling.control"           : self.scaling,
             "client_options"            : True,

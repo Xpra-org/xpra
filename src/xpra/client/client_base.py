@@ -24,7 +24,7 @@ from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.scripts.config import ENCRYPTION_CIPHERS
-from xpra.version_util import version_compat_check, get_version_info, get_platform_info, local_version
+from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
@@ -320,8 +320,7 @@ class XpraClientBase(object):
             capabilities["display"] = self.display
         def up(prefix, d):
             updict(capabilities, prefix, d)
-        up("platform",  get_platform_info())
-        up("build",     get_version_info())
+        up("build",     self.get_version_info())
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
@@ -345,6 +344,9 @@ class XpraClientBase(object):
             self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations)
             netlog("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
         return capabilities
+
+    def get_version_info(self):
+        return get_version_info()
 
     def make_hello(self):
         capabilities = {
