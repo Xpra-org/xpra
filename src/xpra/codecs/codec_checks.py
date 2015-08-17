@@ -32,15 +32,15 @@ def make_test_image(pixel_format, w, h):
     if pixel_format.startswith("YUV") or pixel_format=="GBRP":
         divs = get_subsampling_divs(pixel_format)
         ydiv = divs[0]  #always (1,1)
-        y = bytearray(w*h//(ydiv[0]*ydiv[1]))
+        y = bytes("\0"*(w*h//(ydiv[0]*ydiv[1])))
         udiv = divs[1]
-        u = bytearray(w*h//(udiv[0]*udiv[1]))
+        u = bytes("\0"*(w*h//(udiv[0]*udiv[1])))
         vdiv = divs[2]
-        v = bytearray(w*h//(vdiv[0]*vdiv[1]))
+        v = bytes("\0"*(w*h//(vdiv[0]*vdiv[1])))
         image = ImageWrapper(0, 0, w, h, [y, u, v], pixel_format, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper._3_PLANES, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA"):
-        rgb_data = bytearray(w*h*len(pixel_format))
+        rgb_data = bytes("\0"*(w*h*len(pixel_format)))
         image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, w*len(pixel_format), planes=ImageWrapper.PACKED, thread_safe=True)
         #l = len(rgb_data)
     else:
@@ -152,19 +152,20 @@ def get_encoder_max_size(encoder_module, encoding):
     MAX_WIDTH = maxw
     MAX_HEIGHT = maxh
     for v in (512, 1024, 2048, 4096, 8192, 16384):
-        if v>=limit:
-            break
-        try:
-            w = min(maxw, v)
-            h = min(maxh, v)
-            do_testencoding(encoder_module, encoding, w, h)
-            log("%s can handle %ix%i for %s", einfo(), w, h, encoding)
-            MAX_WIDTH = w
-            MAX_HEIGHT = h
-        except Exception as e:
-            log("%s is limited to %ix%i for %s", einfo(), MAX_WIDTH, MAX_HEIGHT, encoding)
-            log(" %s", e)
-            break
+        for tw, th in ((v, v), (v*2, v)):
+            if tw>limit or th>limit:
+                continue
+            try:
+                w = min(maxw, tw)
+                h = min(maxh, th)
+                do_testencoding(encoder_module, encoding, w, h)
+                log("%s can handle %ix%i for %s", einfo(), w, h, encoding)
+                MAX_WIDTH = w
+                MAX_HEIGHT = h
+            except Exception as e:
+                log("%s is limited to %ix%i for %s", einfo(), MAX_WIDTH, MAX_HEIGHT, encoding)
+                log(" %s", e)
+                break
     log("%s max dimensions for %s: %ix%i", einfo(), encoding, MAX_WIDTH, MAX_HEIGHT)
     return MAX_WIDTH, MAX_HEIGHT
     

@@ -2408,3 +2408,11 @@ def init_module():
 def cleanup_module():
     log("nvenc.cleanup_module()")
     reset_state()
+
+def selftest(full=False):
+    #this is expensive, so don't run it unless "full" is set:
+    if full:
+        from xpra.codecs.codec_checks import get_encoder_max_sizes
+        from xpra.codecs.nvenc4 import encoder
+        init_module()
+        log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))

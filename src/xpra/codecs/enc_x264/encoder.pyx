@@ -340,8 +340,8 @@ if X264_BUILD<146:
     MAX_WIDTH = 4096
     MAX_HEIGHT = 4096
 else:
-    MAX_WIDTH = 8192
-    MAX_HEIGHT = 8192
+    MAX_WIDTH = 16384
+    MAX_HEIGHT = 16384
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
