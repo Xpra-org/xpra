@@ -294,8 +294,11 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 #educated guess:
 MAX_SIZE = {"vp8"   : (4096, 4096),
-            "vp9"   : (8192, 8192),
+            "vp9"   : (4096, 4096),
             }
+IF LIBVPX14:
+            MAX_SIZE["vp9"] = (8192, 8192)
+
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
