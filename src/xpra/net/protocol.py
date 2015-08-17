@@ -797,10 +797,11 @@ class Protocol(object):
                     return
                 except ValueError as e:
                     etype = packet_encoding.get_packet_encoding_type(protocol_flags)
-                    log.error("failed to parse %s packet: %s", etype, e, exc_info=not self._closed)
+                    log.error("Error parsing %s packet:", etype)
+                    log.error(" %s", e)
                     if self._closed:
                         return
-                    log("failed to parse %s packet: %s", etype, binascii.hexlify(data))
+                    log("failed to parse %s packet: %s", etype, binascii.hexlify(data), exc_info=True)
                     msg = "packet index=%s, packet size=%s, buffer size=%s, error=%s" % (packet_index, payload_size, bl, e)
                     self.gibberish(msg, data)
                     return
