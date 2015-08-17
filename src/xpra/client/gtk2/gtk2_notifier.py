@@ -19,7 +19,7 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 import gtk
-import gobject
+import glib
 
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
@@ -193,7 +193,7 @@ class Popup(gtk.Window):
         self.move(self.get_x(self.w), self.get_y(self.h))
         self.wait_timer = None
         self.fade_out_timer = None
-        self.fade_in_timer = gobject.timeout_add(100, self.fade_in)
+        self.fade_in_timer = glib.timeout_add(100, self.fade_in)
         #ensure we dont show it in the taskbar:
         self.window.set_skip_taskbar_hint(True)
         self.window.set_skip_pager_hint(True)
@@ -231,7 +231,7 @@ class Popup(gtk.Window):
         opacity = self.get_opacity()
         opacity += 0.15
         if opacity >= 1:
-            self.wait_timer = gobject.timeout_add(1000, self.wait)
+            self.wait_timer = glib.timeout_add(1000, self.wait)
             self.fade_in_timer = None
             return False
         self.set_opacity(opacity)
@@ -243,7 +243,7 @@ class Popup(gtk.Window):
         if self.show_timeout:
             self.counter.set_markup(str("<b>%s</b>" % self.timeout))
         if self.timeout == 0:
-            self.fade_out_timer = gobject.timeout_add(100, self.fade_out)
+            self.fade_out_timer = glib.timeout_add(100, self.fade_out)
             self.wait_timer = None
             return False
         return True
@@ -271,7 +271,7 @@ class Popup(gtk.Window):
             v = getattr(self, timer)
             if v:
                 setattr(self, timer, None)
-                gobject.source_remove(v)
+                glib.source_remove(v)
         self.destroy()
         self.destroy_cb(self)
 
@@ -299,8 +299,8 @@ def main():
         gtk.main_quit()
 
     notifier = GTK2_Notifier(timeout=6)
-    gobject.timeout_add(4000, notify_factory)
-    gobject.timeout_add(20000, gtk_main_quit)
+    glib.timeout_add(4000, notify_factory)
+    glib.timeout_add(20000, gtk_main_quit)
     gtk.main()
 
 if __name__ == "__main__":

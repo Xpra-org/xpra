@@ -5,10 +5,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
-gobject = import_gobject()
+glib = import_glib()
 import sys
 import time
 import datetime
@@ -400,10 +400,10 @@ class SessionInfo(gtk.Window):
         self.init_counters()
         self.populate()
         self.populate_all()
-        gobject.timeout_add(1000, self.populate)
-        gobject.timeout_add(100, self.populate_tab)
+        glib.timeout_add(1000, self.populate)
+        glib.timeout_add(100, self.populate_tab)
         if SHOW_SOUND_STATS:
-            gobject.timeout_add(100, self.populate_sound_stats)
+            glib.timeout_add(100, self.populate_sound_stats)
         add_close_accel(self, self.destroy)
 
 

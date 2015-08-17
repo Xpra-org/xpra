@@ -7,6 +7,11 @@
 
 import os
 import gobject
+import glib
+try:
+    glib.threads_init()
+except:
+    pass
 try:
     #we *have to* do this as early as possible on win32..
     gobject.threads_init()
@@ -18,7 +23,7 @@ gdk.threads_init()
 
 
 from xpra.platform.ui_thread_watcher import get_UI_watcher
-UI_watcher = get_UI_watcher(gobject.timeout_add)
+UI_watcher = get_UI_watcher(glib.timeout_add)
 
 from xpra.gtk_common.gtk_util import gtk_main, color_parse
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient

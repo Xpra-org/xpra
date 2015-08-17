@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_gobject
-gobject = import_gobject()
+from xpra.gtk_common.gobject_compat import import_glib
+glib = import_glib()
 import os
 
 from xpra.client.window_backing_base import fire_paint_callbacks
@@ -31,7 +31,7 @@ class FakeBacking(object):
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         log("draw_region(..) faking it after %sms", self.fake_delay)
-        gobject.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
+        glib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
     def cairo_draw(self, context, x, y):
         pass

@@ -2,7 +2,7 @@
 # This file is part of Xpra.
 # Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_glib
 from xpra.gtk_common.gtk_util import SHIFT_MASK, LOCK_MASK, CONTROL_MASK, MOD1_MASK, MOD2_MASK, MOD3_MASK, MOD4_MASK, MOD5_MASK
 import sys
 from collections import deque
@@ -10,7 +10,7 @@ from collections import deque
 gtk = import_gtk()
 gdk = import_gdk()
 pango = import_pango()
-gobject = import_gobject()
+glib = import_glib()
 
 from xpra.platform.paths import get_icon
 from xpra.gtk_common import gtk_util
@@ -67,7 +67,7 @@ class KeyboardStateInfoWindow:
 
         self.window.add(vbox)
         self.window.show_all()
-        gobject.timeout_add(100, self.populate_modifiers)
+        glib.timeout_add(100, self.populate_modifiers)
 
         self.key_events = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)

@@ -8,8 +8,6 @@ import time
 import socket
 import os
 import signal
-import gobject
-gobject.threads_init()
 from threading import Timer
 
 from xpra.log import Logger

@@ -763,8 +763,8 @@ def main():
             def show_signal():
                 app.show()
                 app.client.cleanup()
-                gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-                gobject.timeout_add(1000, app.set_info_color, True)
+                glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+                glib.timeout_add(1000, app.set_info_color, True)
             #call from UI thread:
             glib.idle_add(show_signal)
         if sys.version_info[0]<3:

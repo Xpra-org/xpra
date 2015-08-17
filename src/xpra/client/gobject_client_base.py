@@ -331,7 +331,7 @@ class PrintClient(CommandConnectClient):
         from xpra.net.compression import Compressed
         blob = Compressed("print", self.file_data)
         self.send("print", self.filename, blob, *self.command)
-        gobject.idle_add(self.send, "disconnect", DONE, "detaching")
+        self.idle_add(self.send, "disconnect", DONE, "detaching")
 
     def make_hello(self):
         capabilities = CommandConnectClient.make_hello(self)
@@ -355,7 +355,7 @@ class ExitXpraClient(CommandConnectClient):
         return capabilities
 
     def do_command(self):
-        gobject.idle_add(self.send, "exit-server")
+        self.idle_add(self.send, "exit-server")
 
 
 class StopXpraClient(CommandConnectClient):
@@ -372,7 +372,7 @@ class StopXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
     def do_command(self):
-        gobject.idle_add(self.send, "shutdown-server")
+        self.idle_add(self.send, "shutdown-server")
         #not exiting the client here,
         #the server should send us the shutdown disconnection message anyway
         #and if not, we will then hit the timeout to tell us something went wrong
@@ -392,6 +392,6 @@ class DetachXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
     def do_command(self):
-        gobject.idle_add(self.send, "disconnect", DONE, "detaching")
+        self.idle_add(self.send, "disconnect", DONE, "detaching")
         #not exitint the client here,
         #the server should disconnect us with the response

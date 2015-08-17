@@ -138,12 +138,12 @@ class GTKStatusIconTray(TrayBase):
 
 def main():
     log.enable_debug()
-    from xpra.gtk_common.gobject_compat import import_gobject
-    gobject = import_gobject()
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
     s = GTKStatusIconTray(None, "test", "xpra.png", None, None, None, gtk.main_quit)
-    gobject.timeout_add(1000*2, s.set_blinking, True)
-    gobject.timeout_add(1000*5, s.set_blinking, False)
-    gobject.timeout_add(1000*10, gtk.main_quit)
+    glib.timeout_add(1000*2, s.set_blinking, True)
+    glib.timeout_add(1000*5, s.set_blinking, False)
+    glib.timeout_add(1000*10, gtk.main_quit)
     gtk.main()
 
 

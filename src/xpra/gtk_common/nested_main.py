@@ -60,8 +60,8 @@
 # timeout. If the user ever stops pasting madly for a few seconds, though,
 # then everything should have a chance to return to equilibrium...
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk
-gobject = import_gobject()
+from xpra.gtk_common.gobject_compat import import_glib, import_gtk
+glib = import_glib()
 gtk = import_gtk()
 
 from xpra.log import Logger
@@ -124,7 +124,7 @@ class NestedMainLoop(object):
         return False
 
     def _wakeup(self):
-        gobject.timeout_add(0, self._quit_while_top_done)
+        glib.timeout_add(0, self._quit_while_top_done)
 
     def _soft_timeout_cb(self):
         log("%#x: soft timeout", id(self))
@@ -150,8 +150,8 @@ class NestedMainLoop(object):
         self._soft_timed_out = False
         self._hard_timed_out = False
         self._stack.append(self)
-        soft = gobject.timeout_add(soft_timeout, self._soft_timeout_cb)
-        hard = gobject.timeout_add(hard_timeout, self._hard_timeout_cb)
+        soft = glib.timeout_add(soft_timeout, self._soft_timeout_cb)
+        hard = glib.timeout_add(hard_timeout, self._hard_timeout_cb)
         log("Entering nested loop %#x (level %s)",
             id(self), gtk.main_level())
         try:
@@ -160,9 +160,9 @@ class NestedMainLoop(object):
         finally:
             assert self._stack.pop() is self
             if not self._soft_timed_out:
-                gobject.source_remove(soft)
+                glib.source_remove(soft)
             if not self._hard_timed_out:
-                gobject.source_remove(hard)
+                glib.source_remove(hard)
         log("%s: done=%#x, soft=%s, hard=%s, result=%s",
             id(self), self._done, self._soft_timed_out, self._hard_timed_out, self._result)
         return self._result

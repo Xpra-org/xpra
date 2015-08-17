@@ -8,6 +8,7 @@
 
 import os
 import gtk.gdk
+import glib
 import gobject
 import time
 
@@ -469,12 +470,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         geom[:4] = [x, y, nw, nh]
         lcce = self.last_client_configure_event
         if self.snc_timer>0:
-            gobject.source_remove(self.snc_timer)
+            glib.source_remove(self.snc_timer)
         #TODO: find a better way to choose the timer delay:
         #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
         #(lcce should always be in the past, so min(..) should be redundant here)
         delay = max(100, min(250, 250 + 1000 * (lcce-time.time())))
-        self.snc_timer = gobject.timeout_add(int(delay), self.size_notify_clients, window, lcce)
+        self.snc_timer = glib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce):
         windowlog("size_notify_clients(%s, %s) last_client_configure_event=%s", window, lcce, self.last_client_configure_event)
