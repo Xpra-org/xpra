@@ -87,6 +87,7 @@ selected_platform = None
 selected_device_cpu_cost = 50
 selected_device_gpu_cost = 50
 selected_device_setup_cost = 50
+selected_device_max_size = 64, 64
 
 context = None
 def reselect_device():
@@ -96,7 +97,7 @@ def reselect_device():
     context = None
     select_device()
 def select_device():
-    global context, selected_device,selected_platform,AMD_WARNING_SHOWN
+    global context, selected_device,selected_platform,selected_device_max_size,AMD_WARNING_SHOWN
     if context is not None:
         return
     log_version_info()
@@ -147,6 +148,7 @@ def select_device():
                 log("trying platform: %s", platform_info(p))
                 log("with %s device: %s", device_type(d), device_info(d))
                 context = pyopencl.Context([d])
+                selected_device_max_size = d.get_info(pyopencl.device_info.IMAGE2D_MAX_WIDTH), d.get_info(pyopencl.device_info.IMAGE2D_MAX_HEIGHT)
                 selected_platform = p
                 selected_device = d
                 log.info(" using platform: %s", platform_info(selected_platform))
@@ -162,6 +164,7 @@ def select_device():
                     selected_device_gpu_cost = 0
                     selected_device_setup_cost = 20
                 log("device is a %s, using CPU cost=%s, GPU cost=%s", device_type(d), selected_device_cpu_cost, selected_device_gpu_cost)
+                log(" max image 2d size: %s", selected_device_max_size)
                 return
             except Exception as e:
                 log.warn(" failed to use %s", platform_info(p))
@@ -500,7 +503,8 @@ def get_info():
             "version"                   : selected_device.version,
             "max_work_group_size"       : selected_device.max_work_group_size,
             "max_work_item_dimensions"  : selected_device.max_work_item_dimensions,
-            "max_work_item_sizes"       : selected_device.max_work_item_sizes})
+            "max_work_item_sizes"       : selected_device.max_work_item_sizes,
+            "max-size"                  : selected_device_max_size})
     return info
 
 
@@ -518,11 +522,12 @@ def validate_in_out(in_colorspace, out_colorspace):
 
 def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
-    global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost
+    global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost, selected_device_max_size
+    max_w, max_h = selected_device_max_size
     return codec_spec(ColorspaceConverter, codec_type=get_type(),
                       speed=100,
                       setup_cost=selected_device_setup_cost,
-                      cpu_cost=selected_device_cpu_cost, gpu_cost=selected_device_gpu_cost, min_w=128, min_h=128, can_scale=True)
+                      cpu_cost=selected_device_cpu_cost, gpu_cost=selected_device_gpu_cost, min_w=128, min_h=128, can_scale=True, max_w=max_w, max_h=max_h)
 
 
 class ColorspaceConverter(object):
