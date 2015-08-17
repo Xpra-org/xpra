@@ -18,10 +18,24 @@ except Exception as e:
     log("pycrypto is missing: %s", e)
 
 
+def get_iv():
+    IV = None
+    #IV = "00000000"
+    return IV or get_hex_uuid()[:16]
+
+def get_salt():
+    KEY_SALT = None
+    #KEY_SALT = "00000000"
+    return KEY_SALT or (get_hex_uuid()+get_hex_uuid())
+
+def get_iterations():
+    return 1000
+
+
 def new_cipher_caps(proto, cipher, encryption_key):
-    iv = get_hex_uuid()[:16]
-    key_salt = get_hex_uuid()+get_hex_uuid()
-    iterations = 1000
+    iv = get_iv()
+    key_salt = get_salt()
+    iterations = get_iterations()
     proto.set_cipher_in(cipher, iv, encryption_key, key_salt, iterations)
     return {
                  "cipher"           : cipher,

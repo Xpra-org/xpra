@@ -327,10 +327,11 @@ class XpraClientBase(object):
             capabilities["machine_id"] = mid
 
         if self.encryption:
+            from xpra.net.crypto import get_iterations, get_iv, get_salt
             assert self.encryption in ENCRYPTION_CIPHERS
-            iv = get_hex_uuid()[:16]
-            key_salt = get_hex_uuid()+get_hex_uuid()
-            iterations = 1000
+            iv = get_iv()
+            key_salt = get_salt()
+            iterations = get_iterations()
             capabilities.update({
                         "cipher"                       : self.encryption,
                         "cipher.iv"                    : iv,
