@@ -34,7 +34,7 @@ from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS
+from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.server.proxy import XpraProxy
@@ -149,7 +149,9 @@ class ServerCore(object):
 
         #Features:
         self.digest_modes = ("hmac", )
+        self.encryption = None
         self.encryption_keyfile = None
+        self.tcp_encryption = None
         self.tcp_encryption_keyfile = None
         self.password_file = None
         self.compression_level = 1
@@ -179,7 +181,9 @@ class ServerCore(object):
         self.main_socket_path = ""
         self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
         self._tcp_proxy = opts.tcp_proxy
+        self.encryption = opts.encryption
         self.encryption_keyfile = opts.encryption_keyfile
+        self.tcp_encryption = opts.tcp_encryption
         self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
@@ -447,13 +451,19 @@ class ServerCore(object):
         protocol.authenticator = None
         if socktype=="tcp":
             protocol.auth_class = self.tcp_auth_class
+            protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
         else:
             protocol.auth_class = self.auth_class
+            protocol.encryption = self.encryption
             protocol.keyfile = self.encryption_keyfile
         protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
         protocol.receive_aliases.update(self._aliases)
+        netlog.info("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
+        if protocol.encryption and ENCRYPT_FIRST_PACKET:
+            password = self.get_encryption_key(None, protocol.keyfile)
+            protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS)
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
@@ -874,6 +884,9 @@ class ServerCore(object):
             filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
 
         up("network",   get_network_caps())
+        up("network", {"encryption"     : self.encryption or "",
+                       "tcp-encryption" : self.tcp_encryption or "",
+                       })
         up("server",    get_server_info())
         up("threads",   self.get_thread_info(proto))
         up("env",       filtered_env)

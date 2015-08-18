@@ -9,7 +9,11 @@ from xpra.log import Logger
 log = Logger("network", "crypto")
 
 ENABLE_CRYPTO = os.environ.get("XPRA_ENABLE_CRYPTO", "1")=="1"
+ENCRYPT_FIRST_PACKET = os.environ.get("XPRA_ENCRYPT_FIRST_PACKET", "0")=="1"
 
+DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
+DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
+DEFAULT_ITERATIONS = int(os.environ.get("XPRA_CRYPTO_DEFAULT_ITERATIONS", "1000"))
 
 AES, PBKDF2 = None, None
 ENCRYPTION_CIPHERS = []
@@ -38,7 +42,7 @@ def get_salt():
     return KEY_SALT or (get_hex_uuid()+get_hex_uuid())
 
 def get_iterations():
-    return 1000
+    return DEFAULT_ITERATIONS
 
 
 def new_cipher_caps(proto, cipher, encryption_key):
