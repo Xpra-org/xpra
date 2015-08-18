@@ -622,28 +622,22 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="remote_xpra", default=defaults.remote_xpra,
                       metavar="CMD",
                       help="How to run xpra on the remote host (default: '%default')")
-    if len(ENCRYPTION_CIPHERS)>0:
-        group.add_option("--encryption", action="store",
-                          dest="encryption", default=defaults.encryption,
-                          metavar="ALGO",
-                          help="Specifies the encryption cipher to use, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
-        group.add_option("--encryption-keyfile", action="store",
-                          dest="encryption_keyfile", default=defaults.encryption_keyfile,
-                          metavar="FILE",
-                          help="Specifies the file containing the encryption key. (default: '%default')")
-        group.add_option("--tcp-encryption", action="store",
-                          dest="tcp_encryption", default=defaults.tcp_encryption,
-                          metavar="ALGO",
-                          help="Specifies the encryption cipher to use for TCP sockets, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
-        group.add_option("--tcp-encryption-keyfile", action="store",
-                          dest="tcp_encryption_keyfile", default=defaults.tcp_encryption_keyfile,
-                          metavar="FILE",
-                          help="Specifies the file containing the encryption key to use for TCP sockets. (default: '%default')")
-    else:
-        ignore({"encryption"                : "",
-                "tcp-encryption"            : "",
-                "encryption-keyfile"        : "",
-                "tcp-encryption_keyfile"    : ""})
+    group.add_option("--encryption", action="store",
+                      dest="encryption", default=defaults.encryption,
+                      metavar="ALGO",
+                      help="Specifies the encryption cipher to use, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS) or 'none available'))
+    group.add_option("--encryption-keyfile", action="store",
+                      dest="encryption_keyfile", default=defaults.encryption_keyfile,
+                      metavar="FILE",
+                      help="Specifies the file containing the encryption key. (default: '%default')")
+    group.add_option("--tcp-encryption", action="store",
+                      dest="tcp_encryption", default=defaults.tcp_encryption,
+                      metavar="ALGO",
+                      help="Specifies the encryption cipher to use for TCP sockets, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS) or 'none available'))
+    group.add_option("--tcp-encryption-keyfile", action="store",
+                      dest="tcp_encryption_keyfile", default=defaults.tcp_encryption_keyfile,
+                      metavar="FILE",
+                      help="Specifies the file containing the encryption key to use for TCP sockets. (default: '%default')")
 
     options, args = parser.parse_args(cmdline[1:])
 
@@ -734,12 +728,20 @@ def do_parse_cmdline(cmdline, defaults):
         except:
             raise InitException("invalid max-size: %s" % options.max_size)
         options.max_size = "%sx%s" % (w, h)
-    if options.encryption:
-        assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
-        if options.encryption not in ENCRYPTION_CIPHERS:
+    if options.encryption or options.tcp_encryption:
+        if not ENCRYPTION_CIPHERS:
+            raise InitException("cannot use encryption: no ciphers available (pycrypto must be installed)")
+        if options.encryption and options.encryption not in ENCRYPTION_CIPHERS:
             raise InitException("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
-        if not options.password_file and not os.environ.get('XPRA_PASSWORD') and not options.encryption_keyfile and not os.environ.get('XPRA_ENCRYPTION_KEY'):
-            raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
+        if options.tcp_encryption and options.tcp_encryption not in ENCRYPTION_CIPHERS:
+            raise InitException("encryption %s is not supported, try: %s" % (options.tcp_encryption, ", ".join(ENCRYPTION_CIPHERS)))
+        #password file can be used as fallback for encryption keys:
+        has_key = options.password_file or os.environ.get('XPRA_PASSWORD') or os.environ.get('XPRA_ENCRYPTION_KEY')
+        if not has_key:
+            if options.encryption and not options.encryption_keyfile:
+                raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
+            if options.tcp_encryption and not options.tcp_encryption_keyfile:
+                raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % options.tcp_encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
     return options, args
