@@ -22,7 +22,8 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
+from xpra.net.crypto import ENCRYPTION_CIPHERS
+from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field

@@ -31,7 +31,7 @@ pango = import_pango()
 from xpra.platform.gui import init as gui_init
 gui_init()
 
-from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, ENCRYPTION_CIPHERS
+from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
                                     OptionMenu, choose_file, \
@@ -42,6 +42,7 @@ from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, set_use_tray_workaround, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
+from xpra.net.crypto import ENCRYPTION_CIPHERS
 from xpra.scripts.main import connect_to, make_client, configure_network
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for

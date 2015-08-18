@@ -4,19 +4,28 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
-from xpra.os_util import get_hex_uuid
+ENABLE_CRYPTO = os.environ.get("XPRA_ENABLE_CRYPTO", "1")=="1"
 
 
-try:
-    from Crypto.Cipher import AES
-    from Crypto.Protocol.KDF import PBKDF2
-except Exception as e:
-    AES, PBKDF2 = None, None
-    log("pycrypto is missing: %s", e)
+AES, PBKDF2 = None, None
+ENCRYPTION_CIPHERS = []
+if ENABLE_CRYPTO:
+    try:
+        from Crypto.Protocol.KDF import PBKDF2
+        from Crypto.Cipher import AES
+        ENCRYPTION_CIPHERS.append("AES")
+    except Exception as e:
+        AES, PBKDF2 = None, None
+        log("pycrypto is missing: %s", e)
 
+
+def get_hex_uuid():
+    from xpra.os_util import get_hex_uuid as ghu
+    return ghu()
 
 def get_iv():
     IV = None

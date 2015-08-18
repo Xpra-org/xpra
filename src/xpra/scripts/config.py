@@ -39,14 +39,6 @@ WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0]>=3
 
-ENCRYPTION_CIPHERS = []
-try:
-    from Crypto.Cipher import AES
-    assert AES
-    ENCRYPTION_CIPHERS.append("AES")
-except:
-    pass
-
 try:
     import xpra.sound
     has_sound_support = bool(xpra.sound)
