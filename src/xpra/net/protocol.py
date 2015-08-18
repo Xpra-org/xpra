@@ -317,19 +317,21 @@ class Protocol(object):
             if self.cipher_out:
                 proto_flags |= FLAGS_CIPHER
                 #note: since we are padding: l!=len(data)
-                padding_size = self.cipher_out_block_size - (len(data) % self.cipher_out_block_size)
+                padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
                 if padding_size==0:
                     padded = data
                 else:
                     # pad byte value is number of padding bytes added
                     padded = data+(chr(padding_size)*padding_size)
-                actual_size = payload_size + padding_size
+                    actual_size += padding_size
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
-                log("sending %s bytes encrypted with %s padding", payload_size, padding_size)
+                log("sending %s bytes %s encrypted with %s padding", payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
+                assert not self.cipher_out
                 #for plain/text packets (ie: gibberish response)
+                log("sending %s bytes without header", payload_size)
                 items.append((data, scb, ecb))
             elif actual_size<PACKET_JOIN_SIZE:
                 if type(data) not in JOIN_TYPES:
@@ -664,6 +666,7 @@ class Protocol(object):
         padding_size = 0
         packet_index = 0
         compression_level = False
+        packet = None
         raw_packets = {}
         while not self._closed:
             buf = self._read_queue.get()
@@ -677,6 +680,7 @@ class Protocol(object):
                 read_buffer = buf
             bl = len(read_buffer)
             while not self._closed:
+                packet = None
                 bl = len(read_buffer)
                 if bl<=0:
                     break
@@ -737,7 +741,7 @@ class Protocol(object):
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & FLAGS_CIPHER:
-                    log("received %s encrypted bytes with %s padding", payload_size, padding_size)
+                    log("received %i %s encrypted bytes with %s padding", payload_size, self.cipher_in_name, padding_size)
                     data = self.cipher_in.decrypt(raw_string)
                     if padding_size > 0:
                         def debug_str(s):
@@ -747,16 +751,19 @@ class Protocol(object):
                                 return csv(list(str(s)))
                         # pad byte value is number of padding bytes added
                         padtext = chr(padding_size)*padding_size
-                        if not data.endswith(padtext):
-                            old_padding = " "*padding_size
-                            if not data.endswith(old_padding):
-                                actual_padding = data[-padding_size:]
-                                log.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
-                                log(" data does not end with bytes %s", debug_str(padtext))
-                                log(" or %s", debug_str(old_padding))
-                                log(" but with %s (%s)", debug_str(actual_padding), type(data))
-                                log(" decrypted data: %s", debug_str(data[:128]))
-                                return self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
+                        old_padding = " "*padding_size      #older versions (0.15 and earlier) used this instead
+                        if data.endswith(padtext):
+                            log("found 'size' %s padding", self.cipher_in_name)
+                        elif data.endswith(old_padding):
+                            log("found 'space' %s padding", self.cipher_in_name)
+                        else:
+                            actual_padding = data[-padding_size:]
+                            log.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
+                            log(" data does not end with bytes %s", debug_str(padtext))
+                            log(" or %s", debug_str(old_padding))
+                            log(" but with %s (%s)", debug_str(actual_padding), type(data))
+                            log(" decrypted data: %s", debug_str(data[:128]))
+                            return self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
                         data = data[:-padding_size]
                 #uncompress if needed:
                 if compression_level>0:
@@ -771,7 +778,10 @@ class Protocol(object):
                         msg = "%s packet decompression failed" % ctype
                         if self.cipher_in:
                             msg += " (invalid encryption key?)"
-                        msg = "msg: %s" % e
+                        else:
+                            #only include the exception text when not using encryption
+                            #as this may leak crypto information:
+                            msg += " %s" % e
                         return self.gibberish(msg, data)
 
                 if self.cipher_in and not (protocol_flags & FLAGS_CIPHER):
@@ -801,9 +811,11 @@ class Protocol(object):
                     log.error(" %s", e)
                     if self._closed:
                         return
-                    log("failed to parse %s packet: %s", etype, binascii.hexlify(data), exc_info=True)
-                    msg = "packet index=%s, packet size=%s, buffer size=%s, error=%s" % (packet_index, payload_size, bl, e)
-                    self.gibberish(msg, data)
+                    log("failed to parse %s packet: %s", etype, binascii.hexlify(data[:128]))
+                    log(" %s", e)
+                    log(" data: %s", repr_ellipsized(data))
+                    log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
+                    self.gibberish("failed to parse packet", data)
                     return
 
                 if self._closed:
