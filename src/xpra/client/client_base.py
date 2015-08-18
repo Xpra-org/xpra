@@ -494,7 +494,7 @@ class XpraClientBase(object):
             client_salt = get_hex_uuid()+get_hex_uuid()
             #TODO: use some key stretching algorigthm? (meh)
             try:
-                from xpra.codecs.xor.cyxor import xor_str
+                from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
                 salt = xor_str(salt, client_salt)
             except:
                 salt = xor(salt, client_salt)
