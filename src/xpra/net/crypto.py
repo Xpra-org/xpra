@@ -20,12 +20,12 @@ except Exception as e:
 
 def get_iv():
     IV = None
-    #IV = "00000000"
+    #IV = "0000000000000000"
     return IV or get_hex_uuid()[:16]
 
 def get_salt():
     KEY_SALT = None
-    #KEY_SALT = "00000000"
+    #KEY_SALT = "0000000000000000"
     return KEY_SALT or (get_hex_uuid()+get_hex_uuid())
 
 def get_iterations():
