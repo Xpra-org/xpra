@@ -1219,6 +1219,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         def sockpathfail_cb(msg):
             raise InitException(msg)
         sockpath = get_sockpath(display_desc, sockpathfail_cb)
+        display_desc["socket_path"] = sockpath
         try:
             conn = _socket_connect(sock, sockpath, display_name, dtype)
             #now that we know it:
@@ -1571,12 +1572,17 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         sockdirs = display_desc.get("socket_dirs", [])
         sockdir = DotXpra(sockdir, sockdirs)
         sockfile = get_sockpath(display_desc, error_cb)
-        if exit_code==0:
-            #client exited normally, probably worked
-            #so we give the server just a bit of time to cleanup:
-            time.sleep(0.75)
-        for _ in range(6):
+        #first 5 seconds: just check if the socket still exists:
+        #without connecting (avoid warnings and log messages on server)
+        for _ in range(25):
+            if not os.path.exists(sockfile):
+                break
+            time.sleep(0.2)
+        #next 5 seconds: actually try to connect
+        for _ in range(10):
             final_state = sockdir.get_server_state(sockfile, 1)
+            if final_state is DotXpra.DEAD:
+                break
             if final_state is DotXpra.LIVE:
                 time.sleep(0.5)
         if final_state is DotXpra.DEAD:
