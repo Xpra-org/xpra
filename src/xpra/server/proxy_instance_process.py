@@ -21,7 +21,7 @@ from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
 from xpra.net.crypto import new_cipher_caps, DEFAULT_PADDING
-from xpra.codecs.loader import load_codecs
+from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
@@ -690,12 +690,13 @@ class ProxyInstanceProcess(Process):
             spec = self._find_video_encoder(encoding, rgb_format)
             if spec is None:
                 #no video encoder!
-                from xpra.server.picture_encode import PIL_encode, PIL, warn_encoding_once
-                if PIL is None:
+                enc_pillow = get_codec("enc_pillow")
+                if not enc_pillow:
+                    from xpra.server.picture_encode import warn_encoding_once
                     warn_encoding_once("no-video-no-PIL", "no video encoder found for rgb format %s, sending as plain RGB!" % rgb_format)
                     return passthrough(True)
                 enclog("no video encoder available: sending as jpeg")
-                coding, compressed_data, client_options, _, _, _, _ = PIL_encode("jpeg", image, quality, speed, False)
+                coding, compressed_data, client_options, _, _, _, _ = enc_pillow.encode("jpeg", image, quality, speed, False)
                 return send_updated(coding, compressed_data, client_options)
 
             enclog("creating new video encoder %s for window %s", spec, wid)
