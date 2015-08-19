@@ -4,10 +4,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import get_hex_uuid
-from xpra.server.auth.sys_auth_base import SysAuthenticator
+from xpra.server.auth.sys_auth_base import SysAuthenticator, init
 
-def init(opts):
-    pass
+assert init
 
 class Authenticator(SysAuthenticator):
 

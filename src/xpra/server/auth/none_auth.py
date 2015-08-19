@@ -3,12 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator
+from xpra.server.auth.sys_auth_base import SysAuthenticator, init
 from xpra.platform.info import get_username
 
-
-def init(opts):
-    pass
+assert init
 
 class Authenticator(SysAuthenticator):
 

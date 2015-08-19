@@ -5,11 +5,10 @@
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 
+assert init
 
-def init(opts):
-    pass
 
 check = None
 #choice of two pam modules we can use

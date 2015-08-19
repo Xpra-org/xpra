@@ -85,6 +85,7 @@ class SysAuthenticator(object):
             results = sockdir.sockets(check_uid=uid)
             displays = [display for state, display in results if state==DotXpra.LIVE]
         except Exception as e:
-            log.error("cannot get socker directory for %s: %s", self.username, e)
+            log.error("Error: cannot get socket directory for '%s':", self.username)
+            log.error(" %s", e)
             displays = []
         return uid, gid, displays, {}, {}
