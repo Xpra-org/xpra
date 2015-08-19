@@ -8,6 +8,10 @@
 
 import gtk.gdk
 import glib
+try:
+    glib.threads_init()
+except AttributeError:
+    pass
 
 from xpra.log import Logger
 log = Logger("server", "gtk")

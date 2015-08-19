@@ -6,7 +6,12 @@
 
 import os
 import signal
-import glib
+from xpra.gtk_common.gobject_compat import import_glib
+glib = import_glib()
+try:
+    glib.threads_init()
+except AttributeError:
+    pass
 from multiprocessing import Queue as MQueue, freeze_support
 freeze_support()
 

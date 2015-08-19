@@ -25,7 +25,8 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
-from xpra.util import typedict, updict, LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
+from xpra.util import typedict, updict, repr_ellipsized, \
+    LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
 from xpra.make_thread import make_thread
 from xpra.scripts.config import parse_number, parse_bool
@@ -62,7 +63,10 @@ class ProxyInstanceProcess(Process):
         self.encryption_key = encryption_key
         self.server_conn = server_conn
         self.caps = caps
-        log("ProxyProcess%s", (uid, gid, client_conn, client_state, cipher, encryption_key, server_conn, "{..}"))
+        log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
+                               video_encoder_modules, csc_modules,
+                               client_conn, client_state, cipher, encryption_key, server_conn,
+                               "%s: %s.." % (type(caps), repr_ellipsized(caps)), message_queue))
         self.client_protocol = None
         self.server_protocol = None
         self.exit = False
@@ -173,10 +177,9 @@ class ProxyInstanceProcess(Process):
         self.timeout_add(VIDEO_TIMEOUT*1000, self.timeout_video_encoders)
 
         try:
-            try:
-                self.run_queue()
-            except KeyboardInterrupt as e:
-                self.stop(str(e))
+            self.run_queue()
+        except KeyboardInterrupt as e:
+            self.stop(str(e))
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
 
@@ -499,9 +502,9 @@ class ProxyInstanceProcess(Process):
                 packet[8] = str(data)
                 return
             #FIXME: this is ugly and not generic!
-            zlib = compression.use_zlib and self.caps.get("zlib", True)
-            lz4 = compression.use_lz4 and self.caps.get("lz4", False)
-            lzo = compression.use_lzo and self.caps.get("lzo", False)
+            zlib = compression.use_zlib and self.caps.boolget("zlib", True)
+            lz4 = compression.use_lz4 and self.caps.boolget("lz4", False)
+            lzo = compression.use_lzo and self.caps.boolget("lzo", False)
             if zlib or lz4 or lzo:
                 packet[index] = compressed_wrapper(name, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
             else:
