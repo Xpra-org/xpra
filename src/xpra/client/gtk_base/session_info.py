@@ -940,7 +940,7 @@ class SessionInfo(gtk.Window):
         W = 360
         H = 160*3//ngraphs
         w = min(maxw, max(W, rect.width-20))
-        h = min(maxh, max(H, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
+        h = min(maxh//ngraphs, max(H, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
         #bandwidth graph:
         labels, datasets = [], []
         if self.net_in_bytecount and self.net_out_bytecount:
