@@ -143,9 +143,11 @@ class ProxyInstanceProcess(Process):
 
         make_thread(self.server_message_queue, "server message queue").start()
 
-        if self.create_control_socket():
-            self.control_socket_thread = make_thread(self.control_socket_loop, "control")
-            self.control_socket_thread.start()
+        if not self.create_control_socket():
+            #TODO: should send a message to the client
+            return
+        self.control_socket_thread = make_thread(self.control_socket_loop, "control")
+        self.control_socket_thread.start()
 
         self.main_queue = Queue()
         #setup protocol wrappers:
@@ -229,8 +231,8 @@ class ProxyInstanceProcess(Process):
 
     def create_control_socket(self):
         assert self.socket_dir
-        sockpath = norm_makepath(self.socket_dir, ":proxy-%s" % os.getpid())
         dotxpra = DotXpra(self.socket_dir)
+        sockpath = dotxpra.socket_path(":proxy-%s" % os.getpid())
         state = dotxpra.get_server_state(sockpath)
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
             log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)
@@ -238,8 +240,10 @@ class ProxyInstanceProcess(Process):
         try:
             sock = create_unix_domain_socket(sockpath, None, 0o600)
             sock.listen(5)
-        except:
-            log.warn("failed to setup control socket %s", sockpath, exc_info=True)
+        except Exception as e:
+            log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)
+            log.error("Error: failed to setup control socket '%s':", sockpath)
+            log.error(" %s", e)
             return False
         self.control_socket = sock
         self.control_socket_path = sockpath
