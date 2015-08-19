@@ -460,7 +460,7 @@ class ServerCore(object):
         protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
         protocol.receive_aliases.update(self._aliases)
-        netlog.info("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
+        netlog("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
         if protocol.encryption and ENCRYPT_FIRST_PACKET:
             password = self.get_encryption_key(None, protocol.keyfile)
             protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS)
