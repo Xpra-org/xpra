@@ -3,7 +3,7 @@
 
 Name:		Cython
 Version:	0.23
-Release:	0%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -11,6 +11,7 @@ License:	Python
 URL:		http://www.cython.org
 Source:		http://www.cython.org/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Patch0:     cython-0.23-flowcontrol.patch
 
 BuildRequires:	python-devel python-setuptools
 
@@ -28,6 +29,7 @@ For more info, see:
 
 %prep
 %setup -q -n %{name}-%{version}
+%patch0 -p1
 
 
 %build
@@ -62,6 +64,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Aug 19 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23-2
+- add upstream patch for infinite deepcopy loop
+
 * Sun Aug 09 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23
 - new upstream release
 
