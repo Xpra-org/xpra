@@ -15,6 +15,37 @@ DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
 DEFAULT_ITERATIONS = int(os.environ.get("XPRA_CRYPTO_DEFAULT_ITERATIONS", "1000"))
 
+#other option "PKCS#7", "legacy"
+PADDING_LEGACY = "legacy"
+PADDING_PKCS7 = "PKCS#7"
+ALL_PADDING_OPTIONS = (PADDING_LEGACY, PADDING_PKCS7)
+INITIAL_PADDING = os.environ.get("XPRA_CRYPTO_INITIAL_PADDING", PADDING_LEGACY)
+DEFAULT_PADDING = PADDING_LEGACY
+PREFERRED_PADDING = os.environ.get("XPRA_CRYPTO_PREFERRED_PADDING", PADDING_PKCS7)
+assert PREFERRED_PADDING in ALL_PADDING_OPTIONS, "invalid preferred padding: %s" % PREFERRED_PADDING
+assert INITIAL_PADDING in ALL_PADDING_OPTIONS, "invalid padding: %s" % INITIAL_PADDING
+#make sure the preferred one is first in the list:
+PADDING_OPTIONS = [PREFERRED_PADDING]
+for x in ALL_PADDING_OPTIONS:
+    if x not in PADDING_OPTIONS:
+        PADDING_OPTIONS.append(x)
+
+
+def pad(padding, size):
+    if padding==PADDING_LEGACY:
+        return " "*size
+    elif padding==PADDING_PKCS7:
+        return chr(size)*size
+    else:
+        raise Exception("invalid padding: %s" % padding)
+
+def choose_padding(options):
+    for x in options:
+        if x in PADDING_OPTIONS:
+            return x
+    raise Exception("cannot find a valid padding in %s" % str(options))
+
+
 AES, PBKDF2 = None, None
 ENCRYPTION_CIPHERS = []
 if ENABLE_CRYPTO:
@@ -45,20 +76,25 @@ def get_iterations():
     return DEFAULT_ITERATIONS
 
 
-def new_cipher_caps(proto, cipher, encryption_key):
+def new_cipher_caps(proto, cipher, encryption_key, padding_options):
     iv = get_iv()
     key_salt = get_salt()
     iterations = get_iterations()
-    proto.set_cipher_in(cipher, iv, encryption_key, key_salt, iterations)
+    padding = choose_padding(padding_options)
+    proto.set_cipher_in(cipher, iv, encryption_key, key_salt, iterations, padding)
     return {
-                 "cipher"           : cipher,
-                 "cipher.iv"        : iv,
-                 "cipher.key_salt"  : key_salt,
-                 "cipher.key_stretch_iterations" : iterations
-                 }
+         "cipher"                       : cipher,
+         "cipher.iv"                    : iv,
+         "cipher.key_salt"              : key_salt,
+         "cipher.key_stretch_iterations": iterations,
+         "cipher.padding"               : padding,
+         "cipher.padding.options"       : PADDING_OPTIONS,
+         }
 
 def get_crypto_caps():
-    caps = {}
+    caps = {
+            "padding.options"       : PADDING_OPTIONS,
+            }
     try:
         import Crypto
         caps["pycrypto"] = True

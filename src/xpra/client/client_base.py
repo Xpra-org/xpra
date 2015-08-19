@@ -23,7 +23,8 @@ netlog = Logger("network")
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS
+from xpra.net.crypto import get_iterations, get_iv, get_salt, choose_padding, \
+    ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
@@ -93,6 +94,7 @@ class XpraClientBase(object):
         self.password_sent = False
         self.encryption = None
         self.encryption_keyfile = None
+        self.server_padding_options = [DEFAULT_PADDING]
         self.quality = -1
         self.min_quality = 0
         self.speed = 0
@@ -236,7 +238,7 @@ class XpraClientBase(object):
         self._protocol.enable_default_compressor()
         if self.encryption and ENCRYPT_FIRST_PACKET:
             password = self.get_encryption_key()
-            self._protocol.set_cipher_out(self.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS)
+            self._protocol.set_cipher_out(self.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = self._protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
@@ -329,23 +331,25 @@ class XpraClientBase(object):
             capabilities["machine_id"] = mid
 
         if self.encryption:
-            from xpra.net.crypto import get_iterations, get_iv, get_salt
             assert self.encryption in ENCRYPTION_CIPHERS
             iv = get_iv()
             key_salt = get_salt()
             iterations = get_iterations()
+            padding = choose_padding(self.server_padding_options)
             capabilities.update({
                         "cipher"                       : self.encryption,
                         "cipher.iv"                    : iv,
                         "cipher.key_salt"              : key_salt,
                         "cipher.key_stretch_iterations": iterations,
+                        "cipher.padding"               : padding,
+                        "cipher.padding.options"       : PADDING_OPTIONS,
                         })
             key = self.get_encryption_key()
             if key is None:
                 self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
                 return
-            self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations)
-            netlog("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
+            self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations, padding)
+            netlog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
         return capabilities
 
     def get_version_info(self):
@@ -528,13 +532,20 @@ class XpraClientBase(object):
         cipher_iv = caps.strget("cipher.iv")
         key_salt = caps.strget("cipher.key_salt")
         iterations = caps.intget("cipher.key_stretch_iterations")
+        padding = caps.strget("cipher.padding", DEFAULT_PADDING)
+        #server may tell us what it supports,
+        #either from hello response or from challenge packet:
+        self.server_padding_options = caps.strlistget("cipher.padding.options", [DEFAULT_PADDING])
         if not cipher or not cipher_iv:
             self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
             return False
         if cipher not in ENCRYPTION_CIPHERS:
             self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, ", ".join(ENCRYPTION_CIPHERS)))
             return False
-        self._protocol.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations)
+        if padding not in ALL_PADDING_OPTIONS:
+            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, ", ".join(ALL_PADDING_OPTIONS)))
+            return False            
+        self._protocol.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations, padding)
         return True
 
 

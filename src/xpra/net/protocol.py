@@ -17,6 +17,8 @@ from threading import Lock, Event
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
+cryptolog = Logger("network", "crypto")
+
 from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized, updict, csv
 from xpra.net.bytestreams import ABORT
@@ -26,7 +28,7 @@ from xpra.net.compression import get_compression_caps, decompress, sanity_checks
         InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
 from xpra.net.packet_encoding import get_packet_encoding_caps, decode, sanity_checks as packet_encoding_sanity_checks, InvalidPacketEncodingException
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER
-from xpra.net.crypto import get_crypto_caps, get_cipher
+from xpra.net.crypto import get_crypto_caps, get_cipher, pad, INITIAL_PADDING
 
 
 #stupid python version breakage:
@@ -137,9 +139,11 @@ class Protocol(object):
         self.cipher_in = None
         self.cipher_in_name = None
         self.cipher_in_block_size = 0
+        self.cipher_in_padding = INITIAL_PADDING
         self.cipher_out = None
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
+        self.cipher_out_padding = INITIAL_PADDING
         self._write_lock = Lock()
         from xpra.make_thread import make_thread
         self._write_thread = make_thread(self._write_thread_loop, "write", daemon=True)
@@ -149,8 +153,8 @@ class Protocol(object):
         self._source_has_more = Event()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
-                    "cipher_in", "cipher_in_name", "cipher_in_block_size",
-                    "cipher_out", "cipher_out_name", "cipher_out_block_size",
+                    "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
+                    "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
                     "compression_level", "encoder", "compressor")
     def save_state(self):
         state = {}
@@ -183,19 +187,21 @@ class Protocol(object):
         self._get_packet_cb = get_packet_cb
 
 
-    def set_cipher_in(self, ciphername, iv, password, key_salt, iterations):
+    def set_cipher_in(self, ciphername, iv, password, key_salt, iterations, padding):
         if self.cipher_in_name!=ciphername:
-            log.info("receiving data using %s encryption", ciphername)
+            cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
-        log("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
+        cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
         self.cipher_in, self.cipher_in_block_size = get_cipher(ciphername, iv, password, key_salt, iterations)
+        self.cipher_in_padding = padding
 
-    def set_cipher_out(self, ciphername, iv, password, key_salt, iterations):
+    def set_cipher_out(self, ciphername, iv, password, key_salt, iterations, padding):
         if self.cipher_out_name!=ciphername:
-            log.info("sending data using %s encryption", ciphername)
+            cryptolog.info("sending data using %s encryption", ciphername)
             self.cipher_out_name = ciphername
-        log("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations))
+        cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_cipher(ciphername, iv, password, key_salt, iterations)
+        self.cipher_out_padding = padding
 
 
     def __repr__(self):
@@ -210,9 +216,11 @@ class Protocol(object):
             "input.packetcount"     : self.input_packetcount,
             "input.raw_packetcount" : self.input_raw_packetcount,
             "input.cipher"          : self.cipher_in_name or "",
+            "input.cipher.padding"  : self.cipher_in_padding,
             "output.packetcount"    : self.output_packetcount,
             "output.raw_packetcount": self.output_raw_packetcount,
             "output.cipher"         : self.cipher_out_name or "",
+            "output.cipher.padding" : self.cipher_out_padding,
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size}
@@ -322,12 +330,12 @@ class Protocol(object):
                     padded = data
                 else:
                     # pad byte value is number of padding bytes added
-                    padded = data+(chr(padding_size)*padding_size)
+                    padded = data + pad(self.cipher_out_padding, padding_size)
                     actual_size += padding_size
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
-                log("sending %s bytes %s encrypted with %s padding", payload_size, self.cipher_out_name, padding_size)
+                cryptolog("sending %s bytes %s encrypted with %s padding", payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
                 #for plain/text packets (ie: gibberish response)
@@ -701,7 +709,7 @@ class Protocol(object):
                     bl = len(read_buffer)-8
                     if protocol_flags & FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
-                            log.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
+                            cryptolog.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
                             self._invalid_header(read_buffer)
                             return
                         padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
@@ -741,7 +749,7 @@ class Protocol(object):
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & FLAGS_CIPHER:
-                    log("received %i %s encrypted bytes with %s padding", payload_size, self.cipher_in_name, padding_size)
+                    cryptolog("received %i %s encrypted bytes with %s padding", payload_size, self.cipher_in_name, padding_size)
                     data = self.cipher_in.decrypt(raw_string)
                     if padding_size > 0:
                         def debug_str(s):
@@ -750,19 +758,15 @@ class Protocol(object):
                             except:
                                 return csv(list(str(s)))
                         # pad byte value is number of padding bytes added
-                        padtext = chr(padding_size)*padding_size
-                        old_padding = " "*padding_size      #older versions (0.15 and earlier) used this instead
+                        padtext = pad(self.cipher_in_padding, padding_size)
                         if data.endswith(padtext):
-                            log("found 'size' %s padding", self.cipher_in_name)
-                        elif data.endswith(old_padding):
-                            log("found 'space' %s padding", self.cipher_in_name)
+                            cryptolog("found %s %s padding", self.cipher_in_padding, self.cipher_in_name)
                         else:
                             actual_padding = data[-padding_size:]
-                            log.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
-                            log(" data does not end with bytes %s", debug_str(padtext))
-                            log(" or %s", debug_str(old_padding))
-                            log(" but with %s (%s)", debug_str(actual_padding), type(data))
-                            log(" decrypted data: %s", debug_str(data[:128]))
+                            cryptolog.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
+                            cryptolog(" data does not end with %s padding bytes %s", self.cipher_in_padding, debug_str(padtext))
+                            cryptolog(" but with %s (%s)", debug_str(actual_padding), type(data))
+                            cryptolog(" decrypted data: %s", debug_str(data[:128]))
                             return self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
                         data = data[:-padding_size]
                 #uncompress if needed:

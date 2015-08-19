@@ -34,7 +34,8 @@ from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS
+from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING,\
+    ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.server.proxy import XpraProxy
@@ -463,7 +464,7 @@ class ServerCore(object):
         netlog("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
         if protocol.encryption and ENCRYPT_FIRST_PACKET:
             password = self.get_encryption_key(None, protocol.keyfile)
-            protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS)
+            protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
@@ -684,6 +685,8 @@ class ServerCore(object):
         cipher_iv = c.strget("cipher.iv")
         key_salt = c.strget("cipher.key_salt")
         iterations = c.intget("cipher.key_stretch_iterations")
+        padding = c.strget("cipher.padding", DEFAULT_PADDING)
+        padding_options = c.strlistget("cipher.padding.options", [DEFAULT_PADDING])
         auth_caps = {}
         if cipher and cipher_iv:
             if cipher not in ENCRYPTION_CIPHERS:
@@ -694,9 +697,12 @@ class ServerCore(object):
             if encryption_key is None:
                 auth_failed("encryption key is missing")
                 return False
-            proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations)
+            if padding not in ALL_PADDING_OPTIONS:
+                auth_failed("unsupported padding: %s" % padding)
+                return False
+            proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
-            auth_caps = new_cipher_caps(proto, cipher, encryption_key)
+            auth_caps = new_cipher_caps(proto, cipher, encryption_key, padding_options)
             authlog("server cipher=%s", auth_caps)
         else:
             if proto.keyfile:
