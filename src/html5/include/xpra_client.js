@@ -600,6 +600,7 @@ XpraClient.prototype._make_hello_base = function() {
 			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
 			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
 	        "cipher.key_stretch_iterations"	: 1000,
+	        "cipher.padding.options"	: ["PKCS#7"],
 		};
     	this._update_capabilities(this.cipher_in_caps);
     	// copy over the encryption caps with the key for recieved data
