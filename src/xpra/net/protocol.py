@@ -815,7 +815,7 @@ class Protocol(object):
                     log(" %s", e)
                     log(" data: %s", repr_ellipsized(data))
                     log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
-                    self.gibberish("failed to parse packet", data)
+                    self.gibberish("failed to parse %s packet" % etype, data)
                     return
 
                 if self._closed:
