@@ -91,7 +91,13 @@ CODEC_OPTIONS = [
             (SPEEX       , "speexenc",      C_FORMAT,   "speexdec",     C_PARSER),
             (WAVPACK     , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
             ]
-CODECS = {}
+
+GDP = "gdp"
+OGG = "ogg"
+MUX_OPTIONS = [
+               (GDP,    "gdppay",   "gdpdepay"),
+               (OGG,    "oggmux"    "oggdemux")
+              ]
 
 #these encoders require an "audioconvert" element:
 ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
@@ -251,8 +257,13 @@ def has_plugins(*names):
     return len(missing)==0
 
 
-if has_gst:
+CODECS = None
+def get_codecs():
+    global CODECS
+    if CODECS is not None or not has_gst:
+        return CODECS or {}
     #populate CODECS:
+    CODECS = {}
     for elements in CODEC_OPTIONS:
         encoding = elements[0]
         if encoding in CODECS:
@@ -283,6 +294,23 @@ if has_gst:
     log("initialized CODECS:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         log("* %s : %s", k, CODECS[k])
+    return CODECS
+get_codecs()
+
+def get_muxers():
+    muxers = []
+    for name,muxer,_ in MUX_OPTIONS:
+        if has_plugins(muxer):
+            muxers.append(name)
+    return muxers
+
+def get_demuxers():
+    demuxers = []
+    for name,_,demuxer in MUX_OPTIONS:
+        if has_plugins(demuxer):
+            demuxers.append(name)
+    return demuxers
+
 
 def get_encoder_formatter(name):
     assert name in CODECS, "invalid codec: %s (should be one of: %s)" % (name, CODECS.keys())

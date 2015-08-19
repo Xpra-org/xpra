@@ -838,6 +838,7 @@ class Protocol(object):
                 self.input_packetcount += 1
                 log("processing packet %s", packet_type)
                 self._process_packet_cb(self, packet)
+                packet = None
                 INJECT_FAULT(self)
 
     def flush_then_close(self, last_packet, done_callback=None):

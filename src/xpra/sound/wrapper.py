@@ -353,6 +353,12 @@ def query_sound_encoders():
 def query_sound_decoders():
     return query_sound("decoders")
 
+def query_sound_muxers():
+    return query_sound("muxers")
+
+def query_sound_demuxers():
+    return query_sound("demuxers")
+
 
 def get_sound_codecs(is_speaker, is_server):
     from xpra.sound.gstreamer_util import has_gst

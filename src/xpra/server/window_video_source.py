@@ -1274,11 +1274,18 @@ class WindowVideoSource(WindowSource):
         start = time.time()
         quality = max(0, min(100, self._current_quality))
         speed = max(0, min(100, self._current_speed))
+        if False:
+            #tell the video encoder if we have more frames in the queue,
+            #so it can use B frames:
+            options["pending"] = len(self.encode_queue)>0
         ret = self._video_encoder.compress_image(csc_image, quality, speed, options)
         if ret is None:
             log.error("video_encode: ouch, %s compression failed", encoding)
             return None
         data, client_options = ret
+        if False and not data:
+            log("video_encode: no data (buffering?)")
+            return None
         end = time.time()
 
         self.free_image_wrapper(csc_image)
