@@ -69,7 +69,7 @@ def gtk_main_quit_on_fatal_exceptions_enable():
             return _oldhook(etype, val, tb)
     sys.excepthook = gtk_main_quit_on_fatal_exception
 
-def gtk_main_quit_on_fatal_exceptions_disable():    
+def gtk_main_quit_on_fatal_exceptions_disable():
     global _oldhook
     oh = _oldhook
     if oh:

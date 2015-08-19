@@ -74,7 +74,7 @@ class GTKKeyboardHelper(KeyboardHelper):
                 self._keymap_change_handler_id = None
             except Exception as e:
                 log.warn("failed to disconnect keymap change handler: %s", e)
-        
+
 
 def main():
     #use gtk as display source:

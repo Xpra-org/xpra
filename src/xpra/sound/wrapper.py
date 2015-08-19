@@ -342,7 +342,6 @@ def query_sound(subcommand):
         if x.startswith(mline):
             return x[len(mline):].split(",")
     return []
-    
 
 def query_sound_sources():
     return query_sound("sources")

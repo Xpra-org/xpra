@@ -258,7 +258,7 @@ def get_double_click_distance():
     return v, v
 
 def get_window_frame_sizes():
-    #for X11, have to create a window and then check the 
+    #for X11, have to create a window and then check the
     #_NET_FRAME_EXTENTS value after sending a _NET_REQUEST_FRAME_EXTENTS message,
     #so this is done in the gtk client instead of here...
     return {}

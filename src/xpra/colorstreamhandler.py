@@ -1,7 +1,7 @@
 # colored stream handler for python logging framework (use the ColorStreamHandler class).
 # based on:
 # http://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output/1336640#1336640
- 
+#
 # Copyright (c) 2014 Markus Pointner
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy

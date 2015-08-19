@@ -1050,7 +1050,6 @@ def parse_display_name(error_cb, opts, display_name):
             error_cb("invalid port number: %s" % port)
         desc["port"] = port
         #host:
-        
         host = parts[1]
         if host.find("@")>0:
             username, host = host.split("@", 1)
@@ -1538,7 +1537,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 time.sleep(0.10)
         else:
             #wait for the display specified to become live:
-            socket_path = dotxpra.socket_path(display_name)            
+            socket_path = dotxpra.socket_path(display_name)
             while dotxpra.get_server_state(socket_path, 1)!=DotXpra.LIVE:
                 if time.time()-start>15:
                     warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))

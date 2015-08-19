@@ -176,7 +176,7 @@ def get_sound_command():
     envvalue = os.environ.get("XPRA_SOUND_COMMAND")
     if envvalue:
         import shlex
-        return shlex.split(envvalue)        
+        return shlex.split(envvalue)
     return do_get_sound_command()
 def do_get_sound_command():
     return ["xpra"]

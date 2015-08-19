@@ -124,7 +124,7 @@ class Win32RootWindowModel(RootWindowModel):
             #    log("skipped system invisible window")
             #    return True
             w = right-left
-            h = bottom-top 
+            h = bottom-top
             l("shape(%s - %#x)=%s", window_title, hwnd, (left, top, w, h))
             if w<=0 and h<=0:
                 l("skipped invalid window size: %ix%i", w, h)

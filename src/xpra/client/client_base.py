@@ -544,7 +544,7 @@ class XpraClientBase(object):
             return False
         if padding not in ALL_PADDING_OPTIONS:
             self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, ", ".join(ALL_PADDING_OPTIONS)))
-            return False            
+            return False
         self._protocol.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations, padding)
         return True
 

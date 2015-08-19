@@ -274,7 +274,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             cb(self)
         #this one is special, and overriden in BaseWindow too:
         self.managed_connect("notify::protocols", self._update_can_focus)
-        
+
     def _update_can_focus(self, *args):
         can_focus = "WM_TAKE_FOCUS" in self.get_property("protocols")
         self._updateprop("can-focus", can_focus)
@@ -692,7 +692,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
 
 
     def do_xpra_xkb_event(self, event):
-        #X11: XKBNotify 
+        #X11: XKBNotify
         log("WindowModel.do_xpra_xkb_event(%r)" % event)
         if event.type!="bell":
             log.error("WindowModel.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))

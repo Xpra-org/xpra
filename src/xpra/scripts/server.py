@@ -800,7 +800,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     script = xpra_runner_shell_script(xpra_file, os.getcwd(), opts.socket_dir)
-    
+
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file

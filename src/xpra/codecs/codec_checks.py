@@ -119,7 +119,7 @@ def get_encoder_max_sizes(encoder_module):
         w = min(w, ew)
         h = min(h, eh)
     return w, h
-    
+
 def get_encoder_max_size(encoder_module, encoding):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
@@ -168,7 +168,7 @@ def get_encoder_max_size(encoder_module, encoding):
                 break
     log("%s max dimensions for %s: %ix%i", einfo(), encoding, MAX_WIDTH, MAX_HEIGHT)
     return MAX_WIDTH, MAX_HEIGHT
-    
+
 
 def do_testencoding(encoder_module, encoding, W, H, full=False):
     for cs_in in encoder_module.get_input_colorspaces(encoding):

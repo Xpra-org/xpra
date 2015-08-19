@@ -421,7 +421,7 @@ class ServerCore(object):
 
     def _new_connection(self, listener, *args):
         if self._closing:
-            netlog.warn("ignoring new connection during shutdown") 
+            netlog.warn("ignoring new connection during shutdown")
             return False
         socktype = self.socket_types.get(listener)
         assert socktype, "cannot find socket type for %s" % listener

@@ -1227,7 +1227,7 @@ class ServerBase(ServerCore):
         commandlog.info("changed session name: %s", self.session_name)
         #self.all_send_client_command("name", name)    not supported by any clients, don't bother!
         return "session name set to %s" % name
- 
+
     def _control_windowsources_from_args(self, *args):
         #converts the args to valid window ids,
         #then returns all the window sources for those wids

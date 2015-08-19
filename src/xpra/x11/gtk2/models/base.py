@@ -144,7 +144,7 @@ class BaseWindowModel(CoreX11WindowModel):
                               "_NET_WM_WINDOW_TYPE",
                               "_NET_WM_DESKTOP",
                               "_NET_WM_FULLSCREEN_MONITORS",
-                              "_NET_WM_BYPASS_COMPOSITOR", 
+                              "_NET_WM_BYPASS_COMPOSITOR",
                               "_NET_WM_STRUT",
                               "_NET_WM_STRUT_PARTIAL",      #redundant as it uses the same function as _NET_WM_STRUT
                               "_NET_WM_WINDOW_OPACITY",

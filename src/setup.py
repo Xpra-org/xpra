@@ -151,7 +151,7 @@ dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fa
 csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 csc_cython_ENABLED      = True
 if WIN32:
-    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")    
+    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
     nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.1_sdk"
     nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
@@ -1899,7 +1899,7 @@ if (nvenc4_ENABLED or nvenc5_ENABLED) and WIN32:
                 ["xpra/codecs/nvapi_version.pyx"],
                 **pkgconfig("nvapi")
                 ))
-    
+
 if nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
     nvcc = None
