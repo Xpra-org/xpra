@@ -19,6 +19,7 @@ from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODING
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 log = Logger("tray")
+clipboardlog = Logger("tray", "clipboard")
 
 
 HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
@@ -434,16 +435,17 @@ class GTKTrayMenuBase(object):
         return self.notifications_menuitem
 
     def make_clipboard_togglemenuitem(self):
+        clipboardlog("make_clipboard_togglemenuitem()")
         def menu_clipboard_toggled(*args):
             new_state = self.clipboard_menuitem.get_active()
-            log("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
+            clipboardlog("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
             if self.client.clipboard_enabled!=new_state:
                 self.client.clipboard_enabled = new_state
                 self.client.emit("clipboard-toggled")
         self.clipboard_menuitem = self.checkitem("Clipboard", menu_clipboard_toggled)
         self.clipboard_menuitem.set_sensitive(False)
         def set_clipboard_menuitem(*args):
-            log("set_clipboard_menuitem%s enabled=%s", args, self.client.clipboard_enabled)
+            clipboardlog("set_clipboard_menuitem%s enabled=%s", args, self.client.clipboard_enabled)
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
             c = self.client
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
@@ -461,6 +463,7 @@ class GTKTrayMenuBase(object):
         return self.clipboard_menuitem
 
     def make_translatedclipboard_optionsmenuitem(self):
+        clipboardlog("make_translatedclipboard_optionsmenuitem()")
         clipboard_menu = self.menuitem("Clipboard", "clipboard.png", "Choose which remote clipboard to connect to", None)
         clipboard_menu.set_sensitive(False)
         def set_clipboard_menu(*args):
@@ -469,7 +472,7 @@ class GTKTrayMenuBase(object):
             self.popup_menu_workaround(clipboard_submenu)
             c = self.client
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard and c.server_supports_clipboard
-            log("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
+            clipboardlog("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
             clipboard_menu.set_sensitive(can_clipboard)
             LABEL_TO_NAME = {"Disabled"  : None,
                             "Clipboard" : "CLIPBOARD",
@@ -484,7 +487,7 @@ class GTKTrayMenuBase(object):
                     label = item.get_label()
                     remote_clipboard = LABEL_TO_NAME.get(label)
                     old_state = self.client.clipboard_enabled
-                    log("remote_clipboard_changed(%s) remote_clipboard=%s, old_state=%s", item, remote_clipboard, old_state)
+                    clipboardlog("remote_clipboard_changed(%s) remote_clipboard=%s, old_state=%s", item, remote_clipboard, old_state)
                     send_tokens = False
                     if remote_clipboard is not None:
                         #clipboard is not disabled
@@ -493,11 +496,15 @@ class GTKTrayMenuBase(object):
                         self.client.clipboard_helper.remote_clipboard = remote_clipboard
                         send_tokens = True
                         new_state = True
+                        selections = [remote_clipboard]
                     else:
                         self.client.clipboard_helper = None
                         send_tokens = False
                         new_state = False
-                    log("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
+                        selections = []
+                    #tell the server what to look for:
+                    self.client.send_clipboard_selections(selections)
+                    clipboardlog("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
                              item, label, remote_clipboard, old_state, new_state)
                     if new_state!=old_state:
                         self.client.clipboard_enabled = new_state
@@ -523,7 +530,7 @@ class GTKTrayMenuBase(object):
             if CLIPBOARD_NATIVE_CLASS[0].find("translated_clipboard")>0:
                 return self.make_translatedclipboard_optionsmenuitem()
         except:
-            log.error("make_clipboardmenuitem()", exc_info=True)
+            clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
         return self.make_clipboard_togglemenuitem()
 
 

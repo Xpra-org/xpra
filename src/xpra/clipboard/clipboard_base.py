@@ -100,9 +100,9 @@ class ClipboardProtocolHelperBase(object):
         self._clipboard_proxies = {}
 
     def enable_selections(self, selections):
-        #when clients connect, they can tell us which
-        #clipboards they want enabled
-        #(ie: OSX and win32 only use "CLIPBOARD", and not "PRIMARY" or "SECONDARY")
+        #when clients first connect or later through the "clipboard-enable-selections" packet,
+        #clients can tell us which clipboard selections they want enabled
+        #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_enabled(selection in selections)
 
@@ -121,6 +121,7 @@ class ClipboardProtocolHelperBase(object):
             "clipboard-contents":           self._process_clipboard_contents,
             "clipboard-contents-none":      self._process_clipboard_contents_none,
             "clipboard-pending-requests":   self._process_clipboard_pending_requests,
+            "clipboard-enable-selections":  self._process_clipboard_enable_selections,
             }
 
     def make_proxy(self, clipboard):
@@ -385,6 +386,12 @@ class ClipboardProtocolHelperBase(object):
         pending = packet[1]
         if self.progress_cb:
             self.progress_cb(None, pending)
+
+    def _process_clipboard_enable_selections(self, packet):
+        selections = packet[1]
+        log("enabling selections: %s", selections)
+        self.enable_selections(selections)
+
 
     def process_clipboard_packet(self, packet):
         packet_type = packet[0]

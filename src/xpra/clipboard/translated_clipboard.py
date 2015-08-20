@@ -13,10 +13,13 @@ DEFAULT_LOCAL_SELECTION = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_LOCAL_SELECTI
 if DEFAULT_LOCAL_SELECTION not in CLIPBOARDS:
     log.warn("invalid default local selection: %s, using %s instead", DEFAULT_LOCAL_SELECTION, CLIPBOARDS[0])
     DEFAULT_LOCAL_SELECTION = CLIPBOARDS[0]
-DEFAULT_REMOTE_SELECTION = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_REMOTE_SELECTION", "CLIPBOARD")
-if DEFAULT_REMOTE_SELECTION not in ("PRIMARY", "SECONDARY", "CLIPBOARD"):
-    log.warn("invalid default remote selection: %s, using %s instead", DEFAULT_REMOTE_SELECTION, "CLIPBOARD")
-    DEFAULT_REMOTE_SELECTION = "CLIPBOARD"
+#we have to validate the remote selection against the list of *LOCAL* selections,
+#because the hello packet tells the server which selections to enable,
+#and if we use one that is not enabled... nothing happens!
+DEFAULT_REMOTE_SELECTION = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_REMOTE_SELECTION", CLIPBOARDS[0])
+if DEFAULT_REMOTE_SELECTION not in CLIPBOARDS:
+    log.warn("invalid default remote selection: %s, using %s instead", DEFAULT_REMOTE_SELECTION, CLIPBOARDS[0])
+    DEFAULT_REMOTE_SELECTION = CLIPBOARDS[0]
 
 
 class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):

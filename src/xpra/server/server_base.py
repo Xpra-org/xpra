@@ -22,6 +22,7 @@ screenlog = Logger("screen")
 printlog = Logger("printing")
 netlog = Logger("network")
 windowlog = Logger("window")
+clipboardlog = Logger("clipboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -417,7 +418,7 @@ class ServerBase(ServerCore):
             log.warn(" %s", e)
 
     def init_clipboard(self):
-        log("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)
+        clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)
         ### Clipboard handling:
         self._clipboard_helper = None
         self._clipboard_client = None
@@ -428,22 +429,22 @@ class ServerBase(ServerCore):
         clipboard_filter_res = []
         if self.clipboard_filter_file:
             if not os.path.exists(self.clipboard_filter_file):
-                log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", self.clipboard_filter_file)
+                clipboardlog.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", self.clipboard_filter_file)
                 return
             try:
                 with open(self.clipboard_filter_file, "r" ) as f:
                     for line in f:
                         clipboard_filter_res.append(line.strip())
-                    log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), self.clipboard_filter_file)
+                    clipboardlog("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), self.clipboard_filter_file)
             except:
-                log.error("error reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
+                clipboardlog.error("error reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, CLIPBOARDS, clipboard_filter_res)
             self._clipboards = CLIPBOARDS
         except Exception as e:
-            log.error("failed to setup clipboard helper: %s" % e)
+            clipboardlog.error("failed to setup clipboard helper: %s" % e)
 
     def init_keyboard(self):
         keylog("init_keyboard()")
@@ -929,7 +930,7 @@ class ServerBase(ServerCore):
             #the selections the client supports (default to all):
             from xpra.platform.features import CLIPBOARDS
             client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-            log("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
+            clipboardlog("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
             self._clipboard_helper.enable_selections(client_selections)
 
     def parse_hello_ui_keyboard(self, ss, c):
@@ -994,6 +995,7 @@ class ServerBase(ServerCore):
                 "sound_sequence", "notify-startup-complete", "suspend-resume",
                 "encoding.generic", "encoding.strict_control",
                 "sound.server_driven",
+                "clipboard.enable-selections",
                 "av-sync",
                 "command_request",
                 "event_request", "server-events",
@@ -1052,7 +1054,9 @@ class ServerBase(ServerCore):
                      "key_repeat"           : key_repeat,
                      "key_repeat_modifiers" : True})
         if server_source.wants_features:
-            capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
+            clipboard = self._clipboard_helper is not None and self._clipboard_client == server_source
+            capabilities["clipboard"] = clipboard
+            clipboardlog("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s", self._clipboard_helper, self._clipboard_client, server_source, clipboard)
             capabilities["remote-logging"] = self.remote_logging
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases

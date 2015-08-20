@@ -28,6 +28,7 @@ iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
 mouselog = Logger("mouse")
 avsynclog = Logger("av-sync")
+clipboardlog = Logger("clipboard")
 
 
 from xpra import __version__ as XPRA_VERSION
@@ -1328,6 +1329,7 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = c.boolget("clipboard")
+        self.server_supports_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
         self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
@@ -1864,12 +1866,18 @@ class UIXpraClient(XpraClientBase):
     def _process_clipboard_enabled_status(self, packet):
         clipboard_enabled, reason = packet[1:3]
         if self.clipboard_enabled!=clipboard_enabled:
-            log.info("clipboard toggled to %s by the server, reason: %s", ["off", "on"][int(clipboard_enabled)], reason)
+            clipboardlog.info("clipboard toggled to %s by the server, reason: %s", ["off", "on"][int(clipboard_enabled)], reason)
             self.clipboard_enabled = bool(clipboard_enabled)
             self.emit("clipboard-toggled")
 
     def send_clipboard_enabled_status(self, *args):
+        clipboardlog("send_clipboard_enabled_status%s clipboard_enabled=%s", args, self.clipboard_enabled)
         self.send("set-clipboard-enabled", self.clipboard_enabled)
+
+    def send_clipboard_selections(self, selections):
+        clipboardlog("send_clipboard_selections(%s) server_supports_clipboard_enable_selections=%s", selections, self.server_supports_clipboard_enable_selections)
+        if self.server_supports_clipboard_enable_selections:
+            self.send("clipboard-enable-selections", selections)
 
     def send_keyboard_sync_enabled_status(self, *args):
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
@@ -2236,6 +2244,7 @@ class UIXpraClient(XpraClientBase):
             self._packet_handlers[k] = v
 
     def process_clipboard_packet(self, packet):
+        clipboardlog("process_clipboard_packet: %s", packet[0])
         self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
 
     def process_packet(self, proto, packet):
