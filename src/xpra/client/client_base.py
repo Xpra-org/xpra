@@ -29,7 +29,7 @@ from xpra.version_util import version_compat_check, get_version_info, local_vers
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
+from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, csv
 
 try:
     import xpra.platform.printing
@@ -53,6 +53,7 @@ EXIT_NO_AUTHENTICATION = 11
 EXIT_UNSUPPORTED = 12
 EXIT_REMOTE_ERROR = 13
 EXIT_INTERNAL_ERROR = 14
+EXIT_FILE_TOO_BIG = 15
 
 
 EXTRA_TIMEOUT = 10
@@ -100,6 +101,7 @@ class XpraClientBase(object):
         self.speed = 0
         self.min_speed = -1
         self.file_transfer = False
+        self.file_size_limit = 10
         self.printing = False
         self.printer_attributes = []
         self.send_printers_pending = False
@@ -138,7 +140,8 @@ class XpraClientBase(object):
         self.speed = opts.speed
         self.min_speed = opts.min_speed
         self.file_transfer = opts.file_transfer
-        self.printing = opts.printing and self.file_transfer
+        self.file_size_limit = opts.file_size_limit
+        self.printing = opts.printing
         self.open_command = opts.open_command
 
         if DETECT_LEAKS:
@@ -311,6 +314,7 @@ class XpraClientBase(object):
                 "encoding.generic"      : True,
                 "namespace"             : True,
                 "file-transfer"         : self.file_transfer,
+                "file-size-limit"       : self.file_size_limit,
                 "printing"              : self.printing,
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
@@ -438,8 +442,8 @@ class XpraClientBase(object):
     def quit(self, exit_code=0):
         raise Exception("override me!")
 
-    def warn_and_quit(self, exit_code, warning):
-        log.warn(warning)
+    def warn_and_quit(self, exit_code, message):
+        log.warn(message)
         self.quit(exit_code)
 
     def _process_disconnect(self, packet):
@@ -458,7 +462,8 @@ class XpraClientBase(object):
             log.warn("server failure: %s", reason)
             e = EXIT_FAILURE
         else:
-            e = EXIT_OK
+            self.quit(EXIT_OK)
+            return
         self.warn_and_quit(e, "server requested disconnect: %s" % s)
 
     def _process_connection_lost(self, packet):
@@ -772,20 +777,28 @@ class XpraClientBase(object):
         assert filesize>0, "invalid file size: %s" % filesize
         assert file_data, "no data!"
         if len(file_data)!=filesize:
-            log.error("Error: invalid data size for file %s", basefilename)
-            log.error(" received %s, expected %s", len(file_data), filesize)
+            log.error("Error: invalid data size for file '%s'", basefilename)
+            log.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
+        if filesize>self.file_size_limit*1024*1024:
+            log.error("Error: file '%s' is too large:", basefilename)
+            log.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
+            return            
         #check digest if present:
-        digest = options.get("sha1")
-        if digest:
-            import hashlib
-            u = hashlib.sha1()
+        import hashlib
+        def check_digest(algo="sha1", libfn=hashlib.sha1):
+            digest = options.get(algo)
+            if not digest:
+                return
+            u = libfn()
             u.update(file_data)
-            filelog("sha1 digest: %s - expected: %s", u.hexdigest(), digest)
+            filelog("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
             if digest!=u.hexdigest():
-                log.error("Error: data does not match, invalid file digest for %s", basefilename)
+                log.error("Error: data does not match, invalid %s file digest for %s", algo, basefilename)
                 log.error(" received %s, expected %s", u.hexdigest(), digest)
                 return
+        check_digest("sha1", hashlib.sha1)
+        check_digest("md5", hashlib.md5)
 
         #make sure we use a filename that does not exist already:
         dd = os.path.expanduser(get_download_dir())
@@ -835,7 +848,12 @@ class XpraClientBase(object):
 
     def _print_file(self, filename, printer, title, options):
         import time
-        from xpra.platform.printing import print_files, printing_finished
+        from xpra.platform.printing import print_files, printing_finished, get_printers
+        printers = get_printers()
+        if printer not in printers:
+            printlog.error("Error: printer '%s' does not exist!", printer)
+            printlog.error(" printers available: %s", csv(printers.keys()) or "none")
+            return
         job = print_files(printer, [filename], title, options)
         printlog("printing %s, job=%s", filename, job)
         if not job:

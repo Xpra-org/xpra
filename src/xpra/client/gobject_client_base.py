@@ -16,7 +16,7 @@ import re
 from xpra.util import nonl, DONE
 from xpra.os_util import bytestostr
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT, \
-    EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR
+    EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -112,6 +112,10 @@ class CommandConnectClient(GObjectXpraClient):
         GObjectXpraClient.init(self, opts)
         self.connect_with_timeout(conn)
         self._protocol._log_stats  = False
+        #not used by command line clients,
+        #so don't try probing for printers, etc
+        self.file_transfer = False
+        self.printing = False
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
@@ -316,6 +320,8 @@ class PrintClient(SendCommandConnectClient):
     def set_command_args(self, command):
         log("set_command_args(%s)", command)
         self.filename = command[0]
+        #print command arguments:
+        #filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         self.command = command[1:]
         #FIXME: load as needed...
         from xpra.os_util import load_binary_file
@@ -324,11 +330,14 @@ class PrintClient(SendCommandConnectClient):
             self.filename = command[2]
             #read file from stdin
             self.file_data = sys.stdin.read()
+            log("read %i bytes from stdin", len(self.file_data))
         else:
             self.file_data = load_binary_file(self.filename)
+            log("read %i bytes from %s", len(self.file_data), self.filename)
+        if len(self.file_data)>=self.file_size_limit*1024*1024:
+            self.warn_and_quit(EXIT_FILE_TOO_BIG, "the file is too large: %iMB (the file size limit is %iMB)" % (len(self.file_data)//1024//1024, self.file_size_limit))
+            return
         assert self.file_data, "no data found for '%s'" % self.filename
-        self.file_transfer = True
-        self.printing = True
 
     def client_type(self):
         return "Python/GObject/Print"
@@ -345,6 +354,7 @@ class PrintClient(SendCommandConnectClient):
         from xpra.net.compression import Compressed
         blob = Compressed("print", self.file_data)
         self.send("print", self.filename, blob, *self.command)
+        log("print: sending %s as %s for printing", self.filename, blob)
         self.idle_add(self.send, "disconnect", DONE, "detaching")
 
     def make_hello(self):

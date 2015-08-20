@@ -2173,12 +2173,18 @@ class UIXpraClient(XpraClientBase):
             maxh = max(root_h, server_h)
         except:
             pass
-        assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "problems calculating maximum desktop size: %sx%s" % (maxw, maxh)
-        #full screen at 32bits times 4 for safety
+        assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "invalid maximum desktop size: %ix%i" % (maxw, maxh)
+        if maxw>=16384 or maxh>=16384:
+            log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
+        #max packet size to accomodate:
+        # * full screen RGBX (32 bits) uncompressed
+        # * file-size-limit
+        # both with enough headroom for some metadata (4k)
         p = self._protocol
         if p:
-            p.max_packet_size = maxw*maxh*4*4
-            log("set maximum packet size to %s", p.max_packet_size)
+            p.max_packet_size = max(maxw*maxh*4, self.file_size_limit*1024*1024) + 4*1024
+            p.abs_max_packet_size = max(maxw*maxh*4 * 4, self.file_size_limit*1024*1024) + 4*1024
+            log("maximum packet size set to %i", p.max_packet_size)
 
 
     def init_authenticated_packet_handlers(self):

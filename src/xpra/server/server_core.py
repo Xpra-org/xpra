@@ -805,6 +805,8 @@ class ServerCore(object):
     def accept_client(self, proto, c):
         #max packet size from client (the biggest we can get are clipboard packets)
         netlog("accept_client(%s, %s)", proto, c)
+        #TODO: when we add the code to upload files,
+        #this will need to be increased up to file-size-limit
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")
         if proto in self._potential_protocols:

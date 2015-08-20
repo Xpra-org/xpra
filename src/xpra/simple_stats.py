@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,24 +8,24 @@
 
 from math import sqrt, pow
 
-def to_std_unit(v, unit=1000.0):
+def to_std_unit(v, unit=1000):
     if v>=unit**3:
-        return "G", v/(unit**3)
+        return "G", v//(unit**3)
     elif v>=unit**2:
-        return "M", v/(unit**2)
+        return "M", v//(unit**2)
     elif v>=unit:
-        return "K", v/unit
+        return "K", v//unit
     else:
         return "", v
 
-def std_unit(v, unit=1000.0):
+def std_unit(v, unit=1000):
     unit, value = to_std_unit(v, unit)
     return "%s%s" % (int(value), unit)
 
 def std_unit_dec(v):
     unit, value = to_std_unit(v*10.0)
     if value>=100:
-        return "%s%s" % (int(value/10.0), unit)
+        return "%s%s" % (int(value//10), unit)
     return "%s%s" % (int(value)/10.0, unit)
 
 

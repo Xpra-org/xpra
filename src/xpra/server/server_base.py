@@ -26,10 +26,11 @@ windowlog = Logger("window")
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
+from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
-from xpra.util import typedict, updict, log_screen_sizes, SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT,\
-    repr_ellipsized
+from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, \
+    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.platform import get_username
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
@@ -107,6 +108,7 @@ class ServerBase(ServerCore):
         self.supports_dbus_proxy = False
         self.dbus_helper = None
         self.file_transfer = False
+        self.file_size_limit = 10
         self.printing = False
         self.lpadmin = ""
         self.exit_with_children = False
@@ -197,6 +199,7 @@ class ServerBase(ServerCore):
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
         self.file_transfer = opts.file_transfer
+        self.file_size_limit = opts.file_size_limit
         self.lpadmin = opts.lpadmin
         self.av_sync = opts.av_sync
         #server-side printer handling is only for posix via pycups for now:
@@ -1010,6 +1013,8 @@ class ServerBase(ServerCore):
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "file-transfer"                : self.file_transfer,
+                 #not exposed as this is currently unused by the client (we only transfer from server to client)
+                 #"file-size-limit"              : self.file_size_limit,
                  "printing"                     : self.printing,
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
@@ -1154,6 +1159,9 @@ class ServerBase(ServerCore):
         if not sources:
             raise ControlError("no clients found matching: %s" % client_uuids)
         data = load_binary_file(actual_filename)
+        file_size_MB = len(data)//1024//1024
+        if file_size_MB>self.file_size_limit:
+            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_size_limit))
         for ss in sources:
             if ss.file_transfer:
                 ss.send_file(filename, "", data, False, openit)
@@ -1365,9 +1373,15 @@ class ServerBase(ServerCore):
         #self.send("print", self.filename, self.file_data, *self.command)
         assert self.printing
         #printlog("_process_print(%s, %s)", proto, packet)
-        assert len(packet)>=9, "invalid print packet: %s" % str(repr_ellipsized(x) for x in packet)
+        if len(packet)<9:
+            log.error("Error: invalid print packet, only %i arguments", len(packet))
+            log.error(" %s", [repr_ellipsized(x) for x in packet])
+            return
         filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
-        assert len(mimetype)<128, "invalid packet format!"
+        if len(mimetype)>=128:
+            log.error("Error: invalid mimetype in print packet:")
+            log.error(" %s", repr_ellipsized(mimetype))
+            return
         printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options_str))
         printlog("process_print: got %s bytes for file %s", len(file_data), filename)
         #parse the print options:
@@ -1386,16 +1400,34 @@ class ServerBase(ServerCore):
                    "sha1"       : u.hexdigest()}
         printlog("parsed printer options: %s", options)
 
+        sent = 0
         for ss in self._server_sources.values():
-            if ss.uuid!=source_uuid:
+            if source_uuid!='*' and ss.uuid!=source_uuid:
                 printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
                 continue
             if not ss.printing:
-                printlog.warn("not sending to %s - printing is disabled for this connection!", ss)
+                if source_uuid!='*':
+                    printlog.warn("Warning: printing is not enabled for:")
+                    printlog.warn(" %s", ss)
+                else:
+                    printlog("printing is not enabled for %s", ss)
                 continue
-            assert ss.file_transfer
-            printlog("sending file for printing to %s", ss)
+            if not ss.printers:
+                printlog.warn("Warning: client %s does not have any printers", ss.uuid)
+                continue
+            if printer not in ss.printers:
+                printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
+                continue
+            printlog("sending file to %s for printing on %s", ss, printer)
             ss.send_file(filename, mimetype, file_data, True, True, options)
+            sent += 1
+        #warn if not sent:
+        if sent==0:
+            l = printlog.warn
+        else:
+            l = printlog.info
+        unit_str, v = to_std_unit(len(file_data), unit=1024)
+        l("file %s (%i%sB) sent to %i client%s", filename, v, unit_str, sent, engs(sent))
 
 
     def _process_start_command(self, proto, packet):
