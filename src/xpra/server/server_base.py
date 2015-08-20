@@ -1500,7 +1500,9 @@ class ServerBase(ServerCore):
              "pulseaudio.command" : self.pulseaudio_command,
              "dbus_proxy"       : self.supports_dbus_proxy,
              "clipboard"        : self.supports_clipboard,
-             "idle_timeout"     : self.idle_timeout}
+             "idle_timeout"     : self.idle_timeout,
+             "file-size-limit"  : self.file_size_limit,
+             }
         for x in self.get_server_features():
             i[x] = True
         return i
