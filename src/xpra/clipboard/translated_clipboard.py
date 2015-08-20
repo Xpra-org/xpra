@@ -4,9 +4,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
+import os
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
+from xpra.platform.features import CLIPBOARDS
+
+DEFAULT_LOCAL_SELECTION = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_LOCAL_SELECTION", CLIPBOARDS[0])
+if DEFAULT_LOCAL_SELECTION not in CLIPBOARDS:
+    log.warn("invalid default local selection: %s, using %s instead", DEFAULT_LOCAL_SELECTION, CLIPBOARDS[0])
+    DEFAULT_LOCAL_SELECTION = CLIPBOARDS[0]
+DEFAULT_REMOTE_SELECTION = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_REMOTE_SELECTION", "CLIPBOARD")
+if DEFAULT_REMOTE_SELECTION not in ("PRIMARY", "SECONDARY", "CLIPBOARD"):
+    log.warn("invalid default remote selection: %s, using %s instead", DEFAULT_REMOTE_SELECTION, "CLIPBOARD")
+    DEFAULT_REMOTE_SELECTION = "CLIPBOARD"
 
 
 class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):
@@ -20,7 +30,7 @@ class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):
         and we generally want to map it to X11's "PRIMARY"...
     """
 
-    def __init__(self, send_packet_cb, progress_cb=None, local_clipboard="CLIPBOARD", remote_clipboard="CLIPBOARD"):
+    def __init__(self, send_packet_cb, progress_cb=None, local_clipboard=DEFAULT_LOCAL_SELECTION, remote_clipboard=DEFAULT_REMOTE_SELECTION):
         self.local_clipboard = local_clipboard
         self.remote_clipboard = remote_clipboard
         ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, [local_clipboard])
