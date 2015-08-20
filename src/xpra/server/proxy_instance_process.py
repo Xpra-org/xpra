@@ -21,7 +21,6 @@ from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
 from xpra.net.crypto import new_cipher_caps, DEFAULT_PADDING
-from xpra.net.bytestreams import set_socket_timeout
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
@@ -43,6 +42,17 @@ PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
 PASSTHROUGH = os.environ.get("XPRA_PROXY_PASSTHROUGH", "0")=="1"
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
+
+
+def set_blocking(conn):
+    #Note: importing set_socket_timeout from xpra.net.bytestreams
+    #fails in mysterious ways, so we duplicate the code here instead
+    log("set_blocking(%s)", conn)
+    try:
+        log("calling %s.setblocking(1)", conn._socket)
+        conn._socket.setblocking(1)
+    except:
+        log("cannot set %s to blocking mode", conn)
 
 
 class ProxyInstanceProcess(Process):
@@ -97,10 +107,10 @@ class ProxyInstanceProcess(Process):
                 self.stop("proxy server request")
                 return
             elif m=="socket-handover-complete":
-                log("setting sockets to blocking mode")
+                log.info("setting sockets %s to blocking mode", (self.client_conn, self.server_conn))
                 #set sockets to blocking mode:
-                set_socket_timeout(self.client_conn, None)
-                set_socket_timeout(self.server_conn, None)
+                set_blocking(self.client_conn)
+                set_blocking(self.server_conn)
             else:
                 log.error("unexpected proxy server message: %s", m)
 
