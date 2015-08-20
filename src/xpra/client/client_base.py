@@ -462,6 +462,10 @@ class XpraClientBase(object):
             log.warn("server failure: %s", reason)
             e = EXIT_FAILURE
         else:
+            if self.exit_code is None:
+                #we're not in the process of exiting already,
+                #tell the user why the server is disconnecting us
+                log.info("server requested disconnect: %s", s)
             self.quit(EXIT_OK)
             return
         self.warn_and_quit(e, "server requested disconnect: %s" % s)
