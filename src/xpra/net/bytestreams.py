@@ -16,7 +16,10 @@ log = Logger("network", "protocol")
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
-CONTINUE = {errno.EINTR : "EINTR"}
+#EWOULDBLOCK can also be hit with the proxy server when we handover the socket
+CONTINUE = {errno.EINTR         : "EINTR",
+            errno.EWOULDBLOCK   : "EWOULDBLOCK"
+            }
 ABORT = {
     errno.ECONNRESET    : "ECONNRESET",
     errno.EPIPE         : "EPIPE"}
@@ -226,7 +229,7 @@ class SocketConnection(Connection):
     def close(self):
         log("%s.close() for socket=%s", self, self._socket)
         Connection.close(self)
-        self._socket.settimeout(0.0)
+        self._socket.settimeout(0)
         self._socket.close()
         log("%s.close() done", self)
 
@@ -251,3 +254,9 @@ class SocketConnection(Connection):
         except:
             log.warn("failed to get socket information", exc_info=True)
         return d
+
+def set_socket_timeout(self, conn, timeout=None):
+    #FIXME: this is ugly, but less intrusive than the alternative?
+    log("set_socket_timeout(%s, %s)", conn, timeout)
+    if isinstance(conn, SocketConnection):
+        conn._socket.settimeout(timeout)

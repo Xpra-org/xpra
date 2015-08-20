@@ -29,7 +29,7 @@ import xpra
 from xpra.server import ClientException
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.server import deadly_signal
-from xpra.net.bytestreams import SocketConnection, pretty_socket
+from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
 from xpra.platform import set_application_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
@@ -512,7 +512,7 @@ class ServerCore(object):
         #now that we own it, we can start it again:
         client_connection.set_active(True)
         #and we can use blocking sockets:
-        self.set_socket_timeout(client_connection, None)
+        set_socket_timeout(client_connection, None)
         sock.settimeout(None)
 
         proxylog("pushing initial buffer to its new destination: %s", repr_ellipsized(data))
@@ -649,11 +649,6 @@ class ServerCore(object):
                 #log exception but don't disclose internal details to the client
                 log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
                 self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
-
-    def set_socket_timeout(self, conn, timeout=None):
-        #FIXME: this is ugly, but less intrusive than the alternative?
-        if isinstance(conn, SocketConnection):
-            conn._socket.settimeout(timeout)
 
 
     def verify_hello(self, proto, c):

@@ -31,6 +31,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
 from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
@@ -825,7 +826,7 @@ class ServerBase(ServerCore):
 
         self.accept_client(proto, c)
         #use blocking sockets from now on:
-        self.set_socket_timeout(proto._conn, None)
+        set_socket_timeout(proto._conn, None)
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)

@@ -21,6 +21,7 @@ from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
 from xpra.net.crypto import new_cipher_caps, DEFAULT_PADDING
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
@@ -32,7 +33,7 @@ from xpra.make_thread import make_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
 from xpra.scripts.main import SOCKET_TIMEOUT
-from xpra.dotxpra import DotXpra, norm_makepath
+from xpra.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection
 from multiprocessing import Process
 
@@ -91,10 +92,17 @@ class ProxyInstanceProcess(Process):
         while True:
             log("waiting for server message on %s", self.message_queue)
             m = self.message_queue.get()
-            log.info("proxy server message: %s", m)
+            log("received proxy server message: %s", m)
             if m=="stop":
                 self.stop("proxy server request")
                 return
+            elif m=="socket-handover-complete":
+                log("setting sockets to blocking mode")
+                #set sockets to blocking mode:
+                set_socket_timeout(self.client_conn, None)
+                set_socket_timeout(self.server_conn, None)
+            else:
+                log.error("unexpected proxy server message: %s", m)
 
     def signal_quit(self, signum, frame):
         log.info("")
@@ -135,7 +143,9 @@ class ProxyInstanceProcess(Process):
             os.environ.update(self.env_options)
         self.video_init()
 
-        log.info("new proxy started for client %s and server %s", self.client_conn, self.server_conn)
+        log.info("new proxy instance started")
+        log.info(" for client %s", self.client_conn)
+        log.info(" and server %s", self.server_conn)
 
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
@@ -247,7 +257,8 @@ class ProxyInstanceProcess(Process):
             return False
         self.control_socket = sock
         self.control_socket_path = sockpath
-        log.info("proxy instance now also available using unix domain socket: %s", self.control_socket_path)
+        log.info("proxy instance now also available using unix domain socket:")
+        log.info(" %s", self.control_socket_path)
         return True
 
     def control_socket_loop(self):
@@ -426,7 +437,7 @@ class ProxyInstanceProcess(Process):
         log.info("proxy instance %s stopped", os.getpid())
 
     def stop(self, reason="proxy terminating", skip_proto=None):
-        log("stop(%s, %s)", reason, skip_proto)
+        log.info("stop(%s, %s)", reason, skip_proto)
         self.exit = True
         if self.control_socket_path:
             try:

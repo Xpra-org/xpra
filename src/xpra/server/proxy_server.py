@@ -20,6 +20,7 @@ log = Logger("proxy")
 
 
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -206,30 +207,27 @@ class ProxyServer(ServerCore):
         #this may block, so run it in a thread:
         def do_start_proxy():
             log("do_start_proxy()")
+            message_queue = MQueue()
             try:
                 ioe = client_proto.wait_for_io_threads_exit(0.5+self._socket_timeout)
                 if not ioe:
                     log.error("some network IO threads have failed to terminate!")
                     return
-                #now we can go back to using blocking sockets:
-                self.set_socket_timeout(client_conn, None)
                 client_conn.set_active(True)
-                self.set_socket_timeout(server_conn, None)
-
                 assert uid!=0 and gid!=0
-                message_queue = MQueue()
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.csc_modules,
                                                client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())
+                self.processes[process] = (display, message_queue)
                 process.start()
                 log("process started")
-                #FIXME: remove processes that have terminated
-                self.processes[process] = (display, message_queue)
             finally:
                 #now we can close our handle on the connection:
                 client_conn.close()
                 server_conn.close()
+                message_queue.put("socket-handover-complete")
+            #FIXME: remove processes that have terminated
         make_thread(do_start_proxy, "start_proxy(%s)" % client_conn).start()
 
 
