@@ -294,6 +294,8 @@ class Protocol(object):
                 self._source_has_more.clear()
                 self._add_packet_to_queue(*gpc())
         except Exception as e:
+            if self._closed:
+                return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
@@ -604,6 +606,8 @@ class Protocol(object):
 
     def _internal_error(self, message="", exc=None, exc_info=False):
         #log exception info with last log message
+        if self._closed:
+            return
         ei = exc_info
         if exc and exc:
             ei = None
@@ -655,6 +659,8 @@ class Protocol(object):
         try:
             self.do_read_parse_thread_loop()
         except Exception as e:
+            if self._closed:
+                return
             self._internal_error("error in network packet reading/parsing", e, exc_info=True)
 
     def do_read_parse_thread_loop(self):
