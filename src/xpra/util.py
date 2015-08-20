@@ -270,7 +270,10 @@ def prettify_plug_name(s, default=""):
     if not s:
         return default
     #prettify strings on win32
-    return s.lstrip("0\\").lstrip(".\\").replace("0\\", "-")
+    s = s.lstrip("0\\").lstrip("1\\").lstrip(".\\").replace("0\\", "-")
+    if s=="WinSta-Default":
+        s = "Default"
+    return s
 
 def do_log_screen_sizes(root_w, root_h, sizes):
     from xpra.log import Logger
