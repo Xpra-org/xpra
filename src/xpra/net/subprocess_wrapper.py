@@ -14,7 +14,7 @@ from xpra.util import repr_ellipsized
 glib = import_glib()
 
 from xpra.net.bytestreams import TwoFileConnection
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, ConnectionClosedException
 from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
@@ -327,7 +327,7 @@ class subprocess_caller(object):
     def abort_test(self, action):
         p = self.process
         if p is None or p.poll():
-            raise Exception("cannot %s: subprocess has terminated" % action)
+            raise ConnectionClosedException("cannot %s: subprocess has terminated" % action)
 
     def make_protocol(self):
         #make a connection using the process stdin / stdout
