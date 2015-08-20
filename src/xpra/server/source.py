@@ -1525,13 +1525,23 @@ class ServerSource(object):
 
 
     def send_file(self, filename, mimetype, data, printit, openit, options={}):
-        assert self.file_transfer
-        filelog("send_file%s", (filename, mimetype, "%s bytes" % len(data), printit, openit, options))
+        if printit:
+            if not self.printing:
+                printlog.warn("Warning: printing is not enabled for %s", self)
+                return False
+            action = "print"
+            l = printlog
+        else:
+            if not self.file_transfer:
+                filelog.warn("Warning: file transfers are not enabled for %s", self)
+                return False
+            action = "transfer"
+            l = filelog
+        l("send_file%s", (filename, mimetype, "%s bytes" % len(data), printit, openit, options))
         #TODO:
         # * client ACK
         # * stream it (don't load the whole file!)
         # * timeouts
-        # * checksum
         # * rate control
         # * xpra info with queue and progress
         basefilename = os.path.basename(filename)
@@ -1539,8 +1549,13 @@ class ServerSource(object):
         cdata = self.compressed_wrapper("file-data", data)
         assert len(cdata)<=filesize     #compressed wrapper ensures this is true
         if filesize>self.file_size_limit*1024*1024:
-            raise Exception("this file is too large: %iMB (the file size limit for this client is %iMB" % (filesize//1024//1024, self.file_size_limit))
+            b = os.path.basename(filename)
+            l.warn("Warning: cannot %s the file '%s'", action, b)
+            l.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
+            l.warn(" the file size limit for %s is %iMB", self, self.file_size_limit)
+            return False
         self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
+        return True
 
     def send_client_command(self, *args):
         self.send("control", *args)

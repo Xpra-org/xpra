@@ -1419,8 +1419,8 @@ class ServerBase(ServerCore):
                 printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
                 continue
             printlog("sending file to %s for printing on %s", ss, printer)
-            ss.send_file(filename, mimetype, file_data, True, True, options)
-            sent += 1
+            if ss.send_file(filename, mimetype, file_data, True, True, options):
+                sent += 1
         #warn if not sent:
         if sent==0:
             l = printlog.warn
