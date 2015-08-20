@@ -131,7 +131,7 @@ ENCODER_LATENCY = {
         SPEEX       : 0,
        }
 
-CODEC_ORDER = [MP3, FLAC, WAVPACK, WAV, OPUS, SPEEX, VORBIS]    #AAC is untested
+CODEC_ORDER = [VORBIS, OPUS, FLAC, MP3, WAV, WAVPACK, SPEEX]    #AAC is untested
 
 
 gst = None
