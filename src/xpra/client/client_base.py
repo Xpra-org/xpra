@@ -476,7 +476,8 @@ class XpraClientBase(object):
             netlog.warn("  could also be the wrong username, password or port")
             if c!="unknown" or e!="unknown":
                 netlog.warn("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
-        self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
+        if self.exit_code!=0:
+            self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):
         netlog("processing challenge: %s", packet[1:])
