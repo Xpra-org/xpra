@@ -481,12 +481,16 @@ class XpraClientBase(object):
 
     def _process_challenge(self, packet):
         netlog("processing challenge: %s", packet[1:])
+        def warn_server_and_exit(code, message, server_message="authentication failed"):
+            log.error("Error: authentication failed:")
+            log.error(" %s", message)
+            self.disconnect_and_quit(code, server_message)
         if not self.password_file and not os.environ.get('XPRA_PASSWORD'):
-            self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requires authentication, please provide a password")
+            warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "this server requires authentication, please provide a password", "no password available")
             return
         password = self.load_password()
         if not password:
-            self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file)
+            warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
             return
         salt = packet[1]
         if self.encryption:
@@ -494,7 +498,7 @@ class XpraClientBase(object):
             server_cipher = typedict(packet[2])
             key = self.get_encryption_key()
             if key is None:
-                self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
+                warn_server_and_exit(EXIT_ENCRYPTION, "the server does not use any encryption", "client requires encryption")
                 return
             if not self.set_server_encryption(server_cipher, key):
                 return
@@ -522,11 +526,11 @@ class XpraClientBase(object):
         elif digest==b"xor":
             #don't send XORed password unencrypted:
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
-                self.warn_and_quit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest)
+                warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
             challenge_response = xor(password, salt)
         else:
-            self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest)
+            warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest, "invalid digest")
             return
         if digest:
             log("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
