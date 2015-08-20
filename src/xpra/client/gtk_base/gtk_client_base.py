@@ -6,9 +6,8 @@
 # later version. See the file COPYING for details.
 
 import os, sys
-from xpra.gtk_common.gobject_compat import import_glib, import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
-glib = import_glib()
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -102,17 +101,17 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.exit_code = exit_code
         if gtk.main_level()>0:
             #if for some reason cleanup() hangs, maybe this will fire...
-            glib.timeout_add(4*1000, self.exit)
+            self.timeout_add(4*1000, self.exit)
             #try harder!:
             def force_quit():
                 from xpra import os_util
                 os_util.force_quit()
-            glib.timeout_add(5*1000, force_quit)
+            self.timeout_add(5*1000, force_quit)
         self.cleanup()
         log("GTKXpraClient.quit(%s) cleanup done, main_level=%s", exit_code, gtk.main_level())
         if gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
-            glib.timeout_add(500, self.exit)
+            self.timeout_add(500, self.exit)
 
     def exit(self):
         log("GTKXpraClient.exit() calling %s", gtk_main_quit_really)

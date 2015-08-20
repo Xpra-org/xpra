@@ -28,16 +28,14 @@ def _try_import(import_method_gtk3, import_method_gtk2):
         return  import_method_gtk2()
     if _is_gtk3 is True:
         return  import_method_gtk3()
-    if sys.version_info[0]<3:
-        order = [import_method_gtk2, import_method_gtk3]
-    else:
-        order = [import_method_gtk3, import_method_gtk2]
+    #python3 sets _is_gtk3 early
+    assert sys.version_info[0]<3
     try:
-        imported = order[0]()
-        _is_gtk3 = order[0]==import_method_gtk3
+        imported = import_method_gtk2()
+        _is_gtk3 = False
     except:
-        imported = order[1]()
-        _is_gtk3 = order[1]==import_method_gtk3
+        imported = import_method_gtk3()
+        _is_gtk3 = True
     return imported
 
 def try_import_GdkX11():
@@ -68,7 +66,6 @@ def import_gobject():
     return  _try_import(import_gobject3, import_gobject2)
 
 def import_glib3():
-    #from gi.repository import Gtk                   #@UnresolvedImport
     from gi.repository import GLib                  #@UnresolvedImport
     return GLib
 def import_glib2():

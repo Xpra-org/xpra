@@ -7,11 +7,6 @@
 
 import os
 import gobject
-import glib
-try:
-    glib.threads_init()
-except:
-    pass
 try:
     #we *have to* do this as early as possible on win32..
     gobject.threads_init()
@@ -21,9 +16,6 @@ import gtk
 from gtk import gdk
 gdk.threads_init()
 
-
-from xpra.platform.ui_thread_watcher import get_UI_watcher
-UI_watcher = get_UI_watcher(glib.timeout_add)
 
 from xpra.gtk_common.gtk_util import gtk_main, color_parse
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
@@ -45,6 +37,7 @@ class XpraClient(GTKXpraClient):
 
     def __init__(self):
         GTKXpraClient.__init__(self)
+        self.UI_watcher = None
         self.border = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
@@ -112,8 +105,10 @@ class XpraClient(GTKXpraClient):
         gtk_main()
 
     def cleanup(self):
-        global UI_watcher
-        UI_watcher.stop()
+        uw = self.UI_watcher
+        if uw:
+            self.UI_watcher = None
+            uw.stop()
         GTKXpraClient.cleanup(self)
 
     def __repr__(self):
@@ -294,16 +289,17 @@ class XpraClient(GTKXpraClient):
 
     def process_ui_capabilities(self):
         GTKXpraClient.process_ui_capabilities(self)
-        global UI_watcher
-        UI_watcher.start()
+        from xpra.platform.ui_thread_watcher import get_UI_watcher
+        self.UI_watcher = get_UI_watcher(self.timeout_add)
+        self.UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:
         if self.suspend_resume:
             def UI_resumed():
                 self.send("resume", True, self._id_to_window.keys())
             def UI_failed():
                 self.send("suspend", True, self._id_to_window.keys())
-            UI_watcher.add_resume_callback(UI_resumed)
-            UI_watcher.add_fail_callback(UI_failed)
+            self.UI_watcher.add_resume_callback(UI_resumed)
+            self.UI_watcher.add_fail_callback(UI_failed)
 
 
     def get_root_size(self):
