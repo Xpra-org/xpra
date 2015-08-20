@@ -123,7 +123,7 @@ class Connection(object):
 
     def _write(self, *args):
         w = self.untilConcludes(*args)
-        self.output_bytecount += w
+        self.output_bytecount += w or 0
         return w
 
     def _read(self, *args):
