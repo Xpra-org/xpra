@@ -550,7 +550,10 @@ class XpraClientBase(object):
         if padding not in ALL_PADDING_OPTIONS:
             self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, ", ".join(ALL_PADDING_OPTIONS)))
             return False
-        self._protocol.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations, padding)
+        p = self._protocol
+        if not p:
+            return False
+        p.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations, padding)
         return True
 
 
@@ -743,20 +746,24 @@ class XpraClientBase(object):
 
     def parse_network_capabilities(self):
         c = self.server_capabilities
-        if not self._protocol.enable_encoder_from_caps(c):
+        p = self._protocol
+        if not p or not p.enable_encoder_from_caps(c):
             return False
-        self._protocol.enable_compressor_from_caps(c)
+        p.enable_compressor_from_caps(c)
         return True
 
     def parse_encryption_capabilities(self):
         c = self.server_capabilities
+        p = self._protocol
+        if not p:
+            return False
+        p.send_aliases = c.dictget("aliases", {})
         if self.encryption:
             #server uses a new cipher after second hello:
             key = self.get_encryption_key()
             assert key, "encryption key is missing"
             if not self.set_server_encryption(c, key):
                 return False
-        self._protocol.send_aliases = c.dictget("aliases", {})
         return True
 
     def _process_set_deflate(self, packet):
