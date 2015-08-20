@@ -93,8 +93,8 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.mouse_click_cb = mouse_click_cb || null;
 	this.window_closed_cb = window_closed_cb || null;
 
-	// update metadata
-	this.update_metadata(metadata);
+	// update metadata that is safe before window is drawn
+	this.update_metadata(metadata, true);
 
 	// create the decoration as part of the window, style is in CSS
 	jQuery(this.div).addClass("window");
@@ -154,6 +154,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 
 	//create the image holding the pixels (the "backing"):
 	this.create_image_backing();
+
+	// now read all metadata
+	this.update_metadata(metadata);
 };
 
 XpraWindow.prototype._init_2d_canvas = function() {
@@ -364,13 +367,31 @@ XpraWindow.prototype.create_image_backing = function() {
  * Update our metadata cache with new key-values,
  * then call set_metadata with these new key-values.
  */
-XpraWindow.prototype.update_metadata = function(metadata) {
+XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	"use strict";
 	//update our metadata cache with new key-values:
 	for (var attrname in metadata) {
 		this.metadata[attrname] = metadata[attrname];
 	}
-    this.set_metadata(metadata)
+	if(safe) {
+		this.set_metadata_safe(metadata);
+	} else {
+    	this.set_metadata(metadata)
+    }
+};
+
+/**
+ * Apply only metadata settings that are safe before window is drawn
+ */
+XpraWindow.prototype.set_metadata_safe = function(metadata) {
+	"use strict";
+    if ("title" in metadata) {
+    	this.title = metadata["title"];
+    	jQuery('#title' + this.wid).html(this.title);
+    }
+    if ("window-type" in metadata) {
+    	this.windowtype = metadata["window-type"][0];
+    }
 };
 
 /**
