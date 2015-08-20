@@ -209,10 +209,10 @@ def get_number_of_desktops():
         d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
         v = struct.unpack("=I", d)[0]
         screenlog("get_number_of_desktops()=%s", v)
-        return v
+        return max(1, v)
     except Exception as e:
         screenlog.warn("failed to get number of desktop: %s", e)
-    return
+    return 1
 
 def get_desktop_names():
     try:
