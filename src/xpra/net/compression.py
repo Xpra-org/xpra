@@ -159,7 +159,7 @@ class Compressed(object):
     def __len__(self):
         return len(self.data)
     def __repr__(self):
-        return  "Compressed(%s: %s bytes)" % (self.datatype, len(self.data))
+        return  "Compressed(%s: %i bytes)" % (self.datatype, len(self.data))
 
 
 class LevelCompressed(Compressed):
@@ -168,7 +168,7 @@ class LevelCompressed(Compressed):
         self.level = level
         self.algorithm = algo
     def __repr__(self):
-        return  "LevelCompressed(%s: %s bytes as %s/%s)" % (self.datatype, len(self.data), self.algorithm, self.level)
+        return  "LevelCompressed(%s: %i bytes as %s/%i)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 
 class Uncompressed(object):
@@ -178,7 +178,7 @@ class Uncompressed(object):
     def __len__(self):
         return len(self.data)
     def __repr__(self):
-        return  "Uncompressed(%s: %s bytes)" % (self.datatype, len(self.data))
+        return  "Uncompressed(%s: %i bytes)" % (self.datatype, len(self.data))
     def compress(self):
         raise Exception("compress() not defined on %s" % self)
 
