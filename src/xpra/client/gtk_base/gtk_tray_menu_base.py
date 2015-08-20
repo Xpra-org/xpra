@@ -518,10 +518,10 @@ class GTKTrayMenuBase(object):
 
     def make_clipboardmenuitem(self):
         try:
-            if self.client.clipboard_helper:
-                from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
-                if isinstance(self.client.clipboard_helper, TranslatedClipboardProtocolHelper):
-                    return self.make_translatedclipboard_optionsmenuitem()
+            from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
+            #ugly alert: the helper does not exist yet.. we just check the helper classname:
+            if CLIPBOARD_NATIVE_CLASS[0].find("translated_clipboard")>0:
+                return self.make_translatedclipboard_optionsmenuitem()
         except:
             log.error("make_clipboardmenuitem()", exc_info=True)
         return self.make_clipboard_togglemenuitem()
