@@ -223,9 +223,11 @@ XpraProtocol.prototype._process = function() {
 	}
 
 	var proto_flags = buf[1];
+	var proto_crypto = proto_flags & 0x2;
+
 	if (proto_flags!=0) {
 		// check for crypto protocol flag
-		if (!(proto_flags & 0x2)) {
+		if (!(proto_crypto)) {
 			throw "we can't handle this protocol flag yet, sorry";
 		}
 	}
@@ -239,7 +241,7 @@ XpraProtocol.prototype._process = function() {
 		packet_size += buf[4+i];
 	}
 	// work out padding if necessary
-	if (proto_flags & 0x2) {
+	if (proto_crypto) {
 		var padding = (this.cipher_in_block_size - packet_size % this.cipher_in_block_size);
 		packet_size += padding;
 	}
@@ -259,12 +261,12 @@ XpraProtocol.prototype._process = function() {
 	var packet_data = this._buffer_shift(packet_size);
 
 	// decrypt if needed
-	if (proto_flags & 0x2) {
+	if (proto_crypto) {
 		this.cipher_in.update(forge.util.createBuffer(uintToString(packet_data)));
 		var decrypted = this.cipher_in.output.getBytes();
-		var packet_data = [];
+		packet_data = [];
 		for (var i=0; i<decrypted.length; i++)
-			packet_data.push(ord(decrypted[i]));
+			packet_data.push(decrypted[i].charCodeAt(0));
 	}
 
 	//decompress it if needed:
@@ -279,7 +281,8 @@ XpraProtocol.prototype._process = function() {
 			// decode the LZ4 block
 			var inflated = new Buffer(length);
 			var uncompressedSize = LZ4.decodeBlock(packet_data, inflated);
-			inflated = inflated.slice(0, uncompressedSize);
+			if(!proto_crypto)
+				inflated = inflated.slice(0, uncompressedSize);
 		} else if (level & 0x20) {
 			// lzo
 		} else {
