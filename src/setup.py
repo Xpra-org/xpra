@@ -1263,7 +1263,9 @@ if WIN32:
 
             import py2exe    #@UnresolvedImport
             assert py2exe is not None
-            EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll"]
+            EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll",
+                            "curand32_55.dll", "curand32_60.dll", "curand32_65.dll",
+                            "curand64_55.dll", "curand64_60.dll", "curand64_65.dll", "curand64_70.dll"]
             py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
             py2exe_options = {
                               "skip_archive"   : not zip_ENABLED,
@@ -1480,8 +1482,9 @@ if WIN32:
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
         elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
-            if "pycuda" not in external_includes:
-                external_includes.append("pycuda")
+            for x in ("pycuda", "pytools"):
+                if x not in external_includes:
+                    external_includes.append(x)
             if "nvenc4" in pkgs_options[0]:
                 nvenc_path = nvenc4_sdk
                 nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
