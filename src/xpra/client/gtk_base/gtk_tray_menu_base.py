@@ -527,7 +527,7 @@ class GTKTrayMenuBase(object):
         try:
             from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
             #ugly alert: the helper does not exist yet.. we just check the helper classname:
-            if CLIPBOARD_NATIVE_CLASS[0].find("translated_clipboard")>0:
+            if CLIPBOARD_NATIVE_CLASS and CLIPBOARD_NATIVE_CLASS[0].find("translated_clipboard")>0:
                 return self.make_translatedclipboard_optionsmenuitem()
         except:
             clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
