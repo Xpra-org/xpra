@@ -382,8 +382,8 @@ class SessionInfo(gtk.Window):
         self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
         self.net_in_bytecount = deque(maxlen=N_SAMPLES+4)
         self.net_out_bytecount = deque(maxlen=N_SAMPLES+4)
-        self.sound_in_bytecount = deque(maxlen=N_SAMPLES+4)
-        self.sound_out_bytecount = deque(maxlen=N_SAMPLES+4)
+        self.sound_in_bitcount = deque(maxlen=N_SAMPLES+4)
+        self.sound_out_bitcount = deque(maxlen=N_SAMPLES+4)
         self.sound_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
         self.sound_out_queue_max = deque(maxlen=N_SAMPLES*10+4)
         self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES*10+4)
@@ -527,9 +527,9 @@ class SessionInfo(gtk.Window):
         self.net_out_bytecount.append(self.connection.output_bytecount)
         if SHOW_SOUND_STATS:
             if self.client.sound_in_bytecount>0:
-                self.sound_in_bytecount.append(self.client.sound_in_bytecount)
+                self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
             if self.client.sound_out_bytecount>0:
-                self.sound_out_bytecount.append(self.client.sound_out_bytecount)
+                self.sound_out_bitcount.append(self.client.sound_out_bytecount * 8)
 
         #count pixels in the last second:
         since = time.time()-1
@@ -965,14 +965,14 @@ class SessionInfo(gtk.Window):
             pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
-        if SHOW_SOUND_STATS and self.sound_in_bytecount:
-            sound_in_scale, sound_in_data =  values_to_diff_scaled_values(list(self.sound_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+        if SHOW_SOUND_STATS and self.sound_in_bitcount:
+            sound_in_scale, sound_in_data =  values_to_diff_scaled_values(list(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_in_data)
-            labels.append("Speaker %sB/s" % unit(sound_in_scale))
-        if SHOW_SOUND_STATS and self.sound_out_bytecount:
-            sound_out_scale, sound_out_data =  values_to_diff_scaled_values(list(self.sound_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            labels.append("Speaker %sb/s" % unit(sound_in_scale))
+        if SHOW_SOUND_STATS and self.sound_out_bitcount:
+            sound_out_scale, sound_out_data =  values_to_diff_scaled_values(list(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_out_data)
-            labels.append("Mic %sB/s" % unit(sound_out_scale))
+            labels.append("Mic %sb/s" % unit(sound_out_scale))
 
         if labels and datasets:
             pixmap = make_graph_pixmap(datasets, labels=labels,
