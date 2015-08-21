@@ -5,6 +5,7 @@
 
 import time
 import os
+from collections import deque
 from xpra.codecs.codec_constants import video_codec_spec
 from xpra.os_util import bytestostr
 
@@ -339,6 +340,7 @@ cdef class Encoder:
     cdef object src_format
     cdef int speed
     cdef int quality
+    cdef object last_frame_times
 
     cdef object __weakref__
 
@@ -358,6 +360,7 @@ cdef class Encoder:
         self.speed = speed
         self.quality = quality
         self.frames = 0
+        self.last_frame_times = deque(maxlen=200)
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
             #no point having too many threads if the height is small, also avoids a warning:
@@ -467,6 +470,20 @@ cdef class Encoder:
                      "encoding"  : self.encoding,
                      "src_format": self.src_format,
                      "max_threads": self.max_threads})
+        #calculate fps:
+        cdef unsigned int f = 0
+        cdef double now = time.time()
+        cdef double last_time = now
+        cdef double cut_off = now-10.0
+        cdef double ms_per_frame = 0
+        for start,end in list(self.last_frame_times):
+            if end>cut_off:
+                f += 1
+                last_time = min(last_time, end)
+                ms_per_frame += (end-start)
+        if f>0 and last_time<now:
+            info["fps"] = int(0.5+f/(now-last_time))
+            info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
         return info
 
     def get_encoding(self):
@@ -536,6 +553,8 @@ cdef class Encoder:
         cdef int frame_cnt = 0
         cdef int flags = 0
         cdef vpx_codec_err_t i                          #@DuplicatedSignature
+
+        start = time.time()
         image = <vpx_image_t *> xmemalign(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width
@@ -598,6 +617,8 @@ cdef class Encoder:
         img = (<char*> pkt.data.frame.buf)[:pkt.data.frame.sz]
         free(image)
         log("vpx returning %s image: %s bytes", self.encoding, len(img))
+        end = time.time()
+        self.last_frame_times.append((start, end))
         return img
 
     def set_encoding_speed(self, int pct):

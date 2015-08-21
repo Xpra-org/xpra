@@ -502,7 +502,7 @@ cdef class Encoder:
             info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
         #calculate fps:
-        cdef int f = 0
+        cdef unsigned int f = 0
         cdef double now = time.time()
         cdef double last_time = now
         cdef double cut_off = now-10.0
