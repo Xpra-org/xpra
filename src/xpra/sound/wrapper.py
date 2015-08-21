@@ -47,7 +47,7 @@ class sound_subprocess(subprocess_callee):
     """
     def __init__(self, wrapped_object, method_whitelist, exports_list):
         #add bits common to both record and play:
-        methods = method_whitelist+["set_volume", "stop", "cleanup"]
+        methods = method_whitelist+["set_volume", "cleanup"]
         exports = ["state-changed", "info", "error"] + exports_list
         subprocess_callee.__init__(self, wrapped_object=wrapped_object, method_whitelist=methods)
         for x in exports:
