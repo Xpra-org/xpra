@@ -111,8 +111,8 @@ if NOT "%VC%"=="" (
 
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
-ECHO %PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% ^> win32\build-xpra.log
-%PYTHON_EXE% -OO setup.py build_ext --inplace %COMPILER_ARGS% > win32\build-xpra.log
+ECHO %PYTHON_EXE% -OO setup.py build_ext %BUILD_ARGS% --inplace %COMPILER_ARGS% ^> win32\build-xpra.log
+%PYTHON_EXE% -OO setup.py build_ext %BUILD_ARGS% --inplace %COMPILER_ARGS% > win32\build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see win32\build-xpra.log"
 	GOTO ERROR
