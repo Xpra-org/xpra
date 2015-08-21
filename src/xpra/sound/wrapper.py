@@ -208,7 +208,8 @@ class sound_subprocess_wrapper(subprocess_caller):
         log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
         #cleanup should cause the process to exit
-        glib.timeout_add(500, self.stop)
+        glib.timeout_add(500, self.send, "stop")
+        glib.timeout_add(1000, self.stop)
 
 
     def verify_started(self):
