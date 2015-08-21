@@ -54,9 +54,9 @@ if sys.byteorder=="little":
     RGB_R, RGB_G, RGB_B = 2, 1, 0
 else:
     BGRA_B, BGRA_G, BGRA_R, BGRA_A = 3, 2, 1, 0
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 2, 1, 0
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 0, 1, 2
     BGR_R, BGR_G, BGR_B = 2, 1, 0
-    RGB_R, RGB_G, RGB_B = 2, 1, 0
+    RGB_R, RGB_G, RGB_B = 0, 1, 2
     
 log("csc_cython: byteorder(BGRA)=%s", (BGRA_B, BGRA_G, BGRA_R, BGRA_A))
 log("csc_cython: byteorder(BGR)=%s", (BGR_B, BGR_G, BGR_R))
