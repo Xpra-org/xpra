@@ -49,9 +49,9 @@ cdef uint8_t RGB_R, RGB_G, RGB_B
 import sys
 if sys.byteorder=="little":
     BGRA_B, BGRA_G, BGRA_R, BGRA_A = 0, 1, 2, 3
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 2, 1, 0, 3
     BGR_R, BGR_G, BGR_B = 0, 1, 2
-    RGB_R, RGB_G, RGB_B = 0, 1, 2
+    RGB_R, RGB_G, RGB_B = 2, 1, 0
 else:
     BGRA_B, BGRA_G, BGRA_R, BGRA_A = 3, 2, 1, 0
     RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 2, 1, 0
