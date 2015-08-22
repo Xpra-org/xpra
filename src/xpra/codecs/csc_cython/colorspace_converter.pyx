@@ -353,7 +353,7 @@ cdef class ColorspaceConverter:
         cdef unsigned char *output_image
         cdef unsigned int input_stride
         cdef unsigned int x,y,o             #@DuplicatedSignature
-        cdef unsigned int sx, sy
+        cdef unsigned int sx, sy, ox, oy
         cdef unsigned int workw, workh
         cdef unsigned int Ystride, Ustride, Vstride
         cdef unsigned char R, G, B
@@ -401,18 +401,20 @@ cdef class ColorspaceConverter:
                     Rsum = Gsum = Bsum = 0
                     sum = 0
                     for dy in range(2):
-                        if y*2+dy>=dst_height:
+                        oy = y*2 + dy
+                        if oy>=dst_height:
                             break
-                        sy = (y*2+dy)*src_height/dst_height
+                        sy = oy*src_height//dst_height
                         for dx in range(2):
-                            if x*2+dx>=dst_width:
+                            ox = x*2 + dx
+                            if ox>=dst_width:
                                 break
-                            sx = (x*2+dx)*src_width/dst_width
+                            sx = ox*src_width//dst_width
                             o = sy*input_stride + sx*4
                             R = input_image[o + BGRA_R]
                             G = input_image[o + BGRA_G]
                             B = input_image[o + BGRA_B]
-                            o = (y*2+dy)*Ystride + (x*2+dx)
+                            o = oy*Ystride + ox
                             Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                             sum += 1
                             Rsum += R
@@ -472,14 +474,14 @@ cdef class ColorspaceConverter:
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
         cdef unsigned int x,y,o                 #@DuplicatedSignature
-        cdef unsigned int sx, sy                #
+        cdef unsigned int sx, sy, ox, oy
         cdef unsigned int workw, workh          #
         cdef unsigned int stride
         cdef unsigned char *Ybuf
         cdef unsigned char *Ubuf
         cdef unsigned char *Vbuf
-        cdef unsigned char i, dx, dy
-        cdef unsigned char Y, U, V
+        cdef unsigned char dx, dy
+        cdef short Y, U, V
         cdef unsigned int Ystride, Ustride, Vstride      #
         cdef object rgb
 
@@ -506,37 +508,39 @@ cdef class ColorspaceConverter:
         assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
         assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
         assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*image.get_height()/2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
+        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
         assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*image.get_height()/2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
+        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
 
         #allocate output buffer:
         output_image = <unsigned char*> xmemalign(self.buffer_size)
 
         #we process 4 pixels at a time:
-        workw = roundup(dst_width/2, 2)
-        workh = roundup(dst_height/2, 2)
+        workw = roundup(dst_width//2, 2)
+        workh = roundup(dst_height//2, 2)
         #from now on, we can release the gil:
         with nogil:
             for y in range(workh):
                 for x in range(workw):
                     #assert x*2<=src_width and y*2<=src_height
                     #read U and V for the next 4 pixels:
-                    sx = x*src_width/dst_width
-                    sy = y*src_height/dst_height
+                    sx = x*src_width//dst_width
+                    sy = y*src_height//dst_height
                     U = Ubuf[sy*Ustride + sx] - Uc
                     V = Vbuf[sy*Vstride + sx] - Vc
                     #now read up to 4 Y values and write an RGBX pixel for each:
                     for dy in range(2):
-                        if y*2+dy>=dst_height:
+                        oy = y*2 + dy
+                        if oy>=dst_height:
                             break
-                        sy = (y*2+dy)*src_height/dst_height
+                        sy = oy*src_height//dst_height
                         for dx in range(2):
-                            if x*2+dx>=dst_width:
+                            ox = x*2 + dx
+                            if ox>=dst_width:
                                 break
-                            sx = (x*2+dx)*src_width/dst_width
+                            sx = ox*src_width//dst_width
                             Y = Ybuf[sy*Ystride + sx] - Yc
-                            o = ((y*2) + dy)*stride + ((x*2) + dx) * Bpp
+                            o = oy*stride + ox * Bpp
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
                             output_image[o + Gindex] = clamp(GY * Y + GU * U + GV * V)
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
