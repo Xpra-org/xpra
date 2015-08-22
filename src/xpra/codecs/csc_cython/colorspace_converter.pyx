@@ -50,12 +50,12 @@ cdef uint8_t RGB_R, RGB_G, RGB_B
 import sys
 if sys.byteorder=="little":
     BGRA_B, BGRA_G, BGRA_R, BGRA_A = 0, 1, 2, 3
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 2, 1, 0, 3
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
     BGR_R, BGR_G, BGR_B = 0, 1, 2
     RGB_R, RGB_G, RGB_B = 2, 1, 0
 else:
     BGRA_B, BGRA_G, BGRA_R, BGRA_A = 3, 2, 1, 0
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 0, 1, 2
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 2, 1, 0
     BGR_R, BGR_G, BGR_B = 2, 1, 0
     RGB_R, RGB_G, RGB_B = 0, 1, 2
     
@@ -162,20 +162,21 @@ DEF max_clamp = 16777216    #2**(16+8)
 #Cr' = Cr - 128
 # (see YC, UC and VC above)
 #RGB:
-#R = 1.164*Y' + 1.5958  * Cb'
-#G = 1.164*Y' - 0.8129  * Cb' - 0.39173 * Cr'
-#B = 1.164*Y'                 + 2.017   * Cr'
+#R = 1.164*Y'                 + 1.596 * Cr'
+#G = 1.164*Y' - 0.391   * Cb' - 0.813   * Cr'
+#B = 1.164*Y' + 2.018   * Cb'
+
 DEF RY = 76284      #1.164    * 2**16
-DEF RU = 104582     #1.5958   * 2**16
-DEF RV = 0
+DEF RU = 0
+DEF RV = 104582     #1.5958   * 2**16
 
 DEF GY = 76284      #1.164    * 2**16
-DEF GU = -53274     #-0.81290 * 2**16
-DEF GV = -25672     #-0.39173 * 2**16
+DEF GU = -25672     #-0.39173 * 2**16
+DEF GV = -53274     #-0.81290 * 2**16
 
 DEF BY = 76284      #1.164    * 2**16
-DEF BU = 0
-DEF BV = 132186     #2.017    * 2**16
+DEF BU = 132186     #2.017    * 2**16
+DEF BV = 0
 
 
 cdef inline unsigned char clamp(const long v) nogil:
