@@ -7,6 +7,7 @@
 #!python
 #cython: boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True
 
+import os
 import time
 import struct
 try:
@@ -64,6 +65,17 @@ log("csc_cython: byteorder(RGBX)=%s", (RGBX_R, RGBX_G, RGBX_B, RGBX_X))
 log("csc_cython: byteorder(RGB)=%s", (RGB_R, RGB_G, RGB_B))
 
 COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
+
+DEBUG_POINTS = []
+dp = os.environ.get("XPRA_CSC_CYTHON_DEBUG_POINTS", "")
+if dp:
+    for point in dp.split(","):
+        try:
+            pv = [int(x) for x in point.split("x")]
+            assert len(pv)==2
+            DEBUG_POINTS.append((pv[0], pv[1]))
+        except:
+            log.error("invalid debug point %s", point)
 
 CSC_CYTHON_VERSION = [1]
 
@@ -340,13 +352,13 @@ cdef class ColorspaceConverter:
         cdef const unsigned char *input_image
         cdef unsigned char *output_image
         cdef unsigned int input_stride
-        cdef unsigned int x,y,i,o,dx,dy     #@DuplicatedSignature
+        cdef unsigned int x,y,o             #@DuplicatedSignature
         cdef unsigned int sx, sy
         cdef unsigned int workw, workh
         cdef unsigned int Ystride, Ustride, Vstride
         cdef unsigned char R, G, B
         cdef unsigned short Rsum, Gsum, Bsum
-        cdef unsigned char sum
+        cdef unsigned char sum, i, dx, dy
         cdef unsigned char *Y
         cdef unsigned char *U
         cdef unsigned char *V
@@ -385,25 +397,22 @@ cdef class ColorspaceConverter:
         with nogil:
             for y in range(workh):
                 for x in range(workw):
-                    R = 0
-                    G = 0
-                    B = 0
-                    Rsum = 0
-                    Gsum = 0
-                    Bsum = 0
+                    R = G = B = 0
+                    Rsum = Gsum = Bsum = 0
                     sum = 0
-                    for i in range(4):
-                        dx = i%2
-                        dy = i/2
-                        if x*2+dx<dst_width and y*2+dy<dst_height:
+                    for dy in range(2):
+                        if y*2+dy>=dst_height:
+                            break
+                        sy = (y*2+dy)*src_height/dst_height
+                        for dx in range(2):
+                            if x*2+dx>=dst_width:
+                                break
                             sx = (x*2+dx)*src_width/dst_width
-                            sy = (y*2+dy)*src_height/dst_height
                             o = sy*input_stride + sx*4
                             R = input_image[o + BGRA_R]
                             G = input_image[o + BGRA_G]
                             B = input_image[o + BGRA_B]
                             o = (y*2+dy)*Ystride + (x*2+dx)
-
                             Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                             sum += 1
                             Rsum += R
@@ -416,6 +425,22 @@ cdef class ColorspaceConverter:
                         Bsum /= sum
                         U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
                         V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+
+        if DEBUG_POINTS:
+            for x,y in DEBUG_POINTS:
+                o = min(y, src_height)*input_stride + min(x, src_width) * 4
+                log.info("RGB(%ix%i)=%3i, %3i, %3i  ->  YUV=%3i, %3i, %3i", x, y,
+                         #RGB:
+                         input_image[o + BGRA_R],
+                         input_image[o + BGRA_G],
+                         input_image[o + BGRA_B],
+                         #Y:
+                         Y[min(y, dst_height) * Ystride + min(x, dst_width)],
+                         #U:
+                         U[min(y, dst_height)//2 * Ustride + min(x, dst_width)//2],
+                         #V:
+                         V[min(y, dst_height)//2 * Vstride + min(x, dst_width)//2])
+
         #create python buffer from each plane:
         planes = []
         strides = []
@@ -446,14 +471,15 @@ cdef class ColorspaceConverter:
     cdef do_YUV420P_to_RGB(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
         cdef unsigned char *output_image        #
-        cdef unsigned int x,y,i,o,dx,dy         #@DuplicatedSignature
+        cdef unsigned int x,y,o                 #@DuplicatedSignature
         cdef unsigned int sx, sy                #
         cdef unsigned int workw, workh          #
         cdef unsigned int stride
         cdef unsigned char *Ybuf
         cdef unsigned char *Ubuf
         cdef unsigned char *Vbuf
-        cdef short Y, U, V
+        cdef unsigned char i, dx, dy
+        cdef unsigned char Y, U, V
         cdef unsigned int Ystride, Ustride, Vstride      #
         cdef object rgb
 
@@ -501,12 +527,14 @@ cdef class ColorspaceConverter:
                     U = Ubuf[sy*Ustride + sx] - Uc
                     V = Vbuf[sy*Vstride + sx] - Vc
                     #now read up to 4 Y values and write an RGBX pixel for each:
-                    for i in range(4):
-                        dx = i%2
-                        dy = i/2
-                        if x*2+dx<dst_width and y*2+dy<dst_height:
+                    for dy in range(2):
+                        if y*2+dy>=dst_height:
+                            break
+                        sy = (y*2+dy)*src_height/dst_height
+                        for dx in range(2):
+                            if x*2+dx>=dst_width:
+                                break
                             sx = (x*2+dx)*src_width/dst_width
-                            sy = (y*2+dy)*src_height/dst_height
                             Y = Ybuf[sy*Ystride + sx] - Yc
                             o = ((y*2) + dy)*stride + ((x*2) + dx) * Bpp
                             output_image[o + Rindex] = clamp(RY * Y + RU * U + RV * V)
@@ -514,6 +542,20 @@ cdef class ColorspaceConverter:
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
                             if Bpp==4:
                                 output_image[o + Xindex] = 255
+        if DEBUG_POINTS:
+            for x,y in DEBUG_POINTS:
+                o = min(y, dst_height)*stride + min(x, dst_width) * Bpp
+                log.info("YUV(%ix%i)=%3i, %3i, %3i  ->  RGB=%3i, %3i, %3i", x, y,
+                         #Y:
+                         Ybuf[min(y, src_height) * Ystride + min(x, src_width)],
+                         #U:
+                         Ubuf[min(y, src_height)//2 * Ustride + min(x, src_width)//2],
+                         #V:
+                         Vbuf[min(y, src_height)//2 * Vstride + min(x, src_width)//2],
+                         #RGB:
+                         output_image[o + Rindex],
+                         output_image[o + Gindex],
+                         output_image[o + Bindex])
 
         rgb = memory_as_pybuffer(<void *> output_image, self.dst_sizes[0], True)
         elapsed = time.time()-start
@@ -535,7 +577,7 @@ cdef class ColorspaceConverter:
                                      const uint8_t Rdst, const uint8_t Gdst, const uint8_t Bdst, const uint8_t Xdst):
         cdef Py_ssize_t buf_len = 0             #
         cdef unsigned char *output_image        #@DuplicatedSignature
-        cdef unsigned int x,y,i,o               #@DuplicatedSignature
+        cdef unsigned int x,y,o                 #@DuplicatedSignature
         cdef unsigned int sx, sy                #@DuplicatedSignature
         cdef unsigned int stride                #@DuplicatedSignature
         cdef unsigned char *Gbuf                #@DuplicatedSignature
