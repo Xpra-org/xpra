@@ -340,14 +340,13 @@ cdef class ColorspaceConverter:
         cdef const unsigned char *input_image
         cdef unsigned char *output_image
         cdef unsigned int input_stride
-        cdef unsigned int x,y,i,o,dx,dy,sum          #@DuplicatedSignature
+        cdef unsigned int x,y,i,o,dx,dy     #@DuplicatedSignature
         cdef unsigned int sx, sy
         cdef unsigned int workw, workh
         cdef unsigned int Ystride, Ustride, Vstride
         cdef unsigned char R, G, B
-        cdef unsigned short Rsum
-        cdef unsigned short Gsum
-        cdef unsigned short Bsum
+        cdef unsigned short Rsum, Gsum, Bsum
+        cdef unsigned char sum
         cdef unsigned char *Y
         cdef unsigned char *U
         cdef unsigned char *V
@@ -536,7 +535,7 @@ cdef class ColorspaceConverter:
                                      const uint8_t Rdst, const uint8_t Gdst, const uint8_t Bdst, const uint8_t Xdst):
         cdef Py_ssize_t buf_len = 0             #
         cdef unsigned char *output_image        #@DuplicatedSignature
-        cdef unsigned int x,y,i,o,sum           #@DuplicatedSignature
+        cdef unsigned int x,y,i,o               #@DuplicatedSignature
         cdef unsigned int sx, sy                #@DuplicatedSignature
         cdef unsigned int stride                #@DuplicatedSignature
         cdef unsigned char *Gbuf                #@DuplicatedSignature
@@ -545,6 +544,7 @@ cdef class ColorspaceConverter:
         cdef unsigned char *Bptr
         cdef unsigned char *Rbuf                #@DuplicatedSignature
         cdef unsigned char *Rptr
+        cdef unsigned char sum
         cdef unsigned int Gstride, Bstride, Rstride
         cdef object rgb                         #@DuplicatedSignature
 
