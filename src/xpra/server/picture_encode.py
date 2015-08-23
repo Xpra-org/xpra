@@ -166,7 +166,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             log("argb_swap: bgra_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgb(pixels))
             image.set_pixel_format("RGB")
-            image.set_rowstride(rs/4*3)
+            image.set_rowstride(rs*3//4)
             return True
     if pixel_format in ("XRGB", "ARGB"):
         if supports_transparency and "RGBA" in rgb_formats:
@@ -178,7 +178,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             log("argb_swap: argb_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgb(pixels))
             image.set_pixel_format("RGB")
-            image.set_rowstride(rs/4*3)
+            image.set_rowstride(rs*3//4)
             return True
     warn_encoding_once(pixel_format+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
     return False
