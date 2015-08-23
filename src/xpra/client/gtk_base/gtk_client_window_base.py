@@ -121,7 +121,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         self._current_frame_extents = None
         #add platform hooks
-        self.connect("realize", self.on_realize)
+        self.on_realize_cb = {}
+        self.connect_after("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
         self.add_events(self.WINDOW_EVENT_MASK)
         ClientWindowBase.init_window(self, metadata)
@@ -228,9 +229,28 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.set_default_size(*self._size)
 
 
+    def when_realized(self, identifier, callback):
+        if self.is_realized():
+            callback()
+        else:
+            self.on_realize_cb[identifier] = callback
+
     def on_realize(self, widget):
-        eventslog("on_realize(%s)", widget)
+        eventslog("on_realize(%s) gdk window=%s", widget, self.get_window())
         add_window_hooks(self)
+        cb = self.on_realize_cb
+        self.on_realize_cb = {}
+        for x in cb.values():
+            try:
+                x()
+            except Exception as e:
+                log.error("Error on realize callback %s for window %i:", x, self._id)
+                log.error(" %s", e)
+        if HAS_X11_BINDINGS:
+            #request frame extents if the window manager supports it
+            self._client.request_frame_extents(self)
+        if self.group_leader:
+            self.get_window().set_group(self.group_leader)
 
     def on_unrealize(self, widget):
         eventslog("on_unrealize(%s)", widget)
@@ -258,8 +278,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def show(self):
-        if not self.is_realized():
-            self.realize()
         gtk.Window.show(self)
 
 
@@ -344,11 +362,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def set_command(self, command):
-        if not self.is_realized() or not HAS_X11_BINDINGS:
-            #if we don't have bindings, can't be done
-            #when the window is realized, this will be called again
+        if not HAS_X11_BINDINGS:
             return
-        metalog("set_command(%s) (type=%s)", command, type(command))
         v = command
         if type(command)!=unicode:
             v = bytestostr(command)
@@ -356,7 +371,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 v = v.decode("utf8")
             except:
                 pass
-        prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
+        def do_set_command():
+            metalog("do_set_command() str(%s)=%s (type=%s)", command, v, type(command))
+            prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
+        self.when_realized("command", do_set_command)
+
 
     def set_class_instance(self, wmclass_name, wmclass_class):
         if not self.is_realized():
@@ -368,32 +387,32 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             xid = get_xid(self.get_window())
             with xsync:
                 X11Window.setClassHint(xid, wmclass_class, wmclass_name)
-                log.info("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
+                log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
     def set_shape(self, shape):
         shapelog("set_shape(%s)", shape)
         if not HAS_X11_BINDINGS:
             return
-        if not self.is_realized():
-            self.realize()
-        xid = get_xid(self.get_window())
-        for kind, name in SHAPE_KIND.items():
-            rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
-            if rectangles is not None:
-                #FIXME: are we supposed to get the offset from the "extents"?
-                x_off, y_off = 0, 0
-                shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
-                with xsync:
-                    X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
+        def do_set_shape():
+            xid = get_xid(self.get_window())
+            for kind, name in SHAPE_KIND.items():
+                rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
+                if rectangles is not None:
+                    #FIXME: are we supposed to get the offset from the "extents"?
+                    x_off, y_off = 0, 0
+                    shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
+                    with xsync:
+                        X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
+        self.when_realized("shape", do_set_shape)
 
     def set_bypass_compositor(self, v):
         if not HAS_X11_BINDINGS:
             return
         if v not in (0, 1, 2):
             v = 0
-        if not self.is_realized():
-            self.realize()
-        prop_set(self.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", v)
+        def do_set_bypass_compositor():
+            prop_set(self.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", v)
+        self.when_realized("bypass-compositor", do_set_bypass_compositor)
 
 
     def set_strut(self, strut):
@@ -413,55 +432,60 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 has_partial = True
             values.append(d.intget(x, 0))
         log("setting strut=%s, has partial=%s", values, has_partial)
-        if not self.is_realized():
-            self.realize()
-        if has_partial:
-            prop_set(self.get_window(), "_NET_WM_STRUT_PARTIAL", ["u32"], values)
-        prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
+        def do_set_strut():
+            if has_partial:
+                prop_set(self.get_window(), "_NET_WM_STRUT_PARTIAL", ["u32"], values)
+            prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
+        self.when_realized("strut", do_set_strut)
 
 
     def set_fullscreen_monitors(self, fsm):
         #platform specific code:
         log("set_fullscreen_monitors(%s)", fsm)
-        if not self.is_realized():
-            self.realize()
-        set_fullscreen_monitors(self.get_window(), fsm)
+        def do_set_fullscreen_monitors():
+            set_fullscreen_monitors(self.get_window(), fsm)
+        self.when_realized("fullscreen-monitors", do_set_fullscreen_monitors)
 
 
     def set_shaded(self, shaded):
         #platform specific code:
         log("set_shaded(%s)", shaded)
-        if not self.is_realized():
-            self.realize()
-        set_shaded(self.get_window(), shaded)
+        def do_set_shaded():
+            set_shaded(self.get_window(), shaded)
+        self.when_realized("shaded", do_set_shaded)
 
 
     def set_fullscreen(self, fullscreen):
         statelog("%s.set_fullscreen(%s)", self, fullscreen)
-        if fullscreen:
-            #we may need to temporarily remove the max-window-size restrictions
-            #to be able to honour the fullscreen request:
-            w, h = self.max_window_size
-            if w>0 and h>0:
-                self.set_size_constraints(self.size_constraints, (0, 0))
-            self.fullscreen()
-        else:
-            self.unfullscreen()
-            #re-apply size restrictions:
-            w, h = self.max_window_size
-            if w>0 and h>0:
-                self.set_size_constraints(self.size_constraints, self.max_window_size)
+        def do_set_fullscreen():
+            if fullscreen:
+                #we may need to temporarily remove the max-window-size restrictions
+                #to be able to honour the fullscreen request:
+                w, h = self.max_window_size
+                if w>0 and h>0:
+                    self.set_size_constraints(self.size_constraints, (0, 0))
+                self.fullscreen()
+            else:
+                self.unfullscreen()
+                #re-apply size restrictions:
+                w, h = self.max_window_size
+                if w>0 and h>0:
+                    self.set_size_constraints(self.size_constraints, self.max_window_size)
+        self.when_realized("fullscreen", do_set_fullscreen)
 
     def set_xid(self, xid):
-        if HAS_X11_BINDINGS and self.is_realized():
-            try:
-                if xid.startswith("0x") and xid.endswith("L"):
-                    xid = xid[:-1]
-                iid = int(xid, 16)
-                self.xset_u32_property(self.get_window(), "XID", iid)
-            except Exception as e:
-                log("%s.set_xid(%s) error parsing/setting xid: %s", self, xid, e)
-                return
+        if not HAS_X11_BINDINGS:
+            return
+        if xid.startswith("0x") and xid.endswith("L"):
+            xid = xid[:-1]
+        try:
+            iid = int(xid, 16)
+        except Exception as e:
+            log("%s.set_xid(%s) error parsing/setting xid: %s", self, xid, e)
+            return
+        def do_set_xid():
+            self.xset_u32_property(self.get_window(), "XID", iid)
+        self.when_realized("xid", do_set_xid)
 
     def xget_u32_property(self, target, name):
         v = prop_get(target, name, "u32", ignore_errors=True)
@@ -479,22 +503,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return self.get_realized()
         #older versions:
         return self.flags() & gtk.REALIZED
-
-
-    def realize(self):
-        self.set_alpha()
-        gtk.Window.realize(self)
-        if self.group_leader:
-            if not self.is_realized():
-                self.realize()
-            self.get_window().set_group(self.group_leader)
-        if HAS_X11_BINDINGS:
-            #now it is realized, we can set WM_COMMAND (for X11 clients only)
-            command = self._metadata.strget("command")
-            if command:
-                self.set_command(command)
-            #and request frame extents if the window manager supports it
-            self._client.request_frame_extents(self)
 
 
     def property_changed(self, widget, event):
@@ -662,12 +670,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def apply_transient_for(self, wid):
         if wid==-1:
-            #root is a gdk window, so we need to ensure we have one
-            #backing our gtk window to be able to call set_transient_for on it
-            log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.get_window(), self.is_mapped())
-            if not self.is_realized():
-                self.realize()
-            self.get_window().set_transient_for(gtk.gdk.get_default_root_window())
+            def set_root_transient():
+                #root is a gdk window, so we need to ensure we have one
+                #backing our gtk window to be able to call set_transient_for on it
+                log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.get_window(), self.is_mapped())
+                self.get_window().set_transient_for(gtk.gdk.get_default_root_window())
+            self.when_realized("transient-for-root", set_root_transient)
         else:
             #gtk window is easier:
             window = self._client._id_to_window.get(wid)
@@ -848,6 +856,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._backing.init(w, h)
 
     def destroy(self):
+        self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         gtk.Window.destroy(self)
         self._unfocus()
