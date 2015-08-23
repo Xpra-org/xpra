@@ -399,7 +399,7 @@ class WindowBackingBase(object):
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #try 24 bit first (paint_rgb24), then 32 bit (paint_rgb32):
-        target_rgb_formats = ["RGB", "RGBX"]
+        target_rgb_formats = self.RGB_MODES
         #as some video formats like vpx can forward transparency
         #also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
