@@ -35,12 +35,14 @@ class SoundSource(SoundPipeline):
             monitor_devices = get_pa_device_options(True, False)
             log.info("found pulseaudio monitor devices: %s", monitor_devices)
             if len(monitor_devices)==0:
-                log.warn("could not detect any pulseaudio monitor devices - will use a test source")
+                log.warn("could not detect any pulseaudio monitor devices")
+                log.warn(" a test source will be used instead")
                 src_type = "audiotestsrc"
                 default_src_options = {"wave":2, "freq":100, "volume":0.4}
             else:
                 monitor_device = monitor_devices.items()[0][0]
-                log.info("using pulseaudio source device: %s", monitor_device)
+                log.info("using pulseaudio source device:")
+                log.info(" '%s'", monitor_device)
                 src_type = "pulsesrc"
                 default_src_options = {"device" : monitor_device}
             src_options = default_src_options

@@ -439,7 +439,8 @@ def get_pulse_defaults(remote):
         else:
             if not WARNED_MULTIPLE_DEVICES:
                 log.warn("using the first device")
-    log.info("using Pulseaudio device '%s'", monitor_device_name)
+    log.info("using pulseaudio device:")
+    log.info(" '%s'", monitor_device_name)
     #make sure it is not muted:
     set_source_mute(monitor_device, mute=False)
     return {"device" : monitor_device}
