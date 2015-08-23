@@ -42,29 +42,44 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 #precalculate indexes in native endianness:
-cdef uint8_t BGRA_B, BGRA_G, BGRA_R, BGRA_A
 cdef uint8_t BGRX_R, BGRX_G, BGRX_B, BGRX_X
-cdef uint8_t BGR_R, BGR_G, BGR_B
 cdef uint8_t RGBX_R, RGBX_G, RGBX_B, RGBX_X
 cdef uint8_t RGB_R, RGB_G, RGB_B
+cdef uint8_t BGR_R, BGR_G, BGR_B
 import sys
 if sys.byteorder=="little":
-    BGRA_B, BGRA_G, BGRA_R, BGRA_A = 0, 1, 2, 3
+    BGRX_B, BGRX_G, BGRX_R, BGRX_X = 0, 1, 2, 3
+    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
+    BGR_R, BGR_G, BGR_B = 2, 1, 0
+    RGB_R, RGB_G, RGB_B = 0, 1, 2
+else:
+    BGRX_B, BGRX_G, BGRX_R, BGRX_X = 0, 1, 2, 3
     RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
     BGR_R, BGR_G, BGR_B = 0, 1, 2
     RGB_R, RGB_G, RGB_B = 2, 1, 0
-else:
-    BGRA_B, BGRA_G, BGRA_R, BGRA_A = 3, 2, 1, 0
-    RGBX_R, RGBX_G, RGBX_B, RGBX_X = 3, 2, 1, 0
-    BGR_R, BGR_G, BGR_B = 2, 1, 0
-    RGB_R, RGB_G, RGB_B = 0, 1, 2
     
-log("csc_cython: byteorder(BGRA)=%s", (BGRA_B, BGRA_G, BGRA_R, BGRA_A))
-log("csc_cython: byteorder(BGR)=%s", (BGR_B, BGR_G, BGR_R))
+log("csc_cython: %s endian:", sys.byteorder)
+log("csc_cython: byteorder(BGRX)=%s", (BGRX_B, BGRX_G, BGRX_R, BGRX_X))
 log("csc_cython: byteorder(RGBX)=%s", (RGBX_R, RGBX_G, RGBX_B, RGBX_X))
 log("csc_cython: byteorder(RGB)=%s", (RGB_R, RGB_G, RGB_B))
+log("csc_cython: byteorder(BGR)=%s", (BGR_R, BGR_G, BGR_B))
 
-COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
+#COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
+def get_CS(in_cs, valid_options):
+    v = os.environ.get("XPRA_CSC_CYTHON_%s_COLORSPACES" % in_cs)
+    if not v:
+        return valid_options
+    env_override = []
+    for cs in v.split(","):
+        if cs in valid_options:
+            env_override.append(cs)
+        else:
+            log.warn("invalid colorspace override for %s: %s (only supports: %s)" % in_cs, cs, valid_options)
+    log("environment override for %s: %s", in_cs, env_override)
+    return env_override
+COLORSPACES = {"BGRX"       : get_CS("BGRX",    ["YUV420P"]),
+               "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
+               "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"])}
 
 DEBUG_POINTS = []
 dp = os.environ.get("XPRA_CSC_CYTHON_DEBUG_POINTS", "")
@@ -394,7 +409,6 @@ cdef class ColorspaceConverter:
         workw = roundup(dst_width/2, 2)
         workh = roundup(dst_height/2, 2)
         #from now on, we can release the gil:
-        #log("work: %sx%s from %sx%s, RGB indexes: %s", workw, workh, self.dst_width, self.dst_height, (BGRA_R, BGRA_G, BGRA_B))
         with nogil:
             for y in range(workh):
                 for x in range(workw):
@@ -412,9 +426,9 @@ cdef class ColorspaceConverter:
                                 break
                             sx = ox*src_width//dst_width
                             o = sy*input_stride + sx*4
-                            R = input_image[o + BGRA_R]
-                            G = input_image[o + BGRA_G]
-                            B = input_image[o + BGRA_B]
+                            R = input_image[o + BGRX_R]
+                            G = input_image[o + BGRX_G]
+                            B = input_image[o + BGRX_B]
                             o = oy*Ystride + ox
                             Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                             sum += 1
@@ -434,9 +448,9 @@ cdef class ColorspaceConverter:
                 o = min(y, src_height)*input_stride + min(x, src_width) * 4
                 log.info("RGB(%ix%i)=%3i, %3i, %3i  ->  YUV=%3i, %3i, %3i", x, y,
                          #RGB:
-                         input_image[o + BGRA_R],
-                         input_image[o + BGRA_G],
-                         input_image[o + BGRA_B],
+                         input_image[o + BGRX_R],
+                         input_image[o + BGRX_G],
+                         input_image[o + BGRX_B],
                          #Y:
                          Y[min(y, dst_height) * Ystride + min(x, dst_width)],
                          #U:
@@ -463,13 +477,13 @@ cdef class ColorspaceConverter:
         return self.do_YUV420P_to_RGB(image, 4, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
     def YUV420P_to_RGB(self, image):
-        return self.do_YUV420P_to_RGB(image, 3, RGBX_R, RGBX_G, RGBX_B, 0)
+        return self.do_YUV420P_to_RGB(image, 3, RGB_R, RGB_G, RGB_B, 0)
 
     def YUV420P_to_BGRX(self, image):
         return self.do_YUV420P_to_RGB(image, 4, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
 
     def YUV420P_to_BGR(self, image):
-        return self.do_YUV420P_to_RGB(image, 3, BGRX_R, BGRX_G, BGRX_B, 0)
+        return self.do_YUV420P_to_RGB(image, 3, BGR_R, BGR_G, BGR_B, 0)
 
     cdef do_YUV420P_to_RGB(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
@@ -494,7 +508,7 @@ cdef class ColorspaceConverter:
         planes = image.get_pixels()
         assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
-        log("do_YUV420P_to_RGB(%s) strides=%s", (image, Rindex, Gindex, Bindex, Xindex), input_strides)
+        log("do_YUV420P_to_RGB(%s) strides=%s", (image, Bpp, Rindex, Gindex, Bindex, Xindex), input_strides)
 
         #copy to local variables:
         stride = self.dst_strides[0]
