@@ -13,7 +13,7 @@ deltalog = Logger("delta")
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
-from xpra.util import typedict
+from xpra.util import typedict, csv
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr
@@ -46,7 +46,7 @@ def load_video_decoders():
         for encoding in vh.get_decodings():
             specs = vh.get_decoder_specs(encoding)
             for colorspace, decoders in specs.items():
-                log("%s decoders for %s: %s", encoding, colorspace, decoders)
+                log("%-4s decoders for %7s: %s", encoding, colorspace, csv([d.get_type() for _,d in decoders]))
                 assert len(decoders)>0
                 #use the first one:
                 _, decoder_module = decoders[0]
