@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from gtk import gdk
 import cairo
 
@@ -14,12 +15,18 @@ from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.os_util import memoryview_to_bytes
 
 
+PIXMAP_RGB_MODES = ["RGB", "RGBX", "RGBA"]
+INDIRECT_BGR = os.environ.get("XPRA_PIXMAP_INDIRECT_BGR", "0")=="1"
+if INDIRECT_BGR:
+    PIXMAP_RGB_MODES += ["BGRX", "BGRA", "BGR"]
+
+
 """
 Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
-    RGB_MODES = ["RGB", "RGBX", "RGBA"]
+    RGB_MODES = PIXMAP_RGB_MODES
 
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
@@ -71,14 +78,31 @@ class PixmapBacking(GTK2WindowBacking):
             cr.rectangle(0, 0, w, h)
             cr.fill()
 
+    def bgr_to_rgb(self, img_data, width, height, rowstride, rgb_format, target_format):
+        if not rgb_format.startswith("BGR"):
+            return img_data
+        from xpra.codecs.loader import get_codec
+        PIL = get_codec("PIL")
+        img = PIL.Image.frombuffer(target_format, (width, height), img_data, "raw", rgb_format, rowstride)
+        data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
+        img_data = data_fn("raw", target_format)
+        log.warn("%s converted to %s", rgb_format, target_format)
+        return img_data
+
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+        log.info("_do_paint_rgb24%s", (len(img_data), x, y, width, height, rowstride, options))
         img_data = memoryview_to_bytes(img_data)
+        if INDIRECT_BGR:
+            img_data = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGB")
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        rgba = memoryview_to_bytes(self.unpremultiply(img_data))
+        log.info("_do_paint_rgb32%s", (len(img_data), x, y, width, height, rowstride, options))
+        img_data = memoryview_to_bytes(self.unpremultiply(img_data))
+        if INDIRECT_BGR:
+            img_data = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGBX")
         gc = self._backing.new_gc()
-        self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, rgba, rowstride)
+        self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
