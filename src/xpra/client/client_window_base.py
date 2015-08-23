@@ -49,6 +49,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         self.init_window(metadata)
         self.setup_window()
+        self.update_metadata(metadata)
 
     def __repr__(self):
         return "ClientWindow(%s)" % self._id
@@ -68,7 +69,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
         self._desktop_workspace = self.get_desktop_workspace()
         workspacelog("init_window(..) workspace=%s, current workspace=%s", self._window_workspace, self._desktop_workspace)
-        self.update_metadata(metadata)
 
 
     def get_desktop_workspace(self):
