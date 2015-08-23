@@ -82,15 +82,16 @@ class PixmapBacking(GTK2WindowBacking):
         if not rgb_format.startswith("BGR"):
             return img_data, rowstride
         from xpra.codecs.loader import get_codec
+        #use an rgb format name that PIL will recognize:
+        in_format = rgb_format.replace("X", "A")
         PIL = get_codec("PIL")
-        img = PIL.Image.frombuffer(target_format, (width, height), img_data, "raw", rgb_format, rowstride)
+        img = PIL.Image.frombuffer(target_format, (width, height), img_data, "raw", in_format, rowstride)
         data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
         img_data = data_fn("raw", target_format)
         log.warn("%s converted to %s", rgb_format, target_format)
         return img_data, width*len(target_format)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        log.info("_do_paint_rgb24%s", (len(img_data), x, y, width, height, rowstride, options))
         img_data = memoryview_to_bytes(img_data)
         if INDIRECT_BGR:
             img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGB")
@@ -99,10 +100,9 @@ class PixmapBacking(GTK2WindowBacking):
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        log.info("_do_paint_rgb32%s", (len(img_data), x, y, width, height, rowstride, options))
         img_data = memoryview_to_bytes(self.unpremultiply(img_data))
         if INDIRECT_BGR:
-            img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGBX")
+            img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGBA")
         gc = self._backing.new_gc()
         self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
