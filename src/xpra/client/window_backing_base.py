@@ -51,7 +51,7 @@ def load_video_decoders():
                 #use the first one:
                 _, decoder_module = decoders[0]
                 VIDEO_DECODERS[encoding] = decoder_module
-        log("video decoders: %s", VIDEO_DECODERS)
+        log("video decoders: %s", dict((e,d.get_type()) for e,d in VIDEO_DECODERS.items()))
     return VIDEO_DECODERS
 
 
