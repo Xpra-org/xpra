@@ -74,7 +74,7 @@ def get_CS(in_cs, valid_options):
         if cs in valid_options:
             env_override.append(cs)
         else:
-            log.warn("invalid colorspace override for %s: %s (only supports: %s)" % in_cs, cs, valid_options)
+            log.warn("invalid colorspace override for %s: %s (only supports: %s)", in_cs, cs, valid_options)
     log("environment override for %s: %s", in_cs, env_override)
     return env_override
 COLORSPACES = {"BGRX"       : get_CS("BGRX",    ["YUV420P"]),
