@@ -482,14 +482,21 @@ class WindowBackingBase(object):
             deltalog("passed compressed data integrity checks: len=%s, md5=%s (type=%s)", l, md5, type(img_data))
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding == "rgb24":
+        elif coding == "rgb24" or coding == "rgb32":
+            #avoid confusion over how many bytes-per-pixel we may have:
+            rgb_format = options.get("rgb_format")
+            if rgb_format:
+                Bpp = len(rgb_format)
+            elif coding=="rgb24":
+                Bpp = 3
+            else:
+                Bpp = 4
             if rowstride==0:
-                rowstride = width * 3
-            self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding == "rgb32":
-            if rowstride==0:
-                rowstride = width * 4
-            self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+                rowstride = width * Bpp
+            if Bpp==3:
+                self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            else:
+                self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding in VIDEO_DECODERS:
             self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
