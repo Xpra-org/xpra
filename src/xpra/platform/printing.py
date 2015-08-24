@@ -10,8 +10,9 @@ import sys, os
 from xpra.log import Logger
 log = Logger("printing")
 
-MIMETYPES = ["application/postscript",
+MIMETYPES = [
              "application/pdf",
+             "application/postscript",
             ]
 if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
     MIMETYPES.append("raw")
