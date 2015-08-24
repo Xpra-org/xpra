@@ -904,7 +904,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	var printers = {
 		"HTML5 client": {
 			"printer-info": "Print to PDF in client browser",
-			"printer-make-and-model": "HTML5 client version"
+			"printer-make-and-model": "HTML5 client version",
+			"mimetypes": ["application/pdf"]
 		}
 	};
 	ctx.protocol.send(["printers", printers]);
