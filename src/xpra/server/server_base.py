@@ -1372,10 +1372,8 @@ class ServerBase(ServerCore):
 
 
     def _process_print(self, proto, packet):
-        #ie: from the xpraforwarder we get:
-        #command = ["xpra", "--socket-dir=%s" % socket_dir, "print", display, output_file, source, title, printer]
-        #which ends up as:
-        #self.send("print", self.filename, self.file_data, *self.command)
+        #ie: from the xpraforwarder we call this command:
+        #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
         assert self.printing
         #printlog("_process_print(%s, %s)", proto, packet)
         if len(packet)<9:

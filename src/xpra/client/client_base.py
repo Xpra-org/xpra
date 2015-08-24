@@ -673,7 +673,7 @@ class XpraClientBase(object):
     def do_send_printers(self):
         try:
             self.send_printers_pending = False
-            from xpra.platform.printing import get_printers
+            from xpra.platform.printing import get_printers, MIMETYPES
             printers = get_printers()
             printlog("do_send_printers() found printers=%s", printers)
             #remove xpra-forwarded printers to avoid loops and multi-forwards,
@@ -700,7 +700,10 @@ class XpraClientBase(object):
                 if state==5:
                     printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
-                exported_printers[k.encode("utf8")] = used_attrs(v)
+                attrs = used_attrs(v)
+                #add mimetypes:
+                attrs["mimetypes"] = MIMETYPES
+                exported_printers[k.encode("utf8")] = attrs
             if self.exported_printers is None:
                 #not been sent yet, ensure we can use the dict below:
                 self.exported_printers = {}
@@ -821,6 +824,7 @@ class XpraClientBase(object):
         wanted_filename = os.path.abspath(os.path.join(dd, os.path.basename(basefilename)))
         EXTS = {"application/postscript"    : "ps",
                 "application/pdf"           : "pdf",
+                "raw"                       : "raw",
                 }
         ext = EXTS.get(mimetype)
         if ext:
@@ -857,12 +861,12 @@ class XpraClientBase(object):
             #whitelist of options we can forward:
             safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
             printlog("safe print options(%s) = %s", options, safe_print_options)
-            self._print_file(filename, printer, title, safe_print_options)
+            self._print_file(filename, mimetype, printer, title, safe_print_options)
             return
         elif openit:
             self._open_file(filename)
 
-    def _print_file(self, filename, printer, title, options):
+    def _print_file(self, filename, mimetype, printer, title, options):
         import time
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
@@ -906,7 +910,8 @@ class XpraClientBase(object):
             returncode = proc.poll()
             log("open_done: command %s has ended, returncode=%s", command, returncode)
             if returncode!=0:
-                log.warn("Warning: failed to open the downloaded file using %s", self.open_command)
+                log.warn("Warning: failed to open the downloaded file")
+                log.warn(" '%s %s' returned", self.open_command, filename, returncode)
         cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
 
     def _process_gibberish(self, packet):

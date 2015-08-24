@@ -79,17 +79,18 @@ def xpra_print(socket_path, socket_dir, display, filename, mimetype, source, tit
 
 def do_main():
 	info(" ".join(["'%s'" % x for x in sys.argv]))
+
 	if len(sys.argv) == 1:
 		# Without arguments should give backend info.
 		# This is also used when lpinfo -v is issued, where it should include "direct this_backend"
-		sys.stdout.write("direct %s \"Unknown\" \"Direct PDF Printing/Forwarding to host via xpra\"\n" % os.path.basename(sys.argv[0]))
+		sys.stdout.write("direct %s \"Unknown\" \"Direct pdf/postscript printing/forwarding to host via xpra\"\n" % os.path.basename(sys.argv[0]))
 		sys.stdout.flush()
-		sys.exit(0)
+		return 0
 	if len(sys.argv) not in (6,7):
 		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
 		sys.stdout.flush()
 		err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
-		sys.exit(1)
+		return 1
 	job_id, username, title, no_copies, print_options = sys.argv[1:6]
 	if len(sys.argv)==7:
 		filename = sys.argv[6]
@@ -109,6 +110,8 @@ def do_main():
 			return default_value
 		assert len(v)==1
 		return v[0]
+
+	mimetype = aget("mimetype", "application/pdf")
 	socket_path = aget("socket-path", None)
 	display = aget("display", os.environ.get("DISPLAY"))
 	socket_dir = aget("socket-dir", None)
@@ -120,16 +123,18 @@ def do_main():
 		raise Exception("Device URI: display number not specified!")
 	info("xpra display: %s, socket-path: %s" % (display, socket_path))
 
-	xpra_print(socket_path, socket_dir, display, filename, "application/postscript", source, title, printer, no_copies, print_options)
+	return xpra_print(socket_path, socket_dir, display, filename, mimetype, source, title, printer, no_copies, print_options)
 
 
 def main():
 	try:
-		do_main()
+		r = do_main()
 	except Exception as e:
 		err("failure in xpraforwarder main: %s" % e)
-		for x in traceback.format_tb(sys.exc_info[2]):
+		for x in traceback.format_tb(sys.exc_info()[2]):
 			err(x)
+		r = 1
+	sys.exit(r)
 
 
 if __name__=='__main__':

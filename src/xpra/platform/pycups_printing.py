@@ -17,17 +17,42 @@ from xpra.log import Logger
 log = Logger("printing")
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
+RAW_MODE = os.environ.get("XPRA_PRINTER_RAW", "0")=="1"
+FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
+#the mimetype to use for clients that do not specify one
+#(older clients just assumed postscript)
+DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/postscript")
+
 LPADMIN = "lpadmin"
 FORWARDER_BACKEND = "xpraforwarder"
-FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
-PPD_FILE = ""
-for ppd_file_option in ["/usr/share/cups/model/CUPS-PDF.ppd",       #used on Fedora and others
-                        "/usr/share/ppd/cups-pdf/CUPS-PDF.ppd",     #used on Ubuntu
-                        ]:
-    if os.path.exists(ppd_file_option):
-        PPD_FILE = ppd_file_option
-        break
-PPD_FILE = os.environ.get("XPRA_PPD_FILE", PPD_FILE)
+
+def find_ppd_file(short_name, filename):
+    ev = os.environ.get("XPRA_%s_PPD" % short_name)
+    if ev and os.path.exists(ev):
+        log("using environment override for %s ppd file: %s", short_name, ev)
+        return ev
+    paths = ["/usr/share/cups/model",           #used on Fedora and others
+              "/usr/share/ppd/cups-pdf",        #used on Ubuntu
+              "/usr/share/ppd/cupsfilters",
+              "/usr/local/share/cups/model",    #install from source with /usr/local prefix
+              #if your distro uses something else, please file a bug so we can add it
+            ]
+    for p in paths:
+        f = os.path.join(p, filename)
+        if os.path.exists(f):
+            return f
+    log("cannot find %s in %s", filename, paths)
+    return None
+
+
+PRINTER_DEF = {}
+if RAW_MODE:
+    PRINTER_DEF["raw"] = ["-o", "raw"]
+for mt,x in {"application/postscript"   : "CUPS-PDF.ppd",
+             "application/pdf"          : "Generic-PDF_Printer-PDF.ppd"}.items():
+    f = find_ppd_file(mt.replace("application/", "").upper(), x)
+    if f:
+        PRINTER_DEF[mt] = ["-P", f]
 
 #PRINTER_PREFIX = "Xpra:"
 ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
@@ -42,7 +67,8 @@ CUPS_DBUS = os.environ.get("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)=="1"
 POLLING_DELAY = int(os.environ.get("XPRA_CUPS_POLLING_DELAY", "60"))
 log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
 log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
-log("pycups settings: PPD_FILE=%s, ALLOW=%s", PPD_FILE, ALLOW)
+log("pycups settings: ALLOW=%s", ALLOW)
+log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
 log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
 
 
@@ -52,10 +78,25 @@ def set_lpadmin_command(lpadmin):
     LPADMIN = lpadmin
 
 def validate_setup():
-    #very simple check
-    if PPD_FILE and (not os.path.exists(PPD_FILE) or not os.path.isfile(PPD_FILE)):
-        log.warn("Printer forwarding cannot be enabled, the PPD file '%s' is missing", PPD_FILE)
+    #very simple check: at least one ppd file exists
+    if not PRINTER_DEF:
+        log.warn("No PPD files found, cannot enable printing")
         return False
+    #check for SELinux
+    try:
+        if os.path.exists("/sys/fs/selinux"):
+            log("SELinux is present")
+            from xpra.os_util import load_binary_file
+            enforce = load_binary_file("/sys/fs/selinux/enforce")
+            log("enforce=%s", enforce)
+            if enforce=="1":
+                log.warn("SELinux is running in enforcing mode")
+                log.warn(" printer forwarding is unlikely to work without a policy")
+            else:
+                log("SELinux is present but not in enforcing mode")
+    except Exception as e:
+        log.error("Error checking for the presence of SELinux:")
+        log.error(" %s", e)
     return True
 
 
@@ -90,7 +131,22 @@ def sanitize_name(name):
     return ''.join(c for c in name if c in valid_chars)
 
 def add_printer(name, options, info, location, attributes={}, success_cb=None):
-    log("add_printer(%s, %s)", name, options)
+    log("add_printer%s", (name, options, info, location, attributes, success_cb))
+    mimetypes = options.get("mimetypes", [DEFAULT_MIMETYPE])
+    #find a matching definition:
+    mimetype, printer_def = None, None
+    for mt in mimetypes:
+        printer_def = PRINTER_DEF.get(mt)
+        if printer_def:
+            log("using printer definition '%s' for %s", printer_def, mt)
+            #ie: printer_def = ["-P", "/path/to/CUPS-PDF.ppd"]
+            mimetype = mt
+            attributes["mimetype"] = mimetype
+            break
+    if not printer_def:
+        log.error("Error: cannot add printer '%s':", name)
+        log.error(" the printing system does not support %s", " or ".join(mimetypes))
+        return
     command = ["-p", PRINTER_PREFIX+sanitize_name(name),
                "-E",
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urllib.urlencode(attributes),
@@ -98,10 +154,7 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
                "-L", location,
                "-o", "printer-is-shared=false",
                "-u", "allow:%s" % ALLOW]
-    if PPD_FILE:
-        command += ["-P", PPD_FILE]
-    else:
-        command += ["-o", "raw"]
+    #add attributes:
     log("pycups_printing adding printer: %s", command)
     exec_lpadmin(command, success_cb=success_cb)
 

@@ -4,11 +4,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
+import sys, os
 
 #default implementation uses pycups
 from xpra.log import Logger
 log = Logger("printing")
+
+MIMETYPES = ["application/postscript",
+             "application/pdf",
+            ]
+if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
+    MIMETYPES.append("raw")
+
 
 def err(*args):
     log.error(*args)
@@ -43,7 +50,8 @@ platform_import(globals(), "printing", False,
                 "cleanup_printing",
                 "get_printers",
                 "print_files",
-                "printing_finished")
+                "printing_finished",
+                "MIMETYPES")
 
 
 def main():
