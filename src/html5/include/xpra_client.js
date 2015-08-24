@@ -88,7 +88,8 @@ function XpraClient(container) {
 		'sound-data': this._process_sound_data,
 		'clipboard-token': this._process_clipboard_token,
 		'set-clipboard-enabled': this._process_set_clipboard_enabled,
-		'clipboard-request': this._process_clipboard_request
+		'clipboard-request': this._process_clipboard_request,
+		'send-file': this._process_send_file,
 	};
 	// assign callback for window resize event
 	if (window.jQuery) {
@@ -667,6 +668,7 @@ XpraClient.prototype._make_hello = function() {
 		// printing
 		"file-transfer" 			: true,
         "printing" 					: true,
+	"file-size-limit"				: 10,
 	});
 }
 
@@ -1082,4 +1084,24 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	}
 
 	ctx.protocol.send(packet);
+}
+
+XpraClient.prototype._process_send_file = function(packet, ctx) {
+	var mimetype = packet[2];
+	var printit = packet[3];
+	var data = packet[6];
+
+	if(mimetype != "application/pdf") {
+		console.warn("Received unsupported print data: "+mimetype);
+	} else if (!printit) {
+		console.warn("Received non printed file data");
+	} else {
+		// do the printing!
+		console.log("got some data to print");
+		var b64data = btoa(uintToString(data));
+		window.open(
+		  'data:application/pdf;base64,'+b64data,
+		  '_blank'
+		);
+	}
 }
