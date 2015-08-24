@@ -878,6 +878,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encode.c",
                    "xpra/codecs/webp/decode.c",
                    "xpra/codecs/dec_avcodec2/decoder.c",
