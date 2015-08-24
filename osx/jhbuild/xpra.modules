@@ -305,9 +305,9 @@
 
   <distutils id="python-cython">
      <branch repo="cython.org"
-	     module="/release/Cython-0.23.tar.gz"
-             hash="md5:63d472d0a9b3b39b9651f7bf568bb4a5"
-	     version="0.23"/>
+	     module="/release/Cython-0.23.1.tar.gz"
+             hash="md5:db3c5b365e1c3f71c7cd90e96473a3ab"
+	     version="0.23.1"/>
   </distutils>
 
   <distutils id="python-numpy">
