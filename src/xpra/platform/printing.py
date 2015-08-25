@@ -14,8 +14,17 @@ MIMETYPES = [
              "application/pdf",
              "application/postscript",
             ]
+#make it easier to test different mimetypes:
+PREFERRED_MIMETYPE = os.environ.get("XPRA_PRINTING_PREFERRED_MIMETYPE")
 if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
     MIMETYPES.append("raw")
+if PREFERRED_MIMETYPE:
+    if PREFERRED_MIMETYPE in MIMETYPES:
+        MIMETYPES.remove(PREFERRED_MIMETYPE)
+        MIMETYPES.insert(0, PREFERRED_MIMETYPE)
+    else:
+        log.warn("Warning: ignoring invalid preferred printing mimetype: %s", PREFERRED_MIMETYPE)
+        log.warn(" allowed mimetypes: %s", MIMETYPES)
 
 
 def err(*args):
