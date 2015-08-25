@@ -22,7 +22,7 @@
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
 %define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate, numpy
-%define requires_printing , python-cups, cups-pdf
+%define requires_printing , python-cups, cups-filters, cups-pdf
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-python, pulseaudio, pulseaudio-utils

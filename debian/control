@@ -98,6 +98,7 @@ Suggests: openssh-server
         ,pulseaudio
         ,pulseaudio-utils
 # for printer forwarding:
+        ,cups-filters
         ,cups-pdf
         ,python-cups
 # for notifications forwarding:
