@@ -1089,6 +1089,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 XpraClient.prototype._process_send_file = function(packet, ctx) {
 	var mimetype = packet[2];
 	var printit = packet[3];
+	var datasize = packet[5];
 	var data = packet[6];
 
 	if(mimetype != "application/pdf") {
@@ -1096,12 +1097,16 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 	} else if (!printit) {
 		console.warn("Received non printed file data");
 	} else {
-		// do the printing!
-		console.log("got some data to print");
-		var b64data = btoa(uintToString(data));
-		window.open(
-		  'data:application/pdf;base64,'+b64data,
-		  '_blank'
-		);
+		// check the data size for file
+		if(data.length != datasize) {
+			console.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
+		} else {
+			console.log("got some data to print");
+			var b64data = btoa(uintToString(data));
+			window.open(
+			  'data:application/pdf;base64,'+b64data,
+			  '_blank'
+			);
+		}
 	}
 }
