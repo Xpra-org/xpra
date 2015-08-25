@@ -153,7 +153,7 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
                "-D", info,
                "-L", location,
                "-o", "printer-is-shared=false",
-               "-u", "allow:%s" % ALLOW]
+               "-u", "allow:%s" % ALLOW]+printer_def
     #add attributes:
     log("pycups_printing adding printer: %s", command)
     exec_lpadmin(command, success_cb=success_cb)
