@@ -37,7 +37,7 @@ import sys, os, syslog
 import subprocess, traceback
 import urlparse
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 #Writes a syslog entry (msg) at the default facility:
 def debug(msg):
@@ -60,7 +60,8 @@ def exec_command(command, env=os.environ.copy(), shell=True):
 	info("stderr=%s" % err)
 	return proc.returncode
 
-def xpra_print(socket_path, socket_dir, display, filename, mimetype, source, title, printer, no_copies, print_options):
+def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
+				display, filename, mimetype, source, title, printer, no_copies, print_options):
 	if socket_path:
 		#use direct connection to a given socket path:
 		command = ["xpra", "print", "socket:%s" % socket_path]
@@ -69,6 +70,11 @@ def xpra_print(socket_path, socket_dir, display, filename, mimetype, source, tit
 		command = ["xpra", "print", display]
 		if socket_dir:
 			command.append("--socket-dir=%s" % socket_dir)
+	if encryption:
+		command += ["--encryption=%s" % encryption,
+					"--encryption-keyfile=%s" % encryption_keyfile]
+	if password_file:
+		command += ["--password-file=%s" % password_file]
 	command += [filename, mimetype, source, title, printer, no_copies, print_options]
 	#in this case, running as root cannot be avoided, so skip the warning:
 	#(using "su" causes even more problems)
@@ -96,7 +102,7 @@ def do_main():
 		filename = sys.argv[6]
 	else:
 		filename = "-"
-	info("username: %s, title: %s, filename: %s, job_id: %s" % (username, title, filename, job_id))
+	info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
 
 	dev_uri = os.environ['DEVICE_URI']
 	parsed_url = urlparse.urlparse(dev_uri)
@@ -104,26 +110,31 @@ def do_main():
 	#write_dir = parsed_url.path
 	attributes = urlparse.parse_qs(parsed_url.query)
 	info("attributes(%s)=%s" % (parsed_url.query, attributes))
-	def aget(k, default_value):
+	def aget(k, default_value=""):
 		v =  attributes.get(k)
 		if v is None:
 			return default_value
 		assert len(v)==1
 		return v[0]
 
-	mimetype = aget("mimetype", "application/pdf")
-	socket_path = aget("socket-path", None)
-	display = aget("display", os.environ.get("DISPLAY"))
-	socket_dir = aget("socket-dir", None)
-	printer = aget("remote-printer", "")
-	source = aget("source", "")
+	source = aget("source")
 	if not source:
 		raise Exception("Device URI: client source uuid is missing")
-	if not display:
-		raise Exception("Device URI: display number not specified!")
+	socket_path = aget("socket-path")
+	display = aget("display", os.environ.get("DISPLAY"))
+	socket_dir = aget("socket-dir")
+	if not display and not socket_path:
+		raise Exception("Device URI: display number and socket path are not specified!")
+	mimetype = aget("mimetype", "application/postscript")
+	printer = aget("remote-printer")
+	password_file = aget("password-file")
+	encryption = aget("encryption")
+	encryption_keyfile = aget("encryption-keyfile")
+
 	info("xpra display: %s, socket-path: %s" % (display, socket_path))
 
-	return xpra_print(socket_path, socket_dir, display, filename, mimetype, source, title, printer, no_copies, print_options)
+	return xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
+					display, filename, mimetype, source, title, printer, no_copies, print_options,)
 
 
 def main():

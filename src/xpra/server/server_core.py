@@ -201,10 +201,12 @@ class ServerCore(object):
     def get_auth_module(self, socket_type, auth, opts):
         authlog("get_auth_module(%s, %s, %s)", socket_type, auth, opts)
         if not auth and opts.password_file:
-            authlog.warn("no authentication module specified with 'password_file', using 'file' based authentication")
+            authlog.warn("Warning: 'password-file' used without an authentication module for %ss", socket_type)
+            authlog.warn(" using 'file' based authentication")
             auth = "file"
         if not auth and os.environ.get('XPRA_PASSWORD'):
-            authlog.warn("no authentication module specified with 'XPRA_PASSWORD', using 'file' based authentication")
+            authlog.warn("no authentication module specified for %ss with 'XPRA_PASSWORD'", socket_type)
+            authlog.warn(" using 'file' based authentication")
             auth = "file"
         if auth=="":
             return None

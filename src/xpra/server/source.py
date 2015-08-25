@@ -1452,8 +1452,8 @@ class ServerSource(object):
         self.send("set_deflate", level)
 
 
-    def set_printers(self, printers):
-        printlog("set_printers(%s) for %s", printers, self)
+    def set_printers(self, printers, password_file, encryption, encryption_keyfile):
+        printlog("set_printers(%s, %s, %s, %s) for %s", printers, password_file, encryption, encryption_keyfile, self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             printlog("not configuring local printers")
@@ -1488,6 +1488,21 @@ class ServerSource(object):
         attributes = {"display"         : os.environ.get("DISPLAY"),
                       "source"          : self.uuid,
                       "socket-dir"      : osexpand(self.socket_dir)}
+        def makeabs(filename):
+            #convert to an absolute path since the backend may run as a different user:
+            return os.path.abspath(os.path.expanduser(filename))
+        if password_file:
+            attributes["password-file"] = makeabs(password_file)
+        if encryption:
+            if not encryption_keyfile:
+                if password_file:
+                    log.warn("Warning: using password file as encryption keyfile")
+                    encryption_keyfile = password_file
+                else:
+                    log.error("Error: no encryption keyfile found for printing")
+            if encryption_keyfile:
+                attributes["encryption"] = encryption
+                attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
         #if we can, tell it exactly where to connect:
         if self.main_socket_path:
             attributes["socket-path"] = self.main_socket_path

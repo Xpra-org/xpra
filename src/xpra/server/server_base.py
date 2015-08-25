@@ -1076,7 +1076,7 @@ class ServerBase(ServerCore):
         if ss is None:
             return
         printers = packet[1]
-        ss.set_printers(printers)
+        ss.set_printers(printers, self.password_file, self.encryption, self.encryption_keyfile)
 
 
     #########################################
