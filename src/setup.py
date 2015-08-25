@@ -598,6 +598,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if strict_ENABLED:
         if is_msvc():
             add_to_keywords(kw, 'extra_compile_args', "/wd4005")    #macro redifined with vpx vs stdint.h
+            add_to_keywords(kw, 'extra_compile_args', "/wd4146")    #MSVC error in __Pyx_PyInt_As_size_t
             add_to_keywords(kw, 'extra_compile_args', "/WX")
             add_to_keywords(kw, 'extra_link_args', "/WX")
         else:
@@ -1426,6 +1427,19 @@ if WIN32:
             add_to_keywords(kw, 'extra_compile_args', "/WX")
             add_to_keywords(kw, 'extra_link_args', "/WX")
 
+        if debug_ENABLED:
+            #Od will override whatever may be specified elsewhere
+            #and allows us to use the debug switches,
+            #at the cost of a warning...
+            for flag in ('/Od', '/Zi', '/DEBUG', '/RTC1', '/GS'):
+                add_to_keywords(kw, 'extra_compile_args', flag)
+            add_to_keywords(kw, 'extra_link_args', "/DEBUG")
+            kw['cython_gdb'] = True
+            add_to_keywords(kw, 'extra_compile_args', "/Ox")
+
+        if strict_ENABLED:
+            add_to_keywords(kw, 'extra_compile_args', "/wd4146")    #MSVC error on __Pyx_PyInt_As_size_t
+
         #always add the win32 include dirs for VC,
         #so codecs can find the inttypes.h and stdint.h:
         win32_include_dir = os.path.join(os.getcwd(), "win32")
@@ -1540,15 +1554,6 @@ if WIN32:
             kw = pycairo_pkgconfig(*pkgs_options, **ekw)
         else:
             sys.exit("ERROR: unknown package config: %s" % str(pkgs_options))
-        if debug_ENABLED:
-            #Od will override whatever may be specified elsewhere
-            #and allows us to use the debug switches,
-            #at the cost of a warning...
-            for flag in ('/Od', '/Zi', '/DEBUG', '/RTC1', '/GS'):
-                add_to_keywords(kw, 'extra_compile_args', flag)
-            add_to_keywords(kw, 'extra_link_args', "/DEBUG")
-            kw['cython_gdb'] = True
-            add_to_keywords(kw, 'extra_compile_args', "/Ox")
         print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
         return kw
 
