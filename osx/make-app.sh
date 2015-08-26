@@ -225,6 +225,8 @@ for x in app audio coreelements \
 done
 rm -fr ${GST_PLUGIN_DIR}
 mv ${KEEP} ${GST_PLUGIN_DIR}
+echo -n "GST Plugins shipped: "
+ls ${GST_PLUGIN_DIR} | xargs
 popd
 popd
 
