@@ -1038,7 +1038,6 @@ class UIXpraClient(XpraClientBase):
             "set_enabled"               : True,
             })
         updict(capabilities, "encoding", {
-            "b-frames"                  : True,
             "flush"                     : True,
             "scaling.control"           : self.scaling,
             "client_options"            : True,
