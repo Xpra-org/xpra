@@ -173,6 +173,7 @@ class ServerSource(object):
                  get_window_id,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
+                 sound_properties,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -184,6 +185,7 @@ class ServerSource(object):
                  get_window_id,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
+                 sound_properties,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -221,6 +223,7 @@ class ServerSource(object):
         self.mouse_echo = False
         self.mouse_last_position = None
         # sound:
+        self.sound_properties = sound_properties
         self.sound_source_plugin = sound_source_plugin
         self.supports_speaker = supports_speaker
         self.speaker_codecs = speaker_codecs
@@ -801,7 +804,6 @@ class ServerSource(object):
             return
         try:
             from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
-            from xpra.sound.wrapper import start_sending_sound
             if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
                 #looks like we're on the same machine, verify it's a different user:
                 if self.uuid==get_user_uuid():
@@ -812,7 +814,9 @@ class ServerSource(object):
             assert self.sound_source is None, "a sound source already exists"
             assert self.sound_receive, "cannot send sound: support is not enabled on the client"
             assert codec in self.sound_decoders, "cannot use codec '%s' which is not in the decoders list: %s" % (codec, self.sound_decoders)
-            ss = start_sending_sound(self.sound_source_plugin, codec, volume, [codec], self.pulseaudio_server, self.pulseaudio_id)
+            from xpra.sound.wrapper import start_sending_sound
+            plugins = self.sound_properties.get("plugins")
+            ss = start_sending_sound(plugins, self.sound_source_plugin, codec, volume, [codec], self.pulseaudio_server, self.pulseaudio_id)
             self.sound_source = ss
             soundlog("start_sending_sound() sound source=%s", ss)
             if ss:
@@ -1166,25 +1170,8 @@ class ServerSource(object):
 
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
-        if self.wants_sound:
-            sound_caps = {}
-            try:
-                from xpra.sound.gstreamer_util import get_info as get_gst_info
-                sound_caps.update(get_gst_info(receive=self.supports_microphone, send=self.supports_speaker,
-                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
-            except ImportError:
-                pass
-            except Exception as e:
-                log.error("failed to setup sound: %s", e)
-            try:
-                from xpra.sound.pulseaudio_util import get_info as get_pa_info
-                sound_caps.update(get_pa_info())
-            except ImportError:
-                pass
-            except Exception as e:
-                log.error("failed to setup sound: %s", e)
-            updict(capabilities, "sound", sound_caps)
-            log("sound capabilities: %s", sound_caps)
+        if self.wants_sound and self.sound_properties:
+            updict(capabilities, "sound", self.sound_properties)
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"
             encoding = self.encoding

@@ -50,7 +50,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, CLIENT_EXIT
+from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -134,28 +134,13 @@ class UIXpraClient(XpraClientBase):
         self.encoding = None
 
         #sound:
-        try:
-            from xpra.sound.gstreamer_util import has_gst
-        except:
-            has_gst = False
         self.sound_source_plugin = None
-        self.speaker_allowed = has_gst
+        self.speaker_allowed = False
         self.speaker_enabled = False
         self.speaker_codecs = []
-        self.microphone_allowed = has_gst
+        self.microphone_allowed = False
         self.microphone_enabled = False
         self.microphone_codecs = []
-        if has_gst:
-            try:
-                from xpra.sound.wrapper import get_sound_codecs
-                self.speaker_codecs = get_sound_codecs(True, False)
-                self.speaker_allowed = len(self.speaker_codecs)>0
-                self.microphone_codecs = get_sound_codecs(False, False)
-                self.microphone_allowed = len(self.microphone_codecs)>0
-            except Exception as e:
-                soundlog("sound support unavailable: %s", e)
-        soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, csv(self.speaker_codecs))
-        soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, csv(self.microphone_codecs))
         self.av_sync = False
         #sound state:
         self.on_sink_ready = None
@@ -272,24 +257,38 @@ class UIXpraClient(XpraClientBase):
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
         self.mmap_group = opts.mmap_group
 
-        try:
-            from xpra.sound.gstreamer_util import has_gst
-        except:
-            has_gst = False
+        self.sound_properties = {}
         self.sound_source_plugin = opts.sound_source
-        self.speaker_allowed = sound_option(opts.speaker) in ("on", "off") and has_gst
-        self.speaker_enabled = sound_option(opts.speaker)=="on" and has_gst
-        self.microphone_allowed = sound_option(opts.microphone) in ("on", "off") and has_gst
-        self.microphone_enabled = sound_option(opts.microphone)=="on" and has_gst
-        if opts.speaker_codec:
-            self.speaker_codecs = opts.speaker_codec
-        if len(self.speaker_codecs)==0 and self.speaker_allowed:
-            self.speaker_allowed = False
-        if opts.microphone_codec:
-            self.microphone_codecs = opts.microphone_codec
-        if len(self.microphone_codecs)==0 and self.microphone_allowed:
-            self.microphone_allowed = False
+        try:
+            from xpra.sound.wrapper import query_sound
+            self.sound_properties = query_sound()
+        except ImportError as e:
+            soundlog("sound support is not available: %s", e)
+        except Exception as e:
+            soundlog.error("Error: failed to query sound subsystem:")
+            soundlog.error(" %s", e)
+        encoders = self.sound_properties.get("encoders", [])
+        decoders = self.sound_properties.get("decoders", [])
+        def option_or_all(name, options, all_values):
+            if not options:
+                return all_values       #not specified on command line: use default
+            invalid_options = [x for x in options if x not in all_values]
+            if len(invalid_options)==0:
+                return options          #all good
+            soundlog.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, invalid_options)
+            soundlog.warn(" valid option%s: %s", engs(all_values), csv(all_values))
+            #only keep the valid options:
+            return [x for x in options if x in all_values]
+        self.speaker_codecs = option_or_all("speaker-codec", opts.speaker_codec, decoders)
+        self.microphone_codecs = option_or_all("microphone-codec", opts.microphone_codec, encoders)
+        self.speaker_allowed = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
+        self.microphone_allowed = len(self.microphone_codecs)>0 and sound_option(opts.microphone) in ("on", "off")
+        self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
+        self.microphone_enabled = self.microphone_allowed and sound_option(opts.microphone)=="on"
         self.av_sync = opts.av_sync
+        soundlog("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
+        soundlog("microphone: codecs=%s, allowed=%s, enabled=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs))
+        soundlog("av-sync=%s", self.av_sync)
 
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
@@ -1135,31 +1134,17 @@ class UIXpraClient(XpraClientBase):
         #hack: workaround namespace issue ("encodings" vs "encoding"..)
         capabilities["encodings.rgb_formats"] = rgb_formats
 
-        sound_caps = {}
-        try:
-            import xpra.sound
-            log("loaded %s", xpra.sound)
+        if self.sound_properties:
+            sound_caps = self.sound_properties
+            sound_caps["send"] = self.microphone_allowed
+            sound_caps["receive"] = self.speaker_allowed
             try:
-                from xpra.sound.gstreamer_util import has_gst, get_info as get_gst_info
-                sound_caps.update(get_gst_info(receive=self.speaker_allowed, send=self.microphone_allowed,
-                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
-            except Exception as e:
-                log.error("failed to setup sound: %s", e, exc_info=True)
-                self.speaker_allowed = False
-                self.microphone_allowed = False
-                has_gst = False
-            if has_gst:
-                try:
-                    from xpra.sound.pulseaudio_util import get_info as get_pa_info
-                    sound_caps.update(get_pa_info())
-                    sound_caps.update(get_gst_info(receive=self.speaker_allowed, send=self.microphone_allowed,
-                                         receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs))
-                except Exception:
-                    pass
+                from xpra.sound.pulseaudio_util import get_info as get_pa_info
+                sound_caps.update(get_pa_info())
+            except Exception:
+                pass
             updict(capabilities, "sound", sound_caps)
             soundlog("sound capabilities: %s", sound_caps)
-        except ImportError as e:
-            soundlog.warn("sound support not available: %s", e)
         #batch options:
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
             evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())

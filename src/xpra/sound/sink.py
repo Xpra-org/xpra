@@ -10,7 +10,7 @@ from threading import Lock
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject, glib, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, MP3, CODECS, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, MP3, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 
 from xpra.scripts.config import InitExit
 from xpra.util import updict, csv
@@ -65,15 +65,15 @@ class SoundSink(SoundPipeline):
         "eos"       : one_arg_signal,
         })
 
-    def __init__(self, sink_type=None, sink_options={}, codecs=CODECS, codec_options={}, volume=1.0):
+    def __init__(self, sink_type=None, sink_options={}, codecs=get_codecs(), codec_options={}, volume=1.0):
         if not sink_type:
             sink_type = DEFAULT_SINK
         if sink_type not in SINKS:
             raise InitExit(1, "invalid sink: %s" % sink_type)
-        matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
+        matching = [x for x in CODEC_ORDER if (x in codecs and x in get_codecs())]
         log("SoundSink(..) found matching codecs %s", matching)
         if not matching:
-            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(CODECS.keys())))
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
         codec = matching[0]
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
@@ -316,9 +316,10 @@ def main():
         if not os.path.exists(filename):
             print("file %s does not exist" % filename)
             return 2
+        codecs = get_codecs()
         if len(args)==3:
             codec = args[2]
-            if codec not in CODECS:
+            if codec not in codecs:
                 print("invalid codec: %s" % codec)
                 return 2
         else:
@@ -326,7 +327,7 @@ def main():
             parts = filename.split(".")
             if len(parts)>1:
                 extension = parts[-1]
-                if extension.lower() in CODECS:
+                if extension.lower() in codecs:
                     codec = extension.lower()
                     print("guessed codec %s from file extension %s" % (codec, extension))
             if codec is None:

@@ -169,13 +169,16 @@ class SessionInfo(gtk.Window):
         tb.new_row("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
         tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version", "python.version")))
 
-        cl_gst_v, cl_pygst_v = "", ""
         try:
-            from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
+            from xpra.sound.wrapper import query_sound
+            props = query_sound()
         except Exception as e:
-            log("cannot load gstreamer: %s", e)
-        tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("sound.gst.version", "gst_version")))
-        tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("sound.pygst.version", "pygst_version")))
+            log("cannot load sound information: %s", e)
+            props = {}
+        gst_version = props.get("gst.version", "")
+        pygst_version = props.get("pygst.version", "")
+        tb.new_row("GStreamer", label(make_version_str(gst_version)), label(server_version_info("sound.gst.version", "gst_version")))
+        tb.new_row("pygst", label(make_version_str(pygst_version)), label(server_version_info("sound.pygst.version", "pygst_version")))
         tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))
         tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label("n/a"))
         tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))

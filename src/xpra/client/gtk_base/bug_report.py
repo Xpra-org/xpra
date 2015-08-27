@@ -95,7 +95,9 @@ class BugReport(object):
         from xpra.codecs.loader import codec_versions, load_codecs
         load_codecs()
         try:
-            from xpra.sound.gstreamer_util import get_info as get_sound_info
+            from xpra.sound.wrapper import query_sound
+            def get_sound_info():
+                return query_sound()
         except:
             get_sound_info = None
         if self.opengl_info:

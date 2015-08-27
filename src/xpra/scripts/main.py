@@ -676,8 +676,8 @@ def do_parse_cmdline(cmdline, defaults):
     if options.sound_source=="help":
         from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
-            from xpra.sound.wrapper import query_sound_sources
-            source_plugins = query_sound_sources()
+            from xpra.sound.wrapper import query_sound
+            source_plugins = query_sound().get("sources", [])
         except Exception as e:
             raise InitInfo(e)
             source_plugins = []
@@ -757,12 +757,12 @@ def dump_frames(*arsg):
     print("")
 
 def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
-    from xpra.sound.gstreamer_util import has_gst
-    from xpra.sound.wrapper import get_sound_codecs
-    if not has_gst:
+    from xpra.sound.wrapper import query_sound
+    props = query_sound()
+    if not props:
         return "sound is not supported - gstreamer not present or not accessible"
     info = []
-    all_speaker_codecs = get_sound_codecs(True, is_server)
+    all_speaker_codecs = props.get("decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
@@ -774,7 +774,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     elif len(speaker_codecs)==0:
         speaker_codecs += all_speaker_codecs
 
-    all_microphone_codecs = get_sound_codecs(True, is_server)
+    all_microphone_codecs = props.get("decoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
@@ -856,6 +856,14 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
 
     configure_logging(options, mode)
     configure_network(options)
+
+    if not mode.startswith("_sound_"):
+        #only the sound subcommands should ever actually import GStreamer:
+        try:
+            from xpra.sound.gstreamer_util import prevent_import
+            prevent_import()
+        except:
+            pass
 
     try:
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))

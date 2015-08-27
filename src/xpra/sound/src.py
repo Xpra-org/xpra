@@ -12,8 +12,8 @@ from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, get_source_plugins, normv, \
-                                MP3, CODECS, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, \
+                                MP3, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -29,7 +29,7 @@ class SoundSource(SoundPipeline):
         "new-buffer"    : n_arg_signal(2),
         })
 
-    def __init__(self, src_type=None, src_options={}, codecs=CODECS, codec_options={}, volume=1.0):
+    def __init__(self, src_type=None, src_options={}, codecs=get_codecs(), codec_options={}, volume=1.0):
         if not src_type:
             from xpra.sound.pulseaudio_util import get_pa_device_options
             monitor_devices = get_pa_device_options(True, False)
@@ -49,10 +49,10 @@ class SoundSource(SoundPipeline):
             src_options.update(src_options)
         if src_type not in get_source_plugins():
             raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins())))
-        matching = [x for x in CODEC_ORDER if (x in codecs and x in CODECS)]
+        matching = [x for x in CODEC_ORDER if (x in codecs and x in get_codecs())]
         log("SoundSource(..) found matching codecs %s", matching)
         if not matching:
-            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(CODECS.keys())))
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
         codec = matching[0]
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
@@ -223,16 +223,17 @@ def main():
             return 1
         codec = None
 
+        codecs = get_codecs()
         if len(sys.argv)==3:
             codec = sys.argv[2]
-            if codec not in CODECS:
-                log.error("invalid codec: %s, codecs supported: %s", codec, CODECS)
+            if codec not in codecs:
+                log.error("invalid codec: %s, codecs supported: %s", codec, codecs)
                 return 1
         else:
             parts = filename.split(".")
             if len(parts)>1:
                 extension = parts[-1]
-                if extension.lower() in CODECS:
+                if extension.lower() in codecs:
                     codec = extension.lower()
                     log.info("guessed codec %s from file extension %s", codec, extension)
             if codec is None:

@@ -5,11 +5,14 @@
 
 import os
 import time
+import sys
 
+from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, parse_element_options, \
+                            can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, glib, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
 from xpra.util import AdHocStruct
-from xpra.scripts.config import InitExit
+from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -63,7 +66,6 @@ class sound_subprocess(subprocess_callee):
             glib.timeout_add(FAKE_EXIT*1000, process_exit)
         if FAKE_CRASH>0:
             def force_exit():
-                import sys
                 sys.exit(1)
             glib.timeout_add(FAKE_CRASH*1000, force_exit)
         subprocess_callee.start(self)
@@ -103,6 +105,11 @@ def run_sound(mode, error_cb, options, args):
     """ this function just parses command line arguments to feed into the sound subprocess class,
         which in turn just feeds them into the sound pipeline class (sink.py or src.py)
     """
+    from xpra.sound.gstreamer_util import import_gst
+    gst = import_gst()
+    log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
+    if not gst:
+        return 1
     if mode=="_sound_record":
         subproc = sound_record
         info = "record"
@@ -110,19 +117,20 @@ def run_sound(mode, error_cb, options, args):
         subproc = sound_play
         info = "play"
     elif mode=="_sound_query":
-        if len(args)!=1:
-            raise Exception("invalid number of arguments for sound query: %s (one subcommand required)" % len(args))
-        subcommand = args[0]
-        from xpra.sound.gstreamer_util import get_available_source_plugins, can_decode, can_encode
-        if subcommand=="encoders":
-            v = can_encode()
-        elif subcommand=="decoders":
-            v = can_decode()
-        elif subcommand=="sources":
-            v = get_available_source_plugins()
-        else:
-            raise Exception("invalid subcommand: %s" % subcommand)
-        print("%s=%s" % (subcommand, ",".join(v)))
+        plugins = get_all_plugin_names()
+        sources = [x for x in get_source_plugins() if x in plugins]
+        from xpra.sound.gstreamer_util import gst_version, pygst_version
+        d = {"encoders"         : can_encode(),
+             "decoders"         : can_decode(),
+             "sources"          : sources,
+             "muxers"           : get_muxers(),
+             "demuxers"         : get_demuxers(),
+             "gst.version"      : gst_version,
+             "pygst.version"    : pygst_version,
+             "plugins"          : plugins,
+            }
+        for k,v in d.items():
+            print("%s=%s" % (k, ",".join(str(x) for x in v)))
         return 0
     else:
         log.error("unknown mode: %s" % mode)
@@ -132,7 +140,6 @@ def run_sound(mode, error_cb, options, args):
     #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
     plugin = args[2]
     #plugin options (ie: "device=monitor_device,something=value")
-    from xpra.sound.gstreamer_util import parse_element_options
     options = parse_element_options(args[3])
     #codecs:
     codecs = [x.strip() for x in args[4].split(",")]
@@ -150,6 +157,9 @@ def run_sound(mode, error_cb, options, args):
         ss.start()
         return 0
     except InitExit as e:
+        log.error("%s: %s", info, e)
+        return e.status
+    except InitException as e:
         log.error("%s: %s", info, e)
         return 1
     except Exception:
@@ -293,17 +303,15 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
             return "sink_subprocess_wrapper(%s)" % self.process
 
 
-def start_sending_sound(sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
-    log("start_sending_sound%s", (sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
-    from xpra.sound.gstreamer_util import has_gst, parse_sound_source
-    assert has_gst
+def start_sending_sound(plugins, sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+    log("start_sending_sound%s", (plugins, sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
     try:
         #info about the remote end:
         remote = AdHocStruct()
         remote.pulseaudio_server = remote_pulseaudio_server
         remote.pulseaudio_id = remote_pulseaudio_id
         remote.remote_decoders = remote_decoders
-        plugin, options = parse_sound_source(sound_source_plugin, remote)
+        plugin, options = parse_sound_source(plugins, sound_source_plugin, remote)
         if not plugin:
             log.error("failed to setup '%s' sound stream source", (sound_source_plugin or "auto"))
             return  None
@@ -324,51 +332,23 @@ def start_receiving_sound(codec):
         log.error("failed to start sound sink", exc_info=True)
         return None
 
-def query_sound(subcommand):
-    import sys
+def query_sound():
     import subprocess
-    command = get_sound_command()+["_sound_query", subcommand]
+    command = get_sound_command()+["_sound_query"]
     _add_debug_args(command)
     kwargs = exec_kwargs()
     env = exec_env()
-    log("query_sound(%s) command=%s, env=%s, kwargs=%s", subcommand, command, env, kwargs)
+    log("query_sound() command=%s, env=%s, kwargs=%s", command, env, kwargs)
     proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=env, **kwargs)
     out, err = proc.communicate(None)
-    log("query_sound(%s) process returned %s", subcommand, proc.returncode)
-    log("query_sound(%s) out=%s, err=%s", subcommand, out, err)
+    log("query_sound() process returned %s", proc.returncode)
+    log("query_sound() out=%s, err=%s", out, err)
     if proc.returncode!=0:
-        return []
-    mline = "%s=" % subcommand      #ie: "decoders="
+        return {}
+    d = {}
     for x in out.decode("utf8").splitlines():
-        if x.startswith(mline):
-            return x[len(mline):].split(",")
-    return []
-
-def query_sound_sources():
-    return query_sound("sources")
-
-def query_sound_encoders():
-    return query_sound("encoders")
-
-def query_sound_decoders():
-    return query_sound("decoders")
-
-def query_sound_muxers():
-    return query_sound("muxers")
-
-def query_sound_demuxers():
-    return query_sound("demuxers")
-
-
-def get_sound_codecs(is_speaker, is_server):
-    from xpra.sound.gstreamer_util import has_gst
-    if not has_gst:
-        return []
-    try:
-        if (is_server and is_speaker) or (not is_server and not is_speaker):
-            return query_sound_encoders()
-        else:
-            return query_sound_decoders()
-    except Exception as e:
-        log.warn("failed to get list of codecs: %s" % e)
-        return []
+        kv = x.split("=", 1)
+        if len(kv)==2:
+            #ie: kv = ["decoders", "mp3,vorbis"]
+            d[kv[0]] = kv[1].split(",")     #d["decoders"] = ["mp3", "vorbis"]
+    return d

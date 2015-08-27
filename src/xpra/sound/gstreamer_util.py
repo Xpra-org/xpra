@@ -33,6 +33,7 @@ MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 
+
 NAME_TO_SRC_PLUGIN = {
     "auto"          : "autoaudiosrc",
     "alsa"          : "alsasrc",
@@ -51,16 +52,17 @@ PLUGIN_TO_DESCRIPTION = {
     "pulsesrc"      : "Pulseaudio",
     "jacksrc"       : "JACK Audio Connection Kit",
     }
+
 NAME_TO_INFO_PLUGIN = {
-    "auto"          : "Wrapper audio source for automatically detected audio source",
-    "alsa"          : "Read from a sound card via ALSA",
-    "oss"           : "Capture from a sound card via OSS",
-    "oss4"          : "Capture from a sound card via OSS version 4",
-    "jack"          : "Captures audio from a JACK server",
-    "osx"           : "Input from a sound card in OS X",
-    "test"          : "Creates audio test signals of given frequency and volume",
-    "pulse"         : "Captures audio from a PulseAudio server",
-    "direct"        : "directsoundsrc",
+    "auto"          : "Automatic audio source selection",
+    "alsa"          : "ALSA Linux Sound",
+    "oss"           : "OSS sound cards",
+    "oss4"          : "OSS version 4 sound cards",
+    "jack"          : "JACK audio sound server",
+    "osx"           : "Mac OS X sound cards",
+    "test"          : "Test signal",
+    "pulse"         : "PulseAudio",
+    "direct"        : "Microsoft Windows Direct Sound",
     }
 
 
@@ -96,11 +98,12 @@ GDP = "gdp"
 OGG = "ogg"
 MUX_OPTIONS = [
                (GDP,    "gdppay",   "gdpdepay"),
-               (OGG,    "oggmux"    "oggdemux")
+               (OGG,    "oggmux",   "oggdemux"),
               ]
 
 #these encoders require an "audioconvert" element:
 ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
+
 #options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
 ENCODER_DEFAULT_OPTIONS = {
@@ -135,21 +138,12 @@ CODEC_ORDER = [VORBIS, OPUS, FLAC, MP3, WAV, WAVPACK, SPEEX]    #AAC is untested
 
 
 gst = None
-has_gst = False
+has_gst = None
+gst_major_version = None
+gst_vinfo = None
 
-all_plugin_names = []
 pygst_version = ""
 gst_version = ""
-#ugly win32 hack to make it find the gstreamer plugins:
-if sys.platform.startswith("win") and hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True):
-    from xpra.platform.paths import get_app_dir
-    if sys.version_info[0]<3:
-        #gstreamer-0.10
-        v = (0, 10)
-    else:
-        #gstreamer-1.0
-        v = (1, 0)
-    os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % (".".join([str(x) for x in v])))
 
 
 def import_gst1():
@@ -206,32 +200,63 @@ def import_gst0_10():
     return gst
 
 
-_gst_major_version = None
-try:
+def import_gst():
+    global gst, has_gst, gst_vinfo, gst_major_version
+    if has_gst is not None:
+        return gst
+    #ugly win32 hack to make it find the gstreamer plugins:
+    if sys.platform.startswith("win") and hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True):
+        from xpra.platform.paths import get_app_dir
+        if sys.version_info[0]<3:
+            #gstreamer-0.10
+            v = (0, 10)
+        else:
+            #gstreamer-1.0
+            v = (1, 0)
+        os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % (".".join([str(x) for x in v])))
+
     from xpra.gtk_common.gobject_compat import is_gtk3
-    import_options = [
-               (import_gst0_10, 0),
-               (import_gst1, 1),
+    if is_gtk3():
+        imports = [ (import_gst1, 1, "1.x") ]
+    else:
+        imports = [
+               (import_gst0_10, 0, "0.10"),
+               (import_gst1, 1, "1.x"),
                ]
-    if is_gtk3() or GSTREAMER1:
-        #try gst1 first:
-        imports = import_options.reverse()
-    gst, vinfo = None, None
-    for import_function, MV in import_options:
+        if GSTREAMER1:
+            imports = imports.reverse()  #try gst1 first:
+    errs = {}
+    for import_function, MV, vinfo in imports:
         try:
-            gst = import_function()
-            v = gst.version()
+            _gst = import_function()
+            v = _gst.version()
             if v[-1]==0:
                 v = v[:-1]
-            vinfo = ".".join((str(x) for x in v))
-            _gst_major_version = MV
+            gst_vinfo = ".".join((str(x) for x in v))
+            gst_major_version = MV
+            gst = _gst
             break
         except Exception as e:
             log("failed to import GStreamer %s: %s", vinfo, e)
+            errs[vinfo] = e
+    if gst:
+        log("Python GStreamer version %s for Python %s.%s", gst_vinfo, sys.version_info[0], sys.version_info[1])
+    else:
+        log.warn("Warning: failed to import GStreamer:")
+        for vinfo,e in errs.items():
+            log.warn(" %s failed with: %s", vinfo, e)
     has_gst = gst is not None
-    log("Loaded Python GStreamer version %s for Python %s.%s", vinfo, sys.version_info[0], sys.version_info[1])
-except:
-    log.warn("failed to import GStreamer", exc_info=True)
+    return gst
+
+def prevent_import():
+    global has_gst, gst, import_gst
+    if has_gst or gst or "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
+        raise Exception("cannot prevent the import of the GStreamer bindings, already loaded: %s" % gst)
+    def fail_import():
+        raise Exception("importing of the GStreamer bindings is not allowed!")
+    import_gst = fail_import
+    sys.modules["gst"] = None
+    sys.modules["gi.repository.Gst"]= None
 
 
 def normv(v):
@@ -240,6 +265,7 @@ def normv(v):
     return v
 
 
+all_plugin_names = []
 def get_all_plugin_names():
     global all_plugin_names, has_gst
     if len(all_plugin_names)==0 and has_gst:
@@ -259,7 +285,7 @@ def has_plugins(*names):
 
 CODECS = None
 def get_codecs():
-    global CODECS
+    global CODECS, gst_major_version
     if CODECS is not None or not has_gst:
         return CODECS or {}
     #populate CODECS:
@@ -273,17 +299,17 @@ def get_codecs():
             log.info("sound codec %s force enabled", encoding)
         elif encoding==FLAC:
             #flac problems:
-            if sys.platform.startswith("win") and _gst_major_version==0 and encoding==FLAC:
+            if sys.platform.startswith("win") and gst_major_version==0 and encoding==FLAC:
                 #the gstreamer 0.10 builds on win32 use the outdated oss build,
                 #which includes outdated flac libraries with known CVEs,
                 #so avoid using those:
                 log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
                 continue
-            elif _gst_major_version==1:
+            elif gst_major_version==1:
                 log("skipping flac with GStreamer 1.x to avoid obscure 'not-neogtiated' errors I do not have time for")
                 continue
         elif encoding==OPUS:
-            if _gst_major_version<1:
+            if gst_major_version<1:
                 log("skipping opus with GStreamer 0.10")
                 continue
         #verify we have all the elements needed:
@@ -295,7 +321,6 @@ def get_codecs():
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         log("* %s : %s", k, CODECS[k])
     return CODECS
-get_codecs()
 
 def get_muxers():
     muxers = []
@@ -313,29 +338,33 @@ def get_demuxers():
 
 
 def get_encoder_formatter(name):
-    assert name in CODECS, "invalid codec: %s (should be one of: %s)" % (name, CODECS.keys())
-    encoder, formatter, _, _ = CODECS.get(name)
+    codecs = get_codecs()
+    assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
+    encoder, formatter, _, _ = codecs.get(name)
     assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
     assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
     return encoder, formatter
 
 def get_decoder_parser(name):
-    assert name in CODECS, "invalid codec: %s (should be one of: %s)" % (name, CODECS.keys())
-    _, _, decoder, parser = CODECS.get(name)
+    codecs = get_codecs()
+    assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
+    _, _, decoder, parser = codecs.get(name)
     assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
     assert parser is None or has_plugins(parser), "parser %s not found" % parser
     return decoder, parser
 
 def has_encoder(name):
-    if name not in CODECS:
+    codecs = get_codecs()
+    if name not in codecs:
         return False
-    encoder, fmt, _, _ = CODECS.get(name)
+    encoder, fmt, _, _ = codecs.get(name)
     return has_plugins(encoder, fmt)
 
 def has_decoder(name):
-    if name not in CODECS:
+    codecs = get_codecs()
+    if name not in codecs:
         return False
-    _, _, decoder, parser = CODECS.get(name)
+    _, _, decoder, parser = codecs.get(name)
     return has_plugins(decoder, parser)
 
 def has_codec(name):
@@ -377,8 +406,6 @@ def get_source_plugins():
     sources.append("audiotestsrc")
     return sources
 
-def get_available_source_plugins():
-    return [x for x in get_source_plugins() if has_plugins(x)]
 
 def get_test_defaults(remote):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
@@ -454,6 +481,7 @@ DEFAULT_SRC_PLUGIN_OPTIONS = {
     }
 
 
+
 def parse_element_options(options_str):
     #parse the options string and add the pairs:
     options = {}
@@ -466,6 +494,7 @@ def parse_element_options(options_str):
         except Exception as e:
             log.warn("failed to parse plugin option '%s': %s", s, e)
     return options
+
 
 def get_sound_source_options(plugin, options_str, remote):
     """
@@ -487,7 +516,8 @@ def get_sound_source_options(plugin, options_str, remote):
     options.update(parse_element_options(options_str))
     return options
 
-def parse_sound_source(sound_source_plugin, remote):
+
+def parse_sound_source(all_plugins, sound_source_plugin, remote):
     #format: PLUGINNAME:options
     #ie: test:wave=2,freq=110,volume=0.4
     #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
@@ -496,7 +526,7 @@ def parse_sound_source(sound_source_plugin, remote):
     simple_str = (plugin).lower().strip()
     if not simple_str:
         #choose the first one from
-        options = get_available_source_plugins()
+        options = [x for x in get_source_plugins() if x in all_plugins]
         if not options:
             log.error("no source plugins available")
             return None
@@ -509,7 +539,7 @@ def parse_sound_source(sound_source_plugin, remote):
     if not gst_sound_source_plugin:
         log.error("unknown source plugin: '%s' / '%s'", simple_str, sound_source_plugin)
         return  None, {}
-    log("parse_sound_source(%s, %s) plugin=%s", sound_source_plugin, remote, gst_sound_source_plugin)
+    log("parse_sound_source(%s, %s, %s) plugin=%s", all_plugins, sound_source_plugin, remote, gst_sound_source_plugin)
     options = get_sound_source_options(simple_str, options_str, remote)
     log("get_sound_source_options%s=%s", (simple_str, options_str, remote), options)
     if options is None:
@@ -518,26 +548,16 @@ def parse_sound_source(sound_source_plugin, remote):
     return gst_sound_source_plugin, options
 
 
-def get_info(receive=True, send=True, receive_codecs=[], send_codecs=[]):
-    if not has_gst:
-        return  {}
-    return {"gst.version"   : gst_version,
-            "pygst.version" : pygst_version,
-            "decoders"      : receive_codecs,
-            "encoders"      : send_codecs,
-            "receive"       : receive and len(receive_codecs)>0,
-            "send"          : send and len(send_codecs)>0,
-            "plugins"       : get_all_plugin_names(),
-            }
-
 
 def main():
+    global pygst_version, gst_version, gst_vinfo
     from xpra.platform import init, clean
     try:
         init("GStreamer-Info", "GStreamer Information")
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
-        print("Loaded Python GStreamer version %s for Python %s.%s" % (vinfo, sys.version_info[0], sys.version_info[1]))
+        import_gst()
+        print("Loaded Python GStreamer version %s for Python %s.%s" % (gst_vinfo, sys.version_info[0], sys.version_info[1]))
         print("GStreamer plugins found: %s" % ", ".join(get_all_plugin_names()))
         print("")
         print("GStreamer version: %s" % ".".join([str(x) for x in gst_version]))

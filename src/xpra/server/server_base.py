@@ -30,10 +30,11 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
-from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, \
+from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, csv, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
+from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import python_platform, parse_bool_or_int
 from xpra.scripts.main import sound_option
@@ -125,6 +126,7 @@ class ServerBase(ServerCore):
         self.pulseaudio = False
         self.pulseaudio_command = None
         self.pulseaudio_proc = None
+        self.sound_properties = {}
 
         #encodings:
         self.allowed_encodings = None
@@ -226,7 +228,7 @@ class ServerBase(ServerCore):
         #sound:
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
-        self.init_sound_options(opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
+        self.init_sound_options(opts)
 
         log("starting component init")
         self.init_clipboard()
@@ -390,32 +392,43 @@ class ServerBase(ServerCore):
                 full_trace = self.is_child_alive(proc)
                 soundlog.warn("error trying to stop pulseaudio", exc_info=full_trace)
 
-    def init_sound_options(self, sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
+    def init_sound_options(self, opts):
+        #sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
+        #opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec
         try:
-            from xpra.sound.gstreamer_util import has_gst
-            from xpra.sound.wrapper import get_sound_codecs
+            from xpra.sound.wrapper import query_sound
+            self.sound_properties = query_sound()
+        except ImportError as e:
+            log("cannot load sound support: %s", e)
         except Exception as e:
-            log("cannot load gstreamer: %s", e)
-            has_gst = False
-        log("init_sound_options%s has_gst=%s", (sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec), has_gst)
-        self.sound_source_plugin = sound_source_plugin
-        self.supports_speaker = sound_option(speaker) in ("on", "off") and has_gst
-        self.supports_microphone = sound_option(microphone) in ("on", "off") and has_gst
-        self.speaker_codecs = speaker_codec
-        if len(self.speaker_codecs)==0 and self.supports_speaker:
-            self.speaker_codecs = get_sound_codecs(True, True)
-            self.supports_speaker = len(self.speaker_codecs)>0
-        self.microphone_codecs = microphone_codec
-        if len(self.microphone_codecs)==0 and self.supports_microphone:
-            self.microphone_codecs = get_sound_codecs(False, False)
-            self.supports_microphone = len(self.microphone_codecs)>0
-        try:
-            from xpra.platform.paths import get_icon_filename
-            from xpra.sound.pulseaudio_util import set_icon_path
-            set_icon_path(get_icon_filename("xpra.png"))
-        except Exception as e:
-            log.warn("Warning: failed to set pulseaudio tagging icon:")
-            log.warn(" %s", e)
+            soundlog.error("Error: failed to query sound subsystem:")
+            soundlog.error(" %s", e)
+        self.sound_source_plugin = opts.sound_source
+        def option_or_all(name, options, all_values):
+            if not options:
+                return all_values       #not specified on command line: use default
+            invalid_options = [x for x in options if x not in all_values]
+            if len(invalid_options)==0:
+                return options          #all good
+            soundlog.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, invalid_options)
+            soundlog.warn(" valid option%s: %s", engs(all_values), csv(all_values))
+            #only keep the valid options:
+            return [x for x in options if x in all_values]
+        self.speaker_codecs = option_or_all("speaker-codec", opts.speaker_codec, self.sound_properties.get("encoders", []))
+        self.microphone_codecs = option_or_all("microphone-codec", opts.microphone_codec, self.sound_properties.get("decoders", []))
+        self.supports_speaker = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
+        self.supports_microphone = len(self.microphone_codecs)>0 and sound_option(opts.microphone) in ("on", "off")
+        if bool(self.sound_properties):
+            self.sound_properties["send"] = len(self.speaker_codecs)>0
+            self.sound_properties["receive"] = len(self.microphone_codecs)>0
+            try:
+                from xpra.sound.pulseaudio_util import set_icon_path, get_info as get_pa_info
+                self.sound_properties.update(get_pa_info())
+                set_icon_path(get_icon_filename("xpra.png"))
+            except Exception as e:
+                log.warn("Warning: failed to set pulseaudio tagging icon:")
+                log.warn(" %s", e)
+        log("init_sound_options sound properties=%s", self.sound_properties)
 
     def init_clipboard(self):
         clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)
@@ -841,6 +854,7 @@ class ServerBase(ServerCore):
                           get_window_id,
                           self.supports_mmap, self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
+                          self.sound_properties,
                           self.sound_source_plugin,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
