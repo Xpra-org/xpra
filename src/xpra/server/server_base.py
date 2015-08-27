@@ -396,31 +396,20 @@ class ServerBase(ServerCore):
         #sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
         #opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec
         try:
+            from xpra.sound.gstreamer_util import sound_option_or_all
             from xpra.sound.wrapper import query_sound
             self.sound_properties = query_sound()
-        except ImportError as e:
-            log("cannot load sound support: %s", e)
         except Exception as e:
             soundlog.error("Error: failed to query sound subsystem:")
             soundlog.error(" %s", e)
+            def sound_option_or_all(*args):
+                return []
         self.sound_source_plugin = opts.sound_source
-        def option_or_all(name, options, all_values):
-            if not options:
-                return all_values       #not specified on command line: use default
-            invalid_options = [x for x in options if x not in all_values]
-            if len(invalid_options)==0:
-                return options          #all good
-            soundlog.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, invalid_options)
-            soundlog.warn(" valid option%s: %s", engs(all_values), csv(all_values))
-            #only keep the valid options:
-            return [x for x in options if x in all_values]
-        self.speaker_codecs = option_or_all("speaker-codec", opts.speaker_codec, self.sound_properties.get("encoders", []))
-        self.microphone_codecs = option_or_all("microphone-codec", opts.microphone_codec, self.sound_properties.get("decoders", []))
+        self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, self.sound_properties.get("encoders", []))
+        self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, self.sound_properties.get("decoders", []))
         self.supports_speaker = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
         self.supports_microphone = len(self.microphone_codecs)>0 and sound_option(opts.microphone) in ("on", "off")
         if bool(self.sound_properties):
-            self.sound_properties["send"] = len(self.speaker_codecs)>0
-            self.sound_properties["receive"] = len(self.microphone_codecs)>0
             try:
                 from xpra.sound.pulseaudio_util import set_icon_path, get_info as get_pa_info
                 self.sound_properties.update(get_pa_info())

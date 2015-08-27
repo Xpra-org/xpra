@@ -802,6 +802,9 @@ class ServerSource(object):
         if self.suspended:
             soundlog.warn("not starting sound as we are suspended")
             return
+        if codec not in self.speaker_codecs:
+            soundlog.warn("Warning: invalid codec specified: %s", codec)
+            return
         try:
             from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
             if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
@@ -1171,7 +1174,12 @@ class ServerSource(object):
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         if self.wants_sound and self.sound_properties:
-            updict(capabilities, "sound", self.sound_properties)
+            sound_props = self.sound_properties.copy()
+            sound_props["encoders"] = self.speaker_codecs
+            sound_props["decoders"] = self.microphone_codecs
+            sound_props["send"] = len(self.speaker_codecs)>0
+            sound_props["receive"] = len(self.microphone_codecs)>0
+            updict(capabilities, "sound", sound_props)
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"
             encoding = self.encoding

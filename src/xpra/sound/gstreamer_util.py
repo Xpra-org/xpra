@@ -78,19 +78,17 @@ WAVPACK = "wavpack"
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
-OGG_DELAY = 20*MS_TO_NS
-C_FORMAT = "oggmux"
-C_PARSER = "oggdemux"
-#C_FORMAT = "gdppay"
-#C_PARSER = "gdpdepay"
 CODEC_OPTIONS = [
             (VORBIS      , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
-            (FLAC        , "flacenc",       C_FORMAT,   "flacdec",      C_PARSER),
+            (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
+#            (FLAC        , "flacenc",       "gdppay",   "flacdec",      "gdpdepay"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
             (MP3         , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
             (WAV         , "wavenc",        None,       None,           "wavparse"),
-            (OPUS        , "opusenc",       C_FORMAT,   "opusdec",      C_PARSER),
-            (SPEEX       , "speexenc",      C_FORMAT,   "speexdec",     C_PARSER),
+            (OPUS        , "opusenc",       "oggmux",   "opusdec",      "oggdemux"),
+#            (OPUS        , "opusenc",       "gdppay",   "opusdec",      "gdpdepay"),
+            (SPEEX       , "speexenc",      "oggmux",   "speexdec",     "oggdemux"),
+#            (SPEEX       , "speexenc",      "gdppay",   "speexdec",     "gdpdepay"),
             (WAVPACK     , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
             ]
 
@@ -100,6 +98,16 @@ MUX_OPTIONS = [
                (GDP,    "gdppay",   "gdpdepay"),
                (OGG,    "oggmux",   "oggdemux"),
               ]
+emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
+if emux:
+    mo = [v for v in MUX_OPTIONS if v[0] in emux]
+    if mo:
+        MUX_OPTIONS = mo
+    else:
+        log.warn("Warning: invalid muxer options %s", emux)
+    del mo
+del emux
+
 
 #these encoders require an "audioconvert" element:
 ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
@@ -546,6 +554,28 @@ def parse_sound_source(all_plugins, sound_source_plugin, remote):
         #means error
         return None, {}
     return gst_sound_source_plugin, options
+
+
+def sound_option_or_all(name, options, all_values):
+    from xpra.util import engs, csv
+    if not options:
+        v = all_values        #not specified on command line: use default
+    else:
+        v = []
+        invalid_options = []
+        for x in options:
+            #options is a list, but it may have csv embedded:
+            for o in x.split(","):
+                o = o.strip()
+                if o not in all_values:
+                    invalid_options.append(o)
+                else:
+                    v.append(o)
+        if len(invalid_options)>0:
+            log.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, csv(invalid_options))
+            log.warn(" valid option%s: %s", engs(all_values), csv(all_values))
+    log("%s=%s", name, csv(v))
+    return v
 
 
 
