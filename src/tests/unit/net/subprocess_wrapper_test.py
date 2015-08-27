@@ -136,7 +136,6 @@ class SubprocessWrapperTest(unittest.TestCase):
             lc.stop()
             glib.idle_add(mainloop.quit)
         def timeout_error():
-            log.info("timeout_error()")
             self.timeout = True
             stop()
         glib.timeout_add(500, timeout_error)
