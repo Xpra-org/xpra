@@ -121,7 +121,7 @@ class SubprocessWrapperTest(unittest.TestCase):
     def test_loopback_callee(self):
         mainloop = glib.MainLoop()
         callee = TestCallee()
-        lc = loopback_callee(wrapped_object=callee, method_whitelist=["test-signal", "stop", "unused"])
+        lc = loopback_callee(wrapped_object=callee, method_whitelist=["test-signal", "loop_stop", "unused"])
         #this will cause the "test-signal" to be sent via the loopback connection
         lc.connect_export("test-signal")
         readback = []
@@ -132,18 +132,18 @@ class SubprocessWrapperTest(unittest.TestCase):
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
         self.timeout = False
-        def stop(*args):
+        def loop_stop(*args):
             lc.stop()
             glib.idle_add(mainloop.quit)
         def timeout_error():
             self.timeout = True
-            stop()
+            loop_stop()
         glib.timeout_add(500, timeout_error)
         signal_string = b"hello foo"
         glib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
-        callee.stop = stop
-        glib.idle_add(lc.send, "stop")
+        callee.loop_stop = loop_stop
+        glib.idle_add(lc.send, "loop_stop")
         #run!
         lc.start()
         mainloop.run()
