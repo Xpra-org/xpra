@@ -14,7 +14,7 @@ import time
 import datetime
 
 from xpra.os_util import os_info, bytestostr
-from xpra.util import prettify_plug_name, typedict
+from xpra.util import prettify_plug_name, typedict, csv
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
@@ -686,9 +686,16 @@ class SessionInfo(gtk.Window):
         self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
         self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strlistget("sound.decoders", [])))
         self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
+        def encliststr(v):
+            v = list(v)
+            try:
+                v.remove("rgb")
+            except:
+                pass
+            return csv(sorted(v))
         se = scaps.strlistget("encodings.core", scaps.strlistget("encodings"))
-        self.server_encodings_label.set_text(", ".join(sorted(se)))
-        self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
+        self.server_encodings_label.set_text(encliststr(se))
+        self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
 
         def get_encoder_list(caps):
             from xpra.net import packet_encoding
