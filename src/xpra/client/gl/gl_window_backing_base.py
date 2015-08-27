@@ -10,7 +10,7 @@ import time, math
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
-OPENGL_PAINT_BOX = os.environ.get("XPRA_OPENGL_PAINT_BOX", "0")=="1"
+OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
 
 from xpra.gtk_common.gtk_util import color_parse
 
@@ -557,11 +557,11 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def paint_box(self, encoding, is_delta, x, y, w, h):
         #show region being painted if debug paint box is enabled only:
-        if not OPENGL_PAINT_BOX:
+        if not OPENGL_PAINT_BOX>0:
             return
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
         glDisable(GL_FRAGMENT_PROGRAM_ARB)
-        glLineWidth(1.5)
+        glLineWidth(OPENGL_PAINT_BOX+0.5)
         if is_delta:
             glLineStipple(1, 0xaaaa)
             glEnable(GL_LINE_STIPPLE)
