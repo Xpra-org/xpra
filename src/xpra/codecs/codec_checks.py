@@ -120,7 +120,7 @@ def get_encoder_max_sizes(encoder_module):
         h = min(h, eh)
     return w, h
 
-def get_encoder_max_size(encoder_module, encoding):
+def get_encoder_max_size(encoder_module, encoding, max_size=16384):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     def einfo():
@@ -128,6 +128,8 @@ def get_encoder_max_size(encoder_module, encoding):
     log("get_encoder_max_size%s", (encoder_module, encoding))
     maxw = 512
     for v in (512, 1024, 2048, 4096, 8192, 16384):
+        if v>max_size:
+            break
         try:
             do_testencoding(encoder_module, encoding, v, 64)
             maxw = v
@@ -138,6 +140,8 @@ def get_encoder_max_size(encoder_module, encoding):
     log("%s max width=%i", einfo(), maxw)
     maxh = 512
     for v in (512, 1024, 2048, 4096, 8192, 16384):
+        if v>max_size:
+            break
         try:
             do_testencoding(encoder_module, encoding, 64, v)
             maxh = v
