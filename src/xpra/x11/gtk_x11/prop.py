@@ -42,7 +42,6 @@ from xpra.x11.bindings.window_bindings import (
 X11Window = X11WindowBindings()
 
 from xpra.os_util import StringIOClass
-from xpra.x11.xsettings_prop import set_settings, get_settings
 from xpra.gtk_common.error import xsync, XError
 from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
 
@@ -242,6 +241,14 @@ def _to_utf8(disp, v):
 def _from_utf8(disp, v):
     return v.decode("UTF-8")
 
+def set_xsettings(disp, v):
+    from xpra.x11.xsettings_prop import set_settings
+    set_settings(disp.get_name(), v)
+
+def get_xsettings(disp, v):
+    from xpra.x11.xsettings_prop import get_settings
+    return get_settings(disp.get_name(), v)
+
 
 _prop_types = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
@@ -284,8 +291,8 @@ _prop_types = {
     "icon": (cairo.ImageSurface, "CARDINAL", 32,
              unsupported, NetWMIcons, None),
     "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8,
-                           set_settings,
-                           get_settings,
+                           set_xsettings,
+                           get_xsettings,
                            None),
     # For uploading ad-hoc instances of the above complex structures to the
     # server, so we can test reading them out again:

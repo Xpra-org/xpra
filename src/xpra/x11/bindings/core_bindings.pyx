@@ -58,6 +58,9 @@ cdef class X11CoreBindings:
         if os.environ.get("XPRA_X_SYNC", "0")=="1":
             XSynchronize(self.display, True)
 
+    def get_display_name(self):
+        return self.display_name
+
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 

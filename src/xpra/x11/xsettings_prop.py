@@ -51,14 +51,20 @@ if sys.version>='3':
     long = int              #@ReservedAssignment
 
 
+XSETTINGS_CACHE = {}
 def get_settings(disp, d):
+    global XSETTINGS_CACHE
     #parse xsettings according to
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
     if DEBUG_XSETTINGS:
         log("get_settings(%s)", list(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
-    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
+    cache = XSETTINGS_CACHE.get(disp)
+    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache(%s)=%s", byte_order, get_local_byteorder(), serial, n_settings, disp, cache)
+    if cache and cache[0]==serial:
+        log("get_settings(..) returning value from cache")
+        return cache
     settings = []
     pos = 12
     while n_settings>len(settings) and len(d)>0:
@@ -99,6 +105,8 @@ def get_settings(disp, d):
             log("get_settings(..) %s -> %s", list(d[istart:pos]), setting)
         settings.append(setting)
     log("get_settings(..) settings=%s", settings)
+    if disp:
+        XSETTINGS_CACHE[disp] = (serial, settings)
     return  serial, settings
 
 def set_settings(disp, d):
@@ -156,7 +164,6 @@ def main():
                 x.enable_debug()
 
         #naughty, but how else can I hook this up?
-        import os
         if os.name!="posix":
             print("xsettings require a posix OS")
             return 1

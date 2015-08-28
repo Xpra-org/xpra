@@ -75,7 +75,7 @@ def _get_xsettings():
         if not data:
             return None
         from xpra.x11.xsettings_prop import get_settings
-        return get_settings(None, data)
+        return get_settings(window_bindings.get_display_name(), data)
     except Exception as e:
         log("_get_xsettings error: %s", e)
     return None
