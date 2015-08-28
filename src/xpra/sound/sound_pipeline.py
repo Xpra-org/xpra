@@ -6,7 +6,7 @@
 import os
 import time
 
-from xpra.sound.gstreamer_util import gst
+from xpra.sound.gstreamer_util import import_gst
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -27,11 +27,10 @@ def inject_fault():
     _counter += 1
     return (_counter % FAULT_RATE)==0
 
-try:
-    MESSAGE_ELEMENT = gst.MESSAGE_ELEMENT
-except:
-    #gstreamer 1.x:
-    MESSAGE_ELEMENT = None
+gst = import_gst()
+MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
+from xpra.sound.gstreamer_util import gst_version       #must be done after import_gst()
+
 
 class SoundPipeline(gobject.GObject):
 
@@ -198,11 +197,11 @@ class SoundPipeline(gobject.GObject):
             self.idle_emit("error", str(err))
         elif t == gst.MESSAGE_TAG or t == MESSAGE_ELEMENT:
             try:
-                assert message.structure is not None, "test for pygst / 0.10"
+                assert gst_version[0]<1
                 #Gst 0.10: can handle both TAG and ELEMENT:
                 parse = self.parse_message0
             except:
-                #Gst 1.0: can only handle tag messages for now:
+                #Gst 1.0: (does not have MESSAGE_ELEMENT):
                 parse = self.parse_message1
             try:
                 parse(message)
@@ -212,7 +211,11 @@ class SoundPipeline(gobject.GObject):
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
         elif t == gst.MESSAGE_STREAM_START:
-            log("stream start: %s", message)
+            log("stream start: %r", message)
+            if gst_version[0]>0:
+                #with gstreamer 1.x, we don't get the "audio-codec" message..
+                #so print the codec here instead (and assume gstreamer is using what we told it to):
+                log.info("using audio codec: %s", self.codec)
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
