@@ -68,13 +68,17 @@ Recommends:
 #vivid:        ,libwebp5
 #wily:        ,libwebp5
 # audio-related:
-        ,gstreamer0.10-plugins-base
+#        ,gstreamer0.10-plugins-base
+        ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
-        ,gstreamer0.10-plugins-good
+#        ,gstreamer0.10-plugins-good
+        ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
-        ,gstreamer0.10-plugins-ugly
+#        ,gstreamer0.10-plugins-ugly
+        ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-        ,python-gst0.10
+#        ,python-gst0.10
+        ,python-gst-1.0
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):

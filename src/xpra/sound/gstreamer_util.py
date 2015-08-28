@@ -28,7 +28,8 @@ def get_queue_time(default_value=450, prefix=""):
 
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
-GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "0")=="1"
+DEFAULT_GSTREAMER1 = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", str(int(DEFAULT_GSTREAMER1)))=="1"
 MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
