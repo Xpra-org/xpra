@@ -740,72 +740,75 @@ def main():
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
 
-    from xpra.platform import init as platform_init
+    from xpra.platform import init as platform_init, clean as platform_clean
     from xpra.platform.gui import ready as gui_ready
-    platform_init("Xpra-Launcher", "Xpra Connection Launcher")
-    gui_init()
-
     try:
-        from xpra.scripts.main import parse_cmdline, fixup_debug_option
-        options, args = parse_cmdline(sys.argv)
-        debug = fixup_debug_option(options.debug)
-        if debug:
-            for x in debug.split(","):
-                enable_debug_for(x)
-    except Exception:
-        exception_dialog("Error parsing command line")
-        return 1
-
-    try:
-        app = ApplicationWindow()
-        def app_signal(signum, frame):
-            print("")
-            log("got signal %s" % SIGNAMES.get(signum, signum))
-            def show_signal():
-                app.show()
-                app.client.cleanup()
-                glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-                glib.timeout_add(1000, app.set_info_color, True)
-            #call from UI thread:
-            glib.idle_add(show_signal)
-        if sys.version_info[0]<3:
-            #breaks GTK3..
-            signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
-        has_file = len(args) == 1
-        if has_file:
-            app.update_options_from_file(args[0])
-            #the compressors and packet encoders cannot be changed from the UI
-            #so apply them now:
-            configure_network(app.config)
-        debug = fixup_debug_option(app.config.debug)
-        if debug:
-            for x in debug.split(","):
-                enable_debug_for(x)
-        #suspend tray workaround for our window widgets:
+        platform_init("Xpra-Launcher", "Xpra Connection Launcher")
+        gui_init()
+    
         try:
-            set_use_tray_workaround(False)
-            app.create_window()
-        finally:
-            set_use_tray_workaround(True)
-        app.update_gui_from_config()
-    except Exception:
-        exception_dialog("Error creating launcher form")
-        return 1
-    try:
-        if app.config.autoconnect:
-            #file says we should connect,
-            #do that only (not showing UI unless something goes wrong):
-            glib.idle_add(app.do_connect)
-        if not has_file:
-            app.reset_errors()
-        gui_ready()
-        if not app.config.autoconnect or app.config.debug:
-            app.show()
-        app.run()
-    except KeyboardInterrupt:
-        pass
-    return 0
+            from xpra.scripts.main import parse_cmdline, fixup_debug_option
+            options, args = parse_cmdline(sys.argv)
+            debug = fixup_debug_option(options.debug)
+            if debug:
+                for x in debug.split(","):
+                    enable_debug_for(x)
+        except Exception:
+            exception_dialog("Error parsing command line")
+            return 1
+    
+        try:
+            app = ApplicationWindow()
+            def app_signal(signum, frame):
+                print("")
+                log("got signal %s" % SIGNAMES.get(signum, signum))
+                def show_signal():
+                    app.show()
+                    app.client.cleanup()
+                    glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+                    glib.timeout_add(1000, app.set_info_color, True)
+                #call from UI thread:
+                glib.idle_add(show_signal)
+            if sys.version_info[0]<3:
+                #breaks GTK3..
+                signal.signal(signal.SIGINT, app_signal)
+            signal.signal(signal.SIGTERM, app_signal)
+            has_file = len(args) == 1
+            if has_file:
+                app.update_options_from_file(args[0])
+                #the compressors and packet encoders cannot be changed from the UI
+                #so apply them now:
+                configure_network(app.config)
+            debug = fixup_debug_option(app.config.debug)
+            if debug:
+                for x in debug.split(","):
+                    enable_debug_for(x)
+            #suspend tray workaround for our window widgets:
+            try:
+                set_use_tray_workaround(False)
+                app.create_window()
+            finally:
+                set_use_tray_workaround(True)
+            app.update_gui_from_config()
+        except Exception:
+            exception_dialog("Error creating launcher form")
+            return 1
+        try:
+            if app.config.autoconnect:
+                #file says we should connect,
+                #do that only (not showing UI unless something goes wrong):
+                glib.idle_add(app.do_connect)
+            if not has_file:
+                app.reset_errors()
+            gui_ready()
+            if not app.config.autoconnect or app.config.debug:
+                app.show()
+            app.run()
+        except KeyboardInterrupt:
+            pass
+        return 0
+    finally:
+        platform_clean()
 
 
 if __name__ == "__main__":

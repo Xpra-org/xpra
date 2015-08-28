@@ -247,9 +247,12 @@ class ClientExtras(object):
 
 
 def main():
-    from xpra.platform import init
-    init("OSX Extras")
-    ClientExtras(None, None, True)
+    from xpra.platform import init, clean
+    try:
+        init("OSX Extras")
+        ClientExtras(None, None, True)
+    finally:
+        clean()
 
 
 if __name__ == "__main__":

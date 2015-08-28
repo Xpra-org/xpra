@@ -138,33 +138,36 @@ class StartNewCommand(object):
 
 
 def main():
-    from xpra.platform import init as platform_init
+    from xpra.platform import init as platform_init, set_name, clean as platform_clean
     from xpra.platform.gui import ready as gui_ready
-    platform_init("Start-New-Command", "Start New Command")
-
-    #logging init:
-    if "-v" in sys.argv:
-        enable_debug_for("util")
-
-    from xpra.os_util import SIGNAMES
-    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-    gtk_main_quit_on_fatal_exceptions_enable()
-
-    app = StartNewCommand()
-    app.close = app.quit
-    def app_signal(signum, frame):
-        print("")
-        log.info("got signal %s", SIGNAMES.get(signum, signum))
-        app.quit()
-    signal.signal(signal.SIGINT, app_signal)
-    signal.signal(signal.SIGTERM, app_signal)
     try:
-        gui_ready()
-        app.show()
-        app.run()
-    except KeyboardInterrupt:
-        pass
-    return 0
+        platform_init("Start-New-Command", "Start New Command")
+    
+        #logging init:
+        if "-v" in sys.argv:
+            enable_debug_for("util")
+    
+        from xpra.os_util import SIGNAMES
+        from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
+        gtk_main_quit_on_fatal_exceptions_enable()
+    
+        app = StartNewCommand()
+        app.close = app.quit
+        def app_signal(signum, frame):
+            print("")
+            log.info("got signal %s", SIGNAMES.get(signum, signum))
+            app.quit()
+        signal.signal(signal.SIGINT, app_signal)
+        signal.signal(signal.SIGTERM, app_signal)
+        try:
+            gui_ready()
+            app.show()
+            app.run()
+        except KeyboardInterrupt:
+            pass
+        return 0
+    finally:
+        platform_clean()
 
 
 if __name__ == "__main__":

@@ -193,40 +193,42 @@ gobject.type_register(OSXClipboardProxy)
 def main():
     global change_count
     import time
-    from xpra.platform import init
-    init("OSX Clipboard Change Test")
-    log.enable_debug()
-
-    #init UI watcher with gobject (required by pasteboard monitoring code)
-    from xpra.platform.ui_thread_watcher import get_UI_watcher
-    gobject.threads_init()
-    import gtk.gdk
-    gtk.gdk.threads_init()
-    get_UI_watcher(glib.timeout_add)
-
-    log.info("testing pasteboard")
-    if not init_pasteboard():
-        log.warn("failed to initialize a pasteboard!")
-        return
-    assert update_clipboard_change_count is not None, "cannot access clipboard change count"
-    cc = update_clipboard_change_count()
-    log.info("current change count=%s", cc)
-    clipboard = gtk.Clipboard(selection="CLIPBOARD")
-    log.info("changing clipboard %s contents", clipboard)
-    clipboard.set_text("HELLO WORLD %s" % time.time())
-    cc = update_clipboard_change_count()
-    log.info("new change count=%s", cc)
-    log.info("any update to your clipboard should get logged (^C to exit)")
-    while True:
-        v = update_clipboard_change_count()
-        if v!=cc:
-            log.info("success! the clipboard change has been detected, new change count=%s", v)
-        else:
-            log.info(".")
-        time.sleep(1)
-    if v==cc:
-        log.info("no clipboard change detected")
-
+    from xpra.platform import init, clean
+    try:
+        init("OSX Clipboard Change Test")
+        log.enable_debug()
+    
+        #init UI watcher with gobject (required by pasteboard monitoring code)
+        from xpra.platform.ui_thread_watcher import get_UI_watcher
+        gobject.threads_init()
+        import gtk.gdk
+        gtk.gdk.threads_init()
+        get_UI_watcher(glib.timeout_add)
+    
+        log.info("testing pasteboard")
+        if not init_pasteboard():
+            log.warn("failed to initialize a pasteboard!")
+            return
+        assert update_clipboard_change_count is not None, "cannot access clipboard change count"
+        cc = update_clipboard_change_count()
+        log.info("current change count=%s", cc)
+        clipboard = gtk.Clipboard(selection="CLIPBOARD")
+        log.info("changing clipboard %s contents", clipboard)
+        clipboard.set_text("HELLO WORLD %s" % time.time())
+        cc = update_clipboard_change_count()
+        log.info("new change count=%s", cc)
+        log.info("any update to your clipboard should get logged (^C to exit)")
+        while True:
+            v = update_clipboard_change_count()
+            if v!=cc:
+                log.info("success! the clipboard change has been detected, new change count=%s", v)
+            else:
+                log.info(".")
+            time.sleep(1)
+        if v==cc:
+            log.info("no clipboard change detected")
+    finally:
+        clean()
 
 if __name__ == "__main__":
     main()

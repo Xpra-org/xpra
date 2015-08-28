@@ -100,9 +100,12 @@ def main():
 
 
 if __name__ == "__main__":
-    from xpra.platform import init
+    from xpra.platform import init, clean
     from xpra.platform.gui import init as gui_init
-    init()
-    gui_init()
-    v = main()
+    try:
+        init("About")
+        gui_init()
+        v = main()
+    finally:
+        clean()
     sys.exit(v)
