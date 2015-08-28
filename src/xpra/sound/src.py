@@ -182,7 +182,7 @@ class SoundSource(SoundPipeline):
                 log("emit_buffer: will flush jitter queue in %ims", jitter)
             self.jitter_queue.put((data, metadata))
             return 0
-        log("emit_buffer data=%s", type(data))
+        log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
         return self.do_emit_buffer(data, metadata)
 
     def flush_jitter_queue(self):
