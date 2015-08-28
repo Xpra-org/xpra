@@ -23,7 +23,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, is_blacklisted
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -2324,10 +2324,14 @@ def init_module():
     #this should log the kernel module version
     v = get_nvidia_module_version()
     if not v:
-        log.warn("unknown driver version")
-    elif v>=[350]:
-        log.warn("Warning: NVidia driver version %s may not work", pver(v))
-        log.warn(" recommended driver versions: up to 350 only")
+        log.warn("Warning: unknown NVidia driver version")
+    else:
+        bl = is_blacklisted()
+        if bl is True:
+            raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
+        elif bl is None:
+            log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
+            log.warn(" recommended driver versions: up to 350 only")
 
     #load the library / DLL:
     init_nvencode_library()

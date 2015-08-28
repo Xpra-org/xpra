@@ -10,6 +10,8 @@ from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 from xpra.util import pver
 
+IGNORE_NVIDIA_DRIVER_BLACKLIST = os.environ.get("XPRA_IGNORE_NVIDIA_DRIVER_BLACKLIST", "0")=="1"
+
 
 def get_nvml_driver_version():
     try:
@@ -85,6 +87,26 @@ def get_nvidia_module_version(probe=True):
         nvidia_module_version = identify_nvidia_module_version()
     return nvidia_module_version
 
+
+def is_blacklisted():
+    v = get_nvidia_module_version(True)
+    def wouldfail():
+        if IGNORE_NVIDIA_DRIVER_BLACKLIST:
+            log.warn("Warning: the driver blacklist has been ignored")
+            return False
+        return True
+    try:
+        if v[0]<350:
+            return False
+        if v[0]==352 and v[1]<=30:
+            return wouldfail()
+        if v[0]==355 and v[1]<=6:
+            return wouldfail()
+    except Exception as e:
+        log.warn("Warning: error checking driver version:")
+        log.warn(" %s", e)
+    return None     #we don't know: unreleased / untested
+
 nvenc_license_keys = {}
 def get_nvenc_license_keys(nvenc_version=0):
     global nvenc_license_keys
@@ -137,7 +159,9 @@ def main():
     try:
         init("Nvidia-Info", "Nvidia Info")
         #this will log the version number:
-        identify_nvidia_module_version()
+        get_nvidia_module_version()
+        if is_blacklisted():
+            log.warn("Warning: this driver version is blacklisted")
         log.info("NVENC license keys:")
         for v in (0, 3, 4):
             keys = get_nvenc_license_keys(v)
