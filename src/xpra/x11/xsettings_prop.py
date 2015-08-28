@@ -14,10 +14,13 @@ and
 It is used by xpra.x11.gtk_x11.prop
 """
 
-import sys
+import sys, os
 import struct
 from xpra.log import Logger
 log = Logger("x11", "xsettings")
+
+
+DEBUG_XSETTINGS = os.environ.get("XPRA_XSETTINGS_DEBUG", "0")=="1"
 
 
 if sys.version > '3':
@@ -52,7 +55,8 @@ def get_settings(disp, d):
     #parse xsettings according to
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
-    log("get_settings(%s)", list(d))
+    if DEBUG_XSETTINGS:
+        log("get_settings(%s)", list(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
     log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
     settings = []
@@ -69,7 +73,8 @@ def get_settings(disp, d):
         assert len(d)>=pos+4, "not enough data (%s bytes) to extract serial (4 bytes needed)" % (len(d)-pos)
         last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
         pos += 4
-        log("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
+        if DEBUG_XSETTINGS:
+            log("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
         if setting_type==XSettingsTypeInteger:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
@@ -90,7 +95,8 @@ def get_settings(disp, d):
             log.error("invalid setting type: %s, cannot continue parsing XSETTINGS!", setting_type)
             break
         setting = setting_type, prop_name, value, last_change_serial
-        log("get_settings(..) %s -> %s", list(d[istart:pos]), setting)
+        if DEBUG_XSETTINGS:
+            log("get_settings(..) %s -> %s", list(d[istart:pos]), setting)
         settings.append(setting)
     log("get_settings(..) settings=%s", settings)
     return  serial, settings
