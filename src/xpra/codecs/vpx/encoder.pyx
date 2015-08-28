@@ -660,5 +660,5 @@ def selftest(full=False):
     if full:
         global MAX_SIZE
         for encoding in get_encodings():
-            MAX_SIZE[encoding] = get_encoder_max_size(encoder, encoding)
+            MAX_SIZE[encoding] = get_encoder_max_size(encoder, encoding, max_size=8192)
         log("%s max dimensions: %s", encoder, MAX_SIZE)
