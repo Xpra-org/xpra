@@ -232,7 +232,7 @@ def import_gst():
                (import_gst1, 1, "1.x"),
                ]
         if GSTREAMER1:
-            imports = imports.reverse()  #try gst1 first:
+            imports.reverse()  #try gst1 first:
     errs = {}
     for import_function, MV, vinfo in imports:
         try:
