@@ -229,7 +229,7 @@ popd
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
-PKG_CONFIG_PATH=$PKG_CONFIG_PATH:%{_libdir}/xpra/pkgconfig
+PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH
 CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python2} setup.py build %{dummy} --with-tests
 popd
