@@ -12,19 +12,30 @@ _init_done = False
 def init(prgname=None, appname=None):
     """ do whatever is needed to prepare an application for running,
         some platforms may initialize logging to file, etc
+        If the names are supplied, we call set_name()
     """
     global _init_done
+    if prgname is not None or appname is not None:
+        set_default_name(prgname, appname)
+        set_name()
     if not _init_done:
         _init_done = True
-        if prgname:
-            set_prgname(prgname)
-        if appname:
-            set_application_name(appname)
         do_init()
 
 #platforms can override this
 def do_init():
     pass
+
+
+_prgname = None
+_appname = None
+def set_default_name(prgname=None, appname=None):
+    #sets the default prg and app names
+    global _prgname, _appname
+    if prgname is not None:
+        _prgname = prgname
+    if appname is not None:
+        _appname = appname
 
 
 #platforms can override this
@@ -47,46 +58,40 @@ def do_clean():
     pass
 
 
+_name_set = False
+def set_name(prgname=_prgname, appname=_appname):
+    global _name_set
+    if not _name_set:
+        _name_set = True
+        set_prgname(prgname)
+        set_application_name(appname)
+
 def _glib():
     from xpra.gtk_common.gobject_compat import import_glib
     return import_glib()
 
 #platforms can override this
-_prg_name = None
 def set_prgname(name):
-    global _prg_name
-    if _prg_name is None:
-        _prg_name = name
-        do_set_prgname(name)
-
-def do_set_prgname(name):
     try:
         _glib().set_prgname(name)
     except:
         pass
 
 def get_prgname():
-    global _prg_name
-    return _prg_name
+    global _prgname
+    return _prgname
 
 
 #platforms can override this
-_application_name = None
 def set_application_name(name):
-    global _application_name
-    if _application_name is None:
-        _application_name = name
-        do_set_application_name(name)
-
-def do_set_application_name(name):
     try:
         _glib().set_application_name(name)
     except:
         pass
 
 def get_application_name():
-    global _application_name
-    return _application_name
+    global _appname
+    return _appname
 
 
 def get_main_fallback():
@@ -143,5 +148,5 @@ def platform_import(where, pm, required, *imports):
         where[x] = v
 
 platform_import(globals(), None, True, "do_init", "do_clean")
-platform_import(globals(), None, False, "do_set_prgname", "do_set_application_name",
+platform_import(globals(), None, False, "set_prgname", "set_application_name",
                 "command_error", "command_info", "get_main_fallback", "do_get_username")

@@ -101,14 +101,13 @@ def fixup_defaults(defaults):
 
 
 def main(script_file, cmdline):
-    from xpra.platform import init as platform_init, clean as platform_clean, command_error, command_info, get_main_fallback
+    from xpra.platform import clean as platform_clean, command_error, command_info, get_main_fallback
     if len(cmdline)==1:
         fm = get_main_fallback()
         if fm:
             return fm()
 
     try:
-        platform_init("Xpra")
         try:
             defaults = make_defaults_struct()
             fixup_defaults(defaults)
@@ -864,6 +863,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             prevent_import()
         except:
             pass
+        #and only the sound commands don't want to set the name
+        #(they do it later to prevent glib import conflicts)
+        from xpra.platform import set_name
+        set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     try:
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
