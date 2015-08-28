@@ -11,6 +11,9 @@ from xpra.log import Logger
 from xpra.codecs.dec_avcodec2.decoder import av_enum
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.csc_cython import colorspace_converter
+from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces,\
+    get_output_colorspaces
+from xpra.codecs.enc_x264.encoder import MAX_HEIGHT
 log = Logger("csc", "swscale")
 
 from xpra.os_util import is_Ubuntu
@@ -162,7 +165,7 @@ for speed, flags, flag_strs in FLAGS_OPTIONS:
     flag_value = 0
     for flag in flags:
         flag_value |= flag
-    log("%s=%s", speed, flag_value)
+    log("speed=%s %s=%s", speed, "|".join(flag_strs), flag_value)
     FLAGS.append((speed, SWSFlags(flag_value, flag_strs)))
 log("swscale flags: %s", FLAGS)
 
@@ -240,8 +243,8 @@ def get_output_colorspaces(input_colorspace):
 
 
 #a safe guess, which we probe later on:
-MAX_WIDTH = 4096
-MAX_HEIGHT = 4096
+MAX_WIDTH = 16384
+MAX_HEIGHT = 16384
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES)
@@ -427,8 +430,8 @@ cdef class ColorspaceConverter:
     def clean(self):                        #@DuplicatedSignature
         #overzealous clean is cheap!
         cdef int i
-        log("swscale.ColorspaceConverter.clean()")
         if self.context!=NULL:
+            log("swscale.ColorspaceConverter.clean() sws context=%#x", <unsigned long> self.context)
             sws_freeContext(self.context)
             self.context = NULL
         self.src_width = 0
@@ -538,6 +541,35 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
     from xpra.codecs.csc_swscale import colorspace_converter
     override_logger()
-    testcsc(colorspace_converter, full)
-    MAX_WIDTH, MAX_HEIGHT = get_csc_max_size(colorspace_converter)
-    log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
+    #test a limited set, not all combinations:
+    if full:
+        planar_tests = [x for x in get_input_colorspaces() if x.endswith("P")]
+        packed_tests = [x for x in get_input_colorspaces() if ((x.find("BGR")>=0 or x.find("RGB")>=0) and not x not in planar_tests)]
+    else:
+        planar_tests = [x for x in ("YUV420P", "YUV422P", "YUV444P", "GBRP") if x in get_input_colorspaces()]
+        packed_tests = ["BGRX"]   #only test BGRX
+    maxw, maxh = 2**24, 2**24
+    for planar in planar_tests:
+        for packed in packed_tests:
+            #test planar to packed:
+            if packed not in get_output_colorspaces(planar):
+                continue
+            testcsc(colorspace_converter, full, [planar], [packed])
+            if full:
+                mw, mh = get_csc_max_size(colorspace_converter, [planar], [packed])
+                maxw = min(maxw, mw)
+                maxh = min(maxh, mh)
+            #test BGRX to planar:
+            if packed not in get_input_colorspaces():
+                continue
+            if planar not in get_output_colorspaces(packed):
+                continue
+            testcsc(colorspace_converter, full, [packed], [planar])
+            if full:
+                mw, mh = get_csc_max_size(colorspace_converter, [packed], [planar])
+                maxw = min(maxw, mw)
+                maxh = min(maxh, mh)
+    if full and maxw<65536 and maxh<65536:
+        MAX_WIDTH = maxw
+        MAX_HEIGHT = maxh
+        log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
