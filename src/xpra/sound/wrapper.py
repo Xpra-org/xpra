@@ -8,8 +8,8 @@ import time
 import sys
 
 from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, parse_element_options, \
-                            can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
-from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, glib, exec_kwargs, exec_env
+                            can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names, GSTREAMER1
+from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
 from xpra.util import AdHocStruct
 from xpra.scripts.config import InitExit, InitException
@@ -58,16 +58,16 @@ class sound_subprocess(subprocess_callee):
 
     def start(self):
         if not FAKE_START_FAILURE:
-            glib.idle_add(self.wrapped_object.start)
+            self.idle_add(self.wrapped_object.start)
         if FAKE_EXIT>0:
             def process_exit():
                 self.cleanup()
-                glib.timeout_add(250, self.stop)
-            glib.timeout_add(FAKE_EXIT*1000, process_exit)
+                self.timeout_add(250, self.stop)
+            self.timeout_add(FAKE_EXIT*1000, process_exit)
         if FAKE_CRASH>0:
             def force_exit():
                 sys.exit(1)
-            glib.timeout_add(FAKE_CRASH*1000, force_exit)
+            self.timeout_add(FAKE_CRASH*1000, force_exit)
         subprocess_callee.start(self)
 
     def cleanup(self):
@@ -105,6 +105,10 @@ def run_sound(mode, error_cb, options, args):
     """ this function just parses command line arguments to feed into the sound subprocess class,
         which in turn just feeds them into the sound pipeline class (sink.py or src.py)
     """
+    from xpra.gtk_common.gobject_compat import want_gtk3
+    want_gtk3(GSTREAMER1)
+    from xpra.platform import init
+    init("Xpra")
     from xpra.sound.gstreamer_util import import_gst
     gst = import_gst()
     log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
@@ -211,15 +215,15 @@ class sound_subprocess_wrapper(subprocess_caller):
     def start(self):
         subprocess_caller.start(self)
         log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
-        glib.timeout_add(2500, self.verify_started)
+        self.timeout_add(2500, self.verify_started)
 
 
     def cleanup(self):
         log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
         #cleanup should cause the process to exit
-        glib.timeout_add(500, self.send, "stop")
-        glib.timeout_add(1000, self.stop)
+        self.timeout_add(500, self.send, "stop")
+        self.timeout_add(1000, self.stop)
 
 
     def verify_started(self):
@@ -237,7 +241,7 @@ class sound_subprocess_wrapper(subprocess_caller):
     def subprocess_signal(self, wrapper, proc):
         log("subprocess_signal: %s", proc)
         #call via idle_add to prevent deadlocks on win32!
-        glib.idle_add(self.stop_protocol)
+        self.idle_add(self.stop_protocol)
 
 
     def state_changed(self, wrapper, new_state):

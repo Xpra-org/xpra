@@ -12,9 +12,6 @@
 import os, sys
 import signal
 
-from xpra.gtk_common.gobject_compat import import_glib
-glib = import_glib()
-
 from xpra.util import updict
 from xpra.log import Logger
 log = Logger("server", "util")
@@ -58,6 +55,8 @@ class ChildReaper(object):
     #note: the quit callback will fire only once!
     def __init__(self, quit_cb=None):
         log("ChildReaper(%s)", quit_cb)
+        from xpra.gtk_common.gobject_compat import import_glib
+        self.glib = import_glib()
         self._quit = quit_cb
         self._proc_info = []
         if USE_PROCESS_POLLING:
@@ -67,7 +66,7 @@ class ChildReaper(object):
                 log.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
             else:
                 log("using process polling every %s seconds", POLL_DELAY)
-            glib.timeout_add(POLL_DELAY*1000, self.poll)
+            self.glib.timeout_add(POLL_DELAY*1000, self.poll)
         else:
             #with a less buggy python, we can just check the list of pids
             #whenever we get a SIGCHLD
@@ -84,7 +83,7 @@ class ChildReaper(object):
             def check_once():
                 self.check()
                 return False # Only call once
-            glib.timeout_add(0, check_once)
+            self.glib.timeout_add(0, check_once)
 
     def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
         pid = process.pid
@@ -129,8 +128,8 @@ class ChildReaper(object):
         return True
 
     def sigchld(self, signum, frame):
-        glib.idle_add(log, "sigchld(%s, %s)", signum, frame)
-        glib.idle_add(self.reap)
+        self.glib.idle_add(log, "sigchld(%s, %s)", signum, frame)
+        self.glib.idle_add(self.reap)
 
     def add_dead_pid(self, pid):
         #find the procinfo for this pid:

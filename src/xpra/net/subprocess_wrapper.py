@@ -11,7 +11,6 @@ import binascii
 
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.util import repr_ellipsized
-glib = import_glib()
 
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.protocol import Protocol, ConnectionClosedException
@@ -50,16 +49,6 @@ else:
         pass
 
 
-#this allows us to use the gtk main loop instead:
-#import gtk
-#gtk.threads_init()
-#class mainloop(object):
-#    def run(self):
-#        gtk.main()
-#    def quit(self):
-#        gtk.main_quit()
-mainloop = glib.MainLoop
-
 def setup_fastencoder_nocompression(protocol):
     from xpra.net.packet_encoding import get_enabled_encoders, PERFORMANCE_ORDER
     encoders = get_enabled_encoders(PERFORMANCE_ORDER)
@@ -85,7 +74,6 @@ class subprocess_callee(object):
     (there is no validation of which signals are valid or not)
     """
     def __init__(self, input_filename="-", output_filename="-", wrapped_object=None, method_whitelist=None):
-        self.mainloop = mainloop()
         self.name = ""
         self.input_filename = input_filename
         self.output_filename = output_filename
@@ -99,6 +87,14 @@ class subprocess_callee(object):
             #this breaks gobject3!
             signal.signal(signal.SIGINT, self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
+        self.setup_mainloop()
+
+    def setup_mainloop(self):
+        glib = import_glib()
+        self.mainloop = glib.MainLoop()
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
 
 
     def connect_export(self, signal_name, *user_data):
@@ -162,7 +158,7 @@ class subprocess_callee(object):
         #stdin and stdout wrapper:
         conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.net_stop)
         conn.timeout = 0
-        protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol
@@ -176,7 +172,7 @@ class subprocess_callee(object):
         #this is called from the network thread,
         #we use idle add to ensure we clean things up from the main thread
         log("net_stop() will call stop from main thread")
-        glib.idle_add(self.stop)
+        self.idle_add(self.stop)
 
 
     def cleanup(self):
@@ -202,7 +198,7 @@ class subprocess_callee(object):
         self.send("signal", signame)
         self.cleanup()
         #give time for the network layer to send the signal message
-        glib.timeout_add(150, self.stop)
+        self.timeout_add(150, self.stop)
 
     def signal_stop(self, sig, frame):
         """ This time we really want to exit without waiting """
@@ -260,7 +256,7 @@ class subprocess_callee(object):
             return
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", wo, attr, str(tuple(packet[1:]))[:128])
-        glib.idle_add(method, *packet[1:])
+        self.idle_add(method, *packet[1:])
         INJECT_FAULT(proto)
 
 
@@ -311,6 +307,10 @@ class subprocess_caller(object):
         #hook a default packet handlers:
         self.connect(Protocol.CONNECTION_LOST, self.connection_lost)
         self.connect(Protocol.GIBBERISH, self.gibberish)
+        glib = import_glib()
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
 
 
     def connect(self, signal, cb, *args):
@@ -337,7 +337,7 @@ class subprocess_caller(object):
         #make a connection using the process stdin / stdout
         conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=self.abort_test, target=self.description, info=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
-        protocol = Protocol(glib, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol
@@ -422,6 +422,6 @@ class subprocess_caller(object):
             for cb, args in callbacks:
                 try:
                     all_args = list(args) + extra_args
-                    glib.idle_add(cb, self, *all_args)
+                    self.idle_add(cb, self, *all_args)
                 except Exception:
                     log.error("error processing callback %s for %s packet", cb, signal_name, exc_info=True)
