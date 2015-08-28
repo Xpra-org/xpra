@@ -799,7 +799,7 @@ def configure_logging(options, mode):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
-        if os.isatty(sys.stderr.fileno()) or os.environ.get("XPRA_FORCE_COLOR_LOG", "0")=="1":
+        if (hasattr(to, "fileno") and os.isatty(to.fileno())) or os.environ.get("XPRA_FORCE_COLOR_LOG", "0")=="1":
             from xpra.colorstreamhandler import ColorStreamHandler
             from xpra.log import LOG_FORMAT
             from logging import Formatter
