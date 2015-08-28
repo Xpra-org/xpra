@@ -129,7 +129,12 @@ def get_first_line_output(commands):
     return  ""
 
 def get_nvcc_version():
-    lines = get_output_lines([("nvcc --version", 0)])
+    options = []
+    for p in ("/usr/local/cuda/bin", "/opt/cuda/bin", ""):
+        nvcc = os.path.join(p, "nvcc")
+        if p=="" or os.path.exists(nvcc):
+            options.append(("%s --version" % (nvcc), 0))
+    lines = get_output_lines(options)
     if len(lines)>0:
         vline = lines[-1]
         vpos = vline.rfind(", V")
