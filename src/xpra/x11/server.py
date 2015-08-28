@@ -950,6 +950,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.set_xsettings(self.default_xsettings or (0, ()))
 
     def set_xsettings(self, v):
+        settingslog("set_xsettings(%s)", v)
         if self._xsettings_manager is None:
             self._xsettings_manager = XSettingsManager()
         self._xsettings_manager.set_settings(v)

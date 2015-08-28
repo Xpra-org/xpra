@@ -241,13 +241,20 @@ def _to_utf8(disp, v):
 def _from_utf8(disp, v):
     return v.decode("UTF-8")
 
+
+def _get_display_name(disp):
+    try:
+        return disp.get_display().get_name()
+    except:
+        return None
+
 def set_xsettings(disp, v):
     from xpra.x11.xsettings_prop import set_settings
-    set_settings(disp.get_name(), v)
+    return set_settings(_get_display_name(disp), v)
 
 def get_xsettings(disp, v):
     from xpra.x11.xsettings_prop import get_settings
-    return get_settings(disp.get_name(), v)
+    return get_settings(_get_display_name(disp), v)
 
 
 _prop_types = {
