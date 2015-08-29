@@ -15,7 +15,6 @@ from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal
 gobject = import_gobject()
 gobject.threads_init()
-glib = import_glib()
 
 FAULT_RATE = int(os.environ.get("XPRA_SOUND_FAULT_INJECTION_RATE", "0"))
 _counter = 0
@@ -56,9 +55,13 @@ class SoundPipeline(gobject.GObject):
         self.buffer_count = 0
         self.byte_count = 0
         self.emit_info_due = False
+        glib = import_glib()
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
 
     def idle_emit(self, sig, *args):
-        glib.idle_add(self.emit, sig, *args)
+        self.idle_add(self.emit, sig, *args)
 
     def emit_info(self):
         if self.emit_info_due:
@@ -67,7 +70,7 @@ class SoundPipeline(gobject.GObject):
         def do_emit_info():
             self.emit_info_due = False
             self.emit("info", self.get_info())
-        glib.timeout_add(50, do_emit_info)
+        self.timeout_add(50, do_emit_info)
 
     def get_info(self):
         info = {"codec"             : self.codec or "",
@@ -133,7 +136,7 @@ class SoundPipeline(gobject.GObject):
         self.pipeline.set_state(gst.STATE_PLAYING)
         self.emit_info()
         #we may never get the stream start, synthesize codec event so we get logging:
-        glib.timeout_add(1000, self.new_codec_description, self.codec)
+        self.timeout_add(1000, self.new_codec_description, self.codec)
         log("SoundPipeline.start() done")
 
     def stop(self):
@@ -227,7 +230,7 @@ class SoundPipeline(gobject.GObject):
                 #with gstreamer 1.x, we don't always get the "audio-codec" message..
                 #so print the codec from here instead (and assume gstreamer is using what we told it to)
                 #after a delay, just in case we do get the real "audio-codec" message!
-                glib.timeout_add(500, self.new_codec_description, self.codec)
+                self.timeout_add(500, self.new_codec_description, self.codec)
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:

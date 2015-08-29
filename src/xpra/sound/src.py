@@ -176,9 +176,7 @@ class SoundSource(SoundPipeline):
                 #queue was empty, schedule a timer to flush it
                 from random import randint
                 jitter = randint(1, JITTER)
-                from xpra.gtk_common.gobject_compat import import_glib
-                glib = import_glib()
-                glib.timeout_add(jitter, self.flush_jitter_queue)
+                self.timeout_add(jitter, self.flush_jitter_queue)
                 log("emit_buffer: will flush jitter queue in %ims", jitter)
             self.jitter_queue.put((data, metadata))
             return 0

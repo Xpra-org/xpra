@@ -8,7 +8,7 @@ import sys, os, time
 from collections import deque
 from threading import Lock
 
-from xpra.sound.sound_pipeline import SoundPipeline, gobject, glib, one_arg_signal
+from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, MP3, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 
@@ -308,6 +308,8 @@ def main():
     from xpra.platform import init, clean
     init("Sound-Record")
     try:
+        from xpra.gtk_common.gobject_compat import import_glib
+        glib = import_glib()
         args = sys.argv
         log.enable_debug()
         import os.path
