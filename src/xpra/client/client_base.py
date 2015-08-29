@@ -340,14 +340,14 @@ class XpraClientBase(object):
             key_salt = get_salt()
             iterations = get_iterations()
             padding = choose_padding(self.server_padding_options)
-            capabilities.update({
-                        "cipher"                       : self.encryption,
-                        "cipher.iv"                    : iv,
-                        "cipher.key_salt"              : key_salt,
-                        "cipher.key_stretch_iterations": iterations,
-                        "cipher.padding"               : padding,
-                        "cipher.padding.options"       : PADDING_OPTIONS,
-                        })
+            up("cipher", {
+                    ""                      : self.encryption,
+                    "iv"                    : iv,
+                    "key_salt"              : key_salt,
+                    "key_stretch_iterations": iterations,
+                    "padding"               : padding,
+                    "padding.options"       : PADDING_OPTIONS,
+                    })
             key = self.get_encryption_key()
             if key is None:
                 self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
