@@ -1,9 +1,10 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%define with_python3 0%{?fedora}
 
 Name:		Cython
 Version:	0.23.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -11,57 +12,102 @@ License:	Python
 URL:		http://www.cython.org
 Source:		http://www.cython.org/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Requires:   python
 
 BuildRequires:	python-devel python-setuptools
+%if %{with_python3}
+BuildRequires:  python3-devel
+%endif
+
 
 %description
 This is a development version of Pyrex, a language
 for writing Python extension modules.
 
-For more info, see:
 
-    Doc/About.html for a description of the language
-    INSTALL.txt	   for installation instructions
-    USAGE.txt	   for usage instructions
-    Demos	   for usage examples
+%if %{with_python3}
+%package -n python3-Cython
+Summary:        A language for writing Python extension modules
+Group:          Development/Tools
+ 
+%description -n python3-Cython
+This is a development version of Pyrex, a language
+for writing Python extension modules.
+%endif
 
 
 %prep
 %setup -q -n %{name}-%{version}
 
+%if %{with_python3}
+rm -rf %{py3dir}
+cp -a . %{py3dir}
+find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
+%endif
+ 
+find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python}|'
+
 
 %build
-%{__python} setup.py build
+CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
+ 
+%if %{with_python3}
+pushd %{py3dir}
+CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
+popd
+%endif
 
 
 %install
 rm -rf %{buildroot}
+# Must do the python3 install first because the scripts in /usr/bin are
+# overwritten with every setup.py install (and we want the python2 version
+# to be the default for now).
+%if %{with_python3}
+pushd %{py3dir}
+%{__python3} setup.py install --skip-build --root $RPM_BUILD_ROOT
+mv $RPM_BUILD_ROOT/usr/bin/cython $RPM_BUILD_ROOT/usr/bin/cython3
+mv $RPM_BUILD_ROOT/usr/bin/cygdb $RPM_BUILD_ROOT/usr/bin/cygdb3
+rm -rf %{buildroot}%{python3_sitelib}/setuptools/tests
+popd
+%endif
 
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
+rm -rf %{buildroot}%{python_sitelib}/setuptools/tests
 
 
 %clean
 rm -rf %{buildroot}
 
+
 ##%%check
 ##%%{__python} runtests.py -x numpy
+
 
 %files
 %defattr(-,root,root,-)
 %{_bindir}/cython
 %{_bindir}/cythonize
-#cygdb is not built with python 2.4 or 2.3.
-%if 0%{?fedora} || 0%{?rhel} >= 6
 %{_bindir}/cygdb
-%endif
 %{python_sitearch}/Cython
 %{python_sitearch}/cython.py*
 %{python_sitearch}/pyximport
 %{python_sitearch}/Cython*egg-info
+%if %{with_python3}
+%files -n python3-Cython
+%doc *.txt Demos Doc Tools
+%{python3_sitearch}/*
+%{_bindir}/cython3
+%{_bindir}/cygdb3
+%{python3_sitearch}/Cython*egg-info
+%endif
 %doc *.txt Demos Doc Tools
 
 
 %changelog
+* Sun Aug 23 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.1-2
+- build python3 package
+
 * Sun Aug 23 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.1-1
 - new upstream release
 
