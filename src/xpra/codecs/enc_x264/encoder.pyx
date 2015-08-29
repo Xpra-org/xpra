@@ -337,11 +337,11 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 if X264_BUILD<146:
     #untested, but should be OK for 4k:
-    MAX_WIDTH = 4096
-    MAX_HEIGHT = 4096
+    MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 else:
-    MAX_WIDTH = 16384
-    MAX_HEIGHT = 16384
+    #actual limits (which we cannot reach because we hit OOM):
+    #MAX_WIDTH, MAX_HEIGHT = 16384, 16384
+    MAX_WIDTH, MAX_HEIGHT = 8192, 4096
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
