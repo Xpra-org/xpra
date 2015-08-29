@@ -19,6 +19,15 @@ class TestDecoders(unittest.TestCase):
             codec = loader.get_codec(codec_name)
             if not codec:
                 continue
+            init_module = getattr(codec, "init_module", None)
+            #print("%s.init_module=%s" % (codec, init_module))
+            if init_module:
+                try:
+                    init_module()
+                except Exception as e:
+                    print("cannot initialize %s: %s" % (codec, e))
+                    print(" test skipped")
+                    continue
             #print("found %s: %s" % (codec_name, codec))
             selftest = getattr(codec, "selftest", None)
             #print("selftest(%s)=%s" % (codec_name, selftest))
