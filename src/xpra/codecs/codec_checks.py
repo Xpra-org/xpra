@@ -27,20 +27,28 @@ TEST_COMPRESSED_DATA = {
 def make_test_image(pixel_format, w, h):
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
+    try:
+        import numpy
+        def makebuf(size):
+            a = numpy.empty(size, dtype=numpy.byte)
+            return a.data
+    except:
+        def makebuf(size):
+            return bytes(b"\0"*(w*h//(ydiv[0]*ydiv[1])))
     #import time
     #start = time.time()
     if pixel_format.startswith("YUV") or pixel_format=="GBRP":
         divs = get_subsampling_divs(pixel_format)
         ydiv = divs[0]  #always (1,1)
-        y = bytes(b"\0"*(w*h//(ydiv[0]*ydiv[1])))
+        y = makebuf(w//ydiv[0]*h//ydiv[1])
         udiv = divs[1]
-        u = bytes(b"\0"*(w*h//(udiv[0]*udiv[1])))
+        u = makebuf(w//udiv[0]*h//udiv[1])
         vdiv = divs[2]
-        v = bytes(b"\0"*(w*h//(vdiv[0]*vdiv[1])))
+        v = makebuf(w//vdiv[0]*h//vdiv[1])
         image = ImageWrapper(0, 0, w, h, [y, u, v], pixel_format, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper._3_PLANES, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA"):
-        rgb_data = bytes(b"\0"*(w*h*len(pixel_format)))
+        rgb_data = makebuf(w*h*len(pixel_format))
         image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, w*len(pixel_format), planes=ImageWrapper.PACKED, thread_safe=True)
         #l = len(rgb_data)
     else:
