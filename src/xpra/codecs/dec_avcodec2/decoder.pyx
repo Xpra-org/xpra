@@ -10,6 +10,7 @@ log = Logger("decoder", "avcodec")
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
+from xpra.util import bytestostr
 
 
 ctypedef unsigned long size_t
@@ -427,12 +428,11 @@ cdef class Decoder:
 
     cdef av_error_str(self, errnum):
         cdef char[128] err_str
+        cdef int i = 0
         if av_strerror(errnum, err_str, 128)==0:
-            e = str(err_str[:128])
-            p = e.find("\0")
-            if p>=0:
-                e = e[:p]
-            return e
+            while i<128 and err_str[i]!=0:
+                i += 1
+            return bytestostr(err_str[:i])
         return str(errnum)
 
     def __repr__(self):                      #@DuplicatedSignature
@@ -545,11 +545,14 @@ cdef class Decoder:
                 len = avcodec_decode_video2(self.codec_ctx, av_frame, &got_picture, &avpkt)
             if len<0:
                 av_frame_unref(av_frame)
-                log.error("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
+                log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
+                log.error("avcodec_decode_video2 %s decoding failure:", self.encoding)
+                log.error(" %s", self.av_error_str(len))
                 return None
             if len==0:
                 av_frame_unref(av_frame)
-                log.error("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
+                log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
+                log.error("avcodec_decode_video2 %s decoding failure - no stream", self.encoding)
                 return None
 
             if steps==1:
