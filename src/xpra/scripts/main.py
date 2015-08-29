@@ -863,10 +863,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             prevent_import()
         except:
             pass
-        #and only the sound commands don't want to set the name
+        #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
-        from xpra.platform import set_name
-        set_name("Xpra", "Xpra %s" % mode.strip("_"))
+        #"attach" does it when it received the session name from the server
+        if mode!="attach":
+            from xpra.platform import set_name
+            set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     try:
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))

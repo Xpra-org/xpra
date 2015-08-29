@@ -36,7 +36,6 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
-from xpra.platform import set_application_name
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time, show_desktop,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
@@ -1292,7 +1291,8 @@ class UIXpraClient(XpraClientBase):
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
-        set_application_name(self.session_name or "Xpra")
+        from xpra.platform import set_name    
+        set_name("Xpra", self.session_name or "Xpra")
         self.window_unmap = c.boolget("window_unmap")
         self.window_configure_skip_geometry = c.boolget("window.configure.skip-geometry")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
