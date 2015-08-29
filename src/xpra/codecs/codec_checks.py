@@ -23,18 +23,19 @@ TEST_COMPRESSED_DATA = {
              "YUV444P" : binascii.unhexlify("a249834200002e001ec007048383000000040000223fffffeea76800c7ffffffeea7680677ffffff753b40081000")},
 }
 
+try:
+    import numpy
+    def makebuf(size):
+        a = numpy.empty(size, dtype=numpy.byte)
+        return a.data
+except:
+    def makebuf(size):
+        return bytes(size)
+
 
 def make_test_image(pixel_format, w, h):
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
-    try:
-        import numpy
-        def makebuf(size):
-            a = numpy.empty(size, dtype=numpy.byte)
-            return a.data
-    except:
-        def makebuf(size):
-            return bytes(b"\0"*(w*h//(ydiv[0]*ydiv[1])))
     #import time
     #start = time.time()
     if pixel_format.startswith("YUV") or pixel_format=="GBRP":
@@ -48,8 +49,9 @@ def make_test_image(pixel_format, w, h):
         image = ImageWrapper(0, 0, w, h, [y, u, v], pixel_format, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper._3_PLANES, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA"):
-        rgb_data = makebuf(w*h*len(pixel_format))
-        image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, w*len(pixel_format), planes=ImageWrapper.PACKED, thread_safe=True)
+        stride = w*len(pixel_format)
+        rgb_data = makebuf(stride*h)
+        image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, stride, planes=ImageWrapper.PACKED, thread_safe=True)
         #l = len(rgb_data)
     else:
         raise Exception("don't know how to create a %s image" % pixel_format)
@@ -171,7 +173,7 @@ def get_encoder_max_size(encoder_module, encoding, max_size=16384):
                 w = min(maxw, tw)
                 h = min(maxh, th)
                 do_testencoding(encoder_module, encoding, w, h)
-                log("%s can handle %ix%i for %s", einfo(), w, h, encoding)
+                log("%s can handle %ix%i for %s", einfo(), w, h, encoding, max_size)
                 MAX_WIDTH = w
                 MAX_HEIGHT = h
             except Exception as e:
@@ -182,7 +184,7 @@ def get_encoder_max_size(encoder_module, encoding, max_size=16384):
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testencoding(encoder_module, encoding, W, H, full=False):
+def do_testencoding(encoder_module, encoding, W, H, full=False, max_size=16384):
     for cs_in in encoder_module.get_input_colorspaces(encoding):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
@@ -204,7 +206,9 @@ def do_testencoding(encoder_module, encoding, W, H, full=False):
                     except:
                         out = None
                     assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
-                    for w,h in ((W*2, H//2), (W//2, H**2)):
+                    for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
+                        if w>max_size or h>max_size:
+                            continue
                         try:
                             image = make_test_image(cs_in, w, h)
                             out = e.compress_image()
