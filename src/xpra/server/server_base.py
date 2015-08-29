@@ -30,7 +30,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
-from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, csv, \
+from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username

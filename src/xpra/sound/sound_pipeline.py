@@ -6,7 +6,7 @@
 import os
 import time
 
-from xpra.sound.gstreamer_util import import_gst, OPUS
+from xpra.sound.gstreamer_util import import_gst
 from xpra.log import Logger
 log = Logger("sound")
 
