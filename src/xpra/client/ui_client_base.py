@@ -1419,8 +1419,9 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
-                 self.server_pulseaudio_id, self.server_pulseaudio_server, self.server_sound_decoders,
-                 self.server_sound_encoders, self.server_sound_receive, self.server_sound_send)
+                 self.server_pulseaudio_id, self.server_pulseaudio_server,
+                 csv(self.server_sound_decoders), csv(self.server_sound_encoders),
+                 self.server_sound_receive, self.server_sound_send)
         if self.server_sound_send and self.speaker_enabled:
             self.start_receiving_sound()
         if self.server_sound_receive and self.microphone_enabled:
@@ -1596,7 +1597,7 @@ class UIXpraClient(XpraClientBase):
             self.emit("microphone-changed")
         #find the matching codecs:
         matching_codecs = [x for x in self.microphone_codecs if x in self.server_sound_decoders]
-        soundlog("start_sound_source() matching codecs=%s", matching_codecs)
+        soundlog("start_sound_source() matching codecs: %s", csv(matching_codecs))
         if len(matching_codecs)==0:
             log.error("Error: no matching codecs between client and server")
             log.error(" server supports: %s", csv(self.server_sound_decoders))
@@ -1653,7 +1654,7 @@ class UIXpraClient(XpraClientBase):
             return
         #choose a codec:
         matching_codecs = [x for x in self.speaker_codecs if x in self.server_sound_encoders]
-        soundlog("start_receiving_sound() matching codecs=%s", matching_codecs)
+        soundlog("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
         if len(matching_codecs)==0:
             log.error("Error: no matching codecs between client and server")
             log.error(" server supports: %s", csv(self.server_sound_encoders))
