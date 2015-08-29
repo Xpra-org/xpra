@@ -172,6 +172,13 @@ class SoundPipeline(gobject.GObject):
         self.volume = None
         log("SoundPipeline.cleanup() done")
 
+
+    def new_codec_description(self, desc):
+        if self.codec_description!=desc.lower():
+            log.info("using audio codec: %s", desc)
+            self.codec_description = desc.lower()
+
+
     def on_message(self, bus, message):
         #log("on_message(%s, %s)", bus, message)
         t = message.type
@@ -213,9 +220,10 @@ class SoundPipeline(gobject.GObject):
         elif t == gst.MESSAGE_STREAM_START:
             log("stream start: %r", message)
             if gst_version[0]>0:
-                #with gstreamer 1.x, we don't get the "audio-codec" message..
-                #so print the codec here instead (and assume gstreamer is using what we told it to):
-                log.info("using audio codec: %s", self.codec)
+                #with gstreamer 1.x, we don't always get the "audio-codec" message..
+                #so print the codec from here instead (and assume gstreamer is using what we told it to)
+                #after a delay, just in case we do get the real "audio-codec" message!
+                glib.timeout_add(500, self.new_codec_description, self.codec)
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
@@ -263,9 +271,7 @@ class SoundPipeline(gobject.GObject):
             found = True
         if structure.has_field("audio-codec"):
             desc = structure["audio-codec"]
-            if self.codec_description!=desc:
-                log.info("using audio codec: %s", desc)
-                self.codec_description = desc
+            self.new_codec_description(desc)
             found = True
         if structure.has_field("mode"):
             mode = structure["mode"]
