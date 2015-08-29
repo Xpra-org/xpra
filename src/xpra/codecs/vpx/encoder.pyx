@@ -295,7 +295,7 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 #educated guess:
 MAX_SIZE = {"vp8"   : (4096, 4096),
-            "vp9"   : (8192, 8192),
+            "vp9"   : (8192, 4096),
             }
 IF LIBVPX14:
             MAX_SIZE["vp8"] = (8192, 8192)
