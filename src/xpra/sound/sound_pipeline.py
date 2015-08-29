@@ -224,6 +224,7 @@ class SoundPipeline(gobject.GObject):
                 log.warn(" %s: %s", type(e), e)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
+            log("stream status: %s", message.get_stream_status_object().get_state())
         elif t == gst.MESSAGE_STREAM_START:
             log("stream start: %r", message)
             if gst_version[0]>0:
@@ -234,13 +235,12 @@ class SoundPipeline(gobject.GObject):
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             log("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
+            _, new_state, _ = message.parse_state_changed()
+            log("state-changed on %s: %s", message.src, gst.element_state_get_name(new_state))
+            state = self.do_get_state(new_state)
             if isinstance(message.src, gst.Pipeline):
-                _, new_state, _ = message.parse_state_changed()
-                log("new-state=%s", gst.element_state_get_name(new_state))
-                self.state = self.do_get_state(new_state)
+                self.state = state
                 self.idle_emit("state-changed", self.state)
-            else:
-                log("state changed: %s", message)
         elif t == gst.MESSAGE_DURATION:
             d = message.parse_duration()
             try:
