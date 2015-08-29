@@ -297,9 +297,11 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 MAX_SIZE = {"vp8"   : (4096, 4096),
             "vp9"   : (8192, 4096),
             }
-IF LIBVPX14:
-            MAX_SIZE["vp8"] = (8192, 8192)
-            MAX_SIZE["vp9"] = (16384, 8192)
+#These are the real limits with libvpx 1.4
+# but we can't probe them without causing OOM on small systems!
+#IF LIBVPX14:
+#            MAX_SIZE["vp8"] = (8192, 8192)
+#            MAX_SIZE["vp9"] = (16384, 8192)
 
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
