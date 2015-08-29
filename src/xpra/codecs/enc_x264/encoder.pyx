@@ -683,5 +683,7 @@ def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
     if full:
         global MAX_WIDTH, MAX_HEIGHT
-        MAX_WIDTH, MAX_HEIGHT = get_encoder_max_sizes(encoder)
-        log("%s max dimensions: %ix%i", encoder, MAX_WIDTH, MAX_HEIGHT)
+        maxw, maxh = get_encoder_max_sizes(encoder)
+        assert maxw>=MAX_WIDTH and maxh>=MAX_HEIGHT, "%s is limited to %ix%i and not %ix%i" % (encoder, maxw, maxh, MAX_WIDTH, MAX_HEIGHT)
+        MAX_WIDTH, MAX_HEIGHT = maxw, maxh
+        log.info("%s max dimensions: %ix%i", encoder, MAX_WIDTH, MAX_HEIGHT)

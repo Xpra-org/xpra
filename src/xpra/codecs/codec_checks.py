@@ -9,6 +9,11 @@ import binascii
 
 from xpra.log import Logger
 log = Logger("util")
+log.enable_debug()
+
+#Warning: many systems will fail above 8k because of memory constraints
+# encoders can allocate many times more memory to hold the frames..
+TEST_LIMIT_W, TEST_LIMIT_H = 8192, 8192
 
 
 #this test data was generated using a 24x16 blank image as input
@@ -123,38 +128,36 @@ def testencoding(encoder_module, encoding, full):
     do_testencoding(encoder_module, encoding, W, H, full)
 
 def get_encoder_max_sizes(encoder_module):
-    w, h = 16384, 16384
+    w, h = TEST_LIMIT_W, TEST_LIMIT_H
     for encoding in encoder_module.get_encodings():
         ew, eh = get_encoder_max_size(encoder_module, encoding)
         w = min(w, ew)
         h = min(h, eh)
     return w, h
 
-def get_encoder_max_size(encoder_module, encoding, max_size=16384):
+def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     def einfo():
         return "%s %s" % (encoder_module.get_type(), encoder_module.get_version())
-    log("get_encoder_max_size%s", (encoder_module, encoding))
-    maxw = 512
-    for v in (512, 1024, 2048, 4096, 8192, 16384):
-        if v>max_size:
-            break
+    log("get_encoder_max_size%s", (encoder_module, encoding, limit_w, limit_h))
+    maxw = w = 512
+    while w<=limit_w:
         try:
-            do_testencoding(encoder_module, encoding, v, 64)
-            maxw = v
+            do_testencoding(encoder_module, encoding, w, 64)
+            maxw = w
+            w *= 2
         except Exception as e:
             log("%s is limited to max width=%i for %s:", einfo(), maxw, encoding)
             log(" %s", e)
             break
     log("%s max width=%i", einfo(), maxw)
-    maxh = 512
-    for v in (512, 1024, 2048, 4096, 8192, 16384):
-        if v>max_size:
-            break
+    maxh = h = 512
+    while h<=limit_h:
         try:
-            do_testencoding(encoder_module, encoding, 64, v)
-            maxh = v
+            do_testencoding(encoder_module, encoding, 64, h)
+            maxh = h
+            h *= 2
         except Exception as e:
             log("%s is limited to max height=%i for %s:", einfo(), maxh, encoding)
             log(" %s", e)
@@ -162,34 +165,34 @@ def get_encoder_max_size(encoder_module, encoding, max_size=16384):
     log("%s max height=%i", einfo(), maxh)
     #now try combining width and height
     #as there might be a lower limit based on the total number of pixels:
-    limit = min(maxw, maxh)
-    MAX_WIDTH = maxw
-    MAX_HEIGHT = maxh
-    for v in (512, 1024, 2048, 4096, 8192, 16384):
+    MAX_WIDTH, MAX_HEIGHT = maxw, maxh
+    #start at half:
+    v = max(512, min(maxw, maxh)//2)
+    while v<max(limit_w, limit_h):
         for tw, th in ((v, v), (v*2, v)):
-            if tw>limit or th>limit:
+            if tw>limit_w or th>limit_h:
                 continue
             try:
                 w = min(maxw, tw)
                 h = min(maxh, th)
                 do_testencoding(encoder_module, encoding, w, h)
-                log("%s can handle %ix%i for %s", einfo(), w, h, encoding, max_size)
-                MAX_WIDTH = w
-                MAX_HEIGHT = h
+                log("%s can handle %ix%i for %s", einfo(), w, h, encoding)
+                MAX_WIDTH, MAX_HEIGHT = w, h
             except Exception as e:
                 log("%s is limited to %ix%i for %s", einfo(), MAX_WIDTH, MAX_HEIGHT, encoding)
                 log(" %s", e)
                 break
+        v *= 2
     log("%s max dimensions for %s: %ix%i", einfo(), encoding, MAX_WIDTH, MAX_HEIGHT)
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testencoding(encoder_module, encoding, W, H, full=False, max_size=16384):
+def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     for cs_in in encoder_module.get_input_colorspaces(encoding):
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
             try:
-                e.init_context(W, H, cs_in, [cs_out], encoding, 50, 100, (1,1), {})
+                e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1,1), {})
                 image = make_test_image(cs_in, W, H)
                 data, meta = e.compress_image(image)
                 del image
@@ -207,7 +210,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, max_size=16384):
                         out = None
                     assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                     for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
-                        if w>max_size or h>max_size:
+                        if w>limit_w or h>limit_h:
                             continue
                         try:
                             image = make_test_image(cs_in, w, h)
@@ -225,28 +228,31 @@ def testcsc(csc_module, full, test_cs_in=None, test_cs_out=None):
     log("test_csc(%s, %s, %s, %s)", csc_module, full, test_cs_in, test_cs_out)
     return do_testcsc(csc_module, W, H, full, test_cs_in, test_cs_out)
 
-def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None):
+def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     MAX_WIDTH, MAX_HEIGHT = 512, 512
     #as there might be a lower limit based on the total number of pixels:
-    for v in (512, 1024, 2048, 4096, 8192, 16384):
+    v = 512
+    while v<=min(limit_w, limit_h):
         for tw, th in ((v, v), (v*2, v)):
+            if tw>limit_w or th>limit_h:
+                break
             try:
-                do_testcsc(colorspace_converter, tw, th, test_cs_in, test_cs_out)
+                do_testcsc(colorspace_converter, tw, th, test_cs_in, test_cs_out, limit_w, limit_h)
                 log("%s can handle %ix%i", colorspace_converter, tw, th)
-                MAX_WIDTH = tw
-                MAX_HEIGHT = th
+                MAX_WIDTH, MAX_HEIGHT = tw, th
             except Exception as e:
                 log("%s is limited to %ix%i for %s", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
                 log(" %s", e)
                 break
+        v *= 2
     log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None):
-    log("do_test_csc(%s, %s, %s, %s)", csc_module, full, test_cs_in, test_cs_out)
+def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+    log("do_test_csc%s", (csc_module, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
     cs_in_list = test_cs_in
     if cs_in_list==None:
         cs_in_list = csc_module.get_input_colorspaces()
@@ -268,6 +274,8 @@ def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None):
                 assert out.get_pixel_format()==cs_out, "expected pixel format %s but got %s" % (cs_out, out.get_pixel_format())
                 if full:
                     for w,h in ((W*2, H//2), (W//2, H**2)):
+                        if w>limit_w or h>limit_h:
+                            continue
                         try:
                             image = make_test_image(cs_in, w, h)
                             out = e.convert_image(image)
