@@ -273,7 +273,9 @@ class SoundSink(SoundPipeline):
                 buf.timestamp = normv(ts)
             d = metadata.get("duration")
             if d is not None:
-                buf.duration = normv(d)
+                d = normv(d)
+                if d>0:
+                    buf.duration = normv(d)
         if self.push_buffer(buf):
             self.buffer_count += 1
             self.byte_count += len(data)
