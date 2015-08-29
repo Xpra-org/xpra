@@ -9,7 +9,6 @@ import binascii
 
 from xpra.log import Logger
 log = Logger("util")
-log.enable_debug()
 
 #Warning: many systems will fail above 8k because of memory constraints
 # encoders can allocate many times more memory to hold the frames..
