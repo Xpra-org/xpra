@@ -6,7 +6,7 @@
 import os
 import time
 
-from xpra.sound.gstreamer_util import import_gst
+from xpra.sound.gstreamer_util import import_gst, OPUS
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -44,7 +44,7 @@ class SoundPipeline(gobject.GObject):
     def __init__(self, codec):
         gobject.GObject.__init__(self)
         self.codec = codec
-        self.codec_description = codec
+        self.codec_description = ""
         self.codec_mode = ""
         self.bus = None
         self.bus_message_handler_id = None
@@ -127,11 +127,13 @@ class SoundPipeline(gobject.GObject):
 
 
     def start(self):
-        log("SoundPipeline.start()")
+        log("SoundPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
         self.state = "active"
         self.pipeline.set_state(gst.STATE_PLAYING)
         self.emit_info()
+        #we may never get the stream start, synthesize codec event so we get logging:
+        glib.timeout_add(1000, self.new_codec_description, self.codec)
         log("SoundPipeline.start() done")
 
     def stop(self):
@@ -175,6 +177,8 @@ class SoundPipeline(gobject.GObject):
 
     def new_codec_description(self, desc):
         if self.codec_description!=desc.lower():
+            if self.codec_description!=self.codec and desc==self.codec:
+                return
             log.info("using audio codec: %s", desc)
             self.codec_description = desc.lower()
 
@@ -315,9 +319,8 @@ class SoundPipeline(gobject.GObject):
                 self.codec_description = desc[1]
         if "audio-codec" in tags:
             desc = taglist.get_string("audio-codec")
-            if desc[0] is True and self.codec_description!=desc[1]:
-                log.info("using audio codec: %s", desc[1])
-                self.codec_description = desc[1]
+            if desc[0] is True:
+                self.new_codec_description(desc[1])
         if "mode" in tags:
             mode = taglist.get_string("mode")
             if mode[0] is True and self.codec_mode!=mode[1]:
