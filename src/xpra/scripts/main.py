@@ -676,7 +676,7 @@ def do_parse_cmdline(cmdline, defaults):
         from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
             from xpra.sound.wrapper import query_sound
-            source_plugins = query_sound().get("sources", [])
+            source_plugins = query_sound().strlistget("sources", [])
         except Exception as e:
             raise InitInfo(e)
             source_plugins = []
@@ -761,7 +761,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     if not props:
         return "sound is not supported - gstreamer not present or not accessible"
     info = []
-    all_speaker_codecs = props.get("decoders")
+    all_speaker_codecs = props.strlistget("decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
@@ -773,7 +773,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     elif len(speaker_codecs)==0:
         speaker_codecs += all_speaker_codecs
 
-    all_microphone_codecs = props.get("decoders")
+    all_microphone_codecs = props.strlistget("decoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:

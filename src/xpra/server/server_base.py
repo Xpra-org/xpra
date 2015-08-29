@@ -405,8 +405,10 @@ class ServerBase(ServerCore):
             def sound_option_or_all(*args):
                 return []
         self.sound_source_plugin = opts.sound_source
-        self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, self.sound_properties.get("encoders", []))
-        self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, self.sound_properties.get("decoders", []))
+        encoders = self.sound_properties.strlistget("encoders", [])
+        decoders = self.sound_properties.strlistget("decoders", [])
+        self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, encoders)
+        self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, decoders)
         self.supports_speaker = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
         self.supports_microphone = len(self.microphone_codecs)>0 and sound_option(opts.microphone) in ("on", "off")
         if bool(self.sound_properties):

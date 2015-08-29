@@ -11,7 +11,7 @@ from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, pa
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names, GSTREAMER1
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, typedict
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")
@@ -349,10 +349,11 @@ def query_sound():
     log("query_sound() out=%s, err=%s", out, err)
     if proc.returncode!=0:
         return {}
-    d = {}
+    d = typedict()
     for x in out.decode("utf8").splitlines():
         kv = x.split("=", 1)
         if len(kv)==2:
             #ie: kv = ["decoders", "mp3,vorbis"]
-            d[kv[0]] = kv[1].split(",")     #d["decoders"] = ["mp3", "vorbis"]
+            d[kv[0].encode()] = [x.encode() for x in kv[1].split(",")]     #d["decoders"] = ["mp3", "vorbis"]
+    log("query_sound()=%s", d)
     return d

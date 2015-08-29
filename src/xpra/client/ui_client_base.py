@@ -267,8 +267,8 @@ class UIXpraClient(XpraClientBase):
             soundlog.error(" %s", e)
             def sound_option_or_all(*args):
                 return []
-        encoders = self.sound_properties.get("encoders", [])
-        decoders = self.sound_properties.get("decoders", [])
+        encoders = self.sound_properties.strlistget("encoders", [])
+        decoders = self.sound_properties.strlistget("decoders", [])
         self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)
         self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, encoders)
         self.speaker_allowed = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
@@ -1124,7 +1124,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["encodings.rgb_formats"] = rgb_formats
 
         if self.sound_properties:
-            sound_caps = self.sound_properties
+            sound_caps = self.sound_properties.copy()
             sound_caps["decoders"] = self.speaker_codecs
             sound_caps["encoders"] = self.microphone_codecs
             sound_caps["send"] = self.microphone_allowed
@@ -1594,19 +1594,17 @@ class UIXpraClient(XpraClientBase):
         assert self.sound_source is None
         def sound_source_state_changed(*args):
             self.emit("microphone-changed")
-        from xpra.sound.gstreamer_util import CODEC_ORDER
         #find the matching codecs:
-        matching_codecs = [x for x in self.server_sound_decoders if x in self.microphone_codecs]
-        ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
-        soundlog("start_sound_source() matching ordered codecs=%s", ordered_codecs)
-        if len(ordered_codecs)==0:
+        matching_codecs = [x for x in self.microphone_codecs if x in self.server_sound_decoders]
+        soundlog("start_sound_source() matching codecs=%s", matching_codecs)
+        if len(matching_codecs)==0:
             log.error("Error: no matching codecs between client and server")
             log.error(" server supports: %s", csv(self.server_sound_decoders))
             log.error(" client supports: %s", csv(self.microphone_codecs))
             return False
         try:
             from xpra.sound.wrapper import start_sending_sound
-            ss = start_sending_sound(self.sound_source_plugin, None, 1.0, ordered_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            ss = start_sending_sound(self.sound_source_plugin, None, 1.0, matching_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not ss:
                 return False
             self.sound_source = ss
@@ -1654,16 +1652,14 @@ class UIXpraClient(XpraClientBase):
             log.error("cannot start receiving sound: support not enabled on the server")
             return
         #choose a codec:
-        from xpra.sound.gstreamer_util import CODEC_ORDER
-        matching_codecs = [x for x in self.server_sound_encoders if x in self.speaker_codecs]
-        ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
-        soundlog("start_receiving_sound() matching ordered codecs=%s", ordered_codecs)
-        if len(ordered_codecs)==0:
+        matching_codecs = [x for x in self.speaker_codecs if x in self.server_sound_encoders]
+        soundlog("start_receiving_sound() matching codecs=%s", matching_codecs)
+        if len(matching_codecs)==0:
             log.error("Error: no matching codecs between client and server")
             log.error(" server supports: %s", csv(self.server_sound_encoders))
             log.error(" client supports: %s", csv(self.speaker_codecs))
             return
-        codec = ordered_codecs[0]
+        codec = matching_codecs[0]
         self.speaker_enabled = True
         self.emit("speaker-changed")
         def sink_ready(*args):
