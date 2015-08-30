@@ -224,7 +224,10 @@ class SoundPipeline(gobject.GObject):
                 log.warn(" %s: %s", type(e), e)
         elif t == gst.MESSAGE_STREAM_STATUS:
             log("stream status: %s", message)
-            log("stream status: %s", message.get_stream_status_object().get_state())
+            try:
+                log("stream status: %s", message.get_stream_status_object().get_state())
+            except:
+                pass
         elif t == gst.MESSAGE_STREAM_START:
             log("stream start: %r", message)
             if gst_version[0]>0:

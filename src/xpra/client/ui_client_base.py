@@ -257,22 +257,27 @@ class UIXpraClient(XpraClientBase):
         self.mmap_group = opts.mmap_group
 
         self.sound_properties = {}
+        self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
+        self.microphone_allowed = sound_option(opts.microphone) in ("on", "off")
         self.sound_source_plugin = opts.sound_source
-        try:
-            from xpra.sound.gstreamer_util import sound_option_or_all
-            from xpra.sound.wrapper import query_sound
-            self.sound_properties = query_sound()
-        except Exception as e:
-            soundlog.error("Error: failed to query sound subsystem:")
-            soundlog.error(" %s", e)
-            def sound_option_or_all(*args):
-                return []
+        if self.speaker_allowed or self.microphone_allowed:
+            try:
+                from xpra.sound.gstreamer_util import sound_option_or_all
+                from xpra.sound.wrapper import query_sound
+                self.sound_properties = query_sound()
+            except Exception as e:
+                soundlog.error("Error: failed to query sound subsystem:")
+                soundlog.error(" %s", e)
+                def sound_option_or_all(*args):
+                    return []
         encoders = self.sound_properties.strlistget("encoders", [])
         decoders = self.sound_properties.strlistget("decoders", [])
         self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)
         self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, encoders)
-        self.speaker_allowed = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
-        self.microphone_allowed = len(self.microphone_codecs)>0 and sound_option(opts.microphone) in ("on", "off")
+        if not self.speaker_codecs:
+            self.speaker_allowed = False
+        if not self.microphone_codecs:
+            self.microphone_allowed = False
         self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
         self.microphone_enabled = self.microphone_allowed and sound_option(opts.microphone)=="on"
         self.av_sync = opts.av_sync

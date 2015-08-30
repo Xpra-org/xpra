@@ -30,7 +30,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
-from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, \
+from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, csv, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
@@ -393,24 +393,27 @@ class ServerBase(ServerCore):
                 soundlog.warn("error trying to stop pulseaudio", exc_info=full_trace)
 
     def init_sound_options(self, opts):
-        #sound_source_plugin, speaker, speaker_codec, microphone, microphone_codec):
-        #opts.sound_source, opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec
-        try:
-            from xpra.sound.gstreamer_util import sound_option_or_all
-            from xpra.sound.wrapper import query_sound
-            self.sound_properties = query_sound()
-        except Exception as e:
-            soundlog.error("Error: failed to query sound subsystem:")
-            soundlog.error(" %s", e)
-            def sound_option_or_all(*args):
-                return []
+        self.supports_speaker = sound_option(opts.speaker) in ("on", "off")
+        self.supports_microphone = sound_option(opts.microphone) in ("on", "off")
+        if self.supports_speaker or self.supports_microphone:
+            try:
+                from xpra.sound.gstreamer_util import sound_option_or_all
+                from xpra.sound.wrapper import query_sound
+                self.sound_properties = query_sound()
+            except Exception as e:
+                soundlog.error("Error: failed to query sound subsystem:")
+                soundlog.error(" %s", e)
+                def sound_option_or_all(*args):
+                    return []
         self.sound_source_plugin = opts.sound_source
         encoders = self.sound_properties.strlistget("encoders", [])
         decoders = self.sound_properties.strlistget("decoders", [])
         self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, encoders)
         self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, decoders)
-        self.supports_speaker = len(self.speaker_codecs)>0 and sound_option(opts.speaker) in ("on", "off")
-        self.supports_microphone = len(self.microphone_codecs)>0 and sound_option(opts.microphone) in ("on", "off")
+        if not self.speaker_codecs:
+            self.supports_speaker = False
+        if not self.microphone_codecs:
+            self.supports_microphone = False
         if bool(self.sound_properties):
             try:
                 from xpra.sound.pulseaudio_util import set_icon_path, get_info as get_pa_info
@@ -419,7 +422,9 @@ class ServerBase(ServerCore):
             except Exception as e:
                 log.warn("Warning: failed to set pulseaudio tagging icon:")
                 log.warn(" %s", e)
-        log("init_sound_options sound properties=%s", self.sound_properties)
+        soundlog("init_sound_options speaker: supported=%s, encoders=%s", self.supports_speaker, csv(self.speaker_codecs))
+        soundlog("init_sound_options microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
+        soundlog("init_sound_options sound properties=%s", self.sound_properties)
 
     def init_clipboard(self):
         clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)

@@ -49,6 +49,8 @@ def bool_or(v, other_value, true_str, false_str, other_str):
 
 def sound_option(v):
     #ensures we return only: "on", "off" or "disabled" given any value
+    if v=="no":
+        v = "disabled"
     return bool_or(v, "disabled", "on", "off", "disabled")
 
 def warn(msg):

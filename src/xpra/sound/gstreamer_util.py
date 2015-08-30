@@ -326,7 +326,7 @@ def get_codecs():
             #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux" = elements
             encoding, encoder, muxer, decoder, demuxer = elements
             CODECS[encoding] = (encoder, muxer, decoder, demuxer)
-    log("initialized CODECS:")
+    log("initialized sound codecs:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         log("* %s : %s", k, CODECS[k])
     return CODECS
