@@ -1177,8 +1177,8 @@ class ServerSource(object):
             sound_props = self.sound_properties.copy()
             sound_props["encoders"] = self.speaker_codecs
             sound_props["decoders"] = self.microphone_codecs
-            sound_props["send"] = len(self.speaker_codecs)>0
-            sound_props["receive"] = len(self.microphone_codecs)>0
+            sound_props["send"] = self.supports_speaker and len(self.speaker_codecs)>0
+            sound_props["receive"] = self.supports_microphone and len(self.microphone_codecs)>0
             updict(capabilities, "sound", sound_props)
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"
