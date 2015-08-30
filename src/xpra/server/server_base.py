@@ -1004,7 +1004,7 @@ class ServerBase(ServerCore):
                 "client_window_properties",
                 "sound_sequence", "notify-startup-complete", "suspend-resume",
                 "encoding.generic", "encoding.strict_control",
-                "sound.server_driven",
+                "sound.server_driven", "sound.ogg-latency-fix",
                 "clipboard.enable-selections",
                 "av-sync",
                 "command_request",

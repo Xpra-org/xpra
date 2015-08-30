@@ -1013,6 +1013,7 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             #sound:
             "sound.server_driven"       : True,
+            "sound.ogg-latency-fix"     : True,
             "av-sync"                   : self.av_sync,
             "av-sync.delay.default"     : 0,    #start at 0 and rely on sound-control packets to set the correct value
             })
