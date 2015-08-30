@@ -52,8 +52,12 @@ def pactl_output(log_errors=True, *pactl_args):
         return -1, None
     #ie: "pactl list"
     cmd = [pactl_bin] + list(pactl_args)
+    #force "C" locale so that we can parse the output as expected
+    env = os.environ.copy()
+    env["LC_ALL"] = "C"
+    kwargs = {"env" : env}
     try:
-        code, out, _ = safe_exec(cmd, log_errors=log_errors)
+        code, out, _ = safe_exec(cmd, log_errors=log_errors, **kwargs)
         log("pactl_output%s returned %s", pactl_args, code)
         return  code, out
     except Exception as e:
