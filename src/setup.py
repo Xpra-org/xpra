@@ -888,6 +888,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
+                   "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/stats/cystats.c",
                    "xpra/server/region.c",
                    "etc/xpra/xpra.conf",
