@@ -1429,7 +1429,7 @@ class UIXpraClient(XpraClientBase):
                  csv(self.server_sound_decoders), csv(self.server_sound_encoders),
                  self.server_sound_receive, self.server_sound_send)
         if self.server_sound_send and self.speaker_enabled:
-            self.start_receiving_sound()
+            self.start_receiving_sound(c.boolget("sound.ogg-latency-fix", False))
         if self.server_sound_receive and self.microphone_enabled:
             self.start_sending_sound()
 
@@ -1649,7 +1649,7 @@ class UIXpraClient(XpraClientBase):
         ss.cleanup()
         self.emit("microphone-changed")
 
-    def start_receiving_sound(self):
+    def start_receiving_sound(self, sound_ogg_latency_fix):
         """ ask the server to start sending sound and emit the client signal """
         soundlog("start_receiving_sound() sound sink=%s", self.sound_sink)
         if self.sound_sink is not None:
@@ -1667,6 +1667,9 @@ class UIXpraClient(XpraClientBase):
             log.error(" client supports: %s", csv(self.speaker_codecs))
             return
         codec = matching_codecs[0]
+        if not sound_ogg_latency_fix and codec in ("flac", "opus", "speex"):
+            log.warn("Warning: this server's sound support is out of date")
+            log.warn(" the sound latency with the %s codec will be high", codec)
         self.speaker_enabled = True
         self.emit("speaker-changed")
         def sink_ready(*args):
