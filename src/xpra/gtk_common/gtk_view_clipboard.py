@@ -239,8 +239,10 @@ class ClipboardStateInfoWindow(object):
 
 def main():
     from xpra.platform import init, clean
+    from xpra.log import enable_color
     try:
         init("Clipboard-Test", "Clipboard Test Tool")
+        enable_color()
         ClipboardStateInfoWindow()
         gtk.main()
     finally:

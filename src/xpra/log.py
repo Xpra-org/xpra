@@ -107,6 +107,19 @@ def set_global_logging_handler(h):
     global_logging_handler = h
     return saved
 
+
+def setloghandler(lh):
+    logging.root.handlers = []
+    logging.root.addHandler(lh)
+
+def enable_color(to=sys.stdout, formatter=NOPREFIX_FORMAT):
+    from xpra.colorstreamhandler import ColorStreamHandler
+    from logging import Formatter
+    csh = ColorStreamHandler(to)
+    csh.setFormatter(Formatter(formatter))
+    setloghandler(csh)
+
+
 #the order will be preserved with Python 2.7 onwards:
 try:
     from collections import OrderedDict

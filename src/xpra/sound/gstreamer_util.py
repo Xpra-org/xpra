@@ -583,8 +583,10 @@ def sound_option_or_all(name, options, all_values):
 def main():
     global pygst_version, gst_version, gst_vinfo
     from xpra.platform import init, clean
+    from xpra.log import enable_color
     try:
         init("GStreamer-Info", "GStreamer Information")
+        enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
         import_gst()

@@ -120,8 +120,10 @@ class KeyboardStateInfoWindow:
 
 def main():
     from xpra.platform import init, clean
+    from xpra.log import enable_color
     try:
         init("Keyboard-Test", "Keyboard Test Tool")
+        enable_color()
         KeyboardStateInfoWindow()
         gtk.main()
     finally:

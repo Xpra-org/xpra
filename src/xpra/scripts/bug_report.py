@@ -9,6 +9,8 @@ import signal, sys
 def main():
     from xpra.platform import init as platform_init
     platform_init("Xpra-Bug-Report", "Xpra Bug Report")
+    from xpra.log import enable_color
+    enable_color()
 
     from xpra.log import Logger, enable_debug_for
     log = Logger("util")

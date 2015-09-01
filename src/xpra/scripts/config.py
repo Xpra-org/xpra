@@ -752,10 +752,12 @@ def main():
                 v = ", ".join(str(x) for x in v)
             print("* %-32s : %s" % (k, nonl(v)))
     from xpra.platform import init, clean
+    from xpra.log import enable_color
     try:
         init("Config-Info", "Config Info")
+        enable_color()
         args = list(sys.argv[1:])
-        if "-v" in args:
+        if "-v" in args or "--verbose" in sys.argv:
             global debug
             def debug(*args):
                 print(args[0] % args[1:])

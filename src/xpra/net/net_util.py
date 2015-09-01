@@ -160,8 +160,10 @@ def get_info():
 
 def main():
 	from xpra.platform import init, clean
+	from xpra.log import enable_color
 	try:
 		init("Network-Info", "Network Info")
+		enable_color()
 		verbose = "-v" in sys.argv or "--verbose" in sys.argv
 		if verbose:
 			log.enable_debug()

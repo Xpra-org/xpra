@@ -84,8 +84,10 @@ def main():
             v = d[k]
             print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
     from xpra.platform import init, clean
+    from xpra.log import enable_color
     try:
         init("Printing", "Printing")
+        enable_color()
         if len(sys.argv)<3:
             print_dict(get_printers())
         else:

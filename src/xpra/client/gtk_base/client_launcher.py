@@ -742,10 +742,11 @@ def main():
 
     from xpra.platform import init as platform_init, clean as platform_clean
     from xpra.platform.gui import ready as gui_ready
+    from xpra.log import enable_color
     try:
         platform_init("Xpra-Launcher", "Xpra Connection Launcher")
+        enable_color()
         gui_init()
-    
         try:
             from xpra.scripts.main import parse_cmdline, fixup_debug_option
             options, args = parse_cmdline(sys.argv)

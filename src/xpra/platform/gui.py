@@ -190,8 +190,10 @@ platform_import(globals(), "gui", False,
 def main():
     from xpra.platform import init as platform_init,clean
     from xpra.util import nonl
+    from xpra.log import enable_color
     try:
         platform_init("GUI-Properties")
+        enable_color()
         init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:

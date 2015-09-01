@@ -788,28 +788,21 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
         microphone_codecs += all_microphone_codecs
     return info
 
-def setloghandler(lh):
-    logging.root.handlers = []
-    logging.root.addHandler(lh)
-
 def configure_logging(options, mode):
     to = sys.stderr
     if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print"):
         to = sys.stdout
-    if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "version", "print"):
+    if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "version", "print", "showconfig"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
         if (hasattr(to, "fileno") and os.isatty(to.fileno())) or os.environ.get("XPRA_FORCE_COLOR_LOG", "0")=="1":
-            from xpra.colorstreamhandler import ColorStreamHandler
-            from xpra.log import LOG_FORMAT
-            from logging import Formatter
-            csh = ColorStreamHandler(to)
-            csh.setFormatter(Formatter(LOG_FORMAT))
-            setloghandler(csh)
+            from xpra.log import LOG_FORMAT, enable_color
+            enable_color(to, LOG_FORMAT)
     else:
         #a bit naughty here, but it's easier to let xpra.log initialize
         #the logging system every time, and just undo things here..
+        from xpra.log import setloghandler
         setloghandler(logging.StreamHandler(to))
 
     from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
@@ -1689,15 +1682,10 @@ def run_list(error_cb, opts, extra_args):
     return 0
 
 def run_showconfig(options, args):
-    from xpra.colorstreamhandler import ColorStreamHandler
-    from xpra.log import Logger, NOPREFIX_FORMAT
-    from xpra.util import nonl
-    from logging import Formatter
-    csh = ColorStreamHandler(sys.stdout)
-    csh.setFormatter(Formatter(NOPREFIX_FORMAT))
-    setloghandler(csh)
+    from xpra.log import Logger
     log = Logger("util")
     from xpra.scripts.config import dict_to_validated_config, print_env
+    from xpra.util import nonl
     d = dict_to_validated_config({})
     fixup_options(d)
     VIRTUAL = ["mode"]       #no such option! (it's a virtual one for the launch by config files)

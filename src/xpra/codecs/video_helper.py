@@ -427,18 +427,27 @@ def getVideoHelper():
 
 def main():
     from xpra.codecs.loader import log as loader_log, load_codecs
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        loader_log.enable_debug()
-        log.enable_debug()
-    load_codecs()
-    vh = getVideoHelper()
-    vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
-    vh.init()
-    log.info("VideoHelper.get_info():")
-    info = vh.get_info()
-    for k in sorted(info.keys()):
-        v = info.get(k)
-        log.info("%s=%s", k, v)
+    from xpra.log import enable_color
+    from xpra.platform import init, clean
+    try:
+        init("Video Helper")
+        enable_color()
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            loader_log.enable_debug()
+            log.enable_debug()
+        load_codecs()
+        vh = getVideoHelper()
+        vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
+        vh.init()
+        log.info("VideoHelper.get_info():")
+        info = vh.get_info()
+        for k in sorted(info.keys()):
+            v = info.get(k)
+            if type(v) in (list, tuple):
+                v = csv(v)
+            log.info("%s=%s", k, v)
+    finally:
+        clean()
 
 
 if __name__ == "__main__":

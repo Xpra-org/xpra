@@ -54,11 +54,18 @@ set_source_mute         = _pulseaudio_util.set_source_mute
 
 
 def main():
-    if "-v" in sys.argv:
-        log.enable_debug()
-    i = get_info()
-    for k in sorted(i):
-        log.info("%s : %s", k.ljust(64), i[k])
+    from xpra.platform import init, clean
+    from xpra.log import enable_color
+    try:
+        init("Pulseaudio-Info")
+        enable_color()
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            log.enable_debug()
+        i = get_info()
+        for k in sorted(i):
+            log.info("%s : %s", k.ljust(64), i[k])
+    finally:
+        clean()
 
 if __name__ == "__main__":
     main()
