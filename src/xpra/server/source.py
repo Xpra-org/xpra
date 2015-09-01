@@ -805,13 +805,14 @@ class ServerSource(object):
         if codec not in self.speaker_codecs:
             soundlog.warn("Warning: invalid codec specified: %s", codec)
             return
+        ss = None
         try:
             from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
             if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
                 #looks like we're on the same machine, verify it's a different user:
                 if self.uuid==get_user_uuid():
-                    soundlog.warn("cannot start sound:")
-                    soundlog.warn(" identical user environment as the server (loop)")
+                    soundlog.warn("Warning: cannot start sound:")
+                    soundlog.warn(" identical user and server environment (loop)")
                     return
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
@@ -831,6 +832,10 @@ class ServerSource(object):
                 ss.start()
         except Exception as e:
             soundlog.error("error setting up sound: %s", e, exc_info=True)
+        finally:
+            if ss is None:
+                #tell the client we're not sending anything:
+                self.send_eos(codec)
 
     def sound_source_exit(self, source, *args):
         soundlog("sound_source_exit(%s, %s)", source, args)
@@ -845,11 +850,15 @@ class ServerSource(object):
         soundlog("stop_sending_sound() sound_source=%s", ss)
         if ss:
             self.sound_source = None
-            if self.server_driven:
-                #tell the client this is the end:
-                self.send("sound-data", ss.codec, "", {"end-of-stream" : True,
-                                                       "sequence"      : ss.sequence})
+            self.send_eos(ss.codec, ss.sequence)
             ss.cleanup()
+
+    def send_eos(self, codec, sequence=0):
+        if self.server_driven:
+            #tell the client this is the end:
+            self.send("sound-data", codec, "", {"end-of-stream" : True,
+                                                "sequence"      : sequence})
+
 
     def new_stream(self, sound_source, codec):
         soundlog("new_stream(%s)", codec)
