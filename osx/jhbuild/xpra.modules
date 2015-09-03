@@ -148,6 +148,9 @@
 			version="20150727-2245-stable"
                         hash="md5:839cb78e0d43085a66ed67ad2897439a"
             repo="download.videolan.org"/>
+  <dependencies>
+      <dep package="yasm"/>
+  </dependencies>
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
