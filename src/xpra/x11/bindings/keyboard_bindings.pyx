@@ -159,8 +159,8 @@ cdef extern from "X11/XKBlib.h":
 
 
 cdef extern from "X11/extensions/XTest.h":
-    Bool XTestQueryExtension(Display *, int *, int *,
-                             int * major, int * minor)
+    Bool XTestQueryExtension(Display *display, int *event_base_return, int *error_base_return,
+                                int * major, int * minor)
     int XTestFakeKeyEvent(Display *, unsigned int keycode,
                           Bool is_press, unsigned long delay)
     int XTestFakeButtonEvent(Display *, unsigned int button,
@@ -229,22 +229,23 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     cdef XModifierKeymap* work_keymap
     cdef int min_keycode
     cdef int max_keycode
-    cdef int version_major
-    cdef int version_minor
+    cdef int Xkb_checked
+    cdef int Xkb_version_major
+    cdef int Xkb_version_minor
+    cdef int XTest_checked
+    cdef int XTest_version_major
+    cdef int XTest_version_minor
+    cdef int XFixes_checked
+    cdef int XFixes_present
 
     def __init__(self):
         self.work_keymap = NULL
         self.min_keycode = -1
         self.max_keycode = -1
-        self.ensure_XTest_support()
 
     def __repr__(self):
         return "X11KeyboardBindings(%s)" % self.display_name
 
-
-    def ensure_XTest_support(self):
-        cdef int ignored = 0
-        XTestQueryExtension(self.display, &ignored, &ignored, &ignored, &ignored)
 
     cpdef int setxkbmap(self, rules_name, model, layout, variant, options) except -1:
         log("setxkbmap(%s, %s, %s, %s, %s)", rules_name, model, layout, variant, options)
@@ -334,10 +335,14 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
 
     def hasXkb(self):
-        if self.version_major>0 or self.version_minor>0:
-            return True
+        if self.Xkb_checked:
+            return self.Xkb_version_major>0 or self.Xkb_version_minor>0
         cdef int major, minor, r, opr
         cdef int evbase, errbase
+        self.Xkb_checked = True
+        if os.environ.get("XPRA_X11_XKB", "1")!="1":
+            log.warn("Xkb disabled using XPRA_X11_XKB")
+            return False
         r = XkbQueryExtension(self.display, &opr, &evbase, &errbase, &major, &minor)
         log("XkbQueryExtension version present: %s", bool(r))
         if not r:
@@ -349,8 +354,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         if not bool(r):
             log.warn("Warning: Xkb extension version is incompatible")
             return False
-        self.version_major = major
-        self.version_minor = minor
+        self.Xkb_version_major = major
+        self.Xkb_version_minor = minor
         return True
 
 
@@ -361,11 +366,11 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 }
 
     def getXkbProperties(self):
-        cdef XkbRF_VarDefsRec vd
-        cdef char *tmp = NULL
         if not self.hasXkb():
             log.warn("Warning: no Xkb support")
             return {}
+        cdef XkbRF_VarDefsRec vd
+        cdef char *tmp = NULL
         if XkbRF_GetNamesProp(self.display, &tmp, &vd)==0 or tmp==NULL:
             log.warn("Error: XkbRF_GetNamesProp failed")
             return {}
@@ -539,6 +544,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             free(ckeysyms)
 
     cdef KeysymToKeycodes(self, KeySym keysym):
+        if not self.hasXkb():
+            return []
         cdef int i, j
         min_keycode, max_keycode = self._get_minmax_keycodes()
         keycodes = []
@@ -690,7 +697,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                     keysym = XkbKeycodeToKeysym(self.display, keycode, index//4, index%4)
                     index += 1
                 if keysym==0:
-                    log.warn("Warning: no keysym found for modifier %s and keycode %s", modifier, keycode)
+                    log.warn("Warning: no keysym found for keycode %i of modifier %s", keycode, modifier)
                     continue
                 keyname = XKeysymToString(keysym)
                 if keyname not in keynames:
@@ -753,6 +760,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return down
 
     def get_keycodes_down(self):
+        if not self.hasXkb():
+            {}
         cdef Display * display                          #@DuplicatedSignature
         cdef char* key
         keycodes = self._get_keycodes_down()
@@ -764,6 +773,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return keys
 
     def unpress_all_keys(self):
+        if not self.hasXTest():
+            return
         keycodes = self._get_keycodes_down()
         for keycode in keycodes:
             XTestFakeKeyEvent(self.display, keycode, False, 0)
@@ -855,6 +866,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return XInternAtom(self.display, string, False)
 
     def device_bell(self, xwindow, deviceSpec, bellClass, bellID, percent, name):
+        if not self.hasXkb():
+            return
         name_atom = self.get_xatom(name)
         #until (if ever) we replicate the same devices on the server,
         #use the default device:
@@ -863,20 +876,46 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return XkbDeviceBell(self.display, xwindow, deviceSpec, bellClass, bellID,  percent, name_atom)
 
 
+    def hasXTest(self):
+        if self.XTest_checked:
+            return self.XTest_version_major>0 or self.XTest_version_minor>0
+        self.XTest_checked = True
+        if os.environ.get("XPRA_X11_XTEST", "1")!="1":
+            log.warn("XTest disabled using XPRA_X11_XTEST")
+            return False
+        cdef int r
+        cdef int evbase, errbase
+        cdef int major, minor
+        r = XTestQueryExtension(self.display, &evbase, &errbase, &major, &minor)
+        if not r:
+            log.warn("Warning: XTest extension is missing")
+            return False
+        log("XTestQueryExtension found version %i.%i with event base=%i, error base=%i", major, minor, evbase, errbase)
+        self.XTest_version_major = major
+        self.XTest_version_minor = minor
+        return True
+
+
     def xtest_fake_key(self, keycode, is_press):
-        XTestFakeKeyEvent(self.display, keycode, is_press, 0)
+        if self.hasXTest():
+            XTestFakeKeyEvent(self.display, keycode, is_press, 0)
 
     def xtest_fake_button(self, button, is_press):
-        XTestFakeButtonEvent(self.display, button, is_press, 0)
+        if self.hasXTest():
+            XTestFakeButtonEvent(self.display, button, is_press, 0)
 
     def xtest_fake_motion(self, int screen, int x, int y, int delay=0):
-        XTestFakeMotionEvent(self.display, screen, x, y, delay)
+        if self.hasXTest():
+            XTestFakeMotionEvent(self.display, screen, x, y, delay)
 
     def xtest_fake_relative_motion(self, int x, int y, int delay=0):
-        XTestFakeRelativeMotionEvent(self.display, x, y, delay)
+        if self.hasXTest():
+            XTestFakeRelativeMotionEvent(self.display, x, y, delay)
 
 
     def get_key_repeat_rate(self):
+        if not self.hasXkb():
+            return None
         cdef unsigned int deviceSpec = XkbUseCoreKbd
         cdef unsigned int delay = 0
         cdef unsigned int interval = 0
@@ -885,14 +924,33 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return (delay, interval)
 
     def set_key_repeat_rate(self, delay, interval):
+        if not self.hasXkb():
+            log.warn("Warning: cannot set key repeat rate without Xkb support")
+            return False
         cdef unsigned int deviceSpec = XkbUseCoreKbd    #@DuplicatedSignature
         cdef unsigned int cdelay = delay
         cdef unsigned int cinterval = interval
         return XkbSetAutoRepeatRate(self.display, deviceSpec, cdelay, cinterval)
 
 
+    def hasXFixes(self):
+        cdef int r, evbase, errbase
+        if not self.XFixes_checked:
+            self.XFixes_checked = True
+            if os.environ.get("XPRA_X11_XFIXES", "1")!="1":
+                log.warn("XFixes disabled using XPRA_X11_XFIXES")
+            else:
+                self.XFixes_present = XFixesQueryExtension(self.display, &evbase, &errbase)
+                log("XFixesQueryExtension version present: %s", bool(self.XFixes_present))
+                if self.XFixes_present:
+                    log("XFixesQueryExtension event base=%i, error base=%i", evbase, errbase)
+                else:
+                    log.warn("Warning: XFixes extension is missing")
+        return bool(self.XFixes_present)
 
     def get_cursor_image(self):
+        if not self.hasXFixes():
+            return None
         cdef XFixesCursorImage* image = NULL
         cdef int n, i = 0
         cdef unsigned char r, g, b, a
@@ -923,13 +981,11 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             if image:
                 XFree(image)
 
-    def get_XFixes_event_base(self):
-        cdef int event_base = 0                             #@DuplicatedSignature
-        cdef int error_base = 0                             #@DuplicatedSignature
-        XFixesQueryExtension(self.display, &event_base, &error_base)
-        return int(event_base)
 
     def selectCursorChange(self, on):
+        if not self.hasXFixes():
+            log.warn("Warning: no cursor change notifications without XFixes support")
+            return
         root_window = XDefaultRootWindow(self.display)
         if on:
             v = XFixesDisplayCursorNotifyMask
@@ -939,6 +995,9 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
 
     def selectBellNotification(self, on):
+        if not self.hasXkb():
+            log.warn("Warning: no system bell events without Xkb support")
+            return
         cdef int bits = XkbBellNotifyMask
         if not on:
             bits = 0

@@ -104,13 +104,18 @@ class Keyboard(KeyboardBase):
 
 
     def get_keyboard_repeat(self):
+        v = None
         if keyboard_bindings:
             try:
-                delay, interval = keyboard_bindings.get_key_repeat_rate()
-                return delay,interval
+                v = keyboard_bindings.get_key_repeat_rate()
+                if v:
+                    assert len(v)==2
             except Exception as e:
-                log.error("failed to get keyboard repeat rate: %s", e)
-        return None
+                log.error("Error: failed to get keyboard repeat rate:")
+                log.error(" %s", e)
+                v = None
+        log("get_keyboard_repeat()=%s", v)
+        return v
 
     def update_modifier_map(self, display, xkbmap_mod_meanings):
         try:

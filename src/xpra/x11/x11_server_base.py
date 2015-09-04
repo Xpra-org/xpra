@@ -74,6 +74,12 @@ class X11ServerBase(GTKServerBase):
         GTKServerBase.init(self, opts)
 
     def x11_init(self):
+        if not X11Keyboard.hasXFixes():
+            log.error("Error: cursor forwarding support disabled") 
+        if not X11Keyboard.hasXTest():
+            log.error("Error: keyboard and mouse disabled")
+        elif not X11Keyboard.hasXkb():
+            log.error("Error: limited keyboard support")
         self.init_x11_atoms()
         self.randr = RandR.has_randr()
         if self.randr and len(RandR.get_screen_sizes())<=1:
