@@ -146,7 +146,7 @@ if OPENGL_DEBUG:
 from ctypes import c_char_p
 
 try:
-    import OpenGL_accelerate
+    import OpenGL_accelerate            #@UnresolvedImport
 except:
     OpenGL_accelerate = None
 zerocopy_upload = os.environ.get("XPRA_ZEROCOPY_OPENGL_UPLOAD", "1")=="1" and is_pyopengl_memoryview_safe(OpenGL_version.__version__) and OpenGL_accelerate
