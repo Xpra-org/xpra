@@ -547,7 +547,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i", self.gl_texture_size_limit, self.gl_texture_size_limit)
                 l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
         except ImportError as e:
-            opengllog.warn("OpenGL support could not be enabled:")
+            opengllog.warn("OpenGL support is missing:")
+            opengllog.warn(" %s", e)
+            self.opengl_props["info"] = str(e)
+        except RuntimeError as e:
+            opengllog.warn("OpenGL support could not be enabled on this hardware:")
             opengllog.warn(" %s", e)
             self.opengl_props["info"] = str(e)
         except Exception as e:
