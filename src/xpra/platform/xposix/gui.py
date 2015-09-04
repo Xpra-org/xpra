@@ -175,14 +175,16 @@ def get_antialias_info():
 
 
 def get_current_desktop():
+    v = -1
+    d = None
     try:
         d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
-        v = struct.unpack("=I", d)[0]
-        log("get_current_desktop()=%s", v)
-        return v
+        if d:
+            v = struct.unpack("=I", d)[0]
     except Exception as e:
         log.warn("failed to get current desktop: %s", e)
-    return -1
+    log("get_current_desktop() %s=%s", d, v)
+    return v
 
 def get_workarea():
     try:
@@ -190,6 +192,8 @@ def get_workarea():
         if d<0:
             return None
         workarea = _get_X11_root_property("_NET_WORKAREA", "CARDINAL")
+        if not workarea:
+            return None
         screenlog("get_workarea()=%s, len=%s", type(workarea), len(workarea))
         #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
         if len(workarea)<(d+1)*4*4:
@@ -205,27 +209,31 @@ def get_workarea():
 
 
 def get_number_of_desktops():
+    v = 1
+    d = None
     try:
         d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
-        v = struct.unpack("=I", d)[0]
-        screenlog("get_number_of_desktops()=%s", v)
-        return max(1, v)
+        if d:
+            v = struct.unpack("=I", d)[0]
     except Exception as e:
         screenlog.warn("failed to get number of desktop: %s", e)
-    return 1
+    v = max(1, v)
+    screenlog("get_number_of_desktops() %s=%s", d, v)
+    return v
 
 def get_desktop_names():
+    v = ["Main"]
+    d = None
     try:
         d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
         if d:
             v = d.split(b"\0")
             if len(v)>1 and v[-1]=="":
                 v = v[:-1]
-            screenlog("get_desktop_names()=%s", v)
-            return v
     except Exception as e:
         screenlog.warn("failed to get desktop names: %s", e)
-    return ["Main"]
+    screenlog("get_desktop_names() %s=%s", d, v)
+    return v
 
 
 def get_vrefresh():
@@ -233,11 +241,11 @@ def get_vrefresh():
         from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
         randr = RandRBindings()
         v = randr.get_vrefresh()
-        screenlog("get_vrefresh()=%s", v)
-        return v
     except Exception as e:
         screenlog.warn("failed to get VREFRESH: %s", e)
-        return -1
+        v = -1
+    screenlog("get_vrefresh()=%s", v)
+    return v
 
 
 def _get_xsettings_int(name, default_value):
