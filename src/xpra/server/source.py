@@ -305,6 +305,7 @@ class ServerSource(object):
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
+        self.client_revision= None
         self.client_platform = None
         self.client_machine = None
         self.client_processor = None
@@ -590,6 +591,7 @@ class ServerSource(object):
         self.client_processor = c.strget("platform.processor")
         self.client_release = c.strget("platform.release")
         self.client_version = c.strget("version")
+        self.client_revision = c.strget("build.revision")
         self.client_proxy = c.boolget("proxy")
         #general features:
         self.zlib = c.boolget("zlib", True)
@@ -650,13 +652,16 @@ class ServerSource(object):
         pinfo = ""
         if self.client_platform:
             pinfo = " %s" % platform_name(self.client_platform, self.client_release)
-        log.info("%s%s client version %s", std(self.client_type), pinfo, std(self.client_version))
+        revinfo = ""
+        if self.client_revision:
+            revinfo="-r%s" % self.client_revision
+        log.info("%s%s client version %s%s", std(self.client_type), pinfo, std(self.client_version), std(revinfo))
         msg = ""
         if self.hostname:
             msg += " connected from '%s'" % std(self.hostname)
         if self.username:
             msg += " as '%s'" % std(self.username)
-            if self.name:
+            if self.name and self.name!=self.username:
                 msg += " - '%s'" % std(self.name)
         log.info(msg)
         if c.boolget("proxy"):
@@ -1211,6 +1216,7 @@ class ServerSource(object):
             lpe = int(time.time()*1000-self.last_ping_echoed_time)
         info = {
                 "version"           : self.client_version or "unknown",
+                "revision"          : self.client_revision or "unknown",
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
                 "uuid"              : self.uuid,
                 "idle_time"         : int(time.time()-self.last_user_event),

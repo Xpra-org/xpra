@@ -732,10 +732,8 @@ class XpraClientBase(object):
         c = self.server_capabilities
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
-        self._remote_version = c.strget("version")
-        self._remote_version = c.strget("build.version", self._remote_version)
-        self._remote_revision = c.strget("revision")
-        self._remote_revision = c.strget("build.revision", self._remote_revision)
+        self._remote_version = c.strget("build.version", c.strget("version"))
+        self._remote_revision = c.strget("build.revision", c.strget("revision"))
         self._remote_platform = c.strget("platform")
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")

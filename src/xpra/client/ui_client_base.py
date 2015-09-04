@@ -92,7 +92,7 @@ class UIXpraClient(XpraClientBase):
         XpraClientBase.__init__(self)
         try:
             from xpra.src_info import REVISION
-            rev_info = " (r%s)" % REVISION
+            rev_info = "-r%s" % REVISION
         except:
             rev_info = ""
         log.info("xpra %s client version %s%s", self.client_toolkit(), XPRA_VERSION, rev_info)
@@ -1376,8 +1376,8 @@ class UIXpraClient(XpraClientBase):
         i = " ".join(os_info(self._remote_platform, self._remote_platform_release, self._remote_platform_platform, self._remote_platform_linux_distribution))
         r = self._remote_version
         if self._remote_revision:
-            r += " (r%s)" % self._remote_revision
-        log.info("server: %s, Xpra version %s", i, r)
+            r += "-r%s" % self._remote_revision
+        log.info("server: %s, Xpra version %s", std(i), std(r))
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")

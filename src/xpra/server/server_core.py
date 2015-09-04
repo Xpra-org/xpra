@@ -357,7 +357,7 @@ class ServerCore(object):
     def run(self):
         try:
             from xpra.src_info import REVISION
-            rev_info = " (r%s)" % REVISION
+            rev_info = "-r%s" % REVISION
         except:
             rev_info = ""
         log.info("xpra %s version %s%s", self.get_server_mode(), local_version, rev_info)
