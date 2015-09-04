@@ -213,6 +213,13 @@ cdef NS(char *v):
         return "NULL"
     return str(v)
 
+cdef s(const char *v):
+    pytmp = v[:]
+    try:
+        return pytmp.decode()
+    except:
+        return str(v[:])
+
 
 # xmodmap's "keycode" action done implemented in python
 # some of the methods aren't very pythonic
@@ -374,22 +381,17 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             log.warn("Error: XkbRF_GetNamesProp failed")
             return {}
         v = {}
-        def s(v):
-            try:
-                return v.decode()
-            except:
-                return str(v)
         if len(tmp)>0:
-            v["rules"] = s(tmp[:])
+            v["rules"] = s(tmp)
             XFree(tmp)
         if vd.model:
-            v["model"]  = s(vd.model[:])
+            v["model"]  = s(vd.model)
             XFree(vd.model)
         if vd.layout:
-            v["layout"] = s(vd.layout[:])
+            v["layout"] = s(vd.layout)
             XFree(vd.layout)
         if vd.options!=NULL:
-            v["options"] = s(vd.options[:])
+            v["options"] = s(vd.options)
             XFree(vd.options)
         #log("vd.num_extra=%s", vd.num_extra)
         if vd.extra_names:
