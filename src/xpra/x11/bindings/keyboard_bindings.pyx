@@ -8,6 +8,7 @@ import os
 import time
 
 from xpra.log import Logger
+from hawkey import VERSION_MAJOR
 log = Logger("x11", "bindings", "keyboard")
 
 from xpra.util import bytestostr
@@ -137,6 +138,8 @@ cdef extern from "X11/extensions/XKBrules.h":
 
     ctypedef XkbRF_VarDefsRec* XkbRF_VarDefsPtr
 
+    Bool XkbLibraryVersion(int *major , int *minor)
+
     Bool XkbRF_GetNamesProp(Display *dpy, char **rules_file_rtrn, XkbRF_VarDefsPtr var_defs_rtrn)
     Bool XkbRF_SetNamesProp(Display *dpy, char *rules_file, XkbRF_VarDefsPtr var_defs)
     Bool XkbRF_GetComponents(XkbRF_RulesPtr rules, XkbRF_VarDefsPtr var_defs, XkbComponentNamesPtr names)
@@ -226,6 +229,8 @@ cdef class X11KeyboardBindings(X11CoreBindings):
     cdef XModifierKeymap* work_keymap
     cdef int min_keycode
     cdef int max_keycode
+    cdef int version_major
+    cdef int version_minor
 
     def __init__(self):
         self.work_keymap = NULL
@@ -243,6 +248,9 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
     cpdef int setxkbmap(self, rules_name, model, layout, variant, options) except -1:
         log("setxkbmap(%s, %s, %s, %s, %s)", rules_name, model, layout, variant, options)
+        if not self.hasXkb():
+            log.error("Error: no Xkb support in this X11 server, cannot set keymap")
+            return False
         cdef XkbRF_RulesPtr rules = NULL
         cdef XkbRF_VarDefsRec rdefs
         cdef XkbComponentNamesRec rnames
@@ -323,18 +331,44 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 return False
             log("X11 keymap property updated: %s", self.getXkbProperties())
         return True
-        
+
+
+    def hasXkb(self):
+        if self.version_major>0 or self.version_minor>0:
+            return True
+        cdef int major, minor, r, opr
+        cdef int evbase, errbase
+        r = XkbQueryExtension(self.display, &opr, &evbase, &errbase, &major, &minor)
+        log("XkbQueryExtension version present: %s", bool(r))
+        if not r:
+            log.warn("Warning: Xkb server extension is missing")
+            return False
+        log("XkbQueryExtension version %i.%i, opcode result=%i, event base=%i, error base=%i", major, minor, opr, evbase, errbase)
+        r = XkbLibraryVersion(&major, &minor)
+        log("XkbLibraryVersion version %i.%i, compatible: %s", major, minor, bool(r))
+        if not bool(r):
+            log.warn("Warning: Xkb extension version is incompatible")
+            return False
+        self.version_major = major
+        self.version_minor = minor
+        return True
+
+
+    def get_default_properties(self):
+        return {"rules"    : "base",
+                "model"    : "pc105",
+                "layout"   : "us",
+                }
 
     def getXkbProperties(self):
         cdef XkbRF_VarDefsRec vd
         cdef char *tmp = NULL
+        if not self.hasXkb():
+            log.warn("Warning: no Xkb support")
+            return {}
         if XkbRF_GetNamesProp(self.display, &tmp, &vd)==0 or tmp==NULL:
-            v = {"rules"    : "base",
-                 "model"    : "pc105",
-                 "layout"   : "us",
-                 }
-            log.warn("XkbRF_GetNamesProp failed, returning defaults: %s", v)
-            return v
+            log.warn("Error: XkbRF_GetNamesProp failed")
+            return {}
         v = {}
         def s(v):
             try:
@@ -656,7 +690,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                     keysym = XkbKeycodeToKeysym(self.display, keycode, index//4, index%4)
                     index += 1
                 if keysym==0:
-                    log.info("no keysym found for keycode %s", keycode)
+                    log.warn("Warning: no keysym found for modifier %s and keycode %s", modifier, keycode)
                     continue
                 keyname = XKeysymToString(keysym)
                 if keyname not in keynames:
