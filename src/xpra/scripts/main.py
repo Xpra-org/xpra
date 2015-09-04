@@ -861,7 +861,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
-        if mode!="attach":
+        if mode not in ("attach", "start", "upgrade", "proxy", "shadow"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 

@@ -30,7 +30,7 @@ from xpra.server import ClientException
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
-from xpra.platform import set_application_name
+from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
@@ -177,7 +177,7 @@ class ServerCore(object):
     def init(self, opts):
         log("ServerCore.init(%s)", opts)
         self.session_name = opts.session_name
-        set_application_name(self.session_name or "Xpra")
+        set_name("Xpra", self.session_name or "Xpra")
 
         self.main_socket_path = ""
         self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
