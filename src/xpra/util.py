@@ -295,7 +295,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         display_name, width, height, width_mm, height_mm, \
         monitors, work_x, work_y, work_width, work_height = s[:11]
         #always log plug name:
-        info = ["'%s'" % prettify_plug_name(display_name)]
+        info = ["%s" % prettify_plug_name(display_name)]
         if width!=root_w or height!=root_h:
             #log plug dimensions if not the same as display (root):
             info.append("%sx%s" % (width, height))
@@ -322,8 +322,10 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
                 info.append("(%sx%s mm - DPI: %sx%s)" % (plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm)))
             if len(m)>=11:
-                work_x, work_y, work_width, work_height = m[7:11]
-                add_workarea(work_x, work_y, work_width, work_height)
+                dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
+                #only show it again if different from the screen workarea
+                if dwork_x!=work_x or dwork_y!=work_y or dwork_width!=work_width or dwork_height!=work_height:
+                    add_workarea(work_x, work_y, work_width, work_height)
             log.info("    "+" ".join(info))
 
 def get_screen_info(screen_sizes):

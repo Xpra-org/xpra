@@ -435,25 +435,30 @@ def get_pulse_defaults(remote):
     #one that starts with {UUID}unix:/..
     if pa_server and pa_server.startswith("{") and \
         remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
-        log.error("identical Pulseaudio server, refusing to create a sound loop - sound disabled")
-        return    None
+        log.error("Error: sound is disabled to prevent a sound loop")
+        log.error(" identical Pulseaudio server '%s'", pa_server)
+        return None
     pa_id = get_pulse_id()
     log("start sound, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
     if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
-        log.error("identical Pulseaudio ID, refusing to create a sound loop - sound disabled")
-        return    None
+        log.error("Error: sound is disabled to prevent a sound loop")
+        log.error(" identical Pulseaudio ID '%s'", pa_id)
+        return None
     monitor_devices = get_pa_device_options(True, False)
     log("found pulseaudio monitor devices: %s", monitor_devices)
     if len(monitor_devices)==0:
-        log.error("could not detect any Pulseaudio monitor devices - sound forwarding is disabled")
-        return    None
+        log.error("Error: sound forwarding is disabled")
+        log.error(" could not detect any Pulseaudio monitor devices")
+        return None
     if len(monitor_devices)>1 and MONITOR_DEVICE_NAME:
         monitor_devices = dict((k,v) for k,v in monitor_devices.items() if k.find(MONITOR_DEVICE_NAME)>=0 or v.find(MONITOR_DEVICE_NAME)>0)
         if len(monitor_devices)==0:
-            log.warn("Pulseaudio monitor device name filter '%s' did not match any devices", MONITOR_DEVICE_NAME)
+            log.warn("Warning: Pulseaudio monitor device name filter '%s'", MONITOR_DEVICE_NAME)
+            log.warn(" did not match any devices")
             return None
         elif len(monitor_devices)>1:
-            log.warn("Pulseaudio monitor device name filter '%s' matched %i devices", MONITOR_DEVICE_NAME, len(monitor_devices))
+            log.warn("Warning: Pulseaudio monitor device name filter '%s'", MONITOR_DEVICE_NAME)
+            log.warn(" matched %i devices", len(monitor_devices))
     #default to first one:
     monitor_device, monitor_device_name = monitor_devices.items()[0]
     if len(monitor_devices)>1:
@@ -462,11 +467,13 @@ def get_pulse_defaults(remote):
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
-            log.warn("found more than one audio monitor device:")
+            if not MONITOR_DEVICE_NAME: #warned already
+                log.warn("Warning: found more than one audio monitor device:")
             for k,v in monitor_devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
-            log.warn(" use the environment variable XPRA_MONITOR_DEVICE_NAME to select a specific one")
+            if not MONITOR_DEVICE_NAME: #used already!
+                log.warn(" use the environment variable XPRA_MONITOR_DEVICE_NAME to select a specific one")
         if default_monitor in monitor_devices:
             monitor_device = default_monitor
             monitor_device_name = monitor_devices.get(default_monitor)
