@@ -549,7 +549,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                              "below"                 : ("_NET_WM_STATE_BELOW", ),
                              "focused"               : ("_NET_WM_STATE_FOCUSED", ),
                              }
-            state_atoms = set(wm_state_atoms)
+            state_atoms = set(wm_state_atoms or [])
             state_updates = {}
             for state, atoms in WM_STATE_NAME.items():
                 var = "_" + state.replace("-", "_")           #ie: "skip-pager" -> "_skip_pager"
