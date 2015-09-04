@@ -8,7 +8,6 @@ import os
 import time
 
 from xpra.log import Logger
-from hawkey import VERSION_MAJOR
 log = Logger("x11", "bindings", "keyboard")
 
 from xpra.util import bytestostr
