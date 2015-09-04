@@ -53,7 +53,8 @@ try:
 except Exception as e:
     #ignore the error on win32:
     if not sys.platform.startswith("win"):
-        err("cannot use pycups for printing: %s", e)
+        err("Error: printing disabled:")
+        err(" %s", e)
 
 platform_import(globals(), "printing", False,
                 "init_printing",
