@@ -63,7 +63,7 @@ class ChildReaper(object):
             POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
             if BUGGY_PYTHON:
                 log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
-                log.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
+                log.warn(" switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
             else:
                 log("using process polling every %s seconds", POLL_DELAY)
             self.glib.timeout_add(POLL_DELAY*1000, self.poll)
