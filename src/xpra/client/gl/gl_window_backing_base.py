@@ -449,13 +449,13 @@ class GLWindowBackingBase(GTKWindowBacking):
         #   change fragment program
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
-    def present_fbo(self, x, y, w, h, flush=None):
-        if not self.paint_screen:
-            return
+    def present_fbo(self, x, y, w, h, flush=0):
         log("present_fbo: adding %s to pending paint list, flush=%s", (x, y, w, h), flush)
         self.pending_fbo_paint.append((x, y, w, h))
-        #if the flush flag is missing, or with the special value 0, actually do the paint:
-        if flush is None or flush==0:
+        if not self.paint_screen:
+            return
+        #flush>0 means we should wait for the final flush=0 paint
+        if flush==0:
             self.do_present_fbo()
 
     def do_present_fbo(self):
@@ -674,7 +674,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
 
             # Present update to screen
-            self.present_fbo(x, y, width, height, options.get("flush"))
+            self.present_fbo(x, y, width, height, options.get("flush", 0))
             # present_fbo has reset state already
         return True
 
