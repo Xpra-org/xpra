@@ -681,7 +681,7 @@ class GLWindowBackingBase(GTKWindowBacking):
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)
         img.clone_pixel_data()
-        self.idle_add(self.gl_paint_planar, options.get("flush"), options.get("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
+        self.idle_add(self.gl_paint_planar, options.get("flush", 0), options.get("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
 
     def gl_paint_planar(self, flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
