@@ -480,7 +480,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         else:
             #paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
-            self.pending_fbo_paint = []
+        self.pending_fbo_paint = []
         log("do_present_fbo: painting %s", rectangles)
 
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
