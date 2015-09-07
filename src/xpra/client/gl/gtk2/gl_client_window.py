@@ -33,10 +33,6 @@ class GLClientWindow(GTK2WindowBase):
             self.max_window_size = mts, mts
         GTK2WindowBase.init_window(self, metadata)
 
-    def setup_window(self, *args):
-        self._client_properties["encoding.uses_swscale"] = False
-        GTK2WindowBase.setup_window(self, *args)
-
 
     def __str__(self):
         return "GLClientWindow(%s : %s)" % (self._id, self._backing)

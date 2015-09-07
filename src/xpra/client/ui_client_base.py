@@ -1125,7 +1125,6 @@ class UIXpraClient(XpraClientBase):
         log("supported full csc_modes=%s", full_csc_modes)
         encoding_caps["full_csc_modes"] = full_csc_modes
 
-        encoding_caps["uses_swscale"] = True
         if "h264" in self.get_core_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for I420/YUV420P

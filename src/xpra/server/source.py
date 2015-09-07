@@ -717,7 +717,7 @@ class ServerSource(object):
                 if stripped_k in ("transparency", "csc_atoms", "client_options",
                                   "video_separateplane",
                                   "rgb_zlib", "rgb_lz4", "rgb_lzo",
-                                  "webp_leaks", "video_subregion", "uses_swscale",
+                                  "webp_leaks", "video_subregion",
                                   "video_scaling", "video_reinit"):
                     v = c.boolget(k)
                 elif stripped_k in ("initial_quality", "initial_speed",

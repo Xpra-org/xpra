@@ -51,8 +51,6 @@ class WindowVideoSource(WindowSource):
     def __init__(self, *args):
         #this will call init_vars():
         WindowSource.__init__(self, *args)
-        #client uses uses_swscale (has extra limits on sizes)
-        self.uses_swscale = self.encoding_options.boolget("uses_swscale", True)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_reinit = self.encoding_options.boolget("video_reinit", False)
         self.supports_video_subregion = VIDEO_SUBREGION and self.encoding_options.boolget("video_subregion", False)
@@ -99,7 +97,6 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_scores = []
         self.last_pipeline_time = 0
 
-        self.uses_swscale = False
         self.supports_video_scaling = False
         self.supports_video_reinit = False
         self.supports_video_subregion = False
@@ -131,7 +128,6 @@ class WindowVideoSource(WindowSource):
 
     def get_client_info(self):
         info = {
-            "uses_swscale"              : self.uses_swscale,
             "supports_video_scaling"    : self.supports_video_scaling,
             "supports_video_reinit"     : self.supports_video_reinit,
             "supports_video_subregion"  : self.supports_video_subregion,
@@ -270,7 +266,6 @@ class WindowVideoSource(WindowSource):
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
-        self.uses_swscale = properties.boolget("encoding.uses_swscale", self.uses_swscale)
         self.scaling_control = max(0, min(100, properties.intget("scaling.control", self.scaling_control)))
         WindowSource.do_set_client_properties(self, properties)
         #encodings may have changed, so redo this:
@@ -280,8 +275,8 @@ class WindowVideoSource(WindowSource):
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
         except:
             self.edge_encoding = None
-        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, uses_swscale=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
-            properties, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.uses_swscale, self.non_video_encodings, self.edge_encoding, self.scaling_control)
+        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
+            properties, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         return self.get_best_encoding_video
