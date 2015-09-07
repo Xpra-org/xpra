@@ -586,6 +586,14 @@ def sound_option_or_all(name, options, all_values):
     return v
 
 
+def loop_warning(mode="speaker", machine_id=""):
+    log.warn("cannot start %s forwarding:", mode)
+    log.warn(" user and server environment are identical,")
+    log.warn(" this would create a sound loop")
+    log.warn(" use XPRA_ALLOW_SOUND_LOOP=1 to force enable it")
+    if machine_id:
+        log(" '%s'", machine_id)
+
 
 def main():
     global pygst_version, gst_version, gst_vinfo

@@ -1606,12 +1606,11 @@ class UIXpraClient(XpraClientBase):
         soundlog("start_sending_sound()")
         assert self.microphone_allowed, "microphone forwarding is disabled"
         assert self.server_sound_receive, "client support for receiving sound is disabled"
-        from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
+        from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
         if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
             #looks like we're on the same machine, verify it's a different user:
             if self._remote_uuid==get_user_uuid():
-                soundlog.warn("cannot start sound:")
-                soundlog.warn(" identical user environment as the server (loop)")
+                loop_warning("microphone", self._remote_uuid)
                 return
 
         ss = self.sound_source

@@ -812,12 +812,11 @@ class ServerSource(object):
             return
         ss = None
         try:
-            from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP
+            from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
             if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
                 #looks like we're on the same machine, verify it's a different user:
                 if self.uuid==get_user_uuid():
-                    soundlog.warn("Warning: cannot start sound:")
-                    soundlog.warn(" identical user and server environment (loop)")
+                    loop_warning("speaker", self.uuid)
                     return
             assert self.supports_speaker, "cannot send sound: support not enabled on the server"
             assert self.sound_source is None, "a sound source already exists"
