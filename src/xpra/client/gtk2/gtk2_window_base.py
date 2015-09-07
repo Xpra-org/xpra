@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -92,18 +92,18 @@ class GTK2WindowBase(GTKClientWindowBase):
         self.set_data("_kde_no_window_grab", 1)
 
 
-    def setup_window(self):
+    def setup_window(self, *args):
         #preserve screen:
         if not self._override_redirect:
             display = gtk.gdk.display_get_default()
             screen_num = self._client_properties.get("screen", -1)
             n = display.get_n_screens()
-            log("setup_window() screen=%s, nscreens=%s", screen_num, n)
+            log("setup_window%s screen=%s, nscreens=%s", args, screen_num, n)
             if screen_num>=0 and screen_num<n:
                 screen = display.get_screen(screen_num)
                 if screen:
                     self.set_screen(screen)
-        GTKClientWindowBase.setup_window(self)
+        GTKClientWindowBase.setup_window(self, *args)
 
 
     def enable_alpha(self):

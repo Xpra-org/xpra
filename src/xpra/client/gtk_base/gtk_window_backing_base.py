@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -34,21 +34,3 @@ class GTKWindowBacking(WindowBackingBase):
 
     def __init__(self, wid, window_alpha):
         WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA, glib.idle_add)
-
-
-    def cairo_draw(self, context):
-        self.cairo_draw_from_drawable(context, self._backing)
-
-    def cairo_draw_from_drawable(self, context, drawable):
-        if drawable is None:
-            return
-        try:
-            context.set_source_pixmap(drawable, 0, 0)
-            context.set_operator(cairo.OPERATOR_SOURCE)
-            context.paint()
-            return True
-        except KeyboardInterrupt:
-            raise
-        except:
-            log.error("cairo_draw_from_drawable(%s, %s)", context, drawable, exc_info=True)
-            return False

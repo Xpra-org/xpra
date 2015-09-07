@@ -29,6 +29,7 @@ screenlog = Logger("client", "screen")
 mouselog = Logger("mouse")
 avsynclog = Logger("av-sync")
 clipboardlog = Logger("clipboard")
+scalinglog = Logger("scaling")
 
 
 from xpra import __version__ as XPRA_VERSION
@@ -65,6 +66,20 @@ MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
 
 PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
 PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
+
+
+try:
+    X_SCALING = float(os.environ["XPRA_X_SCALING"])
+    assert X_SCALING>0.1 and X_SCALING<10, "XPRA_X_SCALING is out of range: %s" % X_SCALING
+except Exception as e:
+    scalinglog("using default xscale=1: %s", e)
+    X_SCALING = 1
+try:
+    Y_SCALING = float(os.environ["XPRA_Y_SCALING"])
+    assert Y_SCALING>0.1 and Y_SCALING<10, "XPRA_Y_SCALING is out of range: %s" % Y_SCALING
+except:
+    Y_SCALING = 1
+scalinglog("scaling: %sx%s", X_SCALING, Y_SCALING)
 
 
 PYTHON3 = sys.version_info[0] == 3
@@ -105,6 +120,9 @@ class UIXpraClient(XpraClientBase):
         self.auto_refresh_delay = -1
         self.max_window_size = 0, 0
         self.dpi = 0
+        self.xscale = X_SCALING
+        self.yscale = Y_SCALING
+        scalinglog("scaling: %sx%s", self.xscale, self.yscale)
 
         #draw thread:
         self._draw_queue = None
@@ -650,10 +668,9 @@ class UIXpraClient(XpraClientBase):
             tray = self._id_to_window.get(wid)
             traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
             if tray:
-                pointer = x, y
                 modifiers = self.get_current_modifiers()
                 buttons = []
-                self.send_mouse_position(["pointer-position", wid, pointer, modifiers, buttons])
+                self.send_mouse_position(["pointer-position", wid, self.sp(x, y), modifiers, buttons])
         def do_tray_geometry(*args):
             #tell the "ClientTray" where it now lives
             #which should also update the location on the server if it has changed
@@ -696,19 +713,19 @@ class UIXpraClient(XpraClientBase):
             return
         def update_screen_size():
             self.screen_size_change_pending = False
-            root_w, root_h = self.get_root_size()
-            ss = self.get_screen_sizes()
+            root_w, root_h = self.cp(*self.get_root_size())
+            sss = self.get_screen_sizes(self.xscale, self.yscale)
             ndesktops = get_number_of_desktops()
             desktop_names = get_desktop_names()
-            screenlog("update_screen_size() sizes=%s, %s desktops: %s", ss, ndesktops, desktop_names)
-            screen_settings = (root_w, root_h, ss, ndesktops, desktop_names)
+            screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
+            screen_settings = (root_w, root_h, sss, ndesktops, desktop_names)
             screenlog("update_screen_size()     new settings=%s", screen_settings)
             screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
             if self._last_screen_settings==screen_settings:
                 log("screen size unchanged")
                 return
-            screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(ss))
-            log_screen_sizes(root_w, root_h, ss)
+            screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
+            log_screen_sizes(root_w, root_h, sss)
             self.send("desktop_size", *screen_settings)
             self._last_screen_settings = screen_settings
             #update the max packet size (may have gone up):
@@ -725,7 +742,7 @@ class UIXpraClient(XpraClientBase):
             delay = 5*1000
         self.timeout_add(delay, update_screen_size)
 
-    def get_screen_sizes(self):
+    def get_screen_sizes(self, xscale=1, yscale=1):
         raise Exception("override me!")
 
     def get_root_size(self):
@@ -749,7 +766,7 @@ class UIXpraClient(XpraClientBase):
         from xpra.os_util import get_int_uuid
         from xpra.net.mmap_pipe import init_client_mmap
         #calculate size:
-        root_w, root_h = self.get_root_size()
+        root_w, root_h = self.sp(self.get_root_size())
         #at least 128MB, or 8 fullscreen RGBX frames:
         mmap_size = max(128*1024*1024, root_w*root_h*4*8)
         mmap_size = min(1024*1024*1024, mmap_size)
@@ -777,11 +794,14 @@ class UIXpraClient(XpraClientBase):
         self.opengl_props = {"info" : "not supported"}
 
 
+    def scale_pointer(self, pointer):
+        return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
+
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons):
         def send_button(state):
             self.send_positional(["button-action", wid,
                                               button, state,
-                                              pointer, modifiers, buttons])
+                                              self.scale_pointer(pointer), modifiers, buttons])
         pressed_state = self._button_state.get(button, False)
         if PYTHON3 and WIN32 and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
@@ -946,17 +966,24 @@ class UIXpraClient(XpraClientBase):
 
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
-        capabilities["desktop_size"] = [root_w, root_h]
+        capabilities["desktop_size"] = self.cp(root_w, root_h)
         ndesktops = get_number_of_desktops()
         capabilities["desktops"] = ndesktops
         desktop_names = get_desktop_names()
         capabilities["desktop.names"] = desktop_names
-        capabilities["desktop_size"] = [root_w, root_h]
         ss = self.get_screen_sizes()
         log.info(" desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
         log_screen_sizes(root_w, root_h, ss)
-        capabilities["screen_sizes"] = ss
-        self._last_screen_settings = (root_w, root_h, ss, ndesktops, desktop_names)
+        if self.xscale!=1 or self.yscale!=1:
+            capabilities["screen_sizes.unscaled"] = ss
+            log.info(" scaled using %sx%s to:", self.xscale, self.yscale)
+            sss = self.get_screen_sizes(self.xscale, self.yscale)
+            root_w, root_h = self.cp(root_w, root_h)
+            log_screen_sizes(root_w, root_h, sss)
+        else:
+            sss = ss
+        capabilities["screen_sizes"] = sss
+        self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names)
         if self.keyboard_helper:
             key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
             if key_repeat:
@@ -985,6 +1012,9 @@ class UIXpraClient(XpraClientBase):
             "notify-startup-complete"   : True,
             "wants_events"              : True,
             "randr_notify"              : True,
+            "screen-scaling"            : True,
+            "screen-scaling.enabled"    : (self.xscale!=1 or self.yscale!=1),
+            "screen-scaling.values"     : (int(1000*self.xscale), int(1000*self.yscale)),
             #mouse and cursors:
             "compressible_cursors"      : True,
             "mouse.echo"                : MOUSE_ECHO,
@@ -1405,13 +1435,13 @@ class UIXpraClient(XpraClientBase):
             assert server_desktop_size
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
-            if avail_w<root_w or avail_h<root_h:
+            if avail_w*self.xscale<root_w or avail_h*self.yscale<root_h:
                 log.warn("Server's virtual screen is too small -- "
                          "(server: %sx%s vs. client: %sx%s)\n"
                          "You may see strange behavior.\n"
                          "Please see "
                          "http://xpra.org/trac/wiki/Xdummy#Configuration"
-                         % (avail_w, avail_h, root_w, root_h))
+                         % (int(avail_w*self.xscale), int(avail_h*self.yscale), root_w, root_h))
         if self.keyboard_helper:
             modifier_keycodes = c.dictget("modifier_keycodes")
             if modifier_keycodes:
@@ -1895,22 +1925,55 @@ class UIXpraClient(XpraClientBase):
             self.emit("first-ui-received")
         self._ui_events += 1
 
+
+    def sx(self, v):
+        """ convert X coordinate from server to client """
+        return int(v*self.xscale)
+    def sy(self, v):
+        """ convert Y coordinate from server to client """
+        return int(v*self.yscale)
+    def srect(self, x, y, w, h):
+        """ convert rectangle coordinates from server to client """
+        return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
+    def sp(self, x, y):
+        """ convert X,Y coordinates from server to client """
+        return self.sx(x), self.sy(y)
+
+    def cx(self, v):
+        """ convert X coordinate from client to server """
+        return int(v/self.xscale)
+    def cy(self, v):
+        """ convert Y coordinate from client to server """
+        return int(v/self.yscale)
+    def crect(self, x, y, w, h):
+        """ convert rectangle coordinates from client to server """
+        return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
+    def cp(self, x, y):
+        """ convert X,Y coordinates from client to server """
+        return self.cx(x), self.cy(y)
+
+
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
         wid, x, y, w, h, metadata = packet[1:7]
         windowlog("process_new_common: %s, OR=%s", packet[1:7], override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
-        if w<=0 or h<=0:
+        if w<=1 or h<=1:
             windowlog.error("window dimensions are wrong: %sx%s", w, h)
             w, h = 1, 1
+        x = self.sx(x)
+        y = self.sy(y)
+        bw, bh = w, h
+        ww = max(1, self.sx(w))
+        wh = max(1, self.sy(h))
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
-        self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+        self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
-    def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties):
+    def make_new_window(self, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties):
         metadata = typedict(metadata)
-        client_window_classes = self.get_client_window_classes(w, h, metadata, override_redirect)
+        client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
         #prevents them from being pushed under other windows on OSX
@@ -1931,7 +1994,7 @@ class UIXpraClient(XpraClientBase):
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, self.border, self.max_window_size)
+                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border, self.max_window_size)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)
@@ -1961,6 +2024,8 @@ class UIXpraClient(XpraClientBase):
         assert SYSTEM_TRAY_SUPPORTED
         self._ui_event()
         wid, w, h = packet[1:4]
+        w = max(1, self.sx(w))
+        h = max(1, self.sy(h))
         metadata = {}
         if len(packet)>=5:
             metadata = packet[4]
@@ -1972,6 +2037,8 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_move_resize(self, packet):
         (wid, x, y, w, h) = packet[1:6]
+        w = max(1, self.sx(w))
+        h = max(1, self.sy(h))
         resize_counter = -1
         if len(packet)>4:
             resize_counter = packet[4]
@@ -1982,6 +2049,8 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_resized(self, packet):
         (wid, w, h) = packet[1:4]
+        w = max(1, self.sx(w))
+        h = max(1, self.sy(h))
         resize_counter = -1
         if len(packet)>4:
             resize_counter = packet[4]
@@ -2054,6 +2123,9 @@ class UIXpraClient(XpraClientBase):
             if PAINT_FAULT_TELL:
                 self.idle_add(record_decode_time, False, "fault injection for %s draw packet %i, sequence number=%i" % (coding, self._draw_counter, packet_sequence))
             return
+        #we could expose this to the csc step? (not sure how this could be used)
+        #if self.xscale!=1 or self.yscale!=1:
+        #    options["client-scaling"] = self.xscale, self.yscale
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
         except KeyboardInterrupt:
@@ -2121,7 +2193,8 @@ class UIXpraClient(XpraClientBase):
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
-            window.initiate_moveresize(*packet[2:7])
+            x_root, y_root, direction, button, source_indication = packet[2:7]
+            window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
 
     def _process_window_metadata(self, packet):
         wid, metadata = packet[1:3]
@@ -2168,8 +2241,9 @@ class UIXpraClient(XpraClientBase):
         self.server_max_desktop_size = max_w, max_h
         self.server_actual_desktop_size = root_w, root_h
 
+
     def set_max_packet_size(self):
-        root_w, root_h = self.get_root_size()
+        root_w, root_h = self.sp(*self.get_root_size())
         maxw, maxh = root_w, root_h
         try:
             server_w, server_h = self.server_actual_desktop_size

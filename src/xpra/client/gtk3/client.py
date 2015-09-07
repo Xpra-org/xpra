@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -79,7 +79,8 @@ class XpraClient(GTKXpraClient):
 
     def get_mouse_position(self):
         #with GTK3, we can get None values!
-        return [x or 0 for x in self.get_root_window().get_pointer()[:2]]
+        p = self.get_root_window().get_pointer()
+        return self.client.sp(p[0] or 0, p[1] or 0)
 
     def get_root_size(self):
         if WIN32:
@@ -99,8 +100,9 @@ class XpraClient(GTKXpraClient):
             root = self.get_root_window()
             w, h = root.get_geometry()[2:]
         if w<=0 or h<=0 or w>32768 or h>32768:
-            log("Gdk returned invalid root window dimensions: %sx%s", w, h)
+            log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
             w, h = 1920, 1080
+            log.warn(" using %ix%i instead", w, h)
         return w, h
 
 GObject.type_register(XpraClient)

@@ -40,7 +40,8 @@ class CairoBacking(CairoBackingBase):
             #maybe we should also check that the stride is acceptable for cairo?
             #cairo_stride = cairo.ImageSurface.format_stride_for_width(cairo_format, width)
             #log("cairo_stride=%s, stride=%s", cairo_stride, rowstride)
-            img_surface = cairo.ImageSurface.create_for_data(img_data, cairo_format, width, height, rowstride)
+            pix_data = bytearray(img_data)
+            img_surface = cairo.ImageSurface.create_for_data(pix_data, cairo_format, width, height, rowstride)
             self.cairo_paint_surface(img_surface, x, y)
             return True
 

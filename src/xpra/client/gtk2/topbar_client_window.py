@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -19,8 +19,8 @@ where we can place widgets.
 """
 class TopBarClientWindow(ClientWindow):
 
-    def setup_window(self):
-        log("setup_window()")
+    def setup_window(self, *args):
+        log("setup_window%s", args)
         self._has_custom_decorations = False
         self._top_bar_box = None
         if not self._override_redirect:
@@ -35,7 +35,7 @@ class TopBarClientWindow(ClientWindow):
             log("vbox size: %sx%s", w, h)
             self._top_bar_box = vbox
             self._top_bar_box.hide()
-        ClientWindow.setup_window(self)
+        ClientWindow.setup_window(self, *args)
 
     def magic_key(self, *args):
         assert self._top_bar_box

@@ -19,6 +19,7 @@ metalog = Logger("metadata")
 statelog = Logger("state")
 eventslog = Logger("events")
 shapelog = Logger("shape")
+mouselog = Logger("mouse")
 
 
 from xpra.os_util import memoryview_to_bytes
@@ -183,7 +184,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     gtk.Window.move(self, max(0, x-nx+fx), max(0, y-ny+fy))
 
 
-    def setup_window(self):
+    def setup_window(self, *args):
         self.set_alpha()
 
         if self._override_redirect:
@@ -205,7 +206,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.connect("window-state-event", self.window_state_updated)
 
         #this will create the backing:
-        ClientWindowBase.setup_window(self)
+        ClientWindowBase.setup_window(self, *args)
 
         #honour the initial position if the flag is set
         #(or just if non zero, for older servers)
@@ -398,6 +399,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             for kind, name in SHAPE_KIND.items():
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
                 if rectangles is not None:
+                    #adjust for scaling:
+                    srect = self._client.srect
+                    rectangles = [srect(*x) for x in rectangles]
                     #FIXME: are we supposed to get the offset from the "extents"?
                     x_off, y_off = 0, 0
                     shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
@@ -422,7 +426,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         d = typedict(strut)
         values = []
         for x in ("left", "right", "top", "bottom"):
-            values.append(d.intget(x, 0))
+            v = d.intget(x, 0)
+            #handle scaling:
+            if x in ("left", "right"):
+                v = self._client.sx(v)
+            else:
+                v = self._client.sy(v)
+            values.append(v)
         has_partial = False
         for x in ("left_start_y", "left_end_y",
                   "right_start_y", "right_end_y",
@@ -430,7 +440,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                   "bottom_start_x", "bottom_end_x"):
             if x in d:
                 has_partial = True
-            values.append(d.intget(x, 0))
+            v = d.intget(x, 0)
+            if x.find("_x"):
+                v = self._client.sx(v)
+            elif x.find("_y"):
+                v = self._client.sy(v)
+            values.append(v)
         log("setting strut=%s, has partial=%s", values, has_partial)
         def do_set_strut():
             if has_partial:
@@ -753,7 +768,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 state["frame"] = wfs
                 self._current_frame_extents = wfs
         eventslog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
-        self.send("map-window", self._id, x, y, w, h, props, state)
+        cx = self._client.cx
+        cy = self._client.cy
+        self.send("map-window", self._id, cx(x), cy(y), cx(w), cy(h), props, state)
         self._pos = (x, y)
         self._size = (w, h)
         self.idle_add(self._focus_change, "initial")
@@ -794,7 +811,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
                 self._window_workspace = workspace
                 props["workspace"] = workspace
-        packet = ["configure-window", self._id, x, y, w, h, props, self._resize_counter, state, skip_geometry]
+        cx = self._client.cx
+        cy = self._client.cy
+        packet = ["configure-window", self._id, cx(x), cy(y), cx(w), cy(h), props, self._resize_counter, state, skip_geometry]
         if self._client.window_configure_pointer:
             packet.append(self.get_mouse_event_wid())
             packet.append(self._client.get_mouse_position())
@@ -808,13 +827,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 window.move(x+dx, y+dy)
         if (w, h) != self._size:
             self._size = (w, h)
-            self._backing.init(w, h)
+            self._set_backing_size(w, h)
+
+    def _set_backing_size(self, ww, wh):
+        self._backing.init(ww, wh, self._client.cx(ww), self._client.cy(wh))
 
     def resize(self, w, h, resize_counter=0):
         log("resize(%s, %s, %s)", w, h, resize_counter)
         self._resize_counter = resize_counter
         gtk.Window.resize(self, w, h)
-        self._backing.init(w, h)
+        self._set_backing_size(w, h)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
         statelog("move_resize%s", (x, y, w, h, resize_counter))
@@ -853,7 +875,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._size = (w, h)
         window.move_resize(ax, ay, w, h)
         #re-init the backing with the new size
-        self._backing.init(w, h)
+        self._set_backing_size(w, h)
+
 
     def destroy(self):
         self.on_realize_cb = {}
@@ -875,13 +898,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _pointer_modifiers(self, event):
-        pointer = (int(event.x_root), int(event.y_root))
+        pointer = self._client.cp(event.x_root, event.y_root)
         modifiers = self._client.mask_to_names(event.state)
         buttons = []
         for mask, button in self.BUTTON_MASK.items():
             if event.state & mask:
                 buttons.append(button)
-        return pointer, modifiers, buttons
+        v = pointer, modifiers, buttons
+        mouselog("pointer_modifiers(%s)=%s", event, v)
+        return v
 
     def parse_key_event(self, event, pressed):
         keyval = event.keyval

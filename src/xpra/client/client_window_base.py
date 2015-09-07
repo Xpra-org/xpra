@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -21,13 +21,13 @@ metalog = Logger("metadata")
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, border, max_window_size):
-        log("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, max_window_size))
+    def __init__(self, client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, max_window_size):
+        log("%s%s", type(self), (client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, max_window_size))
         ClientWidgetBase.__init__(self, client, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (x, y)
-        self._size = (w, h)
+        self._size = (ww, wh)
         self._client_properties = client_properties
         self._set_initial_position = False
         self.size_constraints = typedict()
@@ -48,7 +48,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.button_state = {}
 
         self.init_window(metadata)
-        self.setup_window()
+        self.setup_window(bw, bh)
         self.update_metadata(metadata)
 
     def __repr__(self):
@@ -78,11 +78,12 @@ class ClientWindowBase(ClientWidgetBase):
         return None
 
 
-    def new_backing(self, w, h):
+    def new_backing(self, bw, bh):
         backing_class = self.get_backing_class()
-        log("new_backing(%s, %s) backing_class=%s", w, h, backing_class)
+        log("new_backing(%s, %s) backing_class=%s", bw, bh, backing_class)
         assert backing_class is not None
-        self._backing = self.make_new_backing(backing_class, w, h)
+        w, h = self._size
+        self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
 
     def destroy(self):
@@ -95,8 +96,8 @@ class ClientWindowBase(ClientWidgetBase):
             self._backing = None
 
 
-    def setup_window(self):
-        self.new_backing(*self._size)
+    def setup_window(self, bw, bh):
+        self.new_backing(bw, bh)
         #tell the server about the encoding capabilities of this backing instance:
         #but don't bother if they're the same as what we sent as defaults
         #(with a bit of magic to collapse the missing namespace from encoding_defaults)
@@ -352,7 +353,7 @@ class ClientWindowBase(ClientWidgetBase):
             v = size_constraints.intpair(a)
             if v:
                 v1, v2 = v
-                hints[h1], hints[h2] = int(v1), int(v2)
+                hints[h1], hints[h2] = self._client.sp(v1, v2)
         for (a, h) in [
             (b"minimum-aspect-ratio", b"min_aspect"),
             (b"maximum-aspect-ratio", b"max_aspect"),
@@ -455,7 +456,7 @@ class ClientWindowBase(ClientWidgetBase):
                 return
             backing = self._backing
             if backing and backing.draw_needs_refresh:
-                self.queue_draw(x, y, width, height)
+                self.queue_draw(*self._client.srect(x, y, width, height))
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:
             callbacks.append(after_draw_refresh)

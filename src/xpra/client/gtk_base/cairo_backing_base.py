@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -30,10 +30,9 @@ Superclass for gtk2 and gtk3 cairo implementations.
 class CairoBackingBase(GTKWindowBacking):
 
 
-    def __init__(self, wid, w, h, has_alpha):
-        GTKWindowBacking.__init__(self, wid, has_alpha)
-
-    def init(self, w, h):
+    def init(self, ww, wh, w, h):
+        self.size = w, h
+        self.render_size = ww, wh
         old_backing = self._backing
         #should we honour self.depth here?
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
@@ -135,6 +134,10 @@ class CairoBackingBase(GTKWindowBacking):
         if self._backing is None:
             return False
         try:
+            if self.render_size!=self.size:
+                ww, wh = self.render_size
+                w, h = self.size
+                context.scale(float(ww)/w, float(wh)/h)
             context.set_source_surface(self._backing, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()

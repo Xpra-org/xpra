@@ -74,6 +74,7 @@ class WindowBackingBase(object):
         load_csc_options()
         load_video_decoders()
         self.wid = wid
+        self.size = 0, 0
         self.idle_add = idle_add
         self._alpha_enabled = window_alpha
         self._backing = None

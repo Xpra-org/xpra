@@ -31,9 +31,9 @@ class GLClientWindow(ClientWindow):
             self.max_window_size = mts, mts
         ClientWindow.init_window(self, metadata)
 
-    def setup_window(self):
+    def setup_window(self, *args):
         self._client_properties["encoding.uses_swscale"] = False
-        ClientWindow.setup_window(self)
+        ClientWindow.setup_window(self, *args)
 
 
     def __str__(self):

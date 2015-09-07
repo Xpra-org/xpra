@@ -235,7 +235,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self.frame_request_window:
             v = self.get_frame_extents(self.frame_request_window)
             if v:
-                l, _, t, _ = v
+                l, r, t, b = v
                 wfs["frame"] = v
                 wfs["offset"] = (l, t)
         framelog("get_window_frame_sizes()=%s", wfs)
@@ -274,7 +274,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         raise Exception("override me!")
 
     def get_mouse_position(self):
-        return self.get_root_window().get_pointer()[:2]
+        p = self.get_root_window().get_pointer()
+        return self.sp(p[0], p[1])
 
     def get_current_modifiers(self):
         modifiers_mask = self.get_root_window().get_pointer()[-1]
@@ -340,12 +341,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return screen_get_default().get_rgba_visual() is not None
 
 
-    def get_screen_sizes(self):
+    def get_screen_sizes(self, xscale=1, yscale=1):
+        def xs(v):
+            return int(v/xscale)
+        def ys(v):
+            return int(v/yscale)
+        def swork(*workarea):
+            return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
         display = display_get_default()
         i=0
         screen_sizes = []
         n_screens = display.get_n_screens()
-        screenlog("get_screen_sizes() found %s screens", n_screens)
+        screenlog("get_screen_sizes(%f, %f) found %s screens", xscale, yscale, n_screens)
         while i<n_screens:
             screen = display.get_screen(i)
             j = 0
@@ -355,11 +362,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #and it is only implemented on win32 right now
             #other platforms only implement "get_workarea()" instead, which is reported against the screen
             n_monitors = screen.get_n_monitors()
-            screenlog("get_screen_sizes() screen %s has %s monitors", i, n_monitors)
+            screenlog(" screen %s has %s monitors", i, n_monitors)
             if n_screens==1:
                 workareas = get_workareas()
                 if len(workareas)!=n_monitors:
-                    screenlog("number of monitors does not match number of workareas!")
+                    screenlog(" number of monitors does not match number of workareas!")
                     workareas = []
             while j<screen.get_n_monitors():
                 geom = screen.get_monitor_geometry(j)
@@ -372,24 +379,23 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 hmm = -1
                 if hasattr(screen, "get_monitor_height_mm"):
                     hmm = screen.get_monitor_height_mm(j)
-                monitor = [plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm]
-                screenlog("get_screen_sizes() monitor %s: %s", j, monitor)
+                monitor = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
+                screenlog(" monitor %s: %s", j, monitor)
                 if workareas:
                     w = workareas[j]
-                    monitor += list(w)
+                    monitor += list(swork(*w))
                 monitors.append(tuple(monitor))
                 j += 1
-            work_x, work_y = 0, 0
-            work_width, work_height = screen.get_width(), screen.get_height()
+            work_x, work_y, work_width, work_height = swork(0, 0, screen.get_width(), screen.get_height())
             workarea = get_workarea()
             if workarea:
-                work_x, work_y, work_width, work_height = workarea
-            screenlog("get_screen_sizes() workarea=%s", workarea)
-            item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
+                work_x, work_y, work_width, work_height = swork(*workarea)
+            screenlog(" workarea=%s", workarea)
+            item = (screen.make_display_name(), xs(screen.get_width()), ys(screen.get_height()),
                         screen.get_width_mm(), screen.get_height_mm(),
                         monitors,
                         work_x, work_y, work_width, work_height)
-            screenlog("get_screen_sizes() screen %s: %s", i, item)
+            screenlog(" screen %s: %s", i, item)
             screen_sizes.append(item)
             i += 1
         return screen_sizes
@@ -455,13 +461,19 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 cursor_pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)
                 xratio, yratio = float(w)/fw, float(h)/fh
                 x, y = int(x/xratio), int(y/yratio)
-        elif w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
-            ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
-            x, y, w, h = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
-            cursorlog("downscaling cursor %s by %.2f: %sx%s", pixbuf, ratio, w, h)
-            cursor_pixbuf = pixbuf.scale_simple(w, h, INTERP_BILINEAR)
         else:
-            cursor_pixbuf = pixbuf
+            sw, sh = w, h
+            if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
+                ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
+                x, y, sw, sh = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
+            #scale cursors?
+            #if self.xscale!=1 or self.yscale!=1:
+            #    x, y, sw, sh = self.srect(x, y, w, h)
+            if sw!=w or sh!=h:
+                cursorlog("scaling cursor from %ix%i to %ix%i", w, h, sw, sh)
+                cursor_pixbuf = pixbuf.scale_simple(sw, sh, INTERP_BILINEAR)
+            else:
+                cursor_pixbuf = pixbuf
         return new_Cursor_from_pixbuf(display, cursor_pixbuf, x, y)
 
 
@@ -581,7 +593,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             window.send = fake_send
             #copy attributes:
             x, y = window._pos
-            w, h = window._size
+            ww, wh = window._size
+            try:
+                bw, bh = window._backing.size
+            except:
+                bw, bh = ww, wh
             client_properties = window._client_properties
             metadata = window._metadata
             override_redirect = window._override_redirect
@@ -615,7 +631,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 except:
                     pass
                 #create the new window, which should honour the new state of the opengl_enabled flag:
-                window = self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+                window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
                 if video_decoder or csc_decoder:
                     backing = window._backing
                     backing._video_decoder = video_decoder

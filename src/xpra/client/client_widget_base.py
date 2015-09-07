@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -29,20 +29,24 @@ class ClientWidgetBase(object):
         self._window_alpha = False
         self._client = client
 
-    def make_new_backing(self, backing_class, w, h):
-        w = max(1, w)
-        h = max(1, h)
+    def make_new_backing(self, backing_class, ww, wh, bw, bh):
+        #size of the backing (same as server window source):
+        bw = max(1, bw)
+        bh = max(1, bh)
+        #actual size of window (may be different when scaling):
+        ww = max(1, ww)
+        wh = max(1, wh)
         backing = self._backing
         if backing is None:
             bc = backing_class
             if USE_FAKE_BACKING:
                 from xpra.client.fake_window_backing import FakeBacking
                 bc = FakeBacking
-            log("make_new_backing(%s, %s, %s) effective backing class=%s, server alpha=%s, window alpha=%s", backing_class, w, h, bc, self._has_alpha, self._window_alpha)
-            backing = bc(self._id, w, h, self._window_alpha)
+            log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s", (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
+            backing = bc(self._id, self._window_alpha)
             if self._client.mmap_enabled:
                 backing.enable_mmap(self._client.mmap)
-        backing.init(w, h)
+        backing.init(ww, wh, bw, bh)
         return backing
 
     def workspace_changed(self):

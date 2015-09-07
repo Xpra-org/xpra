@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -71,7 +71,7 @@ from OpenGL.GL import \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_COLOR_BUFFER_BIT, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
-    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, \
+    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_2D, \
@@ -188,9 +188,10 @@ class GLWindowBackingBase(GTKWindowBacking):
     RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
-    def __init__(self, wid, w, h, window_alpha):
+    def __init__(self, wid, window_alpha):
         self.wid = wid
         self.size = 0, 0
+        self.render_size = 0, 0
         self.pixel_format = None
         self.texture_pixel_format = None
         #this is the pixel format we are currently updating the fbo with
@@ -198,7 +199,6 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.pixel_format = None
         self.textures = None # OpenGL texture IDs
         self.shaders = None
-        self.size = 0, 0
         self.texture_size = 0, 0
         self.gl_setup = False
         self.debug_setup = False
@@ -256,12 +256,13 @@ class GLWindowBackingBase(GTKWindowBacking):
     def __repr__(self):
         return "GLWindowBacking(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
-    def init(self, w, h):
+    def init(self, ww, wh, bw, bh):
         #re-init gl projection with new dimensions
         #(see gl_init)
-        if self.size!=(w, h):
+        if self.size!=(bw, bh):
             self.gl_setup = False
-            self.size = w, h
+            self.size = bw, bh
+        self.render_size = ww, wh
 
     def gl_marker(self, *msg):
         log(*msg)
@@ -354,7 +355,7 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         if not self.gl_setup:
             w, h = self.size
-            self.gl_marker("Initializing GL context for window size %d x %d", w, h)
+            self.gl_marker("Initializing GL context for window size %s, backing size %s", self.render_size, self.size)
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
             glMatrixMode(GL_PROJECTION)
@@ -374,6 +375,9 @@ class GLWindowBackingBase(GTKWindowBacking):
 
             # we don't use the depth (2D only):
             glDisable(GL_DEPTH_TEST)
+            glDisable(GL_SCISSOR_TEST)
+            glDisable(GL_LIGHTING)
+            glDisable(GL_DITHER)
             # only do alpha blending in present_fbo:
             glDisable(GL_BLEND)
 
@@ -472,11 +476,12 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
-        ww, wh = self.size
+        bw, bh = self.size
+        ww, wh = self.render_size
 
-        if self.glconfig.is_double_buffered():
+        if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
             #refresh the whole window:
-            rectangles = ((0, 0, ww, wh), )
+            rectangles = ((0, 0, bw, bh), )
         else:
             #paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
@@ -491,17 +496,22 @@ class GLWindowBackingBase(GTKWindowBacking):
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
+        #viewport for painting to window:
+        glViewport(0, 0, ww, wh)
+
         glBegin(GL_QUADS)
         for x,y,w,h in rectangles:
             #note how we invert coordinates..
-            glTexCoord2i(x, wh-y)
-            glVertex2i(x, y)            #top-left of window viewport
-            glTexCoord2i(x, wh-y-h)
-            glVertex2i(x, y+h)          #bottom-left of window viewport
-            glTexCoord2i(x+w, wh-y-h)
-            glVertex2i(x+w, y+h)        #bottom-right of window viewport
-            glTexCoord2i(x+w, wh-y)
-            glVertex2i(x+w, y)          #top-right of window viewport
+            tx1, ty1, tx2, ty2 = x, bh-y,  x+w, bh-y-h
+            vx1, vy1, vx2, vy2 = x, y,     x+w, y+h
+            glTexCoord2i(tx1, ty1)
+            glVertex2i(vx1, vy1)        #top-left of window viewport
+            glTexCoord2i(tx1, ty2)
+            glVertex2i(vx1, vy2)        #bottom-left of window viewport
+            glTexCoord2i(tx2, ty2)
+            glVertex2i(vx2, vy2)        #bottom-right of window viewport
+            glTexCoord2i(tx2, ty1)
+            glVertex2i(vx2, vy1)        #top-right of window viewport
         glEnd()
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -538,6 +548,10 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.gl_show()
         self.gl_frame_terminator()
 
+        #restore pbo viewport
+        glViewport(0, 0, w, h)
+ 
+        #glPopMatrix()
         self.unset_rgb_paint_state()
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)

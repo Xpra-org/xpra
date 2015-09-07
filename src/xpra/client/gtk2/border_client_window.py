@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,9 +15,9 @@ Adds a red border around the window contents
 """
 class BorderClientWindow(ClientWindow):
 
-    def setup_window(self):
+    def setup_window(self, *args):
         self.border = None
-        ClientWindow.setup_window(self)
+        ClientWindow.setup_window(self, *args)
 
     def magic_key(self, *args):
         self.border_shown = (not self.border_shown)

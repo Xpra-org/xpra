@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,6 +13,7 @@ log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.os_util import memoryview_to_bytes
+from xpra.util import csv
 
 
 PIXMAP_RGB_MODES = ["RGB", "RGBX", "RGBA"]
@@ -21,6 +22,16 @@ if INDIRECT_BGR:
     PIXMAP_RGB_MODES += ["BGRX", "BGRA", "BGR"]
 
 
+INTERP_DICT = {"nearest"    : gdk.INTERP_NEAREST,
+               "tiles"      : gdk.INTERP_TILES,
+               "bilinear"   : gdk.INTERP_BILINEAR,
+               "hyper"      : gdk.INTERP_HYPER}
+SCALING_INTERP_STR = os.environ.get("XPRA_SCALING_INTERPOLATION", "HYPER").lower()
+SCALING_INTERP = INTERP_DICT.get(SCALING_INTERP_STR)
+if not SCALING_INTERP:
+    log.warn("Warning: invalid interpolation '%s'")
+    log.warn(" supported types: %s", csv(INTERP_DICT.keys()))
+
 """
 Backing using a gdk.Pixmap
 """
@@ -28,14 +39,18 @@ class PixmapBacking(GTK2WindowBacking):
 
     RGB_MODES = PIXMAP_RGB_MODES
 
+    def __init__(self, *args):
+        self.paint_scaling = 1, 1
+        GTK2WindowBacking.__init__(self, *args)
+
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
 
-    def __init__(self, wid, w, h, has_alpha):
-        self._backing = None
-        GTK2WindowBacking.__init__(self, wid, has_alpha)
-
-    def init(self, w, h):
+    def init(self, ww, wh, bw, bh):
+        #use window size as backing size:
+        self.render_size = ww, wh
+        self.size = bw, bh
+        w, h = bw, bh
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
         if self._alpha_enabled:
@@ -115,7 +130,29 @@ class PixmapBacking(GTK2WindowBacking):
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.paint()
         else:
-            #no alpha is easier:
+            #no alpha or scaling is easier:
             gc = self._backing.new_gc()
             self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
+
+    def cairo_draw(self, context):
+        self.cairo_draw_from_drawable(context, self._backing)
+
+
+    def cairo_draw_from_drawable(self, context, drawable):
+        if drawable is None:
+            return
+        try:
+            if self.render_size!=self.size:
+                ww, wh = self.render_size
+                w, h = self.size
+                context.scale(float(ww)/w, float(wh)/h)
+            context.set_source_pixmap(drawable, 0, 0)
+            context.set_operator(cairo.OPERATOR_SOURCE)
+            context.paint()
+            return True
+        except KeyboardInterrupt:
+            raise
+        except:
+            log.error("cairo_draw_from_drawable(%s, %s)", context, drawable, exc_info=True)
+            return False
