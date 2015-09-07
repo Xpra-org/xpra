@@ -1616,7 +1616,7 @@ class UIXpraClient(XpraClientBase):
         ss = self.sound_source
         if ss:
             if ss.get_state()=="active":
-                soundlog.error("already sending sound!")
+                soundlog.error("Error: microphone forwarding is already active")
                 return
             ss.start()
         elif not self.start_sound_source():
