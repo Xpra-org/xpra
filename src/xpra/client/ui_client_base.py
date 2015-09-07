@@ -713,12 +713,13 @@ class UIXpraClient(XpraClientBase):
             return
         def update_screen_size():
             self.screen_size_change_pending = False
-            root_w, root_h = self.cp(*self.get_root_size())
+            u_root_w, u_root_h = self.get_root_size()
+            root_w, root_h = self.cp(u_root_w, u_root_h)
             sss = self.get_screen_sizes(self.xscale, self.yscale)
             ndesktops = get_number_of_desktops()
             desktop_names = get_desktop_names()
             screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
-            screen_settings = (root_w, root_h, sss, ndesktops, desktop_names)
+            screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h)
             screenlog("update_screen_size()     new settings=%s", screen_settings)
             screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
             if self._last_screen_settings==screen_settings:
@@ -965,25 +966,27 @@ class UIXpraClient(XpraClientBase):
                 log.info(" detected keyboard: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))
 
         capabilities["modifiers"] = self.get_current_modifiers()
-        root_w, root_h = self.get_root_size()
-        capabilities["desktop_size"] = self.cp(root_w, root_h)
+        u_root_w, u_root_h = self.get_root_size()
+        capabilities["desktop_size"] = self.cp(u_root_w, u_root_h)
         ndesktops = get_number_of_desktops()
         capabilities["desktops"] = ndesktops
         desktop_names = get_desktop_names()
         capabilities["desktop.names"] = desktop_names
         ss = self.get_screen_sizes()
-        log.info(" desktop size is %sx%s with %s screen(s):", root_w, root_h, len(ss))
-        log_screen_sizes(root_w, root_h, ss)
+        log.info(" desktop size is %sx%s with %s screen(s):", u_root_w, u_root_h, len(ss))
+        log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale!=1 or self.yscale!=1:
             capabilities["screen_sizes.unscaled"] = ss
+            capabilities["desktop_size.unscaled"] = u_root_w, u_root_h
             log.info(" scaled using %sx%s to:", self.xscale, self.yscale)
             sss = self.get_screen_sizes(self.xscale, self.yscale)
-            root_w, root_h = self.cp(root_w, root_h)
+            root_w, root_h = self.cp(u_root_w, u_root_h)
             log_screen_sizes(root_w, root_h, sss)
         else:
+            root_w, root_h = u_root_w, u_root_h
             sss = ss
         capabilities["screen_sizes"] = sss
-        self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names)
+        self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h)
         if self.keyboard_helper:
             key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
             if key_repeat:

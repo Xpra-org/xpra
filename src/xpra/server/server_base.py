@@ -1704,7 +1704,7 @@ class ServerBase(ServerCore):
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
                 count +=1
         if count>0:
-            log.info("sent updated screen size to %s clients: %sx%s (max %sx%s)", count, root_w, root_h, max_w, max_h)
+            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)", count, engs(count), root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
         max_w, max_h = self.get_root_window_size()
@@ -1731,6 +1731,10 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        ss.desktop_size = (width, height)
+        if len(packet)>=8:
+            #added in 0.16 for scaled client displays:
+            ss.desktop_size_unscaled = packet[6:8]
         if len(packet)>=6:
             desktops, desktop_names = packet[4:6]
             ss.set_desktops(desktops, desktop_names)

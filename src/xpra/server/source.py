@@ -325,6 +325,7 @@ class ServerSource(object):
         self.clipboard_set_enabled = False
         self.share = False
         self.desktop_size = None
+        self.desktop_size_unscaled = None
         self.screen_sizes = []
         self.desktops = 1
         self.desktop_names = []
@@ -630,6 +631,7 @@ class ServerSource(object):
             if w<=0 or h<=0 or w>=32768 or h>=32768:
                 log.warn("ignoring invalid desktop dimensions: %sx%s", w, h)
                 self.desktop_size = None
+        self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.set_screen_sizes(c.listget("screen_sizes"))
         self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
 
@@ -1231,6 +1233,8 @@ class ServerSource(object):
                 "last-ping-echo"    : lpe,
                 "suspended"         : self.suspended,
                 }
+        if self.desktop_size_unscaled:
+            info["desktop_size.unscaled"] = self.desktop_size_unscaled
 
         def addattr(k, name):
             v = getattr(self, name)
