@@ -13,8 +13,6 @@ from xpra.client.gl.gtk3.gl_window_backing import GLPixmapBacking
 
 class GLClientWindow(ClientWindow):
 
-    MAX_TEXTURE_SIZE = 16*1024
-
     def __init__(self, *args):
         log("GLClientWindow(..)")
         ClientWindow.__init__(self, *args)
@@ -22,14 +20,6 @@ class GLClientWindow(ClientWindow):
 
     def get_backing_class(self):
         return GLPixmapBacking
-
-    def init_window(self, metadata):
-        mww, mwh = self.max_window_size
-        mts = GLClientWindow.MAX_TEXTURE_SIZE
-        if mts<16*1024 and (mww==0 or mwh==0 or mts<mww or mts<mwh):
-            log("overriding max_window_size=%ix%i with %ix%i", mww, mwh, mts, mts)
-            self.max_window_size = mts, mts
-        ClientWindow.init_window(self, metadata)
 
 
     def __str__(self):

@@ -109,7 +109,13 @@ class GTKKeyEvent(AdHocStruct):
 
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
+    #maximum size of the actual window:
+    MAX_VIEWPORT_DIMS = 16*1024, 16*1024
+    #maximum size of the backing pixel buffer:
+    MAX_BACKING_DIMS = 16*1024, 16*1024
+
     def init_window(self, metadata):
+        self.init_max_window_size(metadata)
         if self._is_popup(metadata):
             window_type = WINDOW_POPUP
         else:
@@ -127,6 +133,31 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.connect('unrealize', self.on_unrealize)
         self.add_events(self.WINDOW_EVENT_MASK)
         ClientWindowBase.init_window(self, metadata)
+
+
+    def init_max_window_size(self, metadata):
+        """ used by GL windows to enforce a hard limit on window sizes """
+        saved_mws = self.max_window_size
+        def clamp_to(maxw, maxh):
+            mww, mwh = self.max_window_size
+            #don't bother if the limit is greater than 16k:
+            if maxw>=16*1024 or maxh>=16*1024:
+                return mww, mwh
+            #only take into account the current max-window-size if non zero:
+            if mww>0:
+                maxw = min(mww, maxw)
+            if mwh>0:
+                maxh = min(mwh, maxh)
+            self.max_window_size = maxw, maxh
+        #viewport is easy, measured in window pixels:
+        clamp_to(*self.MAX_VIEWPORT_DIMS)
+        #backing dimensions are harder,
+        #we have to take scaling into account (if any):
+        clamp_to(*self._client.sp(*self.MAX_BACKING_DIMS))
+        if self.max_window_size!=saved_mws:
+            log("init_max_window_size(..) max-window-size changed from %s to %s, because of max viewport dims %s and max backing dims %s",
+                saved_mws, self.max_window_size, self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
+
 
     def _is_popup(self, metadata):
         #decide if the window type is POPUP or NORMAL

@@ -174,7 +174,7 @@ def do_check_GL_support(force_enable):
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
-        from OpenGL.GL import glGetString, glGetInteger
+        from OpenGL.GL import glGetString, glGetInteger, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
         if gl_version_str is None:
             gl_check_error("OpenGL version is missing - cannot continue")
@@ -347,7 +347,19 @@ def do_check_GL_support(force_enable):
             return props
 
         log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
-        props["texture-size-limit"] = min(rect_texture_size, texture_size)
+        texture_size_limit = min(rect_texture_size, texture_size)
+        props["texture-size-limit"] = texture_size_limit
+
+        try:
+            from OpenGL.GL import GL_MAX_VIEWPORT_DIMS
+            v = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
+            max_viewport_dims = v[0], v[1]
+            assert max_viewport_dims[0]>=texture_size_limit and max_viewport_dims[1]>=texture_size_limit
+            log("GL_MAX_VIEWPORT_DIMS=%s", max_viewport_dims)
+        except ImportError as e:
+            log.error("Error querying max viewport dims: %s", e)
+            max_viewport_dims = texture_size_limit, texture_size_limit
+        props["max-viewport-dims"] = max_viewport_dims
         return props
     finally:
         for x in alogger.handlers[0].records:
