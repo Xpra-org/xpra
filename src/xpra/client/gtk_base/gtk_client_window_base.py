@@ -139,11 +139,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         """ used by GL windows to enforce a hard limit on window sizes """
         saved_mws = self.max_window_size
         def clamp_to(maxw, maxh):
-            mww, mwh = self.max_window_size
-            #don't bother if the limit is greater than 16k:
-            if maxw>=16*1024 or maxh>=16*1024:
-                return mww, mwh
+            #don't bother if the new limit is greater than 16k:
+            if maxw>=16*1024 and maxh>=16*1024:
+                return
             #only take into account the current max-window-size if non zero:
+            mww, mwh = self.max_window_size
             if mww>0:
                 maxw = min(mww, maxw)
             if mwh>0:
