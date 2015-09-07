@@ -583,8 +583,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def get_client_window_classes(self, w, h, metadata, override_redirect):
         log("get_client_window_class(%i, %i, %s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", w, h, metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
-        #self.max_viewport_dims
-        if self.GLClientWindowClass is None or not self.opengl_enabled or w>self.gl_texture_size_limit or h>self.gl_texture_size_limit:
+        ms = min(self.sx(self.gl_texture_size_limit), *self.max_viewport_dims)
+        if self.GLClientWindowClass is None or not self.opengl_enabled or w>ms or h>ms:
             return [self.ClientWindowClass]
         return [self.GLClientWindowClass, self.ClientWindowClass]
 
