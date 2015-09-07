@@ -631,7 +631,6 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.transparency"		: true,
 		"encoding.client_options"	: true,
 		"encoding.csc_atoms"		: true,
-		"encoding.uses_swscale"		: false,
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
