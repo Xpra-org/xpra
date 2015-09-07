@@ -517,11 +517,11 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         if self.paint_spinner:
             #add spinner:
-            dim = min(ww/3.0, wh/3.0)
+            dim = min(bw/3.0, bh/3.0)
             t = time.time()
             count = int(t*4.0)
-            bx = ww//2
-            by = wh//2
+            bx = bw//2
+            by = bh//2
             for i in range(8):      #8 lines
                 glBegin(GL_POLYGON)
                 c = cv.trs[count%8][i]
@@ -540,7 +540,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glLineWidth(self.border.size*2)
             glBegin(GL_LINE_LOOP)
             glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
-            for px,py in ((0, 0), (ww, 0), (ww, wh), (0, wh)):
+            for px,py in ((0, 0), (bw, 0), (bw, bh), (0, bh)):
                 glVertex2i(px, py)
             glEnd()
 
