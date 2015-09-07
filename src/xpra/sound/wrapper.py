@@ -348,7 +348,7 @@ def query_sound():
     log("query_sound() process returned %s", proc.returncode)
     log("query_sound() out=%s, err=%s", out, err)
     if proc.returncode!=0:
-        return {}
+        return typedict()
     d = typedict()
     for x in out.decode("utf8").splitlines():
         kv = x.split("=", 1)

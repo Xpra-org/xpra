@@ -395,6 +395,8 @@ class ServerBase(ServerCore):
     def init_sound_options(self, opts):
         self.supports_speaker = sound_option(opts.speaker) in ("on", "off")
         self.supports_microphone = sound_option(opts.microphone) in ("on", "off")
+        def sound_option_or_all(*args):
+            return []
         if self.supports_speaker or self.supports_microphone:
             try:
                 from xpra.sound.gstreamer_util import sound_option_or_all
@@ -403,8 +405,6 @@ class ServerBase(ServerCore):
             except Exception as e:
                 soundlog.error("Error: failed to query sound subsystem:")
                 soundlog.error(" %s", e)
-                def sound_option_or_all(*args):
-                    return []
         self.sound_source_plugin = opts.sound_source
         encoders = self.sound_properties.strlistget("encoders", [])
         decoders = self.sound_properties.strlistget("decoders", [])

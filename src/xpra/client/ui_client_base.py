@@ -274,10 +274,12 @@ class UIXpraClient(XpraClientBase):
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
         self.mmap_group = opts.mmap_group
 
-        self.sound_properties = {}
+        self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
         self.microphone_allowed = sound_option(opts.microphone) in ("on", "off")
         self.sound_source_plugin = opts.sound_source
+        def sound_option_or_all(*args):
+            return []
         if self.speaker_allowed or self.microphone_allowed:
             try:
                 from xpra.sound.gstreamer_util import sound_option_or_all
@@ -286,8 +288,6 @@ class UIXpraClient(XpraClientBase):
             except Exception as e:
                 soundlog.error("Error: failed to query sound subsystem:")
                 soundlog.error(" %s", e)
-                def sound_option_or_all(*args):
-                    return []
         encoders = self.sound_properties.strlistget("encoders", [])
         decoders = self.sound_properties.strlistget("decoders", [])
         self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)
