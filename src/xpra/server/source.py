@@ -326,6 +326,7 @@ class ServerSource(object):
         self.share = False
         self.desktop_size = None
         self.desktop_size_unscaled = None
+        self.desktop_size_server = None
         self.screen_sizes = []
         self.desktops = 1
         self.desktop_names = []
@@ -1632,7 +1633,8 @@ class ServerSource(object):
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
-        if self.randr_notify and (not self.desktop_size or tuple(self.desktop_size)!=(root_w, root_h)):
+        if self.randr_notify and (not self.desktop_size_server or tuple(self.desktop_size_server)!=(root_w, root_h)):
+            self.desktop_size_server = root_w, root_h
             self.send("desktop_size", root_w, root_h, max_w, max_h)
             return True
         return False

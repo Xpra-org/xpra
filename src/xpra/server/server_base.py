@@ -914,6 +914,9 @@ class ServerBase(ServerCore):
                 dw, dh = None, None
         sw, sh = self.set_best_screen_size()
         screenlog("set_best_screen_size()=%s", (sw, sh))
+        #we will tell the client about the size chosen in the hello we send back,
+        #so record this size as the current server desktop size to avoid change notifications:
+        ss.desktop_size_server = sw, sh
         #prefer desktop size, fallback to screen size:
         w = dw or sw
         h = dh or sh
