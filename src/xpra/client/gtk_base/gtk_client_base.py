@@ -544,16 +544,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #only enable opengl by default if force-enabled or if safe to do so:
             self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
-            self.max_viewport_dims = self.opengl_props.get("max-viewport-dims", (self.gl_texture_size_limit, self.gl_texture_size_limit))
-            if min(self.max_viewport_dims)<4*1024:
+            self.gl_max_viewport_dims = self.opengl_props.get("max-viewport-dims", (self.gl_texture_size_limit, self.gl_texture_size_limit))
+            if min(self.gl_max_viewport_dims)<4*1024:
                 opengllog.warn("Warning: OpenGL is disabled:")
-                opengllog.warn(" the maximum viewport size is too low: %s", self.max_viewport_dims)
+                opengllog.warn(" the maximum viewport size is too low: %s", self.gl_max_viewport_dims)
                 self.opengl_enabled = False
             elif self.gl_texture_size_limit<4*1024:
                 opengllog.warn("Warning: OpenGL is disabled:")
                 opengllog.warn(" the texture size limit is too low: %s", self.gl_texture_size_limit)
                 self.opengl_enabled = False
-            self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.max_viewport_dims
+            self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.gl_max_viewport_dims
             self.GLClientWindowClass.MAX_BACKING_DIMS = self.gl_texture_size_limit, self.gl_texture_size_limit
             self.GLClientWindowClass.MAX_VIEWPORT_DIMS = 8192, 8192
             self.GLClientWindowClass.MAX_BACKING_DIMS = 4096, 4096
@@ -583,7 +583,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def get_client_window_classes(self, w, h, metadata, override_redirect):
         log("get_client_window_class(%i, %i, %s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", w, h, metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
-        ms = min(self.sx(self.gl_texture_size_limit), *self.max_viewport_dims)
+        ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
         if self.GLClientWindowClass is None or not self.opengl_enabled or w>ms or h>ms:
             return [self.ClientWindowClass]
         return [self.GLClientWindowClass, self.ClientWindowClass]
