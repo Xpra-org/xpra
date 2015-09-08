@@ -97,6 +97,7 @@ def get_version_info_full():
         updict(props, "lib", d)
     except Exception as e:
         log.warn("missing some build information: %s", e)
+    log("get_version_info_full()=%s", props)
     return props
 
 def do_get_platform_info():

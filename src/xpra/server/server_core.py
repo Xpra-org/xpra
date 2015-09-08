@@ -32,7 +32,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
-from xpra.version_util import version_compat_check, get_version_info, get_platform_info, get_host_info, local_version
+from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING,\
     ALL_PADDING_OPTIONS
@@ -56,7 +56,7 @@ def get_server_info():
     def up(prefix, d):
         updict(info, prefix, d)
     up("platform",  get_platform_info())
-    up("build",     get_version_info())
+    up("build",     get_version_info_full())
     return info
 
 def get_thread_info(proto=None, protocols=[]):
