@@ -237,7 +237,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             v = self.get_frame_extents(self.frame_request_window)
             if v:
                 l, r, t, b = v
-                wfs["frame"] = v
+                wfs["frame"] = (l, r, t, b)
                 wfs["offset"] = (l, t)
         framelog("get_window_frame_sizes()=%s", wfs)
         return wfs
