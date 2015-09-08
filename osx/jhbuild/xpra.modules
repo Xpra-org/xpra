@@ -207,6 +207,12 @@
 			version="0.10.18"
                         hash="md5:04a7009a4efea2844075949c111f5e4d"
             repo="gstreamer.freedesktop.org"/>
+    <dependencies>
+      <dep package="x264"/>
+    </dependencies>
+    <after>
+      <dep package="x264"/>
+    </after>
   </autotools>
 
   <autotools id="gst-python" autogenargs="" autogen-sh="configure">
