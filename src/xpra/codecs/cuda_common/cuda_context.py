@@ -15,8 +15,6 @@ import os
 import time
 import pycuda
 from pycuda import driver
-from pycuda import tools
-from pycuda.compiler import compile
 
 from xpra.util import engs
 
