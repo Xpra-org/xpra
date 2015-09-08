@@ -549,9 +549,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.gl_frame_terminator()
 
         #restore pbo viewport
-        glViewport(0, 0, w, h)
+        glViewport(0, 0, bw, bh)
  
-        #glPopMatrix()
         self.unset_rgb_paint_state()
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
