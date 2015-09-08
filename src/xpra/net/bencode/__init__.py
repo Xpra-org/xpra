@@ -7,7 +7,7 @@ import os
 
 
 cython_bencode_loaded = False
-if os.environ.get("USE_CYTHON_BENCODE", "1")!="0":
+if os.environ.get("XPRA_USE_CYTHON_BENCODE", "1")!="0":
     try:
         from xpra.net.bencode.cython_bencode import bencode, bdecode, __version__
         cython_bencode_loaded = True

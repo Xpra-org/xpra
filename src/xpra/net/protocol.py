@@ -57,7 +57,7 @@ USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 READ_BUFFER_SIZE = int(os.environ.get("XPRA_READ_BUFFER_SIZE", 65536))
 #merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE))
-LARGE_PACKET_SIZE = 4096
+LARGE_PACKET_SIZE = int(os.environ.get("XPRA_LARGE_PACKET_SIZE", 4096))
 #inline compressed data in packet if smaller than:
 INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 32768))
 FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))

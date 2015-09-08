@@ -9,7 +9,7 @@ assert PIL is not None and Image is not None, "failed to load Pillow"
 PIL_VERSION = PIL.PILLOW_VERSION
 
 import os
-if os.environ.get("PIL_DEBUG", "0")=="1":
+if os.environ.get("XPRA_PIL_DEBUG", "0")=="1":
     from xpra.log import Logger
     log = Logger("encoder", "pillow")
     log.info("enabling PIL.DEBUG")
