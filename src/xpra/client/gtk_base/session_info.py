@@ -206,29 +206,29 @@ class SessionInfo(gtk.Window):
         opengl_box.add(self.client_opengl_label)
         tb.new_row("Client OpenGL", opengl_box)
         self.opengl_buffering = label()
-        tb.new_row("OpenGL Buffering", self.opengl_buffering)
+        tb.new_row("OpenGL Mode", self.opengl_buffering)
         self.server_mmap_icon = gtk.Image()
         tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
         self.server_clipboard_icon = gtk.Image()
         tb.new_row("Clipboard", self.server_clipboard_icon)
         self.server_notifications_icon = gtk.Image()
-        tb.new_row("Notification Forwarding", self.server_notifications_icon)
+        tb.new_row("Notifications", self.server_notifications_icon)
         self.server_bell_icon = gtk.Image()
-        tb.new_row("Bell Forwarding", self.server_bell_icon)
+        tb.new_row("Bell", self.server_bell_icon)
         self.server_cursors_icon = gtk.Image()
-        tb.new_row("Cursor Forwarding", self.server_cursors_icon)
+        tb.new_row("Cursors", self.server_cursors_icon)
         speaker_box = gtk.HBox(False, 20)
         self.server_speaker_icon = gtk.Image()
         speaker_box.add(self.server_speaker_icon)
         self.speaker_codec_label = label()
         speaker_box.add(self.speaker_codec_label)
-        tb.new_row("Speaker Forwarding", speaker_box)
+        tb.new_row("Speaker", speaker_box)
         microphone_box = gtk.HBox(False, 20)
         self.server_microphone_icon = gtk.Image()
         microphone_box.add(self.server_microphone_icon)
         self.microphone_codec_label = label()
         microphone_box.add(self.microphone_codec_label)
-        tb.new_row("Microphone Forwarding", microphone_box)
+        tb.new_row("Microphone", microphone_box)
         #add bottom table:
         tb = TableBuilder(rows=1, columns=3)
         table = tb.get_table()
@@ -623,6 +623,12 @@ class SessionInfo(gtk.Window):
                 buffering = "single buffering"
             else:
                 buffering = "unknown"
+            if buffering!="unknown":
+                if "ALPHA" in display_mode:
+                    buffering += " with"
+                else:
+                    buffering += " without"
+                buffering += " transparency"
         else:
             #info could be telling us that the gl bindings are missing:
             glinfo = self.client.opengl_props.get("info", "disabled")
