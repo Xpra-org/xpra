@@ -151,6 +151,9 @@
   <dependencies>
       <dep package="yasm"/>
   </dependencies>
+  <after>
+      <dep package="yasm"/>
+  </after>
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
