@@ -30,8 +30,6 @@ grablog = Logger("gtk", "client", "grab")
 
 from xpra.client.gtk2.border_client_window import BorderClientWindow
 
-FAKE_UI_LOCKUPS = int(os.environ.get("XPRA_FAKE_UI_LOCKUPS", "0"))
-
 
 class XpraClient(GTKXpraClient):
 
