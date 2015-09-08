@@ -183,6 +183,9 @@
   <dependencies>
       <dep package="x264"/>
   </dependencies>
+  <after>
+      <dep package="x264"/>
+  </after>
   </autotools>
 
   <autotools id="sdl" autogenargs="" autogen-sh="configure">
