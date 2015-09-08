@@ -15,6 +15,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")
 metalog = Logger("x11", "window", "metadata")
+geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
@@ -553,7 +554,7 @@ class BaseWindowModel(CoreX11WindowModel):
             #honour hints:
             hints = self.get_property("size-hints")
             w, h, _, _ = calc_constrained_size(w, h, hints)
-            log("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
+            geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
             with xswallow:
                 X11Window.configureAndNotify(self.xid, x, y, w, h)
             return True
@@ -565,7 +566,7 @@ class BaseWindowModel(CoreX11WindowModel):
             return
         #shouldn't the border width always be 0?
         geom = (event.x, event.y, event.width, event.height, event.border_width)
-        log("%s.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", self._MODELTYPE, event, self.xid, self._geometry, geom)
+        geomlog("%s.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", self._MODELTYPE, event, self.xid, self._geometry, geom)
         if geom!=self._geometry:
             self._geometry = geom
             #X11Window.MoveResizeWindow(self.xid, )

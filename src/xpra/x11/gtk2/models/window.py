@@ -32,6 +32,7 @@ grablog = Logger("x11", "window", "grab")
 metalog = Logger("x11", "window", "metadata")
 iconlog = Logger("x11", "window", "icon")
 focuslog = Logger("x11", "window", "focus")
+geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
@@ -368,9 +369,9 @@ class WindowModel(BaseWindowModel):
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
-        log("_update_client_geometry: owner=%s, setup_done=%s", owner, self._setup_done)
+        geomlog("_update_client_geometry: owner=%s, setup_done=%s", owner, self._setup_done)
         if owner is not None:
-            log("_update_client_geometry: using owner=%s", owner)
+            geomlog("_update_client_geometry: using owner=%s", owner)
             def window_size():
                 return  owner.window_size(self)
             def window_position(w, h):
@@ -382,19 +383,19 @@ class WindowModel(BaseWindowModel):
                 return self.get_property("requested-size")
             def window_position(w=0, h=0):
                 return self.get_property("requested-position")
-            log("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
+            geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
             self._do_update_client_geometry(window_size, window_position)
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
         allocated_w, allocated_h = window_size_cb()
-        log("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
+        geomlog("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
-        log("_do_update_client_geometry: hints=%s", hints)
+        geomlog("_do_update_client_geometry: hints=%s", hints)
         size = calc_constrained_size(allocated_w, allocated_h, hints)
-        log("_do_update_client_geometry: size=%s", size)
+        geomlog("_do_update_client_geometry: size=%s", size)
         w, h, wvis, hvis = size
         x, y = window_position_cb(w, h)
-        log("_do_update_client_geometry: position=%s", (x,y))
+        geomlog("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
@@ -402,18 +403,18 @@ class WindowModel(BaseWindowModel):
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
-        log("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, self.corral_window.xid, self.xid, self._managed)
+        geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, self.corral_window.xid, self.xid, self._managed)
         if not self._managed:
             return
         if event.window!=self.client_window:
             #we only care about events on the client window
-            log("WindowModel.do_xpra_configure_event: event is not on the client window")
+            geomlog("WindowModel.do_xpra_configure_event: event is not on the client window")
             return
         if self.corral_window is None or not self.corral_window.is_visible():
-            log("WindowModel.do_xpra_configure_event: corral window is not visible")
+            geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
             return
         if self.client_window is None or not self.client_window.is_visible():
-            log("WindowModel.do_xpra_configure_event: client window is not visible")
+            geomlog("WindowModel.do_xpra_configure_event: client window is not visible")
             return
         try:
             #workaround applications whose windows disappear from underneath us:
@@ -421,7 +422,7 @@ class WindowModel(BaseWindowModel):
                 if self.resize_corral_window(event.x, event.y, event.width, event.height, event.border_width):
                     self.notify("geometry")
         except XError as e:
-            log.warn("failed to resize corral window: %s", e)
+            geomlog.warn("failed to resize corral window: %s", e)
 
     def resize_corral_window(self, x, y, w, h, border):
         #the client window may have been resized or moved (generally programmatically)
@@ -433,23 +434,23 @@ class WindowModel(BaseWindowModel):
         #size changes (and position if any):
         hints = self.get_property("size-hints")
         size = calc_constrained_size(w, h, hints)
-        log("resize_corral_window() new constrained size=%s", size)
+        geomlog("resize_corral_window() new constrained size=%s", size)
         w, h, wvis, hvis = size
         if cow!=w or coh!=h:
             if (x, y) != (0, 0):
-                log("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
+                geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
                 self.client_window.move(0, 0)
                 cox, coy, cow, coh = x, y, w, h
             else:
                 #just resize:
-                log("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
+                geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
                 self.corral_window.resize(w, h)
                 cow, coh = w, h
             modded = True
         #just position change:
         elif (x, y) != (0, 0):
-            log("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
+            geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
             cox, coy = x, y
@@ -465,13 +466,13 @@ class WindowModel(BaseWindowModel):
 
         if modded:
             self._geometry = (cox, coy, cow, coh, border)
-        log("resize_corral_window() modified=%s, geometry=%s", modded, self._geometry)
+        geomlog("resize_corral_window() modified=%s, geometry=%s", modded, self._geometry)
         return modded
 
     def do_child_configure_request_event(self, event):
-        log("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask))
+        geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask))
         if event.value_mask & CWStackMode:
-            log(" restack above=%s, detail=%s", event.above, event.detail)
+            geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
         if event.value_mask & CWX:
@@ -488,7 +489,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-size", (w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
-        log("do_child_configure_request_event updated requested geometry: %s", (x, y, w, h))
+        geomlog("do_child_configure_request_event updated requested geometry: %s", (x, y, w, h))
         self._update_client_geometry()
 
         # FIXME: consider handling attempts to change stacking order here.

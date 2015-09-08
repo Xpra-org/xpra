@@ -149,6 +149,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ])),
     ("Window", OrderedDict([
                 ("window"       , "All window code"),
+                ("geometry"     , "Window geometry"),
                 ("shape"        , "Window shape forwarding (XShape)"),
                 ("focus"        , "Window focus"),
                 ("workspace"    , "Window workspace synchronization"),

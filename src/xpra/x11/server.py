@@ -40,6 +40,7 @@ log = Logger("server")
 focuslog = Logger("server", "focus")
 grablog = Logger("server", "grab")
 windowlog = Logger("server", "window")
+geomlog = Logger("server", "window", "geometry")
 cursorlog = Logger("server", "cursor")
 traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
@@ -747,7 +748,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             windowlog("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
-        windowlog("client mapped window %s - %s, at: %s", wid, window, (x, y, width, height))
+        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, width, height))
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
         self._desktop_manager.configure_window(window, x, y, width, height)
@@ -768,7 +769,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
         assert not window.is_OR()
-        windowlog("client unmapped window %s - %s", wid, window)
+        geomlog("client unmapped window %s - %s", wid, window)
         for ss in self._server_sources.values():
             ss.unmap_window(wid, window)
         window.unmap()
@@ -790,9 +791,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
         window = self._id_to_window.get(wid)
-        windowlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
+        geomlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
         if not window:
-            windowlog("cannot map window %s: already removed!", wid)
+            geomlog("cannot map window %s: already removed!", wid)
             return
         damage = False
         if window.is_tray():
@@ -809,7 +810,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 damage = len(changes)>0
             if not skip_geometry:
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
-                windowlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+                geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
                 self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
                 damage |= oww!=w or owh!=h
         if len(packet)>=7:

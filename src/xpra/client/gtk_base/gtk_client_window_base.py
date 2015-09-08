@@ -20,6 +20,7 @@ statelog = Logger("state")
 eventslog = Logger("events")
 shapelog = Logger("shape")
 mouselog = Logger("mouse")
+geomlog = Logger("geometry")
 
 
 from xpra.os_util import memoryview_to_bytes
@@ -798,7 +799,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if wfs:
                 state["frame"] = wfs
                 self._current_frame_extents = wfs
-        eventslog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
+        geomlog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
         cx = self._client.cx
         cy = self._client.cy
         self.send("map-window", self._id, cx(x), cy(y), cx(w), cy(h), props, state)
@@ -849,7 +850,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             packet.append(self.get_mouse_event_wid())
             packet.append(self._client.get_mouse_position())
             packet.append(self._client.get_current_modifiers())
-        eventslog("%s", packet)
+        geomlog("%s", packet)
         self.send(*packet)
         if dx!=0 or dy!=0:
             #window has moved, also move any child OR window:

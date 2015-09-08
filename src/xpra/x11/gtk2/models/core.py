@@ -28,6 +28,7 @@ metalog = Logger("x11", "window", "metadata")
 shapelog = Logger("x11", "window", "shape")
 grablog = Logger("x11", "window", "grab")
 framelog = Logger("x11", "window", "frame")
+geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
@@ -425,7 +426,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         if self._geometry is None:
             with xsync:
                 self._geometry = X11Window.geometry_with_border(self.xid)
-                log("BaseWindowModel.do_get_property_geometry() synced update: geometry(%#x)=%s", self.xid, self._geometry)
+                geomlog("BaseWindowModel.do_get_property_geometry() synced update: geometry(%#x)=%s", self.xid, self._geometry)
         x, y, w, h, b = self._geometry
         return (x, y, w + 2*b, h + 2*b)
 
@@ -662,7 +663,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             return
         #shouldn't the border width always be 0?
         geom = (event.x, event.y, event.width, event.height, event.border_width)
-        log("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", event, self.xid, self._geometry, geom)
+        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", event, self.xid, self._geometry, geom)
         if geom!=self._geometry:
             self._geometry = geom
             #X11Window.MoveResizeWindow(self.xid, )
