@@ -1437,13 +1437,11 @@ class UIXpraClient(XpraClientBase):
             assert server_desktop_size
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
-            if avail_w*self.xscale<root_w or avail_h*self.yscale<root_h:
-                log.warn("Server's virtual screen is too small -- "
-                         "(server: %sx%s vs. client: %sx%s)\n"
-                         "You may see strange behavior.\n"
-                         "Please see "
-                         "http://xpra.org/trac/wiki/Xdummy#Configuration"
-                         % (int(avail_w*self.xscale), int(avail_h*self.yscale), root_w, root_h))
+            if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
+                log.warn("Server's virtual screen is too small")
+                log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
+                log.warn(" you may see strange behavior,")
+                log.warn(" please see http://xpra.org/trac/wiki/Xdummy#Configuration")
         if self.keyboard_helper:
             modifier_keycodes = c.dictget("modifier_keycodes")
             if modifier_keycodes:
