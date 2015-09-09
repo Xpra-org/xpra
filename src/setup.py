@@ -1989,11 +1989,13 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
         if version!="0" and version<"5":
             print("CUDA version %s is very unlikely to work")
-            print("try upgrading to version 6.5 or 7.0")
+            print("try upgrading to version 6.5 or later")
         if version>="6":
             comp_code_options.append((50, 50))
         if version>="7":
             comp_code_options.append((52, 52))
+        if version>="7.5":
+            comp_code_options.append((53, 53))
         for arch, code in comp_code_options:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
