@@ -14,7 +14,7 @@ import time
 import datetime
 
 from xpra.os_util import os_info, bytestostr
-from xpra.util import prettify_plug_name, typedict, csv
+from xpra.util import prettify_plug_name, typedict, csv, engs
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
@@ -142,7 +142,7 @@ class SessionInfo(gtk.Window):
         def make_revision_str(rev, changes):
             if not changes:
                 return rev
-            return "%s (%s changes)" % (rev, changes)
+            return "%s (%s change%s)" % (rev, changes, engs(changes))
         def make_datetime(date, time):
             if not time:
                 return date
@@ -198,6 +198,8 @@ class SessionInfo(gtk.Window):
         randr_box.add(self.server_randr_icon)
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
+        self.client_display = label()
+        tb.new_row("Client Display", self.client_display)
         opengl_box = gtk.HBox(False, 20)
         self.client_opengl_label = label()
         self.client_opengl_label.set_line_wrap(True)
@@ -217,18 +219,6 @@ class SessionInfo(gtk.Window):
         tb.new_row("Bell", self.server_bell_icon)
         self.server_cursors_icon = gtk.Image()
         tb.new_row("Cursors", self.server_cursors_icon)
-        speaker_box = gtk.HBox(False, 20)
-        self.server_speaker_icon = gtk.Image()
-        speaker_box.add(self.server_speaker_icon)
-        self.speaker_codec_label = label()
-        speaker_box.add(self.speaker_codec_label)
-        tb.new_row("Speaker", speaker_box)
-        microphone_box = gtk.HBox(False, 20)
-        self.server_microphone_icon = gtk.Image()
-        microphone_box.add(self.server_microphone_icon)
-        self.microphone_codec_label = label()
-        microphone_box.add(self.microphone_codec_label)
-        tb.new_row("Microphone", microphone_box)
         #add bottom table:
         tb = TableBuilder(rows=1, columns=3)
         table = tb.get_table()
@@ -645,6 +635,13 @@ class SessionInfo(gtk.Window):
                 size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
+        root_w, root_h = self.client.get_root_size()
+        if self.client.xscale!=1 or self.client.yscale!=1:
+            sw, sh = self.client.cp(root_w, root_h)
+            display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
+        else:
+            display_info = "%ix%i" % (root_w, root_h)
+        self.client_display.set_text(display_info)
         self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
 
         scaps = self.client.server_capabilities
@@ -674,18 +671,6 @@ class SessionInfo(gtk.Window):
             if not enabled:
                 return "n/a"
             return ", ".join(codecs or [])
-        def populate_speaker_info(*args):
-            can = scaps.boolget("sound.send", False) and self.client.speaker_allowed
-            self.bool_icon(self.server_speaker_icon, can)
-            self.speaker_codec_label.set_text(bytestostr(pipeline_info(can, self.client.sound_sink)))
-        populate_speaker_info()
-        self.client.connect("speaker-changed", populate_speaker_info)
-        def populate_microphone_info(*args):
-            can = scaps.boolget("sound.receive", False) and self.client.microphone_allowed
-            self.bool_icon(self.server_microphone_icon, can)
-            self.microphone_codec_label.set_text(bytestostr(pipeline_info(can, self.client.sound_source)))
-        populate_microphone_info()
-        self.client.connect("microphone-changed", populate_microphone_info)
 
         #sound/video codec table:
         self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strlistget("sound.encoders", [])))
