@@ -77,6 +77,7 @@ class CairoBackingBase(GTKWindowBacking):
         log("cairo_paint_pixbuf(%s, %s, %s) backing=%s", pixbuf, x, y, self._backing)
         #now use it to paint:
         gc = gdk_cairo_context(cairo.Context(self._backing))
+        gc.set_operator(cairo.OPERATOR_SOURCE)
         cairo_set_source_pixbuf(gc, pixbuf, x, y)
         gc.paint()
 
@@ -88,7 +89,7 @@ class CairoBackingBase(GTKWindowBacking):
         gc.set_operator(cairo.OPERATOR_CLEAR)
         gc.rectangle(x, y, img_surface.get_width(), img_surface.get_height())
         gc.fill()
-        gc.set_operator(cairo.OPERATOR_OVER)
+        gc.set_operator(cairo.OPERATOR_SOURCE)
         gc.set_source_surface(img_surface, x, y)
         gc.paint()
 
