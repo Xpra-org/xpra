@@ -711,26 +711,6 @@ class UIXpraClient(XpraClientBase):
         screenlog("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
         if self.screen_size_change_pending:
             return
-        def update_screen_size():
-            self.screen_size_change_pending = False
-            u_root_w, u_root_h = self.get_root_size()
-            root_w, root_h = self.cp(u_root_w, u_root_h)
-            sss = self.get_screen_sizes(self.xscale, self.yscale)
-            ndesktops = get_number_of_desktops()
-            desktop_names = get_desktop_names()
-            screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
-            screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h)
-            screenlog("update_screen_size()     new settings=%s", screen_settings)
-            screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
-            if self._last_screen_settings==screen_settings:
-                log("screen size unchanged")
-                return
-            screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
-            log_screen_sizes(root_w, root_h, sss)
-            self.send("desktop_size", *screen_settings)
-            self._last_screen_settings = screen_settings
-            #update the max packet size (may have gone up):
-            self.set_max_packet_size()
         #update via timer so the data is more likely to be final (up to date) when we query it,
         #some properties (like _NET_WORKAREA for X11 clients via xposix "ClientExtras") may
         #trigger multiple calls to screen_size_changed, delayed by some amount
@@ -741,7 +721,52 @@ class UIXpraClient(XpraClientBase):
         #(better chance that the suspend-resume cycle will have completed)
         if self._suspended_at>0 and self._suspended_at-time.time()<5*1000:
             delay = 5*1000
-        self.timeout_add(delay, update_screen_size)
+        self.timeout_add(delay, self.update_screen_size)
+
+    def update_screen_size(self):
+        self.screen_size_change_pending = False
+        u_root_w, u_root_h = self.get_root_size()
+        root_w, root_h = self.cp(u_root_w, u_root_h)
+        sss = self.get_screen_sizes(self.xscale, self.yscale)
+        ndesktops = get_number_of_desktops()
+        desktop_names = get_desktop_names()
+        screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
+        screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h)
+        screenlog("update_screen_size()     new settings=%s", screen_settings)
+        screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
+        if self._last_screen_settings==screen_settings:
+            log("screen size unchanged")
+            return
+        screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
+        log_screen_sizes(root_w, root_h, sss)
+        self.send("desktop_size", *screen_settings)
+        self._last_screen_settings = screen_settings
+        #update the max packet size (may have gone up):
+        self.set_max_packet_size()
+
+
+    def scaleup(self):
+        #TODO: wait until the server has actually updated it?
+        self.xscale = min(10, self.scale*2)
+        self.yscale = min(10, self.ycale*2)
+        scalinglog("scaleup() new scaling: %sx%s", self.xscale, self.yscale)
+        self.scale_reinit(2, 2)
+
+    def scaledown(self):
+        if self.screen_size_change_pending:
+            return
+        self.xscale = max(0.1, self.scale*0.5)
+        self.yscale = max(0.1, self.ycale*0.5)
+        scalinglog("scaledown() new scaling: %sx%s", self.xscale, self.yscale)
+        self.scale_reinit(0.5, 0.5)
+
+    def scale_reinit(self, xchange=1.0, ychange=1.0):
+        #re-initialize all the windows with their new size
+        def new_size_fn(w, h):
+            return int(w*xchange), int(h*ychange)
+        self.reinit_windows(self._id_to_window.keys(), new_size_fn)
+        self.update_screen_size()
+
 
     def get_screen_sizes(self, xscale=1, yscale=1):
         raise Exception("override me!")
@@ -767,7 +792,7 @@ class UIXpraClient(XpraClientBase):
         from xpra.os_util import get_int_uuid
         from xpra.net.mmap_pipe import init_client_mmap
         #calculate size:
-        root_w, root_h = self.sp(self.get_root_size())
+        root_w, root_h = self.cp(self.get_root_size())
         #at least 128MB, or 8 fullscreen RGBX frames:
         mmap_size = max(128*1024*1024, root_w*root_h*4*8)
         mmap_size = min(1024*1024*1024, mmap_size)
@@ -2005,6 +2030,72 @@ class UIXpraClient(XpraClientBase):
         window.show()
         return window
 
+    def reinit_windows(self, window_ids, new_size_fn=None):
+        assert self.window_unmap, "server support for 'window_unmap' is required for reinitializing windows"
+        def fake_send(*args):
+            log("fake_send%s", args)
+        #now replace all the windows with new ones:
+        for wid in window_ids:
+            window = self._id_to_window.get(wid)
+            if not window or window.is_tray():
+                #trays are never GL enabled, so don't bother re-creating them
+                #might cause problems anyway if we did anyway
+                continue
+            #ignore packets from old window:
+            window.send = fake_send
+            #copy attributes:
+            x, y = window._pos
+            ww, wh = window._size
+            if new_size_fn:
+                ww, wh = new_size_fn(ww, wh)
+            try:
+                bw, bh = window._backing.size
+            except:
+                bw, bh = ww, wh
+            client_properties = window._client_properties
+            metadata = window._metadata
+            override_redirect = window._override_redirect
+            backing = window._backing
+            video_decoder, csc_decoder, decoder_lock = None, None, None
+            try:
+                if backing:
+                    video_decoder = backing._video_decoder
+                    csc_decoder = backing._csc_decoder
+                    decoder_lock = backing._decoder_lock
+                    if decoder_lock:
+                        decoder_lock.acquire()
+                        windowlog("reinit_windows() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
+                        backing._video_decoder = None
+                        backing._csc_decoder = None
+                        backing._decoder_lock = None
+
+                #now we can unmap it:
+                self.destroy_window(wid, window)
+                #explicitly tell the server we have unmapped it:
+                #(so it will reset the video encoders, etc)
+                self.send("unmap-window", wid)
+                try:
+                    del self._id_to_window[wid]
+                except:
+                    pass
+                try:
+                    del self._window_to_id[window]
+                except:
+                    pass
+                #create the new window,
+                #which should honour the new state of the opengl_enabled flag if that's what we changed,
+                #or the new dimensions, etc
+                window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
+                if video_decoder or csc_decoder:
+                    backing = window._backing
+                    backing._video_decoder = video_decoder
+                    backing._csc_decoder = csc_decoder
+                    backing._decoder_lock = decoder_lock
+            finally:
+                if decoder_lock:
+                    decoder_lock.release()
+
+
     def get_group_leader(self, wid, metadata, override_redirect):
         #subclasses that wish to implement the feature may override this method
         return None
@@ -2242,7 +2333,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def set_max_packet_size(self):
-        root_w, root_h = self.sp(*self.get_root_size())
+        root_w, root_h = self.cp(*self.get_root_size())
         maxw, maxh = root_w, root_h
         try:
             server_w, server_h = self.server_actual_desktop_size

@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.util import nonl
+from xpra.util import nonl, csv
 
 
 class KeyboardHelper(object):
@@ -131,15 +131,17 @@ class KeyboardHelper(object):
                     #ie: "alt_l" -> "mod1"
                     imod = modifier_names.get(mod.lower())
                     if not imod:
-                        log.error("invalid modifier: %s, valid modifiers are: %s", mod, modifier_names.keys())
+                        log.error("Error: invalid modifier '%s' in keyboard shortcut '%s'", mod, s)
+                        log.error(" the modifiers must be one of: %s", csv(modifier_names.keys()))
                         valid = False
                         break
                     modifiers.append(imod)
                 if not valid:
                     continue
+            #TODO: validate keyname
             keyname = keyspec[len(keyspec)-1]
             shortcuts[keyname] = (modifiers, action, args)
-        log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        log.info("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         return  shortcuts
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):

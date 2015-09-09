@@ -482,7 +482,10 @@ def get_defaults():
                                            "Meta+Shift+F2:show_start_new_command",
                                            "Meta+Shift+F4:quit",
                                            "Meta+Shift+F8:magic_key",
-                                           "Meta+Shift+F11:show_session_info"
+                                           "Meta+Shift+F11:show_session_info",
+                                           "Meta+Shift+plus:scaleup",
+                                           "Meta+Shift+minus:scaledown",
+                                           "Meta+Shift+underscore:scaledown",
                                            ],
                     "bind-tcp"          : [],
                     "start"             : [],

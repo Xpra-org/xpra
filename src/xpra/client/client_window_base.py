@@ -429,6 +429,13 @@ class ClientWindowBase(ClientWidgetBase):
     def set_xid(self, xid):
         pass
 
+
+    def scaleup(self, *args):
+        self._client.scaleup()
+
+    def scaledown(self, *args):
+        self._client.scaledown()
+
     def magic_key(self, *args):
         log.info("magic_key(%s) not handled in %s", args, type(self))
 

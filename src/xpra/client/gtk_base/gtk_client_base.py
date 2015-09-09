@@ -367,6 +367,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if n_screens==1:
                 workareas = get_workareas()
                 if len(workareas)!=n_monitors:
+                    screenlog(" workareas: %s", workareas)
                     screenlog(" number of monitors does not match number of workareas!")
                     workareas = []
             while j<screen.get_n_monitors():
