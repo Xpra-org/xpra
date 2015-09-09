@@ -61,6 +61,8 @@ FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
+REINIT_WINDOWS = os.environ.get("XPRA_MONITOR_CHANGE_REINIT", "0")=="1"
+
 AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
 
@@ -721,7 +723,14 @@ class UIXpraClient(XpraClientBase):
         #(better chance that the suspend-resume cycle will have completed)
         if self._suspended_at>0 and self._suspended_at-time.time()<5*1000:
             delay = 5*1000
-        self.timeout_add(delay, self.update_screen_size)
+        self.timeout_add(delay, self.do_process_screen_size_change)
+
+    def do_process_screen_size_change(self):
+        self.update_screen_size()
+        if REINIT_WINDOWS:
+            screenlog.info("screen size change: will reinit the windows")
+            self.reinit_windows(self._id_to_window.keys())
+
 
     def update_screen_size(self):
         self.screen_size_change_pending = False
