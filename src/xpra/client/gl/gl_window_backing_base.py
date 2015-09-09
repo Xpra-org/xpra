@@ -392,7 +392,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
             try:
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             except Exception as e:
@@ -499,8 +499,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         #viewport for painting to window:
         glViewport(0, 0, ww, wh)
         if ww!=bw or wh!=bh:
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
         glBegin(GL_QUADS)
         for x,y,w,h in rectangles:
@@ -553,8 +553,8 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         #restore pbo viewport
         glViewport(0, 0, bw, bh)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
  
         self.unset_rgb_paint_state()
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
@@ -672,9 +672,9 @@ class GLWindowBackingBase(GTKWindowBacking):
             glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
 
             # Draw textured RGB quad at the right coordinates
@@ -758,7 +758,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                     mag_filter = GL_LINEAR
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
 
