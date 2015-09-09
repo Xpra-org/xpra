@@ -498,6 +498,9 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         #viewport for painting to window:
         glViewport(0, 0, ww, wh)
+        if ww!=bw or wh!=bh:
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
         glBegin(GL_QUADS)
         for x,y,w,h in rectangles:
@@ -550,6 +553,8 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         #restore pbo viewport
         glViewport(0, 0, bw, bh)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
  
         self.unset_rgb_paint_state()
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
