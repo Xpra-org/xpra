@@ -1912,22 +1912,23 @@ if (nvenc4_ENABLED or nvenc5_ENABLED) and WIN32:
 
 if nvenc4_ENABLED or nvenc5_ENABLED:
     #find nvcc:
-    nvcc = None
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
         nvcc_exe = "nvcc.exe"
         #FIXME: we try to use SDK 6.5 x86 first!
         #(so that we can build on 32-bit envs)
         path_options = [
-                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.5\\bin",
-                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.0\\bin",
                          "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v5.5\\bin",
+                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.0\\bin",
+                         "C:\\Program Files (x86)\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.5\\bin",
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.5\\bin",
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.0\\bin",
+                         "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\bin",
                          ] + path_options
     else:
         nvcc_exe = "nvcc"
-        path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
+        for v in ("-5.5", "-6.0", "-6.5", "-7.0", "-7.5", ""):
+            path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     if not WIN32:
         #prefer the one we find on the $PATH, if any:
@@ -1937,12 +1938,12 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
                 options.append(0, out)
         except:
             pass
+    nvcc_versions = {}
     for filename in options:
         if not os.path.exists(filename):
             continue
         code, out, err = get_status_output([filename, "--version"])
         if code==0:
-            nvcc = filename
             out = out.decode('utf-8')
             vpos = out.rfind(", V")
             if vpos>0:
@@ -1951,9 +1952,13 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
             else:
                 version = "0"
                 version_str = " unknown version!"
-            print("found CUDA compiler: %s%s" % (nvcc, version_str))
-            break
-    assert nvcc is not None, "cannot find nvcc compiler!"
+            print("found CUDA compiler: %s%s" % (filename, version_str))
+            nvcc_versions[version] = filename
+    assert nvcc_versions, "cannot find nvcc compiler!"
+    #choose the most recent one:
+    version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
+    if len(nvcc_versions)>1:
+        print(" using version %s from %s" % (version, nvcc))
     if WIN32:
         cuda_path = os.path.dirname(nvcc)           #strip nvcc.exe
         cuda_path = os.path.dirname(cuda_path)      #strip /bin/
