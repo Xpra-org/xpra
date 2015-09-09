@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+import binascii
 from xpra.log import Logger
 log = Logger("posix")
 eventlog = Logger("posix", "events")
@@ -183,7 +184,7 @@ def get_current_desktop():
             v = struct.unpack("=I", d)[0]
     except Exception as e:
         log.warn("failed to get current desktop: %s", e)
-    log("get_current_desktop() %s=%s", d, v)
+    log("get_current_desktop() %s=%s", binascii.hexlify(d), v)
     return v
 
 def get_workarea():
@@ -201,7 +202,7 @@ def get_workarea():
         else:
             cur_workarea = workarea[d*4*4:(d+1)*4*4]
             v = struct.unpack("=IIII", cur_workarea)
-            screenlog("get_workarea()=%s", v)
+            screenlog("get_workarea() %s=%s", binascii.hexlify(cur_workarea), v)
             return v
     except Exception as e:
         screenlog.warn("failed to get workarea: %s", e)
@@ -218,7 +219,7 @@ def get_number_of_desktops():
     except Exception as e:
         screenlog.warn("failed to get number of desktop: %s", e)
     v = max(1, v)
-    screenlog("get_number_of_desktops() %s=%s", d, v)
+    screenlog("get_number_of_desktops() %s=%s", binascii.hexlify(d), v)
     return v
 
 def get_desktop_names():
@@ -232,7 +233,7 @@ def get_desktop_names():
                 v = v[:-1]
     except Exception as e:
         screenlog.warn("failed to get desktop names: %s", e)
-    screenlog("get_desktop_names() %s=%s", d, v)
+    screenlog("get_desktop_names() %s=%s", binascii.hexlify(d), v)
     return v
 
 
