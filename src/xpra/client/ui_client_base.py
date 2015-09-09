@@ -760,16 +760,16 @@ class UIXpraClient(XpraClientBase):
 
     def scaleup(self):
         #TODO: wait until the server has actually updated it?
-        self.xscale = min(10, self.scale*2)
-        self.yscale = min(10, self.ycale*2)
+        self.xscale = min(10, self.xscale*2)
+        self.yscale = min(10, self.yscale*2)
         scalinglog("scaleup() new scaling: %sx%s", self.xscale, self.yscale)
         self.scale_reinit(2, 2)
 
     def scaledown(self):
         if self.screen_size_change_pending:
             return
-        self.xscale = max(0.1, self.scale*0.5)
-        self.yscale = max(0.1, self.ycale*0.5)
+        self.xscale = max(0.1, self.xscale*0.5)
+        self.yscale = max(0.1, self.yscale*0.5)
         scalinglog("scaledown() new scaling: %sx%s", self.xscale, self.yscale)
         self.scale_reinit(0.5, 0.5)
 
