@@ -144,7 +144,7 @@ class WindowBackingBase(object):
 
 
     def unpremultiply(self, img_data):
-        if type(img_data) in (str, _buffer):
+        if type(img_data) not in (str, _buffer):
             try:
                 unpremultiply_argb_in_place(img_data)
                 return img_data
