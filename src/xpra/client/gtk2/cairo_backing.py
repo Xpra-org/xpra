@@ -23,7 +23,7 @@ log = Logger("paint", "cairo")
 class CairoBacking(CairoBackingBase):
 
     #with gtk2 we can convert these directly to a cairo image surface:
-    RGB_MODES = ["ARGB", "XRGB", "RGBA", "RGBX", "RGB"]
+    RGB_MODES = ["ARGB", "RGBA", "RGBX", "RGB"]
 
 
     def __repr__(self):
@@ -35,7 +35,7 @@ class CairoBacking(CairoBackingBase):
         log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
         rgb_format = options.strget("rgb_format", "RGB")
 
-        if rgb_format in ("ARGB", "XRGB"):
+        if rgb_format in ("ARGB", ):
             #the pixel format is also what cairo expects
             #maybe we should also check that the stride is acceptable for cairo?
             #cairo_stride = cairo.ImageSurface.format_stride_for_width(cairo_format, width)
