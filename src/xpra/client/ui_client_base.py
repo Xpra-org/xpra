@@ -454,6 +454,10 @@ class UIXpraClient(XpraClientBase):
         log.info("system resumed, was suspended for %s", delta)
         #this will reset the refresh rate too:
         self.send_refresh_all()
+        if self.opengl_enabled:
+            #with opengl, the buffers sometimes contain garbage after resuming,
+            #this should create new backing buffers:
+            self.reinit_windows()
 
 
     def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
@@ -729,7 +733,7 @@ class UIXpraClient(XpraClientBase):
         self.update_screen_size()
         if REINIT_WINDOWS:
             screenlog.info("screen size change: will reinit the windows")
-            self.reinit_windows(self._id_to_window.keys())
+            self.reinit_windows()
 
 
     def update_screen_size(self):
@@ -773,7 +777,7 @@ class UIXpraClient(XpraClientBase):
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
             return int(w*xchange), int(h*ychange)
-        self.reinit_windows(self._id_to_window.keys(), new_size_fn)
+        self.reinit_windows(new_size_fn)
         self.update_screen_size()
 
 
@@ -2039,13 +2043,12 @@ class UIXpraClient(XpraClientBase):
         window.show()
         return window
 
-    def reinit_windows(self, window_ids, new_size_fn=None):
+    def reinit_windows(self, new_size_fn=None):
         assert self.window_unmap, "server support for 'window_unmap' is required for reinitializing windows"
         def fake_send(*args):
             log("fake_send%s", args)
         #now replace all the windows with new ones:
-        for wid in window_ids:
-            window = self._id_to_window.get(wid)
+        for wid, window in self._id_to_window.items():
             if not window or window.is_tray():
                 #trays are never GL enabled, so don't bother re-creating them
                 #might cause problems anyway if we did anyway
