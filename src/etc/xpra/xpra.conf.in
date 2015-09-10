@@ -64,7 +64,7 @@ file-transfer = yes
 
 # Location where files are received:
 #download-path = ~/Downloads
-#download-path = ~/Deskto
+#download-path = ~/Desktop
 #download-path = /tmp
 
 # File size limit in MB
