@@ -52,7 +52,11 @@ class PixmapBacking(GTK2WindowBacking):
         self.size = bw, bh
         w, h = bw, bh
         old_backing = self._backing
+        self._backing = None
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
+        if w==0 or h==0:
+            #this can happen during cleanup
+            return
         if self._alpha_enabled:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
@@ -143,9 +147,11 @@ class PixmapBacking(GTK2WindowBacking):
         if drawable is None:
             return
         try:
-            if self.render_size!=self.size:
-                ww, wh = self.render_size
-                w, h = self.size
+            ww, wh = self.render_size
+            w, h = self.size
+            if ww==0 or w==0 or wh==0 or h==0:
+                return False
+            if w!=ww or h!=wh:
                 context.scale(float(ww)/w, float(wh)/h)
             context.set_source_pixmap(drawable, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)

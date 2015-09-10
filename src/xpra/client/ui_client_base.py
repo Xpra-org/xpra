@@ -776,7 +776,7 @@ class UIXpraClient(XpraClientBase):
     def scale_reinit(self, xchange=1.0, ychange=1.0):
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
-            return int(w*xchange), int(h*ychange)
+            return max(1, int(w*xchange)), max(1, int(h*ychange))
         self.reinit_windows(new_size_fn)
         self.update_screen_size()
 
