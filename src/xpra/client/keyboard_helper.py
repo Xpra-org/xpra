@@ -141,7 +141,7 @@ class KeyboardHelper(object):
             #TODO: validate keyname
             keyname = keyspec[len(keyspec)-1]
             shortcuts[keyname] = (modifiers, action, args)
-        log.info("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         return  shortcuts
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
