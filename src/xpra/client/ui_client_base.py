@@ -1019,7 +1019,9 @@ class UIXpraClient(XpraClientBase):
         if self.xscale!=1 or self.yscale!=1:
             capabilities["screen_sizes.unscaled"] = ss
             capabilities["desktop_size.unscaled"] = u_root_w, u_root_h
-            log.info(" scaled using %sx%s to:", self.xscale, self.yscale)
+            def roundfloat(v):
+                return str(v)[:5].rstrip("0").rstrip(".")
+            log.info(" scaled using %s x %s to:", roundfloat(self.xscale), roundfloat(self.yscale))
             sss = self.get_screen_sizes(self.xscale, self.yscale)
             root_w, root_h = self.cp(u_root_w, u_root_h)
             log_screen_sizes(root_w, root_h, sss)
