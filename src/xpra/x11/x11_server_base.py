@@ -65,6 +65,8 @@ class X11ServerBase(GTKServerBase):
 
     def __init__(self, clobber):
         self.clobber = clobber
+        self.screen_number = gtk.gdk.display_get_default().get_default_screen().get_number()
+        self.root_window = gtk.gdk.get_default_root_window()
         GTKServerBase.__init__(self)
 
     def init(self, opts):
@@ -261,7 +263,7 @@ class X11ServerBase(GTKServerBase):
 
     def get_max_screen_size(self):
         from xpra.x11.gtk2.window import MAX_WINDOW_SIZE
-        max_w, max_h = gtk.gdk.get_default_root_window().get_size()
+        max_w, max_h = self.root_window.get_size()
         sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:
             for w,h in sizes:
@@ -275,7 +277,7 @@ class X11ServerBase(GTKServerBase):
     def set_best_screen_size(self):
         #return ServerBase.set_best_screen_size(self)
         """ sets the screen size to use the largest width and height used by any of the clients """
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = self.root_window.get_size()
         if not self.randr:
             return root_w, root_h
         max_w, max_h = 0, 0
@@ -295,7 +297,7 @@ class X11ServerBase(GTKServerBase):
         return  root_w, root_h
 
     def set_screen_size(self, desired_w, desired_h):
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = self.root_window.get_size()
         if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
             return    root_w,root_h    #unlikely: perfect match already!
         #clients may supply "xdpi" and "ydpi" (v0.15 onwards), or just "dpi", or nothing...
@@ -452,14 +454,13 @@ class X11ServerBase(GTKServerBase):
         #(this is called within an xswallow context)
         mouselog("move_pointer(%s, %s)", wid, pos)
         x, y = pos
-        n = gtk.gdk.display_get_default().get_default_screen().get_number()
-        X11Keyboard.xtest_fake_motion(n, x, y)
+        X11Keyboard.xtest_fake_motion(self.screen_number, x, y)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        pos = gtk.gdk.get_default_root_window().get_pointer()[:2]
+        pos = self.root_window.get_pointer()[:2]
         if pos!=pointer:
             with xswallow:
                 self._move_pointer(wid, pointer)
