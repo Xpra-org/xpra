@@ -5,7 +5,7 @@
 %define gstpb_minver 1.4
 
 Summary: GStreamer streaming media framework "ugly" plug-ins
-Name: gstreamer-plugins-ugly
+Name: gstreamer1-plugins-ugly
 Version: 1.4.5
 Release: 1%{?dist}
 License: LGPL
