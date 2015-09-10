@@ -7,7 +7,6 @@
 import os
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
-from xpra.platform.features import CLIPBOARDS
 
 
 DEFAULT_LOCAL_SELECTION     = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_LOCAL_SELECTION")

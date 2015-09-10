@@ -199,9 +199,12 @@ class XpraClient(GTKXpraClient):
         clipboardlog("make_clipboard_helper() options=%s, server_clipboards=%s, local clipboards=%s", clipboard_options, self.server_clipboards, CLIPBOARDS)
         #first add the platform specific one, (may be None):
         kwargs= {"clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
-                 "clipboards.remote"    : self.server_clipboards,       #all the remote clipboards supported
+                 "clipboards.remote"    : self.server_clipboards}       #all the remote clipboards supported
+        #only allow translation overrides if we have a way of telling the server about them: 
+        if self.server_supports_clipboard_enable_selections:
+            kwargs.update({
                  "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)
-                 "clipboard.remote"     : self.remote_clipboard}        #the remote clipboard we want to we sync to (with the translated clipboard only)
+                 "clipboard.remote"     : self.remote_clipboard})       #the remote clipboard we want to we sync to (with the translated clipboard only)
         clipboardlog("make_clipboard_helper() clipboard_options=%s, kwargs=%s", clipboard_options, kwargs)
         for classname in clipboard_options:
             module_name, _class = classname.rsplit(".", 1)
