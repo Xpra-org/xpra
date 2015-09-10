@@ -391,9 +391,15 @@ pulseaudio-command = %(pulseaudio_command)s
 
 # Virtual display command:
 # - Old Xvfb option:
-# xvfb=Xvfb +extension Composite -screen 0 5760x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY
+# xvfb=Xvfb +extension Composite -nolisten tcp -noreset \
+#        -auth $XAUTHORITY \
+#        -screen 0 5760x2560x24+32
 # - With Xorg 1.12 or newer and the dummy driver:
-# xvfb=/usr/bin/Xorg -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config %(conf_dir)s/xorg.conf
+# xvfb=/usr/bin/Xorg -noreset -nolisten tcp \
+#        +extension GLX +extension RANDR +extension RENDER \
+#        -auth $XAUTHORITY \
+#        -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log \
+#        -config %(conf_dir)s/xorg.conf
 #
 # Selecting virtual X server:
 xvfb=%(xvfb_command)s
