@@ -57,6 +57,7 @@ def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpr
           "+extension", "GLX",
           "+extension", "RANDR",
           "+extension", "RENDER",
+          "-auth", "$XAUTHORITY",
           "-logfile", "%s/Xorg.${DISPLAY}.log" % log_dir,
           "-config", xorg_conf]
 
