@@ -821,7 +821,7 @@ def build_xpra_conf(install_dir):
     socket_dirs = get_socket_dirs()
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
-    if os.name=="posix":
+    if os.name=="posix" and printing_ENABLED:
         try:
             from xpra.platform.pycups_printing import get_printer_definitions
             print("probing cups printer definitions")
