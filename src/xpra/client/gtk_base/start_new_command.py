@@ -138,7 +138,7 @@ class StartNewCommand(object):
 
 
 def main():
-    from xpra.platform import init as platform_init, set_name, clean as platform_clean
+    from xpra.platform import init as platform_init, clean as platform_clean
     from xpra.platform.gui import ready as gui_ready
     try:
         platform_init("Start-New-Command", "Start New Command")

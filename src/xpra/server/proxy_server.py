@@ -20,7 +20,6 @@ log = Logger("proxy")
 
 
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized
-from xpra.net.bytestreams import set_socket_timeout
 from xpra.server.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
