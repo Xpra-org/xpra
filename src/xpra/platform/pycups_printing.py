@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -18,13 +19,43 @@ log = Logger("printing")
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
 RAW_MODE = os.environ.get("XPRA_PRINTER_RAW", "0")=="1"
+GENERIC = os.environ.get("XPRA_PRINTERS_GENERIC", "1")=="1"
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 #the mimetype to use for clients that do not specify one
 #(older clients just assumed postscript)
 DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/postscript")
 
 LPADMIN = "lpadmin"
+LPINFO = "lpinfo"
 FORWARDER_BACKEND = "xpraforwarder"
+
+
+#PRINTER_PREFIX = "Xpra:"
+ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
+PRINTER_PREFIX = ""
+if ADD_LOCAL_PRINTERS:
+    #this prevents problems where we end up deleting local printers!
+    PRINTER_PREFIX = "Xpra:"
+PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
+
+DEFAULT_CUPS_DBUS = str(int(not sys.platform.startswith("darwin")))
+CUPS_DBUS = os.environ.get("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)=="1"
+POLLING_DELAY = int(os.environ.get("XPRA_CUPS_POLLING_DELAY", "60"))
+log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
+log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
+log("pycups settings: ALLOW=%s", ALLOW)
+log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
+
+
+#allows us to inject the lpadmin and lpinfo commands from the config file
+def set_lpadmin_command(lpadmin):
+    global LPADMIN
+    LPADMIN = lpadmin
+
+def set_lpinfo_command(lpinfo):
+    global LPINFO
+    LPINFO = lpinfo
+
 
 def find_ppd_file(short_name, filename):
     ev = os.environ.get("XPRA_%s_PPD" % short_name)
@@ -45,42 +76,91 @@ def find_ppd_file(short_name, filename):
     return None
 
 
-PRINTER_DEF = {}
-if RAW_MODE:
-    PRINTER_DEF["raw"] = ["-o", "raw"]
-for mt,x in {"application/postscript"   : "CUPS-PDF.ppd",
-             "application/pdf"          : "Generic-PDF_Printer-PDF.ppd"}.items():
-    f = find_ppd_file(mt.replace("application/", "").upper(), x)
-    if f:
-        PRINTER_DEF[mt] = ["-P", f]
+def get_lpinfo_drv(make_and_model):
+    command = shlex.split(LPINFO)+["--make-and-model", make_and_model, "-m"]
+    def preexec():
+        os.setsid()
+    log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
+    proc = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True, preexec_fn=preexec)
+    #use the global child reaper to make sure this doesn't end up as a zombie
+    from xpra.child_reaper import getChildReaper
+    from xpra.util import nonl
+    cr = getChildReaper()
+    cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
+    out, err = proc.communicate()
+    if proc.wait()!=0:
+        log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
+        log.warn(" command used: '%s'", command)
+        return None
+    if sys.version_info[0]>=3:
+        try:
+            out = out.decode()
+        except:
+            out = str(out)
+    log("lpinfo out=%s", nonl(out))
+    log("lpinfo err=%s", nonl(err))
+    if err:
+        log.warn("Warning: lpinfo command produced some warnings:")
+        log.warn(" '%s'", nonl(err))
+    for line in out.splitlines():
+        if line.startswith("drv://"):
+            return line.split(" ")[0]
+    return None
 
-#PRINTER_PREFIX = "Xpra:"
-ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
-PRINTER_PREFIX = ""
-if ADD_LOCAL_PRINTERS:
-    #this prevents problems where we end up deleting local printers!
-    PRINTER_PREFIX = "Xpra:"
-PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 
-DEFAULT_CUPS_DBUS = str(int(not sys.platform.startswith("darwin")))
-CUPS_DBUS = os.environ.get("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)=="1"
-POLLING_DELAY = int(os.environ.get("XPRA_CUPS_POLLING_DELAY", "60"))
-log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
-log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
-log("pycups settings: ALLOW=%s", ALLOW)
-log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
-log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
+UNPROBED_PRINTER_DEFS = {}
+def add_printer_def(mimetype, definition):
+    if definition.startswith("drv://"):
+        UNPROBED_PRINTER_DEFS[mimetype] = ["-m", definition]
+    elif definition.lower().endswith("ppd"):
+        if os.path.exists(definition):
+            UNPROBED_PRINTER_DEFS[mimetype] = ["-P", definition]
+        else:
+            log.warn("Warning: ppd file '%s' does not exist", definition)
+    else:
+        log.warn("Warning: invalid printer definition for %s:", mimetype)
+        log.warn(" '%s' is not a valid driver or ppd file", definition)
 
 
-#allows us to inject the lpadmin command
-def set_lpadmin_command(lpadmin):
-    global LPADMIN
-    LPADMIN = lpadmin
+PRINTER_DEF = None
+def get_printer_definitions():
+    global PRINTER_DEF, UNPROBED_PRINTER_DEFS
+    if PRINTER_DEF is not None:
+        return PRINTER_DEF
+    log("get_printer_definitions() UNPROBED_PRINTER_DEFS=%s, GENERIC=%s", UNPROBED_PRINTER_DEFS, GENERIC)
+    #first add the user-supplied definitions:
+    PRINTER_DEF = UNPROBED_PRINTER_DEFS.copy()
+    #raw mode if supported:
+    if RAW_MODE:
+        PRINTER_DEF["raw"] = ["-o", "raw"]
+    #now probe for generic printers via lpinfo:
+    if GENERIC:
+        for mt,x in {"application/postscript"   : "Generic PostScript Printer",
+                     "application/pdf"          : "Generic PDF Printer"}.items():
+            if mt in PRINTER_DEF:
+                continue    #we have a pre-defined one already
+            drv = get_lpinfo_drv(x)
+            if drv:
+                #ie: ["-m", "drv:///sample.drv/generic.ppd"]
+                PRINTER_DEF[mt] = ["-m", drv]
+    #fallback to locating ppd files:
+    for mt,x in {"application/postscript"   : "CUPS-PDF.ppd",
+                 "application/pdf"          : "Generic-PDF_Printer-PDF.ppd"}.items():
+        if mt in PRINTER_DEF:
+            continue        #we have a generic or pre-defined one already
+        f = find_ppd_file(mt.replace("application/", "").upper(), x)
+        if f:
+            #ie: ["-P", "/usr/share/cups/model/Generic-PDF_Printer-PDF.ppd"]
+            PRINTER_DEF[mt] = ["-P", f]
+    log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
+    return PRINTER_DEF
+
 
 def validate_setup():
     #very simple check: at least one ppd file exists
-    if not PRINTER_DEF:
-        log.warn("No PPD files found, cannot enable printing")
+    defs = get_printer_definitions()
+    if not defs:
+        log.warn("Warning: no printer definitions found, cannot enable printing")
         return False
     #check for SELinux
     try:
@@ -88,7 +168,7 @@ def validate_setup():
             log("SELinux is present")
             from xpra.os_util import load_binary_file
             enforce = load_binary_file("/sys/fs/selinux/enforce")
-            log("enforce=%s", enforce)
+            log("SELinux enforce=%s", enforce)
             if enforce=="1":
                 log.warn("SELinux is running in enforcing mode")
                 log.warn(" printer forwarding is unlikely to work without a policy")
@@ -135,8 +215,9 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
     mimetypes = options.get("mimetypes", [DEFAULT_MIMETYPE])
     #find a matching definition:
     mimetype, printer_def = None, None
+    defs = get_printer_definitions()
     for mt in mimetypes:
-        printer_def = PRINTER_DEF.get(mt)
+        printer_def = defs.get(mt)
         if printer_def:
             log("using printer definition '%s' for %s", printer_def, mt)
             #ie: printer_def = ["-P", "/path/to/CUPS-PDF.ppd"]
@@ -170,7 +251,8 @@ DBUS_IFACE="com.redhat.PrinterSpooler"
 def handle_dbus_signal(*args):
     global printers_modified_callback
     log("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
-    printers_modified_callback()
+    if printers_modified_callback:
+        printers_modified_callback()
 
 def init_dbus_listener():
     if not CUPS_DBUS:
@@ -210,7 +292,7 @@ def schedule_polling_timer():
     _polling_timer = Timer(POLLING_DELAY, check_printers)
     _polling_timer.start()
 
-def init_printing(callback):
+def init_printing(callback=None):
     global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
@@ -248,3 +330,34 @@ def printing_finished(printpid):
     f = conn.getJobs().get(printpid, None) is None
     log("pycups.printing_finished(%s)=%s", printpid, f)
     return f
+
+
+
+def main():
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        from xpra.log import add_debug_category, enable_debug_for
+        add_debug_category("printing")
+        enable_debug_for("printing")
+        try:
+            sys.argv.remove("-v")
+        except:
+            pass
+        try:
+            sys.argv.remove("--verbose")
+        except:
+            pass
+
+    from xpra.platform import init, clean
+    from xpra.log import enable_color
+    try:
+        init("PyCUPS Printing")
+        enable_color()
+        init_printing()
+        for k,v in get_printer_definitions().items():
+            log.info("* %-32s: %s", k, v)
+    finally:
+        clean()
+
+
+if __name__ == "__main__":
+    main()

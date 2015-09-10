@@ -300,8 +300,15 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="lpadmin", default=defaults.lpadmin,
                           metavar="COMMAND",
                           help="Specify the lpadmin command to use. Default: '%default'.")
+        group.add_option("--lpinfo", action="store",
+                          dest="lpinfo", default=defaults.lpinfo,
+                          metavar="COMMAND",
+                          help="Specify the lpinfo command to use. Default: '%default'.")
     else:
-        ignore({"lpadmin"   : defaults.lpadmin})
+        ignore({"lpadmin"   : defaults.lpadmin,
+                "lpinfo"    : defaults.lpinfo})
+    hidden_options["pdf_printer"] = defaults.pdf_printer
+    hidden_options["postscript_printer"] = defaults.postscript_printer
     hidden_options["file_size_limit"] = defaults.file_size_limit
     hidden_options["open_command"] = defaults.open_command
     hidden_options["open_files"] = defaults.open_files
