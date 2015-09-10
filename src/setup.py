@@ -820,18 +820,40 @@ def build_xpra_conf(install_dir):
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     #FIXME: we should probably get these values from the default config instead
-    SUBS = {'xvfb_command'   : " ".join(xvfb_command),
-            'ssh_command'    : DEFAULT_SSH_COMMAND,
-            'remote_logging' : bstr(OSX or WIN32),
-            'env'            : env,
-            'has_displayfd'  : bstr(has_displayfd),
-            'pulseaudio_command' : DEFAULT_PULSEAUDIO_COMMAND,
-            'conf_dir'       : conf_dir,
-            'socket_dirs'    : "\nsocket-dirs = ".join(socket_dirs),
-            'log_dir'        : get_default_log_dir(),
-            'mdns'           : bstr(not WIN32),
-            'dbus_proxy'     : bstr(not OSX and not WIN32),
-            'pulseaudio'     : bstr(not OSX and not WIN32)}
+    pdf, postscript = "", ""
+    if os.name=="posix":
+        try:
+            from xpra.platform.pycups_printing import get_printer_definitions
+            print("probing cups printer definitions")
+            defs = get_printer_definitions()
+            def get_printer_def(k):
+                v = defs.get("application/%s" % k)
+                if not v:
+                    return ""
+                if len(v)!=2:
+                    return ""
+                if v[0] not in ("-m", "-P"):
+                    return ""
+                return v[1]     #ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
+            pdf = get_printer_def("pdf")
+            postscript = get_printer_def("postscript")
+        except Exception as e:
+            print("could not probe for pdf/postscript printers: %s" % e)
+    SUBS = {'xvfb_command'          : " ".join(xvfb_command),
+            'ssh_command'           : DEFAULT_SSH_COMMAND,
+            'remote_logging'        : bstr(OSX or WIN32),
+            'env'                   : env,
+            'has_displayfd'         : bstr(has_displayfd),
+            'pulseaudio_command'    : DEFAULT_PULSEAUDIO_COMMAND,
+            'conf_dir'              : conf_dir,
+            'socket_dirs'           : "\nsocket-dirs = ".join(socket_dirs),
+            'log_dir'               : get_default_log_dir(),
+            'mdns'                  : bstr(not WIN32),
+            'dbus_proxy'            : bstr(not OSX and not WIN32),
+            'pulseaudio'            : bstr(not OSX and not WIN32),
+            'pdf_printer'           : pdf,
+            "postscript_printer"    : postscript,
+            }
     conf = template % SUBS
     #get conf dir for install, without stripping the build root
     conf_dir = get_conf_dir(install_dir, stripbuildroot=False)
