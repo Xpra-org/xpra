@@ -229,7 +229,7 @@ class ServerBase(ServerCore):
                 self.printing = False
         self.notifications_forwarder = None
         self.notifications = opts.notifications
-        self.scaling_control = parse_bool_or_int("scaling", opts.scaling)
+        self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
 
         #sound:
         self.pulseaudio = opts.pulseaudio
