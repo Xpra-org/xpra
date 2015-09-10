@@ -33,6 +33,7 @@ SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
+CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -627,6 +628,22 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--clipboard-filter-file", action="store",
                       dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
                       help="Name of a file containing regular expressions of clipboard contents that must be filtered out")
+    from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
+    #this is ugly, but we don't know which clipboard class will be used at this point,
+    #we just try to figure it out as best we can:
+    if CLIPBOARD_NATIVE_CLASS and CLIPBOARD_NATIVE_CLASS.find("translated")>0 or CLIPBOARD_CLASS and CLIPBOARD_CLASS.find("translated")>0:
+        #only used on win32
+        group.add_option("--local-clipboard", action="store",
+                          dest="local_clipboard", default=defaults.local_clipboard,
+                          metavar="SELECTION",
+                          help="Name of the local clipboard selection to be synchronized (default: %default)")
+        group.add_option("--remote-clipboard", action="store",
+                          dest="remote_clipboard", default=defaults.remote_clipboard,
+                          metavar="SELECTION",
+                          help="Name of the remote clipboard selection to be synchronized (default: %default)")
+    else:
+        hidden_options["remote_clipboard"] = defaults.remote_clipboard
+        hidden_options["local_clipboard"] = defaults.local_clipboard
     group.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=defaults.remote_xpra,
                       metavar="CMD",

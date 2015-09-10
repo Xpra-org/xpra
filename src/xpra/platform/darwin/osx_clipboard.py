@@ -125,9 +125,9 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
         * CLIPBOARD_WANT_TARGETS: include targets with the tokens
     """
 
-    def __init__(self, send_packet_cb, progress_cb=None):
+    def __init__(self, *args, **kwargs):
         init_pasteboard()
-        GDKClipboardProtocolHelper.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD"])
+        GDKClipboardProtocolHelper.__init__(self, *args, **kwargs)
 
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)

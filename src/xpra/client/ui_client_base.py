@@ -555,6 +555,9 @@ class UIXpraClient(XpraClientBase):
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
         return KeyboardHelper(self.send, keyboard_sync, key_shortcuts)
 
+    def get_clipboard_helper_classes(self):
+        return []
+
     def make_clipboard_helper(self):
         raise Exception("override me!")
 
@@ -1466,6 +1469,10 @@ class UIXpraClient(XpraClientBase):
         if self.clipboard_enabled:
             self.clipboard_helper = self.make_clipboard_helper()
             self.clipboard_enabled = self.clipboard_helper is not None
+            if self.clipboard_enabled and self.server_supports_clipboard_enable_selections:
+                #tell the server about which selections we really want to sync with
+                #(could have been translated, or limited if the client only has one, etc)
+                self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
         self.set_max_packet_size()
         self.send_deflate_level()
         c = self.server_capabilities

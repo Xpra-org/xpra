@@ -39,10 +39,15 @@ class XpraClient(GTKXpraClient):
         self.border = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
+        #only used with the translated clipboard class:
+        self.local_clipboard = ""
+        self.remote_clipboard = ""
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
         self.ClientWindowClass = BorderClientWindow
+        self.remote_clipboard = opts.remote_clipboard
+        self.local_clipboard = opts.local_clipboard
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
 
@@ -169,23 +174,38 @@ class XpraClient(GTKXpraClient):
             return
         self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
 
+
+    def get_clipboard_helper_classes(self):
+        from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
+        from xpra.scripts.main import CLIPBOARD_CLASS
+        #first add the platform specific one, (may be None):
+        clipboard_options = []
+        if CLIPBOARD_CLASS:
+            clipboard_options.append(CLIPBOARD_CLASS)
+        if CLIPBOARD_NATIVE_CLASS:
+            clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
+        clipboard_options.append("xpra.clipboard.gdk_clipboard.GDKClipboardProtocolHelper")
+        clipboard_options.append("xpra.clipboard.clipboard_base.DefaultClipboardProtocolHelper")
+        clipboardlog("get_clipboard_helper_classes()=%s", clipboard_options)
+        return clipboard_options
+
     def make_clipboard_helper(self):
         """
             Try the various clipboard classes until we find one
             that loads ok. (some platforms have more options than others)
         """
-        from xpra.platform.features import CLIPBOARDS, CLIPBOARD_NATIVE_CLASS
-        clipboards = [x for x in CLIPBOARDS if x in self.server_clipboards]
-        clipboardlog("make_clipboard_helper() server_clipboards=%s, local clipboards=%s, common=%s", self.server_clipboards, CLIPBOARDS, clipboards)
+        from xpra.platform.features import CLIPBOARDS
+        clipboard_options = self.get_clipboard_helper_classes()
+        clipboardlog("make_clipboard_helper() options=%s, server_clipboards=%s, local clipboards=%s", clipboard_options, self.server_clipboards, CLIPBOARDS)
         #first add the platform specific one, (may be None):
-        clipboard_options = []
-        if CLIPBOARD_NATIVE_CLASS:
-            clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
-        clipboard_options.append(("xpra.clipboard.gdk_clipboard", "GDKClipboardProtocolHelper", {"clipboards" : clipboards}))
-        clipboard_options.append(("xpra.clipboard.clipboard_base", "DefaultClipboardProtocolHelper", {"clipboards" : clipboards}))
-        clipboardlog("make_clipboard_helper() clipboard_options=%s", clipboard_options)
-        for module_name, classname, kwargs in clipboard_options:
-            c = self.try_load_clipboard_helper(module_name, classname, kwargs)
+        kwargs= {"clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
+                 "clipboards.remote"    : self.server_clipboards,       #all the remote clipboards supported
+                 "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)
+                 "clipboard.remote"     : self.remote_clipboard}        #the remote clipboard we want to we sync to (with the translated clipboard only)
+        clipboardlog("make_clipboard_helper() clipboard_options=%s, kwargs=%s", clipboard_options, kwargs)
+        for classname in clipboard_options:
+            module_name, _class = classname.rsplit(".", 1)
+            c = self.try_load_clipboard_helper(module_name, _class, kwargs)
             if c:
                 return c
         return None
@@ -200,6 +220,10 @@ class XpraClient(GTKXpraClient):
                 c = getattr(m, classname)
                 if c:
                     return self.setup_clipboard_helper(c, **kwargs)
+        except ImportError as e:
+            clipboardlog.error("Error: cannot load %s.%s:", module, classname)
+            clipboardlog.error(" %s", e)
+            return None
         except:
             clipboardlog.error("cannot load %s.%s", module, classname, exc_info=True)
             return None

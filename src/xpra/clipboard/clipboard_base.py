@@ -58,11 +58,12 @@ TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
 
 class ClipboardProtocolHelperBase(object):
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None):
+    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
         self.filter_res = []
+        filter_res = kwargs.get("filters")
         if filter_res:
             for x in filter_res:
                 try:
@@ -73,7 +74,8 @@ class ClipboardProtocolHelperBase(object):
         self._clipboard_outstanding_requests = {}
         self._want_targets = False
         self.init_packet_handlers()
-        self.init_proxies(clipboards)
+        self.init_proxies(kwargs.get("clipboards.local", CLIPBOARDS))
+        self.remote_clipboards = kwargs.get("clipboards.remote", CLIPBOARDS)
 
     def __str__(self):
         return "ClipboardProtocolHelperBase"
@@ -101,7 +103,7 @@ class ClipboardProtocolHelperBase(object):
 
     def enable_selections(self, selections):
         #when clients first connect or later through the "clipboard-enable-selections" packet,
-        #clients can tell us which clipboard selections they want enabled
+        #they can tell us which clipboard selections they want enabled
         #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_enabled(selection in selections)

@@ -494,6 +494,7 @@ class GTKTrayMenuBase(object):
                         if self.client.clipboard_helper is None:
                             self.client.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
                         self.client.clipboard_helper.remote_clipboard = remote_clipboard
+                        self.client.clipboard_helper.remote_clipboards = [remote_clipboard]
                         send_tokens = True
                         new_state = True
                         selections = [remote_clipboard]
@@ -525,10 +526,11 @@ class GTKTrayMenuBase(object):
 
     def make_clipboardmenuitem(self):
         try:
-            from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
-            #ugly alert: the helper does not exist yet.. we just check the helper classname:
-            if CLIPBOARD_NATIVE_CLASS and CLIPBOARD_NATIVE_CLASS[0].find("translated_clipboard")>0:
-                return self.make_translatedclipboard_optionsmenuitem()
+            copts = self.client.get_clipboard_helper_classes()
+            #ugly alert: the helper does not exist yet.. we just check the helper classnames:
+            for c in copts:
+                if c.find("translated_clipboard")>0:
+                    return self.make_translatedclipboard_optionsmenuitem()
         except:
             clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
         return self.make_clipboard_togglemenuitem()

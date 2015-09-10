@@ -456,7 +456,8 @@ class ServerBase(ServerCore):
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, CLIPBOARDS, clipboard_filter_res)
+            kwargs = {"filters" : clipboard_filter_res}
+            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
             self._clipboards = CLIPBOARDS
         except Exception as e:
             clipboardlog.error("failed to setup clipboard helper: %s" % e)
@@ -949,7 +950,7 @@ class ServerBase(ServerCore):
             #the selections the client supports (default to all):
             from xpra.platform.features import CLIPBOARDS
             client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-            clipboardlog("process_hello server has clipboards: %s, client supports: %s", self._clipboards, client_selections)
+            clipboardlog("process_hello server has clipboards: %s, client initial selections: %s", self._clipboards, client_selections)
             self._clipboard_helper.enable_selections(client_selections)
 
     def parse_hello_ui_keyboard(self, ss, c):

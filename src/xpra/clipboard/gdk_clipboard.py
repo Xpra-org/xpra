@@ -11,16 +11,13 @@ from xpra.gtk_common.gdk_atoms import (
                 gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
                 )
 
-from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, CLIPBOARDS, log
+from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
     """ This clipboard helper adds the ability to parse raw X11 atoms
         to and from a form suitable for transport over the wire.
     """
-
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None):
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, clipboards, filter_res)
 
     def __str__(self):
         return "GDKClipboardProtocolHelper"
