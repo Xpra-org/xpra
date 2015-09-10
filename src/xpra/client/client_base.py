@@ -785,21 +785,23 @@ class XpraClientBase(object):
         #send-file basefilename, printit, openit, filesize, 0, data)
         from xpra.platform.paths import get_download_dir
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:11]
-        filelog("received file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         options = typedict(options)
         if printit:
+            l = printlog
             assert self.printing
         else:
+            l = filelog
             assert self.file_transfer
+        l("received file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         assert filesize>0, "invalid file size: %s" % filesize
         assert file_data, "no data!"
         if len(file_data)!=filesize:
-            log.error("Error: invalid data size for file '%s'", basefilename)
-            log.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
+            l.error("Error: invalid data size for file '%s'", basefilename)
+            l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         if filesize>self.file_size_limit*1024*1024:
-            log.error("Error: file '%s' is too large:", basefilename)
-            log.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
+            l.error("Error: file '%s' is too large:", basefilename)
+            l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
             return            
         #check digest if present:
         import hashlib
@@ -809,10 +811,10 @@ class XpraClientBase(object):
                 return
             u = libfn()
             u.update(file_data)
-            filelog("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
+            l("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
             if digest!=u.hexdigest():
-                log.error("Error: data does not match, invalid %s file digest for %s", algo, basefilename)
-                log.error(" received %s, expected %s", u.hexdigest(), digest)
+                l.error("Error: data does not match, invalid %s file digest for %s", algo, basefilename)
+                l.error(" received %s, expected %s", u.hexdigest(), digest)
                 return
         check_digest("sha1", hashlib.sha1)
         check_digest("md5", hashlib.md5)
@@ -834,7 +836,7 @@ class XpraClientBase(object):
         filename = wanted_filename
         base = 0
         while os.path.exists(filename):
-            filelog("cannot save file as %s: file already exists", filename)
+            l("cannot save file as %s: file already exists", filename)
             root, ext = os.path.splitext(wanted_filename)
             base += 1
             filename = root+("-%s" % base)+ext
@@ -848,8 +850,8 @@ class XpraClientBase(object):
             os.write(fd, file_data)
         finally:
             os.close(fd)
-        filelog.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "unknown"), ["", " for printing"][int(printit)])
-        filelog.info(" %s", filename)
+        l.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "unknown"), ["", " for printing"][int(printit)])
+        l.info(" %s", filename)
         if printit:
             printer = options.strget("printer")
             title   = options.strget("title")
@@ -858,7 +860,7 @@ class XpraClientBase(object):
             #copies = options.intget("copies")
             #whitelist of options we can forward:
             safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
-            printlog("safe print options(%s) = %s", options, safe_print_options)
+            l("safe print options(%s) = %s", options, safe_print_options)
             self._print_file(filename, mimetype, printer, title, safe_print_options)
             return
         elif openit:
