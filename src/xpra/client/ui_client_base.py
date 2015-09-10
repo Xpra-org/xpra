@@ -843,7 +843,7 @@ class UIXpraClient(XpraClientBase):
         def send_button(state):
             self.send_positional(["button-action", wid,
                                               button, state,
-                                              self.scale_pointer(pointer), modifiers, buttons])
+                                              pointer, modifiers, buttons])
         pressed_state = self._button_state.get(button, False)
         if PYTHON3 and WIN32 and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
