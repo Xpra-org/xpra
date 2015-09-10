@@ -164,7 +164,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("video"        , "Video codecs"),
                 ("score"        , "Video pipeline scoring and selection"),
                 ("encoding"     , "Server side encoding selection and compression"),
-                ("scaling"      , "Scaling: automatic scaling calculations"),
+                ("scaling"      , "Picture scaling"),
                 ("delta"        , "Delta pre-compression"),
                 ("xor"          , "XOR delta pre-compression"),
                 ("subregion"    , "Video subregion processing"),

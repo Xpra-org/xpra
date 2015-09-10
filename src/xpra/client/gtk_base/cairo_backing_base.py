@@ -35,6 +35,10 @@ class CairoBackingBase(GTKWindowBacking):
         self.render_size = ww, wh
         old_backing = self._backing
         #should we honour self.depth here?
+        self._backing = None
+        if w==0 or h==0:
+            #this can happen during cleanup
+            return
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
         cr = cairo.Context(self._backing)
         cr.set_operator(cairo.OPERATOR_CLEAR)

@@ -135,13 +135,13 @@ csc-modules = all
 # video-decoders = all
 video-decoders = all
 
-# Automatic window downscaling:
-# scaling = 0		#same as off
-# scaling = off
-# scaling = on
-# scaling = 10		#mild automatic scaling
-# scaling = 100		#very aggressive scaling
-scaling = on
+# Automatic video downscaling:
+# video-scaling = 0		#same as off
+# video-scaling = off
+# video-scaling = on
+# video-scaling = 10		#mild automatic downscaling
+# video-scaling = 100		#very aggressive downscaling
+video-scaling = on
 
 # Use fixed quality
 # (value is a percentage or "auto"):

@@ -259,7 +259,7 @@ class UIXpraClient(XpraClientBase):
         """ initialize variables from configuration """
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
-        self.scaling = parse_bool_or_int("scaling", opts.scaling)
+        self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.title = opts.title
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -1106,7 +1106,7 @@ class UIXpraClient(XpraClientBase):
             })
         updict(capabilities, "encoding", {
             "flush"                     : True,
-            "scaling.control"           : self.scaling,
+            "scaling.control"           : self.video_scaling,
             "client_options"            : True,
             "csc_atoms"                 : True,
             #TODO: check for csc support (swscale only?)
