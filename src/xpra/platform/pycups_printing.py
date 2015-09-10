@@ -352,7 +352,7 @@ def main():
     try:
         init("PyCUPS Printing")
         enable_color()
-        init_printing()
+        validate_setup()
         for k,v in get_printer_definitions().items():
             log.info("* %-32s: %s", k, v)
     finally:
