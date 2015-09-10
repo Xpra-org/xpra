@@ -103,6 +103,7 @@ Suggests: openssh-server
         ,pulseaudio-utils
 # for printer forwarding:
         ,cups-filters
+        ,cups-common
         ,cups-pdf
         ,python-cups
 # for notifications forwarding:
