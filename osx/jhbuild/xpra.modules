@@ -144,9 +144,9 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
-    <branch module="/pub/x264/snapshots/x264-snapshot-20150727-2245-stable.tar.bz2"
-			version="20150727-2245-stable"
-                        hash="md5:839cb78e0d43085a66ed67ad2897439a"
+    <branch module="/pub/x264/snapshots/x264-snapshot-20150909-2245-stable.tar.bz2"
+			version="20150909-2245-stable"
+                        hash="md5:173cdffc41b428d38b1039d80f02a820"
             repo="download.videolan.org"/>
   <dependencies>
       <dep package="yasm"/>
