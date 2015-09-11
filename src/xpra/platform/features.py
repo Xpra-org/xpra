@@ -14,6 +14,7 @@ SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
 SYSTEM_TRAY_SUPPORTED = False
+REINIT_WINDOWS = False
 
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = False
@@ -46,6 +47,7 @@ _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "CAN_DAEMONIZE",
                 "MMAP_SUPPORTED",
                 "SYSTEM_TRAY_SUPPORTED",
+                "REINIT_WINDOWS",
                 "DEFAULT_ENV",
                 "DEFAULT_SSH_COMMAND",
                 "DEFAULT_PULSEAUDIO_COMMAND",

@@ -37,7 +37,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
-from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
+from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_double_click_time, show_desktop,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_dpi, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
@@ -61,7 +61,7 @@ FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
-REINIT_WINDOWS = os.environ.get("XPRA_MONITOR_CHANGE_REINIT", "0")=="1"
+MONITOR_CHANGE_REINIT = os.environ.get("XPRA_MONITOR_CHANGE_REINIT")
 
 AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
@@ -734,9 +734,12 @@ class UIXpraClient(XpraClientBase):
 
     def do_process_screen_size_change(self):
         self.update_screen_size()
-        if REINIT_WINDOWS:
+        if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":
+            return
+        if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
             screenlog.info("screen size change: will reinit the windows")
-            self.reinit_windows()
+            for window in self._id_to_window.values():
+                window.send_configure()
 
 
     def update_screen_size(self):

@@ -8,6 +8,7 @@
 CAN_DAEMONIZE = False
 MMAP_SUPPORTED = False
 SYSTEM_TRAY_SUPPORTED = True
+REINIT_WINDOWS = True
 
 GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'

@@ -55,6 +55,10 @@ class ClientTray(ClientWidgetBase):
     def get_tray_size(self):
         return self.tray_widget.get_size()
 
+
+    def send_configure(self):
+        self.reconfigure(True)
+
     def reconfigure(self, force_send_configure=False):
         geometry = self.tray_widget.get_geometry()
         log("%s.reconfigure(%s) geometry=%s", self, force_send_configure, geometry)

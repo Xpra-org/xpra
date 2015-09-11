@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 SYSTEM_TRAY_SUPPORTED = True
+REINIT_WINDOWS = True
 
 CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_WANT_TARGETS = True

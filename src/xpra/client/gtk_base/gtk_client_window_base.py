@@ -817,6 +817,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return frame
 
 
+    def send_configure(self):
+        self.process_configure_event()
+
     def do_configure_event(self, event):
         eventslog("%s.do_configure_event(%s)", self, event)
         gtk.Window.do_configure_event(self, event)
