@@ -811,7 +811,7 @@ class UIXpraClient(XpraClientBase):
         from xpra.os_util import get_int_uuid
         from xpra.net.mmap_pipe import init_client_mmap
         #calculate size:
-        root_w, root_h = self.cp(self.get_root_size())
+        root_w, root_h = self.cp(*self.get_root_size())
         #at least 128MB, or 8 fullscreen RGBX frames:
         mmap_size = max(128*1024*1024, root_w*root_h*4*8)
         mmap_size = min(1024*1024*1024, mmap_size)
