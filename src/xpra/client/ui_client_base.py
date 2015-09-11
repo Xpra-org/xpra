@@ -379,6 +379,18 @@ class UIXpraClient(XpraClientBase):
         scalinglog("parse_scaling(%s)", desktop_scaling)
         if desktop_scaling in TRUE_OPTIONS:
             return 1, 1
+        root_w, root_h = self.get_root_size()
+        if desktop_scaling=="auto":
+            #with auto mode, enable scaling if the desktop is very big:
+            if root_w<=1920 or root_h<=1080:
+                return 1,1              #100% no auto scaling up to 1080p
+            if root_w<=2560 or root_h<=1600:
+                return 1.5,1.5          #150% upscaling up to WQXGA
+            if root_w<=3960 or root_h<=2160:
+                return 2,2              #200% upscaling up to UHD
+            if root_w<=7680 or root_h<=4320:
+                return 3,3              #300% upscaling up to FUHD
+            return 4,4                  #400% if higher (who has this anyway?)
         def parse_item(v):
             try:
                 return int(v)           #ie: desktop-scaling=2
@@ -410,7 +422,6 @@ class UIXpraClient(XpraClientBase):
                 return 1, 1
         scalinglog("parse_scaling(%s) parsed items=%s", (x, y))
         #normalize absolute values into floats:
-        root_w, root_h = self.get_root_size()
         if x>MAX_SCALING or y>MAX_SCALING:
             scalinglog(" normalizing dimensions to a ratio of %ix%i", root_w, root_h)
             x = float(x / root_w)
