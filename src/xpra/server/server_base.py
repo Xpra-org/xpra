@@ -927,6 +927,10 @@ class ServerBase(ServerCore):
         #prefer desktop size, fallback to screen size:
         w = dw or sw
         h = dh or sh
+        #clamp to max supported:
+        maxw, maxh = self.get_max_screen_size()
+        w = min(w, maxw)
+        h = min(h, maxh)
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)
@@ -1709,6 +1713,8 @@ class ServerBase(ServerCore):
     def send_updated_screen_size(self):
         max_w, max_h = self.get_max_screen_size()
         root_w, root_h = self.get_root_window_size()
+        root_w = min(root_w, max_w)
+        root_h = min(root_h, max_h)
         count = 0
         for ss in self._server_sources.values():
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
