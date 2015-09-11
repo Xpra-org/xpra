@@ -527,6 +527,7 @@ class ClientExtras(object):
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
                 el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
+                el.add_event_callback(win32con.WM_MOVE, self.wm_move)
         except Exception as e:
             log.error("cannot register focus and power callbacks: %s", e)
 
@@ -541,21 +542,31 @@ class ClientExtras(object):
         log("ClientExtras.cleanup() ended")
         #self.client = None
 
+    def wm_move(self, wParam, lParam):
+        c = self.client
+        log("WM_MOVE: %s/%s client=%s", wParam, lParam, c)
+        if c:
+            #this is not really a screen size change event,
+            #but we do want to process it as such (see window reinit code)
+            c.screen_size_changed()
+
     def activateapp(self, wParam, lParam):
-        log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, self.client)
-        if wParam==0 and self.client:
+        c = self.client
+        log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, c)
+        if wParam==0 and c:
             #our app has lost focus
-            self.client.update_focus(0, False)
+            c.update_focus(0, False)
 
     def power_broadcast_event(self, wParam, lParam):
-        log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, self.client)
+        c = self.client
+        log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, c)
         #maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
-        if wParam==win32con.PBT_APMSUSPEND and self.client:
-            self.client.suspend()
+        if wParam==win32con.PBT_APMSUSPEND and c:
+            c.suspend()
         #According to the documentation:
         #The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
-        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and self.client:
-            self.client.resume()
+        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and c:
+            c.resume()
 
     def setup_console_event_listener(self, enable=True):
         try:
