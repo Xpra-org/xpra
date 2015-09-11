@@ -293,6 +293,19 @@ key-shortcut = Meta+Shift+underscore:scaledown
 #border=1,red
 #border=no
 
+# Desktop Scaling:
+# - double the size of all windows:
+#desktop-scaling = 2
+# - increase the size by 50%%:
+#desktop-scaling = 1.5
+#desktop-scaling = 3/2
+# - disable all desktop scaling:
+#desktop-scaling = off
+#desktop-scaling = 0
+# - enable desktop scaling, but start with no scaling activated:
+#desktop-scaling = 1
+#desktop-scaling = on
+desktop-scaling = on
 
 ########################################################################
 # Server Options:

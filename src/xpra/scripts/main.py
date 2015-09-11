@@ -544,6 +544,14 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="max_size", default=defaults.max_size,
                       metavar="MAX_SIZE",
                       help="The maximum size for all windows, ie: 800x600. Default: '%default'.")
+    group.add_option("--desktop-scaling", action="store",
+                      dest="desktop_scaling", default=defaults.desktop_scaling,
+                      metavar="SCALING",
+                      help="How much to scale the client desktop by."
+                            " This value can be specified in the form of absolute pixels: \"WIDTHxHEIGHT\""
+                            " as a fraction: \"3/2\" or just as a decimal number: \"1.5\"."
+                            " You can also specify each dimension individually: \"2x1.5\"."
+                            " Default: '%default'.")
     group.add_option("--border", action="store",
                       dest="border", default=defaults.border,
                       help="The border to draw inside xpra windows to distinguish them from local windows."

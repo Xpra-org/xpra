@@ -44,7 +44,7 @@ from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_i
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
-from xpra.scripts.config import parse_bool_or_int
+from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
@@ -70,19 +70,8 @@ PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
 PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
 
 
-try:
-    X_SCALING = float(os.environ["XPRA_X_SCALING"])
-    assert X_SCALING>0.1 and X_SCALING<10, "XPRA_X_SCALING is out of range: %s" % X_SCALING
-except Exception as e:
-    scalinglog("using default xscale=1: %s", e)
-    X_SCALING = 1
-try:
-    Y_SCALING = float(os.environ["XPRA_Y_SCALING"])
-    assert Y_SCALING>0.1 and Y_SCALING<10, "XPRA_Y_SCALING is out of range: %s" % Y_SCALING
-except:
-    Y_SCALING = 1
-scalinglog("scaling: %sx%s", X_SCALING, Y_SCALING)
-
+MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
+MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "20"))
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
@@ -122,9 +111,8 @@ class UIXpraClient(XpraClientBase):
         self.auto_refresh_delay = -1
         self.max_window_size = 0, 0
         self.dpi = 0
-        self.xscale = X_SCALING
-        self.yscale = Y_SCALING
-        scalinglog("scaling: %sx%s", self.xscale, self.yscale)
+        self.xscale = 1
+        self.yscale = 1
 
         #draw thread:
         self._draw_queue = None
@@ -271,6 +259,10 @@ class UIXpraClient(XpraClientBase):
                 #the main script does some checking, but we could be called from a config file launch
                 log.warn("Warning: invalid window max-size specified: %s", opts.max_size)
                 self.max_window_size = 0, 0
+        self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
+        if self.can_scale:
+            self.xscale, self.yscale = self.parse_scaling(opts.desktop_scaling)
+
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
@@ -382,6 +374,52 @@ class UIXpraClient(XpraClientBase):
     def parse_border(self, border_str, extra_args):
         #not implemented here (see gtk2 client)
         pass
+
+    def parse_scaling(self, desktop_scaling):
+        scalinglog("parse_scaling(%s)", desktop_scaling)
+        if desktop_scaling in TRUE_OPTIONS:
+            return 1, 1
+        def parse_item(v):
+            try:
+                return int(v)           #ie: desktop-scaling=2
+            except:
+                pass
+            try:
+                return float(v)         #ie: desktop-scaling=1.5
+            except:
+                pass
+            #ie: desktop-scaling=3/2, or desktop-scaling=3:2
+            pair = v.replace(":", "/").split("/", 1)
+            try:
+                return float(pair[0])/float(pair[1])
+            except:
+                pass
+            scalinglog.warn("Warning: failed to parse scaling value '%s'", v)
+            return None
+        #split if we have two dimensions: "1600x1200" -> ["1600", "1200"], if not: "2" -> ["2"]
+        values = desktop_scaling.replace(",", "x").split("x", 1)
+        x = parse_item(values[0])
+        if x is None:
+            return 1, 1
+        if len(values)==1:
+            #just one value: use the same for X and Y
+            y = x
+        else:
+            y = parse_item(values[1])
+            if y is None:
+                return 1, 1
+        scalinglog("parse_scaling(%s) parsed items=%s", (x, y))
+        #normalize absolute values into floats:
+        root_w, root_h = self.get_root_size()
+        if x>MAX_SCALING or y>MAX_SCALING:
+            scalinglog(" normalizing dimensions to a ratio of %ix%i", root_w, root_h)
+            x = float(x / root_w)
+            y = float(y / root_h)
+        if x<MIN_SCALING or y<MIN_SCALING or x>MAX_SCALING or y>MAX_SCALING:
+            scalinglog.warn("Warning: scaling values %sx%s are out of range", x, y)
+            return 1, 1
+        scalinglog("parse_scaling(%s)=%s", desktop_scaling, (x, y))
+        return x, y
 
 
     def run(self):
@@ -765,17 +803,26 @@ class UIXpraClient(XpraClientBase):
 
 
     def scaleup(self):
-        #TODO: wait until the server has actually updated it?
-        self.xscale = min(10, self.xscale*2)
-        self.yscale = min(10, self.yscale*2)
+        if self.screen_size_change_pending:
+            scalinglog("scaleup() screen size change is already pending")
+            return
+        if not self.can_scale:
+            scalinglog("scaleup() ignored, scaling is disabled")
+            return
+        self.xscale = min(MAX_SCALING, self.xscale*2)
+        self.yscale = min(MAX_SCALING, self.yscale*2)
         scalinglog("scaleup() new scaling: %sx%s", self.xscale, self.yscale)
         self.scale_reinit(2, 2)
 
     def scaledown(self):
         if self.screen_size_change_pending:
+            scalinglog("scaledown() screen size change is already pending")
             return
-        self.xscale = max(0.1, self.xscale*0.5)
-        self.yscale = max(0.1, self.yscale*0.5)
+        if not self.can_scale:
+            scalinglog("scaledown() ignored, scaling is disabled")
+            return
+        self.xscale = max(MIN_SCALING, self.xscale*0.5)
+        self.yscale = max(MIN_SCALING, self.yscale*0.5)
         scalinglog("scaledown() new scaling: %sx%s", self.xscale, self.yscale)
         self.scale_reinit(0.5, 0.5)
 
