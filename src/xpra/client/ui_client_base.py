@@ -814,28 +814,53 @@ class UIXpraClient(XpraClientBase):
 
 
     def scaleup(self):
-        if self.screen_size_change_pending:
-            scalinglog("scaleup() screen size change is already pending")
-            return
-        if not self.can_scale:
-            scalinglog("scaleup() ignored, scaling is disabled")
-            return
-        self.xscale = min(MAX_SCALING, self.xscale*2)
-        self.yscale = min(MAX_SCALING, self.yscale*2)
-        scalinglog("scaleup() new scaling: %sx%s", self.xscale, self.yscale)
-        self.scale_reinit(2, 2)
+        self.scale_change(2, 2)
 
     def scaledown(self):
-        if self.screen_size_change_pending:
-            scalinglog("scaledown() screen size change is already pending")
-            return
+        self.scale_change(0.5, 0.5)
+
+    def scale_change(self, xchange=1, ychange=1):
         if not self.can_scale:
-            scalinglog("scaledown() ignored, scaling is disabled")
+            scalinglog("scale_change(%s, %s) ignored, scaling is disabled", xchange, ychange)
             return
-        self.xscale = max(MIN_SCALING, self.xscale*0.5)
-        self.yscale = max(MIN_SCALING, self.yscale*0.5)
-        scalinglog("scaledown() new scaling: %sx%s", self.xscale, self.yscale)
-        self.scale_reinit(0.5, 0.5)
+        if self.screen_size_change_pending:
+            scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
+            return
+        def clamp(v):
+            return max(MIN_SCALING, min(MAX_SCALING, v))
+        xscale = clamp(self.xscale*xchange)
+        yscale = clamp(self.yscale*ychange)
+        scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
+        scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
+        #check against maximum server supported size:
+        maxw, maxh = self.server_max_desktop_size
+        root_w, root_h = self.get_root_size()
+        sw = int(root_w / xscale)
+        sh = int(root_h / yscale)
+        scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)
+        scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
+        if sw>(maxw+1) or sh>(maxh+1):
+            #would overflow..
+            v = clamp(max(float(maxw)/root_w, float(maxh)/root_h))
+            #prefer int over float:
+            try:
+                v = int(str(v).rstrip("0").rstrip("."))
+            except:
+                pass
+            scalinglog.warn("Warning: cannot scale by %s x %s", xscale, yscale)
+            scalinglog.warn(" the scaled client screen %i x %i -> %i x %i", root_w, root_h, sw, sh)
+            scalinglog.warn(" would overflow the server's screen: %i x %i", maxw, maxh)
+            scalinglog.warn(" using %s x %s", v, v)
+            xscale = v
+            yscale = v
+            xchange = xscale / self.xscale 
+            ychange = yscale / self.yscale 
+            scalinglog("xscale was %s, now %s", self.xscale, xscale)
+            scalinglog("yscale was %s, now %s", self.yscale, yscale)
+        self.xscale = xscale
+        self.yscale = yscale
+        scalinglog("scale_change new scaling: %sx%s, change: %sx%s", self.xscale, self.yscale, xchange, ychange)
+        self.scale_reinit(xchange, ychange)
 
     def scale_reinit(self, xchange=1.0, ychange=1.0):
         #re-initialize all the windows with their new size
@@ -1543,6 +1568,8 @@ class UIXpraClient(XpraClientBase):
         log("server desktop size=%s", server_desktop_size)
         if not c.boolget("shadow"):
             assert server_desktop_size
+            if self.can_scale:
+                self.may_adjust_scaling()
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
@@ -2409,10 +2436,35 @@ class UIXpraClient(XpraClientBase):
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
-        log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
+        screenlog("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         self.server_max_desktop_size = max_w, max_h
         self.server_actual_desktop_size = root_w, root_h
+        if self.can_scale:
+            self.may_adjust_scaling()
 
+
+    def may_adjust_scaling(self):
+        assert self.can_scale
+        max_w, max_h = self.server_max_desktop_size             #ie: server limited to 8192x4096?
+        w, h = self.get_root_size()                             #ie: 5760, 2160
+        sw, sh = self.cp(w, h)                                  #ie: upscaled to: 11520x4320 
+        scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s", self.server_actual_desktop_size, self.get_root_size())
+        scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
+        if sw>(max_w+1) or sh>(max_h+1):
+            #server size is too small for this scaling, change it
+            def clamp(v):
+                return max(MIN_SCALING, min(MAX_SCALING, v))
+            v = clamp(max(float(w)/max_w, float(h)/max_h))
+            #prefer int over float:
+            try:
+                v = int(str(v).rstrip("0").rstrip("."))
+            except:
+                pass
+            self.xscale = v
+            self.yscale = v
+            scalinglog.warn("Warning: adjusting scaling to accomodate server")
+            scalinglog.warn(" server desktop size is %ix%i, using scaling factor %s", max_w, max_h, v)
+            
 
     def set_max_packet_size(self):
         root_w, root_h = self.cp(*self.get_root_size())

@@ -28,6 +28,7 @@ keylog = Logger("x11", "server", "keyboard")
 mouselog = Logger("x11", "server", "mouse")
 grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
+screenlog = Logger("server", "screen")
 
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -270,7 +271,8 @@ class X11ServerBase(GTKServerBase):
                 max_w = max(max_w, w)
                 max_h = max(max_h, h)
         if max_w>MAX_WINDOW_SIZE or max_h>MAX_WINDOW_SIZE:
-            log.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
+            screenlog.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
+        screenlog("get_max_screen_size()=%s", (max_w, max_h))
         return max_w, max_h
 
 
