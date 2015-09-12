@@ -841,12 +841,15 @@ class UIXpraClient(XpraClientBase):
         scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
         if sw>(maxw+1) or sh>(maxh+1):
             #would overflow..
-            v = clamp(max(float(maxw)/root_w, float(maxh)/root_h))
+            v = clamp(max(float(root_w)/maxw, float(root_h)/maxh))
             #prefer int over float:
             try:
                 v = int(str(v).rstrip("0").rstrip("."))
             except:
                 pass
+            if self.xscale==v and self.yscale==v:
+                #no change needed
+                return
             scalinglog.warn("Warning: cannot scale by %s x %s", xscale, yscale)
             scalinglog.warn(" the scaled client screen %i x %i -> %i x %i", root_w, root_h, sw, sh)
             scalinglog.warn(" would overflow the server's screen: %i x %i", maxw, maxh)
