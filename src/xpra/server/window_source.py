@@ -1178,7 +1178,7 @@ class WindowSource(object):
                     regions = merged_rects
 
             #check to see if the total amount of pixels makes us use a fullscreen update instead:
-            if len(regions)>1:
+            if len(regions)>1 and exclude_region is None:
                 pixel_count = sum(rect.width*rect.height for rect in regions)
                 actual_encoding = get_encoding(pixel_count)
                 log("send_delayed_regions: %s regions with %s pixels (encoding=%s, actual=%s)", len(regions), pixel_count, coding, actual_encoding)
