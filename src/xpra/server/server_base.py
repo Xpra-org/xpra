@@ -1216,9 +1216,13 @@ class ServerBase(ServerCore):
             argp = arg.split("=", 1)
             if len(argp)==2 and len(argp[0])>0:
                 options[argp[0]] = argp[1]
+        data = load_binary_file(actual_filename)
+        file_size_MB = len(data)//1024//1024
+        if file_size_MB>self.file_size_limit:
+            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_size_limit))
         for ss in sources:
             if ss.printing:
-                ss.send_file(actual_filename, True, True, ss, maxbitrate, printer, title, options)
+                ss.send_file(filename, "", data, True, True, options)
             else:
                 printlog.warn("client %s does not support printing!", ss)
         return "printing to %s initiated" % client_uuids
