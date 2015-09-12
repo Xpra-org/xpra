@@ -37,7 +37,7 @@ class DamageBatchConfig(object):
     """
     Encapsulate all the damage batching configuration into one object.
     """
-    ALWAYS = False
+    ALWAYS = ival("ALWAYS", 0, 0, 1)==1
     MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
     MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames
     TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
