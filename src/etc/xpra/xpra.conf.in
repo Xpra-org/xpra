@@ -23,6 +23,11 @@
 # Enable clipboard forwarding:
 #clipboard = yes
 #clipboard = no
+# Can also be used to specify a different keyboard implementation:
+#clipboard = GDK
+#clipboard = translated
+#clipboard = default
+#clipboard = auto
 clipboard = yes
 
 # Forward notifications:

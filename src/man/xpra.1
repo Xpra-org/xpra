@@ -25,7 +25,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-csc\-modules\fP=\fIMODULES\fP]
 [\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
-[\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
@@ -415,11 +415,27 @@ and reduces both CPU consumption and local network traffic.
 Enable or disable the forwarding of windows. This is usually
 the primary use for xpra and should be enabled.
 .TP
-\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP
+\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP
 Enable or disable clipboard synchronization.
-If used on the server, no clients will be able to use clipboard
-synchronization at all. If used on the client, only this particular
-connection will ignore clipboard data from the server.
+If disabled on the server, no clients will be able to use clipboard
+synchronization at all. If turned off on the client, only this
+particular connection will ignore clipboard data from the server.
+This can also be used to specify a different clipboard implementation.
+The clipboard types available will vary from platform to platform and
+also depend on build time environment and options
+so this is best left on \fBauto\fP.
+Other clipboard types available may include:
+.RS
+.IP \fBtranslated\fP
+Clipboard which can translate from one type of selection to another
+.IP \fBGDK\fP
+The most complete clipboard implementation, includes full X11 support
+.IP \fBdefault\fP
+Simple clipboard with limited X11 support
+.IP \fBOSX\fP
+OSX specific clipboard
+.RE
+
 .TP
 \fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP
 Enable or disable the starting of a pulseaudio server with the session.

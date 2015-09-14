@@ -36,7 +36,7 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
-from xpra.scripts.config import python_platform, parse_bool_or_int
+from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTIONS
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
@@ -194,7 +194,7 @@ class ServerBase(ServerCore):
         self.ydpi = 0
         self.antialias = {}
         self.idle_timeout = opts.idle_timeout
-        self.supports_clipboard = opts.clipboard
+        self.supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children

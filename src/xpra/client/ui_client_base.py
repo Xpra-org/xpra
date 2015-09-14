@@ -303,7 +303,8 @@ class UIXpraClient(XpraClientBase):
 
         self.client_supports_notifications = opts.notifications
         self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
-        self.client_supports_clipboard = opts.clipboard
+        self.client_clipboard_type = opts.clipboard
+        self.client_supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing

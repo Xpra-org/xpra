@@ -383,9 +383,9 @@ def do_parse_cmdline(cmdline, defaults):
                 "but the client cannot enable them if they are disabled on the server.")
     parser.add_option_group(group)
     legacy_bool_parse("clipboard")
-    group.add_option("--clipboard", action="store", metavar="yes|no",
+    group.add_option("--clipboard", action="store", metavar="yes|no|clipboard-type",
                       dest="clipboard", default=defaults.clipboard,
-                      help="Enable clipboard support. Default: %s." % enabled_str(defaults.clipboard))
+                      help="Enable clipboard support. Default: %s." % defaults.clipboard)
     legacy_bool_parse("notifications")
     group.add_option("--notifications", action="store", metavar="yes|no",
                       dest="notifications", default=defaults.notifications,
@@ -636,22 +636,14 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--clipboard-filter-file", action="store",
                       dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
                       help="Name of a file containing regular expressions of clipboard contents that must be filtered out")
-    from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
-    #this is ugly, but we don't know which clipboard class will be used at this point,
-    #we just try to figure it out as best we can:
-    if CLIPBOARD_NATIVE_CLASS and CLIPBOARD_NATIVE_CLASS.find("translated")>0 or CLIPBOARD_CLASS and CLIPBOARD_CLASS.find("translated")>0:
-        #only used on win32
-        group.add_option("--local-clipboard", action="store",
-                          dest="local_clipboard", default=defaults.local_clipboard,
-                          metavar="SELECTION",
-                          help="Name of the local clipboard selection to be synchronized (default: %default)")
-        group.add_option("--remote-clipboard", action="store",
-                          dest="remote_clipboard", default=defaults.remote_clipboard,
-                          metavar="SELECTION",
-                          help="Name of the remote clipboard selection to be synchronized (default: %default)")
-    else:
-        hidden_options["remote_clipboard"] = defaults.remote_clipboard
-        hidden_options["local_clipboard"] = defaults.local_clipboard
+    group.add_option("--local-clipboard", action="store",
+                      dest="local_clipboard", default=defaults.local_clipboard,
+                      metavar="SELECTION",
+                      help="Name of the local clipboard selection to be synchronized when using the translated clipboard (default: %default)")
+    group.add_option("--remote-clipboard", action="store",
+                      dest="remote_clipboard", default=defaults.remote_clipboard,
+                      metavar="SELECTION",
+                      help="Name of the remote clipboard selection to be synchronized when using the translated clipboard (default: %default)")
     group.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=defaults.remote_xpra,
                       metavar="CMD",

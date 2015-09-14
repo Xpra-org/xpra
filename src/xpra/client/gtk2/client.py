@@ -185,6 +185,16 @@ class XpraClient(GTKXpraClient):
             clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
         clipboard_options.append("xpra.clipboard.gdk_clipboard.GDKClipboardProtocolHelper")
         clipboard_options.append("xpra.clipboard.clipboard_base.DefaultClipboardProtocolHelper")
+        clipboard_options.append("xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper")
+        clipboardlog("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
+        if self.client_clipboard_type and self.client_clipboard_type.lower()!="auto":
+            #try to match the string specified:
+            filtered = [x for x in clipboard_options if x.lower().find(self.client_clipboard_type)>=0]
+            if len(filtered)>0:
+                clipboardlog(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type) 
+            else:
+                clipboardlog.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
+            clipboard_options = filtered
         clipboardlog("get_clipboard_helper_classes()=%s", clipboard_options)
         return clipboard_options
 
