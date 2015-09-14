@@ -23,6 +23,7 @@ from xpra.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.net.crypto import ENCRYPTION_CIPHERS
+from xpra.util import csv
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, \
@@ -465,7 +466,7 @@ def do_parse_cmdline(cmdline, defaults):
     parser.add_option_group(group)
     group.add_option("--encodings", action="store",
                       dest="encodings", default=defaults.encodings,
-                      help="Specify which encodings are allowed. Default: %default.")
+                      help="Specify which encodings are allowed. Default: %s." % csv(defaults.encodings))
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
