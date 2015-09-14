@@ -334,8 +334,11 @@ class X11ServerBase(GTKServerBase):
 
         #try to find the best screen size to resize to:
         new_size = None
+        closest = {}
         for w,h in RandR.get_screen_sizes():
             if w<desired_w or h<desired_h:
+                distance = abs(w-desired_w)*abs(h-desired_h)
+                closest[distance] = (w, h)
                 continue            #size is too small for client
             if new_size:
                 ew,eh = new_size
@@ -343,8 +346,12 @@ class X11ServerBase(GTKServerBase):
                     continue        #we found a better (smaller) candidate already
             new_size = w,h
         if not new_size:
-            log.warn("resolution not found for %sx%s", desired_w, desired_h)
-            return  root_w, root_h
+            log.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
+            if len(closest)>0:
+                new_size = sorted(closest.items())[0]
+                log.warn(" using %sx%s instead", *new_size)
+            else:
+                return  root_w, root_h
         log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
         #now actually apply the new settings:
         w, h = new_size
