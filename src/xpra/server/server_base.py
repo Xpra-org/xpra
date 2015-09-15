@@ -1473,7 +1473,7 @@ class ServerBase(ServerCore):
             def info_callback(_proto, info):
                 assert proto==_proto
                 ss.send_info_response(info)
-            self.get_all_info(info_callback, proto, *packet[1:])
+            self.get_all_info(info_callback, proto, *packet[2:])
 
     def send_hello_info(self, proto):
         log.info("processing info request from %s", proto._conn)
