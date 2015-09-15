@@ -70,6 +70,10 @@ PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
 PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
 
 
+#LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
+LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "").split(",")
+
+
 MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
 MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "20"))
 
@@ -1412,7 +1416,14 @@ class UIXpraClient(XpraClientBase):
     def _process_info_response(self, packet):
         self.info_request_pending = False
         self.server_last_info = packet[1]
-        log("info-response: %s", packet)
+        log("info-response: %s", self.server_last_info)
+        import re
+        logres = [re.compile(v) for v in LOG_INFO_RESPONSE]
+        if logres:
+            log.info("info-response debug for %s:", csv(["'%s'" % x for x in LOG_INFO_RESPONSE]))
+            for k in sorted(self.server_last_info.keys()):
+                if any(lr.match(k) for lr in logres):
+                    log.info(" %s=%s", k, self.server_last_info[k])
 
     def send_info_request(self):
         assert self.server_info_request

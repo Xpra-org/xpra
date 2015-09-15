@@ -869,7 +869,7 @@ class ServerCore(object):
             except Exception as e:
                 log.error("error during info collection: %s", e, exc_info=True)
             callback(proto, ui_info)
-        thread.start_new_thread(in_thread, ())
+        make_thread(in_thread, "Info", daemon=True).start()
 
     def get_ui_info(self, proto, *args):
         #this function is for info which MUST be collected from the UI thread

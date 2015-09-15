@@ -1468,6 +1468,8 @@ class ServerBase(ServerCore):
         log("process_start_command: proc=%s", proc)
 
     def _process_info_request(self, proto, packet):
+        log("process_info_request(%s, %s)", proto, packet)
+        #ignoring the list of client uuids supplied in packet[1]
         ss = self._server_sources.get(proto)
         if ss:
             def info_callback(_proto, info):
