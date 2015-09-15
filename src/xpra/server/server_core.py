@@ -14,7 +14,6 @@ import time
 import socket
 import signal
 import threading
-import thread
 import traceback
 
 from xpra.log import Logger
