@@ -92,6 +92,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
 [\fB\-\-border\fP=\fIBORDER\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
+[\fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP]
+[\fB\-\-shadow\-fullscreen\fP=\fIno\fP|\fIyes\fP]
 [\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-ssh\fP=\fICMD\fP]
 [\fB\-\-exit\-ssh\fP=\fIyes\fP|\fIno\fP]
@@ -987,6 +989,42 @@ This icon may be shown in the window's bar, its iconified
 state or task switchers.  This depends on the operating system,
 the window manage and the application may override this too.
 .TP
+\fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP
+Desktop scaling allows the windows to be scaled
+by the client.
+Downscaling will mostly waste bandwidth (though it can be
+useful when used with the \fBshadow\-fullscreen\fP option).
+Upscaling allows the window's pixels to be sent over the wire
+at a lower resolution, saving bandwidth and CPU time.
+This option can also be used to request a specific scaling value.
+For best results, use \fBopengl\fP client rendering, the other
+display backends may show visual artifacts when scaling.
+Note: the scaling may also be adjusted at runtime
+through keyboard shortcuts if those are configured.
+
+The \fIdesktop\-scaling\fP value can take the form:
+.RS
+.IP \fBoff\fP
+scaling will be disabled
+.IP \fBon\fP
+scaling will be allowed, but it will start unscaled
+.IP \fBauto\fP
+scaling will be allowed and a scaling value will be automatically
+chosen if the client's desktop is large (bigger desktops will
+use higher scaling values)
+.IP \fBscaling\-value\fP
+scaling will be enabled and use the given value, specified as a number of fraction. ie: \fB2\fP or \fB3/2\fP
+.IP \fBpair\fP
+the scaling will be enabled and use a different value for the X and Y axis. ie: \fB3x2\fP or \fB3/2x4/3\fP
+.IP \fBdesktop\-size\fP
+the scaling will be enabled and the server will render to the given size. ie: \fB1600x1200\fP
+.RE
+.PP
+
+\fB\-\-shadow\-fullscreen\fP=\fIno\fP|\fIyes\fP
+When connecting to shadow server, the remote display
+can be shown fullscreen using this option.
+
 \fB\-\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable the system tray.  Not available on OSX since the dock
 icon is always shown.

@@ -307,12 +307,15 @@ key-shortcut = Meta+Shift+underscore:scaledown
 # - disable all desktop scaling:
 #desktop-scaling = off
 #desktop-scaling = 0
+# - enable desktop scaling and automatically select
+#   a scaling value if the client display is large:
+#desktop-scaling = auto
 # - enable desktop scaling, but start with no scaling activated:
 #desktop-scaling = 1
 #desktop-scaling = on
 desktop-scaling = on
 
-# Make shadow servers show in fullscreen mode:
+# Make shadow servers show up in fullscreen mode:
 #shadow-fullscreen = yes
 shadow-fullscreen = no
 
