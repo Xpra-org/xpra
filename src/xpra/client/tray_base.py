@@ -139,8 +139,8 @@ class TrayBase(object):
         padx = width-(maxx-minx)
         pady = height-(maxy-miny)
         assert padx>=0 and pady>=0
-        minx -= padx/2
-        miny -= pady/2
+        minx -= padx//2
+        miny -= pady//2
         oldgeom = self.geometry_guess
         self.geometry_guess = max(0, minx), max(0, miny), width, height
         log("recalculate_geometry() geometry guess=%s", self.geometry_guess)
