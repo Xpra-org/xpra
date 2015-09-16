@@ -436,6 +436,9 @@ class ClientWindowBase(ClientWidgetBase):
     def scaledown(self, *args):
         self._client.scaledown()
 
+    def scalereset(self, *args):
+        self._client.scalereset()
+
     def magic_key(self, *args):
         log.info("magic_key(%s) not handled in %s", args, type(self))
 

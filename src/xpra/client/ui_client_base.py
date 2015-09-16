@@ -828,6 +828,9 @@ class UIXpraClient(XpraClientBase):
     def scaledown(self):
         self.scale_change(0.5, 0.5)
 
+    def scalereset(self):
+        self.scale_change(1.0/self.xscale, 1.0/self.yscale)
+
     def scale_change(self, xchange=1, ychange=1):
         if self.server_is_shadow and self.shadow_fullscreen:
             scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)

@@ -292,6 +292,9 @@ key-shortcut = Meta+Shift+F11:show_session_info
 key-shortcut = Meta+Shift+plus:scaleup
 key-shortcut = Meta+Shift+minus:scaledown
 key-shortcut = Meta+Shift+underscore:scaledown
+key-shortcut = Meta+Shift+KP_Add:scaleup
+key-shortcut = Meta+Shift+KP_Subtract:scaledown
+key-shortcut = Meta+Shift+KP_Multiply:scalereset
 
 # Border:
 #border=5,auto

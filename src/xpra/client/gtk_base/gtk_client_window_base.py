@@ -474,7 +474,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                             rectangles = [srect(*x) for x in rectangles]
                     #FIXME: are we supposed to get the offset from the "extents"?
                     x_off, y_off = 0, 0
-                    shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
+                    shapelog("XShapeCombineRectangles %s=%i rectangles", name, len(rectangles))
+                    #too expensive to log:
+                    #shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
                     with xsync:
                         X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
         self.when_realized("shape", do_set_shape)
