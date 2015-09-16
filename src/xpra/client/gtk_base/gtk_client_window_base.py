@@ -432,8 +432,46 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
                 if rectangles is not None:
                     #adjust for scaling:
-                    srect = self._client.srect
-                    rectangles = [srect(*x) for x in rectangles]
+                    if self._client.xscale!=1 or self._client.yscale!=1:
+                        try:
+                            from PIL import Image, ImageDraw        #@UnresolvedImport
+                        except:
+                            Image, ImageDraw = None, None
+                        if Image and ImageDraw:
+                            ww, wh = self._size
+                            sw, sh = self._client.cp(ww, wh)
+                            img = Image.new('1', (sw, sh), color=0)
+                            shapelog("drawing on bitmap(%s,%s)=%s", sw, sh, img)
+                            self._backing
+                            shapelog("drawing %s on bitmap(%s,%s)=%s", kind, sw, sh, img)
+                            d = ImageDraw.Draw(img)
+                            for x,y,w,h in rectangles:
+                                d.rectangle([x, y, x+w, y+h], fill=1)
+                            img = img.resize((ww, wh))
+                            shapelog("resized %s bitmap to window size %sx%s: %s", kind, ww, wh, img)
+                            #now convert back to rectangles...
+                            rectangles = []
+                            for y in range(wh):
+                                #for debugging, this is very useful, but costly!
+                                #shapelog("pixels[%3i]=%s", y, "".join([str(img.getpixel((x, y))) for x in range(ww)]))
+                                x = 0
+                                start = None
+                                while x<ww:
+                                    #find first white pixel:
+                                    while x<ww and img.getpixel((x, y))==0:
+                                        x += 1
+                                    start = x
+                                    #find next black pixel:
+                                    while x<ww and img.getpixel((x, y))!=0:
+                                        x += 1
+                                    end = x
+                                    if start<end:
+                                        rectangles.append((start, y, end-start, 1))
+                        else:
+                            #scale the rectangles without a bitmap...
+                            #results aren't so good! (but better than nothing?)
+                            srect = self._client.srect
+                            rectangles = [srect(*x) for x in rectangles]
                     #FIXME: are we supposed to get the offset from the "extents"?
                     x_off, y_off = 0, 0
                     shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
