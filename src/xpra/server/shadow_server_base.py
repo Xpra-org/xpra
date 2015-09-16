@@ -22,7 +22,7 @@ class RootWindowModel(object):
 
     def __init__(self, root_window):
         self.window = root_window
-        self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon"]
+        self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon", "shadow"]
         self.dynamic_property_names = []
         self.internal_property_names = []
 
@@ -83,6 +83,8 @@ class RootWindowModel(object):
             return ["NORMAL"]
         elif prop=="fullscreen":
             return False
+        elif prop=="shadow":
+            return True
         elif prop=="scaling":
             return None
         elif prop=="opacity":

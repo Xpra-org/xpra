@@ -553,6 +553,11 @@ def do_parse_cmdline(cmdline, defaults):
                             " as a fraction: \"3/2\" or just as a decimal number: \"1.5\"."
                             " You can also specify each dimension individually: \"2x1.5\"."
                             " Default: '%default'.")
+    legacy_bool_parse("shadow-fullscreen")
+    group.add_option("--shadow-fullscreen", action="store",
+                      dest="shadow_fullscreen", default=defaults.shadow_fullscreen,
+                      help="Make the window fullscreen if it is from a shadow server, scaling it to fit the screen."
+                            " Default: '%default'.")
     group.add_option("--border", action="store",
                       dest="border", default=defaults.border,
                       help="The border to draw inside xpra windows to distinguish them from local windows."

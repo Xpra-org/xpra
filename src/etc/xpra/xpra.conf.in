@@ -312,6 +312,11 @@ key-shortcut = Meta+Shift+underscore:scaledown
 #desktop-scaling = on
 desktop-scaling = on
 
+# Make shadow servers show in fullscreen mode:
+#shadow-fullscreen = yes
+shadow-fullscreen = no
+
+
 ########################################################################
 # Server Options:
 

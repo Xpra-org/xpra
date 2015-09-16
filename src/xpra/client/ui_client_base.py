@@ -117,6 +117,7 @@ class UIXpraClient(XpraClientBase):
         self.dpi = 0
         self.xscale = 1
         self.yscale = 1
+        self.shadow_fullscreen = False
 
         #draw thread:
         self._draw_queue = None
@@ -207,6 +208,7 @@ class UIXpraClient(XpraClientBase):
         self.server_dbus_proxy = False
         self.start_new_commands = False
         self.server_window_frame_extents = False
+        self.server_is_shadow = False
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -271,6 +273,7 @@ class UIXpraClient(XpraClientBase):
         self.xsettings_enabled = opts.xsettings
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
         self.mmap_group = opts.mmap_group
+        self.shadow_fullscreen = opts.shadow_fullscreen
 
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
@@ -826,6 +829,9 @@ class UIXpraClient(XpraClientBase):
         self.scale_change(0.5, 0.5)
 
     def scale_change(self, xchange=1, ychange=1):
+        if self.server_is_shadow and self.shadow_fullscreen:
+            scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)
+            return
         if not self.can_scale:
             scalinglog("scale_change(%s, %s) ignored, scaling is disabled", xchange, ychange)
             return
@@ -1582,10 +1588,10 @@ class UIXpraClient(XpraClientBase):
         c = self.server_capabilities
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
-        if not c.boolget("shadow"):
-            assert server_desktop_size
-            if self.can_scale:
-                self.may_adjust_scaling()
+        self.server_is_shadow = c.boolget("shadow")
+        if self.can_scale:
+            self.may_adjust_scaling()
+        if not self.server_is_shadow:
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
@@ -2105,8 +2111,9 @@ class UIXpraClient(XpraClientBase):
 
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
-        wid, x, y, w, h, metadata = packet[1:7]
-        windowlog("process_new_common: %s, OR=%s", packet[1:7], override_redirect)
+        wid, x, y, w, h = packet[1:6]
+        metadata = self.cook_metadata(packet[6])
+        windowlog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=1 or h<=1:
             windowlog.error("window dimensions are wrong: %sx%s", w, h)
@@ -2121,8 +2128,22 @@ class UIXpraClient(XpraClientBase):
             client_properties = packet[7]
         self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
-    def make_new_window(self, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties):
+    def cook_metadata(self, metadata):
+        #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
+        if self.server_is_shadow and self.shadow_fullscreen:
+            #force it fullscreen:
+            try:
+                del metadata["size-constraints"]
+            except:
+                pass
+            metadata["fullscreen"] = True
+            #FIXME: try to figure out the monitors we go fullscreen on for X11:
+            #if os.name=="posix":
+            #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
+        return metadata
+
+    def make_new_window(self, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
@@ -2241,9 +2262,9 @@ class UIXpraClient(XpraClientBase):
         wid, w, h = packet[1:4]
         w = max(1, self.sx(w))
         h = max(1, self.sy(h))
-        metadata = {}
+        metadata = typedict()
         if len(packet)>=5:
-            metadata = packet[4]
+            metadata = self.cook_metadata(packet[4])
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         tray = self.setup_system_tray(self, wid, w, h, metadata.get("title", ""))
         traylog("process_new_tray(%s) tray=%s", packet, tray)
@@ -2415,7 +2436,7 @@ class UIXpraClient(XpraClientBase):
         wid, metadata = packet[1:3]
         window = self._id_to_window.get(wid)
         if window:
-            metadata = typedict(metadata)
+            metadata = self.cook_metadata(metadata)
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet):
@@ -2460,6 +2481,9 @@ class UIXpraClient(XpraClientBase):
 
 
     def may_adjust_scaling(self):
+        if self.server_is_shadow and not self.shadow_fullscreen:
+            #don't try to make it fit
+            return
         assert self.can_scale
         max_w, max_h = self.server_max_desktop_size             #ie: server limited to 8192x4096?
         w, h = self.get_root_size()                             #ie: 5760, 2160
@@ -2467,19 +2491,28 @@ class UIXpraClient(XpraClientBase):
         scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s", self.server_actual_desktop_size, self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
         if sw>(max_w+1) or sh>(max_h+1):
-            #server size is too small for this scaling, change it
+            #server size is too small for the client screen size with the current scaling value,
+            #calculate the minimum scaling to fit it:
             def clamp(v):
                 return max(MIN_SCALING, min(MAX_SCALING, v))
-            v = clamp(max(float(w)/max_w, float(h)/max_h))
-            #prefer int over float:
-            try:
-                v = int(str(v).rstrip("0").rstrip("."))
-            except:
-                pass
-            self.xscale = v
-            self.yscale = v
+            x = clamp(float(w)/max_w)
+            y = clamp(float(h)/max_h)
+            def mint(v):
+                #prefer int over float:
+                try:
+                    return int(str(v).rstrip("0").rstrip("."))
+                except:
+                    return v
+            if self.server_is_shadow:
+                self.xscale = mint(x)
+                self.yscale = mint(y)
+            else:
+                #use the same scale for both axis:
+                self.xscale = mint(max(x, y))
+                self.yscale = self.xscale
             scalinglog.warn("Warning: adjusting scaling to accomodate server")
-            scalinglog.warn(" server desktop size is %ix%i, using scaling factor %s", max_w, max_h, v)
+            scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
+            scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
             
 
     def set_max_packet_size(self):

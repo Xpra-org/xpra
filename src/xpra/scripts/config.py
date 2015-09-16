@@ -347,6 +347,7 @@ OPTION_TYPES = {
                     "exit-with-children": bool,
                     "exit-with-client"  : bool,
                     "exit-ssh"          : bool,
+                    "av-sync"           : bool,
                     "opengl"            : bool,
                     "mdns"              : bool,
                     "file-transfer"     : bool,
@@ -355,7 +356,7 @@ OPTION_TYPES = {
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
                     "remote-logging"    : bool,
-                    "av-sync"           : bool,
+                    "shadow-fullscreen" : bool,
                     #arrays of strings:
                     "socket-dirs"       : list,
                     "encodings"         : list,
@@ -482,6 +483,7 @@ def get_defaults():
                     "printing"          : True,
                     "open-files"        : False,
                     "swap-keys"         : OSX,  #only used on osx
+                    "shadow-fullscreen" : False,
                     "socket-dirs"       : [],
                     "encodings"         : ["all"],
                     "video-encoders"    : ["all"],

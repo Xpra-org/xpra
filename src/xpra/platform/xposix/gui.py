@@ -325,7 +325,9 @@ def set_fullscreen_monitors(window, fsm):
     if len(fsm)!=4:
         log.warn("invalid number of fullscreen-monitors: %s", len(fsm))
         return
-    _send_client_message(window, "_NET_WM_FULLSCREEN_MONITORS", *fsm)
+    #add source indication = 1
+    values = list(fsm)+[1]
+    _send_client_message(window, "_NET_WM_FULLSCREEN_MONITORS", *values)
 
 def _toggle_wm_state(window, state, enabled):
     if enabled:
