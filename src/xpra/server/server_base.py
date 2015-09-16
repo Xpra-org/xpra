@@ -2308,10 +2308,12 @@ class ServerBase(ServerCore):
                 netlog("will process ui packet %s", packet_type)
                 self.idle_add(handler, proto, packet)
                 return
-            if not self._closing and not proto._closed:
-                netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
-            if proto not in self._server_sources:
-                proto.close()
+            def invalid_packet():
+                if not self._closing and not proto._closed:
+                    netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
+                if proto not in self._server_sources:
+                    proto.close()
+            self.idle_add(invalid_packet)
         except KeyboardInterrupt:
             raise
         except:
