@@ -318,15 +318,14 @@ def _send_client_message(window, message_type, *values):
 def show_desktop(b):
     _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))
 
-def set_fullscreen_monitors(window, fsm):
+def set_fullscreen_monitors(window, fsm, source_indication=0):
     if type(fsm) not in (tuple, list):
         log.warn("invalid type for fullscreen-monitors: %s", type(fsm))
         return
     if len(fsm)!=4:
         log.warn("invalid number of fullscreen-monitors: %s", len(fsm))
         return
-    #add source indication = 1
-    values = list(fsm)+[1]
+    values = list(fsm)+[source_indication]
     _send_client_message(window, "_NET_WM_FULLSCREEN_MONITORS", *values)
 
 def _toggle_wm_state(window, state, enabled):

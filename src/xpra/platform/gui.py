@@ -116,7 +116,7 @@ def remove_window_hooks(window):
 def show_desktop(show):
     pass
 
-def set_fullscreen_monitors(window, fsm):
+def set_fullscreen_monitors(window, fsm, source_indication=0):
     pass
 
 def set_shaded(window, shaded):

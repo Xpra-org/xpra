@@ -530,6 +530,7 @@ class BaseWindowModel(CoreX11WindowModel):
         elif event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
             log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
             #TODO: we should validate the indexes instead of copying them blindly!
+            #TODO: keep track of source indication so we can forward that to the client
             m1, m2, m3, m4 = event.data[0], event.data[1], event.data[2], event.data[3]
             N = 16      #FIXME: arbitrary limit
             if m1<0 or m1>=N or m2<0 or m2>=N or m3<0 or m3>=N or m4<0 or m4>=N:
