@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
+import sys, os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
@@ -17,6 +17,9 @@ focuslog = Logger("focus")
 mouselog = Logger("mouse")
 workspacelog = Logger("workspace")
 metalog = Logger("metadata")
+
+
+REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -466,6 +469,11 @@ class ClientWindowBase(ClientWidgetBase):
                 return
             backing = self._backing
             if backing and backing.draw_needs_refresh:
+                if REPAINT_ALL=="0":
+                    pass
+                elif REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
+                    w, h = self.get_size()
+                    self.queue_draw(*self._client.srect(0, 0, w, h))
                 self.queue_draw(*self._client.srect(x, y, width, height))
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:
