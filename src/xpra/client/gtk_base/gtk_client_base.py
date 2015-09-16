@@ -407,7 +407,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def scaling_changed(self):
         UIXpraClient.scaling_changed(self)
-        cursorlog.info("scaling_changed() resetting cursors for: %s", self._cursors.keys())
+        cursorlog("scaling_changed() resetting cursors for: %s", self._cursors.keys())
         for w,cursor_data in list(self._cursors.items()):
             self.set_windows_cursor([w], cursor_data)
 
