@@ -883,6 +883,12 @@ class UIXpraClient(XpraClientBase):
             return max(1, int(w*xchange)), max(1, int(h*ychange))
         self.reinit_windows(new_size_fn)
         self.update_screen_size()
+        self.scaling_changed()
+
+    def scaling_changed(self):
+        #some clients may re-initialize things here
+        #(gtk resets the cursors)
+        pass
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
@@ -2513,6 +2519,7 @@ class UIXpraClient(XpraClientBase):
             scalinglog.warn("Warning: adjusting scaling to accomodate server")
             scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
             scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
+            self.scaling_changed()
             
 
     def set_max_packet_size(self):

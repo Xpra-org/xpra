@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os, sys
+import weakref
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
 gobject = import_gobject()
@@ -59,6 +60,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.opengl_props = {}
         self.gl_max_viewport_dims = 0, 0
         self.gl_texture_size_limit = 0
+        self._cursors = weakref.WeakKeyDictionary()
         #frame request hidden window:
         self.frame_request_window = None
         #group leader bits:
@@ -402,6 +404,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             i += 1
         return screen_sizes
 
+
+    def scaling_changed(self):
+        UIXpraClient.scaling_changed(self)
+        cursorlog.info("scaling_changed() resetting cursors for: %s", self._cursors.keys())
+        for w,cursor_data in list(self._cursors.items()):
+            self.set_windows_cursor([w], cursor_data)
+
+
     def set_windows_cursor(self, windows, cursor_data):
         cursorlog("set_windows_cursor(%s, ..)", windows)
         cursor = None
@@ -418,6 +428,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             gdkwin = w.get_window()
             #trays don't have a gdk window
             if gdkwin:
+                self._cursors[w] = cursor_data
                 gdkwin.set_cursor(cursor)
 
     def make_cursor(self, cursor_data):
@@ -465,12 +476,13 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 x, y = int(x/xratio), int(y/yratio)
         else:
             sw, sh = w, h
+            #scale the cursors:
+            if self.xscale!=1 or self.yscale!=1:
+                x, y, sw, sh = self.srect(x, y, sw, sh)
+            #ensure we honour the max size:
             if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
                 ratio = max(float(w)/cmaxw, float(h)/cmaxh, float(max(w,h))/csize)
                 x, y, sw, sh = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
-            #scale cursors?
-            #if self.xscale!=1 or self.yscale!=1:
-            #    x, y, sw, sh = self.srect(x, y, w, h)
             if sw!=w or sh!=h:
                 cursorlog("scaling cursor from %ix%i to %ix%i", w, h, sw, sh)
                 cursor_pixbuf = pixbuf.scale_simple(sw, sh, INTERP_BILINEAR)
