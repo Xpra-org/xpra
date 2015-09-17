@@ -77,50 +77,62 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         the py_property_handlers do it in the other direction.
     """
     __common_properties__ = {
+        #the actual X11 client window
         "client-window": (gobject.TYPE_PYOBJECT,
                 "gtk.gdk.Window representing the client toplevel", "",
                 gobject.PARAM_READABLE),
+        #the X11 window id
         "xid": (gobject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
                 gobject.PARAM_READABLE),
+        #FIXME: this is an ugly virtual property
         "geometry": (gobject.TYPE_PYOBJECT,
                 "current (border-corrected, relative to parent) coordinates (x, y, w, h) for the window", "",
                 gobject.PARAM_READABLE),
+        #if the window depth is 32 bit
         "has-alpha": (gobject.TYPE_BOOLEAN,
                 "Does the window use transparency", "",
                 False,
                 gobject.PARAM_READABLE),
+        #from WM_CLIENT_MACHINE
         "client-machine": (gobject.TYPE_PYOBJECT,
                 "Host where client process is running", "",
                 gobject.PARAM_READABLE),
+        #from _NET_WM_PID
         "pid": (gobject.TYPE_INT,
                 "PID of owning process", "",
                 -1, 65535, -1,
                 gobject.PARAM_READABLE),
+        #from _NET_WM_NAME or WM_NAME
         "title": (gobject.TYPE_PYOBJECT,
                 "Window title (unicode or None)", "",
                 gobject.PARAM_READABLE),
+        #from WM_WINDOW_ROLE
         "role" : (gobject.TYPE_PYOBJECT,
                 "The window's role (ICCCM session management)", "",
                 gobject.PARAM_READABLE),
+        #from WM_PROTOCOLS via XGetWMProtocols
         "protocols": (gobject.TYPE_PYOBJECT,
                 "Supported WM protocols", "",
                 gobject.PARAM_READABLE),
+        #from WM_COMMAND
         "command": (gobject.TYPE_PYOBJECT,
                 "Command used to start or restart the client", "",
                 gobject.PARAM_READABLE),
+        #from WM_CLASS via getClassHint
         "class-instance": (gobject.TYPE_PYOBJECT,
                 "Classic X 'class' and 'instance'", "",
                 gobject.PARAM_READABLE),
+        #ShapeNotify events will populate this using XShapeQueryExtents
         "shape": (gobject.TYPE_PYOBJECT,
                 "Window XShape data", "",
                 gobject.PARAM_READABLE),
-        #this is synced to "_NET_FRAME_EXTENTS"
+        #synced to "_NET_FRAME_EXTENTS"
         "frame": (gobject.TYPE_PYOBJECT,
                 "Size of the window frame, as per _NET_FRAME_EXTENTS", "",
                 gobject.PARAM_READWRITE),
-        #this is ssynced to "_NET_WM_ALLOWED_ACTIONS"
+        #synced to "_NET_WM_ALLOWED_ACTIONS"
         "allowed-actions": (gobject.TYPE_PYOBJECT,
                 "Supported WM actions", "",
                 gobject.PARAM_READWRITE),

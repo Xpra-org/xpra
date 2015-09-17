@@ -10,6 +10,7 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk2.models.core import CoreX11WindowModel, gobject, xswallow, gdk
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants              #@UnresolvedImport
 from xpra.x11.gtk2.gdk_bindings import get_pywindow, get_pyatom, calc_constrained_size  #@UnresolvedImport
+from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -47,45 +48,58 @@ class BaseWindowModel(CoreX11WindowModel):
     """
     __common_properties__ = CoreX11WindowModel.__common_properties__.copy()
     __common_properties__.update({
+        #from WM_TRANSIENT_FOR
         "transient-for": (gobject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
                           gobject.PARAM_READABLE),
+        #from _NET_WM_WINDOW_OPACITY
         "opacity": (gobject.TYPE_INT64,
                 "Opacity", "",
                 -1, 0xffffffff, -1,
                 gobject.PARAM_READABLE),
+        #from WM_HINTS.window_group
         "group-leader": (gobject.TYPE_PYOBJECT,
                          "Window group leader as a pair: (xid, gdk window)", "",
                          gobject.PARAM_READABLE),
+        #from WM_HINTS.urgency or _NET_WM_STATE
         "attention-requested": (gobject.TYPE_BOOLEAN,
                                 "Urgency hint from client, or us", "",
                                 False,
                                 gobject.PARAM_READWRITE),
+        #from WM_HINTS.input or WM_TAKE_FOCUS
         "can-focus": (gobject.TYPE_BOOLEAN,
                       "Does this window ever accept keyboard input?", "",
                       True,
                       gobject.PARAM_READWRITE),
+        #
+        "size-hints": (gobject.TYPE_PYOBJECT,
+                       "Client hints on constraining its size", "",
+                       gobject.PARAM_READABLE),
+        #from _NET_WM_BYPASS_COMPOSITOR
         "bypass-compositor": (gobject.TYPE_INT,
                        "hint that the window would benefit from running uncomposited ", "",
                        0, 2, 0,
                        gobject.PARAM_READABLE),
+        #from _NET_WM_FULLSCREEN_MONITORS
         "fullscreen-monitors": (gobject.TYPE_PYOBJECT,
                          "List of 4 monitor indices indicating the top, bottom, left, and right edges of the window when the fullscreen state is enabled", "",
                          gobject.PARAM_READABLE),
+        #from _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT
         "strut": (gobject.TYPE_PYOBJECT,
                   "Struts requested by window, or None", "",
                   gobject.PARAM_READABLE),
+        #from _NET_WM_DESKTOP
         "workspace": (gobject.TYPE_UINT,
                 "The workspace this window is on", "",
                 0, 2**32-1, WORKSPACE_UNSET,
                 gobject.PARAM_READWRITE),
+        #set initially only by the window model class
+        #(derived from XGetWindowAttributes.override_redirect)
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
                        gobject.PARAM_READABLE),
-        "modal": (gobject.TYPE_PYOBJECT,
-                          "Modal (boolean)", "",
-                          gobject.PARAM_READWRITE),
+        #from _NET_WM_WINDOW_TYPE
         "window-type": (gobject.TYPE_PYOBJECT,
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
@@ -95,6 +109,9 @@ class BaseWindowModel(CoreX11WindowModel):
                   "State, as per _NET_WM_STATE", "",
                   gobject.PARAM_READABLE),
         #all the attributes below are virtual attributes from WM_STATE:
+        "modal": (gobject.TYPE_PYOBJECT,
+                          "Modal (boolean)", "",
+                          gobject.PARAM_READWRITE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
@@ -133,11 +150,11 @@ class BaseWindowModel(CoreX11WindowModel):
                        gobject.PARAM_READWRITE),
         })
     _property_names = CoreX11WindowModel._property_names + [
-                      "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
+                      "size-hints", "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
                       #virtual attributes:
                       "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
-                              "attention-requested",
+                              "size-hints", "attention-requested",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
@@ -313,6 +330,34 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("can-focus", can_focus)
 
 
+    def _handle_wm_normal_hints_change(self):
+        with xswallow:
+            size_hints = X11Window.getSizeHints(self.xid)
+        metalog("WM_NORMAL_HINTS=%s", size_hints)
+        #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
+        #but we use a different naming (for historical reason and backwards compatibility)
+        #so rename the fields:
+        hints = {}
+        if size_hints:
+            for k,v in size_hints.items():
+                hints[{"min_size"       : "minimum-size",
+                       "max_size"       : "maximum-size",
+                       "base_size"      : "base-size",
+                       "resize_inc"     : "increment",
+                       "win_gravity"    : "gravity",
+                       }.get(k, k)] = v
+        sanitize_size_hints(hints)
+        # Don't send out notify and ConfigureNotify events when this property
+        # gets no-op updated -- some apps like FSF Emacs 21 like to update
+        # their properties every time they see a ConfigureNotify, and this
+        # reduces the chance for us to get caught in loops:
+        old_hints = self.get_property("size-hints")
+        if hints and hints!=old_hints:
+            self._internal_set_property("size-hints", hints)
+            if self._setup_done:
+                self._update_client_geometry()
+
+
     _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({
         "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
@@ -324,6 +369,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "_NET_WM_STRUT_PARTIAL"         : _handle_wm_strut_change,
         "_NET_WM_WINDOW_OPACITY"        : _handle_opacity_change,
         "WM_HINTS"                      : _handle_wm_hints_change,
+        "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
         })
 
 

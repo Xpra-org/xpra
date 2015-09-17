@@ -14,7 +14,6 @@ from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk2.models import Unmanageable, MAX_WINDOW_SIZE
-from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
 from xpra.x11.gtk2.models.base import BaseWindowModel, constants
 from xpra.x11.gtk2.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk2.gdk_bindings import (
@@ -74,6 +73,9 @@ class WindowModel(BaseWindowModel):
 
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
     __gproperties__.update({
+        "owner": (gobject.TYPE_PYOBJECT,
+                  "Owner", "",
+                  gobject.PARAM_READABLE),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
         "actual-size": (gobject.TYPE_PYOBJECT,
@@ -88,9 +90,6 @@ class WindowModel(BaseWindowModel):
         "requested-size": (gobject.TYPE_PYOBJECT,
                            "Client-requested size on screen", "",
                            gobject.PARAM_READABLE),
-        "size-hints": (gobject.TYPE_PYOBJECT,
-                       "Client hints on constraining its size", "",
-                       gobject.PARAM_READABLE),
         # Toggling this property does not actually make the window iconified,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
@@ -99,18 +98,19 @@ class WindowModel(BaseWindowModel):
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
                    gobject.PARAM_READWRITE),
+        #from _NET_WM_ICON_NAME or WM_ICON_NAME
         "icon-title": (gobject.TYPE_PYOBJECT,
                        "Icon title (unicode or None)", "",
                        gobject.PARAM_READABLE),
+        #from _NET_WM_ICON
         "icon": (gobject.TYPE_PYOBJECT,
                  "Icon (local Cairo surface)", "",
                  gobject.PARAM_READABLE),
+        #from _NET_WM_ICON
         "icon-pixmap": (gobject.TYPE_PYOBJECT,
                         "Icon (server Pixmap)", "",
                         gobject.PARAM_READABLE),
-        "owner": (gobject.TYPE_PYOBJECT,
-                  "Owner", "",
-                  gobject.PARAM_READABLE),
+        #from _MOTIF_WM_HINTS.decorations
         "decorations": (gobject.TYPE_BOOLEAN,
                        "Should the window decorations be shown", "",
                        True,
@@ -125,9 +125,9 @@ class WindowModel(BaseWindowModel):
         })
 
     _property_names         = BaseWindowModel._property_names + [
-                              "size-hints", "icon-title", "icon", "decorations"]
+                              "icon-title", "icon", "decorations"]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
-                              "size-hints", "icon-title", "icon", "decorations"]
+                              "icon-title", "icon", "decorations"]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
                               "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
                               "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
@@ -194,7 +194,6 @@ class WindowModel(BaseWindowModel):
         w,h = X11Window.getGeometry(self.xid)[2:4]
         hints = self.get_property("size-hints")
         log("setup() hints=%s size=%ix%i", hints, w, h)
-        sanitize_size_hints(hints)
         nw, nh = calc_constrained_size(w, h, hints)[:2]
         if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
             #we can't handle windows that big!
@@ -501,33 +500,6 @@ class WindowModel(BaseWindowModel):
     # X11 properties synced to Python objects
     #########################################
 
-    def _handle_wm_normal_hints_change(self):
-        with xswallow:
-            size_hints = X11Window.getSizeHints(self.xid)
-        metalog("WM_NORMAL_HINTS=%s", size_hints)
-        #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
-        #but we use a different naming (for historical reason and backwards compatibility)
-        #so rename the fields:
-        hints = {}
-        if size_hints:
-            for k,v in size_hints.items():
-                hints[{"min_size"       : "minimum-size",
-                       "max_size"       : "maximum-size",
-                       "base_size"      : "base-size",
-                       "resize_inc"     : "increment",
-                       "win_gravity"    : "gravity",
-                       }.get(k, k)] = v
-        sanitize_size_hints(hints)
-        # Don't send out notify and ConfigureNotify events when this property
-        # gets no-op updated -- some apps like FSF Emacs 21 like to update
-        # their properties every time they see a ConfigureNotify, and this
-        # reduces the chance for us to get caught in loops:
-        old_hints = self.get_property("size-hints")
-        if hints and hints!=old_hints:
-            self._internal_set_property("size-hints", hints)
-            if self._setup_done:
-                self._update_client_geometry()
-
     def _handle_icon_title_change(self):
         icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
         iconlog("_NET_WM_ICON_NAME=%s", icon_name)
@@ -569,7 +541,6 @@ class WindowModel(BaseWindowModel):
 
     _x11_property_handlers = dict(BaseWindowModel._x11_property_handlers)
     _x11_property_handlers.update({
-        "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
         "WM_ICON_NAME"                  : _handle_icon_title_change,
         "_NET_WM_ICON_NAME"             : _handle_icon_title_change,
         "_MOTIF_WM_HINTS"               : _handle_motif_wm_hints_change,
