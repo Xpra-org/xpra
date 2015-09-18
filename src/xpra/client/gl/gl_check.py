@@ -15,7 +15,9 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 WHITELIST = {}
 GREYLIST = {}
-BLACKLIST = {"vendor" : ["nouveau", "Humper", "VMware, Inc."],
+VERSION_REQ = {"nouveau" : [3, 0],      #older versions have issues
+               }
+BLACKLIST = {"vendor" : ["Humper", "VMware, Inc."],
              "renderer" : ["Software Rasterizer"]}
 
 if False:
@@ -231,6 +233,16 @@ def do_check_GL_support(force_enable):
                     log("OpenGL property '%s' is missing", d)
                 v = ""
             props[d] = v
+        vendor = props["vendor"]
+        version_req = VERSION_REQ.get(vendor)
+        if version_req:
+            req_maj, req_min = version_req
+            if gl_major<req_maj or (gl_major==req_maj and gl_minor<req_min):
+                if force_enable:
+                    log.warn("Warning: '%s' OpenGL driver requires version %i.%i", vendor, req_maj, req_min)
+                    log.warn(" version %i.%i was found", gl_major, gl_minor)
+                else:
+                    gl_check_error("OpenGL version %i.%i is too old, %i.%i is required for %s" % (gl_major, gl_minor, req_maj, req_min, vendor))
 
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
         for d,s in {"GLU version": GLU_VERSION, "GLU extensions":GLU_EXTENSIONS}.items():
