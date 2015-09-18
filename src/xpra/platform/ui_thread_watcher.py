@@ -5,6 +5,7 @@
 
 import os
 import time
+import threading
 from threading import Event
 from xpra.make_thread import make_thread
 from xpra.log import Logger
@@ -57,9 +58,11 @@ class UI_thread_watcher(object):
         if FAKE_UI_LOCKUPS>0:
             #watch out: sleeping in UI thread!
             def sleep_in_ui_thread(*args):
-                time.sleep(FAKE_UI_LOCKUPS)
+                t = threading.current_thread()
+                log.warn("sleep_in_ui_thread%s pausing %s for %ims", args, t, FAKE_UI_LOCKUPS)
+                time.sleep(FAKE_UI_LOCKUPS/1000.0)
                 return True
-            self.timeout_add((10+FAKE_UI_LOCKUPS)*1000, sleep_in_ui_thread)
+            self.timeout_add(10*1000+FAKE_UI_LOCKUPS, sleep_in_ui_thread)
 
     def stop(self):
         self.exit.set()
