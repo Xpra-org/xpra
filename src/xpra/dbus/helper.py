@@ -15,6 +15,9 @@ class DBusHelper(object):
         from xpra.dbus.common import init_session_bus
         self.bus = init_session_bus()
 
+    def get_session_bus(self):
+        return self.bus
+
     def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb):
         try:
             #remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")

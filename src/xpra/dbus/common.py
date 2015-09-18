@@ -3,14 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-_loop_init_done = False
+_loop = None
 def loop_init():
-    global _loop_init_done
-    if _loop_init_done:
-        return
-    from dbus.mainloop.glib import DBusGMainLoop
-    DBusGMainLoop(set_as_default=True)
-    _loop_init_done = True
+    global _loop
+    if not _loop:
+        from dbus.mainloop.glib import DBusGMainLoop
+        _loop = DBusGMainLoop(set_as_default=True)
+    return _loop
 
 _session_bus = None
 def init_session_bus():
