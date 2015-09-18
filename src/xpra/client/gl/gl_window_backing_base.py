@@ -342,6 +342,9 @@ class GLWindowBackingBase(GTKWindowBacking):
         if not self._backing:
             return None
         w, h = self.size
+        if w<=0 or h<=0:
+            log.error("Error: invalid OpenGL backing size: %ix%i", w, h, exc_info=True)
+            return None
         context = GLContextManager(self._backing)
         log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
         return context
