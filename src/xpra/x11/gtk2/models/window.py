@@ -599,7 +599,7 @@ class WindowModel(BaseWindowModel):
                 self.do_give_client_focus()
 
     def do_give_client_focus(self):
-        focuslog("Giving focus to %#x", )
+        focuslog("Giving focus to %#x", self.xid)
         # Have to fetch the time, not just use CurrentTime, both because ICCCM
         # says that WM_TAKE_FOCUS must use a real time and because there are
         # genuine race conditions here (e.g. suppose the client does not
