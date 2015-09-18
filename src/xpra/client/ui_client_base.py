@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
 import sys
 import time
 import datetime
@@ -71,7 +72,7 @@ PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
 
 
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
-LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "").split(",")
+LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 
 MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
@@ -1432,10 +1433,10 @@ class UIXpraClient(XpraClientBase):
         self.info_request_pending = False
         self.server_last_info = packet[1]
         log("info-response: %s", self.server_last_info)
-        import re
-        logres = [re.compile(v) for v in LOG_INFO_RESPONSE]
-        if logres:
-            log.info("info-response debug for %s:", csv(["'%s'" % x for x in LOG_INFO_RESPONSE]))
+        if LOG_INFO_RESPONSE:
+            items = LOG_INFO_RESPONSE.split(",")
+            logres = [re.compile(v) for v in items]
+            log.info("info-response debug for %s:", csv(["'%s'" % x for x in items]))
             for k in sorted(self.server_last_info.keys()):
                 if any(lr.match(k) for lr in logres):
                     log.info(" %s=%s", k, self.server_last_info[k])
