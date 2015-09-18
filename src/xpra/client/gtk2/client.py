@@ -48,6 +48,8 @@ class XpraClient(GTKXpraClient):
         self.remote_clipboard = opts.remote_clipboard
         self.local_clipboard = opts.local_clipboard
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
+        from xpra.platform.ui_thread_watcher import get_UI_watcher
+        self.UI_watcher = get_UI_watcher(self.timeout_add)
 
 
     def parse_border(self, border_str, extra_args):
@@ -325,8 +327,6 @@ class XpraClient(GTKXpraClient):
 
     def process_ui_capabilities(self):
         GTKXpraClient.process_ui_capabilities(self)
-        from xpra.platform.ui_thread_watcher import get_UI_watcher
-        self.UI_watcher = get_UI_watcher(self.timeout_add)
         self.UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:
         if self.suspend_resume:

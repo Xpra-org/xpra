@@ -119,4 +119,5 @@ def get_UI_watcher(timeout_add=None):
     global UI_watcher
     if UI_watcher is None and timeout_add:
         UI_watcher = UI_thread_watcher(timeout_add, POLLING)
+        log("get_UI_watcher(%s)", timeout_add)
     return UI_watcher
