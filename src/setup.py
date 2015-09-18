@@ -852,7 +852,8 @@ def build_xpra_conf(install_dir):
             'dbus_proxy'            : bstr(not OSX and not WIN32),
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,
-            "postscript_printer"    : postscript,
+            'postscript_printer'    : postscript,
+            'printing'              : printing_ENABLED,
             }
     conf = template % SUBS
     #get conf dir for install, without stripping the build root

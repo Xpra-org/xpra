@@ -76,7 +76,7 @@ file-transfer = yes
 file-size-limit = 10
 
 # Print support:
-printing = yes
+printing = %(printing)s
 
 # To manage printers:
 #lpadmin = lpadmin
