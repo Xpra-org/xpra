@@ -797,9 +797,7 @@ class UIXpraClient(XpraClientBase):
             return
         if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
             screenlog.info("screen size change: will reinit the windows")
-            for window in self._id_to_window.values():
-                if not window.is_OR() or window.is_tray():
-                    window.send_configure()
+            self.reinit_windows()
 
 
     def update_screen_size(self):
