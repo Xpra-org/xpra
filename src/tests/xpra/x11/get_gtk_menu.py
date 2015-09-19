@@ -107,8 +107,13 @@ def main(args):
             for d in items:
                 menu = {}
                 section = d.get(":section")
+                submenu = d.get(":submenu")
                 if section:
+                    #subscription, menu
                     menu[":section"] = ni(section[0]), ni(section[1])
+                elif section or submenu:
+                    #subscription, menu
+                    menu[":submenu"] = ni(section[0]), ni(section[1])
                 else:
                     for k in ("action", "label"):
                         if k in d:
