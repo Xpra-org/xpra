@@ -882,11 +882,11 @@ class UIXpraClient(XpraClientBase):
         self.scale_reinit(xchange, ychange)
 
     def scale_reinit(self, xchange=1.0, ychange=1.0):
+        self.update_screen_size()
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
             return max(1, int(w*xchange)), max(1, int(h*ychange))
         self.reinit_windows(new_size_fn)
-        self.update_screen_size()
         self.scaling_changed()
 
     def scaling_changed(self):
@@ -2193,9 +2193,13 @@ class UIXpraClient(XpraClientBase):
             log("fake_send%s", args)
         #now replace all the windows with new ones:
         for wid, window in self._id_to_window.items():
-            if not window or window.is_tray():
+            if not window:
+                continue
+            if window.is_tray():
                 #trays are never GL enabled, so don't bother re-creating them
                 #might cause problems anyway if we did anyway
+                #just send a configure event in case they are moved / scaled
+                window.send_configure()
                 continue
             #ignore packets from old window:
             window.send = fake_send
