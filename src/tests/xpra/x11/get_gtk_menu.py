@@ -51,6 +51,8 @@ def main(args):
     dbus_helper = DBusHelper()
     def n(*args):
         return dbus_helper.dbus_to_native(*args)
+    def ni(*args):
+        return int(n(*args))
 
     bus = dbus_helper.get_session_bus()
     window = bus.get_object(bus_name, window_path)
@@ -91,20 +93,35 @@ def main(args):
     def menus_changed(*args):
         print("menus_changed%s" % str(args))
     iface.connect_to_signal("Changed", menus_changed)
-    
+
     def start_cb(*args):
         print("start_cb args=%s" % str(args))
         print("start_cb args[0]=%s" % str(args[0]))
         #print("start_cb args[0][0]=%s" % str(args[0][0]))
         values = n(args[0])
         print("start_cb values=%s" % str(values))
+        menus = {}
         for sgroup, menuno, items in values:
             print(" %s: %s - %s" % (sgroup, menuno, n(items)))
+            dmenus = []
+            for d in items:
+                menu = {}
+                section = d.get(":section")
+                if section:
+                    menu[":section"] = ni(section[0]), ni(section[1])
+                else:
+                    for k in ("action", "label"):
+                        if k in d:
+                            menu[k] = n(d[k])
+                if menu:
+                    dmenus.append(menu)
+            menus.setdefault(ni(sgroup), {})[ni(menuno)] = dmenus
+        print("menus=%s" % menus)
         #values = dbus_helper.dbus_to_native(args[0])
     def start_err(*args):
         print("describe_cb%s" % str(args))
     dbus_helper.call_function(bus_name, menu_path, interface, "Start", [[0]], start_cb, start_err)
-    
+
     loop.run()
 
 
