@@ -150,9 +150,9 @@
 
   <autotools id="glib-networking" autogen-sh="configure"
 	     autogenargs="--without-ca-certificates set_more_warnings=no">
-    <branch module="glib-networking/2.42/glib-networking-2.42.1.tar.xz"
-            hash="sha256:c06bf76da3353695fcc791b7b02e5d60c01c379e554f7841dc6cbca32f65f3a0"
-            version="2.42.1"/>
+    <branch module="glib-networking/2.44/glib-networking-2.44.0.tar.xz"
+            hash="sha256:8f8a340d3ba99bfdef38b653da929652ea6640e27969d29f7ac51fbbe11a4346"
+            version="2.44.0"/>
     <dependencies>
       <dep package="gnutls"/>
     </dependencies>
@@ -174,7 +174,6 @@
 	    repo="abisource/enchant">
  <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-gsize.patch" strip="1"/>
  <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-env.patch" strip="1"/>
- <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-xdg-path.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -188,8 +187,8 @@
   </autotools>
 
   <autotools id="libgcrypt" autogen-sh="configure" autogenargs="--disable-asm">
-    <branch repo="ftp.gnupg.org" version="1.6.2"
-            module="gcrypt/libgcrypt/libgcrypt-1.6.2.tar.bz2"/>
+    <branch repo="ftp.gnupg.org" version="1.6.3"
+            module="gcrypt/libgcrypt/libgcrypt-1.6.3.tar.bz2"/>
     <dependencies>
       <dep package="libgpg-error" />
     </dependencies>
@@ -197,8 +196,8 @@
 
   <autotools id="libtasn1" supports-non-srcdir-builds="no"
 	     autogen-sh="configure">
-    <branch repo="ftp.gnu.org" version="4.2"
-	    module="libtasn1/libtasn1-4.2.tar.gz"/>
+    <branch repo="ftp.gnu.org" version="4.4"
+	    module="libtasn1/libtasn1-4.4.tar.gz"/>
   </autotools>
 
    <!-- 10.5 has 7.16.3, which is too old for some things. Otherwise can be skipped. -->
@@ -207,7 +206,7 @@
   </autotools>
 
   <autotools id="libwebp" autogen-sh="configure">
-    <branch repo="webm" module="webp/libwebp-0.4.2.tar.gz" version="0.4.2"/>
+    <branch repo="webm" module="webp/libwebp-0.4.3.tar.gz" version="0.4.3"/>
   </autotools>
 
   <!-- This is WebKitGTK 1.x, for GTK 2.x.
@@ -286,6 +285,8 @@
              strip="1"/>
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch"
              strip="1"/>
+      <!-- This patch can be commented out for XCode >= 6.3, but does no harm if
+      it's left in -->
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch"
              strip="1"/>
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-126433-check-platform-gtk.patch"

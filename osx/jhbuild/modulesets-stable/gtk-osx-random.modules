@@ -80,9 +80,9 @@ Libglade itself is deprecated. This is the last release. -->
   </autotools>
 
   <autotools id="vala" autogen-sh="configure">
-    <branch repo="ftp.gnome.org" version="0.26.0"
-            module="vala/0.26/vala-0.26.0.tar.xz"
-            hash="sha256:c1d0a6a485d5cbfbe027483adfc5f7c80c2404b692375be80d75193d915dcd2f"/>
+    <branch repo="ftp.gnome.org" version="0.28.0"
+            module="vala/0.28/vala-0.28.0.tar.xz"
+            hash="sha256:0d9e3bd3f82145664875f7c29b2f544ba92d2814f75412948f774c0727fc977f"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="meta-gtk-osx-core"/>
@@ -118,20 +118,20 @@ Libglade itself is deprecated. This is the last release. -->
     </dependencies>
   </autotools>
 
-<!-- Devhelp-gtk3 depends upon Webkit for Gtk3, something that I
-     haven't gotten to build yet. If you want to give it a try, you'll
-     be using WebKit-svn, which is enormous and difficult. Good
-     Luck. -->
+  <!-- 3.8 is the last version to support WebKit1 -->
   <autotools id="devhelp-gtk3" autogen-sh="configure">
-    <branch module="devhelp/3.6/devhelp-3.6.0.tar.xz" version="3.6.0"
-            hash="sha256:bf0576d5d70496367ccb22be53be620bbfe341bd491c1d725cfb59d566769fe1"/>
+    <branch module="devhelp/3.8/devhelp-3.8.2.tar.xz" version="3.8.2"
+            hash="sha256:a245b53824c6f2ff89245ff807bb2140bde74951ea6f1d759a0fd0c6959ca9f7"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="meta-gtk-osx-themes"/>
       <dep package="meta-gtk-osx-gtk3"/>
     </after>
     <dependencies>
-      <dep package="WebKit-svn"/>
+      <dep package="webkit1gtk3"/>
+      <dep package="gsettings-desktop-schemas"/>
+      <!-- Without shared-mime-info, HTML documents display as plain text -->
+      <dep package="shared-mime-info"/>
     </dependencies>
   </autotools>
 
@@ -157,10 +157,10 @@ Libglade itself is deprecated. This is the last release. -->
 <!-- Glade 3.10 is the first stable series for Gtk+-3. Note the name
      change back to just "glade"-->
   <autotools id="glade" autogen-sh="configure"
-	     autogenargs="--disable-scrollkeeper">
-    <branch module="glade/3.16/glade-3.16.1.tar.xz" version="3.16.1"
-            hash="sha256:994ac258bc100d3907ed40a2880c3144f13997b324477253e812d59f2716523f">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/glade-3_16_1.patch" strip="1"/>
+	     autogenargs='--disable-scrollkeeper --disable-introspection CPPFLAGS="$CPPFLAGS -xobjective-c"'>
+    <branch module="glade/3.18/glade-3.18.3.tar.xz" version="3.18.3"
+            hash="sha256:ecdbce46e7fbfecd463be840b94fbf54d83723b3ebe075414cfd225ddab66452">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/glade-1-18.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="itstool"/>
@@ -275,6 +275,16 @@ Libglade itself is deprecated. This is the last release. -->
     </branch>
     <dependencies>
       <dep package="glib"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="gsettings-desktop-schemas" autogen-sh="configure"
+             autogenargs="--enable-introspection=yes">
+    <branch module="gsettings-desktop-schemas/3.16/gsettings-desktop-schemas-3.16.1.tar.xz"
+            version="3.16.1"
+            hash="sha256:74fe9fdad510c8a6666febeceb7ebafc581ef990b3afcc8c1e8b5d90b24b3461"/>
+    <dependencies>
+      <dep package="gobject-introspection"/>
     </dependencies>
   </autotools>
 

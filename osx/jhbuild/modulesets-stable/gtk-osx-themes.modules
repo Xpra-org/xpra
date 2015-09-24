@@ -53,8 +53,8 @@
   </autotools>
 
   <autotools id="adwaita-icon-theme" autogen-sh="configure">
-    <branch module="adwaita-icon-theme/3.14/adwaita-icon-theme-3.14.1.tar.xz"
-            version="3.14.1" hash="sha256:b776a7ad58c97f4c1ede316e44d8d054105429cb4e3a8ec46616a14b11df48ee"/>
+    <branch module="adwaita-icon-theme/3.16/adwaita-icon-theme-3.16.0.tar.xz"
+            version="3.16.0" hash="sha256:a3c8ad3b099ca571b423811a20ee9a7a43498cfa04d299719ee43cd7af6f6eb1"/>
     <dependencies>
       <dep package="librsvg"/>
       <dep package="hicolor-icon-theme"/>
@@ -64,8 +64,8 @@
 
  <autotools id="gnome-themes-standard" autogen-sh="configure"
 	    autogenargs='--disable-gtk2-engine'>
-    <branch module="gnome-themes-standard/3.14/gnome-themes-standard-3.14.0.tar.xz"
-            version="3.14.0" hash="sha256:addd469f4ba746f8ebb03da8b5c67b7d8b6b2c979f7f07958455c7e33fbdbe09"/>
+    <branch module="gnome-themes-standard/3.16/gnome-themes-standard-3.16.0.tar.xz"
+            version="3.16.0" hash="sha256:4ce9cbac71c74d1426b73ad8ca37a29b3267c66f94d2fb4de5e619fab25bd94f"/>
     <dependencies>
       <dep package="librsvg"/>
       <dep package="adwaita-icon-theme"/>

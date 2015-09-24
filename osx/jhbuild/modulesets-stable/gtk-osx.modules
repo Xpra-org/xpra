@@ -12,6 +12,9 @@
               href="http://ftp.gnu.org/gnu/"/>
   <repository type="tarball" name="sourceware.org"
               href="ftp://sourceware.org/pub/"/>
+  <repository type="tarball" name="freedesktop"
+              href="ftp://ftp.freedesktop.org/pub/"/>
+  <repository type="git" name="github" href="git://github.com/"/>
 
   <!-- This module set works a bit differently than for example the
        GNOME ones do. It's split up in seperate pieces:
@@ -68,8 +71,8 @@
   </metamodule>
 
   <autotools id="glib" autogen-sh="autoreconf">
-    <branch module="glib/2.42/glib-2.42.1.tar.xz"  version="2.42.1"
-            hash="sha256:8f3f0865280e45b8ce840e176ef83bcfd511148918cc8d39df2ee89b67dcf89a">
+    <branch module="glib/2.44/glib-2.44.1.tar.xz"  version="2.44.1"
+            hash="sha256:8811deacaf8a503d0a9b701777ea079ca6a4277be10e3d730d2112735d5eca07">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-g_get_monotonic_time-on-non-Intel-Darwin.patch" strip="1"/>
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gio-in-reserved-in-gcc-48.patch" strip="1"/>
@@ -84,8 +87,21 @@
 
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
-    <branch module="libffi/libffi-3.0.13.tar.gz" repo="sourceware.org"
-            version="3.0.13" checkoutdir="atgreen-libffi-873d687"/>
+    <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
+            version="3.2.1"/>
+  </autotools>
+
+  <autotools id="xorg-util-macros">
+    <branch repo="freedesktop" version="1.19.0"
+            module="xorg/individual/util/util-macros-1.19.0.tar.bz2"/>
+  </autotools>
+
+  <!-- There is no stable release yet that works here, so use master -->
+  <autotools id="libepoxy">
+    <branch repo="github" module="anholt/libepoxy"/>
+    <dependencies>
+      <dep package="xorg-util-macros"/>
+    </dependencies>
   </autotools>
 
 <!-- This is the latest 0.10 version. Later versions are 1.29 and intended to work with glib 2.29; the minor version of gobject-introspection will track the minor version of glib that it's intended to work with. Note that in the unlikely event you need to introspect Gtk+-2.0, you need to build Glib 1.28 and use this gobject-introspection. The default is to *not* introspect Gtk+-2.0 and to use the latest GLib and Gobject-Introspection with Gtk3 -->
@@ -103,9 +119,9 @@
   </autotools>
 
   <autotools id="gobject-introspection" autogen-sh="configure">
-    <branch module="gobject-introspection/1.42/gobject-introspection-1.42.0.tar.xz"
-            version="1.42.0"
-            hash="sha256:3ba2edfad4f71d4f0de16960b5d5f2511335fa646b2c49bbb93ce5942b3f95f7">
+    <branch module="gobject-introspection/1.44/gobject-introspection-1.44.0.tar.xz"
+            version="1.44.0"
+            hash="sha256:6f0c2c28aeaa37b5037acbf21558098c4f95029b666db755d3a12c2f1e1627ad">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
     </branch>
     <dependencies>
@@ -126,6 +142,7 @@
      </dependencies>
     <after>
       <dep package="gobject-introspection"/>
+      <dep package="gobject-introspection-10"/>
       <dep package="meta-gtk-osx-freetype"/>
       <dep package="glib"/>
       <dep package="meta-gtk-osx-bootstrap"/>
@@ -133,13 +150,15 @@
   </autotools>
 
  <autotools id="atk" autogen-sh="configure">
-    <branch module="atk/2.14/atk-2.14.0.tar.xz" version="2.14.0"
-            hash="sha256:2875cc0b32bfb173c066c22a337f79793e0c99d2cc5e81c4dac0d5a523b8fbad"/>
+    <branch module="atk/2.16/atk-2.16.0.tar.xz" version="2.16.0"
+            hash="sha256:095f986060a6a0b22eb15eef84ae9f14a1cf8082488faa6886d94c37438ae562"/>
     <dependencies>
     </dependencies>
     <after>
       <dep package="glib"/>
       <dep package="meta-gtk-osx-bootstrap"/>
+      <dep package="gobject-introspection"/>
+      <dep package="gobject-introspection-10"/>
     </after>
   </autotools>
 
@@ -148,6 +167,8 @@
             hash="sha256:4853830616113db4435837992c0aebd94cbb993c44dc55063cee7f72a7bef8be"/>
     <after>
       <dep package="pango"/>
+      <dep package="gobject-introspection"/>
+      <dep package="gobject-introspection-10"/>
     </after>
   </autotools>
 
@@ -175,9 +196,11 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.14/gtk+-3.14.5.tar.xz" version="3.14.5"
-            hash="sha256:ba70f5ccde6646c6d8aa5a6398794b7bcf23fc45af22580a215d258f392dbbe2">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-Bug-739885-GtkPlug-is-conditionally-supported-on-X11-only.patch" strip="1"/>
+    <branch module="gtk+/3.16/gtk+-3.16.0.tar.xz" version="3.16.0"
+            hash="sha256:ce617318fe18092383cf6ed5d8c688a95a97f2d4c68481317a6a531e288c26ea">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
+<!-- The following patch is committed and can be removed after release of gtk+-3.16.4. -->
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-DnD-Introspection-on-Quartz-Backend.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -185,13 +208,15 @@
       <dep package="atk"/>
       <dep package="gdk-pixbuf"/>
       <dep package="gobject-introspection"/>
+      <dep package="libepoxy"/>
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
   </autotools>
 
-  <autotools id="pixman" autogenargs="--disable-gtk" autogen-sh="configure">
+  <autotools id="pixman" autogenargs="--disable-gtk --disable-mmx"
+             autogen-sh="configure">
     <branch version="0.32.6" module="pixman-0.32.6.tar.gz"
             repo="cairographics"
             hash="sha1:8791343cbf6d99451f4d08e8209d6ac11bf96df2"/>

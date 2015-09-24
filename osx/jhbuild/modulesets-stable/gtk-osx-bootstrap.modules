@@ -23,7 +23,7 @@
   <repository type="tarball" name="harfbuzz"
               href="http://www.freedesktop.org/software/harfbuzz/release/"/>
   <repository type="tarball" name="cups"
-	      href="http://ftp.easysw.com/pub/"/>
+	      href="https://www.cups.org/software/"/>
   <repository type="tarball" name="itstool" href="http://files.itstool.org/"/>
   <repository type="tarball" name="icu"
               href="http://download.icu-project.org/files/"/>
@@ -35,8 +35,8 @@
   </autotools>
 
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch version="1.6.14" module="libpng/libpng-1.6.14.tar.xz"
-	    repo="sourceforge"/>
+    <branch version="1.6.17" module="libpng/libpng-1.6.17.tar.xz"
+            repo="sourceforge" md5sum="430a9b76b78533235cd4b9b26ce75c7e"/>
   </autotools>
 
   <autotools id="libjpeg" autogenargs="" autogen-sh="configure" autogenargs="--with-jpeg8">
@@ -59,7 +59,8 @@
        module won't link. In case you're wondering, itstool
        needs libxml2's python module. -->
 
-  <autotools id="libxml2" autogen-sh="configure" autogenargs="--with-python">
+  <autotools id="libxml2" autogen-sh="configure"
+             autogenargs='--libdir="$JHBUILD_LIBDIR" --with-python'>
     <branch version="2.9.2" module="libxml2-2.9.2.tar.gz"
 	    repo="xmlsoft.org"/>
     <after>
@@ -79,7 +80,7 @@
   <!-- Cups is needed *only* for Tiger, and skipped otherwise -->
   <autotools id='cups' autogen-sh='configure' skip-autogen='never'
 	     autogenargs='DSOFLAGS="$LDFLAGS"'>
-    <branch module="cups/1.2.12/cups-1.2.12-source.tar.bz2"
+    <branch module="1.2.12/cups-1.2.12-source.tar.bz2"
 	    version="1.2.12" repo="cups"  checkoutdir='cups-1.2.12'/>
     <dependencies>
       <dep package="libtiff"/>
@@ -95,8 +96,8 @@
   </autotools>
 
   <autotools id="yelp-xsl">
-    <branch version="3.14.0" module="yelp-xsl/3.14/yelp-xsl-3.14.0.tar.xz"
-            hash="sha256:8f5b6793cd600f8308e4ac93da68009169fa6d590eb71ed4a8e98bafe541a87e"/>
+    <branch version="3.16.1" module="yelp-xsl/3.16/yelp-xsl-3.16.1.tar.xz"
+            hash="sha256:3295eecc4b03d2a239f7a1bdf4a1311d34c46c3055e6535c1f72bb5a49b4174a"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -105,8 +106,8 @@
   </autotools>
 
   <autotools id="yelp-tools">
-    <branch version="3.14.1" module="yelp-tools/3.14/yelp-tools-3.14.1.tar.xz"
-            hash="sha256:000222baf5d2db394df6025591054976b5cecd0b27872601de7538f36520f60f"/>
+    <branch version="3.16.1" module="yelp-tools/3.16/yelp-tools-3.16.1.tar.xz"
+            hash="sha256:b4f66c145af1c6448dc51037d305d6844da13dc31d07729b8e29005ee4fef89c"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -128,13 +129,13 @@
 
   <autotools id="icu" autogen-sh="source/configure"
              makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
-    <branch repo="icu" version="54.1" checkoutdir="icu"
-            module="icu4c/54.1/icu4c-54_1-src.tgz"/>
+    <branch repo="icu" version="55.1" checkoutdir="icu"
+            module="icu4c/55.1/icu4c-55_1-src.tgz"/>
   </autotools>
 
   <autotools id="harfbuzz" autogen-sh="configure"
              autogenargs="--with-coretext --with-freetype --with-icu">
-    <branch repo="harfbuzz" module="harfbuzz-0.9.35.tar.bz2" version="0.9.35">
+    <branch repo="harfbuzz" module="harfbuzz-0.9.40.tar.bz2" version="0.9.40">
        <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/>
     </branch>
     <dependencies>
