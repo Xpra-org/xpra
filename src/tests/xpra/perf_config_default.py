@@ -28,6 +28,23 @@ VLC_SOUND_TEST = (VLC_BIN, "-L", "--audio-visual=visual", "./test.mp3")
 VLC_VIDEO_TEST = (VLC_BIN, "-L", "./test.avi")
 MPLAYER_VIDEO_TEST = "while true; do %s test.avi; done" % MPLAYER_BIN
 
+#ugly code duplicated from setup.py!
+def get_xorg_bin():
+    # Detect Xorg Binary
+    if os.path.exists("/usr/libexec/Xorg.bin"):
+        #fedora 21?
+        return "/usr/libexec/Xorg.bin"
+    elif os.path.exists("/usr/libexec/Xorg"):
+        #fedora 22
+        return "/usr/libexec/Xorg"
+    else:
+        #look for it in $PATH:
+        for x in os.environ.get("PATH").split(os.pathsep):
+            xorg = os.path.join(x, "Xorg")
+            if os.path.isfile(xorg):
+                return xorg
+    return None
+
 class Config():
     def __init__(self):
         def screensaver(x):
@@ -74,7 +91,7 @@ class Config():
     TRICKLE_BIN = "/usr/bin/trickle"
     TCBENCH = "/opt/VirtualGL/bin/tcbench"
     TCBENCH_LOG = "./tcbench.log"
-    XORG_BIN = "/usr/bin/Xorg"
+    XORG_BIN = get_xorg_bin()
     VGLRUN_BIN = "/usr/bin/vglrun"
 
     XORG_CONFIG = "%s/xorg.conf" % HOME
@@ -160,7 +177,7 @@ class Config():
 
     #XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
     #XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
-    XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "h264", "vp8", "vp9", "mmap"]
+    XPRA_TEST_ENCODINGS = ["png", "rgb", "jpeg", "h264", "vp8", "vp9", "mmap"]
 
     #XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
     #    "webp" : XPRA_QUALITY_OPTIONS,

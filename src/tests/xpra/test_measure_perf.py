@@ -570,12 +570,20 @@ def get_command_name(command_arg):
     assert type(c)==str
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
+def get_auth_args():
+    cmd = []
+    if config.XPRA_USE_PASSWORD:
+        cmd.append("--password-file=%s" % password_filename)
+        if XPRA_VERSION_NO>=[0, 14]:
+            cmd.append("--auth=file")
+        if XPRA_VERSION_NO>=[0, 15]:
+            cmd.append("--tcp-auth=file")
+    return cmd
+
 def xpra_get_stats(initial_stats=None, all_stats=[]):
     if XPRA_VERSION_NO<[0, 3]:
         return  {}
-    info_cmd = XPRA_INFO_COMMAND[:]
-    if config.XPRA_USE_PASSWORD:
-        info_cmd.append("--password-file=%s" % password_filename)
+    info_cmd = XPRA_INFO_COMMAND[:] + get_auth_args()
     out = getoutput(info_cmd)
     if not out:
         return  {}
@@ -694,8 +702,7 @@ def get_xpra_start_server_command():
         cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (config.XORG_BIN, config.XORG_LOG, config.XORG_CONFIG))
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
-    if config.XPRA_USE_PASSWORD:
-        cmd.append("--password-file=%s" % password_filename)
+    cmd += get_auth_args()
     cmd.append("--no-pulseaudio")
     cmd += ["start", ":%s" % config.DISPLAY_NO]
     return cmd
@@ -744,9 +751,11 @@ def test_xpra():
                                                         cmd.append("tcp:%s:%s" % (config.IP, config.PORT))
                                                     else:
                                                         cmd.append(":%s" % (config.DISPLAY_NO))
-                                                    cmd.append("--readonly")
-                                                    if config.XPRA_USE_PASSWORD:
-                                                        cmd.append("--password-file=%s" % password_filename)
+                                                    if XPRA_VERSION_NO>=[0, 15]:
+                                                        cmd.append("--readonly=yes")
+                                                    else:
+                                                        cmd.append("--readonly")                                                        
+                                                    cmd += get_auth_args()
                                                     if packet_encoders:
                                                         cmd += ["--packet-encoders=%s" % packet_encoders]
                                                     if comp:
