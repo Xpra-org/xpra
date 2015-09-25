@@ -177,7 +177,10 @@ class XpraClient(GTKXpraClient):
 
 
     def get_clipboard_helper_classes(self):
-        from xpra.scripts.config import TRUE_OPTIONS
+        from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+        ct = self.client_clipboard_type
+        if ct and ct.lower() in FALSE_OPTIONS:
+            return []
         from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
         from xpra.scripts.main import CLIPBOARD_CLASS
         #first add the platform specific one, (may be None):
@@ -190,7 +193,6 @@ class XpraClient(GTKXpraClient):
         clipboard_options.append("xpra.clipboard.clipboard_base.DefaultClipboardProtocolHelper")
         clipboard_options.append("xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper")
         clipboardlog("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
-        ct = self.client_clipboard_type
         if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
             #try to match the string specified:
             filtered = [x for x in clipboard_options if x.lower().find(self.client_clipboard_type)>=0]
