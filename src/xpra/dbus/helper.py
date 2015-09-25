@@ -9,6 +9,29 @@ from xpra.log import Logger
 log = Logger("dbus")
 
 
+def dbus_to_native(value):
+    #log("dbus_to_native(%s) type=%s", value, type(value))
+    if value is None:
+        return None
+    elif isinstance(value, int):
+        return int(value)
+    elif isinstance(value, long):
+        return long(value)
+    elif isinstance(value, dict):
+        d = {}
+        for k,v in value.items():
+            d[dbus_to_native(k)] = dbus_to_native(v)
+        return d
+    elif isinstance(value, unicode):
+        return str(value)
+    elif isinstance(value, basestring):
+        return str(value)
+    elif isinstance(value, float):
+        return float(value)
+    elif isinstance(value, list):
+        return [dbus_to_native(x) for x in value]
+    return value
+
 class DBusHelper(object):
 
     def __init__(self):
@@ -17,6 +40,10 @@ class DBusHelper(object):
 
     def get_session_bus(self):
         return self.bus
+
+    def dbus_to_native(self, *args):
+        return dbus_to_native(*args)
+
 
     def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb):
         try:
@@ -46,26 +73,3 @@ class DBusHelper(object):
             msg = "error invoking %s on %s: %s" % (function, obj, e)
             log("DBusHelper: %s", msg)
             err_cb(msg)
-
-    def dbus_to_native(self, value):
-        #log("dbus_to_native(%s) type=%s", value, type(value))
-        if value is None:
-            return None
-        elif isinstance(value, int):
-            return int(value)
-        elif isinstance(value, long):
-            return long(value)
-        elif isinstance(value, dict):
-            d = {}
-            for k,v in value.items():
-                d[self.dbus_to_native(k)] = self.dbus_to_native(v)
-            return d
-        elif isinstance(value, unicode):
-            return str(value)
-        elif isinstance(value, basestring):
-            return str(value)
-        elif isinstance(value, float):
-            return float(value)
-        elif isinstance(value, list):
-            return [self.dbus_to_native(x) for x in value]
-        return value

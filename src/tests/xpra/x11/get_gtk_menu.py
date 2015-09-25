@@ -44,6 +44,9 @@ def main(args):
             "application-id"    : app_id,
             }
     print("gtk menu properties for window %s on display %s: %s" % (wid, display.get_name(), props))
+    if not (menu_path and window_path and app_path and bus_name and app_id):
+        print("some properties are missing - cannot continue")
+        return
 
     loop_init()
     import gobject
@@ -71,20 +74,24 @@ def main(args):
         print("list_cb: values=%s" % str(values))
     def list_err(*args):
         print("list_err%s" % str(args))
-    dbus_helper.call_function(bus_name, window_path, interface, "List", args, list_cb, list_err)
+    dbus_helper.call_function(bus_name, window_path, interface, "List", [], list_cb, list_err)
+    dbus_helper.call_function(bus_name, app_path, interface, "List", [], list_cb, list_err)
 
-    def describe_cb(*args):
-        print("describe_cb:")
-        #print("describe_cb%s" % str(args))
+    def describe_actions_cb(*args):
+        print("describe_actions_cb:")
         values = dbus_helper.dbus_to_native(args[0])
         #print("describe_cb: values=%s" % str(values))
+        actions = {}
         for k,v in values.items():
             #enabled, parameter type, state
             mdef = [bool(n(v[0])), n(v[1]), [n(x) for x in v[2]]]
-            print(" %s=%s" % (k, mdef))
-    def describe_err(*args):
-        print("describe_err%s" % str(args))
-    dbus_helper.call_function(bus_name, window_path, interface, "DescribeAll", [], describe_cb, describe_err)
+            #print(" %s=%s" % (k, mdef))
+            actions[k] = mdef
+        print("actions=%s" % actions)
+    def describe_actions_err(*args):
+        print("describe_actions_err%s" % str(args))
+    dbus_helper.call_function(bus_name, window_path, interface, "DescribeAll", [], describe_actions_cb, describe_actions_err)
+    dbus_helper.call_function(bus_name, app_path, interface, "DescribeAll", [], describe_actions_cb, describe_actions_err)
 
     #app menu:
     interface = "org.gtk.Menus"
@@ -94,12 +101,11 @@ def main(args):
         print("menus_changed%s" % str(args))
     iface.connect_to_signal("Changed", menus_changed)
 
-    def start_cb(*args):
-        print("start_cb args=%s" % str(args))
-        print("start_cb args[0]=%s" % str(args[0]))
-        #print("start_cb args[0][0]=%s" % str(args[0][0]))
+    def menus_start_cb(*args):
+        #print("menus_start_cb args=%s" % str(args))
+        #print("menus_start_cb args[0]=%s" % str(args[0]))
         values = n(args[0])
-        print("start_cb values=%s" % str(values))
+        #print("menus_start_cb values=%s" % str(values))
         menus = {}
         for sgroup, menuno, items in values:
             print(" %s: %s - %s" % (sgroup, menuno, n(items)))
@@ -115,17 +121,23 @@ def main(args):
                     #subscription, menu
                     menu[":submenu"] = ni(section[0]), ni(section[1])
                 else:
+                    #action?
                     for k in ("action", "label"):
                         if k in d:
                             menu[k] = n(d[k])
+                    if menu:
+                        target = d.get("target")
+                        if target:
+                            menu["target"] = [n(target[x]) for x in range(len(target))] 
+                            #print("target=%s (len=%s)" % (target, len(target)))
                 if menu:
                     dmenus.append(menu)
             menus.setdefault(ni(sgroup), {})[ni(menuno)] = dmenus
         print("menus=%s" % menus)
         #values = dbus_helper.dbus_to_native(args[0])
-    def start_err(*args):
-        print("describe_cb%s" % str(args))
-    dbus_helper.call_function(bus_name, menu_path, interface, "Start", [[0]], start_cb, start_err)
+    def menus_start_err(*args):
+        print("menus_start_err%s" % str(args))
+    dbus_helper.call_function(bus_name, menu_path, interface, "Start", [[0]], menus_start_cb, menus_start_err)
 
     loop.run()
 
