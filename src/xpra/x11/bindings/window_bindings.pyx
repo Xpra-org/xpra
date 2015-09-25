@@ -263,6 +263,9 @@ cdef extern from "X11/extensions/Xcomposite.h":
     void XCompositeRedirectSubwindows(Display *, Window, int mode)
     void XCompositeUnredirectWindow(Display *, Window, int mode)
     void XCompositeUnredirectSubwindows(Display *, Window, int mode)
+    Window XCompositeGetOverlayWindow(Display *dpy, Window window)
+    void XCompositeReleaseOverlayWindow(Display *dpy, Window window)
+
 
 cdef extern from "X11/extensions/shape.h":
     Bool XShapeQueryExtension(Display *display, int *event_base, int *error_base)
@@ -615,6 +618,11 @@ cdef class X11WindowBindings(X11CoreBindings):
     def XCompositeUnredirectSubwindows(self, Window xwindow):
         XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
+    def XCompositeGetOverlayWindow(self, Window window):
+        return XCompositeGetOverlayWindow(self.display, window)
+
+    def XCompositeReleaseOverlayWindow(self, Window window):
+        XCompositeReleaseOverlayWindow(self.display, window)
 
 
     ###################################
