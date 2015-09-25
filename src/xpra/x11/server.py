@@ -447,6 +447,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not window.is_tray():
             window.managed_connect("raised", self._raised_window)
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)
+        prop_set = getattr(window, "prop_set", None)
+        if prop_set:
+            prop_set("_XPRA_WID", "u32", wid)
         return wid
 
     def _add_new_window(self, window):
