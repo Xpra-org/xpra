@@ -189,6 +189,14 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._kill_count = 0
         self._internal_set_property("client-window", client_window)
 
+
+    def __repr__(self):
+        try:
+            return "%s(%#x)" % (type(self).__name__, self.xid)
+        except:
+            return repr(self)
+
+
     #########################################
     # Setup and teardown
     #########################################
