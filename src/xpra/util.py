@@ -461,6 +461,10 @@ def repr_ellipsized(obj, limit=100):
         return repr(obj)
 
 
+def rindex(alist, avalue):
+    return len(alist) - alist[::-1].index(avalue) - 1
+
+
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
 def updict(todict, prefix, d, suffix=""):

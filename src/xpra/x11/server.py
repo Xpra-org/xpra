@@ -11,8 +11,9 @@ import gtk.gdk
 import glib
 import gobject
 import time
+from collections import deque
 
-from xpra.util import AdHocStruct, updict
+from xpra.util import AdHocStruct, updict, rindex
 from xpra.os_util import memoryview_to_bytes
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
@@ -191,6 +192,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         self._has_grab = 0
         self._has_focus = 0
+        self._focus_history = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
         root = gtk.gdk.get_default_root_window()
@@ -624,6 +626,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._has_focus==wid:
             #nothing to do!
             return
+        self._focus_history.append(wid)
         had_focus = self._id_to_window.get(self._has_focus)
         def reset_focus():
             toplevel = None
@@ -910,7 +913,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
             except:
                 pass
         img_data = memoryview_to_bytes(img_data)
-        overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data, rowstride)
+        has_alpha = image.get_pixel_format().find("A")>=0
+        log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
+        if has_alpha:
+            import cairo
+            pixbuf = gtk.gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
+            cr = overlaywin.cairo_create()
+            cr.new_path()
+            cr.rectangle(wx+x, wy+y, width, height)
+            cr.clip()
+            cr.set_source_pixbuf(pixbuf, wx+x, wy+y)
+            cr.set_operator(cairo.OPERATOR_OVER)
+            cr.paint()
+        else:
+            overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data, rowstride)
 
     def repaint_root_overlay(self):
         log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims", self.root_overlay, self.repaint_root_overlay_due, self.sync_xvfb)
@@ -930,16 +946,30 @@ class XpraServer(gobject.GObject, X11ServerBase):
         cr.paint()
         #now paint all the windows on top:
         windows = self._wm.get_property("windows")
-        log("do_repaint_root_overlay() windows=%s", windows)
+        order = {}
+        focus_history = list(self._focus_history)
         for window in windows:
+            wid = self._window_to_id.get(window)
+            if not wid:
+                continue
+            prio = int(self._has_focus==wid)*32768 + int(self._has_grab==wid)*65536
+            if prio==0:
+                try:
+                    prio = rindex(focus_history, wid)
+                except:
+                    pass        #not in focus history!
+            order[(prio, wid)] = window
+        log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s", self._has_focus, self._has_grab, order)
+        for k in sorted(order):
+            window = order[k]
             if window.is_OR():
                 x, y, w, h = window.get_property("geometry")[:4]
             else:
                 x, y, w, h = self._desktop_manager.window_geometry(window)[:4]            
             image = window.get_image(0, 0, w, h)
-            log("do_repaint_root_overlay() painting window %s with %s", window, image)
             if image:
                 self.update_root_overlay(window, 0, 0, image)
+                cr.new_path()
                 cr.set_source_rgb(0, 0, 0)
                 cr.set_line_width(1)
                 cr.rectangle(x, y, w, h)
