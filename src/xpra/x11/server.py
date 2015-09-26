@@ -923,6 +923,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         width, height = self.get_root_window_size()
         overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
         cr = overlaywin.cairo_create()
+        #paint white background:
         cr.set_source_rgb(1, 1, 1)
         cr.rectangle(0, 0, width, height)
         cr.fill()
@@ -931,20 +932,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
         windows = self._wm.get_property("windows")
         log("do_repaint_root_overlay() windows=%s", windows)
         for window in windows:
-            image = window.get_image(0, 0, width, height)
+            if window.is_OR():
+                x, y, w, h = window.get_property("geometry")[:4]
+            else:
+                x, y, w, h = self._desktop_manager.window_geometry(window)[:4]            
+            image = window.get_image(0, 0, w, h)
             log("do_repaint_root_overlay() painting window %s with %s", window, image)
             if image:
                 self.update_root_overlay(window, 0, 0, image)
-                if window.is_OR():
-                    x, y, w, h = window.get_property("geometry")[:4]
-                else:
-                    x, y, w, h = self._desktop_manager.window_geometry(window)[:4]
                 cr.set_source_rgb(0, 0, 0)
                 cr.set_line_width(1)
                 cr.rectangle(x, y, w, h)
                 cr.stroke()
         return False
-            
+
 
     def make_screenshot_packet(self):
         try:
