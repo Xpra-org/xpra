@@ -474,44 +474,51 @@ class WindowBackingBase(object):
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         """ dispatches the paint to one of the paint_XXXX methods """
-        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
-        coding = bytestostr(coding)
-        options["encoding"] = coding            #used for choosing the color of the paint box
-        if INTEGRITY_HASH:
-            l = options.get("z.len")
-            if l:
-                assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
-            md5 = options.get("z.md5")
-            if md5:
-                h = hashlib.md5(img_data)
-                hd = h.hexdigest()
-                assert md5==hd, "pixel data failed compressed md5 integrity check: expected %s but got %s" % (md5, hd)
-            deltalog("passed compressed data integrity checks: len=%s, md5=%s (type=%s)", l, md5, type(img_data))
-        if coding == "mmap":
-            self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding == "rgb24" or coding == "rgb32":
-            #avoid confusion over how many bytes-per-pixel we may have:
-            rgb_format = options.get("rgb_format")
-            if rgb_format:
-                Bpp = len(rgb_format)
-            elif coding=="rgb24":
-                Bpp = 3
+        try:
+            assert self._backing is not None
+            log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
+            coding = bytestostr(coding)
+            options["encoding"] = coding            #used for choosing the color of the paint box
+            if INTEGRITY_HASH:
+                l = options.get("z.len")
+                if l:
+                    assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
+                md5 = options.get("z.md5")
+                if md5:
+                    h = hashlib.md5(img_data)
+                    hd = h.hexdigest()
+                    assert md5==hd, "pixel data failed compressed md5 integrity check: expected %s but got %s" % (md5, hd)
+                deltalog("passed compressed data integrity checks: len=%s, md5=%s (type=%s)", l, md5, type(img_data))
+            if coding == "mmap":
+                self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
+            elif coding == "rgb24" or coding == "rgb32":
+                #avoid confusion over how many bytes-per-pixel we may have:
+                rgb_format = options.get("rgb_format")
+                if rgb_format:
+                    Bpp = len(rgb_format)
+                elif coding=="rgb24":
+                    Bpp = 3
+                else:
+                    Bpp = 4
+                if rowstride==0:
+                    rowstride = width * Bpp
+                if Bpp==3:
+                    self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+                else:
+                    self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+            elif coding in VIDEO_DECODERS:
+                self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
+            elif coding == "webp":
+                self.paint_webp(img_data, x, y, width, height, options, callbacks)
+            elif coding in self._PIL_encodings:
+                self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
             else:
-                Bpp = 4
-            if rowstride==0:
-                rowstride = width * Bpp
-            if Bpp==3:
-                self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+                self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+        except Exception:
+            if self._backing is None:
+                fire_paint_callbacks(callbacks, False, "this backing is closed - retry?")
             else:
-                self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding in VIDEO_DECODERS:
-            self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
-        elif coding == "webp":
-            self.paint_webp(img_data, x, y, width, height, options, callbacks)
-        elif coding in self._PIL_encodings:
-            self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
-        else:
-            self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+                raise
 
     def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
         raise Exception("invalid encoding: %s" % coding)
