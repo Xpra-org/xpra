@@ -321,6 +321,7 @@ OPTION_TYPES = {
                     "file-size-limit"   : int,
                     "idle-timeout"      : int,
                     "server-idle-timeout" : int,
+                    "sync-xvfb"         : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -448,6 +449,7 @@ def get_defaults():
                     "file-size-limit"   : 10,
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
+                    "sync-xvfb"         : 0,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "use-display"       : False,

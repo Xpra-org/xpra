@@ -13,6 +13,7 @@ import gobject
 import time
 
 from xpra.util import AdHocStruct, updict
+from xpra.os_util import memoryview_to_bytes
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
@@ -33,7 +34,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
-from xpra.gtk_common.error import trap, xsync
+from xpra.gtk_common.error import trap, xsync, xswallow
 
 from xpra.log import Logger
 log = Logger("server")
@@ -173,12 +174,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
         }
 
     def __init__(self, clobber):
+        self.root_overlay = None
+        self.repaint_root_overlay_due = None
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self, clobber)
 
     def init(self, opts):
         self.xsettings_enabled = opts.xsettings
         self.wm_name = opts.wm_name
+        self.sync_xvfb = int(opts.sync_xvfb)
         X11ServerBase.init(self, opts)
 
     def x11_init(self):
@@ -197,6 +201,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
                             gtk.gdk.PROP_MODE_REPLACE,
                             xpra.__version__)
         add_event_receiver(root, self)
+        if self.sync_xvfb>0:
+            with xswallow:
+                self.root_overlay = X11Window.XCompositeGetOverlayWindow(root.xid)
+                if self.root_overlay:
+                    X11Window.AllowInputPassthrough(self.root_overlay)
 
         ### Create the WM object
         self._wm = Wm(self.clobber, self.wm_name)
@@ -326,6 +335,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._tray:
             self._tray.cleanup()
             self._tray = None
+        if self.root_overlay:
+            if self.repaint_root_overlay_due:
+                self.source_remove(self.repaint_root_overlay_due)
+            with xswallow:
+                X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
+            self.root_overlay = None
         X11ServerBase.do_cleanup(self)
         remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
@@ -675,6 +690,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         del self._id_to_window[wid]
         for ss in self._server_sources.values():
             ss.remove_window(wid, window)
+        self.repaint_root_overlay()
 
     def _contents_changed(self, window, event):
         if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):
@@ -780,6 +796,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if iconified and not window.get_property("iconic"):
             window.set_property("iconic", True)
         self._desktop_manager.hide_window(window)
+        self.repaint_root_overlay()
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
@@ -818,6 +835,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 damage |= oww!=w or owh!=h
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
+        self.repaint_root_overlay()
         if damage:
             self._damage(window, 0, 0, w, h)
 
@@ -857,7 +875,76 @@ class XpraServer(gobject.GObject, X11ServerBase):
             window.request_close()
         else:
             windowlog("cannot close window %s: it is already gone!", wid)
+        self.repaint_root_overlay()
 
+
+    def _damage(self, window, x, y, width, height, options=None):
+        image = None
+        if self.root_overlay:
+            #get the image early, so damage has a chance to re-use it when not batching
+            image = window.get_image(x, y, width, height)
+        X11ServerBase._damage(self, window, x, y, width, height, options)
+        if image:
+            self.update_root_overlay(window, x, y, image)
+
+    def update_root_overlay(self, window, x, y, image):
+        overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
+        gc = overlaywin.new_gc()
+        if window.is_OR():
+            wx, wy = window.get_property("geometry")[:2]
+        else:
+            wx, wy = self._desktop_manager.window_geometry(window)[:2]
+        #FIXME: we should paint the root overlay directly
+        # either using XCopyArea or XShmPutImage,
+        # using GTK and having to unpremultiply then convert to RGB is just too slooooow
+        width = image.get_width()
+        height = image.get_height()
+        rowstride = image.get_rowstride()
+        img_data = image.get_pixels()
+        if image.get_pixel_format().startswith("BGR"):
+            try:
+                from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba  #@UnresolvedImport
+                if image.get_pixel_format()=="BGRA":
+                    img_data = unpremultiply_argb(img_data)
+                img_data = bgra_to_rgba(img_data)
+            except:
+                pass
+        img_data = memoryview_to_bytes(img_data)
+        overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data, rowstride)
+
+    def repaint_root_overlay(self):
+        log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims", self.root_overlay, self.repaint_root_overlay_due, self.sync_xvfb)
+        if not self.root_overlay or self.repaint_root_overlay_due:
+            return
+        self.repaint_root_overlay_due = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
+
+    def do_repaint_root_overlay(self):
+        self.repaint_root_overlay_due = None
+        width, height = self.get_root_window_size()
+        overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
+        cr = overlaywin.cairo_create()
+        cr.set_source_rgb(1, 1, 1)
+        cr.rectangle(0, 0, width, height)
+        cr.fill()
+        cr.paint()
+        #now paint all the windows on top:
+        windows = self._wm.get_property("windows")
+        log("do_repaint_root_overlay() windows=%s", windows)
+        for window in windows:
+            image = window.get_image(0, 0, width, height)
+            log("do_repaint_root_overlay() painting window %s with %s", window, image)
+            if image:
+                self.update_root_overlay(window, 0, 0, image)
+                if window.is_OR():
+                    x, y, w, h = window.get_property("geometry")[:4]
+                else:
+                    x, y, w, h = self._desktop_manager.window_geometry(window)[:4]
+                cr.set_source_rgb(0, 0, 0)
+                cr.set_line_width(1)
+                cr.rectangle(x, y, w, h)
+                cr.stroke()
+        return False
+            
 
     def make_screenshot_packet(self):
         try:

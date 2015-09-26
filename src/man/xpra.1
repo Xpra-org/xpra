@@ -21,6 +21,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
+[\fB\-\-sync\-vfb\fP=\fIDELAY\fP]
 [\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
 [\fB\-\-csc\-modules\fP=\fIMODULES\fP]
 [\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP]
@@ -588,9 +589,9 @@ to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 After starting the server, runs the command \fICMD\fP using the
 default shell.  The command is run with its \fB$DISPLAY\fP set to point to
 the newly-started server.  This option may be given multiple times to
-start multiple children.
+start multiple commands.
 \fB\-\-start\-child\fP=\fICMD\fP
-Identical to \fB\-\-start\fP, except the commands are taken into
+Identical to \fB\-\-start\fP, except that the commands are taken into
 account by \fB\-\-exit\-with\-children\fP.
 .TP
 \fB\-\-env\fP=\fIKEY=VALUE\fP
@@ -610,17 +611,22 @@ This can also be used to rescue an existing display whose
 xpra server instance crashed.
 .TP
 \fB\-\-xvfb\fP=\fICMD\fP
-When starting the server, xpra starts a virtual X server to run the
-clients on.  By default, this is 'Xvfb'.  If your Xvfb is installed in a
+When starting a seamless server, xpra starts a virtual X server to
+run the clients on.  If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
-executable.  The default value used is:
-\fIXvfb +extension Composite \-screen 0 3840x2560x24+32 \-nolisten tcp \-noreset  \-auth $XAUTHORITY\fP
-
-This can also be used to specify Xdummy as an alternative to Xvfb,
-this requires Xorg server version 1.12 or later and the dummy driver
-version 0.3.5 or later.  For more information, see:
+executable.  The default value used depends on your platform.
+For more information, see:
 https://xpra.org/Xdummy.html
+.TP
+\fB\-\-sync\-vfb\fP=\fIDELAY\fP
+The windows are normally only displayed on the client(s), they are
+not painted on the virtual display.
+Some applications like screen recorders may want to capture the
+window contents, you can use this option to enable painting with
+a configurable delay (in milliseconds).
+Warning: this extra painting is expensive and quite slow, which is why
+it is not enabled by default.
 .TP
 
 .SS Options for start, upgrade, shadow

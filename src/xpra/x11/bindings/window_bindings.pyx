@@ -280,9 +280,11 @@ cdef extern from "X11/extensions/shape.h":
 
     cdef int ShapeBounding
     cdef int ShapeClip
+    cdef int ShapeInput
 SHAPE_KIND = {
                 ShapeBounding   : "Bounding",
                 ShapeClip       : "Clip",
+                ShapeInput      : "ShapeInput",
               }
 
 ###################################
@@ -325,6 +327,11 @@ cdef extern from "X11/extensions/Xfixes.h":
     XFixesCursorImage* XFixesGetCursorImage(Display *)
 
     ctypedef XID XserverRegion
+
+    XserverRegion XFixesCreateRegion(Display *dpy, XRectangle *rectangles, int nrectangles)
+    void XFixesDestroyRegion(Display *dpy, XserverRegion region)
+    
+    void XFixesSetWindowShapeRegion(Display *dpy, Window win, int shape_kind, int x_off, int y_off, XserverRegion region)
 
 
 ###################################
@@ -623,6 +630,12 @@ cdef class X11WindowBindings(X11CoreBindings):
 
     def XCompositeReleaseOverlayWindow(self, Window window):
         XCompositeReleaseOverlayWindow(self.display, window)
+
+    def AllowInputPassthrough(self, Window window):
+        cdef XserverRegion region = XFixesCreateRegion(self.display, NULL, 0)
+        XFixesSetWindowShapeRegion(self.display, window, ShapeBounding, 0, 0, 0)
+        XFixesSetWindowShapeRegion(self.display, window, ShapeInput, 0, 0, region)
+        XFixesDestroyRegion(self.display, region)
 
 
     ###################################
