@@ -104,14 +104,15 @@ class WindowBackingBase(object):
         self.close_decoder(False)
 
     def close_decoder(self, blocking=False):
-        if self._decoder_lock is None or not self._decoder_lock.acquire(blocking):
+        dl = self._decoder_lock
+        if dl is None or not dl.acquire(blocking):
             return False
         try:
             self.do_clean_video_decoder()
             self.do_clean_csc_decoder()
             return True
         finally:
-            self._decoder_lock.release()
+            dl.release()
 
     def do_clean_video_decoder(self):
         if self._video_decoder:
@@ -347,7 +348,11 @@ class WindowBackingBase(object):
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
         #log("paint_with_video_decoder%s", (decoder_module, coding, "%s bytes" % len(img_data), x, y, width, height, options, callbacks))
         assert decoder_module, "decoder module not found for %s" % coding
-        with self._decoder_lock:
+        dl = self._decoder_lock
+        if dl is None:
+            fire_paint_callbacks(callbacks, False, "no lock - retry")
+            return
+        with dl:
             if self._backing is None:
                 message = "window %s is already gone!" % self.wid
                 log(message)

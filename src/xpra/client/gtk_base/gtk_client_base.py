@@ -649,6 +649,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                         backing._video_decoder = None
                         backing._csc_decoder = None
                         backing._decoder_lock = None
+                        backing.close()
 
                 #now we can unmap it:
                 self.destroy_window(wid, window)
