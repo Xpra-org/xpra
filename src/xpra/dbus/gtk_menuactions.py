@@ -20,6 +20,11 @@ def n(*args):
 def ni(*args):
     return int(n(*args))
 
+def di(v):
+    return dbus.UInt32(v)
+def ds(v):
+    return dbus.String(v)
+
 
 class Actions(dbus.service.Object):
     SUPPORTS_MULTIPLE_OBJECT_PATHS = True
@@ -30,8 +35,34 @@ class Actions(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, path)
 
     def set_actions(self, actions):
+        oldactions = self.actions
         self.actions = actions
         #TODO: diff and emit the "Change" signal
+        """Four separate types of changes are possible, and the 4 parameters of the change signal reflect these possibilities:
+        as a list of removed actions
+        a{sb} a list of actions that had their enabled flag changed
+        a{sv} a list of actions that had their state changed
+        a{s(bgav)} a list of new actions added in the same format as the return value of the DescribeAll method"""
+        removed = []
+        enabled_changed = []
+        state_changed = []
+        added = []
+        allactions = list(set(list(oldactions.keys()) + list(actions.keys())))
+        for action in allactions:
+            if action not in actions:
+                removed.append(ds(action))
+            elif action not in oldactions:
+                added.append(self._make_action(action))
+            else:   #maybe changed state?
+                oldaction = oldactions.get(action, [False, None, None]) #default value should be redundant
+                newaction = actions.get(action, [False, None, None])    #default value should be redundant
+                if oldaction[0]!=newaction[0]:
+                    enabled_changed.append((ds(action), dbus.Boolean(newaction[0])))
+                if oldaction[2]!=newaction[2]:
+                    state_changed.append((ds(action), newaction[2]))
+        self.log(".set_actions(..) changes: %s", (removed, enabled_changed, state_changed, added))
+        if removed or enabled_changed or state_changed or added:
+            self.Changed(removed, enabled_changed, state_changed, added)
 
 
     def log(self, fmt, *args):
@@ -62,7 +93,7 @@ class Actions(dbus.service.Object):
         return v
 
 
-    def _make_action(self, enabled, ptype, state):
+    def _make_action(self, enabled, ptype, state, callback=None):
         return dbus.Boolean(enabled), dbus.Signature(ptype), dbus.Array(state)
  
     @dbus.service.method(ACTIONS, in_signature="s", out_signature="(bgav)")
@@ -70,7 +101,7 @@ class Actions(dbus.service.Object):
         v = self.actions.get(action)
         if not v:
             raise dbus.exceptions.DBusException("unknown action '%s'" % action)
-        r = self._make_action(*v[:3])
+        r = self._make_action(*v)
         self.log(".Describe(%s)=%s", action, r)
         return r
 
@@ -80,7 +111,7 @@ class Actions(dbus.service.Object):
         d = {}
         for k,v in self.actions.items():
             #enabled, arg, state = v
-            d[k] = dbus.Struct(self._make_action(*v[:3]))
+            d[k] = dbus.Struct(self._make_action(*v))
         self.log(".DescribeAll()=%s", d)
         return dbus.Dictionary(d)
 
@@ -94,19 +125,20 @@ class Actions(dbus.service.Object):
             self.log.warn(".Activate%s no callback for %s", (action, state, pdata), action)
             return
         cb = v[3]
+        paction = str(action)
         pstate = n(state)
         ppdata = n(pdata)
-        self.log("Activate(%s, %s, %s) calling %s%s", action, state, pdata, cb, (pstate, ppdata))
-        cb(action, pstate, ppdata)
+        self.log("Activate(%s, %s, %s) calling %s%s", action, state, pdata, cb, (paction, pstate, ppdata))
+        cb(paction, pstate, ppdata)
 
 
     @dbus.service.method(ACTIONS, in_signature="sva{sv}")
     def SetState(self, s, v, a):
         return
 
-    @dbus.service.signal(ACTIONS, signature='s')
-    def Changed(self, arg):
-        return []
+    @dbus.service.signal(ACTIONS, signature='asa{sb}a{sv}a{s(bgav)}')
+    def Changed(self, removed, enabled_changed, state_changed, added):
+        pass
 
 
 class Menus(dbus.service.Object):
@@ -119,9 +151,27 @@ class Menus(dbus.service.Object):
         self.set_menus(menus)
 
     def set_menus(self, menus):
+        oldmenus = self.menus
         self.menus = menus
-        #TODO: diff and emit the "Change" signal
-
+        #build the change list for emitting the signal:
+        changed = []
+        groups_ids = sorted(list(set(list(oldmenus.keys())+list(menus.keys()))))
+        for group_id in groups_ids:
+            oldgroup = oldmenus.get(group_id, {})
+            group = menus.get(group_id, {})
+            menu_ids = sorted(list(set(list(oldgroup.keys()) + list(group.keys()))))
+            for menu_id in menu_ids:
+                oldmenu = oldgroup.get(menu_id, [])
+                menu = group.get(menu_id, [])
+                if menu==oldmenu:
+                    continue
+                self.log("set_menus(..) found change at group=%i, menu_id=%i : from %s to %s", group_id, menu_id, oldmenu, menu)
+                delcount = len(oldmenu)     #remove all
+                insert = [self._make_menu_item(menu[i]) for i in range(len(menu))]
+                changed.append((di(group_id), di(menu_id), di(0), di(delcount), dbus.Array(insert)))
+        self.log("menus changed: %s", changed)
+        if changed:
+            self.Changed(dbus.Array(changed))
 
     def log(self, fmt, *args):
         log("%s(%s:%s)"+fmt, MENUS, self._name, self._object_path, *args)
@@ -202,8 +252,8 @@ class Menus(dbus.service.Object):
                 self.subscribed[group] = c - 1
  
     @dbus.service.signal(MENUS, signature='a(uuuuaa{sv})')
-    def Changed(self, arg):
-        return
+    def Changed(self, changes):
+        pass
 
 
 def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
@@ -215,7 +265,7 @@ def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
     def actions_changed(*args):
         log("actions_changed%s", args)
         if actions_cb:
-            actions_cb()
+            actions_iface.DescribeAll(reply_handler=describe_all_actions, error_handler=describe_all_error)
     def actions_list(*args):
         log("actions_list%s", args)
     def actions_error(*args):
@@ -233,10 +283,12 @@ def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
             log(" %s=%s", k, mdef)
             actions[k] = mdef
         log("actions=%s", actions)
+        if actions_cb:
+            actions_cb(actions)
     def describe_all_error(*args):
         log("describe_all_error%s", args)
         if error_cb:
-            error_cb()
+            error_cb(args)
     actions_iface.DescribeAll(reply_handler=describe_all_actions, error_handler=describe_all_error)
     return actions_iface
 
@@ -249,7 +301,8 @@ def query_menu(bus_name, object_path, menu_cb=None, menu_err=None):
     def menus_changed(*args):
         log("menus_changed%s", args)
         if menu_cb:
-            menu_cb()
+            menu_iface.End([0])
+            menu_iface.Start([0], reply_handler=menus_start_cb, error_handler=menus_start_err)
     menu_iface.connect_to_signal("Changed", menus_changed)
     def menus_start_cb(values):
         menus = {}
@@ -279,9 +332,11 @@ def query_menu(bus_name, object_path, menu_cb=None, menu_err=None):
                     dmenus.append(menu)
             menus.setdefault(ni(sgroup), {})[ni(menuno)] = dmenus
         log("menus=%s", menus)
+        if menu_cb:
+            menu_cb(menus)
     def menus_start_err(*args):
         log("menus_start_err%s", args)
         if menu_err:
-            menu_err()
+            menu_err(args)
     menu_iface.Start([0], reply_handler=menus_start_cb, error_handler=menus_start_err)
     return menu_iface

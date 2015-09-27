@@ -29,8 +29,8 @@ def main(args):
     loop_init()
     session_bus = dbus_helper.get_session_bus()
 
-    app_id = u"org.xpra.Terminal"
-    app_path = u"/org/xpra/Terminal"
+    app_id = u"org.xpra.ExampleMenu"
+    app_path = u"/org/xpra/ExampleMenu"
     menu_path = u"%s/menus/appmenu" % app_path
     window_path = u"%s/window/1" % app_path
     bus_name = session_bus.get_unique_name().decode()
@@ -62,19 +62,27 @@ def main(args):
                     'about'         : [True, '', []],
                     'activate-tab'  : [True, 's', []],
                     'preferences'   : [True, '', []],
-                    'help'          : [True, '', []]
+                    'help'          : [True, '', []],
+                    'custom'        : [True, '', []],
                   }
     appactions_service = Actions(app_id, app_path, session_bus, app_actions)
     menus = {0:
-             {0: [{':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}],
-              1: [{'action': 'win.new-terminal', 'label': '_New Terminal', 'target': ['default', 'default']}],
-              2: [{'action': 'app.preferences', 'label': '_Preferences'}],
-              3: [{'action': 'app.help', 'label': '_Help'},
-                  {'action': 'app.about', 'label': '_About'},
-                  {'action': 'app.quit', 'label': '_Quit'}
-                  ]
-              }
-             }
+             {
+                0: [{':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}],
+                1: [{'action': 'win.new-terminal', 'label': '_New Terminal', 'target': ['default', 'default']}],
+                2: [{'action': 'app.preferences', 'label': '_Preferences'}],
+                3: [{'action': 'app.help', 'label': '_Help'},
+                    {'action': 'app.about', 'label': '_About'},
+                    {'action': 'app.quit', 'label': '_Quit'}
+                   ]
+             },
+             #not shown anywhere:
+             #1:
+             #{
+             #   0: [{':section': (0, 1)}],
+             #   1: [{'action': 'app.custom', 'label': '_Custom'}]
+             #},
+            }
     menus_service = Menus(app_id, menu_path, session_bus, menus)
 
     def pset(key, etype, value, ignore_errors=True):
@@ -86,10 +94,27 @@ def main(args):
     pset("_GTK_APPLICATION_ID", "utf8", app_id)
     print("gtk menu properties for window %#x on display %s" % (w.xid, display.get_name()))
 
+    import copy
+    new_menus = copy.deepcopy(menus)
+    #remove about:
+    help_about_quit = new_menus[0][3]
+    help_about_quit.remove(help_about_quit[1])
+
+    both_menus = [menus, new_menus]
+    def toggle_menu(*args):
+        menus_service.set_menus(both_menus[0])
+        saved = list(both_menus)
+        both_menus[0] = saved[1]
+        both_menus[1] = saved[0]
+        return True
+    import gobject
+    gobject.timeout_add(1000*5, toggle_menu)
     window.show()
     gtk.main()
-    del menuactions_service, appactions_service, menus_service
 
 
 if __name__ == '__main__':
+    if "-v" in sys.argv or "--versbose" in sys.argv:
+        from xpra.dbus.gtk_menuactions import log
+        log.enable_debug()
     sys.exit(main(sys.argv))
