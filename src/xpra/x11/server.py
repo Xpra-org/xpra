@@ -927,6 +927,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             cr.paint()
         else:
             overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data, rowstride)
+        image.free()
 
     def repaint_root_overlay(self):
         log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims", self.root_overlay, self.repaint_root_overlay_due, self.sync_xvfb)
