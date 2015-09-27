@@ -2556,11 +2556,12 @@ class UIXpraClient(XpraClientBase):
         log("init_authenticated_packet_handlers()")
         XpraClientBase.init_authenticated_packet_handlers(self)
         def delhandler(k):
-            #remove any existing mapping:
-            if k in self._packet_handlers:
-                del self._packet_handlers[k]
-            if k in self._ui_packet_handlers:
-                del self._ui_packet_handlers[k]
+            #remove any existing mappings:
+            for d in (self._packet_handlers, self._ui_packet_handlers):
+                try:
+                    del d[k]
+                except:
+                    pass
         for k,v in {
             "startup-complete":     self._startup_complete,
             "new-window":           self._process_new_window,
