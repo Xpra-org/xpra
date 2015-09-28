@@ -9,7 +9,8 @@ from xpra.dbus.common import init_session_bus
 import dbus.service
 
 from xpra.log import Logger
-log = Logger("dbus")
+log = Logger("dbus", "menu")
+
 
 ACTIONS = "org.gtk.Actions"
 MENUS = "org.gtk.Menus"
@@ -25,14 +26,29 @@ def di(v):
 def ds(v):
     return dbus.String(v)
 
+def busnamestr(o):
+    try:
+        return o._name._name
+    except:
+        return str(o)
+
+def ordered_ints(*lists):
+    """ merge all the lists and returned a sorted list with all the ints
+        errors out if the values are not ints
+    """
+    import itertools
+    return sorted(int(x) for x in set(itertools.chain(*lists)))
+
 
 class Actions(dbus.service.Object):
     SUPPORTS_MULTIPLE_OBJECT_PATHS = True
  
-    def __init__(self, name, path, session_bus, actions={}):
+    def __init__(self, name, path, session_bus, actions={}, default_callback=None):
         self.actions = actions
+        self.default_callback = default_callback
         bus_name = dbus.service.BusName(name, session_bus)
         dbus.service.Object.__init__(self, bus_name, path)
+        self.log("%s", (name, path, session_bus, actions))
 
     def set_actions(self, actions):
         oldactions = self.actions
@@ -47,7 +63,7 @@ class Actions(dbus.service.Object):
         enabled_changed = []
         state_changed = []
         added = []
-        allactions = list(set(list(oldactions.keys()) + list(actions.keys())))
+        allactions = list(set(oldactions.keys() + actions.keys()))
         for action in allactions:
             if action not in actions:
                 removed.append(ds(action))
@@ -66,7 +82,9 @@ class Actions(dbus.service.Object):
 
 
     def log(self, fmt, *args):
-        log("%s(%s:%s)"+fmt, ACTIONS, self._name, self._object_path, *args)
+        log("%s(%s:%s)"+fmt, ACTIONS,  busnamestr(self), self._object_path, *args)
+    def warn(self, fmt, *args):
+        log.warn("%s(%s:%s)"+fmt, ACTIONS,  busnamestr(self), self._object_path, *args)
 
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='v')
@@ -115,21 +133,27 @@ class Actions(dbus.service.Object):
         self.log(".DescribeAll()=%s", d)
         return dbus.Dictionary(d)
 
-    #async_callbacks=("ok_cb", "err_cb")
     @dbus.service.method(ACTIONS, in_signature="sava{sv}")
     def Activate(self, action, state, pdata):
         v = self.actions.get(action)
+        self.log(".Activate%s action=%s", (action, state, pdata), v)
         if not v:
             raise dbus.exceptions.DBusException("unknown action '%s'" % action)
         if len(v)<4:
-            self.log.warn(".Activate%s no callback for %s", (action, state, pdata), action)
+            cb = self.default_callback
+        else:
+            cb = v[3]
+        if cb is None:
+            self.warn(".Activate%s no callback for %s", (action, state, pdata), action)
             return
-        cb = v[3]
         paction = str(action)
         pstate = n(state)
         ppdata = n(pdata)
-        self.log("Activate(%s, %s, %s) calling %s%s", action, state, pdata, cb, (paction, pstate, ppdata))
-        cb(paction, pstate, ppdata)
+        self.log(".Activate(%s, %s, %s) calling %s%s", action, state, pdata, cb, (self, paction, pstate, ppdata))
+        try:
+            cb(self, paction, pstate, ppdata)
+        except Exception:
+            log.error("Error: calling Activate callback %s", cb, exc_info=True)
 
 
     @dbus.service.method(ACTIONS, in_signature="sva{sv}")
@@ -148,33 +172,38 @@ class Menus(dbus.service.Object):
         self.subscribed = {}
         bus_name = dbus.service.BusName(name, session_bus)
         dbus.service.Object.__init__(self, bus_name, path)
-        self.set_menus(menus)
+        self.log("%s", (name, path, session_bus, menus))
 
     def set_menus(self, menus):
         oldmenus = self.menus
         self.menus = menus
         #build the change list for emitting the signal:
         changed = []
-        groups_ids = sorted(list(set(list(oldmenus.keys())+list(menus.keys()))))
+        self.log(".set_menus(%s) old menus=%s", menus, oldmenus)
+        groups_ids = ordered_ints(oldmenus.keys(), menus.keys())
+        self.log(".set_menus(..) group_ids=%s", groups_ids)
         for group_id in groups_ids:
             oldgroup = oldmenus.get(group_id, {})
             group = menus.get(group_id, {})
-            menu_ids = sorted(list(set(list(oldgroup.keys()) + list(group.keys()))))
+            menu_ids = ordered_ints(oldgroup.keys(), group.keys())
+            self.log(".set_menus(..) menu_ids(%s)=%s", group_id, menu_ids)
             for menu_id in menu_ids:
                 oldmenu = oldgroup.get(menu_id, [])
                 menu = group.get(menu_id, [])
                 if menu==oldmenu:
                     continue
-                self.log("set_menus(..) found change at group=%i, menu_id=%i : from %s to %s", group_id, menu_id, oldmenu, menu)
+                self.log(".set_menus(..) found change at group=%i, menu_id=%i : from %s to %s", group_id, menu_id, oldmenu, menu)
                 delcount = len(oldmenu)     #remove all
                 insert = [self._make_menu_item(menu[i]) for i in range(len(menu))]
                 changed.append((di(group_id), di(menu_id), di(0), di(delcount), dbus.Array(insert)))
-        self.log("menus changed: %s", changed)
+        self.log(".set_menus(..) changed: %s", changed)
         if changed:
             self.Changed(dbus.Array(changed))
 
     def log(self, fmt, *args):
-        log("%s(%s:%s)"+fmt, MENUS, self._name, self._object_path, *args)
+        log("%s(%s:%s)"+fmt, MENUS,  busnamestr(self), self._object_path, *args)
+    def warn(self, fmt, *args):
+        log.warn("%s(%s:%s)"+fmt, MENUS,  busnamestr(self), self._object_path, *args)
 
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ss', out_signature='v')
@@ -226,7 +255,7 @@ class Menus(dbus.service.Object):
         for group in ids:
             group_menus = self.menus.get(group)
             if group_menus is None:
-                self.log.warn(".Start(%s) invalid subscription group %i", ids, group)
+                self.warn(".Start(%s) invalid subscription group %i", ids, group)
                 continue
             self.subscribed[group] = self.subscribed.get(group, 0)+1
             for n, items in group_menus.items():
@@ -241,7 +270,7 @@ class Menus(dbus.service.Object):
                         menu_items.append(menu_item)
                 if menu_items:
                     menus.append((group, dbus.UInt32(n), menu_items))
-        self.log("Start(%s)=%s", ids, menus)
+        self.log(".Start(%s)=%s", ids, menus)
         return menus
  
     @dbus.service.method(MENUS, in_signature="au")
@@ -256,12 +285,16 @@ class Menus(dbus.service.Object):
         pass
 
 
-def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
+def get_actions_interface(bus_name, object_path):
     bus = init_session_bus()
     obj = bus.get_object(bus_name, object_path)
     log("%s:%s=%s", bus_name, object_path, obj)
     actions_iface = dbus.Interface(obj, ACTIONS)
     log("%s(%s)=%s", ACTIONS, obj, actions_iface)
+    return actions_iface
+
+def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
+    actions_iface = get_actions_interface(bus_name, object_path)
     def actions_changed(*args):
         log("actions_changed%s", args)
         if actions_cb:
@@ -293,11 +326,16 @@ def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
     return actions_iface
 
 
-def query_menu(bus_name, object_path, menu_cb=None, menu_err=None):
+def get_menu_interface(bus_name, object_path):
     bus = init_session_bus()
     obj = bus.get_object(bus_name, object_path)
+    log("%s:%s=%s", bus_name, object_path, obj)
     menu_iface = dbus.Interface(obj, MENUS)
     log("%s(%s)=%s", MENUS, obj, menu_iface)
+    return menu_iface
+
+def query_menu(bus_name, object_path, menu_cb=None, menu_err=None):
+    menu_iface = get_menu_interface(bus_name, object_path)
     def menus_changed(*args):
         log("menus_changed%s", args)
         if menu_cb:

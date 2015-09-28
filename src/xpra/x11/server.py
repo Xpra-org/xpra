@@ -49,6 +49,7 @@ settingslog = Logger("x11", "xsettings")
 workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
+menulog  = Logger("x11", "menu")
 
 import xpra
 from xpra.util import nonl, typedict
@@ -184,7 +185,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.xsettings_enabled = opts.xsettings
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb)
+        self.global_menus = int(opts.global_menus)
         X11ServerBase.init(self, opts)
+        if self.global_menus:
+            self.rpc_handlers["menu"] = self._handle_menu_rpc
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
@@ -977,6 +981,25 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 cr.stroke()
         return False
 
+
+    def _handle_menu_rpc(self, ss, rpcid, action_type, wid, action, state, pdata, *extra):
+        menulog("_handle_menu_rpc%s", (ss, rpcid, action_type, wid, action, state, pdata, extra))
+        def native(args):
+            return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
+        def ok_back(*args):
+            menulog("menu rpc: ok_back%s", args)
+            ss.rpc_reply("menu", rpcid, True, native(args))
+        def err_back(*args):
+            menulog("menu rpc: err_back%s", args)
+            ss.rpc_reply("menu", rpcid, False, native(args))
+        try:
+            window = self._id_to_window[wid]
+            window.activate_menu(action_type, action, state, pdata)
+            ok_back("done")
+        except Exception as e:
+            menulog.error("Error: cannot handle menu action %s:", action)
+            menulog.error(" %s", e)
+            err_back(str(e))
 
     def make_screenshot_packet(self):
         try:

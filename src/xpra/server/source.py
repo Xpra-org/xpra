@@ -100,7 +100,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         if wid:
             return {"transient-for" : wid}
         return {}
-    elif propname in ("window-type", "shape"):
+    elif propname in ("window-type", "shape", "menu"):
         #always send unchanged:
         return {propname : raw()}
     elif propname in ("iconic", "fullscreen", "maximized", "decorations", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):

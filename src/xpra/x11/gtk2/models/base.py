@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -17,6 +18,20 @@ log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")
 metalog = Logger("x11", "window", "metadata")
 geomlog = Logger("x11", "window", "geometry")
+menulog = Logger("x11", "window", "menu")
+
+
+dbus_helper = None
+MENU_FORWARDING = os.environ.get("XPRA_MENU_FORWARDING", "1")=="1"
+if MENU_FORWARDING:
+    try:
+        from xpra.dbus.helper import DBusHelper
+        dbus_helper = DBusHelper()
+        from xpra.dbus.gtk_menuactions import query_actions, query_menu, ACTIONS, MENUS
+    except Exception as e:
+        log.warn("Warning: menu forwarding is disabled:")
+        log.warn(" cannot load dbus helper: %s", e)
+        MENU_FORWARDING = False
 
 
 X11Window = X11WindowBindings()
@@ -71,7 +86,7 @@ class BaseWindowModel(CoreX11WindowModel):
                       "Does this window ever accept keyboard input?", "",
                       True,
                       gobject.PARAM_READWRITE),
-        #
+        #from WM_NORMAL_HINTS
         "size-hints": (gobject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
                        gobject.PARAM_READABLE),
@@ -87,6 +102,10 @@ class BaseWindowModel(CoreX11WindowModel):
         #from _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT
         "strut": (gobject.TYPE_PYOBJECT,
                   "Struts requested by window, or None", "",
+                  gobject.PARAM_READABLE),
+        #from _GTK_*MENU*
+        "menu": (gobject.TYPE_PYOBJECT,
+                  "Application menu, or None", "",
                   gobject.PARAM_READABLE),
         #from _NET_WM_DESKTOP
         "workspace": (gobject.TYPE_UINT,
@@ -151,10 +170,12 @@ class BaseWindowModel(CoreX11WindowModel):
         })
     _property_names = CoreX11WindowModel._property_names + [
                       "size-hints", "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
+                      "menu",
                       #virtual attributes:
                       "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "size-hints", "attention-requested",
+                              "menu",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
@@ -164,9 +185,18 @@ class BaseWindowModel(CoreX11WindowModel):
                               "_NET_WM_FULLSCREEN_MONITORS",
                               "_NET_WM_BYPASS_COMPOSITOR",
                               "_NET_WM_STRUT",
-                              "_NET_WM_STRUT_PARTIAL",      #redundant as it uses the same function as _NET_WM_STRUT
+                              #redundant as it uses the same function as _NET_WM_STRUT:
+                              #"_NET_WM_STRUT_PARTIAL",
                               "_NET_WM_WINDOW_OPACITY",
-                              "WM_HINTS"]
+                              "WM_HINTS",
+                              "_GTK_APP_MENU_OBJECT_PATH",
+                              #redundant as they use the same function as _GTK_APP_MENU_OBJECT_PATH:
+                              #"_GTK_APPLICATION_ID",
+                              #"_GTK_UNIQUE_BUS_NAME",
+                              #"_GTK_APPLICATION_OBJECT_PATH",
+                              #"_GTK_APP_MENU_OBJECT_PATH",
+                              #"_GTK_WINDOW_OBJECT_PATH",
+                              ]
     _DEFAULT_NET_WM_ALLOWED_ACTIONS = ["_NET_WM_ACTION_%s" % x for x in (
         "CLOSE", "MOVE", "RESIZE", "FULLSCREEN",
         "MINIMIZE", "SHADE", "STICK",
@@ -351,11 +381,107 @@ class BaseWindowModel(CoreX11WindowModel):
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
-        old_hints = self.get_property("size-hints")
-        if hints and hints!=old_hints:
-            self._internal_set_property("size-hints", hints)
+        if self._updateprop("size-hints", hints):
             if self._setup_done:
                 self._update_client_geometry()
+
+
+    def _get_x11_menu_properties(self):
+        props = {}
+        for k,x11name in {
+            "application-id"    : "_GTK_APPLICATION_ID",            #ie: org.gnome.baobab
+            "bus-name"          : "_GTK_UNIQUE_BUS_NAME",           #ie: :1.745
+            "application-path"  : "_GTK_APPLICATION_OBJECT_PATH",   #ie: /org/gnome/baobab
+            "app-menu-path"     : "_GTK_APP_MENU_OBJECT_PATH",      #ie: /org/gnome/baobab/menus/appmenu
+            "window-path"       : "_GTK_WINDOW_OBJECT_PATH",        #ie: /org/gnome/baobab/window/1
+            }.items():
+            v = self.prop_get(x11name, "utf8", ignore_errors=True, raise_xerrors=False)
+            menulog("%s=%s", x11name, v)
+            if v:
+                props[k] = v
+        return props
+
+    def _handle_gtk_app_menu_change(self):
+        def nomenu(*args):
+            self._updateprop("menu", {})
+        if not MENU_FORWARDING:
+            nomenu()
+        props = self._get_x11_menu_properties()
+        if len(props)<5:        #incomplete
+            nomenu()
+            return
+        menulog("gtk menu properties: %s", props)
+        app_id      = props["application-id"]
+        bus_name    = props["bus-name"]
+        app_path    = props["application-path"]
+        menu_path   = props["app-menu-path"]
+        window_path = props["window-path"]
+        def updatemenu(k, v):
+            """ Updates the 'menu' property if the value has changed.
+                Sets the 'enabled' flag if all the required properties are present.
+            """
+            menu = self._gproperties.get("menu") or {}
+            cv = menu.get(k)
+            if cv==v:
+                return
+            if v is None:
+                try:
+                    del menu[k]
+                except:
+                    pass
+            else:
+                menu[k] = v
+            enabled = all(menu.get(x) for x in ("application-id", "application-actions", "window-actions", "window-menu"))
+            menu["enabled"] = enabled
+            menulog("menu(%s)=%s", self, menu)
+            self._internal_set_property("menu", menu)
+        updatemenu("application-id", app_id)
+        def app_actions_cb(actions):
+            menulog("application-actions=%s", actions)
+            updatemenu("application-actions", actions)
+        def app_actions_err(err):
+            menulog.error("Error: failed to query %s at %s:", ACTIONS, app_path)
+            menulog.error(" %s", err)
+            updatemenu("application-actions", None)
+        query_actions(bus_name, app_path, app_actions_cb, app_actions_err)
+        def window_actions_cb(actions):
+            menulog("window-actions", actions)
+            updatemenu("window-actions", actions)
+        def window_actions_err(err):
+            menulog.error("Error: failed to query %s at %s:", ACTIONS, window_path)
+            menulog.error(" %s", err)
+            updatemenu("window-actions", None)
+        query_actions(bus_name, window_path, window_actions_cb, window_actions_err)
+        def menu_cb(menu):
+            menulog("window-menu", menu)
+            updatemenu("window-menu", menu)
+        def menu_err(err):
+            menulog.error("Error: failed to query %s at %s:", MENUS, menu_path)
+            menulog.error(" %s", err)
+            updatemenu("window-menu", None)
+        query_menu(bus_name, menu_path, menu_cb, menu_err)
+
+    def activate_menu(self, action_type, action, state, pdata):
+        #locate the service and call it:
+        from xpra.dbus.gtk_menuactions import get_actions_interface
+        props = self._get_x11_menu_properties()
+        menulog("activate_menu%s properties=%s", (action_type, action, state, pdata), props)
+        if not props:
+            raise Exception("no menu defined for %s" % self)
+        bus_name    = props.get("bus-name")
+        if not bus_name:
+            raise Exception("no bus name defined for %s" % self)
+        if action_type=="application":
+            path = "application-path"
+        elif action_type=="window":
+            path = "window-path"
+        else:
+            raise Exception("unknown action type for menu: %s" % action_type)
+        object_path = props.get(path)
+        if not object_path:
+            raise Exception("no object path property %s" % path)
+        actions_iface = get_actions_interface(bus_name, object_path)
+        actions_iface.Activate(action, state, pdata)
 
 
     _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
@@ -370,6 +496,11 @@ class BaseWindowModel(CoreX11WindowModel):
         "_NET_WM_WINDOW_OPACITY"        : _handle_opacity_change,
         "WM_HINTS"                      : _handle_wm_hints_change,
         "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
+        "_GTK_APPLICATION_ID"           : _handle_gtk_app_menu_change,
+        "_GTK_UNIQUE_BUS_NAME"          : _handle_gtk_app_menu_change,
+        "_GTK_APPLICATION_OBJECT_PATH"  : _handle_gtk_app_menu_change,
+        "_GTK_APP_MENU_OBJECT_PATH"     : _handle_gtk_app_menu_change,
+        "_GTK_WINDOW_OBJECT_PATH"       : _handle_gtk_app_menu_change,
         })
 
 

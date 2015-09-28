@@ -320,6 +320,12 @@ class ClientWindowBase(ClientWidgetBase):
         if b"command" in metadata:
             self.set_command(metadata.strget("command"))
 
+        if b"menu" in metadata:
+            self.set_menu(metadata.dictget("menu"))
+
+
+    def set_menu(self, menu):
+        pass
 
     def set_command(self, command):
         pass
@@ -521,9 +527,15 @@ class ClientWindowBase(ClientWidgetBase):
     def log(self, message=""):
         log.info(message)
 
+
     def dbus_call(self, *args, **kwargs):
-        #see UIXpraClient.dbus_call
-        return self._client.dbus_call(self._id, *args, **kwargs)
+        #alias for rpc_call using dbus as rpc_type, see UIXpraClient.dbus_call
+        if not self._client.server_dbus_proxy:
+            log.error("Error: cannot send remote dbus call:")
+            log.error(" this server does not support dbus-proxying")
+            return
+        rpc_args = [self._id]+args
+        return self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 
     def get_mouse_event_wid(self):

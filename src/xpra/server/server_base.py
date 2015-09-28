@@ -23,6 +23,7 @@ printlog = Logger("printing")
 netlog = Logger("network")
 windowlog = Logger("window")
 clipboardlog = Logger("clipboard")
+rpclog = Logger("rpc")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -121,6 +122,7 @@ class ServerBase(ServerCore):
         self.child_reaper = getChildReaper(self.reaper_exit)
         self.send_pings = False
         self.scaling_control = False
+        self.rpc_handlers = {}
 
         #sound:
         self.pulseaudio = False
@@ -489,6 +491,7 @@ class ServerBase(ServerCore):
         try:
             from xpra.dbus.helper import DBusHelper
             self.dbus_helper = DBusHelper()
+            self.rpc_handlers["dbus"] = self._handle_dbus_rpc
         except Exception as e:
             log.warn("cannot load dbus helper: %s", e)
             self.supports_dbus_proxy = False
@@ -1039,6 +1042,7 @@ class ServerBase(ServerCore):
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
+                 "rpc-types"                    : self.rpc_handlers.keys(),
                  "file-transfer"                : self.file_transfer,
                  #not exposed as this is currently unused by the client (we only transfer from server to client)
                  #"file-size-limit"              : self.file_size_limit,
@@ -1532,6 +1536,7 @@ class ServerBase(ServerCore):
              "pulseaudio"       : self.pulseaudio,
              "pulseaudio.command" : self.pulseaudio_command,
              "dbus_proxy"       : self.supports_dbus_proxy,
+             "rpc-types"        : self.rpc_handlers.keys(),
              "clipboard"        : self.supports_clipboard,
              "idle_timeout"     : self.idle_timeout,
              "file-size-limit"  : self.file_size_limit,
@@ -1825,19 +1830,29 @@ class ServerBase(ServerCore):
     def _process_rpc(self, proto, packet):
         ss = self._server_sources.get(proto)
         assert ss is not None
-        rpc_type, rpcid, _, bus_name, path, interface, function, args = packet[1:9]
-        assert rpc_type=="dbus", "unsupported rpc request type: %s" % rpc_type
+        rpc_type = packet[1]
+        rpcid = packet[2]
+        handler = self.rpc_handlers.get(rpc_type)
+        if not handler:
+            rpclog.error("Error: invalid rpc request of type '%s'", rpc_type)
+            return
+        rpclog("rpc handler for %s: %s", rpc_type, handler)
+        try:
+            handler(ss, *packet[2:])
+        except Exception as e:
+            rpclog.error("Error: cannot call %s handler %s:", rpc_type, handler, exc_info=True)
+            ss.rpc_reply(rpc_type, rpcid, False, str(e))
+
+    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *extra):
         assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
         def native(args):
-            if args is None:
-                return ""
-            return [self.dbus_helper.dbus_to_native(x) for x in args]
+            return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
         def ok_back(*args):
             log("rpc: ok_back%s", args)
-            ss.rpc_reply(rpc_type, rpcid, True, native(args))
+            ss.rpc_reply("dbus", rpcid, True, native(args))
         def err_back(*args):
             log("rpc: err_back%s", args)
-            ss.rpc_reply(rpc_type, rpcid, False, native(args))
+            ss.rpc_reply("dbus", rpcid, False, native(args))
         self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
 
 

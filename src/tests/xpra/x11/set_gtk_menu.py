@@ -56,7 +56,7 @@ def main(args):
                     'paste'         : [True, 's', []],
                     'find'          : [True, 's', []],
                     'help'          : [True, '', []]}
-    menuactions_service = Actions(app_id, window_path, session_bus, window_actions)
+    Actions(app_id, window_path, session_bus, window_actions)
     app_actions = {
                     'quit'          : [True, '', []],
                     'about'         : [True, '', []],
@@ -65,7 +65,7 @@ def main(args):
                     'help'          : [True, '', []],
                     'custom'        : [True, '', []],
                   }
-    appactions_service = Actions(app_id, app_path, session_bus, app_actions)
+    Actions(app_id, app_path, session_bus, app_actions)
     menus = {0:
              {
                 0: [{':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}],
@@ -85,13 +85,13 @@ def main(args):
             }
     menus_service = Menus(app_id, menu_path, session_bus, menus)
 
-    def pset(key, etype, value, ignore_errors=True):
-        return prop_set(w, key, etype, value)
-    pset("_GTK_APP_MENU_OBJECT_PATH", "utf8", menu_path)
-    pset("_GTK_WINDOW_OBJECT_PATH", "utf8", window_path)
-    pset("_GTK_APPLICATION_OBJECT_PATH", "utf8", app_path)
-    pset("_GTK_UNIQUE_BUS_NAME", "utf8", bus_name)
-    pset("_GTK_APPLICATION_ID", "utf8", app_id)
+    def pset(key, value):
+        return prop_set(w, key, "utf8", value)
+    pset("_GTK_APP_MENU_OBJECT_PATH",       menu_path)
+    pset("_GTK_WINDOW_OBJECT_PATH",         window_path)
+    pset("_GTK_APPLICATION_OBJECT_PATH",    app_path)
+    pset("_GTK_UNIQUE_BUS_NAME",            bus_name)
+    pset("_GTK_APPLICATION_ID",             app_id)
     print("gtk menu properties for window %#x on display %s" % (w.xid, display.get_name()))
 
     import copy

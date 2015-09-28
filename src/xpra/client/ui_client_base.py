@@ -23,7 +23,7 @@ soundlog = Logger("client", "sound")
 traylog = Logger("client", "tray")
 keylog = Logger("client", "keyboard")
 workspacelog = Logger("client", "workspace")
-dbuslog = Logger("client", "dbus")
+rpclog = Logger("client", "rpc")
 grablog = Logger("client", "grab")
 iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
@@ -80,6 +80,8 @@ MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "20"))
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
+
+RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
 
 """
@@ -172,9 +174,9 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_send = False
         self.queue_used_sent = None
 
-        #dbus:
-        self.dbus_counter = AtomicInteger()
-        self.dbus_pending_requests = {}
+        #rpc / dbus:
+        self.rpc_counter = AtomicInteger()
+        self.rpc_pending_requests = {}
 
         #mmap:
         self.mmap_enabled = False
@@ -207,6 +209,7 @@ class UIXpraClient(XpraClientBase):
         self.pings = False
         self.xsettings_enabled = False
         self.server_dbus_proxy = False
+        self.server_rpc_types = []
         self.start_new_commands = False
         self.server_window_frame_extents = False
         self.server_is_shadow = False
@@ -1509,6 +1512,12 @@ class UIXpraClient(XpraClientBase):
         self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
+        #default for pre-0.16 servers:
+        if self.server_dbus_proxy:
+            default_rpc_types = ["dbus"]
+        else:
+            default_rpc_types = []
+        self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
         self.start_new_commands = c.boolget("start-new-commands")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
@@ -1674,38 +1683,42 @@ class UIXpraClient(XpraClientBase):
         finally:
             self.in_remote_logging = False
 
-    def dbus_call(self, wid, bus_name, path, interface, function, reply_handler=None, error_handler=None, *args):
-        if not self.server_dbus_proxy:
-            log.error("cannot use dbus_call: this server does not support dbus-proxying")
-            return
-        rpcid = self.dbus_counter.increase()
-        self.dbus_filter_pending()
-        req = (time.time(), bus_name, path, interface, function, reply_handler, error_handler)
-        dbuslog("sending dbus request %s to server: %s", rpcid, req)
-        self.dbus_pending_requests[rpcid] = req
-        self.send("rpc", "dbus", rpcid, wid, bus_name, path, interface, function, args)
-        self.timeout_add(5000, self.dbus_filter_pending)
+    def rpc_call(self, rpc_type, rpc_args, reply_handler=None, error_handler=None):
+        assert rpc_type in self.server_rpc_types, "server does not support %s rpc" % rpc_type
+        rpcid = self.rpc_counter.increase()
+        self.rpc_filter_pending()
+        #keep track of this request (for timeout / error and reply callbacks):
+        req = time.time(), rpc_type, rpc_args, reply_handler, error_handler
+        self.rpc_pending_requests[rpcid] = req
+        rpclog("sending %s rpc request %s to server: %s", rpc_type, rpcid, req)
+        packet = ["rpc", rpc_type, rpcid] + rpc_args
+        self.send(*packet)
+        self.timeout_add(RPC_TIMEOUT, self.rpc_filter_pending)
 
-    def dbus_filter_pending(self):
+    def rpc_filter_pending(self):
         """ removes timed out dbus requests """
-        for k in list(self.dbus_pending_requests.keys()):
-            v = self.dbus_pending_requests.get(k)
+        for k in list(self.rpc_pending_requests.keys()):
+            v = self.rpc_pending_requests.get(k)
             if v is None:
                 continue
-            t, bn, p, i, fn, _, ecb = v
-            if time.time()-t>=5:
-                dbuslog.warn("dbus request: %s:%s (%s).%s has timed out", bn, p, i, fn)
-                del self.dbus_pending_requests[k]
-                if ecb is not None:
-                    ecb("timeout")
+            t, rpc_type, _rpc_args, _reply_handler, ecb = v
+            if 1000*(time.time()-t)>=RPC_TIMEOUT:
+                rpclog.warn("%s rpc request: %s has timed out", rpc_type, _rpc_args)
+                try:
+                    del self.rpc_pending_requests[k]
+                    if ecb is not None:
+                        ecb("timeout")
+                except Exception as e:
+                    rpclog.error("Error during timeout handler for %s rpc callback:", rpc_type)
+                    rpclog.error(" %s", e)
 
     def _process_rpc_reply(self, packet):
         rpc_type, rpcid, success, args = packet[1:5]
-        assert rpc_type=="dbus", "unsupported rpc reply type: %s" % rpc_type
-        dbuslog("rpc_reply: %s", (rpc_type, rpcid, success, args))
-        v = self.dbus_pending_requests.get(rpcid)
+        rpclog("rpc_reply: %s", (rpc_type, rpcid, success, args))
+        v = self.rpc_pending_requests.get(rpcid)
         assert v is not None, "pending dbus handler not found for id %s" % rpcid
-        del self.dbus_pending_requests[rpcid]
+        assert rpc_type==v[1], "rpc reply type does not match: expected %s got %s" % (v[1], rpc_type)
+        del self.rpc_pending_requests[rpcid]
         if success:
             ctype = "ok"
             rh = v[-2]      #ok callback
@@ -1713,13 +1726,14 @@ class UIXpraClient(XpraClientBase):
             ctype = "error"
             rh = v[-1]      #error callback
         if rh is None:
-            dbuslog("no %s rpc callback defined, return values=%s", ctype, args)
+            rpclog("no %s rpc callback defined, return values=%s", ctype, args)
             return
-        dbuslog("calling %s callback %s(%s)", ctype, rh, args)
+        rpclog("calling %s callback %s(%s)", ctype, rh, args)
         try:
             rh(*args)
         except Exception as e:
-            dbuslog.warn("error processing rpc reply handler %s(%s) : %s", rh, args, e)
+            rpclog.error("Error processing rpc reply handler %s(%s) :", rh, args)
+            rpclog.error(" %s", e)
 
 
     def _process_control(self, packet):

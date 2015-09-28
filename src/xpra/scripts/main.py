@@ -403,6 +403,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--bell", action="store",
                       dest="bell", default=defaults.bell, metavar="yes|no",
                       help="Forward the system bell. Default: %s." % enabled_str(defaults.bell))
+    legacy_bool_parse("global-menus")
+    group.add_option("--global-menus", action="store",
+                      dest="global_menus", default=defaults.global_menus, metavar="yes|no",
+                      help="Forward application global menus. Default: %s." % enabled_str(defaults.global_menus))
     legacy_bool_parse("xsettings")
     if os.name=="posix":
         group.add_option("--xsettings", action="store", metavar="yes|no",

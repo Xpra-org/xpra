@@ -20,10 +20,11 @@ opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 screenlog = Logger("gtk", "client", "screen")
 framelog = Logger("gtk", "client", "frame")
+menulog = Logger("gtk", "client", "menu")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import bytestostr, updict, pver, DEFAULT_METADATA_SUPPORTED
+from xpra.util import typedict, bytestostr, updict, pver, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -66,6 +67,15 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
+        try:
+            from xpra.x11.gtk_x11.menu import has_gtk_menu_support
+            self._has_menu_support = has_gtk_menu_support(self.get_root_window())
+        except ImportError as e:
+            self._has_menu_support = False
+            menulog("no gtk menu support: %s", e)
+        self._window_menus = {}
+        self._window_menu_services = weakref.WeakValueDictionary()
+
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -270,6 +280,94 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return True
 
 
+    def set_window_menu(self, wid, menus, application_action_callback=None, window_action_callback=None):
+        assert self._has_menu_support
+        #ie: menu = {
+        #         'enabled': True,
+        #         'application-id':         'org.xpra.ExampleMenu',
+        #         'application-actions':    {'quit': (True, '', ()), 'about': (True, '', ()), 'help': (True, '', ()), 'custom': (True, '', ()), 'activate-tab': (True, 's', ()), 'preferences': (True, '', ())},
+        #         'window-actions':         {'edit-profile': (True, 's', ()), 'reset': (True, 'b', ()), 'about': (True, '', ()), 'help': (True, '', ()), 'fullscreen': (True, '', (0,)), 'detach-tab': (True, '', ()), 'save-contents': (True, '', ()), 'zoom': (True, 'i', ()), 'move-tab': (True, 'i', ()), 'new-terminal': (True, '(ss)', ()), 'switch-tab': (True, 'i', ()), 'new-profile': (True, '', ()), 'close': (True, 's', ()), 'show-menubar': (True, '', (1,)), 'select-all': (True, '', ()), 'copy': (True, '', ()), 'paste': (True, 's', ()), 'find': (True, 's', ()), 'preferences': (True, '', ())},
+        #         'window-menu':            {0: {0: ({':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}), 1: ({'action': 'win.new-terminal', 'target': ('default', 'default'), 'label': '_New Terminal'},), 2: ({'action': 'app.preferences', 'label': '_Preferences'},), 3: ({'action': 'app.help', 'label': '_Help'}, {'action': 'app.about', 'label': '_About'}, {'action': 'app.quit', 'label': '_Quit'})}}
+        #           }
+        enabled = menus.get("enabled", False)
+        app_actions_service, window_actions_service, window_menu_service = None, None, None
+        def remove_services(*args):
+            """ removes all the services if they are not longer used by any windows """
+            for x in (app_actions_service, window_actions_service, window_menu_service):
+                if x:
+                    if x not in self._window_menu_services.values():
+                        try:
+                            x.remove_from_connection()
+                        except Exception as e:
+                            menulog.warn("Error removing %s: %s", x, e)
+                try:
+                    del self._window_menus[wid]
+                except:
+                    pass
+        if enabled:
+            m = typedict(menus)
+            app_id          = bytestostr(m.strget("application-id")).decode()
+            app_actions     = m.dictget("application-actions")
+            window_actions  = m.dictget("window-actions")
+            window_menu     = m.dictget("window-menu")
+        if wid in self._window_menus:
+            #update, destroy or re-create the services:
+            app_actions_service, window_actions_service, window_menu_service, cur_app_id = self._window_menus[wid]
+            if not enabled or cur_app_id!=app_id:
+                remove_services()   #falls through to re-create them if enabled is True
+                app_actions_service, window_actions_service, window_menu_service = None, None, None
+            else:
+                #update them:
+                app_actions_service.set_actions(app_actions)
+                window_actions_service.set_actions(window_actions)
+                window_menu_service.set_menus(window_menu)
+                return
+        if not enabled:
+            return
+        #make or re-use services:
+        try:
+            NAME_PREFIX = "org.xpra."
+            from xpra.util import strtobytes
+            from xpra.x11.gtk_x11.prop import prop_set
+            from xpra.dbus.common import init_session_bus
+            from xpra.dbus.gtk_menuactions import Menus, Actions
+            session_bus = init_session_bus()
+            bus_name = session_bus.get_unique_name().decode()
+            name = NAME_PREFIX + app_id.lstrip("org.").lstrip("gtk.").lstrip("xpra.")
+
+            def get_service(service_class, name, path, *args):
+                """ find the service by name and path, or create one """
+                service = self._window_menu_services.get((service_class, name, path))
+                if service is None:
+                    menulog
+                    service = service_class(name, path, session_bus, *args)
+                    self._window_menu_services[(service_class, name, path)] = service
+                return service
+
+            app_path = strtobytes("/"+name.replace(".", "/")).decode()
+            app_actions_service = get_service(Actions, name, app_path, app_actions, application_action_callback)
+
+            #this one should be unique and therefore not re-used? (only one "window_action_callback"..)
+            window_path = u"%s/window/%s" % (app_path, wid)
+            window_actions_service = get_service(Actions, name, window_path, window_actions, window_action_callback)
+
+            menu_path = u"%s/menus/appmenu" % app_path
+            window_menu_service = get_service(Menus, app_id, menu_path, window_menu)
+            self._window_menus[wid] = app_actions_service, window_actions_service, window_menu_service, app_id
+
+            window = self._id_to_window[wid].get_window()
+            def pset(key, value):
+                return prop_set(window, key, "utf8", value)
+            pset("_GTK_APP_MENU_OBJECT_PATH",       menu_path)
+            pset("_GTK_WINDOW_OBJECT_PATH",         window_path)
+            pset("_GTK_APPLICATION_OBJECT_PATH",    app_path)
+            pset("_GTK_UNIQUE_BUS_NAME",            bus_name)
+            pset("_GTK_APPLICATION_ID",             app_id)
+        except Exception:
+            menulog.error("Error: cannot parse or apply menu:", exc_info=True)
+            remove_services()
+
+
     def get_root_window(self):
         return get_default_root_window()
 
@@ -322,6 +420,15 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
         if HAS_X11_BINDINGS:
             ms += ["shape"]
+        if self._has_menu_support:
+            ms += ["menu"]
+        #figure out if we can handle the "global menu" stuff:
+        if os.name=="posix" and not sys.platform.startswith("darwin"):
+            try:
+                from xpra.dbus.helper import DBusHelper
+                assert DBusHelper
+            except:
+                pass
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
         #we need the bindings to support initiate-moveresize (posix only for now):

@@ -21,6 +21,7 @@ eventslog = Logger("events")
 shapelog = Logger("shape")
 mouselog = Logger("mouse")
 geomlog = Logger("geometry")
+menulog = Logger("menu")
 
 
 from xpra.os_util import memoryview_to_bytes
@@ -742,6 +743,28 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return self._window_workspace
 
 
+    def set_menu(self, menu):
+        assert self._client._has_menu_support
+        menulog("set_menu(%s)", menu)
+        def do_set_menu():
+            self._client.set_window_menu(self._id, menu, self.application_action_callback, self.window_action_callback)
+        self.when_realized("menu", do_set_menu)
+
+    def application_action_callback(self, action_service, action, state, pdata):
+        self.call_action("application", action, state, pdata)
+
+    def window_action_callback(self, action_service, action, state, pdata):
+        self.call_action("window", action, state, pdata)
+
+    def call_action(self, action_type, action, state, pdata):
+        menulog("call_action%s", (action_type, action, state, pdata))
+        rpc_args = [action_type, self._id, action, state, pdata]
+        try:
+            self._client.rpc_call("menu", rpc_args)
+        except Exception as e:
+            log.error("Error: failed to send %s menu rpc request for %s", action_type, action, exc_info=True)
+
+
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
         statelog("initiate_moveresize%s", (x_root, y_root, direction, button, source_indication))
         assert HAS_X11_BINDINGS, "cannot handle initiate-moveresize without X11 bindings"
@@ -954,6 +977,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def destroy(self):
+        if self._client._has_menu_support:
+            self._client.set_window_menu(self._id, {})
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         gtk.Window.destroy(self)

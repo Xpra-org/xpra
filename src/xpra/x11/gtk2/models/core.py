@@ -488,8 +488,9 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
                 self.notify(name)
             else:
                 metalog("not sending notify(%s) (setup done=%s, managed=%s)", name, self._setup_done, self._managed)
-        else:
-            metalog("updateprop(%s, %s) unchanged", name, value)
+            return True
+        metalog("updateprop(%s, %s) unchanged", name, value)
+        return False
 
     def get(self, name, default_value=None):
         """ Allows us the avoid defining all the attributes we may ever query,

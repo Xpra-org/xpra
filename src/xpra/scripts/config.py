@@ -358,6 +358,7 @@ OPTION_TYPES = {
                     "start-new-commands": bool,
                     "remote-logging"    : bool,
                     "shadow-fullscreen" : bool,
+                    "global-menus"      : bool,
                     #arrays of strings:
                     "socket-dirs"       : list,
                     "encodings"         : list,
@@ -486,6 +487,7 @@ def get_defaults():
                     "open-files"        : False,
                     "swap-keys"         : OSX,  #only used on osx
                     "shadow-fullscreen" : False,
+                    "global-menus"      : True,
                     "socket-dirs"       : [],
                     "encodings"         : ["all"],
                     "video-encoders"    : ["all"],

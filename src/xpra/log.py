@@ -146,6 +146,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("screen"       , "Screen and workarea dimension"),
                 ("xsettings"    , "XSettings synchronization"),
                 ("dbus"         , "DBUS calls"),
+                ("rpc"          , "Remote Procedure Calls"),
                 ("menu"         , "Menus"),
                 ])),
     ("Window", OrderedDict([
