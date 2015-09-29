@@ -76,18 +76,18 @@ def _set_gtk_x11_window_menu(wid, window, menus, application_action_callback=Non
         #window has already been closed
         #(but we still want to call setup_dbus_window_menu above to ensure we clear things up!)
         return
-    from xpra.gtk_common.error import xsync
-    with xsync:
-        try:
+    try:
+        from xpra.gtk_common.error import xsync
+        with xsync:
             for k,v in window_props.items():
                 if v is None:
                     prop_del(window, k)
                 else:
                     vtype, value = v
                     prop_set(window, k, vtype, value)
-        except Exception as e:
-            menulog.error("Error setting menu window properties:")
-            menulog.error(" %s", e)
+    except Exception as e:
+        menulog.error("Error setting menu window properties:")
+        menulog.error(" %s", e)
 
 def get_menu_support_function():
     try:
