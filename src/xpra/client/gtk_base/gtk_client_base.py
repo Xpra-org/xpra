@@ -147,6 +147,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return self.start_new_command
 
 
+    def show_about(self, *args):
+        from xpra.client.gtk_base.about import about
+        about()
+
     def show_session_info(self, *args):
         if self.session_info and not self.session_info.is_closed:
             #exists already: just raise its window:
@@ -273,13 +277,21 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return True
 
 
-    def set_window_menu(self, wid, menus, application_action_callback=None, window_action_callback=None):
+    def cook_metadata(self, new_window, metadata):
+        metadata = UIXpraClient.cook_metadata(self, new_window, metadata)
+        #ensures we will call set_window_menu for this window when we create it:
+        if new_window and b"menu" not in metadata and self._set_window_menu:
+            metadata[b"menu"] = {}
+        return metadata
+
+
+    def set_window_menu(self, add, wid, menus, application_action_callback=None, window_action_callback=None):
         assert self._set_window_menu
         model = self._id_to_window.get(wid)
         window = None
         if model:
             window = model.get_window()
-        self._set_window_menu(wid, window, menus, application_action_callback, window_action_callback)
+        self._set_window_menu(add, wid, window, menus, application_action_callback, window_action_callback)
 
 
     def get_root_window(self):

@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import struct
 import binascii
 from xpra.log import Logger
@@ -11,11 +12,45 @@ log = Logger("posix")
 eventlog = Logger("posix", "events")
 screenlog = Logger("posix", "screen")
 dbuslog = Logger("posix", "dbus")
+traylog = Logger("posix", "menu")
 menulog = Logger("posix", "menu")
 
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
 device_bell = None
+
+
+def get_native_system_tray_classes():
+    try:
+        from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
+        if can_use_appindicator():
+            return [AppindicatorTray]
+    except Exception as e:
+        traylog("cannot load appindicator tray: %s", e)
+    return []
+
+def get_native_tray_classes():
+    wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
+    try:
+        wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
+        if wm_check:
+            xid = struct.unpack("=I", wm_check)[0]
+            traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
+            wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
+            traylog("_NET_WM_NAME=%s", wm_name)
+    except Exception as e:
+        traylog.error("Error accessing window manager information:")
+        traylog.error(" %s", e)
+    #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
+    if has_gtk_menu_support():  #and wm_name=="GNOME Shell":
+        try:
+            from xpra.platform.xposix.gtkmenu_tray import GTKMenuTray
+            traylog("using GTKMenuTray for %s", wm_name)
+            return [GTKMenuTray]
+        except Exception as e:
+            traylog("cannot load gtk menu tray: %s", e)
+    return get_native_system_tray_classes()
+
 
 def get_native_notifier_classes():
     ncs = []
@@ -31,44 +66,39 @@ def get_native_notifier_classes():
         log("cannot load pynotify notifier: %s", e)
     return ncs
 
-def get_native_tray_classes():
-    try:
-        from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
-        if can_use_appindicator():
-            return [AppindicatorTray]
-    except Exception as e:
-        log("cannot load appindicator tray: %s", e)
-    return []
-
-def get_native_system_tray_classes():
-    #appindicator can be used for both
-    return get_native_tray_classes()
-
 
 #we duplicate some of the code found in gtk_x11.prop ...
 #which is still better than having dependencies on that GTK2 code
-def _get_X11_root_property(name, req_type):
+def _get_X11_window_property(xid, name, req_type):
     try:
         from xpra.gtk_common.error import xsync
         from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError #@UnresolvedImport
         window_bindings = X11WindowBindings()
-        root = window_bindings.getDefaultRootWindow()
         try:
             with xsync:
-                prop = window_bindings.XGetWindowProperty(root, name, req_type)
-            log("_get_X11_root_property(%s, %s)=%s, len=%s", name, req_type, type(prop), len(prop or []))
+                prop = window_bindings.XGetWindowProperty(xid, name, req_type)
+            log("_get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or []))
             return prop
         except PropertyError as e:
-            log("_get_X11_root_property(%s, %s): %s", name, req_type, e)
+            log("_get_X11_window_property(%#x, %s, %s): %s", xid, name, req_type, e)
+    except Exception as e:
+        log.warn("failed to get X11 window property %s on window %#x: %s", name, xid, e)
+    return None
+def _get_X11_root_property(name, req_type):
+    try:
+        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+        window_bindings = X11WindowBindings()
+        root_xid = window_bindings.getDefaultRootWindow()
+        return _get_X11_window_property(root_xid, name, req_type)
     except Exception as e:
         log.warn("failed to get X11 root property %s: %s", name, e)
     return None
 
 
-def _set_gtk_x11_window_menu(wid, window, menus, application_action_callback=None, window_action_callback=None):
+def _set_gtk_x11_window_menu(add, wid, window, menus, application_action_callback=None, window_action_callback=None):
     from xpra.x11.gtk_x11.menu import setup_dbus_window_menu
     from xpra.x11.gtk_x11.prop import prop_set, prop_del
-    window_props = setup_dbus_window_menu(wid, menus, application_action_callback, window_action_callback)
+    window_props = setup_dbus_window_menu(add, wid, menus, application_action_callback, window_action_callback)
     #window_props may contains X11 window properties we have to clear or set 
     if not window_props:
         return
@@ -76,6 +106,7 @@ def _set_gtk_x11_window_menu(wid, window, menus, application_action_callback=Non
         #window has already been closed
         #(but we still want to call setup_dbus_window_menu above to ensure we clear things up!)
         return
+    menulog("will set/remove the following window properties for wid=%i: %s", wid, window_props)
     try:
         from xpra.gtk_common.error import xsync
         with xsync:
@@ -89,17 +120,26 @@ def _set_gtk_x11_window_menu(wid, window, menus, application_action_callback=Non
         menulog.error("Error setting menu window properties:")
         menulog.error(" %s", e)
 
-def get_menu_support_function():
+
+_has_gtk_menu_support = None
+def has_gtk_menu_support():
+    global _has_gtk_menu_support
+    if _has_gtk_menu_support is not None:
+        return _has_gtk_menu_support
     try:
         from xpra.gtk_common.gtk_util import get_default_root_window
         from xpra.x11.gtk_x11.menu import has_gtk_menu_support
         root = get_default_root_window()
-        has_gtk_menu = has_gtk_menu_support(root)
-        menulog("has_gtk_menu_support(%s)=%s", root, has_gtk_menu)
-        if has_gtk_menu:
-            return _set_gtk_x11_window_menu
+        _has_gtk_menu_support = has_gtk_menu_support(root)
+        menulog("has_gtk_menu_support(%s)=%s", root, _has_gtk_menu_support)
     except Exception as e:
         menulog("cannot enable gtk-x11 menu support: %s", e)
+        _has_gtk_menu_support = False
+    return _has_gtk_menu_support
+
+def get_menu_support_function():
+    if has_gtk_menu_support():
+        return _set_gtk_x11_window_menu
     return None
 
 

@@ -35,8 +35,23 @@ def has_gtk_menu_support(root_window):
 window_menus = {}
 window_menu_services = weakref.WeakValueDictionary()
 
-def setup_dbus_window_menu(wid, menus, application_action_callback=None, window_action_callback=None):
-    global window_menu_services, window_menus
+fallback_menus = {}
+
+def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, window_action_callback=None):
+    def nomenu():
+        #tell caller to clear all properties if they exist:
+        return {
+                "_GTK_APP_MENU_OBJECT_PATH"     : None,
+                "_GTK_WINDOW_OBJECT_PATH"       : None,
+                "_GTK_APPLICATION_OBJECT_PATH"  : None,
+                "_GTK_UNIQUE_BUS_NAME"          : None,
+                "_GTK_APPLICATION_ID"           : None
+                }
+    if add is False:
+        return nomenu()
+    global window_menu_services, window_menus, fallback_menus
+    if len(menus)==0 and fallback_menus:
+        menus = fallback_menus
     #ie: menu = {
     #         'enabled': True,
     #         'application-id':         'org.xpra.ExampleMenu',
@@ -61,7 +76,7 @@ def setup_dbus_window_menu(wid, menus, application_action_callback=None, window_
                 pass
     if enabled:
         m = typedict(menus)
-        app_id          = bytestostr(m.strget("application-id")).decode()
+        app_id          = bytestostr(m.strget("application-id", b"org.xpra.Window%i" % wid)).decode()
         app_actions     = m.dictget("application-actions")
         window_actions  = m.dictget("window-actions")
         window_menu     = m.dictget("window-menu")
@@ -77,15 +92,6 @@ def setup_dbus_window_menu(wid, menus, application_action_callback=None, window_
             window_actions_service.set_actions(window_actions)
             window_menu_service.set_menus(window_menu)
             return
-    def nomenu():
-        #tell caller to clear all properties if they exist:
-        return {
-                "_GTK_APP_MENU_OBJECT_PATH"     : None,
-                "_GTK_WINDOW_OBJECT_PATH"       : None,
-                "_GTK_APPLICATION_OBJECT_PATH"  : None,
-                "_GTK_UNIQUE_BUS_NAME"          : None,
-                "_GTK_APPLICATION_ID"           : None
-                }
     if not enabled:
         #tell caller to clear all properties if they exist:
         return nomenu()

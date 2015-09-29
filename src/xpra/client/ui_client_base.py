@@ -560,6 +560,9 @@ class UIXpraClient(XpraClientBase):
         self.send_refresh(-1)
 
 
+    def show_about(self, *args):
+        log.warn("show_about() is not implemented in %s", self)
+
     def show_session_info(self, *args):
         log.warn("show_session_info() is not implemented in %s", self)
 
@@ -639,7 +642,7 @@ class UIXpraClient(XpraClientBase):
         """ tray used for application systray forwarding """
         tc = self.get_system_tray_classes()
         traylog("make_system_tray%s system tray classes=%s", args, tc)
-        return self.make_instance(tc, *args)
+        return self.make_instance(tc, self, *args)
 
     def get_system_tray_classes(self):
         #subclasses may add their toolkit specific variants, if any
@@ -652,7 +655,7 @@ class UIXpraClient(XpraClientBase):
         """ tray used by our own application """
         tc = self.get_tray_classes()
         traylog("make_tray%s tray classes=%s", args, tc)
-        return self.make_instance(tc, *args)
+        return self.make_instance(tc, self, *args)
 
     def get_tray_classes(self):
         #subclasses may add their toolkit specific variants, if any
@@ -2135,7 +2138,7 @@ class UIXpraClient(XpraClientBase):
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
         wid, x, y, w, h = packet[1:6]
-        metadata = self.cook_metadata(packet[6])
+        metadata = self.cook_metadata(True, packet[6])
         windowlog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=1 or h<=1:
@@ -2151,7 +2154,7 @@ class UIXpraClient(XpraClientBase):
             client_properties = packet[7]
         self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
-    def cook_metadata(self, metadata):
+    def cook_metadata(self, new_window, metadata):
         #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
         if self.server_is_shadow and self.shadow_fullscreen:
@@ -2291,7 +2294,7 @@ class UIXpraClient(XpraClientBase):
         h = max(1, self.sy(h))
         metadata = typedict()
         if len(packet)>=5:
-            metadata = self.cook_metadata(packet[4])
+            metadata = self.cook_metadata(True, packet[4])
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         tray = self.setup_system_tray(self, wid, w, h, metadata.get("title", ""))
         traylog("process_new_tray(%s) tray=%s", packet, tray)
@@ -2463,7 +2466,7 @@ class UIXpraClient(XpraClientBase):
         wid, metadata = packet[1:3]
         window = self._id_to_window.get(wid)
         if window:
-            metadata = self.cook_metadata(metadata)
+            metadata = self.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet):

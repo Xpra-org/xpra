@@ -746,7 +746,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def set_menu(self, menu):
         menulog("set_menu(%s)", menu)
         def do_set_menu():
-            self._client.set_window_menu(self._id, menu, self.application_action_callback, self.window_action_callback)
+            self._client.set_window_menu(True, self._id, menu, self.application_action_callback, self.window_action_callback)
         self.when_realized("menu", do_set_menu)
 
     def application_action_callback(self, action_service, action, state, pdata):
@@ -977,7 +977,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def destroy(self):
         if self._client._set_window_menu:
-            self._client.set_window_menu(self._id, {})
+            self._client.set_window_menu(False, self._id, {})
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         gtk.Window.destroy(self)

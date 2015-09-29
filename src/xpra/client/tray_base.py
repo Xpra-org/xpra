@@ -17,7 +17,9 @@ class TrayBase(object):
         Utility superclass for all tray implementations
     """
 
-    def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
+    def __init__(self, client, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
+        #we don't keep a reference to client,
+        #because calling functions on the client directly should be discouraged
         self.menu = menu
         self.tooltip = tooltip
         self.size_changed_cb = size_changed_cb
