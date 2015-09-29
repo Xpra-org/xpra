@@ -290,12 +290,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if not model:
             return
         window = model.get_window()
-        for k,v in window_props.items():
-            if v is None:
-                prop_del(window, k)
-            else:
-                vtype, value = v
-                prop_set(window, k, vtype, value)
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            try:
+                for k,v in window_props.items():
+                    if v is None:
+                        prop_del(window, k)
+                    else:
+                        vtype, value = v
+                        prop_set(window, k, vtype, value)
+            except Exception as e:
+                menulog.error("Error setting menu window properties:")
+                menulog.error(" %s", e)
 
 
     def get_root_window(self):
