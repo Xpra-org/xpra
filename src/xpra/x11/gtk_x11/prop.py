@@ -399,3 +399,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
                      + "  Data: %r[...?]",
                      key, etype, data[:160], exc_info=True)
         raise
+
+def prop_del(target, key):
+    with xsync:
+        X11Window.XDeleteProperty(get_xwindow(target), key)
