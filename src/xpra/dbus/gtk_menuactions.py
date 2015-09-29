@@ -53,12 +53,13 @@ class Actions(dbus.service.Object):
     def set_actions(self, actions):
         oldactions = self.actions
         self.actions = actions
-        #TODO: diff and emit the "Change" signal
-        """Four separate types of changes are possible, and the 4 parameters of the change signal reflect these possibilities:
-        as a list of removed actions
-        a{sb} a list of actions that had their enabled flag changed
-        a{sv} a list of actions that had their state changed
-        a{s(bgav)} a list of new actions added in the same format as the return value of the DescribeAll method"""
+        #build the change list for emitting the signal:
+        # Four separate types of changes are possible,
+        # and the 4 parameters of the change signal reflect these possibilities:
+        # - as a list of removed actions
+        # - a{sb} a list of actions that had their enabled flag changed
+        # - a{sv} a list of actions that had their state changed
+        # - a{s(bgav)} a list of new actions added in the same format as the return value of the DescribeAll method"""
         removed = []
         enabled_changed = []
         state_changed = []
