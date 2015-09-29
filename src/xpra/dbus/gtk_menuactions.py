@@ -166,6 +166,7 @@ class Actions(dbus.service.Object):
 
 
 class Menus(dbus.service.Object):
+    SUPPORTS_MULTIPLE_OBJECT_PATHS = True
  
     def __init__(self, name, path, session_bus, menus={}):
         self.menus = menus
