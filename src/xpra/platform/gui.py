@@ -126,6 +126,10 @@ def set_shaded(window, shaded):
 def gl_check():
     return None     #no problem
 
+def get_menu_support_function():
+    return None
+
+
 take_screenshot = None
 ClientExtras = None
 
@@ -173,6 +177,7 @@ platform_import(globals(), "gui", False,
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "ClientExtras",
                 "take_screenshot",
+                "get_menu_support_function",
                 "get_native_tray_menu_helper_classes",
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",

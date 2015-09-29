@@ -11,6 +11,7 @@ log = Logger("posix")
 eventlog = Logger("posix", "events")
 screenlog = Logger("posix", "screen")
 dbuslog = Logger("posix", "dbus")
+menulog = Logger("posix", "menu")
 
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
@@ -61,6 +62,44 @@ def _get_X11_root_property(name, req_type):
             log("_get_X11_root_property(%s, %s): %s", name, req_type, e)
     except Exception as e:
         log.warn("failed to get X11 root property %s: %s", name, e)
+    return None
+
+
+def _set_gtk_x11_window_menu(wid, window, menus, application_action_callback=None, window_action_callback=None):
+    from xpra.x11.gtk_x11.menu import setup_dbus_window_menu
+    from xpra.x11.gtk_x11.prop import prop_set, prop_del
+    window_props = setup_dbus_window_menu(wid, menus, application_action_callback, window_action_callback)
+    #window_props may contains X11 window properties we have to clear or set 
+    if not window_props:
+        return
+    if not window:
+        #window has already been closed
+        #(but we still want to call setup_dbus_window_menu above to ensure we clear things up!)
+        return
+    from xpra.gtk_common.error import xsync
+    with xsync:
+        try:
+            for k,v in window_props.items():
+                if v is None:
+                    prop_del(window, k)
+                else:
+                    vtype, value = v
+                    prop_set(window, k, vtype, value)
+        except Exception as e:
+            menulog.error("Error setting menu window properties:")
+            menulog.error(" %s", e)
+
+def get_menu_support_function():
+    try:
+        from xpra.gtk_common.gtk_util import get_default_root_window
+        from xpra.x11.gtk_x11.menu import has_gtk_menu_support
+        root = get_default_root_window()
+        has_gtk_menu = has_gtk_menu_support(root)
+        menulog("has_gtk_menu_support(%s)=%s", root, has_gtk_menu)
+        if has_gtk_menu:
+            return _set_gtk_x11_window_menu
+    except Exception as e:
+        menulog("cannot enable gtk-x11 menu support: %s", e)
     return None
 
 

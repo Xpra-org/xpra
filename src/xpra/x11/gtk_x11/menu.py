@@ -35,7 +35,7 @@ def has_gtk_menu_support(root_window):
 window_menus = {}
 window_menu_services = weakref.WeakValueDictionary()
 
-def set_window_menu(wid, menus, application_action_callback=None, window_action_callback=None):
+def setup_dbus_window_menu(wid, menus, application_action_callback=None, window_action_callback=None):
     global window_menu_services, window_menus
     #ie: menu = {
     #         'enabled': True,

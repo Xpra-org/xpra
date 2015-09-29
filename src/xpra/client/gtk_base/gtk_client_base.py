@@ -36,7 +36,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_workarea, get_workareas, get_fixed_cursor_size
+from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_workarea, get_workareas, get_fixed_cursor_size, get_menu_support_function
 
 missing_cursor_names = set()
 
@@ -67,12 +67,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
-        try:
-            from xpra.x11.gtk_x11.menu import has_gtk_menu_support
-            self._has_menu_support = has_gtk_menu_support(self.get_root_window())
-        except ImportError as e:
-            self._has_menu_support = False
-            menulog("no gtk menu support: %s", e)
+        self._set_window_menu = get_menu_support_function()
 
 
     def init(self, opts):
@@ -279,29 +274,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def set_window_menu(self, wid, menus, application_action_callback=None, window_action_callback=None):
-        assert self._has_menu_support
-        from xpra.x11.gtk_x11.menu import set_window_menu
-        from xpra.x11.gtk_x11.prop import prop_set, prop_del
-        window_props = set_window_menu(wid, menus, application_action_callback, window_action_callback)
-        #window_props may contains X11 window properties we have to clear or set 
-        if not window_props:
-            return
+        assert self._set_window_menu
         model = self._id_to_window.get(wid)
-        if not model:
-            return
-        window = model.get_window()
-        from xpra.gtk_common.error import xsync
-        with xsync:
-            try:
-                for k,v in window_props.items():
-                    if v is None:
-                        prop_del(window, k)
-                    else:
-                        vtype, value = v
-                        prop_set(window, k, vtype, value)
-            except Exception as e:
-                menulog.error("Error setting menu window properties:")
-                menulog.error(" %s", e)
+        window = None
+        if model:
+            window = model.get_window()
+        self._set_window_menu(wid, window, menus, application_action_callback, window_action_callback)
 
 
     def get_root_window(self):
@@ -356,7 +334,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
         if HAS_X11_BINDINGS:
             ms += ["shape"]
-        if self._has_menu_support:
+        if self._set_window_menu:
             ms += ["menu"]
         #figure out if we can handle the "global menu" stuff:
         if os.name=="posix" and not sys.platform.startswith("darwin"):
