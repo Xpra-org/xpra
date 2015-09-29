@@ -10,6 +10,7 @@ from xpra.log import Logger
 log = Logger("posix")
 eventlog = Logger("posix", "events")
 screenlog = Logger("posix", "screen")
+dbuslog = Logger("posix", "dbus")
 
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
@@ -21,7 +22,7 @@ def get_native_notifier_classes():
         from xpra.client.notifications.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
     except Exception as e:
-        log("cannot load dbus notifier: %s", e)
+        dbuslog("cannot load dbus notifier: %s", e)
     try:
         from xpra.client.notifications.pynotify_notifier import PyNotify_Notifier
         ncs.append(PyNotify_Notifier)
