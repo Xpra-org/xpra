@@ -57,7 +57,13 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
     #         'application-id':         'org.xpra.ExampleMenu',
     #         'application-actions':    {'quit': (True, '', ()), 'about': (True, '', ()), 'help': (True, '', ()), 'custom': (True, '', ()), 'activate-tab': (True, 's', ()), 'preferences': (True, '', ())},
     #         'window-actions':         {'edit-profile': (True, 's', ()), 'reset': (True, 'b', ()), 'about': (True, '', ()), 'help': (True, '', ()), 'fullscreen': (True, '', (0,)), 'detach-tab': (True, '', ()), 'save-contents': (True, '', ()), 'zoom': (True, 'i', ()), 'move-tab': (True, 'i', ()), 'new-terminal': (True, '(ss)', ()), 'switch-tab': (True, 'i', ()), 'new-profile': (True, '', ()), 'close': (True, 's', ()), 'show-menubar': (True, '', (1,)), 'select-all': (True, '', ()), 'copy': (True, '', ()), 'paste': (True, 's', ()), 'find': (True, 's', ()), 'preferences': (True, '', ())},
-    #         'window-menu':            {0: {0: ({':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}), 1: ({'action': 'win.new-terminal', 'target': ('default', 'default'), 'label': '_New Terminal'},), 2: ({'action': 'app.preferences', 'label': '_Preferences'},), 3: ({'action': 'app.help', 'label': '_Help'}, {'action': 'app.about', 'label': '_About'}, {'action': 'app.quit', 'label': '_Quit'})}}
+    #         'window-menu':            {0:
+    #               {0: ({':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}),
+    #                1: ({'action': 'win.new-terminal', 'target': ('default', 'default'), 'label': '_New Terminal'},),
+    #                2: ({'action': 'app.preferences', 'label': '_Preferences'},),
+    #                3: ({'action': 'app.help', 'label': '_Help'}, {'action': 'app.about', 'label': '_About'}, {'action': 'app.quit', 'label': '_Quit'}),
+    #                }
+    #             }
     #           }
     enabled = menus.get("enabled", False)
     app_actions_service, window_actions_service, window_menu_service = None, None, None
@@ -70,10 +76,10 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
                         x.remove_from_connection()
                     except Exception as e:
                         menulog.warn("Error removing %s: %s", x, e)
-            try:
-                del window_menus[wid]
-            except:
-                pass
+        try:
+            del window_menus[wid]
+        except:
+            pass
     if enabled:
         m = typedict(menus)
         app_id          = bytestostr(m.strget("application-id", b"org.xpra.Window%i" % wid)).decode()
@@ -103,7 +109,12 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
         from xpra.dbus.gtk_menuactions import Menus, Actions
         session_bus = init_session_bus()
         bus_name = session_bus.get_unique_name().decode()
-        name = NAME_PREFIX + app_id.lstrip("org.").lstrip("gtk.").lstrip("xpra.")
+        name = app_id
+        for strip in ("org.", "gtk.", "xpra.", "gnome."):
+            if name.startswith(strip):
+                name = name[len(strip):]
+        name = NAME_PREFIX + name
+        menulog("normalized named(%s)=%s", app_id, name)
 
         def get_service(service_class, name, path, *args):
             """ find the service by name and path, or create one """
