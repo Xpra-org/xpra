@@ -129,7 +129,7 @@ def window_focused(window, event):
     global window_menus
     wid = window._id
     menu_data = window_menus.get(wid)
-    log.warn("window_focused(%s, %s) menu(%s)=%s", window, event, wid, menu_data)
+    log("window_focused(%s, %s) menu(%s)=%s", window, event, wid, menu_data)
     application_actions, window_menu = None, None
     if menu_data:
         menus, application_action_callback, window_action_callback = menu_data
