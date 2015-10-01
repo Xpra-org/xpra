@@ -17,9 +17,10 @@ from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
 from xpra.platform.gui import get_icon_size
+
 from xpra.log import Logger
-log = Logger("tray")
-clipboardlog = Logger("tray", "clipboard")
+log = Logger("menu")
+clipboardlog = Logger("menu", "clipboard")
 
 
 HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
