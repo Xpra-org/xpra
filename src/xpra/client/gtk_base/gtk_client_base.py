@@ -512,6 +512,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #scale the cursors:
             if self.xscale!=1 or self.yscale!=1:
                 sx, sy, sw, sh = self.srect(x, y, w, h)
+            sw = max(1, sw)
+            sh = max(1, sh)
             #ensure we honour the max size:
             if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
                 ratio = max(float(w)/cmaxw, float(h)/cmaxh)
