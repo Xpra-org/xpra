@@ -92,7 +92,6 @@ class UIXpraClient(XpraClientBase):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
-        "handshake-complete"        : no_arg_signal,
         "first-ui-received"         : no_arg_signal,
 
         "clipboard-toggled"         : no_arg_signal,
@@ -249,6 +248,7 @@ class UIXpraClient(XpraClientBase):
         self._last_screen_settings = None
         self._suspended_at = 0
         self._button_state = {}
+        self._on_handshake = []
 
         self.init_aliases()
 
@@ -1642,7 +1642,7 @@ class UIXpraClient(XpraClientBase):
             self.start_sending_sound()
 
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
-        self.emit("handshake-complete")
+        self.handshake_complete()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         if self.server_supports_clipboard:
@@ -1664,6 +1664,22 @@ class UIXpraClient(XpraClientBase):
         gui_ready()
         if self.tray:
             self.tray.ready()
+
+
+    def handshake_complete(self):
+        for cb, args in self._on_handshake:
+            try:
+                cb(*args)
+            except:
+                log.error("Error processing handshake callback %s", cb, exc_info=True)
+        self._on_handshake = None
+
+    def after_handshake(self, cb, *args):
+        if self._on_handshake is None:
+            #handshake has already occurred, just call it:
+            self.idle_add(cb, *args)
+        else:
+            self._on_handshake.append((cb, args))
 
 
     def remote_logging_handler(self, log, level, msg, *args, **kwargs):

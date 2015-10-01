@@ -142,7 +142,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
                 encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
-            self.client.connect("handshake-complete", set_encodings_menu)
+            self.client.after_handshake(set_encodings_menu)
             menus.append(("Encoding", encodings_menu))
         if SHOW_ACTIONS_MENU:
             actions_menu = self.make_menu()
@@ -153,7 +153,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             def addsnc(*args):
                 if self.client.start_new_commands:
                     actions_menu.add(self.make_startnewcommandmenuitem(True))
-            self.client.connect("handshake-complete", addsnc)
+            self.client.after_handshake(addsnc)
             menus.append(("Actions", actions_menu))
         return menus
 
@@ -178,7 +178,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             else:
                 log("set_swapkeys_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
-        self.client.connect("handshake-complete", set_swapkeys_menuitem)
+        self.client.after_handshake(set_swapkeys_menuitem)
         return  self.swapkeys_menuitem
 
     def make_numlockmenuitem(self):
@@ -196,7 +196,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             else:
                 log("set_numlock_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
-        self.client.connect("handshake-complete", set_numlock_menuitem)
+        self.client.after_handshake(set_numlock_menuitem)
         return self.numlock_menuitem
 
     def update_numlock(self, on):

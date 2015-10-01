@@ -248,7 +248,7 @@ class GTKTrayMenuBase(object):
         def set_menu_title(*args):
             #set the real name when available:
             self.menu.set_title(self.client.session_name)
-        self.client.connect("handshake-complete", set_menu_title)
+        self.client.after_handshake(set_menu_title)
 
         menu.append(self.make_aboutmenuitem())
         menu.append(self.make_sessioninfomenuitem())
@@ -322,7 +322,7 @@ class GTKTrayMenuBase(object):
         mi.set_sensitive(False)
         def enable_menuitem(*args):
             mi.set_sensitive(True)
-        self.client.connect("handshake-complete", enable_menuitem)
+        self.client.after_handshake(enable_menuitem)
         return mi
 
 
@@ -387,7 +387,7 @@ class GTKTrayMenuBase(object):
                 self.bell_menuitem.set_tooltip_text("Forward system bell")
             else:
                 self.bell_menuitem.set_tooltip_text("Cannot forward the system bell: the feature has been disabled")
-        self.client.connect("handshake-complete", set_bell_menuitem)
+        self.client.after_handshake(set_bell_menuitem)
         return  self.bell_menuitem
 
     def make_cursorsmenuitem(self):
@@ -412,7 +412,7 @@ class GTKTrayMenuBase(object):
                 self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
             else:
                 self.cursors_menuitem.set_tooltip_text("Cannot forward mouse cursors: the feature has been disabled")
-        self.client.connect("handshake-complete", set_cursors_menuitem)
+        self.client.after_handshake(set_cursors_menuitem)
         return  self.cursors_menuitem
 
     def make_notificationsmenuitem(self):
@@ -435,7 +435,7 @@ class GTKTrayMenuBase(object):
                 self.notifications_menuitem.set_tooltip_text("Forward system notifications")
             else:
                 self.notifications_menuitem.set_tooltip_text("Cannot forward system notifications: the feature has been disabled")
-        self.client.connect("handshake-complete", set_notifications_menuitem)
+        self.client.after_handshake(set_notifications_menuitem)
         return self.notifications_menuitem
 
     def make_clipboard_togglemenuitem(self):
@@ -458,7 +458,7 @@ class GTKTrayMenuBase(object):
                 self.clipboard_menuitem.set_tooltip_text("Enable clipboard synchronization")
             else:
                 self.clipboard_menuitem.set_tooltip_text("Clipboard synchronization cannot be enabled: disabled by server")
-        self.client.connect("handshake-complete", set_clipboard_menuitem)
+        self.client.after_handshake(set_clipboard_menuitem)
         def clipboard_toggled(*args):
             #keep menu in sync with actual "clipboard_enabled" flag:
             if self.client.clipboard_enabled != self.clipboard_menuitem.get_active():
@@ -525,7 +525,7 @@ class GTKTrayMenuBase(object):
                 clipboard_item.connect("toggled", remote_clipboard_changed)
                 clipboard_submenu.append(clipboard_item)
             clipboard_submenu.show_all()
-        self.client.connect("handshake-complete", set_clipboard_menu)
+        self.client.after_handshake(set_clipboard_menu)
         return clipboard_menu
 
     def make_clipboardmenuitem(self):
@@ -562,7 +562,7 @@ class GTKTrayMenuBase(object):
             self.keyboard_sync_menuitem.set_active(self.client.keyboard_helper.keyboard_sync)
             self.keyboard_sync_menuitem.set_sensitive(self.client.toggle_keyboard_sync)
             set_keyboard_sync_tooltip()
-        self.client.connect("handshake-complete", set_keyboard_sync_menuitem)
+        self.client.after_handshake(set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
 
     def make_openglmenuitem(self):
@@ -578,7 +578,7 @@ class GTKTrayMenuBase(object):
                 log("opengl_toggled%s", args)
                 self.client.toggle_opengl()
             gl.connect("toggled", opengl_toggled)
-        self.client.connect("handshake-complete", gl_set)
+        self.client.after_handshake(gl_set)
         return gl
 
     def make_encodingsmenuitem(self):
@@ -593,7 +593,7 @@ class GTKTrayMenuBase(object):
                 encodings.set_tooltip_text("memory mapped transfers are in use so picture encoding is disabled")
             else:
                 encodings.set_submenu(self.make_encodingssubmenu())
-        self.client.connect("handshake-complete", set_encodingsmenuitem)
+        self.client.after_handshake(set_encodingsmenuitem)
         return encodings
 
     def make_encodingssubmenu(self, handshake_complete=True):
@@ -630,7 +630,7 @@ class GTKTrayMenuBase(object):
         def may_enable_qualitymenu(*args):
             self.quality.set_submenu(self.make_qualitysubmenu())
             self.set_qualitymenu()
-        self.client.connect("handshake-complete", may_enable_qualitymenu)
+        self.client.after_handshake(may_enable_qualitymenu)
         return self.quality
 
     def make_qualitysubmenu(self):
@@ -676,7 +676,7 @@ class GTKTrayMenuBase(object):
         def may_enable_speedmenu(*args):
             self.speed.set_submenu(self.make_speedsubmenu())
             self.set_speedmenu()
-        self.client.connect("handshake-complete", may_enable_speedmenu)
+        self.client.after_handshake(may_enable_speedmenu)
         return self.speed
 
     def make_speedsubmenu(self):
@@ -737,7 +737,7 @@ class GTKTrayMenuBase(object):
                 return
             speaker.set_sensitive(True)
             speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
-        self.client.connect("handshake-complete", speaker_state)
+        self.client.after_handshake(speaker_state)
         return speaker
 
     def mic_on(self, *args):
@@ -762,7 +762,7 @@ class GTKTrayMenuBase(object):
                 return
             microphone.set_sensitive(True)
             microphone.set_submenu(self.make_soundsubmenu(is_microphone_on, self.mic_on, self.mic_off, "microphone-changed"))
-        self.client.connect("handshake-complete", microphone_state)
+        self.client.after_handshake(microphone_state)
         return microphone
 
     def make_soundsubmenu(self, is_on_cb, on_cb, off_cb, client_signal):
@@ -897,7 +897,7 @@ class GTKTrayMenuBase(object):
                 keyboard.hide()
                 return
             keyboard.set_sensitive(True)
-        self.client.connect("handshake-complete", set_layout_enabled)
+        self.client.after_handshake(set_layout_enabled)
         return keyboard
 
     def make_compressionmenu(self):
@@ -922,7 +922,7 @@ class GTKTrayMenuBase(object):
         def enable_compressionmenu(self):
             self.compression.set_sensitive(True)
             self.compression_submenu.show_all()
-        self.client.connect("handshake-complete", enable_compressionmenu)
+        self.client.after_handshake(enable_compressionmenu)
         return self.compression
 
 
@@ -947,7 +947,7 @@ class GTKTrayMenuBase(object):
             if not self.client.start_new_commands:
                 self.startnewcommand.set_tooltip_text("Not supported by the server")
         if not handshake_done:
-            self.client.connect("handshake-complete", enable_start_new_command)
+            self.client.after_handshake(enable_start_new_command)
         else:
             enable_start_new_command()
         return self.startnewcommand

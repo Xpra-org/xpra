@@ -286,7 +286,7 @@ class XpraClient(GTKXpraClient):
                 self.remote_clipboard_requests = 0
                 self.clipboard_notify(0)
             self.connect("clipboard-toggled", clipboard_toggled)
-        self.connect("handshake-complete", register_clipboard_toggled)
+        self.after_handshake(register_clipboard_toggled)
         return helperClass(clipboard_send, clipboard_progress, *args, **kwargs)
 
     def clipboard_notify(self, n):

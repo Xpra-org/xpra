@@ -513,7 +513,7 @@ class ClientExtras(object):
 
     def setup_xprops(self):
         #wait for handshake to complete:
-        self.client.connect("handshake-complete", self.do_setup_xprops)
+        self.client.after_handshake(self.do_setup_xprops)
 
     def do_setup_xprops(self, *args):
         log("do_setup_xprops(%s)", args)
