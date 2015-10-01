@@ -515,7 +515,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             sw = max(1, sw)
             sh = max(1, sh)
             #ensure we honour the max size:
-            if w>cmaxw or h>cmaxh or (csize>0 and (csize<w or csize<h)):
+            if w>cmaxw or h>cmaxh:
                 ratio = max(float(w)/cmaxw, float(h)/cmaxh)
                 cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
                 sx, sy, sw, sh = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
