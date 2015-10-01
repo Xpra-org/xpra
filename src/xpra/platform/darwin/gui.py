@@ -152,7 +152,7 @@ def window_focused(window, event):
         item.set_submenu(submenu)
         options.add(item)
     opt.show_all()
-    mh.add_to_menu_bar(item)
+    mh.add_to_menu_bar(opt)
     mh.menu_bar.show_all()
     #add the application menus after that:
     #ie: menu = {
