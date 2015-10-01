@@ -11,7 +11,7 @@ from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_en
 from xpra.platform.paths import get_icon
 
 from xpra.log import Logger
-log = Logger("tray", "osx")
+log = Logger("osx", "tray", "menu")
 
 
 #control which menus are shown in the OSX global menu:
@@ -105,14 +105,17 @@ class OSXMenuHelper(GTKTrayMenuBase):
             return
         self.full = True
         assert self.client
-        if SHOW_ABOUT_XPRA:
-            info = self.menus.get("Info")
-            info_menu = info.get_submenu()
-            info_menu.append(self.make_sessioninfomenuitem())
-            info_menu.append(self.make_bugreportmenuitem())
         menus = self.get_extra_menus()
         for label, submenu in menus:
-            item = self.menuitem(label)
+            item = None
+            #try to find an existing menu item matching this label:
+            for x in self.menu_bar.get_children():
+                if hasattr(x, "get_label") and x.get_label()==label:
+                    log("found existing menu item for %s: %s", label, x)
+                    item = x
+                    break
+            if item is None:
+                item = self.menuitem(label)
             item.set_submenu(submenu)
             item.show_all()
             self.add_to_menu_bar(item)
@@ -120,6 +123,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def get_extra_menus(self):
         menus = []
+        if SHOW_ABOUT_XPRA:
+            info_menu = self.make_menu()
+            info_menu.append(self.menuitem("About Xpra", "information.png", None, about))
+            info_menu.append(self.make_sessioninfomenuitem())
+            info_menu.append(self.make_bugreportmenuitem())
+            menus.append(("Info", info_menu))
         if SHOW_FEATURES_MENU:
             features_menu = self.make_menu()
             menus.append(("Features", features_menu))
