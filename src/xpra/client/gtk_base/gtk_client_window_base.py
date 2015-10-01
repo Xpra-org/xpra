@@ -278,8 +278,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             try:
                 x()
             except Exception as e:
-                log.error("Error on realize callback %s for window %i:", x, self._id)
-                log.error(" %s", e)
+                log.error("Error on realize callback %s for window %i", x, self._id, exc_info=True)
         if HAS_X11_BINDINGS:
             #request frame extents if the window manager supports it
             self._client.request_frame_extents(self)

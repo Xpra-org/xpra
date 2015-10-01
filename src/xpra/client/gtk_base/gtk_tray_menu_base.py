@@ -325,6 +325,10 @@ class GTKTrayMenuBase(object):
         self.client.connect("handshake-complete", enable_menuitem)
         return mi
 
+
+    def make_menu(self):
+        return gtk.Menu()
+
     def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
         """ Utility method for easily creating an ImageMenuItem """
         image = None

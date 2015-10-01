@@ -15,6 +15,7 @@ log = Logger("tray", "osx")
 
 
 #control which menus are shown in the OSX global menu:
+SHOW_FEATURES_MENU = True
 SHOW_SOUND_MENU = True
 SHOW_ENCODINGS_MENU = True
 SHOW_ACTIONS_MENU = True
@@ -63,33 +64,39 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def rebuild(self):
         log("OSXMenuHelper.rebuild()")
-        if self.menu_bar:
-            self.remove_all_menus()
-            self.build_menu_bar()
-        return self.build()
+        if not self.menu_bar:
+            return self.build()
+        self.remove_all_menus()
+        self.build_menu_bar()
+        return self.menu_bar
 
     def remove_all_menus(self):
         log("OSXMenuHelper.remove_all_menus()")
         if self.menu_bar:
             for x in self.menus.values():
-                self.menu_bar.remove(x)
+                if x in self.menu_bar.get_children():
+                    self.menu_bar.remove(x)
                 x.hide()
         self.menus = {}
+        self.full = False
 
-    def make_osxmenu(self, name):
-        item = gtk.MenuItem(name)
-        submenu = gtk.Menu()
-        item.set_submenu(submenu)
-        item.show_all()
-        self.menu_bar.add(item)
-        self.menus[name] = (item, submenu)
-        return submenu
+
+    def add_to_menu_bar(self, item):
+        submenu = item.get_submenu()
+        assert submenu
+        if item not in self.menu_bar.get_children():
+            self.menu_bar.add(item)
+            self.menus[item.get_label()] = item
 
     def build_menu_bar(self):
         log("OSXMenuHelper.build_menu_bar()")
         if SHOW_ABOUT_XPRA:
-            info_menu = self.make_osxmenu("Info")
+            info = self.menuitem("Info")
+            info_menu = self.make_menu()
+            info.set_submenu(info_menu)
             info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
+            info.show_all()
+            self.add_to_menu_bar(info)
         self.menu_bar.show_all()
 
     def add_full_menu(self):
@@ -99,31 +106,46 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.full = True
         assert self.client
         if SHOW_ABOUT_XPRA:
-            _, info_menu = self.menus.get("Info")
+            info = self.menus.get("Info")
+            info_menu = info.get_submenu()
             info_menu.append(self.make_sessioninfomenuitem())
             info_menu.append(self.make_bugreportmenuitem())
-        features_menu = self.make_osxmenu("Features")
-        features_menu.add(self.make_bellmenuitem())
-        features_menu.add(self.make_cursorsmenuitem())
-        features_menu.add(self.make_notificationsmenuitem())
-        features_menu.add(self.make_swapkeysmenuitem())
-        features_menu.add(self.make_numlockmenuitem())
-        features_menu.add(self.make_openglmenuitem())
+        menus = self.get_extra_menus()
+        for label, submenu in menus:
+            item = self.menuitem(label)
+            item.set_submenu(submenu)
+            item.show_all()
+            self.add_to_menu_bar(item)
+        self.menu_bar.show_all()
+
+    def get_extra_menus(self):
+        menus = []
+        if SHOW_FEATURES_MENU:
+            features_menu = self.make_menu()
+            menus.append(("Features", features_menu))
+            features_menu.add(self.make_bellmenuitem())
+            features_menu.add(self.make_cursorsmenuitem())
+            features_menu.add(self.make_notificationsmenuitem())
+            features_menu.add(self.make_swapkeysmenuitem())
+            features_menu.add(self.make_numlockmenuitem())
+            features_menu.add(self.make_openglmenuitem())
         if SHOW_SOUND_MENU:
-            sound_menu = self.make_osxmenu("Sound")
+            sound_menu = self.make_menu()
             if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
                 sound_menu.add(self.make_speakermenuitem())
             if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
                 sound_menu.add(self.make_microphonemenuitem())
+            menus.append(("Sound", sound_menu))
         if SHOW_ENCODINGS_MENU:
-            encodings_menu = self.make_osxmenu("Encoding")
+            encodings_menu = self.make_menu()
             def set_encodings_menu(*args):
                 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
                 encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
             self.client.connect("handshake-complete", set_encodings_menu)
+            menus.append(("Encoding", encodings_menu))
         if SHOW_ACTIONS_MENU:
-            actions_menu = self.make_osxmenu("Actions")
+            actions_menu = self.make_menu()
             actions_menu.add(self.make_refreshmenuitem())
             actions_menu.add(self.make_raisewindowsmenuitem())
             #set_sensitive(bool) does not work on OSX,
@@ -132,7 +154,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 if self.client.start_new_commands:
                     actions_menu.add(self.make_startnewcommandmenuitem(True))
             self.client.connect("handshake-complete", addsnc)
-        self.menu_bar.show_all()
+            menus.append(("Actions", actions_menu))
+        return menus
 
     #these methods are called by the superclass
     #but we don't have a quality or speed menu, so override and ignore
@@ -182,7 +205,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def build_dock_menu(self):
         log("OSXMenuHelper.build_dock_menu()")
-        self.dock_menu = gtk.Menu()
+        self.dock_menu = self.make_menu()
         if SHOW_ABOUT_XPRA:
             self.dock_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.dock_menu.show_all()
