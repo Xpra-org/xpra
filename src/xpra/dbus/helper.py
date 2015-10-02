@@ -30,6 +30,8 @@ def dbus_to_native(value):
         return float(value)
     elif isinstance(value, list):
         return [dbus_to_native(x) for x in value]
+    elif isinstance(value, dbus.Struct):
+        return [dbus_to_native(value[i]) for i in range(len(value))]
     return value
 
 class DBusHelper(object):
