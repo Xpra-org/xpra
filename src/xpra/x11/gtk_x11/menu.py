@@ -5,7 +5,7 @@
 
 import weakref
 from xpra.log import Logger
-menulog = Logger("menu")
+log = Logger("menu")
 
 from xpra.util import typedict, bytestostr
 
@@ -16,19 +16,19 @@ def has_gtk_menu_support(root_window):
         from xpra.dbus.helper import DBusHelper
         assert DBusHelper
     except Exception as e:
-        menulog("has_menu_support() no dbus: %s", e)
+        log("has_menu_support() no dbus: %s", e)
         return False
     try:
         from xpra.x11.gtk_x11.prop import prop_get
     except Exception as e:
-        menulog("has_menu_support() no X11 bindings: %s", e)
+        log("has_menu_support() no X11 bindings: %s", e)
         return False
     v = prop_get(root_window, "_NET_SUPPORTED", ["atom"], ignore_errors=True, raise_xerrors=False)
     if not v:
-        menulog("has_menu_support() _NET_SUPPORTED is empty!?")
+        log("has_menu_support() _NET_SUPPORTED is empty!?")
         return False
     show_window_menu = "_GTK_SHOW_WINDOW_MENU" in v
-    menulog("has_menu_support() _GTK_SHOW_WINDOW_MENU in _NET_SUPPORTED: %s", show_window_menu)
+    log("has_menu_support() _GTK_SHOW_WINDOW_MENU in _NET_SUPPORTED: %s", show_window_menu)
     return show_window_menu
 
 
@@ -75,7 +75,7 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
                     try:
                         x.remove_from_connection()
                     except Exception as e:
-                        menulog.warn("Error removing %s: %s", x, e)
+                        log.warn("Error removing %s: %s", x, e)
         try:
             del window_menus[wid]
         except:
@@ -114,13 +114,12 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
             if name.startswith(strip):
                 name = name[len(strip):]
         name = NAME_PREFIX + name
-        menulog("normalized named(%s)=%s", app_id, name)
+        log("normalized named(%s)=%s", app_id, name)
 
         def get_service(service_class, name, path, *args):
             """ find the service by name and path, or create one """
             service = window_menu_services.get((service_class, name, path))
             if service is None:
-                menulog
                 service = service_class(name, path, session_bus, *args)
                 window_menu_services[(service_class, name, path)] = service
             return service
@@ -144,6 +143,6 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
                 "_GTK_APPLICATION_ID"           : ("utf8", app_id),
                }
     except Exception:
-        menulog.error("Error: cannot parse or apply menu:", exc_info=True)
+        log.error("Error: cannot parse or apply menu:", exc_info=True)
         remove_services()
         return nomenu()
