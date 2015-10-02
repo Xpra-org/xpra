@@ -46,6 +46,9 @@ class WindowWithMenu(gtk.Window):
         btn = gtk.Button("Toggle Menu")
         btn.connect("clicked", self.delayed_call, self.toggle_menu)
         vbox.add(btn)
+        btn = gtk.Button("New Window")
+        btn.connect("clicked", self.delayed_call, self.new_window)
+        vbox.add(btn)
         #no services to begin with:
         self.window_actions_service, self.app_actions_service, self.menus_service = None, None, None
         self.init_defaults()
@@ -83,7 +86,7 @@ class WindowWithMenu(gtk.Window):
                   }
         self.initial_menus = {0:
              {
-                0: [{'action': 'app.help', 'label': '_Help'}, {':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}],
+                0: [{':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}],
                 1: [{'action': 'win.new-terminal', 'label': '_New Terminal', 'target': ['default', 'default']}],
                 2: [{'action': 'app.preferences', 'label': '_Preferences'}],
                 3: [{'action': 'app.help', 'label': '_Help'},
@@ -194,6 +197,9 @@ class WindowWithMenu(gtk.Window):
         if self.menus_service:
             self.menus_service.set_menus(self.current_menus)
 
+    def new_window(self, *args):
+        w = WindowWithMenu()
+        w.show_all()
 
     def action_cb(self, *args):
         print("action_cb%s" % str(args))
