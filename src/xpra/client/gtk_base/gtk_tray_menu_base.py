@@ -90,6 +90,15 @@ def set_use_tray_workaround(enabled):
 set_use_tray_workaround(True)
 
 
+def set_sensitive(widget, sensitive):
+    if sys.platform.startswith("darwin"):
+        if sensitive:
+            widget.show()
+        else:
+            widget.hide()
+    widget.set_sensitive(sensitive)
+
+
 def make_min_auto_menu(title, min_options, options, get_current_min_value, get_current_value, set_min_value_cb, set_value_cb):
     #note: we must keep references to the parameters on the submenu
     #(closures and gtk callbacks don't mix so well!)
@@ -99,7 +108,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
     submenu.set_min_value_cb = set_min_value_cb
     submenu.set_value_cb = set_value_cb
     fstitle = gtk.MenuItem("Fixed %s:" % title)
-    fstitle.set_sensitive(False)
+    set_sensitive(fstitle, False)
     submenu.append(fstitle)
     submenu.menu_items = {}
     submenu.min_menu_items = {}
@@ -144,7 +153,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
     submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
     submenu.append(gtk.SeparatorMenuItem())
     mstitle = gtk.MenuItem("Minimum %s:" % title)
-    mstitle.set_sensitive(False)
+    set_sensitive(mstitle, False)
     submenu.append(mstitle)
     def set_min_value(item, ss):
         if not item.get_active():
@@ -209,7 +218,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         sensitive = encoding in server_encodings
         if not sensitive and HIDE_DISABLED_MENU_ENTRIES:
             continue
-        encoding_item.set_sensitive(encoding in server_encodings)
+        set_sensitive(encoding_item, encoding in server_encodings)
         encoding_item.set_draw_as_radio(True)
         encoding_item.connect("toggled", encoding_changed)
         encodings_submenu.append(encoding_item)
@@ -320,9 +329,9 @@ class GTKTrayMenuBase(object):
     def handshake_menuitem(self, *args, **kwargs):
         """ Same as menuitem() but this one will be disabled until we complete the server handshake """
         mi = self.menuitem(*args, **kwargs)
-        mi.set_sensitive(False)
+        set_sensitive(mi, False)
         def enable_menuitem(*args):
-            mi.set_sensitive(True)
+            set_sensitive(mi, True)
         self.client.after_handshake(enable_menuitem)
         return mi
 
@@ -377,13 +386,13 @@ class GTKTrayMenuBase(object):
                 self.client.send_bell_enabled()
             log("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
-        self.bell_menuitem.set_sensitive(False)
+        set_sensitive(self.bell_menuitem, False)
         def set_bell_menuitem(*args):
             log("set_bell_menuitem%s enabled=%s", args, self.client.bell_enabled)
             self.bell_menuitem.set_active(self.client.bell_enabled)
             c = self.client
             can_toggle_bell = c.toggle_cursors_bell_notify and c.server_supports_bell and c.client_supports_bell
-            self.bell_menuitem.set_sensitive(can_toggle_bell)
+            set_sensitive(self.bell_menuitem, can_toggle_bell)
             if can_toggle_bell:
                 self.bell_menuitem.set_tooltip_text("Forward system bell")
             else:
@@ -402,13 +411,13 @@ class GTKTrayMenuBase(object):
                 self.client.reset_cursor()
             log("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
-        self.cursors_menuitem.set_sensitive(False)
+        set_sensitive(self.cursors_menuitem, False)
         def set_cursors_menuitem(*args):
             log("set_cursors_menuitem%s enabled=%s", args, self.client.cursors_enabled)
             self.cursors_menuitem.set_active(self.client.cursors_enabled)
             c = self.client
             can_toggle_cursors = c.toggle_cursors_bell_notify and c.server_supports_cursors and c.client_supports_cursors
-            self.cursors_menuitem.set_sensitive(can_toggle_cursors)
+            set_sensitive(self.cursors_menuitem, can_toggle_cursors)
             if can_toggle_cursors:
                 self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
             else:
@@ -425,13 +434,13 @@ class GTKTrayMenuBase(object):
             if changed and self.client.toggle_cursors_bell_notify:
                 self.client.send_notify_enabled()
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
-        self.notifications_menuitem.set_sensitive(False)
+        set_sensitive(self.notifications_menuitem, False)
         def set_notifications_menuitem(*args):
             log("set_notifications_menuitem%s enabled=%s", args, self.client.notifications_enabled)
             self.notifications_menuitem.set_active(self.client.notifications_enabled)
             c = self.client
             can_notify = c.toggle_cursors_bell_notify and c.server_supports_notifications and c.client_supports_notifications
-            self.notifications_menuitem.set_sensitive(can_notify)
+            set_sensitive(self.notifications_menuitem, can_notify)
             if can_notify:
                 self.notifications_menuitem.set_tooltip_text("Forward system notifications")
             else:
@@ -448,13 +457,13 @@ class GTKTrayMenuBase(object):
                 self.client.clipboard_enabled = new_state
                 self.client.emit("clipboard-toggled")
         self.clipboard_menuitem = self.checkitem("Clipboard", menu_clipboard_toggled)
-        self.clipboard_menuitem.set_sensitive(False)
+        set_sensitive(self.clipboard_menuitem, False)
         def set_clipboard_menuitem(*args):
             clipboardlog("set_clipboard_menuitem%s enabled=%s", args, self.client.clipboard_enabled)
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
             c = self.client
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
-            self.clipboard_menuitem.set_sensitive(can_clipboard)
+            set_sensitive(self.clipboard_menuitem, can_clipboard)
             if can_clipboard:
                 self.clipboard_menuitem.set_tooltip_text("Enable clipboard synchronization")
             else:
@@ -470,7 +479,7 @@ class GTKTrayMenuBase(object):
     def make_translatedclipboard_optionsmenuitem(self):
         clipboardlog("make_translatedclipboard_optionsmenuitem()")
         clipboard_menu = self.menuitem("Clipboard", "clipboard.png", "Choose which remote clipboard to connect to", None)
-        clipboard_menu.set_sensitive(False)
+        set_sensitive(clipboard_menu, False)
         def set_clipboard_menu(*args):
             clipboard_submenu = gtk.Menu()
             clipboard_menu.set_submenu(clipboard_submenu)
@@ -478,7 +487,7 @@ class GTKTrayMenuBase(object):
             c = self.client
             can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard and c.server_supports_clipboard
             clipboardlog("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
-            clipboard_menu.set_sensitive(can_clipboard)
+            set_sensitive(clipboard_menu, can_clipboard)
             LABEL_TO_NAME = {"Disabled"  : None,
                             "Clipboard" : "CLIPBOARD",
                             "Primary"   : "PRIMARY",
@@ -521,7 +530,7 @@ class GTKTrayMenuBase(object):
                 active = isinstance(self.client.clipboard_helper, TranslatedClipboardProtocolHelper) \
                             and self.client.clipboard_helper.remote_clipboard==remote_clipboard
                 clipboard_item.set_active(active)
-                clipboard_item.set_sensitive(can_clipboard)
+                set_sensitive(clipboard_item, can_clipboard)
                 clipboard_item.set_draw_as_radio(True)
                 clipboard_item.connect("toggled", remote_clipboard_changed)
                 clipboard_submenu.append(clipboard_item)
@@ -557,11 +566,11 @@ class GTKTrayMenuBase(object):
             set_keyboard_sync_tooltip()
             self.client.emit("keyboard-sync-toggled")
         self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
-        self.keyboard_sync_menuitem.set_sensitive(False)
+        set_sensitive(self.keyboard_sync_menuitem, False)
         def set_keyboard_sync_menuitem(*args):
             log("set_keyboard_sync_menuitem%s enabled=%s", args, self.client.keyboard_helper.keyboard_sync)
             self.keyboard_sync_menuitem.set_active(self.client.keyboard_helper.keyboard_sync)
-            self.keyboard_sync_menuitem.set_sensitive(self.client.toggle_keyboard_sync)
+            set_sensitive(self.keyboard_sync_menuitem, self.client.toggle_keyboard_sync)
             set_keyboard_sync_tooltip()
         self.client.after_handshake(set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
@@ -571,7 +580,8 @@ class GTKTrayMenuBase(object):
         def gl_set(*args):
             log("gl_set(%s) opengl_enabled=%s, window_unmap=%s", args, self.client.opengl_enabled, self.client.window_unmap)
             gl.set_active(self.client.opengl_enabled)
-            gl.set_sensitive(self.client.window_unmap)
+            can_gl = self.client.window_unmap and self.client.client_supports_opengl
+            set_sensitive(gl, can_gl)
             if not self.client.window_unmap:
                 gl.set_tooltip_text("no server support for runtime switching")
                 return
@@ -584,10 +594,10 @@ class GTKTrayMenuBase(object):
 
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
-        encodings.set_sensitive(False)
+        set_sensitive(encodings, False)
         def set_encodingsmenuitem(*args):
             log("set_encodingsmenuitem%s", args)
-            encodings.set_sensitive(not self.client.mmap_enabled)
+            set_sensitive(encodings, not self.client.mmap_enabled)
             if self.client.mmap_enabled:
                 #mmap disables encoding and uses raw rgb24
                 encodings.set_label("Encoding")
@@ -622,12 +632,12 @@ class GTKTrayMenuBase(object):
                 active = encoding==self.client.encoding
                 if active!=x.get_active():
                     x.set_active(active)
-                x.set_sensitive(encoding in self.client.server_encodings)
+                set_sensitive(x, encoding in self.client.server_encodings)
 
 
     def make_qualitymenuitem(self):
         self.quality = self.menuitem("Quality", "slider.png", "Picture quality", None)
-        self.quality.set_sensitive(False)
+        set_sensitive(self.quality, False)
         def may_enable_qualitymenu(*args):
             self.quality.set_submenu(self.make_qualitysubmenu())
             self.set_qualitymenu()
@@ -659,7 +669,7 @@ class GTKTrayMenuBase(object):
     def set_qualitymenu(self, *args):
         if self.quality:
             can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_quality
-            self.quality.set_sensitive(can_use)
+            set_sensitive(self.quality, can_use)
             if not can_use:
                 self.quality.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
                 return
@@ -668,12 +678,12 @@ class GTKTrayMenuBase(object):
             if self.quality.get_submenu():
                 can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
                 for q,item in self.quality.get_submenu().menu_items.items():
-                    item.set_sensitive(q<100 or can_lossless)
+                    set_sensitive(item, q<100 or can_lossless)
 
 
     def make_speedmenuitem(self):
         self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size", None)
-        self.speed.set_sensitive(False)
+        set_sensitive(self.speed, False)
         def may_enable_speedmenu(*args):
             self.speed.set_submenu(self.make_speedsubmenu())
             self.set_speedmenu()
@@ -705,7 +715,7 @@ class GTKTrayMenuBase(object):
     def set_speedmenu(self, *args):
         if self.speed:
             can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_speed and self.client.change_speed
-            self.speed.set_sensitive(can_use)
+            set_sensitive(self.speed, can_use)
             if self.client.mmap_enabled:
                 self.speed.set_tooltip_text("Quality is always 100% with mmap")
             elif not self.client.change_speed:
@@ -724,19 +734,19 @@ class GTKTrayMenuBase(object):
         self.client.stop_receiving_sound()
     def make_speakermenuitem(self):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
-        speaker.set_sensitive(False)
+        set_sensitive(speaker, False)
         def is_speaker_on(*args):
             return self.client.speaker_enabled
         def speaker_state(*args):
             if not self.client.speaker_allowed:
-                speaker.set_sensitive(False)
+                set_sensitive(speaker, False)
                 speaker.set_tooltip_text("Speaker forwarding has been disabled")
                 return
             if not self.client.server_sound_send:
-                speaker.set_sensitive(False)
+                set_sensitive(speaker, False)
                 speaker.set_tooltip_text("Server does not support speaker forwarding")
                 return
-            speaker.set_sensitive(True)
+            set_sensitive(speaker, True)
             speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
         self.client.after_handshake(speaker_state)
         return speaker
@@ -749,19 +759,19 @@ class GTKTrayMenuBase(object):
         self.client.stop_sending_sound()
     def make_microphonemenuitem(self):
         microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
-        microphone.set_sensitive(False)
+        set_sensitive(microphone, False)
         def is_microphone_on(*args):
             return self.client.microphone_enabled
         def microphone_state(*args):
             if not self.client.microphone_allowed:
-                microphone.set_sensitive(False)
+                set_sensitive(microphone, False)
                 microphone.set_tooltip_text("Microphone forwarding has been disabled")
                 return
             if not self.client.server_sound_receive:
-                microphone.set_sensitive(False)
+                set_sensitive(microphone, False)
                 microphone.set_tooltip_text("Server does not support microphone forwarding")
                 return
-            microphone.set_sensitive(True)
+            set_sensitive(microphone, True)
             microphone.set_submenu(self.make_soundsubmenu(is_microphone_on, self.mic_on, self.mic_off, "microphone-changed"))
         self.client.after_handshake(microphone_state)
         return microphone
@@ -809,7 +819,7 @@ class GTKTrayMenuBase(object):
 
     def make_layoutsmenuitem(self):
         keyboard = self.menuitem("Keyboard", "keyboard.png", "Select your keyboard layout", None)
-        keyboard.set_sensitive(False)
+        set_sensitive(keyboard, False)
         self.layout_submenu = gtk.Menu()
         keyboard.set_submenu(self.layout_submenu)
         self.popup_menu_workaround(self.layout_submenu)
@@ -897,13 +907,13 @@ class GTKTrayMenuBase(object):
                 #so no need to show the user the huge layout list
                 keyboard.hide()
                 return
-            keyboard.set_sensitive(True)
+            set_sensitive(keyboard, True)
         self.client.after_handshake(set_layout_enabled)
         return keyboard
 
     def make_compressionmenu(self):
         self.compression = self.menuitem("Compression", "compressed.png", "Network packet compression", None)
-        self.compression.set_sensitive(False)
+        set_sensitive(self.compression, False)
         self.compression_submenu = gtk.Menu()
         self.compression.set_submenu(self.compression_submenu)
         self.popup_menu_workaround(self.compression_submenu)
@@ -921,7 +931,7 @@ class GTKTrayMenuBase(object):
             c.connect('activate', set_compression)
             self.compression_submenu.append(c)
         def enable_compressionmenu(self):
-            self.compression.set_sensitive(True)
+            set_sensitive(self.compression, True)
             self.compression_submenu.show_all()
         self.client.after_handshake(enable_compressionmenu)
         return self.compression
@@ -944,7 +954,7 @@ class GTKTrayMenuBase(object):
         self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
         def enable_start_new_command(*args):
             log("enable_start_new_command%s start_new_command=%s", args, self.client.start_new_commands)
-            self.startnewcommand.set_sensitive(self.client.start_new_commands)
+            set_sensitive(self.startnewcommand, self.client.start_new_commands)
             if not self.client.start_new_commands:
                 self.startnewcommand.set_tooltip_text("Not supported by the server")
         if not handshake_done:
