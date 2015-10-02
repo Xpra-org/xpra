@@ -458,7 +458,9 @@ class UIXpraClient(XpraClientBase):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
         #tell the draw thread to exit:
-        self._draw_queue.put(None)
+        dq = self._draw_queue
+        if dq:
+            dq.put(None)
         self.stop_all_sound()
         for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
