@@ -138,22 +138,10 @@ def window_focused(window, event):
         window_menu = menus.get("window-menu")
     from xpra.platform.darwin.osx_menu import getOSXMenuHelper
     mh = getOSXMenuHelper()
+    mh.rebuild()
+    mh.add_full_menu()
     if not menu_data or (not application_actions and not window_actions) or not window_menu:
-        mh.rebuild()        #just the standard xpra controls
-        mh.add_full_menu()
         return
-    mh.remove_all_menus()
-    #add all the xpra menus as sub-menus under one menu:
-    opt = mh.menuitem("Xpra Options")
-    options = mh.make_menu()
-    opt.set_submenu(options)
-    for label, submenu in mh.get_extra_menus():
-        item = mh.menuitem(label)
-        item.set_submenu(submenu)
-        options.add(item)
-    opt.show_all()
-    mh.add_to_menu_bar(opt)
-    mh.menu_bar.show_all()
     #add the application menus after that:
     #ie: menu = {
     #         'enabled': True,
@@ -200,9 +188,7 @@ def window_focused(window, event):
     for group_id in sorted(window_menu.keys()):
         group = window_menu[group_id]
         title = window.get_title() or "Application"
-        application = mh.menuitem(title)
-        submenu = mh.make_menu()
-        application.set_submenu(submenu)
+        app_menu = mh.make_menu()
         for menuid in sorted(group.keys()):
             menu_entries = group[menuid]
             for d in menu_entries:
@@ -213,10 +199,9 @@ def window_focused(window, event):
                 item = mh.menuitem(label, cb=cb)
                 item._action = action
                 item._target = d.get("target")
-                submenu.add(item)
+                app_menu.add(item)
                 log("added %s to %s menu for %s", label, title, window)
-        application.show_all()
-        mh.add_to_menu_bar(application)
+        mh.add_to_menu_bar(title, app_menu)
 
 
 def add_window_hooks(window):

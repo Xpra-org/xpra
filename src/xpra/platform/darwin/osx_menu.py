@@ -3,12 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.gtk_common.gobject_compat import import_gtk
 gtk = import_gtk()
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.client.gtk_base.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu
 from xpra.platform.paths import get_icon
+from xpra.platform.darwin.gui import get_OSXApplication
 
 from xpra.log import Logger
 log = Logger("osx", "tray", "menu")
@@ -19,7 +22,14 @@ SHOW_FEATURES_MENU = True
 SHOW_SOUND_MENU = True
 SHOW_ENCODINGS_MENU = True
 SHOW_ACTIONS_MENU = True
+SHOW_INFO_MENU = True
+
 SHOW_ABOUT_XPRA = True
+
+SINGLE_MENU = os.environ.get("XPRA_OSX_SINGLE_MENU", "1")=="1"
+
+
+SEPARATOR = "SEPARATOR"
 
 
 _OSXMenuHelper = None
@@ -46,7 +56,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.menu_bar = None
         self.hidden_window = None
         self.keyboard = None
-        self.menus = {}
+        self.menus = {}             #all the "top-level" menu items we manage
+        self.app_menus = {}         #the ones added to the app_menu via insert_app_menu_item (which cannot be removed!)
         self.full = False
         self.set_client(client)
 
@@ -54,12 +65,16 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.client = client
         if client and client.keyboard_helper:
             self.keyboard = client.keyboard_helper.keyboard
+        #if we call add_about before the main loop is ready,
+        #things don't work...
+        if client and SHOW_ABOUT_XPRA:
+            self.client.after_handshake(self.add_about)
 
     def build(self):
         log("OSXMenuHelper.build()")
         if self.menu_bar is None:
             self.menu_bar = gtk.MenuBar()
-            self.build_menu_bar()
+            self.menu_bar.show_all()
         return self.menu_bar
 
     def rebuild(self):
@@ -67,7 +82,6 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if not self.menu_bar:
             return self.build()
         self.remove_all_menus()
-        self.build_menu_bar()
         return self.menu_bar
 
     def remove_all_menus(self):
@@ -76,28 +90,64 @@ class OSXMenuHelper(GTKTrayMenuBase):
             for x in self.menus.values():
                 if x in self.menu_bar.get_children():
                     self.menu_bar.remove(x)
-                x.hide()
+                    x.hide()
         self.menus = {}
         self.full = False
 
 
-    def add_to_menu_bar(self, item):
-        submenu = item.get_submenu()
-        assert submenu
-        if item not in self.menu_bar.get_children():
-            self.menu_bar.add(item)
-            self.menus[item.get_label()] = item
+    def add_top_level_menu(self, label, submenu):
+        """ Adds the item to the app-menu or to the top bar,
+            but only if it has not been added yet.
+            (depending on the SINGLE_MENU flag)
+        """
+        if SINGLE_MENU:
+            #add or re-use menu item in the app-menu:
+            self.add_to_app_menu(label, submenu)
+        else:
+            self.add_to_menu_bar(label, submenu)
 
-    def build_menu_bar(self):
-        log("OSXMenuHelper.build_menu_bar()")
-        if SHOW_ABOUT_XPRA:
-            info = self.menuitem("Info")
-            info_menu = self.make_menu()
-            info.set_submenu(info_menu)
-            info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
-            info.show_all()
-            self.add_to_menu_bar(info)
-        self.menu_bar.show_all()
+    def add_to_app_menu(self, label, submenu):
+        item = self.app_menus.get(label)
+        if item:
+            log("application menu already has a '%s' entry", label)
+            if submenu is not None:
+                item.set_submenu(submenu)
+            item.show_all()
+        else:
+            if label.startswith(SEPARATOR):
+                item = gtk.SeparatorMenuItem()
+            else:
+                item = self.menuitem(label)
+                item.set_submenu(submenu)
+            item.show_all()
+            macapp = get_OSXApplication()
+            macapp.insert_app_menu_item(item, 1)
+            self.app_menus[label] = item
+
+    def add_to_menu_bar(self, label, submenu):
+        if label.startswith(SEPARATOR):
+            return      #not relevant
+        item = self.menus.get(label)
+        if item is None:
+            item = self.menuitem(label)
+            item.set_submenu(submenu)
+            item.show_all()
+            self.menu_bar.add(item)
+            self.menus[label] = item
+        else:
+            item.set_submenu(submenu)
+            item.show_all()
+
+
+    def add_about(self):
+        if "About" in self.app_menus:
+            return
+        item = self.menuitem("About", cb=about)
+        item.show_all()
+        macapp = get_OSXApplication()
+        macapp.insert_app_menu_item(item, 0)
+        self.app_menus["About"] = item
+
 
     def add_full_menu(self):
         log("OSXMenuHelper.add_full_menu()")
@@ -106,26 +156,14 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.full = True
         assert self.client
         menus = self.get_extra_menus()
-        for label, submenu in menus:
-            item = None
-            #try to find an existing menu item matching this label:
-            for x in self.menu_bar.get_children():
-                if hasattr(x, "get_label") and x.get_label()==label:
-                    log("found existing menu item for %s: %s", label, x)
-                    item = x
-                    break
-            if item is None:
-                item = self.menuitem(label)
-            item.set_submenu(submenu)
-            item.show_all()
-            self.add_to_menu_bar(item)
+        for label, submenu in reversed(menus):
+            self.add_top_level_menu(label, submenu)
         self.menu_bar.show_all()
 
     def get_extra_menus(self):
         menus = []
-        if SHOW_ABOUT_XPRA:
+        if SHOW_INFO_MENU:
             info_menu = self.make_menu()
-            info_menu.append(self.menuitem("About Xpra", "information.png", None, about))
             info_menu.append(self.make_sessioninfomenuitem())
             info_menu.append(self.make_bugreportmenuitem())
             menus.append(("Info", info_menu))
@@ -164,6 +202,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                     actions_menu.add(self.make_startnewcommandmenuitem(True))
             self.client.after_handshake(addsnc)
             menus.append(("Actions", actions_menu))
+        menus.append((SEPARATOR+"-EXTRAS", None))
         return menus
 
     #these methods are called by the superclass
