@@ -6,6 +6,7 @@
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
+from xpra.util import csv
 import dbus.service
 
 from xpra.log import Logger
@@ -64,22 +65,28 @@ class Actions(dbus.service.Object):
         enabled_changed = []
         state_changed = []
         added = []
-        allactions = list(set(oldactions.keys() + actions.keys()))
-        for action in allactions:
+        all_actions = list(set(oldactions.keys() + actions.keys()))
+        self.log(".set_actions(..) all actions=%s", csv(all_actions))
+        for action in all_actions:
             if action not in actions:
                 removed.append(ds(action))
+                self.log(".set_actions(..) removed %s", action)
             elif action not in oldactions:
-                added.append(self._make_action(action))
+                action_def = actions[action]
+                added.append(dbus.Struct(self._make_action(*action_def)))
+                self.log(".set_actions(..) added %s=%s", action, action_def)
             else:   #maybe changed state?
                 oldaction = oldactions.get(action, [False, None, None]) #default value should be redundant
                 newaction = actions.get(action, [False, None, None])    #default value should be redundant
                 if oldaction[0]!=newaction[0]:
                     enabled_changed.append((ds(action), dbus.Boolean(newaction[0])))
+                    self.log(".set_actions(..) enabled changed for %s from %s to %s", action, oldaction[0], newaction[0])
                 if oldaction[2]!=newaction[2]:
                     state_changed.append((ds(action), newaction[2]))
+                    self.log(".set_actions(..) state changed for %s from %s to %s", action, oldaction[2], newaction[2])
         self.log(".set_actions(..) changes: %s", (removed, enabled_changed, state_changed, added))
         if removed or enabled_changed or state_changed or added:
-            self.Changed(removed, enabled_changed, state_changed, added)
+            self.Changed(dbus.Array(removed), dbus.Array(enabled_changed), dbus.Array(state_changed), dbus.Array(added))
 
 
     def log(self, fmt, *args):
@@ -108,7 +115,7 @@ class Actions(dbus.service.Object):
     @dbus.service.method(ACTIONS, out_signature="as")
     def List(self):
         v = dbus.Array(dbus.String(x) for x in self.actions.keys())
-        self.log(".List()=%s", v)
+        self.log(".List()=%s", csv(self.actions.keys()))
         return v
 
 
