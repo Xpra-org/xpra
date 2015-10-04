@@ -927,7 +927,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         app = ShadowServer()
         info = "shadow"
     elif proxying:
-        from xpra.server.proxy_server import ProxyServer
+        from xpra.server.proxy.proxy_server import ProxyServer
         app = ProxyServer()
         info = "proxy"
     else:

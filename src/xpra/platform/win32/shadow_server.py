@@ -19,7 +19,8 @@ shapelog = Logger("shape")
 
 from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.codecs.image_wrapper import ImageWrapper

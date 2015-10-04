@@ -1504,7 +1504,7 @@ def no_gtk():
 
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
-    from xpra.server.proxy import XpraProxy
+    from xpra.scripts.fdproxy import XpraProxy
     no_gtk()
     if mode in ("_proxy_start", "_shadow_start"):
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)

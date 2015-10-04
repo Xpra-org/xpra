@@ -29,9 +29,9 @@ mmaplog = Logger("mmap")
 
 from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
-from xpra.server.window_video_source import WindowVideoSource
-from xpra.server.window_source import WindowSource
-from xpra.server.batch_config import DamageBatchConfig
+from xpra.server.window.window_video_source import WindowVideoSource
+from xpra.server.window.window_source import WindowSource
+from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import codec_spec

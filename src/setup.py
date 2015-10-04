@@ -913,7 +913,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvapi_version.c",
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/stats/cystats.c",
-                   "xpra/server/region.c",
+                   "xpra/server/window/region.c",
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra.conf in build (see #891):
                    "build/etc/xpra/xpra.conf"]
@@ -1793,7 +1793,8 @@ buffers_c = "xpra/buffers/%s_buffers.c" % bmod
 membuffers_c = ["xpra/buffers/memalign.c", "xpra/inline.c", buffers_c]
 
 
-toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth")
+toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
+toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
@@ -1916,8 +1917,8 @@ if server_ENABLED:
     cython_add(Extension("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
                 **pkgconfig()))
-    cython_add(Extension("xpra.server.region",
-                ["xpra/server/region.pyx"],
+    cython_add(Extension("xpra.server.window/region",
+                ["xpra/server/window/region.pyx"],
                 **pkgconfig()))
 
 

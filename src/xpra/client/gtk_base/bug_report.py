@@ -162,7 +162,7 @@ class BugReport(object):
         if not take_screenshot_fn:
             #default: gtk screen capture
             try:
-                from xpra.server.gtk_root_window_model import GTKRootWindowModel
+                from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
                 rwm = GTKRootWindowModel(gtk.gdk.get_default_root_window())
                 take_screenshot_fn = rwm.take_screenshot
             except:

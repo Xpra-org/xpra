@@ -8,7 +8,8 @@ from xpra.log import Logger
 log = Logger("shadow", "osx")
 
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
+from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 
 import gtk.gdk
