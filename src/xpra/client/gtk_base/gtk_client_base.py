@@ -25,7 +25,7 @@ menulog = Logger("gtk", "client", "menu")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import bytestostr, updict, pver, DEFAULT_METADATA_SUPPORTED
-from xpra.gtk_common.cursor_names import cursor_names
+from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
@@ -311,7 +311,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def make_hello(self):
         capabilities = UIXpraClient.make_hello(self)
-        capabilities["named_cursors"] = len(cursor_names)>0
+        capabilities["named_cursors"] = len(cursor_types)>0
         capabilities.update(get_gtk_version_info())
         #tell the server which icons GTK can use
         #so it knows when it should supply one as fallback
@@ -467,10 +467,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
         display = display_get_default()
-        if len(cursor_data)>=9 and cursor_names:
+        if len(cursor_data)>=9 and cursor_types:
             cursor_name = bytestostr(cursor_data[8])
             if cursor_name:
-                gdk_cursor = cursor_names.get(cursor_name.upper())
+                gdk_cursor = cursor_types.get(cursor_name.upper())
                 if gdk_cursor is not None:
                     cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
                     return new_Cursor_for_display(display, gdk_cursor)
