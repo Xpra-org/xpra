@@ -41,6 +41,7 @@ from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, sys
 missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
+USE_LOCAL_CURSORS = os.environ.get("XPRA_USE_LOCAL_CURSORS", "1")=="1"
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
@@ -469,7 +470,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         display = display_get_default()
         if len(cursor_data)>=9 and cursor_types:
             cursor_name = bytestostr(cursor_data[8])
-            if cursor_name:
+            if cursor_name and USE_LOCAL_CURSORS:
                 gdk_cursor = cursor_types.get(cursor_name.upper())
                 if gdk_cursor is not None:
                     cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
