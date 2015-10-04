@@ -111,6 +111,8 @@ class ServerBase(ServerCore):
         self.supports_clipboard = False
         self.supports_dbus_proxy = False
         self.dbus_helper = None
+        self.dbus_control = False
+        self.dbus_server = None
         self.file_transfer = False
         self.file_size_limit = 10
         self.printing = False
@@ -209,6 +211,7 @@ class ServerBase(ServerCore):
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
         self.av_sync = opts.av_sync
+        self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
         if os.name=="posix" and opts.printing:
             try:
@@ -244,7 +247,7 @@ class ServerBase(ServerCore):
         self.init_pulseaudio()
         self.init_notification_forwarder()
         self.init_dbus_helper()
-        #self.init_dbus_server()
+        self.init_dbus_server()
 
         #video init: default to ALL if not specified
         video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
@@ -495,6 +498,16 @@ class ServerBase(ServerCore):
         except Exception as e:
             log.warn("cannot load dbus helper: %s", e)
             self.supports_dbus_proxy = False
+
+    def init_dbus_server(self):
+        if not self.dbus_control:
+            return
+        try:
+            from xpra.server.dbus_server import DBUS_Server
+            self.dbus_server = DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
+        except Exception as e:
+            log.error("Error setting up our dbus server:")
+            log.error(" %s", e)
 
 
     def load_existing_windows(self, system_tray):

@@ -854,6 +854,7 @@ def build_xpra_conf(install_dir):
             'pdf_printer'           : pdf,
             'postscript_printer'    : postscript,
             'printing'              : printing_ENABLED,
+            "dbus_control"          : dbus_ENABLED,
             }
     conf = template % SUBS
     #get conf dir for install, without stripping the build root

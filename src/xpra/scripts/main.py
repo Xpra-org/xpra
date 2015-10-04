@@ -363,6 +363,7 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({"mdns" : False})
     legacy_bool_parse("pulseaudio")
     legacy_bool_parse("dbus-proxy")
+    legacy_bool_parse("dbus-control")
     if supports_server:
         group.add_option("--pulseaudio", action="store", metavar="yes|no",
                       dest="pulseaudio", default=defaults.pulseaudio,
@@ -373,10 +374,15 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--dbus-proxy", action="store", metavar="yes|no",
                       dest="dbus_proxy", default=defaults.dbus_proxy,
                       help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
+        group.add_option("--dbus-control", action="store", metavar="yes|no",
+                      dest="dbus_control", default=defaults.dbus_control,
+                      help="Allows the server to be controlled via its dbus interface. Default: %s." % enabled_str(defaults.dbus_control))
     else:
         ignore({"pulseaudio"            : defaults.pulseaudio,
                 "pulseaudio-command"    : defaults.pulseaudio_command,
-                "dbus-proxy"            : defaults.dbus_proxy})
+                "dbus-proxy"            : defaults.dbus_proxy,
+                "dbus-control"          : defaults.dbus_control,
+                })
 
     group = optparse.OptionGroup(parser, "Server Controlled Features",
                 "These options can be used to turn certain features on or off, "

@@ -394,6 +394,10 @@ mdns = %(mdns)s
 #dbus-proxy = no
 dbus-proxy = %(dbus_proxy)s
 
+# Start a dbus server which can be used to interact with the server process:
+#dbus-control = no
+dbus-control = %(dbus_control)s
+
 # Input methods
 # To disable input method completely:
 #input-method=none

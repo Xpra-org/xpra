@@ -19,6 +19,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
 [\fB\-\-sync\-vfb\fP=\fIDELAY\fP]
@@ -547,6 +550,13 @@ prevents that behavior (useful mostly for debugging).
 .TP
 \fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
+.TP
+\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP
+Allows the client to forward dbus calls to the server.
+.TP
+\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP
+Start a dbus server which can be used to interact with the server
+process.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
 Specifies the authentication module to use.
