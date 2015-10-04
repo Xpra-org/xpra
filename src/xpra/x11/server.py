@@ -187,6 +187,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.sync_xvfb = int(opts.sync_xvfb)
         self.global_menus = int(opts.global_menus)
         X11ServerBase.init(self, opts)
+        self.init_all_server_settings()
         if self.global_menus:
             self.rpc_handlers["menu"] = self._handle_menu_rpc
 
@@ -1101,14 +1102,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._xsettings_manager = XSettingsManager()
         self._xsettings_manager.set_settings(v)
 
-    def _get_antialias_hintstyle(self):
-        ad = typedict(self.antialias)
-        hintstyle = ad.strget("hintstyle", "").lower()
+
+    def _get_antialias_hintstyle(self, antialias):
+        hintstyle = antialias.strget("hintstyle", "").lower()
         if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
             #X11 clients can give us what we need directly:
             return hintstyle
         #win32 style contrast value:
-        contrast = ad.intget("contrast", -1)
+        contrast = antialias.intget("contrast", -1)
         if contrast>1600:
             return "hintfull"
         elif contrast>1000:
@@ -1117,7 +1118,31 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return "hintslight"
         return "hintnone"
 
+
+    def init_all_server_settings(self):
+        settingslog("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
+        #almost like update_all, except we use the default_dpi,
+        #since this is called before the first client connects
+        self.do_update_server_settings({"resource-manager"  : "",
+                                        "xsettings-blob"    : (0, [])},
+                                        reset = True,
+                                        dpi = self.default_dpi,
+                                        pulseaudio = self.pulseaudio)
+
+    def update_all_server_settings(self, reset=False):
+        self.update_server_settings({"resource-manager"  : "",
+                                     "xsettings-blob"    : (0, [])},
+                                     reset=reset)
+
     def update_server_settings(self, settings, reset=False):
+        dpi = self.dpi
+        double_click_time = self.double_click_time
+        double_click_distance = self.double_click_distance
+        antialias = self.antialias
+        pulseaudio = self.pulseaudio
+        self.do_update_server_settings(settings, reset, dpi, double_click_time, double_click_distance, antialias, pulseaudio)
+
+    def do_update_server_settings(self, settings, reset=False, dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias={}, pulseaudio=True):
         if not self.xsettings_enabled:
             settingslog("ignoring xsettings update: %s", settings)
             return
@@ -1127,13 +1152,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._settings = self.default_xsettings or {}
         old_settings = dict(self._settings)
         settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
-        settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", self.dpi, self.double_click_time, self.double_click_distance)
-        settingslog("overrides: antialias=%s", self.antialias)
+        settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", dpi, double_click_time, double_click_distance)
+        settingslog("overrides: antialias=%s", antialias)
         self._settings.update(settings)
-        root = gtk.gdk.get_default_root_window()
         for k, v in settings.items():
-            #cook the "resource-manager" value to add the DPI:
-            if k=="resource-manager" and self.dpi>0:
+            #cook the "resource-manager" value to add the DPI and/or antialias values:
+            if k=="resource-manager" and (dpi>0 or antialias):
                 value = v.decode("utf-8")
                 #parse the resources into a dict:
                 values={}
@@ -1145,15 +1169,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     if len(parts)!=2:
                         continue
                     values[parts[0]] = parts[1]
-                values["Xft.dpi"] = self.dpi
-                values["gnome.Xft/DPI"] = self.dpi*1024
-                if self.antialias:
-                    ad = typedict(self.antialias)
+                values["Xft.dpi"] = dpi
+                values["gnome.Xft/DPI"] = dpi*1024
+                if antialias:
+                    ad = typedict(antialias)
                     values.update({
                                    "Xft.antialias"  : ad.intget("enabled", -1),
                                    "Xft.hinting"    : ad.intget("hinting", -1),
                                    "Xft.rgba"       : ad.strget("orientation", "none").lower(),
-                                   "Xft.hintstyle"  : self._get_antialias_hintstyle()})
+                                   "Xft.hintstyle"  : self._get_antialias_hintstyle(ad)})
                 settingslog("server_settings: resource-manager values=%s", nonl(values))
                 #convert the dict back into a resource string:
                 value = ''
@@ -1163,9 +1187,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._settings["resource-manager"] = value
                 v = value.encode("utf-8")
 
-            #cook xsettings to add double-click settings:
+            #cook xsettings to add various settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1)):
+            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
                 from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
                 def set_xsettings_value(name, value_type, value):
                     #remove existing one, if any:
@@ -1175,29 +1199,30 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     return serial, new_values
                 def set_xsettings_int(name, value):
                     return set_xsettings_value(name, XSettingsTypeInteger, value)
-                if self.dpi>0:
-                    v = set_xsettings_int("Xft/DPI", self.dpi*1024)
-                if self.double_click_time>0:
+                if dpi>0:
+                    v = set_xsettings_int("Xft/DPI", dpi*1024)
+                if double_click_time>0:
                     v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
-                if self.antialias:
-                    ad = typedict(self.antialias)
+                if antialias:
+                    ad = typedict(antialias)
                     v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
                     v = set_xsettings_int("Xft/Hinting",    ad.intget("hinting", -1))
                     v = set_xsettings_value("Xft/RGBA",     XSettingsTypeString, ad.strget("orientation", "none").lower())
-                    v = set_xsettings_value("Xft/HintStyle", XSettingsTypeString, self._get_antialias_hintstyle())
-                if self.double_click_distance!=(-1, -1):
+                    v = set_xsettings_value("Xft/HintStyle", XSettingsTypeString, self._get_antialias_hintstyle(ad))
+                if double_click_distance!=(-1, -1):
                     #some platforms give us a value for each axis,
                     #but X11 only has one, so take the average
                     try:
-                        x,y = self.double_click_distance
+                        x,y = double_click_distance
                         if x>0 and y>0:
                             d = (x+y)//2
                             d = max(1, min(128, d))     #sanitize it a bit
                             v = set_xsettings_int("Net/DoubleClickDistance", d)
                     except Exception as e:
-                        log.warn("error setting double click distance from %s: %s", self.double_click_distance, e)
+                        log.warn("error setting double click distance from %s: %s", double_click_distance, e)
 
             if k not in old_settings or v != old_settings[k]:
+                root = gtk.gdk.get_default_root_window()
                 def root_set(p):
                     settingslog("server_settings: setting %s to %s", nonl(p), nonl(v))
                     prop_set(root, p, "latin1", v.decode("utf-8"))
@@ -1205,7 +1230,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     self.set_xsettings(v)
                 elif k == "resource-manager":
                     root_set("RESOURCE_MANAGER")
-                elif self.pulseaudio:
+                elif pulseaudio:
                     if k == "pulse-cookie":
                         root_set("PULSE_COOKIE")
                     elif k == "pulse-id":

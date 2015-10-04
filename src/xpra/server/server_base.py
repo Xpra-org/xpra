@@ -837,12 +837,7 @@ class ServerBase(ServerCore):
             log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias)
             #if we're not sharing, reset all the settings:
             reset = share_count==0
-            #some non-posix clients never send us 'resource-manager' settings
-            #so just use a fake one to ensure the overrides get applied:
-            self.update_server_settings({'resource-manager' : ""}, reset=reset)
-            #same for xsettings and double click settings:
-            #fake an empty xsettings update:
-            self.update_server_settings({"xsettings-blob" : (0, [])}, reset=reset)
+            self.update_all_server_settings(reset)
 
         self.accept_client(proto, c)
         #use blocking sockets from now on:
@@ -983,8 +978,8 @@ class ServerBase(ServerCore):
             s.send_server_event(*args)
 
 
-    def update_server_settings(self, settings, reset=False):
-        log("server settings ignored: ", settings)
+    def update_all_server_settings(self, reset=False):
+        pass        #may be overriden in subclasses (ie: x11 server)
 
 
     def get_keyboard_config(self, props):
