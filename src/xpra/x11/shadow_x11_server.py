@@ -8,8 +8,8 @@ import os, time
 
 from xpra.gtk_common.gtk_util import get_xwindow, get_default_root_window
 from xpra.x11.x11_server_base import X11ServerBase
-from xpra.server.shadow_server_base import ShadowServerBase
-from xpra.server.gtk_root_window_model import GTKRootWindowModel
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
 XImage = XImageBindings()
