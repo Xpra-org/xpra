@@ -34,7 +34,10 @@ class DBUS_Server(dbus.service.Object):
         self.server = server
         session_bus = init_session_bus()
         bus_name = dbus.service.BusName(INTERFACE, session_bus)
-        dbus.service.Object.__init__(self, bus_name, PATH+pathextra)
+        path = PATH
+        if pathextra:
+            path += "/"+pathextra
+        dbus.service.Object.__init__(self, bus_name, path)
         self.log("(%s)", server)
         self._properties = {"idle-timeout"          : ("idle_timeout",          ni),
                             "server-idle-timeout"   : ("server_idle_timeout",   ni),
