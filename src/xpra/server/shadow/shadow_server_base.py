@@ -24,6 +24,8 @@ class ShadowServerBase(object):
         self.mapped_at = None
         self.pulseaudio = False
         self.sharing = False
+        self.refresh_delay = REFRESH_DELAY
+        self.timer = None
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
 
@@ -40,16 +42,31 @@ class ShadowServerBase(object):
     def watch_keymap_changes(self):
         pass
 
-    def start_refresh(self, delay=REFRESH_DELAY):
-        self.timeout_add(delay, self.refresh)
+    def start_refresh(self):
+        self.timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def timeout_add(self, *args):
         #usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
 
+    def source_remove(self, *args):
+        #usually done via gobject
+        raise NotImplementedError("subclasses should define this method!")
+
+
+    def set_refresh_delay(self, v):
+        assert v>0 and v<10000
+        self.refresh_delay = v
+        if self.mapped_at:
+            if self.timer:
+                self.source_remove(self.timer)
+                self.timer = None
+            self.start_refresh()
+
 
     def refresh(self):
         if not self.mapped_at:
+            self.timer = None
             return False
         w, h = self.root.get_size()
         self._damage(self.root_window_model, 0, 0, w, h)
@@ -156,3 +173,14 @@ class ShadowServerBase(object):
         w, h, encoding, rowstride, data = self.root_window_model.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
+
+
+    def init_dbus_server(self):
+        if not self.dbus_control:
+            return
+        try:
+            from xpra.server.shadow.shadow_dbus_server import Shadow_DBUS_Server
+            self.dbus_server = Shadow_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
+        except Exception as e:
+            log.error("Error setting up our dbus server:")
+            log.error(" %s", e)
