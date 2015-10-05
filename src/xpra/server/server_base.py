@@ -582,14 +582,7 @@ class ServerBase(ServerCore):
 
     def init_control_commands(self):
         super(ServerBase, self).init_control_commands()
-        from xpra.util import parse_scaling_value
-        def from0to100(v):
-            try:
-                v = int(v)
-                assert v>=0 and v<=100
-                return v
-            except:
-                raise ValueError("value must be between 0 and 100 inclusive")
+        from xpra.util import parse_scaling_value, from0to100
         for cmd in (
             ArgsControlCommand("focus",                 "give focus to the window id",      validation=[int]),
             #window source:

@@ -6,9 +6,10 @@
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
+from xpra.util import parse_scaling_value, from0to100
 import dbus.service
 
-from xpra.log import Logger
+from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
 log = Logger("dbus", "server")
 
 INTERFACE = "org.xpra.Server"
@@ -23,6 +24,10 @@ def ns(*args):
     return str(n(*args))
 
 
+def stoms(v):
+    return int(v*1000.0)
+
+
 class DBUS_Server(dbus.service.Object):
 
     def __init__(self, server=None, pathextra=""):
@@ -31,9 +36,9 @@ class DBUS_Server(dbus.service.Object):
         bus_name = dbus.service.BusName(INTERFACE, session_bus)
         dbus.service.Object.__init__(self, bus_name, PATH+pathextra)
         self.log("(%s)", server)
-        self._properties = {"idle-timeout"          : ("idle_timeout", ni),
-                            "server-idle-timeout"   : ("server_idle_timeout", ni),
-                            "name"                  : ("session_name", ns),
+        self._properties = {"idle-timeout"          : ("idle_timeout",          ni),
+                            "server-idle-timeout"   : ("server_idle_timeout",   ni),
+                            "name"                  : ("session_name",          ns),
                             }
 
     def cleanup(self):
@@ -111,3 +116,57 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyRelease(self, keycode):
         self.server.control_command_key(keycode, press=False)
+
+
+    @dbus.service.method(INTERFACE, in_signature='', out_signature='v')
+    def ListWindows(self):
+        d = {}
+        for wid, window in self.server._id_to_window.items():
+            try:
+                d[wid] = window.get_property("title")
+            except:
+                d[wid] = str(window)
+        return d
+
+
+    @dbus.service.method(INTERFACE, in_signature='ii')
+    def MoveWindowToWorkspace(self, wid, workspace):
+        self.server.control_command_workspace(wid, workspace)
+
+    @dbus.service.method(INTERFACE, in_signature='is')
+    def SetWindowScaling(self, wid, scaling):
+        s = parse_scaling_value(scaling)
+        self.server.control_command_scaling(s, wid)
+
+    @dbus.service.method(INTERFACE, in_signature='ii')
+    def SetWindowScalingControl(self, wid, scaling_control):
+        sc = from0to100(scaling_control)
+        self.server.control_command_scaling_control(sc, wid)
+
+    @dbus.service.method(INTERFACE, in_signature='is')
+    def SetWindowEncoding(self, wid, encoding):
+        self.server.control_command_encoding(encoding, wid)
+
+    @dbus.service.method(INTERFACE, in_signature='i')
+    def RefreshWindow(self, wid):
+        self.server.control_command_refresh(wid)
+
+
+    @dbus.service.method(INTERFACE, in_signature='ai')
+    def RefreshWindows(self, window_ids):
+        self.server.control_command_refresh(*window_ids)
+
+    @dbus.service.method(INTERFACE)
+    def RefreshAllWindows(self):
+        self.server.control_command_refresh(*self.server._id_to_window.keys())
+
+
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def EnableDebug(self, category):
+        add_debug_category(category)
+        enable_debug_for(category)
+
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def DisableDebug(self, category):
+        remove_debug_category(category)
+        disable_debug_for(category)

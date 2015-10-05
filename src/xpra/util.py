@@ -257,6 +257,17 @@ def parse_scaling_value(v):
         ret = values[0], values[1]
     return ret
 
+def from0to100(v):
+    return intrangevalidator(v, 0, 100)
+
+def intrangevalidator(v, min_value=None, max_value=None):
+    v = int(v)
+    if min_value is not None and v<min_value:
+        raise ValueError("value must be greater than %i" % min_value)
+    if max_value is not None and v>max_value:
+        raise ValueError("value must be lower than %i" % max_value)
+    return v
+
 
 def log_screen_sizes(root_w, root_h, sizes):
     try:
