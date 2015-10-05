@@ -1239,4 +1239,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
                         root_set("PULSE_SERVER")
 
 
+    def init_dbus_server(self):
+        if not self.dbus_control:
+            return
+        try:
+            from xpra.x11.x11_dbus_server import X11_DBUS_Server
+            self.dbus_server = X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
+        except Exception as e:
+            log.error("Error setting up our dbus server:")
+            log.error(" %s", e)
+
+
 gobject.type_register(XpraServer)

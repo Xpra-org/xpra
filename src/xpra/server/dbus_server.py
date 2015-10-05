@@ -6,7 +6,7 @@
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
-from xpra.util import parse_scaling_value, from0to100
+from xpra.util import parse_scaling_value, from0to100, AdHocStruct
 import dbus.service
 
 from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
@@ -119,6 +119,31 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyRelease(self, keycode):
         self.server.control_command_key(keycode, press=False)
+
+    @dbus.service.method(INTERFACE)
+    def ClearKeysPressed(self):
+        self.server._clear_keys_pressed()
+
+    @dbus.service.method(INTERFACE, in_signature='ii')
+    def SetKeyboardRepeat(self, repeat_delay, repeat_interval):
+        self.server.set_keyboard_repeat(repeat_delay, repeat_interval)
+
+
+    @dbus.service.method(INTERFACE, in_signature='iii')
+    def MovePointer(self, wid, x, y):
+        self.server._move_pointer(wid, (x, y))
+
+    @dbus.service.method(INTERFACE, in_signature='iibiias')
+    def MouseClick(self, wid, button, pressed, x, y, modifiers):
+        packet = [wid, button, pressed, (x, y), modifiers]
+        self.server._process_button_action(None, packet)
+
+
+    @dbus.service.method(INTERFACE, in_signature='iiii')
+    def SetWorkarea(self, x, y, w, h):
+        workarea = AdHocStruct()
+        workarea.x, workarea.y, workarea.width, workarea.height = x, y, w, h
+        self.server.set_workarea(workarea)
 
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='v')
