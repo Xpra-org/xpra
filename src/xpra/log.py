@@ -190,6 +190,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("vpx"          , "libvpx encoder and decoder"),
                 ("nvenc"        , "nvenc encoder (all versions)"),
                 ("x264"         , "libx264 encoder"),
+                ("x265"         , "libx265 encoder"),
                 ("webp"         , "libwebp encoder and decoder"),
                 ])),
     ("Pointer", OrderedDict([
