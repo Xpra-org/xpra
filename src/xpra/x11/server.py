@@ -1243,7 +1243,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not self.dbus_control:
             return
         try:
-            from xpra.x11.x11_dbus_server import X11_DBUS_Server
+            from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
             self.dbus_server = X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
         except Exception as e:
             log.error("Error setting up our dbus server:")

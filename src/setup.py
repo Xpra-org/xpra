@@ -1800,6 +1800,8 @@ toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
+toggle_packages(dbus_ENABLED and server_ENABLED, "xpra.server.dbus")
+toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")

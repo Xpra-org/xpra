@@ -503,10 +503,10 @@ class ServerBase(ServerCore):
         if not self.dbus_control:
             return
         try:
-            from xpra.server.dbus_server import DBUS_Server
+            from xpra.server.dbus.dbus_server import DBUS_Server
             self.dbus_server = DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
         except Exception as e:
-            log.error("Error setting up our dbus server:")
+            log.error("Error setting up our dbus server:", exc_info=True)
             log.error(" %s", e)
 
 

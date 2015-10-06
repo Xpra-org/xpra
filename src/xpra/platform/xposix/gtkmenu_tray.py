@@ -81,6 +81,6 @@ class GTKMenuTray(TrayBase):
                                                }
                                            },
                }
-        from xpra.x11.gtk_x11 import menu
+        from xpra.x11.dbus import menu
         menu.fallback_menus = menus
         #menu.our_menu = "Xpra", menus

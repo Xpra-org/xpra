@@ -96,7 +96,7 @@ def _get_X11_root_property(name, req_type):
 
 
 def _set_gtk_x11_window_menu(add, wid, window, menus, application_action_callback=None, window_action_callback=None):
-    from xpra.x11.gtk_x11.menu import setup_dbus_window_menu
+    from xpra.x11.dbus.menu import setup_dbus_window_menu
     from xpra.x11.gtk_x11.prop import prop_set, prop_del
     window_props = setup_dbus_window_menu(add, wid, menus, application_action_callback, window_action_callback)
     #window_props may contains X11 window properties we have to clear or set 
