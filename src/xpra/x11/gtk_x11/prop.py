@@ -257,6 +257,17 @@ def get_xsettings(disp, v):
     return get_settings(_get_display_name(disp), v)
 
 
+def get_python_type(scalar_type):
+    #ie: get_python_type("STRING") = "latin1"
+    return {"UTF8_STRING"  : "utf8",
+            "STRING"       : "latin1",
+            "ATOM"         : "atom",
+            "CARDINAL"     : "u32",
+            "INTEGER"      : "integer",
+            "VISUALID"     : "visual",
+            "WINDOW"       : "window",
+            }.get(scalar_type)
+
 _prop_types = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
     # terminator

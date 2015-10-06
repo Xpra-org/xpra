@@ -859,8 +859,8 @@ class ServerBase(ServerCore):
             self.disconnect_client(proto, reason, *args)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
-        from xpra.server.source import ServerSource
-        ss = ServerSource(proto, drop_client,
+        ServerSourceClass = self.get_server_source_class()
+        ss = ServerSourceClass(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
                           self._socket_dir, self.main_socket_path, self.dbus_control,
@@ -885,6 +885,11 @@ class ServerBase(ServerCore):
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
+
+    def get_server_source_class(self):
+        from xpra.server.source import ServerSource
+        return ServerSource
+
 
     def parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #adds try:except around parse hello ui code:

@@ -148,6 +148,40 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     raise Exception("unhandled property name: %s" % propname)
 
 
+class WindowPropertyFilter(object):
+    def __init__(self, property_name, value):
+        self.property_name = property_name
+        self.value = value
+
+    def get_window_value(self, window):
+        return window.get_property(self.property_name)
+
+    def show(self, window):
+        try:
+            v = self.get_window_value(window)
+            log("%s.show(%s) %s(..)=%s", type(self).__name__, window, self.get_window_value, v)
+        except Exception:
+            log("%s.show(%s) %s(..) error:", type(self).__name__, window, self.get_window_value, exc_info=True)
+            v = None
+        e = self.evaluate(v)
+        return e
+
+    def evaluate(self, window_value):
+        raise NotImplementedError()
+
+
+class WindowPropertyIn(WindowPropertyFilter):
+
+    def evaluate(self, window_value):
+        return window_value in self.value
+
+
+class WindowPropertyNotIn(WindowPropertyIn):
+
+    def evaluate(self, window_value):
+        return not(WindowPropertyIn.evaluate(window_value))
+
+
 class ServerSource(object):
     """
     A ServerSource represents a client connection.
@@ -296,7 +330,7 @@ class ServerSource(object):
                 dbuslog.error(" %s", e)
 
     def __str__(self):
-        return  "ServerSource(%s)" % self.protocol
+        return  "%s(%s)" % (type(self).__name__, self.protocol)
 
     def init_vars(self):
         self.encoding = None                        #the default encoding for all windows
@@ -309,6 +343,7 @@ class ServerSource(object):
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False
+        self.window_filters = []
 
         self.uuid = ""
         self.machine_id = ""
@@ -1693,7 +1728,28 @@ class ServerSource(object):
             if len(metadata)>0:
                 self.send("window-metadata", wid, metadata)
 
+    def reset_window_filters(self):
+        self.window_filters = []
+
+    def get_window_filter(self, object_name, property_name, operator, value):
+        if object_name!="window":
+            raise ValueError("invalid object name")
+        if operator=="=":
+            return WindowPropertyIn(property_name, [value])
+        elif operator=="!=":
+            return WindowPropertyNotIn(property_name, [value])
+        raise ValueError("unknown filter operator: %s" % operator)
+
+    def add_window_filter(self, object_name, property_name, operator, value):
+        window_filter = self.get_window_filter(object_name, property_name, operator, value)
+        assert window_filter
+        self.window_filters.append(window_filter.show)
+
     def can_send_window(self, window):
+        for x in self.window_filters:
+            v = x(window)
+            if v is True or v is False:
+                return v
         if self.send_windows and self.system_tray:
             #common case shortcut
             return True

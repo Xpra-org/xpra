@@ -133,6 +133,11 @@ class X11ServerBase(GTKServerBase):
         self._authenticated_ui_packet_handlers["force-ungrab"] = self._process_force_ungrab
 
 
+    def get_server_source_class(self):
+        from xpra.x11.x11_source import X11ServerSource
+        return X11ServerSource
+
+
     def get_child_env(self):
         #adds fakeXinerama:
         env = GTKServerBase.get_child_env(self)

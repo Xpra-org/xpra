@@ -101,6 +101,14 @@ class DBUS_Source(dbus.service.Object):
     def RaiseWindow(self, wid):
         self.source.raise_window(ni(wid))
 
+    @dbus.service.method(INTERFACE, in_signature='')
+    def ResetWindowFilters(self):
+        self.source.reset_window_filters()
+
+    @dbus.service.method(INTERFACE, in_signature='sssv')
+    def AddWindowFilter(self, object_name, property_name, operator, value):
+        self.source.add_window_filter(ns(object_name), ns(property_name), ns(operator), n(value))
+
 
     @dbus.service.method(INTERFACE, in_signature='')
     def SetDefaultKeymap(self):

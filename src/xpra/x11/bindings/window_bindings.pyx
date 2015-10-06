@@ -864,7 +864,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 
-    def XGetWindowProperty(self, Window xwindow, property, req_type, etype=None):
+    def XGetWindowProperty(self, Window xwindow, property, req_type=0, etype=None):
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger)
@@ -876,7 +876,9 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef unsigned long nitems = 0, bytes_after = 0
         cdef unsigned char * prop = <unsigned char*> 0
         cdef Status status
-        xreq_type = self.get_xatom(req_type)
+        cdef Atom xreq_type = AnyPropertyType
+        if req_type:
+            xreq_type = self.get_xatom(req_type)
         # This is the most bloody awful API I have ever seen.  You will probably
         # not be able to understand this code fully without reading
         # XGetWindowProperty's man page at least 3 times, slowly.
@@ -921,6 +923,40 @@ cdef class X11WindowBindings(X11CoreBindings):
             return _munge_packed_longs_to_ints(data)
         else:
             return data
+
+
+    def GetWindowPropertyType(self, Window xwindow, property):
+        #as above, but for any property type
+        #and returns the type found
+        cdef int buffer_size = 64 * 1024
+        cdef Atom xactual_type = <Atom> 0
+        cdef int actual_format = 0
+        cdef unsigned long nitems = 0, bytes_after = 0
+        cdef unsigned char * prop = <unsigned char*> 0
+        cdef Status status
+        cdef Atom xreq_type = AnyPropertyType
+        status = XGetWindowProperty(self.display,
+                                     xwindow,
+                                     self.get_xatom(property),
+                                     0,
+                                     # This argument has to be divided by 4.  Thus
+                                     # speaks the spec.
+                                     buffer_size / 4,
+                                     False,
+                                     xreq_type, &xactual_type,
+                                     &actual_format, &nitems, &bytes_after, &prop)
+        if status != Success:
+            raise None
+        if xactual_type == XNone:
+            raise None
+        # This should only occur for bad property types:
+        assert not (bytes_after and not nitems)
+        if bytes_after:
+            raise None
+        assert actual_format in (8, 16, 32)
+        XFree(prop)
+        return self.XGetAtomName(xactual_type)
+
 
     def XDeleteProperty(self, Window xwindow, property):
         XDeleteProperty(self.display, xwindow, self.get_xatom(property))

@@ -16,6 +16,7 @@ PointerWindow
 InputFocus
 PointerRoot
 CurrentTime
+AnyPropertyType
 
 # Map states
 IsUnmapped
