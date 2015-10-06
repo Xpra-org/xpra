@@ -358,11 +358,13 @@ class X11ServerBase(GTKServerBase):
         #fakeXinerama:
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         source = None
+        screen_sizes = []
         if len(ui_clients)==1:
             source = ui_clients[0]
+            screen_sizes = source.screen_sizes
         else:
             log("fakeXinerama can only be enabled for a single client (found %s)" % len(ui_clients))
-        xinerama_changed = save_fakeXinerama_config(self.fake_xinerama, source, source.screen_sizes)
+        xinerama_changed = save_fakeXinerama_config(self.fake_xinerama and len(ui_clients)==1, source, screen_sizes)
         #we can only keep things unchanged if xinerama was also unchanged
         #(many apps will only query xinerama again if they get a randr notification)
         if (w==root_w and h==root_h) and not xinerama_changed:

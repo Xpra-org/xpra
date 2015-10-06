@@ -37,6 +37,7 @@ def save_fakeXinerama_config(supported=True, source="", ss=[]):
     """ returns True if the fakexinerama config was modified """
     global current_xinerama_config
     def delfile(msg):
+        global current_xinerama_config
         if msg:
             log.warn(msg)
         cleanup_fakeXinerama()
