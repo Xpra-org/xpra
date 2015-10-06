@@ -313,7 +313,7 @@ def get_desktop_names():
                 v = v[:-1]
     except Exception as e:
         screenlog.warn("failed to get desktop names: %s", e)
-    screenlog("get_desktop_names() %s=%s", binascii.hexlify(d), v)
+    screenlog("get_desktop_names() %s=%s", binascii.hexlify(d or ""), v)
     return v
 
 
