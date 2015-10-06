@@ -41,7 +41,7 @@ from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
-from xpra.util import std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
+from xpra.util import csv, std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -831,6 +831,19 @@ class ServerSource(object):
         if codec not in self.speaker_codecs:
             soundlog.warn("Warning: invalid codec specified: %s", codec)
             return
+        if not self.supports_speaker:
+            soundlog.warn("Error sending sound: support not enabled on the server")
+            return
+        if self.sound_source:
+            soundlog.warn("Error sending sound: forwarding already in progress")
+            return
+        if not self.sound_receive:
+            soundlog.warn("Error sending sound: support is not enabled on the client")
+            return
+        if codec not in self.sound_decoders:
+            soundlog.warn("Error sending sound: invalid codec '%s'", codec)
+            soundlog.warn(" is not in the list of decoders supported by the client: %s", csv(self.sound_decoders))
+            return
         ss = None
         try:
             from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
@@ -839,10 +852,6 @@ class ServerSource(object):
                 if self.uuid==get_user_uuid():
                     loop_warning("speaker", self.uuid)
                     return
-            assert self.supports_speaker, "cannot send sound: support not enabled on the server"
-            assert self.sound_source is None, "a sound source already exists"
-            assert self.sound_receive, "cannot send sound: support is not enabled on the client"
-            assert codec in self.sound_decoders, "cannot use codec '%s' which is not in the decoders list: %s" % (codec, self.sound_decoders)
             from xpra.sound.wrapper import start_sending_sound
             plugins = self.sound_properties.get("plugins")
             ss = start_sending_sound(plugins, self.sound_source_plugin, codec, volume, [codec], self.pulseaudio_server, self.pulseaudio_id)
