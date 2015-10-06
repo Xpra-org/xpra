@@ -22,6 +22,8 @@ def ni(*args):
     return int(n(*args))
 def ns(*args):
     return str(n(*args))
+def nb(*args):
+    return bool(n(*args))
 
 
 def stoms(v):
@@ -30,18 +32,20 @@ def stoms(v):
 
 class DBUS_Server(dbus.service.Object):
 
-    def __init__(self, server=None, pathextra=""):
+    def __init__(self, server=None, extra=""):
         self.server = server
         session_bus = init_session_bus()
-        bus_name = dbus.service.BusName(INTERFACE, session_bus)
+        interface = INTERFACE
         path = PATH
-        if pathextra:
-            path += "/"+pathextra
+        if extra:
+            interface += extra
+        bus_name = dbus.service.BusName(interface, session_bus)
         dbus.service.Object.__init__(self, bus_name, path)
         self.log("(%s)", server)
         self._properties = {"idle-timeout"          : ("idle_timeout",          ni),
                             "server-idle-timeout"   : ("server_idle_timeout",   ni),
                             "name"                  : ("session_name",          ns),
+                            "sharing"               : ("sharing",               nb),
                             }
 
     def cleanup(self):
@@ -146,7 +150,7 @@ class DBUS_Server(dbus.service.Object):
         self.server.set_workarea(workarea)
 
 
-    @dbus.service.method(INTERFACE, in_signature='', out_signature='v')
+    @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
     def ListWindows(self):
         d = {}
         for wid, window in self.server._id_to_window.items():
@@ -198,3 +202,14 @@ class DBUS_Server(dbus.service.Object):
     def DisableDebug(self, category):
         remove_debug_category(category)
         disable_debug_for(category)
+
+
+    @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
+    def ListClients(self):
+        d = {}
+        for p, source in self.server._server_sources.items():
+            try:
+                d[source.uuid] = str(p)
+            except:
+                d[str(source)] = str(p)
+        return d
