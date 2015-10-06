@@ -22,6 +22,8 @@ def ni(*args):
     return int(n(*args))
 def nb(*args):
     return bool(n(*args))
+def ns(*args):
+    return str(n(*args))
 
 
 sequence = AtomicInteger()
@@ -116,7 +118,7 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartSpeaker(self, codec):
-        self.source.start_sending_sound(codec)
+        self.source.start_sending_sound(ns(codec))
 
     @dbus.service.method(INTERFACE, in_signature='')
     def StopSpeaker(self):
