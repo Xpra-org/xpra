@@ -1048,6 +1048,7 @@ class ServerBase(ServerCore):
                  #not exposed as this is currently unused by the client (we only transfer from server to client)
                  #"file-size-limit"              : self.file_size_limit,
                  "printing"                     : self.printing,
+                 "sharing"                      : self.sharing,
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
@@ -1534,6 +1535,7 @@ class ServerBase(ServerCore):
              "cursors"          : self.cursors,
              "bell"             : self.bell,
              "notifications"    : self.notifications_forwarder is not None,
+             "sharing"          : self.sharing,             
              "pulseaudio"       : self.pulseaudio,
              "pulseaudio.command" : self.pulseaudio_command,
              "dbus_proxy"       : self.supports_dbus_proxy,
