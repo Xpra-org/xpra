@@ -12,6 +12,7 @@ import dbus.service
 from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
 log = Logger("dbus", "server")
 
+BUS_NAME = "org.xpra.Server"
 INTERFACE = "org.xpra.Server"
 PATH = "/org/xpra/Server"
 
@@ -35,11 +36,11 @@ class DBUS_Server(dbus.service.Object):
     def __init__(self, server=None, extra=""):
         self.server = server
         session_bus = init_session_bus()
-        interface = INTERFACE
+        name = BUS_NAME
         path = PATH
         if extra:
-            interface += extra
-        bus_name = dbus.service.BusName(interface, session_bus)
+            name += extra
+        bus_name = dbus.service.BusName(name, session_bus)
         dbus.service.Object.__init__(self, bus_name, path)
         self.log("(%s)", server)
         self._properties = {"idle-timeout"          : ("idle_timeout",          ni),
@@ -49,7 +50,12 @@ class DBUS_Server(dbus.service.Object):
                             }
 
     def cleanup(self):
-        self.remove_from_connection()
+        try:
+            log("calling %s", self.remove_from_connection)
+            self.remove_from_connection()
+        except Exception as e:
+            log.error("Error removing the DBUS server:")
+            log.error(" %s", e)
 
 
     def log(self, fmt, *args):
@@ -109,20 +115,20 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def Start(self, command):
-        self.server.do_control_command_start(True, command)
+        self.server.do_control_command_start(True, ns(command))
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartChild(self, command):
-        self.server.do_control_command_start(False, command)
+        self.server.do_control_command_start(False, ns(command))
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyPress(self, keycode):
-        self.server.control_command_key(keycode, press=True)
+        self.server.control_command_key(ns(keycode), press=True)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyRelease(self, keycode):
-        self.server.control_command_key(keycode, press=False)
+        self.server.control_command_key(ns(keycode), press=False)
 
     @dbus.service.method(INTERFACE)
     def ClearKeysPressed(self):
@@ -130,23 +136,23 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetKeyboardRepeat(self, repeat_delay, repeat_interval):
-        self.server.set_keyboard_repeat(repeat_delay, repeat_interval)
+        self.server.set_keyboard_repeat(ni(repeat_delay), ni(repeat_interval))
 
 
     @dbus.service.method(INTERFACE, in_signature='iii')
     def MovePointer(self, wid, x, y):
-        self.server._move_pointer(wid, (x, y))
+        self.server._move_pointer(ni(wid), (ni(x), ni(y)))
 
     @dbus.service.method(INTERFACE, in_signature='iibiias')
     def MouseClick(self, wid, button, pressed, x, y, modifiers):
-        packet = [wid, button, pressed, (x, y), modifiers]
+        packet = [ni(wid), ni(button), nb(pressed), (ni(x), ni(y)), [ns(v) for v in modifiers]]
         self.server._process_button_action(None, packet)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiii')
     def SetWorkarea(self, x, y, w, h):
         workarea = AdHocStruct()
-        workarea.x, workarea.y, workarea.width, workarea.height = x, y, w, h
+        workarea.x, workarea.y, workarea.width, workarea.height = ni(x), ni(y), ni(w), ni(h)
         self.server.set_workarea(workarea)
 
 
@@ -163,30 +169,30 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
-        self.server.control_command_workspace(wid, workspace)
+        self.server.control_command_workspace(ni(wid), ni(workspace))
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScaling(self, wid, scaling):
-        s = parse_scaling_value(scaling)
-        self.server.control_command_scaling(s, wid)
+        s = parse_scaling_value(ns(scaling))
+        self.server.control_command_scaling(s, ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetWindowScalingControl(self, wid, scaling_control):
-        sc = from0to100(scaling_control)
-        self.server.control_command_scaling_control(sc, wid)
+        sc = from0to100(ni(scaling_control))
+        self.server.control_command_scaling_control(sc, ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowEncoding(self, wid, encoding):
-        self.server.control_command_encoding(encoding, wid)
+        self.server.control_command_encoding(ns(encoding), ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def RefreshWindow(self, wid):
-        self.server.control_command_refresh(wid)
+        self.server.control_command_refresh(ni(wid))
 
 
     @dbus.service.method(INTERFACE, in_signature='ai')
     def RefreshWindows(self, window_ids):
-        self.server.control_command_refresh(*window_ids)
+        self.server.control_command_refresh(*(ni(x) for x in window_ids))
 
     @dbus.service.method(INTERFACE)
     def RefreshAllWindows(self):
@@ -195,13 +201,15 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def EnableDebug(self, category):
-        add_debug_category(category)
-        enable_debug_for(category)
+        c = ns(category)
+        add_debug_category(c)
+        enable_debug_for(c)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def DisableDebug(self, category):
-        remove_debug_category(category)
-        disable_debug_for(category)
+        c = ns(category)
+        remove_debug_category(c)
+        disable_debug_for(c)
 
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')

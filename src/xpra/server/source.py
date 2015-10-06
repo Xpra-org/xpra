@@ -25,6 +25,7 @@ timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
 mmaplog = Logger("mmap")
+dbuslog = Logger("dbus")
 
 
 from xpra.server import ClientException
@@ -168,7 +169,8 @@ class ServerSource(object):
     """
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir, main_socket_path,
+                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
+                 socket_dir, main_socket_path, dbus_control,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  supports_mmap, av_sync,
@@ -180,7 +182,8 @@ class ServerSource(object):
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
-                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb, socket_dir, main_socket_path,
+                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
+                 socket_dir, main_socket_path, dbus_control,
                  get_transient_for, get_focus,
                  get_window_id,
                  supports_mmap, av_sync,
@@ -208,6 +211,8 @@ class ServerSource(object):
         self.schedule_idle_timeout()
         self.socket_dir = socket_dir
         self.main_socket_path = main_socket_path
+        self.dbus_control = dbus_control
+        self.dbus_server = None
         #pass it to window source:
         WindowSource.staticinit(idle_add, timeout_add, source_remove)
         self.get_transient_for = get_transient_for
@@ -280,6 +285,15 @@ class ServerSource(object):
         self.calculate_window_ids = set()
         self.calculate_due = False
         self.calculate_last_time = 0
+        #dbus:
+        if self.dbus_control:
+            try:
+                from xpra.server.dbus.dbus_source import DBUS_Source
+                self.dbus_server = DBUS_Source(self, os.environ.get("DISPLAY", "").lstrip(":"))
+                dbuslog("Source DBUS_Server=%s", self.dbus_server)
+            except Exception as e:
+                dbuslog.error("Error setting up the source's DBUS server:")
+                dbuslog.error(" %s", e)
 
     def __str__(self):
         return  "ServerSource(%s)" % self.protocol
@@ -384,6 +398,10 @@ class ServerSource(object):
             self.mmap_size = 0
         self.stop_sending_sound()
         self.remove_printers()
+        ds = self.dbus_server
+        if ds:
+            ds.cleanup()
+            self.dbus_server = None
 
 
     def recalculate_delays(self):
@@ -1733,7 +1751,7 @@ class ServerSource(object):
         if ws:
             ws.unmap()
 
-    def raise_window(self, wid, window):
+    def raise_window(self, wid):
         self.send("raise-window", wid)
 
     def remove_window(self, wid, window):

@@ -24,6 +24,7 @@ netlog = Logger("network")
 windowlog = Logger("window")
 clipboardlog = Logger("clipboard")
 rpclog = Logger("rpc")
+dbuslog = Logger("dbus")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -505,9 +506,10 @@ class ServerBase(ServerCore):
         try:
             from xpra.server.dbus.dbus_server import DBUS_Server
             self.dbus_server = DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
+            dbuslog("init_dbus_server() DBUS_Server=%s", self.dbus_server)
         except Exception as e:
-            log.error("Error setting up our dbus server:", exc_info=True)
-            log.error(" %s", e)
+            dbuslog.error("Error setting up our dbus server:", exc_info=True)
+            dbuslog.error(" %s", e)
 
 
     def load_existing_windows(self, system_tray):
@@ -673,6 +675,10 @@ class ServerBase(ServerCore):
         getVideoHelper().cleanup()
         reaper_cleanup()
         self.cleanup_pulseaudio()
+        ds = self.dbus_server
+        if ds:
+            ds.cleanup()
+            self.dbus_server = None
 
 
     def add_listen_socket(self, socktype, socket):
@@ -856,7 +862,8 @@ class ServerBase(ServerCore):
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
-                          self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb, self._socket_dir, self.main_socket_path,
+                          self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
+                          self._socket_dir, self.main_socket_path, self.dbus_control,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.supports_mmap, self.av_sync,
