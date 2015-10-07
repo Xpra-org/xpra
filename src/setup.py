@@ -1920,7 +1920,7 @@ if server_ENABLED:
     cython_add(Extension("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
                 **pkgconfig()))
-    cython_add(Extension("xpra.server.window/region",
+    cython_add(Extension("xpra.server.window.region",
                 ["xpra/server/window/region.pyx"],
                 **pkgconfig()))
 
