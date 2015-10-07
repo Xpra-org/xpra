@@ -213,6 +213,7 @@ class UIXpraClient(XpraClientBase):
         self.server_window_frame_extents = False
         self.server_is_shadow = False
         self.server_supports_sharing = False
+        self.server_supports_window_filters = False
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -1613,6 +1614,7 @@ class UIXpraClient(XpraClientBase):
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
         self.server_supports_sharing = c.boolget("sharing")
+        self.server_supports_window_filters = c.boolget("window-filters")
         self.server_is_shadow = c.boolget("shadow")
         if self.can_scale:
             self.may_adjust_scaling()

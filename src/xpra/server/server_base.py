@@ -1042,6 +1042,7 @@ class ServerBase(ServerCore):
                 "sound.server_driven", "sound.ogg-latency-fix",
                 "clipboard.enable-selections",
                 "av-sync",
+                "window-filters",
                 "command_request",
                 "event_request", "server-events",
                 "sound.eos-sequence")
@@ -1486,7 +1487,7 @@ class ServerBase(ServerCore):
 
     def _process_start_command(self, proto, packet):
         assert self.start_new_commands
-        log.info("start new command: %s", packet)
+        log("start new command: %s", packet)
         name, command, ignore = packet[1:4]
         proc = self.start_child(name, command, ignore)
         if len(packet)>=5:
@@ -1494,7 +1495,7 @@ class ServerBase(ServerCore):
             if proc and not shared:
                 ss = self._server_sources.get(proto)
                 assert ss
-                log.info("adding filter: pid=%s for %s", proc.pid, proto)
+                log("adding filter: pid=%s for %s", proc.pid, proto)
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log("process_start_command: proc=%s", proc)
 
