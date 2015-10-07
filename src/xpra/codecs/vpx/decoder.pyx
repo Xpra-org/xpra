@@ -118,8 +118,11 @@ IF ENABLE_VP9:
     if VPX_DECODER_ABI_VERSION>=9:
         vp9_cs.append("YUV444P")
     else:
-        log.warn("Warning: libvpx ABI version %s is too old:", VPX_DECODER_ABI_VERSION)
-        log.warn(" disabling YUV444P support with VP9")
+        if sys.platform.startswith("darwin"):
+            pass        #cannot build libvpx 1.4 on osx... so skip warning
+        else:
+            log.warn("Warning: libvpx ABI version %s is too old:", VPX_DECODER_ABI_VERSION)
+            log.warn(" disabling YUV444P support with VP9")
     COLORSPACES["vp9"] = vp9_cs
 
 
