@@ -1794,7 +1794,9 @@ buffers_c = "xpra/buffers/%s_buffers.c" % bmod
 membuffers_c = ["xpra/buffers/memalign.c", "xpra/inline.c", buffers_c]
 
 
-toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
+if server_ENABLED:
+    add_modules("xpra.server")
+toggle_packages(server_ENABLED, "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
