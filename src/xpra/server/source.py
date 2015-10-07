@@ -207,6 +207,7 @@ class ServerSource(object):
                  socket_dir, main_socket_path, dbus_control,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
+                 window_filters,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -220,6 +221,7 @@ class ServerSource(object):
                  socket_dir, main_socket_path, dbus_control,
                  get_transient_for, get_focus,
                  get_window_id,
+                 window_filters,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -253,6 +255,7 @@ class ServerSource(object):
         self.get_focus = get_focus
         self.get_cursor_data_cb = get_cursor_data_cb
         self.get_window_id = get_window_id
+        self.window_filters = window_filters
         # mmap:
         self.supports_mmap = supports_mmap
         self.mmap = None
@@ -343,7 +346,6 @@ class ServerSource(object):
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False
-        self.window_filters = []
 
         self.uuid = ""
         self.machine_id = ""
@@ -1729,7 +1731,7 @@ class ServerSource(object):
                 self.send("window-metadata", wid, metadata)
 
     def reset_window_filters(self):
-        self.window_filters = []
+        self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
 
     def get_window_filter(self, object_name, property_name, operator, value):
         if object_name!="window":
@@ -1743,13 +1745,13 @@ class ServerSource(object):
     def add_window_filter(self, object_name, property_name, operator, value):
         window_filter = self.get_window_filter(object_name, property_name, operator, value)
         assert window_filter
-        self.window_filters.append(window_filter.show)
+        self.window_filters.append((self.uuid, window_filter.show))
 
     def can_send_window(self, window):
-        for x in self.window_filters:
+        for uuid,x in self.window_filters:
             v = x(window)
-            if v is True or v is False:
-                return v
+            if v is True:
+                return uuid==self.uuid
         if self.send_windows and self.system_tray:
             #common case shortcut
             return True

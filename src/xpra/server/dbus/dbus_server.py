@@ -199,6 +199,11 @@ class DBUS_Server(dbus.service.Object):
         self.server.control_command_refresh(*self.server._id_to_window.keys())
 
 
+    @dbus.service.method(INTERFACE)
+    def ResetWindowFilters(self):
+        self.server.reset_window_filters()
+
+
     @dbus.service.method(INTERFACE, in_signature='s')
     def EnableDebug(self, category):
         c = ns(category)

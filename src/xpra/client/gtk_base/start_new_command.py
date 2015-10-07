@@ -29,16 +29,16 @@ log = Logger("util")
 
 
 _instance = None
-def getStartNewCommand(run_callback):
+def getStartNewCommand(run_callback, can_share=False):
     global _instance
     if _instance is None:
-        _instance = StartNewCommand(run_callback)
+        _instance = StartNewCommand(run_callback, can_share)
     return _instance
 
 
 class StartNewCommand(object):
 
-    def __init__(self, run_callback=None):
+    def __init__(self, run_callback=None, can_share=False):
         self.run_callback = run_callback
         self.window = gtk.Window()
         self.window.connect("destroy", self.close)
@@ -67,6 +67,14 @@ class StartNewCommand(object):
         self.entry.set_width_chars(32)
         self.entry.connect('activate', self.run_command)
         vbox.add(self.entry)
+
+        if can_share:
+            self.share = gtk.CheckButton("Shared", use_underline=False)
+            #Shared commands will also be shown to other clients
+            self.share.set_active(True)
+            vbox.add(self.share)
+        else:
+            self.share = False
 
         # Buttons:
         hbox = gtk.HBox(False, 20)
@@ -134,7 +142,7 @@ class StartNewCommand(object):
         self.hide()
         command = self.entry.get_text()
         if self.run_callback:
-            self.run_callback(command)
+            self.run_callback(command, self.share is None or self.share.get_active())
 
 
 def main():

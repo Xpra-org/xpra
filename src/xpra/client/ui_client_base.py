@@ -212,6 +212,7 @@ class UIXpraClient(XpraClientBase):
         self.start_new_commands = False
         self.server_window_frame_extents = False
         self.server_is_shadow = False
+        self.server_supports_sharing = False
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -988,9 +989,9 @@ class UIXpraClient(XpraClientBase):
         return self.keyboard_helper.mask_to_names(mask)
 
 
-    def send_start_command(self, name, command, ignore):
-        log("send_start_command(%s, %s, %s)", name, command, ignore)
-        self.send("start-command", name, command, ignore)
+    def send_start_command(self, name, command, ignore, sharing=True):
+        log("send_start_command(%s, %s, %s, %s)", name, command, ignore, sharing)
+        self.send("start-command", name, command, ignore, sharing)
 
 
     def send_focus(self, wid):
@@ -1611,6 +1612,7 @@ class UIXpraClient(XpraClientBase):
         c = self.server_capabilities
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
+        self.server_supports_sharing = c.boolget("sharing")
         self.server_is_shadow = c.boolget("shadow")
         if self.can_scale:
             self.may_adjust_scaling()

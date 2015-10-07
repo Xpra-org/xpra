@@ -89,6 +89,7 @@ class ServerBase(ServerCore):
 
         self._window_to_id = {}
         self._id_to_window = {}
+        self.window_filters = []
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
 
@@ -866,6 +867,7 @@ class ServerBase(ServerCore):
                           self._socket_dir, self.main_socket_path, self.dbus_control,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
+                          self.window_filters,
                           self.supports_mmap, self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_properties,
@@ -889,6 +891,9 @@ class ServerBase(ServerCore):
     def get_server_source_class(self):
         from xpra.server.source import ServerSource
         return ServerSource
+
+    def reset_window_filters(self):
+        self.window_filters = []
 
 
     def parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
@@ -1481,8 +1486,16 @@ class ServerBase(ServerCore):
 
     def _process_start_command(self, proto, packet):
         assert self.start_new_commands
+        log.info("start new command: %s", packet)
         name, command, ignore = packet[1:4]
         proc = self.start_child(name, command, ignore)
+        if len(packet)>=5:
+            shared = packet[4]
+            if proc and not shared:
+                ss = self._server_sources.get(proto)
+                assert ss
+                log.info("adding filter: pid=%s for %s", proc.pid, proto)
+                ss.add_window_filter("window", "pid", "=", proc.pid)
         log("process_start_command: proc=%s", proc)
 
     def _process_info_request(self, proto, packet):
