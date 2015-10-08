@@ -311,7 +311,8 @@ def get_spec(encoding, colorspace):
     global MAX_SIZE
     max_w, max_h = MAX_SIZE[encoding]
     return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace],
-                            codec_class=Encoder, codec_type=get_type(), setup_cost=40, max_w=max_w, max_h=max_h)
+                            codec_class=Encoder, codec_type=get_type(),
+                            quality=50, speed=20, setup_cost=20, max_w=max_w, max_h=max_h)
 
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:

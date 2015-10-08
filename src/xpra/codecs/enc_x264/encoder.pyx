@@ -349,7 +349,8 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
-                            codec_class=Encoder, codec_type=get_type(), speed=0, setup_cost=50, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+                            codec_class=Encoder, codec_type=get_type(),
+                            quality=50, speed=50, setup_cost=20, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 #maps a log level to one of our logger functions:

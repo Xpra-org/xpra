@@ -808,7 +808,7 @@ class WindowVideoSource(WindowSource):
     def get_quality_score(self, csc_format, csc_spec, encoder_spec, scaling):
         quality = encoder_spec.quality
         if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
-            #account for subsampling (reduces quality):
+            #account for subsampling: reduces quality
             y,u,v = get_subsampling_divs(csc_format)
             div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
             for div_x, div_y in (y, u, v):
@@ -834,13 +834,22 @@ class WindowVideoSource(WindowSource):
             qscore *= 2.0
         return int(qscore)
 
-    def get_speed_score(self, csc_spec, encoder_spec, scaling):
+    def get_speed_score(self, csc_format, csc_spec, encoder_spec, scaling):
         #score based on speed:
         speed = encoder_spec.speed
         if csc_spec:
-            #average and add 0.25 for the extra cost
-            speed += csc_spec.speed
-            speed /= 2.25
+            #when subsampling, add the speed gains to the video encoder
+            #which now has less work to do:
+            mult = 1.0
+            if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
+                #account for subsampling: increases encoding speed
+                y,u,v = get_subsampling_divs(csc_format)
+                mult = 0.0
+                for div_x, div_y in (y, u, v):
+                    mult += (div_x+div_y)/2.0/3.0
+            #average and add 0.25 for the extra cost of doing the csc step:
+            speed = (encoder_spec.speed * mult + csc_spec.speed) / 2.25
+            
         #the lower the current speed
         #the more we need a fast encoder/csc to cancel it out:
         sscore = max(0, (100.0-self._current_speed) * speed/100.0)
@@ -882,7 +891,7 @@ class WindowVideoSource(WindowSource):
         def clamp(v):
             return max(0, min(100, v))
         qscore = clamp(self.get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling))
-        sscore = clamp(self.get_speed_score(csc_spec, encoder_spec, scaling))
+        sscore = clamp(self.get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling))
 
         #runtime codec adjustements:
         runtime_score = 100
