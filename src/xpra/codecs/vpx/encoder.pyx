@@ -585,17 +585,14 @@ cdef class Encoder:
             flags |= VPX_EFLAG_FORCE_KF
         #deadline based on speed (also affects quality...)
         cdef unsigned long deadline
-        if self.speed<10 or self.quality>=90:
-            deadline = VPX_DL_BEST_QUALITY
-        elif self.speed>=100:
+        if self.speed>=90 or self.encoding=="vp9":
             deadline = VPX_DL_REALTIME
+        elif self.speed<10 or self.quality>=90:
+            deadline = VPX_DL_BEST_QUALITY
         else:
             deadline = MAX(2, VPX_DL_GOOD_QUALITY * (90-self.speed) // 100)
-        if self.encoding=="vp9":
-            #NEVER use 0 (VPX_DL_BEST_QUALITY) with vp9:
-            deadline = MAX(1, deadline)
-        #cap the deadline at 250ms, which is already plenty
-        deadline = MIN(250*1000, deadline)
+            #cap the deadline at 250ms, which is already plenty
+            deadline = MIN(250*1000, deadline)
         start = time.time()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
@@ -629,13 +626,14 @@ cdef class Encoder:
         self.speed = pct
         self.do_set_encoding_speed(pct)
 
-    cdef do_set_encoding_speed(self, int pct):
+    cdef do_set_encoding_speed(self, int speed):
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
+        #But we only use positive values, negative values are just too slow
         cdef int range = 8*(1+int(self.encoding=="vp8"))
         #note: we don't use the full range since the percentages are mapped to -30 to +70
-        cdef int value = (pct-30)*2*range//100
-        value = MIN(range, MAX(-range, value))
+        cdef int value = (speed-30)*2*range//100
+        value = MIN(range, MAX(0, value))
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):
