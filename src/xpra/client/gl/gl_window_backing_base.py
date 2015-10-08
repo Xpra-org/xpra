@@ -192,7 +192,6 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.wid = wid
         self.size = 0, 0
         self.render_size = 0, 0
-        self.pixel_format = None
         self.texture_pixel_format = None
         #this is the pixel format we are currently updating the fbo with
         #can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
