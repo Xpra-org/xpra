@@ -549,6 +549,28 @@ def show_desktop(b):
         log.warn("failed to call show_desktop(%s): %s", b, e)
 
 
+WM_WTSSESSION_CHANGE = 0x02b1
+WTS_CONSOLE_CONNECT         = 0x1
+WTS_CONSOLE_DISCONNECT      = 0x2
+WTS_REMOTE_CONNECT          = 0x3
+WTS_REMOTE_DISCONNECT       = 0x4
+WTS_SESSION_LOGON           = 0x5
+WTS_SESSION_LOGOFF          = 0x6
+WTS_SESSION_LOCK            = 0x7
+WTS_SESSION_UNLOCK          = 0x8
+WTS_SESSION_REMOTE_CONTROL  = 0x9
+WTS_SESSION_EVENTS = {
+                      WTS_CONSOLE_CONNECT       : "CONSOLE CONNECT",
+                      WTS_CONSOLE_DISCONNECT    : "CONSOLE_DISCONNECT",
+                      WTS_REMOTE_CONNECT        : "REMOTE_CONNECT",
+                      WTS_REMOTE_DISCONNECT     : "REMOTE_DISCONNECT",
+                      WTS_SESSION_LOGON         : "SESSION_LOGON",
+                      WTS_SESSION_LOGOFF        : "SESSION_LOGOFF",
+                      WTS_SESSION_LOCK          : "SESSION_LOCK",
+                      WTS_SESSION_UNLOCK        : "SESSION_UNLOCK",
+                      WTS_SESSION_REMOTE_CONTROL: "SESSION_REMOTE_CONTROL",
+                      }
+
 class ClientExtras(object):
     def __init__(self, client, opts):
         self.client = client
@@ -561,6 +583,7 @@ class ClientExtras(object):
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
                 el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
                 el.add_event_callback(win32con.WM_MOVE, self.wm_move)
+                el.add_event_callback(WM_WTSSESSION_CHANGE, self.session_change_event)
         except Exception as e:
             log.error("cannot register focus and power callbacks: %s", e)
 
@@ -582,6 +605,16 @@ class ClientExtras(object):
             #this is not really a screen size change event,
             #but we do want to process it as such (see window reinit code)
             c.screen_size_changed()
+
+    def session_change_event(self, event, session):
+        event_name = WTS_SESSION_EVENTS.get(event, event)
+        log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
+        c = self.client
+        if c and event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
+            log("will iconify all our windows")
+            for window in c._id_to_window.values():
+                if not window.is_tray():
+                    window.iconify()
 
     def activateapp(self, wParam, lParam):
         c = self.client
