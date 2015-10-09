@@ -56,6 +56,10 @@ class ClientTray(ClientWidgetBase):
         return self.tray_widget.get_size()
 
 
+    def freeze(self):
+        pass
+
+
     def send_configure(self):
         self.reconfigure(True)
 

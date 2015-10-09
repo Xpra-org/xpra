@@ -91,6 +91,8 @@ class ClientWindowBase(ClientWidgetBase):
         w, h = self._size
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
+        return self._backing._backing
+
 
     def destroy(self):
         #ensure we clear reference to other windows:

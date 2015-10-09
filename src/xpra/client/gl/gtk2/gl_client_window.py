@@ -18,7 +18,7 @@ class GLClientWindow(GTK2WindowBase):
     def __init__(self, *args):
         log("GLClientWindow(..)")
         GTK2WindowBase.__init__(self, *args)
-        self.add(self._backing._backing)
+
 
     def get_backing_class(self):
         return GLPixmapBacking
@@ -56,6 +56,11 @@ class GLClientWindow(GTK2WindowBase):
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)
 
+    def process_map_event(self):
+        log("GL process_map_event()")
+        GTK2WindowBase.process_map_event(self)
+        self._backing.paint_screen = True
+
     def do_configure_event(self, event):
         log("GL do_configure_event(%s)", event)
         GTK2WindowBase.do_configure_event(self, event)
@@ -67,6 +72,25 @@ class GLClientWindow(GTK2WindowBase):
             b.paint_screen = False
             b.close()
         GTK2WindowBase.destroy(self)
+
+
+    def new_backing(self, bw, bh):
+        widget = GTK2WindowBase.new_backing(self, bw, bh)
+        log("new_backing(%s, %s)=%s", bw, bh, widget)
+        self.add(widget)
+        widget.realize()
+
+
+    def freeze(self):
+        b = self._backing
+        if b:
+            glarea = b._backing
+            if glarea:
+                self.remove(glarea)
+            b.close()
+            self._backing = None
+        self.iconify()
+        
 
     def magic_key(self, *args):
         b = self._backing

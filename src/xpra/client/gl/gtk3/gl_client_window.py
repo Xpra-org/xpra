@@ -16,7 +16,7 @@ class GLClientWindow(ClientWindow):
     def __init__(self, *args):
         log("GLClientWindow(..)")
         ClientWindow.__init__(self, *args)
-        self.add(self._backing._backing)
+
 
     def get_backing_class(self):
         return GLPixmapBacking
@@ -57,6 +57,24 @@ class GLClientWindow(ClientWindow):
             b.paint_screen = False
             b.close()
         ClientWindow.destroy(self)
+
+
+    def new_backing(self, bw, bh):
+        widget = ClientWindow.new_backing(self, bw, bh)
+        self.add(widget)
+        widget.realize()
+
+
+    def freeze(self):
+        b = self._backing
+        if b:
+            glarea = b._backing
+            if glarea:
+                self.remove(glarea)
+            b.close()
+            self._backing = None
+        self.iconify()
+
 
     def magic_key(self, *args):
         b = self._backing

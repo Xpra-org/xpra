@@ -2225,6 +2225,13 @@ class UIXpraClient(XpraClientBase):
         window.show()
         return window
 
+
+    def freeze(self):
+        log("freeze()")
+        for window in self._id_to_window.values():
+            window.freeze()
+
+
     def reinit_windows(self, new_size_fn=None):
         assert self.window_unmap, "server support for 'window_unmap' is required for reinitializing windows"
         def fake_send(*args):

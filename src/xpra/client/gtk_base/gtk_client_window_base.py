@@ -310,6 +310,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self._client_properties["encoding.transparency"] = False
 
 
+    def freeze(self):
+        #the OpenGL subclasses override this method to also free their GL context
+        self.iconify()
+
+
     def show(self):
         gtk.Window.show(self)
 
@@ -381,7 +386,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         def send_updated_window_state():
             if self._window_state and self.get_window():
-                self.process_configure_event(True)
+                self.send_configure_event(True)
         if self._window_state:
             self.timeout_add(25, send_updated_window_state)
 
@@ -585,7 +590,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def property_changed(self, widget, event):
-        statelog("%s.property_changed(%s, %s) : %s", self, widget, event, event.atom)
+        statelog("property_changed(%s, %s) : %s", widget, event, event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             self.do_workspace_changed(event)
         elif event.atom=="_NET_FRAME_EXTENTS":
@@ -609,7 +614,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self._current_frame_extents = v
                 statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
                 self._window_state["frame"] = v
-                self.process_configure_event(True)
+                self.send_configure_event(True)
         elif event.atom=="XKLAVIER_STATE":
             #unused for now, but log it:
             xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
@@ -858,6 +863,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.send("map-window", self._id, cx(x), cy(y), cx(w), cy(h), props, state)
         self._pos = (x, y)
         self._size = (w, h)
+        if self._backing is None:
+            #we may have cleared the backing, so we must re-create one:
+            self._set_backing_size(w, h)
         self.idle_add(self._focus_change, "initial")
 
     def get_window_frame_size(self):
@@ -871,10 +879,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def send_configure(self):
-        self.process_configure_event()
+        self.send_configure_event()
 
     def do_configure_event(self, event):
-        eventslog("%s.do_configure_event(%s)", self, event)
+        eventslog("%s.do_configure_event(%s) OR=%s, iconified=%s", self, event, self._override_redirect, self._iconified)
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect and not self._iconified:
             self.process_configure_event()
@@ -887,6 +895,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ox, oy = self._pos
         dx, dy = x-ox, y-oy
         self._pos = (x, y)
+        self.send_configure_event(skip_geometry)
+        if dx!=0 or dy!=0:
+            #window has moved, also move any child OR window:
+            for window in self._override_redirect_windows:
+                x, y = window.get_position()
+                window.move(x+dx, y+dy)
+        log.info("size=%s, new=%s, backing=%s, iconified=%s", self._size, (w, h), self._backing, self._iconified)
+        if (w, h) != self._size or (self._backing is None and not self._iconified):
+            self._size = (w, h)
+            self._set_backing_size(w, h)
+
+    def send_configure_event(self, skip_geometry=False):
+        assert skip_geometry or not self.is_OR()
+        x, y, w, h = self.get_window_geometry()
+        w = max(1, w)
+        h = max(1, h)
         state = self._window_state
         props = self._client_properties
         self._client_properties = {}
@@ -908,17 +932,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             packet.append(self._client.get_current_modifiers())
         geomlog("%s", packet)
         self.send(*packet)
-        if dx!=0 or dy!=0:
-            #window has moved, also move any child OR window:
-            for window in self._override_redirect_windows:
-                x, y = window.get_position()
-                window.move(x+dx, y+dy)
-        if (w, h) != self._size:
-            self._size = (w, h)
-            self._set_backing_size(w, h)
 
     def _set_backing_size(self, ww, wh):
-        self._backing.init(ww, wh, self._client.cx(ww), self._client.cy(wh))
+        b = self._backing
+        if b:
+            b.init(ww, wh, self._client.cx(ww), self._client.cy(wh))
+        else:
+            self.new_backing(self._client.cx(ww), self._client.cy(wh))
 
     def resize(self, w, h, resize_counter=0):
         log("resize(%s, %s, %s)", w, h, resize_counter)
