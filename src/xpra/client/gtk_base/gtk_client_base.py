@@ -521,7 +521,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if sw>cmaxw or sh>cmaxh:
                 ratio = max(float(w)/cmaxw, float(h)/cmaxh)
                 cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
-                sx, sy, sw, sh = int(x/ratio), int(y/ratio), int(w/ratio), int(h/ratio)
+                sx, sy, sw, sh = int(x/ratio), int(y/ratio), min(cmaxw, int(w/ratio)), min(cmaxh, int(h/ratio))
             if sw!=w or sh!=h:
                 cursorlog("scaling cursor from %ix%i hotspot at %ix%i to %ix%i hotspot at %ix%i", w, h, x, y, sw, sh, sx, sy)
                 cursor_pixbuf = pixbuf.scale_simple(sw, sh, INTERP_BILINEAR)
