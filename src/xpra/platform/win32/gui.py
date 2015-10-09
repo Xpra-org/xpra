@@ -611,10 +611,9 @@ class ClientExtras(object):
         log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
         c = self.client
         if c and event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
-            log("will iconify all our windows")
-            for window in c._id_to_window.values():
-                if not window.is_tray():
-                    window.iconify()
+            log("will freeze all the windows")
+            c.freeze()
+
 
     def activateapp(self, wParam, lParam):
         c = self.client
