@@ -468,7 +468,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
         display = display_get_default()
-        if len(cursor_data)>=9 and cursor_types:
+        cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s", len(cursor_data)>=9, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
+        #named cursors cannot be scaled (round to 10 to compare so 0.95 and 1.05 are considered the same as 1.0, no scaling):
+        if len(cursor_data)>=9 and cursor_types and int(0.5+self.xscale*10)==10 and int(0.5+self.yscale*10)==10:
             cursor_name = bytestostr(cursor_data[8])
             if cursor_name and USE_LOCAL_CURSORS:
                 gdk_cursor = cursor_types.get(cursor_name.upper())
