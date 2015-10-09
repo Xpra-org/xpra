@@ -32,16 +32,19 @@ import collections
 #
 
 # Location of the data files
-base_dir = "/home/nickc/xtests/logs"
+#base_dir = "/home/nickc/xtests/logs/0.15.0"
+base_dir = "/home/nickc/xtests/logs/smo"
 
 # Data file prefix
-prefix = "all_tests_40"
+prefix = "smo_test"
 #prefix = "h264_glx"
+#prefix = "all_tests_40"
 
 # Result subdirectories
 #subs = ["0.15.0", "8585_1", "8585_2", "8585_3"]
 #subs = ["hv", "h1", "h2", "h3"]
-subs = ["8585_2", "9612_2"]
+#subs = ["8585_2", "9612_2"]
+#subs = []
 
 # id is the actual id string used in the data file name
 # dir is an optional subdirectory within the base_dir where the data is stored
@@ -52,29 +55,47 @@ subs = ["8585_2", "9612_2"]
 #    {"id": "9612", "dir": subs[2], "display": "2"},
 #    {"id": "9612", "dir": subs[3], "display": "3"}
 #]
+
+#params = [
+#    {"id": "8585", "dir": subs[0], "display": "8585"},
+#    {"id": "9612", "dir": subs[1], "display": "9612"}
+#]
+
 params = [
-    {"id": "8585", "dir": subs[0], "display": "8585"},
-    {"id": "9612", "dir": subs[1], "display": "9612"}
+    {"id": "8585", "display": "8585"},
+    {"id": "9612", "display": "9612"}
+]
+
+params = [
+    {"id": "156", "display": "8585"},
+    {"id": "16r10655", "display": "9612"}
 ]
 
 # The description will be shown on the output page
-description = 'July comparison of 8585 and 9612, all tests run, all results showing.'
+description = 'Comparison of v15 and v16.'
 
 # Each file name's 'rep' value is the sequence number of that
 # data file, when results of multiple files should be averaged
-reps = 9     # Number of data files in each set
+reps = 5     # Number of data files in each set
 
 #----------------------------------------------------------------
 # Set any of the values in the following lists to 1 in order to
 # include that test app, or metric column in the chart page.
 #
 apps = {"glxgears": 1,
-        "glxspheres": 1,
+        "glxspheres": 0,
+        "glxspheres64": 1,
         "moebiusgears": 1,
         "polytopes": 1,
         "x11perf": 0,
         "xterm": 1,
-        "gtkperf": 0}
+        "gtkperf": 0,
+        "deluxe": 1,
+        "eruption": 1,
+        "memscroller" : 1,
+        "vlc sound visual": 1,
+        "vlc video": 1,
+        "xonotic-glx": 1}
 
 metrics = {"Regions/s": 1,
            "Pixels/s Sent": 1,
@@ -108,9 +129,10 @@ metrics = {"Regions/s": 1,
            "Max Speed": 0}
 
 encodings = {"png": 1,
-             "rgb24": 0,
-             "jpeg": 1,
+             "rgb": 1,
+             "rgb24": 1,
              "h264": 1,
+             "jpeg": 1,
              "vp8": 1,
              "vp9": 1,
              "mmap": 1}
@@ -136,6 +158,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
     rownum = 0
     rgb_count = 0
     rgb_values = None
+    #print "uniqueid ", uniqueId
 
     ifile = open(file_name, "rb")
     for row in csv.reader(ifile, skipinitialspace=True):
@@ -144,6 +167,10 @@ def accumulate_values(file_name, rep, param, uniqueId):
                 get_headers(row)
         else:
             app = get_value(row, "Test Command")
+            if (not app in apps):
+                print "Application: " + app + " not defined."
+                exit()
+
             if (apps[app] == 1):
                 encoding = get_value(row, "Encoding")
                 # x264 is now h264
@@ -152,6 +179,10 @@ def accumulate_values(file_name, rep, param, uniqueId):
                 # vpx is now vp8
                 if (encoding == 'vpx'):
                     encoding = 'vp8'
+
+                if (not encoding in encodings):
+                    print "Encoding: " + encoding + " not defined."
+                    exit()
 
                 if (encodings[encoding] == 1):
                     if (encoding == ENCODING_RGB24):
@@ -357,7 +388,7 @@ def main():
                 file_name = base_dir + '/' + param['dir'] + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
             else:
                 file_name = base_dir + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
-            #print file_name
+            print "Processing: ", file_name
             accumulate_values(file_name, rep, param, uniqueId)
     write_html()
     print('\nCreated: charts.html\n')
