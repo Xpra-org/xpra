@@ -180,7 +180,8 @@ class GTK2WindowBase(GTKClientWindowBase):
     def do_expose_event(self, event):
         #cannot use self
         eventslog("do_expose_event(%s) area=%s", event, event.area)
-        if not (self.flags() & gtk.MAPPED) or self._backing is None:
+        backing = self._backing
+        if not (self.flags() & gtk.MAPPED) or backing is None:
             return
         w,h = self.window.get_size()
         if w>=32768 or h>=32768:
@@ -189,6 +190,6 @@ class GTK2WindowBase(GTKClientWindowBase):
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
-        self._backing.cairo_draw(context)
+        backing.cairo_draw(context)
         if not self._client.server_ok():
             self.paint_spinner(context, event.area)
