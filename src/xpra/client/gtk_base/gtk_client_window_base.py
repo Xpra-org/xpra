@@ -441,8 +441,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                             ww, wh = self._size
                             sw, sh = self._client.cp(ww, wh)
                             img = Image.new('1', (sw, sh), color=0)
-                            shapelog("drawing on bitmap(%s,%s)=%s", sw, sh, img)
-                            self._backing
                             shapelog("drawing %s on bitmap(%s,%s)=%s", kind, sw, sh, img)
                             d = ImageDraw.Draw(img)
                             for x,y,w,h in rectangles:
