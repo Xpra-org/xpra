@@ -348,33 +348,31 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         statelog("window_state_updated(..) state updates: %s, actual updates: %s", state_updates, actual_updates)
         self._window_state.update(actual_updates)
         #iconification is handled a bit differently...
-        if "iconified" in actual_updates:
-            iconified = actual_updates.get("iconified")
-            statelog("iconified=%s (was %s)", iconified, self._iconified)
-            if iconified!=self._iconified:
-                self._iconified = iconified
-                #handle iconification as map events:
-                assert not self._override_redirect
-                if iconified:
-                    #usually means it is unmapped
-                    self._unfocus()
-                    if not self._override_redirect:
-                        #tell server, but wait a bit to try to prevent races:
-                        def tell_server():
-                            if self._iconified:
-                                self.send("unmap-window", self._id, True, self._window_state)
-                                self._window_state = {}
-                        #calculate a good delay to prevent races causing minimize/unminimize loops:
-                        delay = 150
-                        spl = list(self._client.server_ping_latency)
-                        if len(spl)>0:
-                            worst = max([x for _,x in spl])
-                            delay += int(1000*worst)
-                            delay = min(1000, delay)
-                        statelog("telling server about iconification with %sms delay", delay)
-                        self.timeout_add(delay, tell_server)
-                else:
-                    self.process_map_event()
+        iconified = actual_updates.get("iconified")
+        if iconified is not None:
+            statelog("iconified=%s", iconified)
+            #handle iconification as map events:
+            assert not self._override_redirect
+            if iconified:
+                #usually means it is unmapped
+                self._unfocus()
+                if not self._override_redirect:
+                    #tell server, but wait a bit to try to prevent races:
+                    def tell_server():
+                        if self._iconified:
+                            self.send("unmap-window", self._id, True, self._window_state)
+                            self._window_state = {}
+                    #calculate a good delay to prevent races causing minimize/unminimize loops:
+                    delay = 150
+                    spl = list(self._client.server_ping_latency)
+                    if len(spl)>0:
+                        worst = max([x for _,x in spl])
+                        delay += int(1000*worst)
+                        delay = min(1000, delay)
+                    statelog("telling server about iconification with %sms delay", delay)
+                    self.timeout_add(delay, tell_server)
+            else:
+                self.process_map_event()
         self.after_window_state_updated()
         #if we have state updates, send them back to the server using a configure window packet:
         if self.is_OR() and not self._client.window_configure_skip_geometry:
