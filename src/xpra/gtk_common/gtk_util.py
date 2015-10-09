@@ -135,15 +135,46 @@ if is_gtk3():
     TRUE_COLOR      = gdk.VisualType.TRUE_COLOR
     DIRECT_COLOR    = gdk.VisualType.DIRECT_COLOR
 
-    SHIFT_MASK      = gdk.ModifierType.SHIFT_MASK
-    LOCK_MASK       = gdk.ModifierType.LOCK_MASK
-    META_MASK       = gdk.ModifierType.META_MASK
-    CONTROL_MASK    = gdk.ModifierType.CONTROL_MASK
-    MOD1_MASK       = gdk.ModifierType.MOD1_MASK
-    MOD2_MASK       = gdk.ModifierType.MOD2_MASK
-    MOD3_MASK       = gdk.ModifierType.MOD3_MASK
-    MOD4_MASK       = gdk.ModifierType.MOD4_MASK
-    MOD5_MASK       = gdk.ModifierType.MOD5_MASK
+    mt = gdk.ModifierType
+    SHIFT_MASK      = mt.SHIFT_MASK
+    LOCK_MASK       = mt.LOCK_MASK
+    META_MASK       = mt.META_MASK
+    CONTROL_MASK    = mt.CONTROL_MASK
+    MOD1_MASK       = mt.MOD1_MASK
+    MOD2_MASK       = mt.MOD2_MASK
+    MOD3_MASK       = mt.MOD3_MASK
+    MOD4_MASK       = mt.MOD4_MASK
+    MOD5_MASK       = mt.MOD5_MASK
+
+    GTK3_BUTTON_MASK = {mt.BUTTON1_MASK : 1,
+                        mt.BUTTON2_MASK : 2,
+                        mt.BUTTON3_MASK : 3,
+                        mt.BUTTON4_MASK : 4,
+                        mt.BUTTON5_MASK : 5}
+    del mt
+
+    em = gdk.EventMask
+    WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
+            | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
+            | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK
+    del em
+
+    WINDOW_NAME_TO_HINT = {
+                "NORMAL"        : gdk.WindowTypeHint.NORMAL,
+                "DIALOG"        : gdk.WindowTypeHint.DIALOG,
+                "MENU"          : gdk.WindowTypeHint.MENU,
+                "TOOLBAR"       : gdk.WindowTypeHint.TOOLBAR,
+                "SPLASH"        : gdk.WindowTypeHint.SPLASHSCREEN,
+                "UTILITY"       : gdk.WindowTypeHint.UTILITY,
+                "DOCK"          : gdk.WindowTypeHint.DOCK,
+                "DESKTOP"       : gdk.WindowTypeHint.DESKTOP,
+                "DROPDOWN_MENU" : gdk.WindowTypeHint.DROPDOWN_MENU,
+                "POPUP_MENU"    : gdk.WindowTypeHint.POPUP_MENU,
+                "TOOLTIP"       : gdk.WindowTypeHint.TOOLTIP,
+                "NOTIFICATION"  : gdk.WindowTypeHint.NOTIFICATION,
+                "COMBO"         : gdk.WindowTypeHint.COMBO,
+                "DND"           : gdk.WindowTypeHint.DND
+                }
 
     from gi.repository.Gtk import Clipboard     #@UnresolvedImport
     CLIPBOARD_SELECTION = {}
@@ -211,8 +242,8 @@ else:
         return gdk.CairoContext(cairo_context)
     def cairo_set_source_pixbuf(cr, pixbuf, x, y):
         cr.set_source_pixbuf(pixbuf, x, y)
-    COLORSPACE_RGB          = gtk.gdk.COLORSPACE_RGB
-    INTERP_HYPER    = gtk.gdk.INTERP_HYPER
+    COLORSPACE_RGB          = gdk.COLORSPACE_RGB
+    INTERP_HYPER    = gdk.INTERP_HYPER
     INTERP_BILINEAR = gdk.INTERP_BILINEAR
     RELIEF_NONE     = gtk.RELIEF_NONE
     RELIEF_NORMAL   = gtk.RELIEF_NORMAL
@@ -240,24 +271,51 @@ else:
     WINDOW_POPUP    = gtk.WINDOW_POPUP
     WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
 
-    LSB_FIRST       = gtk.gdk.LSB_FIRST
-    MSB_FIRST       = gtk.gdk.MSB_FIRST
-    STATIC_GRAY     = gtk.gdk.VISUAL_STATIC_GRAY
-    GRAYSCALE       = gtk.gdk.VISUAL_GRAYSCALE
-    STATIC_COLOR    = gtk.gdk.VISUAL_STATIC_COLOR
-    PSEUDO_COLOR    = gtk.gdk.VISUAL_PSEUDO_COLOR
-    TRUE_COLOR      = gtk.gdk.VISUAL_TRUE_COLOR
-    DIRECT_COLOR    = gtk.gdk.VISUAL_DIRECT_COLOR
+    LSB_FIRST       = gdk.LSB_FIRST
+    MSB_FIRST       = gdk.MSB_FIRST
+    STATIC_GRAY     = gdk.VISUAL_STATIC_GRAY
+    GRAYSCALE       = gdk.VISUAL_GRAYSCALE
+    STATIC_COLOR    = gdk.VISUAL_STATIC_COLOR
+    PSEUDO_COLOR    = gdk.VISUAL_PSEUDO_COLOR
+    TRUE_COLOR      = gdk.VISUAL_TRUE_COLOR
+    DIRECT_COLOR    = gdk.VISUAL_DIRECT_COLOR
 
-    SHIFT_MASK      = gtk.gdk.SHIFT_MASK
-    LOCK_MASK       = gtk.gdk.LOCK_MASK
+    SHIFT_MASK      = gdk.SHIFT_MASK
+    LOCK_MASK       = gdk.LOCK_MASK
     META_MASK       = gdk.META_MASK
-    CONTROL_MASK    = gtk.gdk.CONTROL_MASK
-    MOD1_MASK       = gtk.gdk.MOD1_MASK
-    MOD2_MASK       = gtk.gdk.MOD2_MASK
-    MOD3_MASK       = gtk.gdk.MOD3_MASK
-    MOD4_MASK       = gtk.gdk.MOD4_MASK
-    MOD5_MASK       = gtk.gdk.MOD5_MASK
+    CONTROL_MASK    = gdk.CONTROL_MASK
+    MOD1_MASK       = gdk.MOD1_MASK
+    MOD2_MASK       = gdk.MOD2_MASK
+    MOD3_MASK       = gdk.MOD3_MASK
+    MOD4_MASK       = gdk.MOD4_MASK
+    MOD5_MASK       = gdk.MOD5_MASK
+
+    BUTTON_MASK = {gdk.BUTTON1_MASK : 1,
+                   gdk.BUTTON2_MASK : 2,
+                   gdk.BUTTON3_MASK : 3,
+                   gdk.BUTTON4_MASK : 4,
+                   gdk.BUTTON5_MASK : 5}
+
+    WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
+            | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
+            | gdk.PROPERTY_CHANGE_MASK
+
+    WINDOW_NAME_TO_HINT = {
+                "NORMAL"        : gdk.WINDOW_TYPE_HINT_NORMAL,
+                "DIALOG"        : gdk.WINDOW_TYPE_HINT_DIALOG,
+                "MENU"          : gdk.WINDOW_TYPE_HINT_MENU,
+                "TOOLBAR"       : gdk.WINDOW_TYPE_HINT_TOOLBAR,
+                "SPLASH"        : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
+                "UTILITY"       : gdk.WINDOW_TYPE_HINT_UTILITY,
+                "DOCK"          : gdk.WINDOW_TYPE_HINT_DOCK,
+                "DESKTOP"       : gdk.WINDOW_TYPE_HINT_DESKTOP,
+                "DROPDOWN_MENU" : gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
+                "POPUP_MENU"    : gdk.WINDOW_TYPE_HINT_POPUP_MENU,
+                "TOOLTIP"       : gdk.WINDOW_TYPE_HINT_TOOLTIP,
+                "NOTIFICATION"  : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
+                "COMBO"         : gdk.WINDOW_TYPE_HINT_COMBO,
+                "DND"           : gdk.WINDOW_TYPE_HINT_DND
+                }
 
     OptionMenu  = gtk.OptionMenu
 

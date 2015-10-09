@@ -16,12 +16,10 @@ workspacelog = Logger("workspace")
 
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.util import WORKSPACE_UNSET
 
 
-GTK2_WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
-            | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
-            | gdk.PROPERTY_CHANGE_MASK
 GTK2_OR_TYPE_HINTS = (gdk.WINDOW_TYPE_HINT_DIALOG,
                 gdk.WINDOW_TYPE_HINT_MENU, gdk.WINDOW_TYPE_HINT_TOOLBAR,
                 #gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
@@ -34,27 +32,6 @@ GTK2_OR_TYPE_HINTS = (gdk.WINDOW_TYPE_HINT_DIALOG,
                 #gdk.WINDOW_TYPE_HINT_NOTIFICATION,
                 gdk.WINDOW_TYPE_HINT_COMBO,
                 gdk.WINDOW_TYPE_HINT_DND)
-GTK2_NAME_TO_HINT = {
-                "NORMAL"        : gdk.WINDOW_TYPE_HINT_NORMAL,
-                "DIALOG"        : gdk.WINDOW_TYPE_HINT_DIALOG,
-                "MENU"          : gdk.WINDOW_TYPE_HINT_MENU,
-                "TOOLBAR"       : gdk.WINDOW_TYPE_HINT_TOOLBAR,
-                "SPLASH"        : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
-                "UTILITY"       : gdk.WINDOW_TYPE_HINT_UTILITY,
-                "DOCK"          : gdk.WINDOW_TYPE_HINT_DOCK,
-                "DESKTOP"       : gdk.WINDOW_TYPE_HINT_DESKTOP,
-                "DROPDOWN_MENU" : gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
-                "POPUP_MENU"    : gdk.WINDOW_TYPE_HINT_POPUP_MENU,
-                "TOOLTIP"       : gdk.WINDOW_TYPE_HINT_TOOLTIP,
-                "NOTIFICATION"  : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
-                "COMBO"         : gdk.WINDOW_TYPE_HINT_COMBO,
-                "DND"           : gdk.WINDOW_TYPE_HINT_DND
-                }
-GTK2_BUTTON_MASK = {gtk.gdk.BUTTON1_MASK : 1,
-                    gtk.gdk.BUTTON2_MASK : 2,
-                    gtk.gdk.BUTTON3_MASK : 3,
-                    gtk.gdk.BUTTON4_MASK : 4,
-                    gtk.gdk.BUTTON5_MASK : 5}
 # Map scroll directions back to mouse buttons.  Mapping is taken from
 # gdk/x11/gdkevents-x11.c.
 GTK2_SCROLL_MAP = {
@@ -71,11 +48,11 @@ GTK2 version of the ClientWindow class
 """
 class GTK2WindowBase(GTKClientWindowBase):
 
-    WINDOW_EVENT_MASK   = GTK2_WINDOW_EVENT_MASK
+    WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
     OR_TYPE_HINTS       = GTK2_OR_TYPE_HINTS
-    NAME_TO_HINT        = GTK2_NAME_TO_HINT
+    NAME_TO_HINT        = WINDOW_NAME_TO_HINT
     SCROLL_MAP          = GTK2_SCROLL_MAP
-    BUTTON_MASK         = GTK2_BUTTON_MASK
+    BUTTON_MASK         = BUTTON_MASK
 
     WINDOW_STATE_FULLSCREEN = gdk.WINDOW_STATE_FULLSCREEN
     WINDOW_STATE_MAXIMIZED  = gdk.WINDOW_STATE_MAXIMIZED

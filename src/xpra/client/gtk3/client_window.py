@@ -13,22 +13,13 @@ from gi.repository import GdkPixbuf             #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
 metalog = Logger("metadata")
 
-
-GTK3_WINDOW_EVENT_MASK = Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.KEY_RELEASE_MASK \
-            | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK \
-            | Gdk.EventMask.PROPERTY_CHANGE_MASK | Gdk.EventMask.SCROLL_MASK
-
-GTK3_BUTTON_MASK = {Gdk.ModifierType.BUTTON1_MASK : 1,
-                    Gdk.ModifierType.BUTTON2_MASK : 2,
-                    Gdk.ModifierType.BUTTON3_MASK : 3,
-                    Gdk.ModifierType.BUTTON4_MASK : 4,
-                    Gdk.ModifierType.BUTTON5_MASK : 5}
 
 GTK3_SCROLL_MAP = {
                    Gdk.ScrollDirection.UP   : 4,
@@ -54,34 +45,16 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-GTK3_NAME_TO_HINT = {
-                "NORMAL"        : Gdk.WindowTypeHint.NORMAL,
-                "DIALOG"        : Gdk.WindowTypeHint.DIALOG,
-                "MENU"          : Gdk.WindowTypeHint.MENU,
-                "TOOLBAR"       : Gdk.WindowTypeHint.TOOLBAR,
-                "SPLASH"        : Gdk.WindowTypeHint.SPLASHSCREEN,
-                "UTILITY"       : Gdk.WindowTypeHint.UTILITY,
-                "DOCK"          : Gdk.WindowTypeHint.DOCK,
-                "DESKTOP"       : Gdk.WindowTypeHint.DESKTOP,
-                "DROPDOWN_MENU" : Gdk.WindowTypeHint.DROPDOWN_MENU,
-                "POPUP_MENU"    : Gdk.WindowTypeHint.POPUP_MENU,
-                "TOOLTIP"       : Gdk.WindowTypeHint.TOOLTIP,
-                "NOTIFICATION"  : Gdk.WindowTypeHint.NOTIFICATION,
-                "COMBO"         : Gdk.WindowTypeHint.COMBO,
-                "DND"           : Gdk.WindowTypeHint.DND
-                }
-
-
 """
 GTK3 version of the ClientWindow class
 """
 class ClientWindow(GTKClientWindowBase, Gtk.Window):
 
-    WINDOW_EVENT_MASK   = GTK3_WINDOW_EVENT_MASK
-    BUTTON_MASK         = GTK3_BUTTON_MASK
+    WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
+    BUTTON_MASK         = BUTTON_MASK
     SCROLL_MAP          = GTK3_SCROLL_MAP
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
-    NAME_TO_HINT        = GTK3_NAME_TO_HINT
+    NAME_TO_HINT        = WINDOW_NAME_TO_HINT
 
     WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
     WINDOW_STATE_MAXIMIZED  = Gdk.WindowState.MAXIMIZED
