@@ -488,7 +488,7 @@ class ClientWindowBase(ClientWidgetBase):
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:
             callbacks.append(after_draw_refresh)
-        self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+        backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def spinner(self, ok):
         if not self.can_have_spinner():
