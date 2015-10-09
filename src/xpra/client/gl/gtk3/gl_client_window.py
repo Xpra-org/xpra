@@ -52,7 +52,10 @@ class GLClientWindow(ClientWindow):
         self._backing.paint_screen = True
 
     def destroy(self):
-        self._backing.paint_screen = False
+        b = self._backing
+        if b:
+            b.paint_screen = False
+            b.close()
         ClientWindow.destroy(self)
 
     def magic_key(self, *args):

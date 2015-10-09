@@ -62,7 +62,10 @@ class GLClientWindow(GTK2WindowBase):
         self._backing.paint_screen = True
 
     def destroy(self):
-        self._backing.paint_screen = False
+        b = self._backing
+        if b:
+            b.paint_screen = False
+            b.close()
         GTK2WindowBase.destroy(self)
 
     def magic_key(self, *args):
