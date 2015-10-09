@@ -2402,15 +2402,19 @@ class UIXpraClient(XpraClientBase):
         paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success, message=""):
-            if success:
+            if success>0:
                 end = time.time()
                 decode_time = int(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((start, end, width*height))
                 dms = "%sms" % (int(decode_time/100)/10.0)
-                paintlog("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
-            else:
+                paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s", success, message, wid, coding, width, height, dms)
+            elif success==0:
                 decode_time = -1
-                paintlog("record_decode_time(%s) decoding error on wid=%s, %s: %sx%s", success, wid, coding, width, height)
+                paintlog("record_decode_time(%s, %s) decoding error on wid=%s, %s: %sx%s", success, message, wid, coding, width, height)
+            else:
+                assert success<0
+                decode_time = 0
+                paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s", success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, message)
         self._draw_counter += 1
         if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:

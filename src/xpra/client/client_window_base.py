@@ -472,11 +472,11 @@ class ClientWindowBase(ClientWidgetBase):
         if not backing:
             log("draw_region: window %s has no backing, gone?", self._id)
             from xpra.client.window_backing_base import fire_paint_callbacks
-            fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, -1, "no backing")
             return
         def after_draw_refresh(success, message=""):
             plog("after_draw_refresh(%s, %s) %sx%s at %sx%s encoding=%s, options=%s", success, message, width, height, x, y, coding, options)
-            if not success:
+            if success<=0:
                 return
             backing = self._backing
             if backing and backing.draw_needs_refresh:

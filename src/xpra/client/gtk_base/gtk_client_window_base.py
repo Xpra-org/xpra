@@ -901,7 +901,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             for window in self._override_redirect_windows:
                 x, y = window.get_position()
                 window.move(x+dx, y+dy)
-        log.info("size=%s, new=%s, backing=%s, iconified=%s", self._size, (w, h), self._backing, self._iconified)
+        log("configure event: current size=%s, new size=%s, backing=%s, iconified=%s", self._size, (w, h), self._backing, self._iconified)
         if (w, h) != self._size or (self._backing is None and not self._iconified):
             self._size = (w, h)
             self._set_backing_size(w, h)

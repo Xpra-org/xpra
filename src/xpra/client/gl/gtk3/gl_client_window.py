@@ -56,6 +56,7 @@ class GLClientWindow(ClientWindow):
         if b:
             b.paint_screen = False
             b.close()
+            self._backing = None
         ClientWindow.destroy(self)
 
 
