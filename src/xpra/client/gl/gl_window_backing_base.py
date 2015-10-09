@@ -460,7 +460,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
     def present_fbo(self, x, y, w, h, flush=0):
-        log("present_fbo: adding %s to pending paint list, flush=%s", (x, y, w, h), flush)
+        log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s", (x, y, w, h), len(self.pending_fbo_paint), flush, self.paint_screen)
         self.pending_fbo_paint.append((x, y, w, h))
         if not self.paint_screen:
             return
@@ -766,7 +766,6 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
-
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
