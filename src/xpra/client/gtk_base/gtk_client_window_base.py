@@ -27,7 +27,7 @@ menulog = Logger("menu")
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
-from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, WINDOW_POPUP, WINDOW_TOPLEVEL
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
@@ -583,11 +583,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         prop_set(target, name, "u32", value)
 
     def is_realized(self):
-        if hasattr(self, "get_realized"):
-            #pygtk 2.22 and above have this method:
-            return self.get_realized()
-        #older versions:
-        return self.flags() & gtk.REALIZED
+        return is_realized(self)
 
 
     def property_changed(self, widget, event):

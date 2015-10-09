@@ -64,6 +64,9 @@ def get_gtk_version_info():
 
 
 if is_gtk3():
+    def is_realized(widget):
+        return widget.get_realized()
+
     def color_parse(*args):
         ok, v = gdk.Color.parse(*args)
         if not ok:
@@ -179,6 +182,13 @@ else:
     #gtk2:
     if gtk.gtk_version<(2,18):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
+
+    if gtk.gtk_version<(2,22):
+        def is_realized(widget):
+            return widget.flags() & gtk.REALIZED
+    else:
+        def is_realized(widget):
+            return widget.get_realized()
 
     get_default_root_window = gdk.get_default_root_window
     keymap_get_for_display  = gdk.keymap_get_for_display
