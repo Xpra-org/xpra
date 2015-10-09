@@ -12,7 +12,7 @@ log = Logger("opengl", "paint")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
 
-from xpra.gtk_common.gtk_util import color_parse
+from xpra.gtk_common.gtk_util import color_parse, is_realized
 
 
 _DEFAULT_BOX_COLORS = {
@@ -339,10 +339,14 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def gl_context(self):
         if not self._backing:
+            log.error("Error: no OpenGL backing")
+            return None
+        if not is_realized(self._backing):
+            log.error("Error: OpenGL backing is not realized")
             return None
         w, h = self.size
         if w<=0 or h<=0:
-            log.error("Error: invalid OpenGL backing size: %ix%i", w, h, exc_info=True)
+            log.error("Error: invalid OpenGL backing size: %ix%i", w, h)
             return None
         context = GLContextManager(self._backing)
         log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
