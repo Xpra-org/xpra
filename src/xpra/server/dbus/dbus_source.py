@@ -35,16 +35,20 @@ class DBUS_Source(dbus.service.Object):
         self.source = source
         session_bus = init_session_bus()
         name = BUS_NAME
-        path = PATH + str(sequence.increase())
+        self.path = PATH + str(sequence.increase())
         if extra:
             name += extra
         bus_name = dbus.service.BusName(name, session_bus)
-        dbus.service.Object.__init__(self, bus_name, path)
+        dbus.service.Object.__init__(self, bus_name, self.path)
         self.log("(%s)", source)
         self._properties = {"bell"              : ("send_bell",             ni),
                             "cursors"           : ("send_cursors",          ni),
                             "notifications"     : ("send_notifications",    ni),
                             }
+
+    def __str__(self):
+        return "DBUS_Source(%s:%s)" % (BUS_NAME, self.path)
+
 
     def cleanup(self):
         try:
@@ -108,6 +112,10 @@ class DBUS_Source(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='sssv')
     def AddWindowFilter(self, object_name, property_name, operator, value):
         self.source.add_window_filter(ns(object_name), ns(property_name), ns(operator), n(value))
+
+    @dbus.service.method(INTERFACE, out_signature='as')
+    def GetAllWindowFilters(self):
+        return [str(x) for x in self.source.get_all_window_filters()]
 
 
     @dbus.service.method(INTERFACE, in_signature='')

@@ -1324,6 +1324,12 @@ class ServerSource(object):
                              "delta"                : AV_SYNC_DELTA})
         if self.window_frame_sizes:
             up("window.frame-sizes", self.window_frame_sizes)
+        if self.window_filters:
+            i = 0
+            for uuid, f in self.window_filters:
+                if uuid==self.uuid:
+                    info["window-filter[%i]" % i] = str(f)
+                    i += 1
         info.update(self.get_sound_info())
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
@@ -1732,6 +1738,9 @@ class ServerSource(object):
 
     def reset_window_filters(self):
         self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
+
+    def get_all_window_filters(self):
+        return [f for uuid, f in self.window_filters if uuid==self.uuid]
 
     def get_window_filter(self, object_name, property_name, operator, value):
         if object_name!="window":
