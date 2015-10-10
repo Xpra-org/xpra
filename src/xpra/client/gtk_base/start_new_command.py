@@ -74,7 +74,7 @@ class StartNewCommand(object):
             self.share.set_active(True)
             vbox.add(self.share)
         else:
-            self.share = False
+            self.share = None
 
         # Buttons:
         hbox = gtk.HBox(False, 20)
