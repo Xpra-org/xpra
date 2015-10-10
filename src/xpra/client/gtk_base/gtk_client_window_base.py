@@ -357,7 +357,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if iconified is not None:
             statelog("iconified=%s", iconified)
             #handle iconification as map events:
-            assert not self._override_redirect
             if iconified:
                 #usually means it is unmapped
                 self._unfocus()
