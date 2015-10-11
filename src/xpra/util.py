@@ -288,7 +288,7 @@ def prettify_plug_name(s, default=""):
 
 def do_log_screen_sizes(root_w, root_h, sizes):
     from xpra.log import Logger
-    log = Logger()
+    log = Logger("util")
     #old format, used by some clients (android):
     if type(sizes) not in (tuple, list):
         return
@@ -304,7 +304,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             continue
         #more detailed output:
         display_name, width, height, width_mm, height_mm, \
-        monitors, work_x, work_y, work_width, work_height = s[:11]
+        monitors, work_x, work_y, work_width, work_height = s[:10]
         #always log plug name:
         info = ["%s" % prettify_plug_name(display_name)]
         if width!=root_w or height!=root_h:
