@@ -739,7 +739,9 @@ class UIXpraClient(XpraClientBase):
             if tray:
                 x, y = self.get_mouse_position()
                 modifiers = self.get_current_modifiers()
-                self.send_positional(["button-action", wid, button, pressed, (x, y), modifiers])
+                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
+                traylog("button_packet=%s", button_packet)
+                self.send_positional(button_packet)
                 tray.reconfigure()
         def tray_mouseover(x, y):
             tray = self._id_to_window.get(wid)
@@ -747,7 +749,9 @@ class UIXpraClient(XpraClientBase):
             if tray:
                 modifiers = self.get_current_modifiers()
                 buttons = []
-                self.send_mouse_position(["pointer-position", wid, self.sp(x, y), modifiers, buttons])
+                pointer_packet = ["pointer-position", wid, self.sp(x, y), modifiers, buttons]
+                traylog("pointer_packet=%s", pointer_packet)
+                self.send_mouse_position(pointer_packet)
         def do_tray_geometry(*args):
             #tell the "ClientTray" where it now lives
             #which should also update the location on the server if it has changed
