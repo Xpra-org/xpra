@@ -2182,7 +2182,7 @@ class ServerBase(ServerCore):
         wid, pointer, modifiers = packet[1:4]
         ss = self._server_sources.get(proto)
         if ss is not None:
-            ss.mouse_last_position = (wid, pointer)
+            ss.mouse_last_position = pointer
         self._process_mouse_common(proto, wid, pointer, modifiers)
 
 

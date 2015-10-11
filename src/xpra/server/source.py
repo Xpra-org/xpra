@@ -1170,8 +1170,8 @@ class ServerSource(object):
         return self.keyboard_config.get_keycode(client_keycode, keyname, modifiers)
 
 
-    def update_mouse(self, window, x, y):
-        log("update_mouse(%s, %i, %i) current=%s", window, x, y, self.mouse_last_position)
+    def update_mouse(self, wid, x, y):
+        log("update_mouse(%s, %i, %i) current=%s", wid, x, y, self.mouse_last_position)
         if not self.mouse_echo:
             return
         if self.mouse_last_position!=(x,y):

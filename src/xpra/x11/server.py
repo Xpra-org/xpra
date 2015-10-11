@@ -11,6 +11,7 @@ import gtk.gdk
 import glib
 import gobject
 import time
+import math
 from collections import deque
 
 from xpra.util import AdHocStruct, updict, rindex
@@ -600,9 +601,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def do_xpra_motion_event(self, event):
         mouselog("motion event: %s", event)
-        window = self._window_to_id.get(event.subwindow)
+        wid = self._window_to_id.get(event.subwindow, 0)
         for ss in self._server_sources.values():
-            ss.update_mouse(window, event.x_root, event.y_root)
+            ss.update_mouse(wid, event.x_root, event.y_root)
 
 
     def _bell_signaled(self, wm, event):
@@ -962,6 +963,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #clear to black
         fill_grey_rect((0, 0, 0), 0, 0, root_width, root_height)
         sources = [source for source in self._server_sources.values() if source.ui_client]
+        ss = None
         if len(sources)==1:
             ss = sources[0]
             if ss.screen_sizes and len(ss.screen_sizes)==1:
@@ -1011,6 +1013,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 cr.set_line_width(1)
                 cr.rectangle(x, y, w, h)
                 cr.stroke()
+        #FIXME: use server mouse position, and use current cursor shape
+        if ss and ss.mouse_last_position and ss.mouse_last_position!=(0, 0):
+            x, y = ss.mouse_last_position
+            cr.set_source_rgb(1.0, 0.5, 0.7)
+            cr.new_path()
+            cr.arc(x, y, 10.0, 0, 2.0 * math.pi)
+            cr.stroke_preserve()
+            cr.set_source_rgb(0.3, 0.4, 0.6)
+            cr.fill()
         return False
 
 
