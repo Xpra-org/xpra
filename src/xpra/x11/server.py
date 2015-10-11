@@ -942,14 +942,49 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def do_repaint_root_overlay(self):
         self.repaint_root_overlay_due = None
-        width, height = self.get_root_window_size()
+        root_width, root_height = self.get_root_window_size()
         overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
+        log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
-        #paint white background:
-        cr.set_source_rgb(1, 1, 1)
-        cr.rectangle(0, 0, width, height)
-        cr.fill()
-        cr.paint()
+        def fill_grey_rect(shade, x, y, w, h):
+            log("paint_grey_rect%s", (shade, x, y, w, h))
+            cr.new_path()
+            cr.set_source_rgb(*shade)
+            cr.rectangle(x, y, w, h)
+            cr.fill()
+        def paint_grey_rect(shade, x, y, w, h):
+            log("paint_grey_rect%s", (shade, x, y, w, h))
+            cr.new_path()
+            cr.set_line_width(2)
+            cr.set_source_rgb(*shade)
+            cr.rectangle(x, y, w, h)
+            cr.stroke()
+        #clear to black
+        fill_grey_rect((0, 0, 0), 0, 0, root_width, root_height)
+        sources = [source for source in self._server_sources.values() if source.ui_client]
+        if len(sources)==1:
+            ss = sources[0]
+            if ss.screen_sizes and len(ss.screen_sizes)==1:
+                screen1 = ss.screen_sizes[0]
+                if len(screen1)>=10:
+                    display_name, width, height, width_mm, height_mm, \
+                        monitors, work_x, work_y, work_width, work_height = screen1[:10]
+                    assert display_name or width_mm or height_mm or True    #just silences pydev warnings
+                    #paint dark grey background for display dimensions:
+                    fill_grey_rect((0.2, 0.2, 0.2), 0, 0, width, height)
+                    paint_grey_rect((0.2, 0.2, 0.4), 0, 0, width, height)
+                    #paint lighter grey background for workspace dimensions:
+                    paint_grey_rect((0.5, 0.5, 0.5), work_x, work_y, work_width, work_height)
+                    #paint each monitor with even lighter shades of grey:
+                    for m in monitors:
+                        if len(m)<7:
+                            continue
+                        plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
+                        assert plug_name or plug_width_mm or plug_height_mm or True #just silences pydev warnings
+                        paint_grey_rect((0.7, 0.7, 0.7), plug_x, plug_y, plug_width, plug_height)
+                        if len(m)>=10:
+                            dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
+                            paint_grey_rect((1, 1, 1), dwork_x, dwork_y, dwork_width, dwork_height)
         #now paint all the windows on top:
         order = {}
         focus_history = list(self._focus_history)
