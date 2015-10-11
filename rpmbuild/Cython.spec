@@ -3,7 +3,7 @@
 %define with_python3 0%{?fedora}
 
 Name:		Cython
-Version:	0.23.3
+Version:	0.23.4
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -105,6 +105,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Oct 11 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.4-1
+- new upstream release
+
 * Tue Sep 29 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.3-1
 - new upstream release
 
