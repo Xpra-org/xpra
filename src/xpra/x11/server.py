@@ -1152,7 +1152,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._settings = {}
             if self.default_xsettings:
                 self._settings = self._default_xsettings[1]
-        log.info("settings=%s", self._settings)
         old_settings = dict(self._settings)
         settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
         settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", dpi, double_click_time, double_click_distance)
