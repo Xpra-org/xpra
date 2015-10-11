@@ -898,7 +898,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def update_root_overlay(self, window, x, y, image):
         overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
         gc = overlaywin.new_gc()
-        if window.is_OR():
+        if window.is_OR() or window.is_tray():
             wx, wy = window.get_property("geometry")[:2]
         else:
             wx, wy = self._desktop_manager.window_geometry(window)[:2]
@@ -951,13 +951,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         cr.fill()
         cr.paint()
         #now paint all the windows on top:
-        windows = self._wm.get_property("windows")
         order = {}
         focus_history = list(self._focus_history)
-        for window in windows:
-            wid = self._window_to_id.get(window)
-            if not wid:
-                continue
+        for wid, window in self._id_to_window.items():
             prio = int(self._has_focus==wid)*32768 + int(self._has_grab==wid)*65536
             if prio==0:
                 try:
@@ -968,7 +964,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s", self._has_focus, self._has_grab, order)
         for k in sorted(order):
             window = order[k]
-            if window.is_OR():
+            if window.is_OR() or window.is_tray():
                 x, y, w, h = window.get_property("geometry")[:4]
             else:
                 x, y, w, h = self._desktop_manager.window_geometry(window)[:4]            
@@ -1018,13 +1014,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("screenshot: window(%s)=%s", wid, window)
             if window is None:
                 continue
-            if window.is_tray():
-                log("screenshot: skipping tray window %s", wid)
-                continue
             if not window.is_managed():
                 log("screenshot: window %s is not/no longer managed", wid)
                 continue
-            if window.is_OR():
+            if window.is_OR() or window.is_tray():
                 x, y = window.get_property("geometry")[:2]
             else:
                 x, y = self._desktop_manager.window_geometry(window)[:2]
