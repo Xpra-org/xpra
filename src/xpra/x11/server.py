@@ -898,12 +898,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _damage(self, window, x, y, width, height, options=None):
-        image = None
-        if self.root_overlay:
-            #get the image early, so damage has a chance to re-use it when not batching
-            image = window.get_image(x, y, width, height)
         X11ServerBase._damage(self, window, x, y, width, height, options)
-        if image:
+        if self.root_overlay:
+            image = window.get_image(x, y, width, height)
             self.update_root_overlay(window, x, y, image)
 
     def update_root_overlay(self, window, x, y, image):
