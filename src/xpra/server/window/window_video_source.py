@@ -644,7 +644,7 @@ class WindowVideoSource(WindowSource):
         if self.supports_video_subregion:
             if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0:
                 ww, wh = self.window_dimensions
-                self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events)
+                self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
             else:
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
                 self.video_subregion.reset()
