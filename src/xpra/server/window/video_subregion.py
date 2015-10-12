@@ -212,7 +212,7 @@ class VideoSubregion(object):
                 return 0
             #and make sure this does not end up much bigger than needed:
             insize = width*height
-            if ww*wh<=insize:
+            if ww*wh<insize:
                 return 0
             #count how many pixels are in or out if this region
             incount, outcount = 0, 0
@@ -274,9 +274,8 @@ class VideoSubregion(object):
             if len(most_damaged_regions)==1:
                 r = most_damaged_regions[0]
                 score = score_region("most-damaged", r)
+                sslog("identify video: score most damaged area %s=%s%%", r, score)
                 if score>120:
-                    if r.width>=(ww-16) and r.height>=(wh-16):
-                        return self.novideoregion("most damaged region is (almost?) the whole window: %s", r)
                     setnewregion(r, "%s%% of large damage requests, score=%s", most_pct, score)
                     return
                 elif score>=100:
