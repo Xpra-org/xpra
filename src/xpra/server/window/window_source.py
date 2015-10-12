@@ -890,7 +890,7 @@ class WindowSource(object):
         self.statistics.last_damage_event_time = now
         ww, wh = window.get_dimensions()
         if self.window_dimensions != (ww, wh):
-            self.statistics.last_resized = time.time()
+            self.statistics.last_resized = now
             self.window_dimensions = ww, wh
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
