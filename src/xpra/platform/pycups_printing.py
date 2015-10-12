@@ -29,6 +29,7 @@ LPADMIN = "lpadmin"
 LPINFO = "lpinfo"
 FORWARDER_BACKEND = "xpraforwarder"
 
+SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Cups-PDF").split(",")
 
 #PRINTER_PREFIX = "Xpra:"
 ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
@@ -45,6 +46,7 @@ log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEF
 log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
 log("pycups settings: ALLOW=%s", ALLOW)
 log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
+log("pycups settings: SKIPPED_PRINTERS=%s", SKIPPED_PRINTERS)
 
 
 #allows us to inject the lpadmin and lpinfo commands from the config file
@@ -310,9 +312,13 @@ def cleanup_printing():
 
 
 def get_printers():
+    all_printers = get_all_printers()
+    return dict((k,v) for k,v in all_printers.items() if k not in SKIPPED_PRINTERS)
+
+def get_all_printers():
     conn = cups.Connection()
     printers = conn.getPrinters()
-    log("pycups.get_printers()=%s", printers)
+    log("pycups.get_all_printers()=%s", printers)
     return printers
 
 def print_files(printer, filenames, title, options):
@@ -331,6 +337,12 @@ def printing_finished(printpid):
     log("pycups.printing_finished(%s)=%s", printpid, f)
     return f
 
+
+PRINTER_STATE = {
+                3   : "idle",
+                4   : "printing",
+                5   : "stopped",
+                 }
 
 
 def main():
@@ -353,8 +365,19 @@ def main():
         init("PyCUPS Printing")
         enable_color()
         validate_setup()
+        log.info("")
+        log.info("printer definitions:")
         for k,v in get_printer_definitions().items():
             log.info("* %-32s: %s", k, v)
+        log.info("")
+        log.info("local printers:")
+        printers = get_printers()
+        for k,d in get_all_printers().items():
+            log.info("* %s%s", k, [" (NOT EXPORTED)", ""][int(k in printers)])
+            for pk, pv in d.items():
+                if pk=="printer-state" and pv in PRINTER_STATE:
+                    pv = "%s (%s)" % (pv, PRINTER_STATE.get(pv))
+                log.info("    %-32s: %s", pk, pv)
     finally:
         clean()
 
