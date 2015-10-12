@@ -1533,7 +1533,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
             cmd.append("shadow")
             display_name = None
-            if len(args)==1 and args[0]!=":":
+            if len(args)==1 and args[0]==":":
                 #display_name was provided:
                 display_name = args[0]
             else:
