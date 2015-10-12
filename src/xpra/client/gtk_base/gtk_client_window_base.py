@@ -824,9 +824,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_map_event(self, event):
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         gtk.Window.do_map_event(self, event)
-        xid = self._metadata.strget("xid")
-        if xid:
-            self.set_xid(xid)
         if not self._override_redirect:
             self.process_map_event()
         self._been_mapped = True
