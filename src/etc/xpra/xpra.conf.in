@@ -287,7 +287,11 @@ ssh = %(ssh_command)s
 # Key Shortcuts:
 key-shortcut = Meta+Shift+F2:show_start_new_command
 key-shortcut = Meta+Shift+F4:quit
-key-shortcut = Meta+Shift+F8:magic_key
+key-shortcut = Meta+Shift+F5:increase_quality
+key-shortcut = Meta+Shift+F6:decrease_quality
+key-shortcut = Meta+Shift+F7:increase_speed
+key-shortcut = Meta+Shift+F8:decrease_speed
+key-shortcut = Meta+Shift+F10:magic_key
 key-shortcut = Meta+Shift+F11:show_session_info
 key-shortcut = Meta+Shift+plus:scaleup
 key-shortcut = Meta+Shift+minus:scaledown

@@ -444,6 +444,50 @@ class ClientWindowBase(ClientWidgetBase):
         pass
 
 
+    def increase_quality(self, *args):
+        if self._client.quality>0:
+            #change fixed quality:
+            self._client.quality = min(100, self._client.quality + 10)
+            self._client.send_quality()
+            log("new quality=%s", self._client.quality)
+        else:
+            self._client.min_quality = min(100, self._client.min_quality + 10)
+            self._client.send_min_quality()
+            log("new min-quality=%s", self._client.min_quality)
+
+    def decrease_quality(self, *args):
+        if self._client.quality>0:
+            #change fixed speed:
+            self._client.quality = max(1, self._client.quality - 10)
+            self._client.send_quality()
+            log("new quality=%s", self._client.quality)
+        else:
+            self._client.min_quality = max(0, self._client.min_quality - 10)
+            self._client.send_min_quality()
+            log("new min-quality=%s", self._client.min_quality)
+
+    def increase_speed(self, *args):
+        if self._client.speed>0:
+            #change fixed speed:
+            self._client.speed = min(100, self._client.speed + 10)
+            self._client.send_speed()
+            log("new speed=%s", self._client.speed)
+        else:
+            self._client.min_speed = min(100, self._client.min_speed + 10)
+            self._client.send_min_speed()
+            log("new min-speed=%s", self._client.min_speed)
+
+    def decrease_speed(self, *args):
+        if self._client.speed>0:
+            #change fixed speed:
+            self._client.speed = max(1, self._client.speed - 10)
+            self._client.send_speed()
+            log("new speed=%s", self._client.speed)
+        else:
+            self._client.min_speed = max(0, self._client.min_speed - 10)
+            self._client.send_min_speed()
+            log("new min-speed=%s", self._client.min_speed)
+
     def scaleup(self, *args):
         self._client.scaleup()
 
@@ -460,7 +504,7 @@ class ClientWindowBase(ClientWidgetBase):
         log("refresh_window(%s) wid=%s", args, self._id)
         self._client.send_refresh(self._id)
 
-    def refresh_all_windows(self):
+    def refresh_all_windows(self, *args):
         #this method is only here because we may want to fire it
         #from a --key-shortcut action and the event is delivered to
         #the "ClientWindow"

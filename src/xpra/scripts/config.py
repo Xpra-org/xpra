@@ -502,7 +502,11 @@ def get_defaults():
                     "key-shortcut"      : [
                                            "Meta+Shift+F2:show_start_new_command",
                                            "Meta+Shift+F4:quit",
-                                           "Meta+Shift+F8:magic_key",
+                                           "Meta+Shift+F5:increase_quality",
+                                           "Meta+Shift+F6:decrease_quality",
+                                           "Meta+Shift+F7:increase_speed",
+                                           "Meta+Shift+F8:decrease_speed",
+                                           "Meta+Shift+F10:magic_key",
                                            "Meta+Shift+F11:show_session_info",
                                            "Meta+Shift+plus:scaleup",
                                            "Meta+Shift+minus:scaledown",
