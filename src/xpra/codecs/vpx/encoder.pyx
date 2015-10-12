@@ -487,6 +487,15 @@ cdef class Encoder:
         if f>0 and last_time<now:
             info["fps"] = int(0.5+f/(now-last_time))
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
+        cdef vpx_codec_enc_cfg_t *cfg = self.cfg
+        if cfg!=NULL:
+            info.update({
+                         "target_bitrate"   : cfg.rc_target_bitrate,
+                         "min-quantizer"    : cfg.rc_min_quantizer,
+                         "max-quantizer"    : cfg.rc_max_quantizer,
+                         "undershoot-pct"   : cfg.rc_undershoot_pct,
+                         "overshoot-pct"    : cfg.rc_overshoot_pct,
+                         })
         return info
 
     def get_encoding(self):
