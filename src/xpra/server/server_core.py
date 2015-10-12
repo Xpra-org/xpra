@@ -359,7 +359,14 @@ class ServerCore(object):
             rev_info = "-r%s" % REVISION
         except:
             rev_info = ""
-        log.info("xpra %s version %s%s", self.get_server_mode(), local_version, rev_info)
+        dinfo = ""
+        try:
+            display = os.environ.get("DISPLAY")
+            if display and display.startswith(":"):
+                dinfo = " on display %s" % display
+        except:
+            pass
+        log.info("xpra %s version %s%s%s", self.get_server_mode(), local_version, rev_info, dinfo)
         log.info("running with pid %s", os.getpid())
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
