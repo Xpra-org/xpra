@@ -456,8 +456,8 @@ cdef class Encoder:
         self.cfg.rc_overshoot_pct = 100
         self.cfg.rc_target_bitrate = int(self.width * self.height * self.initial_bitrate_per_pixel)
         self.cfg.g_threads = self.max_threads
-        self.cfg.rc_max_quantizer = int(max(0, min(63, self.quality * 0.63)))
-        self.cfg.rc_min_quantizer = int(max(0, min(self.cfg.rc_max_quantizer, (self.quality-20)*0.63/1.5)))
+        self.cfg.rc_min_quantizer = int(max(0, min(63, (80-self.quality) * 0.63)))
+        self.cfg.rc_max_quantizer = int(max(0, self.cfg.rc_min_quantizer, min(63, (100-self.quality) * 0.63)))
 
 
     def __repr__(self):
