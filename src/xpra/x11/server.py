@@ -210,10 +210,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
                             xpra.__version__)
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
-            with xswallow:
-                self.root_overlay = X11Window.XCompositeGetOverlayWindow(root.xid)
-                if self.root_overlay:
-                    X11Window.AllowInputPassthrough(self.root_overlay)
+            try:
+                with xsync:
+                    self.root_overlay = X11Window.XCompositeGetOverlayWindow(root.xid)
+                    if self.root_overlay:
+                        root_overlay = AdHocStruct()        #ugly: API expects a window object with a ".xid"
+                        root_overlay.xid = self.root_overlay
+                        prop_set(root_overlay, "WM_TITLE", "latin1", u"RootOverlay")
+                        X11Window.AllowInputPassthrough(self.root_overlay)
+            except Exception as e:
+                log.error("Error setting up xvfb synchronization:")
+                log.error(" %s", e)
 
         ### Create the WM object
         self._wm = Wm(self.clobber, self.wm_name)
@@ -526,6 +533,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _add_new_or_window(self, raw_window):
         xid = get_xwindow(raw_window)
+        if self.root_overlay and self.root_overlay==xid:
+            windowlog("ignoring root overlay window %#x", self.root_overlay)
+            return
         if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
