@@ -251,8 +251,13 @@ class X11ServerBase(GTKServerBase):
 
     def get_cursor_data(self):
         #must be called from the UI thread!
-        with xsync:
-            cursor_data = X11Keyboard.get_cursor_image()
+        try:
+            with xsync:
+                cursor_data = X11Keyboard.get_cursor_image()
+        except Exception as e:
+            cursorlog.error("Error getting cursor data:")
+            cursorlog.error(" %s", e)
+            return None, []
         if cursor_data is None:
             cursorlog("get_cursor_data() failed to get cursor image")
             return None, []
