@@ -54,14 +54,19 @@ MAX_CONCURRENT_CONNECTIONS = 20
 def parse_env(env):
     d = {}
     try:
-        for e in env:
-            v = e.split("=", 1)
-            if len(v)!=2:
-                log.warn("invalid environment option: %s", e)
-                continue
-            d[v[0]] = v[1]
+        for ev in env:
+            try:
+                v = ev.split("=", 1)
+                if len(v)!=2:
+                    log.warn("Warning: invalid environment option '%s'", ev)
+                    continue
+                d[v[0]] = v[1]
+            except Exception as e:
+                log.error("Error parsing child environment '%':", ev)
+                log.error(" %s", e)
     except Exception as e:
-        log.warn("error parsing child environment: %s", e)
+        log.error("Error parsing child environment '%s':", env)
+        log.error(" %s", e)
     return d
 
 
@@ -347,7 +352,8 @@ class ServerBase(ServerCore):
                 from xpra.dbus.notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
                 if self.notifications_forwarder:
-                    log.info("using notification forwarder: %s", self.notifications_forwarder)
+                    log.info("using notification forwarder:")
+                    log.info(" %s", self.notifications_forwarder)
             except Exception as e:
                 if str(e).endswith("is already claimed on the session bus"):
                     log.warn("Warning: cannot forward notifications, the interface is already claimed")
