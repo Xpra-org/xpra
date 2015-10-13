@@ -16,13 +16,13 @@ DISPLAYFD = XDUMMY and sys.version_info[0]<3
 XDUMMY_WRAPPER = is_Fedora()
 
 DEFAULT_ENV = [
-             ("#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:", ),
-             ("UBUNTU_MENUPROXY",           ""),
-             ("QT_X11_NO_NATIVE_MENUBAR",   "1"),
-             ("#fix for MainSoft's MainWin buggy window management:", ),
-             ("MWNOCAPTURE",                "true"),
-             ("MWNO_RIT",                   "true"),
-             ("MWWM",                       "allwm"),
+             "#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:",
+             "UBUNTU_MENUPROXY=",
+             "QT_X11_NO_NATIVE_MENUBAR=1",
+             "#fix for MainSoft's MainWin buggy window management:",
+             "MWNOCAPTURE=true",
+             "MWNO_RIT=true",
+             "MWWM=allwm",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
