@@ -56,6 +56,8 @@ def parse_env(env):
     try:
         for ev in env:
             try:
+                if ev.startswith("#"):
+                    continue
                 v = ev.split("=", 1)
                 if len(v)!=2:
                     log.warn("Warning: invalid environment option '%s'", ev)

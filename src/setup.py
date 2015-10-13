@@ -812,8 +812,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
         return ["no", "yes"][int(b)]
-    from xpra.scripts.config import print_env
-    env = "\n".join(print_env(*x) for x in DEFAULT_ENV)
+    env = "\n".join("env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir

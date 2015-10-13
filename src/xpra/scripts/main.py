@@ -1727,7 +1727,6 @@ def run_list(error_cb, opts, extra_args):
 def run_showconfig(options, args):
     from xpra.log import Logger
     log = Logger("util")
-    from xpra.scripts.config import dict_to_validated_config, print_env
     from xpra.util import nonl
     d = dict_to_validated_config({})
     fixup_options(d)
@@ -1749,12 +1748,6 @@ def run_showconfig(options, args):
             HIDDEN += ["lpadmin", "daemon", "use-display", "displayfd", "mmap-group", "mdns"]
         if not OSX:
             HIDDEN += ["dock-icon", "swap-keys"]
-    def cookit(k, def_vals):
-        #the env values have comments in them,
-        #which are not read back! (so we skip them when comparing)
-        if k=="env" and def_vals:
-            return [print_env(*defs).lstrip("env = ") for defs in def_vals if not print_env(*defs).startswith("#")]
-        return def_vals
     def vstr(v):
         #just used to quote all string values
         if type(v)==str:
@@ -1773,7 +1766,6 @@ def run_showconfig(options, args):
         k = name_to_field(opt)
         dv = getattr(d, k)
         cv = getattr(options, k, dv)
-        dv = cookit(k, dv)
         if cv!=dv:
             log.warn("%-20s  (used)   = %-32s  %s", opt, vstr(cv), type(cv))
             log.warn("%-20s (default) = %-32s  %s", opt, vstr(dv), type(dv))

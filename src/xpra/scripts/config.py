@@ -544,11 +544,6 @@ def parse_bool(k, v):
         warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
         return None
 
-def print_env(k, v=None):
-    if v is None:
-        return k
-    return "env = %s=%s" % (k,v)
-
 def print_bool(k, v, true_str='yes', false_str='no'):
     if type(v)==type(None):
         return 'auto'
