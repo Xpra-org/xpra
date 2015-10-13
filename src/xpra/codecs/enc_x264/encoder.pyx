@@ -240,6 +240,8 @@ cdef int get_preset_for_speed(int speed):
 
 #the x264 quality option ranges from 0 (best) to 51 (lowest)
 cdef float get_x264_quality(int pct):
+    if pct>=100:
+        return 0.0
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
 
 SLICE_TYPES = {
