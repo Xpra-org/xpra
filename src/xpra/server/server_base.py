@@ -62,7 +62,7 @@ def parse_env(env):
                     continue
                 d[v[0]] = v[1]
             except Exception as e:
-                log.error("Error parsing child environment '%':", ev)
+                log.error("Error parsing child environment '%s':", ev)
                 log.error(" %s", e)
     except Exception as e:
         log.error("Error parsing child environment '%s':", env)
