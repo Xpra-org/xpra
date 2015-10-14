@@ -83,7 +83,12 @@ def main():
     def print_dict(d):
         for k in sorted(d.keys()):
             v = d[k]
-            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+            print("* %s" % k)
+            try:
+                for pk,pv in v.items():
+                    print("        %s : %s" % (pk.ljust(32), nonl(pver(pv))))
+            except:
+                print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
     from xpra.platform import init, clean
     from xpra.log import enable_color
     try:
