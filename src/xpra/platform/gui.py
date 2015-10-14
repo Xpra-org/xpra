@@ -209,7 +209,10 @@ def main():
         #naughty, but how else can I hook this up?
         import os
         if os.name=="posix":
-            from xpra.x11.bindings import posix_display_source      #@UnusedImport
+            try:
+                from xpra.x11.bindings import posix_display_source      #@UnusedImport
+            except:
+                pass    #maybe running on OSX? hope for the best..
         i = get_info()
         for k in sorted(i.keys()):
             v = i[k]
