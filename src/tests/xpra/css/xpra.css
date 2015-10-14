@@ -1,8 +1,9 @@
 * {padding: 0; margin: 0; vertical-align: top;}
-html {height: 100%}
+html {height: 100%; width: 100%;}
 body {
-    /* background: url(background.png) repeat-x; */
     font: 18px/1.5em "proxima-nova", Helvetica, Arial, sans-serif;
+    text-align: center;
+    width: 100%;
 }
 a {
     color: #069; 
@@ -26,27 +27,28 @@ input[type=checkbox] {
 }
 #page {
     display: block; 
-    width: 100%; 
+    width: 1100px;
     height: 100vh !important; 
     overflow: hidden;
+    margin: 0 auto;
+    text-align: left;
 }
 #header_box {
     float: left;
-    width: 1550px;
+    width: 1100px;
     display: block;
-    padding: 30px 0 40px 40px;
+    padding: 30px 0 20px 60px;
 }
 #header {
     float: left;
     position: relative;
     height: 100%;
-    padding-right: 50px;
 }
 #select_box {
     float: left;
     position: relative;
     height: 100%;
-    width: 1200px;
+    width: 1100px;
     font-size: 0.8em;
 }
 #help_text {
@@ -72,14 +74,14 @@ input[type=checkbox] {
 #metric_list {
     float: left;
     height: 75vh !important;
-    width: 1520px;
-    margin-left: 40px;
-    padding: 20px;
+    width: 1020px;
+    margin-left: 20px;
+    padding: 20px 0 20px 20px;
     border: 1px solid #ddd;
     overflow: auto;
 }
 .metric_box {
-    width: 100%;
+    width: 1000px;
     padding: 0;
 }
 
@@ -102,6 +104,7 @@ input[type=checkbox] {
     -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    text-align: center;
 }
 .empty-container {
     float: left;

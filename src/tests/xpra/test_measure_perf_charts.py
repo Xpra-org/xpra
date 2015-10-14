@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import csv
-import collections
+import collections, math
 
 #----------------------------------------------------------------
 # The files this generator acts upon are the CSV files output
@@ -57,18 +57,13 @@ prefix = "smo_test"
 #]
 
 #params = [
-#    {"id": "8585", "dir": subs[0], "display": "8585"},
-#    {"id": "9612", "dir": subs[1], "display": "9612"}
+#    {"id": "8585", "display": "8585"},
+#    {"id": "9612", "display": "9612"}
 #]
 
 params = [
-    {"id": "8585", "display": "8585"},
-    {"id": "9612", "display": "9612"}
-]
-
-params = [
-    {"id": "156", "display": "8585"},
-    {"id": "16r10655", "display": "9612"}
+    {"id": "15r10784", "display": "15.6"},
+    {"id": "16r10655", "display": "16"}
 ]
 
 # The description will be shown on the output page
@@ -82,17 +77,19 @@ reps = 5     # Number of data files in each set
 # Set any of the values in the following lists to 1 in order to
 # include that test app, or metric column in the chart page.
 #
-apps = {"glxgears": 1,
+apps = {"glxgears": 0,
         "glxspheres": 0,
-        "glxspheres64": 1,
-        "moebiusgears": 1,
-        "polytopes": 1,
-        "x11perf": 0,
-        "xterm": 1,
+        "glxspheres64": 0,
+        "moebiusgears": 0,
+        "polytopes": 0,
+
+        "x11perf": 0, # Not reliable
+        "xterm": 0,
         "gtkperf": 0,
-        "deluxe": 1,
+        "memscroller": 0,
+        "deluxe": 0,
+
         "eruption": 1,
-        "memscroller" : 1,
         "vlc sound visual": 1,
         "vlc video": 1,
         "xonotic-glx": 1}
@@ -130,7 +127,7 @@ metrics = {"Regions/s": 1,
 
 encodings = {"png": 1,
              "rgb": 1,
-             "rgb24": 1,
+             "rgb24": 0,
              "h264": 1,
              "jpeg": 1,
              "vp8": 1,
@@ -142,6 +139,7 @@ headers = {}
 titles = []
 param_ids = []
 param_names = []
+displayed_encodings = {}
 
 ENCODING_RGB24 = "rgb24"
 
@@ -185,6 +183,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
                     exit()
 
                 if (encodings[encoding] == 1):
+                    displayed_encodings[encoding] = encoding;
                     if (encoding == ENCODING_RGB24):
                         if (rgb_values is None):
                             rgb_values = ftree()
@@ -219,16 +218,12 @@ def write_html():
             app_count += 1
 
     chart_count = 0
-    for encoding in encodings.keys():
+    for encoding in displayed_encodings.keys():
         if (encodings[encoding] == 1):
             chart_count += 1
     box_height = 0
-    if (chart_count < 4):
-        box_height = 400
-    elif (chart_count < 7):
-        box_height = 800
-    elif (chart_count < 10):
-        box_height = 1200
+    row_count = math.ceil(chart_count / 2.0)
+    box_height = row_count * 400
 
     ofile = open("charts.html", "w")
     ofile.write('<!DOCTYPE html>\n')
@@ -244,7 +239,8 @@ def write_html():
     ofile.write('  <script language="javascript" type="text/javascript" src="js/xpra.js"></script>\n')
     ofile.write('  <script language="javascript" type="text/javascript">\n')
     ofile.write('    var options = {canvas:true, grid: {margin: {top:50}, hoverable: true}, series: {bars: {show: true, barWidth: 0.08}}, '
-                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#D4CBC3"]};\n')
+                #' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#cc0000", "#787A40", "#9FBF8C", "#C8AB65", "#D4CBC3"]};\n')
+                ' xaxis: {mode: "categories", tickLength: 0, min: -0.3, max: ' + str(app_count) +'}, colors: ["#688b8a", "#a57c65"]};\n')
 
     m_index = 0
     m_names = []
