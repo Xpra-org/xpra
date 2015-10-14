@@ -259,9 +259,12 @@ class WindowVideoSource(WindowSource):
         #override so we don't use encodings that don't have valid csc modes:
         log("update_encoding_selection(%s, %s)", encoding, exclude)
         for x in self.video_encodings:
+            if x not in self.core_encodings:
+                exclude.append(x)
+                continue
             csc_modes = self.full_csc_modes.get(x)
             csclog("full_csc_modes[%s]=%s", x, csc_modes)
-            if not csc_modes:
+            if not csc_modes or x not in self.core_encodings:
                 exclude.append(x)
                 csclog.warn("client does not support any csc modes with %s", x)
         WindowSource.update_encoding_selection(self, encoding, exclude)
