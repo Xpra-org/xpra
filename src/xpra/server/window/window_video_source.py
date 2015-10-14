@@ -19,6 +19,7 @@ from xpra.util import updict, parse_scaling_value
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
+csclog = Logger("csc")
 scorelog = Logger("score")
 scalinglog = Logger("scaling")
 sublog = Logger("subregion")
@@ -243,6 +244,7 @@ class WindowVideoSource(WindowSource):
 
     def parse_csc_modes(self, full_csc_modes):
         #only override if values are specified:
+        csclog("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
         if full_csc_modes is not None and type(full_csc_modes)==dict:
             self.full_csc_modes = full_csc_modes
 
@@ -255,10 +257,13 @@ class WindowVideoSource(WindowSource):
 
     def update_encoding_selection(self, encoding=None, exclude=[]):
         #override so we don't use encodings that don't have valid csc modes:
+        log("update_encoding_selection(%s, %s)", encoding, exclude)
         for x in self.video_encodings:
-            if not self.full_csc_modes.get(x):
+            csc_modes = self.full_csc_modes.get(x)
+            csclog("full_csc_modes[%s]=%s", x, csc_modes)
+            if not csc_modes:
                 exclude.append(x)
-                log.warn("client does not support any csc modes with %s", x)
+                csclog.warn("client does not support any csc modes with %s", x)
         WindowSource.update_encoding_selection(self, encoding, exclude)
 
     def do_set_client_properties(self, properties):
