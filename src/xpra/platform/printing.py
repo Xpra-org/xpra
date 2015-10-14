@@ -91,17 +91,43 @@ def main():
                 print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
     from xpra.platform import init, clean
     from xpra.log import enable_color
+    from xpra.util import csv
     try:
         init("Printing", "Printing")
         enable_color()
-        if len(sys.argv)<3:
+        if len(sys.argv)<=1:
             print_dict(get_printers())
-        else:
+            return 0
+        printers = get_printers()
+        if len(printers)==0:
+            print("Cannot print: no printers found")
+            return 1
+        if len(sys.argv)==2:
+            filename = sys.argv[1]
+            if not os.path.exists(filename):
+                print("Cannot print file '%s': file does not exist" % filename)
+                return 1
+            printer = printers.keys()[0]
+            if len(printers)>1:
+                print("More than one printer found: %s", csv(printer.keys()))
+            print("Using printer '%s'" % printer)
+            filenames = [filename]
+        if len(sys.argv)>2:
             printer = sys.argv[1]
-            print_files(printer, sys.argv[2:], "Print Command", {})
+            if printer not in printers:
+                print("Invalid printer '%s'" % printer)
+                return 1
+            filenames = sys.argv[2:]
+            for filename in filenames:
+                if not os.path.exists(filename):
+                    print("File '%s' does not exist" % filename)
+                    return 1
+        print("Printing: %s" % csv(filenames))
+        print_files(printer, filenames, "Print Command", {})
+        return 0
     finally:
         clean()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
