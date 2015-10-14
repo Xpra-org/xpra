@@ -28,6 +28,9 @@ DEFAULT_MAX_SIZE_HINT = sys.version_info[0]<3
 MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", str(int(DEFAULT_MAX_SIZE_HINT)))=="1"
 GEOMETRY = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GEOMETRY", "1")=="1"
 
+DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
+DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
+
 
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
@@ -48,18 +51,37 @@ except Exception as e:
 
 def do_init():
     #tell win32 we handle dpi
+    if not DPI_AWARE:
+        screenlog.warn("SetProcessDPIAware not set due to environment override")
+        return
     try:
-        if os.environ.get("XPRA_DPI_AWARE", "1")!="1":
-            log.warn("SetProcessDPIAware not set due to environment override")
-            return
-        from ctypes import WINFUNCTYPE
+        from ctypes import WINFUNCTYPE, c_int
         from ctypes.wintypes import BOOL
+    except Exception as e:
+        screenlog.error("Error setting DPI: %s", e)
+        return
+    try:
         prototype = WINFUNCTYPE(BOOL)
         SetProcessDPIAware = prototype(("SetProcessDPIAware", windll.user32))
         dpi_set = SetProcessDPIAware()
-        log("SetProcessDPIAware()=%s", dpi_set)
+        screenlog("SetProcessDPIAware()=%s", dpi_set)
     except Exception as e:
-        log("failed to set DPI: %s", e)
+        screenlog("SetProcessDPIAware() failed: %s", e)
+    if DPI_AWARENESS<=0:
+        screenlog.warn("SetProcessDPIAwareness not set due to environment override")
+        return
+    try:
+        Process_System_DPI_Aware        = 1
+        Process_DPI_Unaware             = 0
+        Process_Per_Monitor_DPI_Aware   = 2
+        assert DPI_AWARENESS in (Process_System_DPI_Aware, Process_DPI_Unaware, Process_Per_Monitor_DPI_Aware)
+        prototype = WINFUNCTYPE(BOOL, c_int)
+        SetProcessDPIAwareness = prototype(("SetProcessDPIAwareness", windll.user32))
+        dpi_set = SetProcessDPIAwareness(c_int(DPI_AWARENESS))
+        screenlog("SetProcessDPIAwareness(%s)=%s", DPI_AWARENESS, dpi_set)
+    except Exception as e:
+        screenlog("SetProcessDPIAwareness(%s) failed: %s", DPI_AWARENESS, e)
+        screenlog(" (not available on MS Windows before version 8")
 
 
 def get_native_notifier_classes():
