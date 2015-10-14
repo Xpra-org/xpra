@@ -320,7 +320,7 @@ key-shortcut = Meta+Shift+KP_Multiply:scalereset
 # - enable desktop scaling, but start with no scaling activated:
 #desktop-scaling = 1
 #desktop-scaling = on
-desktop-scaling = on
+desktop-scaling = auto
 
 # Make shadow servers show up in fullscreen mode:
 #shadow-fullscreen = yes

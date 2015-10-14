@@ -427,7 +427,7 @@ def get_defaults():
                     "log-file"          : "$DISPLAY.log",
                     "border"            : "auto,0",
                     "max-size"          : "",
-                    "desktop-scaling"   : "on",
+                    "desktop-scaling"   : "auto",
                     "display"           : "",
                     "tcp-proxy"         : "",
                     "download-path"     : get_download_dir(),
