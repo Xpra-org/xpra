@@ -2023,6 +2023,8 @@ class UIXpraClient(XpraClientBase):
                 #server is asking us to start playing sound
                 if not self.speaker_allowed:
                     #no can do!
+                    soundlog.warn("Warning: cannot honour the request to start the speaker")
+                    soundlog.warn(" speaker forwarding is disabled")
                     self.stop_receiving_sound(True)
                     return
                 self.speaker_enabled = True
@@ -2044,11 +2046,12 @@ class UIXpraClient(XpraClientBase):
             return
         if codec!=ss.codec:
             soundlog.error("sound codec change not supported! (from %s to %s)", ss.codec, codec)
-            ss.stop()
+            self.stop_receiving_sound()
             return
         elif ss.get_state()=="stopped":
-            soundlog("sound data received, sound sink is stopped - starting it")
-            ss.start()
+            soundlog("sound data received, sound sink is stopped - telling server to stop")
+            self.stop_receiving_sound()
+            return
         #(some packets (ie: sos, eos) only contain metadata)
         if len(data)>0:
             ss.add_data(data, metadata)
