@@ -1255,8 +1255,9 @@ class ServerSource(object):
                 common = [e for e in self.encodings if e in self.server_encodings]
                 elog("encodings supported by both ends: %s", common)
                 if not common:
-                    log.error("cannot find compatible encoding between "
-                                    "client (%s) and server (%s)" % (", ".join(self.encodings), ", ".join(self.server_encodings)))
+                    log.error("Error no compatible encodings available")
+                    log.error(" this server supports: %s", csv(self.server_encodings) or None)
+                    log.error(" this client supports: %s", csv(self.encodings) or None)
                     raise ClientException("cannot find a common encoding to use")
                 encoding = common[0]
         if window_ids is not None:

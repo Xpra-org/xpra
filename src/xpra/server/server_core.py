@@ -651,7 +651,8 @@ class ServerCore(object):
                     raise Exception("Simulating a server error")
                 self.hello_oked(proto, packet, c, auth_caps)
             except ClientException as e:
-                log.error("error setting up connection for %s:", proto)
+                log.error("Error setting up new connection for")
+                log.error(" %s:", proto)
                 log.error(" %s", e)
                 self.disconnect_client(proto, SERVER_ERROR, str(e))
             except Exception as e:
