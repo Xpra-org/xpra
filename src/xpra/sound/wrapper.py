@@ -214,6 +214,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         return env
 
     def start(self):
+        self.state = "starting"
         subprocess_caller.start(self)
         log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
         self.timeout_add(2500, self.verify_started)
