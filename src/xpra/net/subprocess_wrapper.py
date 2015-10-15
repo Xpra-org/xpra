@@ -324,9 +324,13 @@ class subprocess_caller(object):
         self._fire_callback("exit")
 
     def start(self):
+        self.start = self.fail_start
         self.process = self.exec_subprocess()
         self.protocol = self.make_protocol()
         self.protocol.start()
+
+    def fail_start(self):
+        raise Exception("this wrapper has already been started")
 
     def abort_test(self, action):
         p = self.process
