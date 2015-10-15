@@ -614,7 +614,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("client",                "forwards a control command to the client(s)", min_args=1),
             ArgsControlCommand("name",                  "set the session name",             min_args=1, max_args=1),
             ArgsControlCommand("key",                   "press or unpress a key",           min_args=1, max_args=2),
-            ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1),
+            ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1, max_args=2),
             #windows:
             ArgsControlCommand("workspace",             "move a window to a different workspace", min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("scaling-control",       "set the scaling-control aggressiveness (from 0 to 100)", min_args=1, validation=[from0to100]),

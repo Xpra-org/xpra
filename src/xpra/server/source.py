@@ -867,27 +867,34 @@ class ServerSource(object):
         if self.notify_startup_complete:
             self.send("startup-complete")
 
-    def start_sending_sound(self, codec, volume=1.0):
+    def start_sending_sound(self, codec=None, volume=1.0):
         soundlog("start_sending_sound(%s)", codec)
         if self.suspended:
-            soundlog.warn("not starting sound as we are suspended")
-            return
-        if codec not in self.speaker_codecs:
-            soundlog.warn("Warning: invalid codec specified: %s", codec)
-            return
+            soundlog.warn("Warning: not starting sound whilst in suspended state")
+            return None
         if not self.supports_speaker:
-            soundlog.warn("Error sending sound: support not enabled on the server")
-            return
+            soundlog.error("Error sending sound: support not enabled on the server")
+            return None
         if self.sound_source:
-            soundlog.warn("Error sending sound: forwarding already in progress")
-            return
+            soundlog.error("Error sending sound: forwarding already in progress")
+            return None
         if not self.sound_receive:
-            soundlog.warn("Error sending sound: support is not enabled on the client")
-            return
-        if codec not in self.sound_decoders:
+            soundlog.error("Error sending sound: support is not enabled on the client")
+            return None
+        if codec is None:
+            from xpra.sound.gstreamer_util import CODEC_ORDER
+            codecs = [x for x in CODEC_ORDER if x in self.speaker_codecs and x in self.sound_decoders]
+            if not codecs:
+                soundlog.error("Error sending sound: no codecs in common")
+                return None
+            codec = codecs[0]
+        elif codec not in self.speaker_codecs:
+            soundlog.warn("Warning: invalid codec specified: %s", codec)
+            return None
+        elif codec not in self.sound_decoders:
             soundlog.warn("Error sending sound: invalid codec '%s'", codec)
             soundlog.warn(" is not in the list of decoders supported by the client: %s", csv(self.sound_decoders))
-            return
+            return None
         ss = None
         try:
             from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
@@ -895,21 +902,26 @@ class ServerSource(object):
                 #looks like we're on the same machine, verify it's a different user:
                 if self.uuid==get_user_uuid():
                     loop_warning("speaker", self.uuid)
-                    return
+                    return None
             from xpra.sound.wrapper import start_sending_sound
             plugins = self.sound_properties.get("plugins")
             ss = start_sending_sound(plugins, self.sound_source_plugin, codec, volume, [codec], self.pulseaudio_server, self.pulseaudio_id)
             self.sound_source = ss
             soundlog("start_sending_sound() sound source=%s", ss)
-            if ss:
-                ss.sequence = self.sound_source_sequence
-                ss.connect("new-buffer", self.new_sound_buffer)
-                ss.connect("new-stream", self.new_stream)
-                ss.connect("info", self.sound_source_info)
-                ss.connect("exit", self.sound_source_exit)
-                ss.start()
+            if not ss:
+                return None
+            ss.sequence = self.sound_source_sequence
+            ss.connect("new-buffer", self.new_sound_buffer)
+            ss.connect("new-stream", self.new_stream)
+            ss.connect("info", self.sound_source_info)
+            ss.connect("exit", self.sound_source_exit)
+            ss.start()
+            return ss
         except Exception as e:
             soundlog.error("error setting up sound: %s", e, exc_info=True)
+            self.stop_sending_sound()
+            ss = None
+            return None
         finally:
             if ss is None:
                 #tell the client we're not sending anything:
@@ -986,11 +998,12 @@ class ServerSource(object):
                 volume = 1.0
             else:
                 volume = 0.0
-            self.start_sending_sound(codec, volume)
+            if not self.start_sending_sound(codec, volume):
+                return "failed to start sound"
             if action=="fadein":
                 delay = 1000
-                if len(args)>0:
-                    delay = max(1, min(10*1000, int(args[0])))
+                if len(args)>1:
+                    delay = max(1, min(10*1000, int(args[1])))
                 step = 1.0/(delay/100.0)
                 soundlog("sound_control fadein delay=%s, step=%1.f", delay, step)
                 def fadein():
@@ -1004,7 +1017,10 @@ class ServerSource(object):
                         ss.set_volume(volume)
                     return volume<1.0
                 self.timeout_add(100, fadein)
-            return "started %s" % codec
+            msg = "sound started"
+            if codec:
+                msg += " using codec %s" % codec
+            return msg
         elif action=="fadeout":
             assert self.sound_source, "no active sound source"
             delay = 1000
