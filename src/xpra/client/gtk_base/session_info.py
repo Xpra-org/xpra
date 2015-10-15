@@ -1015,7 +1015,7 @@ class SessionInfo(gtk.Window):
         self.latency_graph.set_size_request(W, H)
         self.latency_graph.set_from_pixmap(pixmap, None)
 
-        if SHOW_SOUND_STATS:
+        if SHOW_SOUND_STATS and self.client.sound_sink:
             #sound queue graph:
             queue_values, queue_labels = norm_lists((
                                  (self.sound_out_queue_max, "Max"),
