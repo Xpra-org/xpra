@@ -196,11 +196,11 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.16/gtk+-3.16.0.tar.xz" version="3.16.0"
-            hash="sha256:ce617318fe18092383cf6ed5d8c688a95a97f2d4c68481317a6a531e288c26ea">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
+    <branch module="gtk+/3.16/gtk+-3.16.7.tar.xz" version="3.16.7"
+            hash="sha256:19689d14de54d182fad538153dbff6d41f53841f940aa871585fdea0306c7fba">
+      <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1" -->
 <!-- The following patch is committed and can be removed after release of gtk+-3.16.4. -->
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-DnD-Introspection-on-Quartz-Backend.patch" strip="1"/>
+      <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-DnD-Introspection-on-Quartz-Backend.patch" strip="1" -->
     </branch>
     <dependencies>
       <dep package="glib"/>
