@@ -768,6 +768,7 @@ class ServerCore(object):
             return self.filedata_nocrlf(keyfile)
         env_key = os.environ.get('XPRA_ENCRYPTION_KEY')
         if env_key:
+            authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
             return env_key
         v = None
         if authenticator:
@@ -777,6 +778,7 @@ class ServerCore(object):
             authlog("trying to load encryption key from password file: %s", self.password_file)
             v = self.filedata_nocrlf(self.password_file)
         if v is None and os.environ.get('XPRA_PASSWORD'):
+            authlog("using encryption key from %s environment variable", 'XPRA_PASSWORD')
             v = os.environ.get('XPRA_PASSWORD')
         return v
 
