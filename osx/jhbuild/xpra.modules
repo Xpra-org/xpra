@@ -46,7 +46,7 @@
     </branch>
   </autotools>
 
-  <autotools id="orc" autogenargs="" autogen-sh="configure">
+  <autotools id="liborc" autogenargs="" autogen-sh="configure">
     <branch module="/data/src/orc/orc-0.4.24.tar.xz"
 			version="0.4.24"
                         hash="md5:9e793ec34c0e20339659dd4bbbf62135"
@@ -486,7 +486,7 @@
     <dependencies>
       <dep package="yasm"/>
       <dep package="nasm"/>
-      <dep package="orc"/>
+      <dep package="liborc"/>
       <dep package="libogg"/>
       <dep package="libtheora"/>
       <dep package="libvorbis"/>
