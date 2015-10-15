@@ -208,7 +208,7 @@ av-sync = on
 # Network Connection
 
 # Enable shared memory transfers:
-mmap = yes
+mmap = %(mmap)s
 
 # Use server group ownership for mmap file:
 mmap-group = no

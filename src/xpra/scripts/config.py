@@ -460,7 +460,7 @@ def get_defaults():
                     "tray"              : True,
                     "pulseaudio"        : not OSX and not WIN32,
                     "dbus-proxy"        : not OSX and not WIN32,
-                    "mmap"              : True,
+                    "mmap"              : not OSX and not WIN32,
                     "mmap-group"        : False,
                     "speaker"           : ["disabled", "on"][has_sound_support],
                     "microphone"        : ["disabled", "off"][has_sound_support],
