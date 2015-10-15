@@ -680,7 +680,7 @@ class ServerCore(object):
             try:
                 proto.authenticator = proto.auth_class(username)
             except Exception as e:
-                authlog.warn("error instantiating %s: %s", proto.auth_class, e)
+                authlog.error("Error instantiating %s: %s", proto.auth_class, e)
                 auth_failed("authentication failed")
                 return False
         self.digest_modes = c.get("digest", ("hmac", ))
@@ -717,21 +717,28 @@ class ServerCore(object):
             auth_caps = None
 
         #verify authentication if required:
-        if proto.authenticator and proto.authenticator.requires_challenge():
+        if (proto.authenticator and proto.authenticator.requires_challenge()) or c.get("challenge") is not None:
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
             authlog("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""))
             #send challenge if this is not a response:
             if not challenge_response:
-                challenge = proto.authenticator.get_challenge()
-                if challenge is None:
-                    auth_failed("invalid authentication state: unexpected challenge response")
-                    return False
-                salt, digest = challenge
-                authlog.info("Authentication required, %s sending challenge for '%s' using digest %s", proto.authenticator, username, digest)
-                if digest not in self.digest_modes:
-                    auth_failed("cannot proceed without %s digest support" % digest)
-                    return False
+                if proto.authenticator:
+                    challenge = proto.authenticator.get_challenge()
+                    if challenge is None:
+                        auth_failed("invalid authentication state: unexpected challenge response")
+                        return False
+                    salt, digest = challenge
+                    authlog.info("Authentication required, %s sending challenge for '%s' using digest %s", proto.authenticator, username, digest)
+                    if digest not in self.digest_modes:
+                        auth_failed("cannot proceed without %s digest support" % digest)
+                        return False
+                else:
+                    authlog.warn("Warning: client expects a challenge but this connection is unauthenticated")
+                    #fake challenge so the client will send the real hello:
+                    from xpra.os_util import get_hex_uuid
+                    salt = get_hex_uuid()+get_hex_uuid()
+                    digest = "hmac"
                 proto.send_now(("challenge", salt, auth_caps or "", digest))
                 return False
 
