@@ -19,6 +19,7 @@ log = Logger("client")
 printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
+authlog = Logger("auth")
 
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
@@ -484,10 +485,10 @@ class XpraClientBase(object):
             self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):
-        netlog("processing challenge: %s", packet[1:])
+        authlog("processing challenge: %s", packet[1:])
         def warn_server_and_exit(code, message, server_message="authentication failed"):
-            log.error("Error: authentication failed:")
-            log.error(" %s", message)
+            authlog.error("Error: authentication failed:")
+            authlog.error(" %s", message)
             self.disconnect_and_quit(code, server_message)
         if not self.password_file and not os.environ.get('XPRA_PASSWORD'):
             warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "this server requires authentication, please provide a password", "no password available")
@@ -537,7 +538,7 @@ class XpraClientBase(object):
             warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest, "invalid digest")
             return
         if digest:
-            log("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
+            authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
         self.password_sent = True
         self.send_hello(challenge_response, client_salt)
 
