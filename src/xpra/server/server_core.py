@@ -469,7 +469,7 @@ class ServerCore(object):
         protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
         protocol.receive_aliases.update(self._aliases)
-        netlog("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
+        authlog("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
         if protocol.encryption and ENCRYPT_FIRST_PACKET:
             password = self.get_encryption_key(None, protocol.keyfile)
             protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
@@ -705,13 +705,14 @@ class ServerCore(object):
             if padding not in ALL_PADDING_OPTIONS:
                 auth_failed("unsupported padding: %s" % padding)
                 return False
+            authlog("set output cipher using encryption key %s", encryption_key)
             proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
             auth_caps = new_cipher_caps(proto, cipher, encryption_key, padding_options)
             authlog("server cipher=%s", auth_caps)
         else:
-            if proto.keyfile:
-                authlog.warn("client does not provide encryption tokens")
+            if proto.encryption:
+                authlog.warn("Warning: client does not provide encryption tokens")
                 auth_failed("missing encryption")
                 return False
             auth_caps = None
@@ -761,18 +762,19 @@ class ServerCore(object):
 
     def get_encryption_key(self, authenticator=None, keyfile=None):
         #if we have a keyfile specified, use that:
+        authlog("get_encryption_key(%s, %s)", authenticator, keyfile)
         if keyfile:
-            netlog("trying to load encryption key from keyfile: %s", keyfile)
+            authlog("loading encryption key from keyfile: %s", keyfile)
             return self.filedata_nocrlf(keyfile)
         env_key = os.environ.get('XPRA_ENCRYPTION_KEY')
         if env_key:
             return env_key
         v = None
         if authenticator:
-            netlog("trying to get encryption key from: %s", authenticator)
+            authlog("trying to get encryption key from: %s", authenticator)
             v = authenticator.get_password()
         if v is None and self.password_file:
-            netlog("trying to load encryption key from password file: %s", self.password_file)
+            authlog("trying to load encryption key from password file: %s", self.password_file)
             v = self.filedata_nocrlf(self.password_file)
         if v is None and os.environ.get('XPRA_PASSWORD'):
             v = os.environ.get('XPRA_PASSWORD')
