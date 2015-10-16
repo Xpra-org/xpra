@@ -344,6 +344,7 @@ cdef class Encoder:
     cdef object src_format
     cdef int speed
     cdef int quality
+    cdef int lossless
     cdef object last_frame_times
 
     cdef object __weakref__
@@ -363,6 +364,7 @@ cdef class Encoder:
         self.height = height
         self.speed = speed
         self.quality = quality
+        self.lossless = 0
         self.frames = 0
         self.last_frame_times = deque(maxlen=200)
         self.pixfmt = get_vpx_colorspace(self.src_format)
@@ -443,6 +445,7 @@ cdef class Encoder:
         log("%s setting %s to %s", self.encoding, info, value)
         if ctrl!=0:
             log.warn("failed to set %s to %s: %s (%s)", info, value, get_error_string(ctrl), ctrl)
+        return ctrl==0
 
 
     def log_cfg(self):
@@ -471,6 +474,7 @@ cdef class Encoder:
                      "height"    : self.height,
                      "speed"     : self.speed,
                      "quality"   : self.quality,
+                     "lossless"  : bool(self.lossless),
                      "encoding"  : self.encoding,
                      "src_format": self.src_format,
                      "max_threads": self.max_threads})
@@ -552,10 +556,12 @@ cdef class Encoder:
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
-        self.set_encoding_speed(speed)
-        self.set_encoding_quality(quality)
+        if speed>=0:
+            self.set_encoding_speed(speed)
+        if quality>=0:
+            self.set_encoding_quality(quality)
         return self.do_compress_image(pic_in, strides), {"frame"    : self.frames,
-                                                         "quality"  : min(99, self.quality),
+                                                         "quality"  : min(99+self.lossless, self.quality),
                                                          "speed"    : self.speed}
 
     cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3]):
@@ -655,9 +661,12 @@ cdef class Encoder:
 
     cdef do_set_encoding_quality(self, int pct):
         self.update_cfg()
+        cdef int lossless = 0
         IF ENABLE_VP9:
             if self.encoding=="vp9":
-                self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100)
+                if self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100):
+                    lossless = 1
+        self.lossless = lossless
         cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
