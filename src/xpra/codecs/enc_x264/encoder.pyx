@@ -501,6 +501,7 @@ cdef class Encoder:
                      "opencl"    : bool(self.opencl),
                      "speed"     : self.speed,
                      "quality"   : self.quality,
+                     "lossless"  : self.quality==100,
                      "src_format": self.src_format,
                      "version"   : get_version()})
         if self.bytes_in>0 and self.bytes_out>0:
