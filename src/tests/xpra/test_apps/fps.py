@@ -47,33 +47,34 @@ class FPSWindow(gtk.Window):
     def draw(self, widget, cr):
         w, h = widget.get_size()
         c = 0.2
-        def paint_block(x, y, w, h, c, label):
-            R = G = B = c
-            cr.new_path()
-            cr.set_operator(cairo.OPERATOR_SOURCE)
-            cr.set_source_rgb(R, G, B)
-            cr.rectangle(x, y, w, h)
-            cr.fill()
+        def paint_block(x, y, w, h, div):
+            split_h = self.counter//div % h
+            #top half:
+            if split_h>0:
+                cr.new_path()
+                cr.set_operator(cairo.OPERATOR_SOURCE)
+                cr.set_source_rgb(c, c, c)
+                cr.rectangle(x, y, w, split_h)
+                cr.fill()
+            #bottom half:
+            if split_h<h:
+                cr.new_path()
+                cr.set_operator(cairo.OPERATOR_SOURCE)
+                cr.set_source_rgb(0, 0, 0)
+                cr.rectangle(x, y+split_h, w, h-split_h)
+                cr.fill()
             #show label:
             cr.set_source_rgb(1, 1, 1)
             cr.move_to(x+w/2-12, y+h/2+8)
-            cr.show_text(label)
+            cr.show_text("1/%s" % div)
 
-        #always paint top-left block in red or black
-        div2 = self.counter%2==0
-        div4 = self.counter%4==0
-        div8 = self.counter%8==0
-        div16 = self.counter%16==0
-        paint_block(0, 0, w//2, h//2, div2*c, "1")
-        if div2:        #half-rate
-            #paint top-right block in green or black
-            paint_block(w//2, 0, w//2, h//2, div4*c, "1/2")
-        if div4:        #quarter rate
-            #paint bottom-left block in blue or black 
-            paint_block(0, h//2, w//2, h//2, div8*c, "1/4")
-        if div8:        #one-eigth rate
-            #paint bottom-right block in white or black
-            paint_block(w//2, h//2, w//2, h//2, div16*c, "1/8")
+        paint_block(0, 0, w//2, h//2, 1)
+        if self.counter%2==0:        #half-rate
+            paint_block(w//2, 0, w//2, h//2, 2)
+        if self.counter%4==0:        #quarter rate
+            paint_block(0, h//2, w//2, h//2, 4)
+        if self.counter%8==0:        #one-eigth rate
+            paint_block(w//2, h//2, w//2, h//2, 8)
 
 w = FPSWindow()
 w.show_all()
