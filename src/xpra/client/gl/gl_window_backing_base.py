@@ -339,7 +339,7 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def gl_context(self):
         if not self._backing:
-            log.error("Error: no OpenGL backing")
+            log("Error: no OpenGL backing")
             return None
         if not is_realized(self._backing):
             log.error("Error: OpenGL backing is not realized")
