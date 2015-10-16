@@ -314,6 +314,8 @@ popd
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+
+%post common
 /bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 
 
