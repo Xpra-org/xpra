@@ -239,9 +239,13 @@ cdef int get_preset_for_speed(int speed):
     return 7 - max(0, min(6, speed / 15))
 
 #the x264 quality option ranges from 0 (best) to 51 (lowest)
-cdef float get_x264_quality(int pct):
-    if pct>=100:
-        return 0.0
+cdef float get_x264_quality(int pct, char *profile):
+    if pct>=100 and profile:
+        #easier to compare as python strings:
+        pyiprofile = str(profile)
+        pycprofile = str(PROFILE_HIGH444_PREDICTIVE)
+        if pycprofile==pyiprofile:
+            return 0.0
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
 
 SLICE_TYPES = {
@@ -350,7 +354,8 @@ def get_spec(encoding, colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace],
+    has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRA", "BGRX", "RGB")
+    return video_codec_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
                             quality=50, speed=50, setup_cost=20, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
@@ -427,11 +432,13 @@ cdef class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
         self.profile = self._get_profile(options, self.src_format)
+        log("profile(%s)=%s", self.src_format, self.profile)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
             self.profile = None
         if self.profile is None:
             self.profile = cs_info[1]
+            log("using default profile=%s", self.profile)
         self.init_encoder()
 
     cdef init_encoder(self):
@@ -445,7 +452,7 @@ cdef class Encoder:
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
-        set_f_rf(&param, get_x264_quality(self.quality))
+        set_f_rf(&param, get_x264_quality(self.quality, self.profile))
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = 999999
         #we don't want IDR frames either:
@@ -547,21 +554,13 @@ cdef class Encoder:
         return self.src_format
 
     cdef _get_profile(self, options, csc_mode):
-        #try the environment as a default, fallback to hardcoded default:
+        #use the environment as default if present:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode)
         #now see if the client has requested a different value:
-        profile = options.get("x264.%s.profile" % csc_mode, profile)
-        if not profile:
-            #also using the old names:
-            old_csc_name = {"YUV420P" : "I420",
-                            "YUV422P" : "I422",
-                            "YUV444P" : "I444",
-                            }.get(csc_mode, csc_mode)
-            profile = options.get("x264.%s.profile" % csc_mode, profile)
-        return profile
+        return options.get("x264.%s.profile" % csc_mode, profile)
 
 
-    def compress_image(self, image, quality=-1, speed=-1, options={}):
+    def compress_image(self, image, int quality=-1, int speed=-1, options={}):
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
@@ -578,10 +577,14 @@ cdef class Encoder:
         if self.frames==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        if speed>=0 and abs(self.speed-speed)>5:
+        if speed>=0:
             self.set_encoding_speed(speed)
-        if quality>=0 and abs(self.quality-quality)>5:
+        else:
+            speed = self.speed
+        if quality>=0:
             self.set_encoding_quality(quality)
+        else:
+            quality = self.quality
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -629,8 +632,8 @@ cdef class Encoder:
         client_options = {
                 "frame"     : self.frames,
                 "pts"       : pic_out.i_pts,
-                "quality"   : min(99, quality),
-                "speed"     : speed,
+                "quality"   : max(0, min(100, quality)),
+                "speed"     : max(0, min(100, speed)),
                 "type"      : slice_type}
         #accounting:
         end = time.time()
@@ -654,7 +657,7 @@ cdef class Encoder:
         #apply new preset:
         x264_param_default_preset(&param, get_preset_names()[new_preset], "zerolatency")
         #ensure quality remains what it was:
-        set_f_rf(&param, get_x264_quality(self.quality))
+        set_f_rf(&param, get_x264_quality(self.quality, self.profile))
         #apply it:
         x264_param_apply_profile(&param, self.profile)
         if x264_encoder_reconfig(self.context, &param)!=0:
@@ -664,7 +667,7 @@ cdef class Encoder:
     def set_encoding_quality(self, int pct):
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
-        if abs(self.quality - pct)<=4 and pct!=100:
+        if self.quality==pct or (abs(self.quality - pct)<=4 and pct!=100):
             #not enough of a change to bother
             return
         cdef x264_param_t param                  #@DuplicatedSignature
@@ -672,7 +675,7 @@ cdef class Encoder:
         #retrieve current parameters:
         x264_encoder_parameters(self.context, &param)
         #adjust quality:
-        set_f_rf(&param, get_x264_quality(self.quality))
+        set_f_rf(&param, get_x264_quality(self.quality, self.profile))
         #apply it:
         if x264_encoder_reconfig(self.context, &param)!=0:
             raise Exception("x264_encoder_reconfig failed for quality=%s" % pct)

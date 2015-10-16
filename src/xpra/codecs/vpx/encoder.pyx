@@ -310,7 +310,8 @@ def get_spec(encoding, colorspace):
     #setup cost is reasonable (usually about 5ms)
     global MAX_SIZE
     max_w, max_h = MAX_SIZE[encoding]
-    return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace],
+    has_lossless_mode = encoding=="vp9" and colorspace=="YUV444P"
+    return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
                             quality=50, speed=20, setup_cost=20, max_w=max_w, max_h=max_h)
 

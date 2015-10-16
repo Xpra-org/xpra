@@ -815,31 +815,36 @@ class WindowVideoSource(WindowSource):
 
     def get_quality_score(self, csc_format, csc_spec, encoder_spec, scaling):
         quality = encoder_spec.quality
+        div = 1
         if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
             #account for subsampling: reduces quality
             y,u,v = get_subsampling_divs(csc_format)
             div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
             for div_x, div_y in (y, u, v):
                 div += (div_x+div_y)/2.0/3.0
-            quality = quality / div
+        quality = quality / div
 
         if csc_spec:
             #csc_spec.quality is the upper limit (up to 100):
             quality += csc_spec.quality
             quality /= 2.0
 
-        #the lower the current quality
-        #the more we need an HQ encoder/csc to improve things:
-        qscore = max(0, (100.0-self._current_quality) * quality/100.0)
-        mq = self._fixed_min_quality
-        if mq>=0:
-            #if the encoder quality is lower or close to min_quality
-            #then it isn't very suitable:
-            mqs = max(0, quality - mq)*100/max(1, 100-mq)
-            qscore = (qscore + mqs)//2
-        #when downscaling, YUV420P should always win:
-        if csc_format=="YUV420P" and scaling!=(1, 1):
-            qscore *= 2.0
+        if scaling==(1, 1) and div==1 and self._current_quality==100 and encoder_spec.has_lossless_mode:
+            #we want lossless!
+            qscore = 100
+        else:
+            #the lower the current quality
+            #the more we need an HQ encoder/csc to improve things:
+            qscore = max(0, (100.0-self._current_quality) * quality/100.0)
+            mq = self._fixed_min_quality
+            if mq>=0:
+                #if the encoder quality is lower or close to min_quality
+                #then it isn't very suitable:
+                mqs = max(0, quality - mq)*100/max(1, 100-mq)
+                qscore = (qscore + mqs)//2
+            #when downscaling, YUV420P should always win:
+            if csc_format=="YUV420P" and scaling!=(1, 1):
+                qscore *= 2.0
         return int(qscore)
 
     def get_speed_score(self, csc_format, csc_spec, encoder_spec, scaling):
