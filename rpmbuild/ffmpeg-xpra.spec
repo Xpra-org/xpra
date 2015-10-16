@@ -1,6 +1,6 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     2.8
+Version:     2.8.1
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra	
 
@@ -125,8 +125,10 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/libswscale.pc
 
 
-
 %changelog
+* Fri Oct 16 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.1-1
+- new upstream release
+
 * Thu Sep 10 2015 Antoine Martin <antoine@devloop.org.uk> 2.8-1
 - new upstream release
 
