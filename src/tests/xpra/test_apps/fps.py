@@ -1,21 +1,30 @@
 #!/usr/bin/env python
 
 import cairo
-from gi.repository import Gtk, Gdk, GLib   #@UnresolvedImport
+import os
+GTK3 = os.environ.get("GTK3", "1")=="1"
+if GTK3:
+    from gi.repository import Gtk as gtk, GLib as glib   #@UnresolvedImport @UnusedImport
+else:
+    import gtk, glib            #@Reimport
+    from gtk import gdk
 
-class TransparentColorWindow(Gtk.Window):
+
+WIDTH, HEIGHT = 640, 640
+
+class FPSWindow(gtk.Window):
 
     def __init__(self):
-        super(TransparentColorWindow, self).__init__()
-        self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_default_size(640, 640)
+        super(FPSWindow, self).__init__()
+        self.set_default_size(WIDTH, HEIGHT)
         self.set_app_paintable(True)
-        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
-        self.connect("key_press_event", self.on_key_press)
         self.counter = 0
-        self.connect("draw", self.draw)
-        self.connect("destroy", Gtk.main_quit)
-        GLib.timeout_add(10, self.repaint)
+        if GTK3:
+            self.connect("draw", self.draw)
+        else:
+            self.connect("expose-event", self.do_expose_event)
+        self.connect("destroy", gtk.main_quit)
+        glib.timeout_add(10, self.repaint)
 
 
     def on_key_press(self, *args):
@@ -23,23 +32,32 @@ class TransparentColorWindow(Gtk.Window):
 
     def repaint(self):
         self.counter += 1
-        self.queue_draw()
+        if GTK3:
+            self.queue_draw()
+        else:
+            window = self.get_window()
+            window.invalidate_rect(gdk.Rectangle(0, 0, WIDTH, HEIGHT), False)
         return True
 
+    def do_expose_event(self, widget, event):
+        #cannot use self
+        context = self.window.cairo_create()
+        self.draw(self, context)
+
     def draw(self, widget, cr):
-        cr.set_operator(cairo.OPERATOR_SOURCE)
         w, h = widget.get_size()
         c = 0.2
-        def paint_block(x, y, w, h, c, label=""):
+        def paint_block(x, y, w, h, c, label):
             R = G = B = c
+            cr.new_path()
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.set_source_rgb(R, G, B)
             cr.rectangle(x, y, w, h)
             cr.fill()
-            if label:
-                cr.set_source_rgb(1, 1, 1)
-                cr.move_to(x+w/2-12, y+h/2+8)
-                cr.show_text(label)
+            #show label:
+            cr.set_source_rgb(1, 1, 1)
+            cr.move_to(x+w/2-12, y+h/2+8)
+            cr.show_text(label)
 
         #always paint top-left block in red or black
         div2 = self.counter%2==0
@@ -57,6 +75,6 @@ class TransparentColorWindow(Gtk.Window):
             #paint bottom-right block in white or black
             paint_block(w//2, h//2, w//2, h//2, div16*c, "1/8")
 
-w = TransparentColorWindow()
+w = FPSWindow()
 w.show_all()
-Gtk.main()
+gtk.main()
