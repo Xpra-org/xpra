@@ -171,6 +171,7 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_encoders = []
         self.server_sound_receive = False
         self.server_sound_send = False
+        self.server_ogg_latency_fix = False
         self.queue_used_sent = None
 
         #rpc / dbus:
@@ -1642,12 +1643,13 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_encoders = c.strlistget("sound.encoders", [])
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
+        self.server_ogg_latency_fix = c.boolget("sound.ogg-latency-fix", False)
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
                  csv(self.server_sound_decoders), csv(self.server_sound_encoders),
                  self.server_sound_receive, self.server_sound_send)
         if self.server_sound_send and self.speaker_enabled:
-            self.start_receiving_sound(c.boolget("sound.ogg-latency-fix", False))
+            self.start_receiving_sound()
         if self.server_sound_receive and self.microphone_enabled:
             self.start_sending_sound()
 
@@ -1887,14 +1889,14 @@ class UIXpraClient(XpraClientBase):
         ss.cleanup()
         self.emit("microphone-changed")
 
-    def start_receiving_sound(self, sound_ogg_latency_fix):
+    def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
         soundlog("start_receiving_sound() sound sink=%s", self.sound_sink)
         if self.sound_sink is not None:
             soundlog("start_receiving_sound: we already have a sound sink")
             return
         elif not self.server_sound_send:
-            log.error("cannot start receiving sound: support not enabled on the server")
+            log.error("Error receiving sound: support not enabled on the server")
             return
         #choose a codec:
         matching_codecs = [x for x in self.speaker_codecs if x in self.server_sound_encoders]
@@ -1905,7 +1907,7 @@ class UIXpraClient(XpraClientBase):
             log.error(" client supports: %s", csv(self.speaker_codecs))
             return
         codec = matching_codecs[0]
-        if not sound_ogg_latency_fix and codec in ("flac", "opus", "speex"):
+        if not self.server_ogg_latency_fix and codec in ("flac", "opus", "speex"):
             log.warn("Warning: this server's sound support is out of date")
             log.warn(" the sound latency with the %s codec will be high", codec)
         self.speaker_enabled = True
