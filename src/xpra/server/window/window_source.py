@@ -38,6 +38,9 @@ FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
 STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
 MERGE_REGIONS = os.environ.get("XPRA_MERGE_REGIONS", "1")=="1"
 INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
+MAX_SYNC_BUFFER_SIZE = int(os.environ.get("XPRA_MAX_SYNC_BUFFER_SIZE", "256"))*1024*1024        #256MB
+AV_SYNC_RATE_CHANGE = int(os.environ.get("XPRA_AV_SYNC_RATE_CHANGE", "20"))
+AV_SYNC_TIME_CHANGE = int(os.environ.get("XPRA_AV_SYNC_TIME_CHANGE", "500"))
 
 
 from xpra.util import updict
@@ -99,7 +102,9 @@ class WindowSource(object):
         self.av_sync = av_sync
         self.av_sync_delay = av_sync_delay
         self.av_sync_delay_target = av_sync_delay
+        self.av_sync_timer = None
         self.encode_queue = []
+        self.encode_queue_max_size = 10
 
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
@@ -574,20 +579,29 @@ class WindowSource(object):
 
     def set_av_sync_delay(self, new_delay):
         self.av_sync_delay_target = new_delay
-        self.update_av_sync_delay()
+        self.schedule_av_sync_update()
 
-    def update_av_sync_delay(self):
+    def schedule_av_sync_update(self, delay=0):
         if not self.av_sync:
             self.av_sync_delay = 0
             return
+        if self.av_sync_delay==self.av_sync_delay_target:
+            return  #already up to date
+        if self.av_sync_timer:
+            return  #already scheduled
+        self.av_sync_timer = self.timeout_add(delay, self.update_av_sync_delay)
+
+    def update_av_sync_delay(self):
+        self.av_sync_timer = None
         delta = self.av_sync_delay_target-self.av_sync_delay
         if delta==0:
             return
         #limit the rate of change:
-        AV_SYNC_RATE_CHANGE = 20
         rdelta = min(AV_SYNC_RATE_CHANGE, max(-AV_SYNC_RATE_CHANGE, delta))
         avsynclog("update_av_sync_delay() current=%s, target=%s, adding %s (capped to +-%s from %s)", self.av_sync_delay, self.av_sync_delay_target, rdelta, AV_SYNC_RATE_CHANGE, delta)
         self.av_sync_delay += rdelta
+        if self.av_sync_delay!=self.av_sync_delay_target:
+            self.schedule_av_sync_update(AV_SYNC_TIME_CHANGE)
 
 
     def set_new_encoding(self, encoding, strict):
@@ -728,6 +742,7 @@ class WindowSource(object):
         self.cancel_soft_timer()
         self.cancel_refresh_timer()
         self.cancel_timeout_timer()
+        self.cancel_av_sync_timer()
         #if a region was delayed, we can just drop it now:
         self.refresh_regions = []
         eq = self.encode_queue
@@ -769,6 +784,12 @@ class WindowSource(object):
         if self.timeout_timer:
             self.source_remove(self.timeout_timer)
             self.timeout_timer = None
+
+    def cancel_av_sync_timer(self):
+        avst = self.av_sync_timer
+        if avst:
+            self.source_remove(avst)
+            self.av_sync_timer = None
 
 
     def is_cancelled(self, sequence=None):
@@ -892,6 +913,7 @@ class WindowSource(object):
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
+            self.encode_queue_max_size = max(2, min(15, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
 
@@ -1263,8 +1285,11 @@ class WindowSource(object):
         else:
             #schedule encode via queue, after freezing the pixels:
             frozen = image.freeze()
-            avsynclog("scheduling encode queue iteration in %ims, pixels frozen=%s", av_delay, frozen)
             self.encode_queue.append(item)
+            l = len(self.encode_queue)
+            if l>=self.encode_queue_max_size:
+                av_delay = 0        #we must free some space!
+            avsynclog("scheduling encode queue iteration in %ims, pixels frozen=%s, encode queue size=%i (max=%i)", av_delay, frozen, l, self.encode_queue_max_size)
             self.timeout_add(av_delay, self.call_in_encode_thread, self.encode_from_queue)
 
     def encode_from_queue(self):
@@ -1278,6 +1303,8 @@ class WindowSource(object):
         #find the first item which is due
         #in seconds, same as time.time():
         av_delay = self.av_sync_delay/1000.0
+        if len(self.encode_queue)>=self.encode_queue_max_size:
+            av_delay = 0        #we must free some space!
         now = time.time()
         still_due = []
         pop = None
@@ -1286,7 +1313,7 @@ class WindowSource(object):
                 sequence = item[8]
                 if self.is_cancelled(sequence):
                     self.free_image_wrapper(item[6])
-                    return
+                    continue
                 ts = item[4]
                 due = ts + av_delay
                 if due<now and pop is None:

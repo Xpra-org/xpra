@@ -2059,10 +2059,12 @@ class UIXpraClient(XpraClientBase):
             ss.add_data(data, metadata)
         if self.av_sync and self.server_av_sync:
             info = ss.get_info()
-            queue_used = info.get("queue.used")
-            if not queue_used:
-                avsynclog("server sound sync: info=%s", info)
-            if queue_used and (self.queue_used_sent is None or abs(self.queue_used_sent-queue_used)>=80):
+            queue_used = info.get("queue.cur")
+            if queue_used is None:
+                return
+            delta = (self.queue_used_sent or 0)-queue_used
+            #avsynclog("server sound sync: queue info=%s, last sent=%s, delta=%s", dict((k,v) for (k,v) in info.items() if k.startswith("queue")), self.queue_used_sent, delta)
+            if self.queue_used_sent is None or abs(delta)>=80:
                 avsynclog("server sound sync: sending updated queue.used=%i (was %s)", queue_used, (self.queue_used_sent or "unset"))
                 self.queue_used_sent = queue_used
                 v = queue_used + AV_SYNC_DELTA
