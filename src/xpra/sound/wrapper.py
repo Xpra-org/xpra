@@ -74,8 +74,6 @@ class sound_subprocess(subprocess_callee):
         wo = self.wrapped_object
         log("stop() wrapped object=%s", wo)
         if wo:
-            if wo.state not in ("starting", "stopped", None):
-                log.info("stopping")
             #this will stop the sound pipeline:
             self.wrapped_object = None
             wo.cleanup()

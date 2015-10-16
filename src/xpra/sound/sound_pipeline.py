@@ -144,7 +144,7 @@ class SoundPipeline(gobject.GObject):
         self.pipeline = None
         if not p:
             return
-        log("SoundPipeline.stop()")
+        log("SoundPipeline.stop() state=%s", self.state)
         #uncomment this to see why we end up calling stop()
         #import traceback
         #for x in traceback.format_stack():
@@ -152,6 +152,8 @@ class SoundPipeline(gobject.GObject):
         #        v = s.replace("\r", "").replace("\n", "")
         #        if v:
         #            log(v)
+        if self.state not in ("starting", "stopped", "ready", None):
+            log.info("stopping")
         self.state = "stopped"
         p.set_state(gst.STATE_NULL)
         log("SoundPipeline.stop() done")
@@ -253,9 +255,9 @@ class SoundPipeline(gobject.GObject):
             except:
                 log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
-            log("Latency message from %s: %s", message.src, message)
+            log("latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:
-            log.info("Sound pipeline message: %s", message)
+            log.info("pipeline message: %s", message)
         elif t == gst.MESSAGE_WARNING:
             w = message.parse_warning()
             log.warn("pipeline warning: %s", w[0].message)
