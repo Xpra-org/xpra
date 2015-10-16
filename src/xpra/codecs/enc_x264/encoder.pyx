@@ -668,8 +668,10 @@ cdef class Encoder:
     def set_encoding_quality(self, int pct):
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
-        if self.quality==pct or (abs(self.quality - pct)<=4 and pct!=100):
-            #not enough of a change to bother
+        if self.quality==pct:
+            return
+        if abs(self.quality - pct)<=4 and pct!=100 and self.quality!=100:
+            #not enough of a change to bother (but always change to/from 100)
             return
         cdef x264_param_t param                  #@DuplicatedSignature
         #only f_rf_constant is changing
