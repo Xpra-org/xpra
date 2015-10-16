@@ -69,7 +69,7 @@ class VideoRegionsWindow(gtk.Window):
 
 def main():
 	w = VideoRegionsWindow()
-	gobject.timeout_add(1000, w.redraw)
+	gobject.timeout_add(10, w.redraw)
 	gtk.main()
 	return 0
 
