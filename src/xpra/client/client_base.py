@@ -27,7 +27,6 @@ from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import get_iterations, get_iv, get_salt, choose_padding, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
-from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
 from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, csv
@@ -930,16 +929,7 @@ class XpraClientBase(object):
         else:
             netlog.warn("Received uninterpretable nonsense: %s", message)
             netlog.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
-        if str(data).find("assword")>0:
-            self.warn_and_quit(EXIT_SSH_FAILURE,
-                              "Your ssh program appears to be asking for a password."
-                             + GOT_PASSWORD_PROMPT_SUGGESTION)
-        elif str(data).find("login")>=0:
-            self.warn_and_quit(EXIT_SSH_FAILURE,
-                             "Your ssh program appears to be asking for a username.\n"
-                             "Perhaps try using something like 'ssh:USER@host:display'?")
-        else:
-            self.quit(EXIT_PACKET_FAILURE)
+        self.quit(EXIT_PACKET_FAILURE)
 
     def _process_invalid(self, packet):
         (_, message, data) = packet

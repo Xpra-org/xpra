@@ -31,7 +31,6 @@ DEFAULT_PULSEAUDIO_COMMAND = "pulseaudio --start --daemonize=false --system=fals
                                     "--exit-idle-time=-1 -n --load=module-suspend-on-idle " + \
                                     "--load=module-null-sink --load=module-native-protocol-unix "+ \
                                     "--log-level=2 --log-target=stderr"
-GOT_PASSWORD_PROMPT_SUGGESTION = ""
 
 if sys.version<'3':
     CLIENT_MODULES = ["xpra.client.gtk2.client"]
@@ -51,7 +50,6 @@ _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "DEFAULT_ENV",
                 "DEFAULT_SSH_COMMAND",
                 "DEFAULT_PULSEAUDIO_COMMAND",
-                "GOT_PASSWORD_PROMPT_SUGGESTION",
                 "CLIPBOARDS",
                 "CLIPBOARD_WANT_TARGETS",
                 "CLIPBOARD_GREEDY",
