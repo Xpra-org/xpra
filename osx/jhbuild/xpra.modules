@@ -215,7 +215,7 @@
     </after>
   </autotools>
 
-  <autotools id="gst-python" autogenargs="" autogen-sh="configure">
+  <autotools id="gst-python" autogenargs="" autogen-sh="configure --with-libpython-dir=../Resources/lib">
     <branch module="/src/gst-python/gst-python-0.10.22.tar.bz2"
 			version="0.10.22"
                         hash="md5:937152fe896241f827689f4b53e79b22"
