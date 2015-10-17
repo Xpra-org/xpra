@@ -294,6 +294,7 @@ key-shortcut = Meta+Shift+F8:decrease_speed
 key-shortcut = Meta+Shift+F10:magic_key
 key-shortcut = Meta+Shift+F11:show_session_info
 key-shortcut = Meta+Shift+plus:scaleup
+key-shortcut = Meta+Shift+plusminus:scaleup
 key-shortcut = Meta+Shift+minus:scaledown
 key-shortcut = Meta+Shift+underscore:scaledown
 key-shortcut = Meta+Shift+KP_Add:scaleup

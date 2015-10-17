@@ -509,6 +509,7 @@ def get_defaults():
                                            "Meta+Shift+F10:magic_key",
                                            "Meta+Shift+F11:show_session_info",
                                            "Meta+Shift+plus:scaleup",
+                                           "Meta+Shift+plusminus:scaleup",          #the keyname on OSX...
                                            "Meta+Shift+minus:scaledown",
                                            "Meta+Shift+underscore:scaledown",
                                            "Meta+Shift+KP_Add:scaleup",
