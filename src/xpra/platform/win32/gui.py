@@ -415,7 +415,8 @@ def get_workarea():
         minmy = min(x[1] for x in monitors)
         maxmx = max(x[2] for x in monitors)
         maxmy = max(x[3] for x in monitors)
-        screenlog("get_workarea() absolute total monitor dimensions: %s", (minmx, minmy, maxmx, maxmy))
+        screenlog("get_workarea() absolute total monitor area: %s", (minmx, minmy, maxmx, maxmy))
+        screenlog(" total monitor dimensions: %s", (maxmx-minmx, maxmy-minmy))
         workareas = []
         for m in win32api.EnumDisplayMonitors(None, None):
             mi = win32api.GetMonitorInfo(m[0])
