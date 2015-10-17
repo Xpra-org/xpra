@@ -30,7 +30,7 @@ from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, SIGNAMES, Queue
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING,\
@@ -367,7 +367,13 @@ class ServerCore(object):
         except:
             pass
         log.info("xpra %s version %s%s%s", self.get_server_mode(), local_version, rev_info, dinfo)
-        log.info("running with pid %s", os.getpid())
+        try:
+            pinfo = get_platform_info()
+            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
+        except:
+            log("platform name error:", exc_info=True)
+            osinfo = ""
+        log.info("running with pid %s%s", os.getpid(), osinfo)
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
         def start_ready_callbacks():
