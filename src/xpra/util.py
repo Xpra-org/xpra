@@ -336,7 +336,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
                 #only show it again if different from the screen workarea
                 if dwork_x!=work_x or dwork_y!=work_y or dwork_width!=work_width or dwork_height!=work_height:
-                    add_workarea(work_x, work_y, work_width, work_height)
+                    add_workarea(dwork_x, dwork_y, dwork_width, dwork_height)
             log.info("    "+" ".join(info))
 
 def get_screen_info(screen_sizes):
