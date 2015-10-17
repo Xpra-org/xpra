@@ -309,13 +309,13 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         info = ["%s" % prettify_plug_name(display_name)]
         if width!=root_w or height!=root_h:
             #log plug dimensions if not the same as display (root):
-            info.append("%sx%s" % (width, height))
-        info.append("(%sx%s mm - DPI: %sx%s)" % (width_mm, height_mm, dpi(width, width_mm), dpi(height, height_mm)))
+            info.append("%ix%i" % (width, height))
+        info.append("(%ix%i mm - DPI: %ix%i)" % (width_mm, height_mm, dpi(width, width_mm), dpi(height, height_mm)))
         def add_workarea(wx, wy, ww, wh):
-            info.append("workarea: %sx%s" % (ww, wh))
+            info.append("workarea: %ix%i" % (ww, wh))
             if wx!=0 or wy!=0:
                 #log position if not (0, 0)
-                info.append("at %sx%s" % (wx, wy))
+                info.append("at %ix%i" % (wx, wy))
 
         if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
             add_workarea(work_x, work_y, work_width, work_height)
@@ -325,13 +325,13 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 log.info("    %s", m)
                 continue
             plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
-            info = ['%s' % prettify_plug_name(plug_name, "monitor %s" % i)]
+            info = ['%s' % prettify_plug_name(plug_name, "monitor %i" % i)]
             if plug_width!=width or plug_height!=height or plug_x!=0 or plug_y!=0:
-                info.append("%sx%s" % (plug_width, plug_height))
+                info.append("%ix%i" % (plug_width, plug_height))
                 if plug_x!=0 or plug_y!=0:
-                    info.append("at %sx%s" % (plug_x, plug_y))
+                    info.append("at %ix%i" % (plug_x, plug_y))
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
-                info.append("(%sx%s mm - DPI: %sx%s)" % (plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm)))
+                info.append("(%ix%i mm - DPI: %ix%i)" % (plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm)))
             if len(m)>=11:
                 dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
                 #only show it again if different from the screen workarea
