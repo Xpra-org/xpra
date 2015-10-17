@@ -107,7 +107,13 @@ class UIXpraClient(XpraClientBase):
             rev_info = "-r%s" % REVISION
         except:
             rev_info = ""
-        log.info("xpra %s client version %s%s", self.client_toolkit(), XPRA_VERSION, rev_info)
+        log.info("Xpra %s client version %s%s", self.client_toolkit(), XPRA_VERSION, rev_info)
+        try:
+            pinfo = get_platform_info()
+            osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
+            log.info(" running on %s", osinfo)
+        except:
+            log("platform name error:", exc_info=True)
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
@@ -1597,7 +1603,8 @@ class UIXpraClient(XpraClientBase):
             proxy_release = c.strget("proxy.platform.release")
             proxy_version = c.strget("proxy.version")
             proxy_version = c.strget("proxy.build.version", proxy_version)
-            msg = "via: %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version))
+            proxy_distro = c.strget("linux_distribution")
+            msg = "via: %s proxy version %s" % (platform_name(proxy_platform, proxy_distro or proxy_release), std(proxy_version))
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
             log.info(msg)

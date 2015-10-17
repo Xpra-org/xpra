@@ -91,9 +91,13 @@ def platform_name(sys_platform, release):
                  "os2"      : "OS/2",
                  }
     def rel(v):
-        if sys_platform=="win32" and release:
-            return "%s %s" % (v, release)
-        return v
+        values = [v]
+        if sys_platform=="win32" or sys_platform.startswith("linux"):
+            if type(release) in (tuple, list):
+                values += list(release)
+            else:
+                values.append(release)
+        return " ".join(values)
     for k,v in PLATFORMS.items():
         regexp = re.compile(k)
         if regexp.match(sys_platform):

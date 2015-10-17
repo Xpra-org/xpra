@@ -709,7 +709,7 @@ class ServerSource(object):
         log("client uuid %s", self.uuid)
         pinfo = ""
         if self.client_platform:
-            pinfo = " %s" % platform_name(self.client_platform, self.client_release)
+            pinfo = " %s" % platform_name(self.client_platform, c.strlistget("platform.linux_distribution") or self.client_release)
         revinfo = ""
         if self.client_revision:
             revinfo="-r%s" % self.client_revision
