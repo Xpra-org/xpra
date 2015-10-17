@@ -118,21 +118,22 @@ def do_get_platform_info():
                 if "model name" in line:
                     return re.sub(".*model name.*:", "", line,1).strip()
         assert False
-    info = {
+    info = {}
+    if sys.platform.startswith("linux") and hasattr(pp, "linux_distribution"):
+        info["linux_distribution"] = pp.linux_distribution()
+    info.update({
             ""          : sys.platform,
-            "name"      : platform_name(sys.platform, pp.release()),
+            "name"      : platform_name(sys.platform, info.get("linux_distribution") or pp.release()),
             "release"   : pp.release(),
             "platform"  : pp.platform(),
             "machine"   : pp.machine(),
             "processor" : pp.processor(),
             "architecture" : pp.architecture(),
-            }
+            })
     try:
         info["processor"] = get_processor_name()
     except:
         info["processor"] = pp.processor()
-    if sys.platform.startswith("linux") and hasattr(pp, "linux_distribution"):
-        info["linux_distribution"] = pp.linux_distribution()
     return info
 #cache the output:
 platform_info_cache = None
