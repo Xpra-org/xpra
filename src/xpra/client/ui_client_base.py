@@ -868,6 +868,12 @@ class UIXpraClient(XpraClientBase):
         yscale = clamp(self.yscale*ychange)
         scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
         scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
+        if xscale==self.xscale and yscale==self.yscale:
+            scalinglog("scaling unchanged: %sx%s", self.xscale, self.yscale)
+            return
+        #re-calculate change values against clamped scale:
+        xchange = xscale / self.xscale
+        ychange = yscale / self.yscale
         #check against maximum server supported size:
         maxw, maxh = self.server_max_desktop_size
         root_w, root_h = self.get_root_size()
