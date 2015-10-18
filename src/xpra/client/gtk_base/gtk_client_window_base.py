@@ -708,8 +708,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return None
         if workspace<0:
             #this should not happen, workspace is unsigned! (CARDINAL)
+            workspacelog.warn("invalid workspace number: %s", workspace)
             workspace = WORKSPACE_UNSET
-            workspacelog.warn("invalid workspace number: %s", self._window_workspace)
         workspacelog("%s.set_workspace() workspace=%s ndesktops=%s", self, workspace, ndesktops)
         #we will need the gdk window:
         if not self.is_realized():
