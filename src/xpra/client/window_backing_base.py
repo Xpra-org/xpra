@@ -275,18 +275,20 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb24
         """
         try:
-            success = (self._backing is not None) and self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options)
+            if self._backing is None:
+                fire_paint_callbacks(callbacks, -1, "no backing")
+                return
+            success = self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
         except Exception as e:
             if not self._backing:
-                message = "paint error on closed backing ignored"
-                log(message)
+                fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
             else:
                 log.error("do_paint_rgb24 error", exc_info=True)
                 message = "do_paint_rgb24 error: %s" % e
-            fire_paint_callbacks(callbacks, False, message)
+                fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
@@ -306,13 +308,19 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb32
         """
         try:
-            success = (self._backing is not None) and self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options)
+            if self._backing is None:
+                fire_paint_callbacks(callbacks, -1, "no backing")
+                return
+            success = self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            log.error("do_paint_rgb32 error", exc_info=True)
-            fire_paint_callbacks(callbacks, False, "do_paint_rgb32 error: %s" % e)
+            if not self._backing:
+                fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
+            else:
+                log.error("do_paint_rgb32 error", exc_info=True)
+                fire_paint_callbacks(callbacks, False, "do_paint_rgb32 error: %s" % e)
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
@@ -356,7 +364,7 @@ class WindowBackingBase(object):
             if self._backing is None:
                 message = "window %s is already gone!" % self.wid
                 log(message)
-                fire_paint_callbacks(callbacks, False, message)
+                fire_paint_callbacks(callbacks, -1, message)
                 return  False
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc")
@@ -516,7 +524,7 @@ class WindowBackingBase(object):
                 self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
         except Exception:
             if self._backing is None:
-                fire_paint_callbacks(callbacks, False, "this backing is closed - retry?")
+                fire_paint_callbacks(callbacks, -1, "this backing is closed - retry?")
             else:
                 raise
 
