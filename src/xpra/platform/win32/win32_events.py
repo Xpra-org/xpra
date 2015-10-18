@@ -13,7 +13,8 @@ from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 
 #no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE        = 0x02b1
-WM_DWMNCRENDERINGCHANGED    = 0x31F
+WM_DWMNCRENDERINGCHANGED    = 0x031F
+WM_DWMCOMPOSITIONCHANGED    = 0x031E
 IGNORE_EVENTS = {
             win32con.WM_DESTROY             : "WM_DESTROY",
             win32con.WM_COMMAND             : "WM_COMMAND",
@@ -23,7 +24,7 @@ IGNORE_EVENTS = {
             win32con.WM_WINDOWPOSCHANGED    : "WM_WINDOWPOSCHANGED",    #happens after resume too?
             win32con.WM_WININICHANGE        : "WM_WININICHANGE",        #happens after resume too?
             win32con.WM_WINDOWPOSCHANGING   : "WM_WINDOWPOSCHANGING",
-            win32con.WM_GETMINMAXINFO       : "WM_GETMINMAXINFO",       #could be used to limit window size?
+            win32con.WM_GETMINMAXINFO       : "WM_GETMINMAXINFO",
             WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
             WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
             800                             : "screen background changed",  #I can't find this definition anywhere
@@ -31,6 +32,7 @@ IGNORE_EVENTS = {
 LOG_EVENTS = {
             win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",
             win32con.WM_TIMECHANGE          : "WM_TIMECHANGE: time change event",
+            WM_DWMCOMPOSITIONCHANGED        : "WM_DWMCOMPOSITIONCHANGED: Desktop Window Manager composition has been enabled or disabled",
             }
 KNOWN_WM_EVENTS = IGNORE_EVENTS.copy()
 KNOWN_WM_EVENTS.update(WNDPROC_EVENT_NAMES)
