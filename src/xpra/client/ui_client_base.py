@@ -911,7 +911,10 @@ class UIXpraClient(XpraClientBase):
         self.update_screen_size()
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
-            return max(1, int(w*xchange)), max(1, int(h*ychange))
+            minx, miny = 16384, 16384
+            if self.max_window_size!=(0, 0):
+                minx, miny = self.max_window_size
+            return max(1, min(minx, int(w*xchange))), max(1, min(miny, int(h*ychange)))
         self.reinit_windows(new_size_fn)
         self.scaling_changed()
 
