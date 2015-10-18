@@ -717,11 +717,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         gdkwin = self.get_window()
         if workspace==WORKSPACE_UNSET:
             #we want to remove the setting, so access the window property directly:
-            self._window_workspace = workspace
+            self._window_workspace = WORKSPACE_UNSET
             xid = get_xid(gdkwin)
             with xswallow:
                 X11Window.XDeleteProperty(xid, "_NET_WM_DESKTOP")
-            return self._window_workspace
+            return WORKSPACE_UNSET
         #clamp to number of workspaces just in case we have a mismatch:
         if workspace==WORKSPACE_ALL:
             self._window_workspace = WORKSPACE_ALL
@@ -730,11 +730,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         workspacelog("%s.set_workspace() clamped workspace=%s", self, self._window_workspace)
         if not gdkwin.is_visible():
             #window is unmapped so we can set the window property directly:
-            prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", self._window_workspace)
+            prop_set(gdkwin, "_NET_WM_DESKTOP", "u32", self._window_workspace)
             return self._window_workspace
         #the window is visible, so we have to ask the window manager politely
         with xsync:
-            send_wm_workspace(root, self.get_window(), self._window_workspace)
+            send_wm_workspace(root, gdkwin, self._window_workspace)
         return self._window_workspace
 
 
