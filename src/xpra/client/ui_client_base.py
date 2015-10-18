@@ -868,7 +868,9 @@ class UIXpraClient(XpraClientBase):
         yscale = clamp(self.yscale*ychange)
         scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
         scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
-        if xscale==self.xscale and yscale==self.yscale:
+        def rcmp(v):    #ignore small differences in floats for scale values
+            return int(v*1000.0 + 0.5)
+        if rcmp(xscale)==rcmp(self.xscale) and rcmp(yscale)==rcmp(self.yscale):
             scalinglog("scaling unchanged: %sx%s", self.xscale, self.yscale)
             return
         #re-calculate change values against clamped scale:
@@ -892,10 +894,10 @@ class UIXpraClient(XpraClientBase):
             if self.xscale==v and self.yscale==v:
                 #no change needed
                 return
-            scalinglog.warn("Warning: cannot scale by %s x %s", xscale, yscale)
+            scalinglog.warn("Warning: cannot scale by %s x %s or lower", xscale, yscale)
             scalinglog.warn(" the scaled client screen %i x %i -> %i x %i", root_w, root_h, sw, sh)
             scalinglog.warn(" would overflow the server's screen: %i x %i", maxw, maxh)
-            scalinglog.warn(" using %s x %s", v, v)
+            scalinglog.warn(" using %s x %s -> %i x %i", v, v, int(root_w / v), int(root_h / v))
             xscale = v
             yscale = v
             xchange = xscale / self.xscale 
