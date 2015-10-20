@@ -321,6 +321,15 @@ def get_all_printers():
     log("pycups.get_all_printers()=%s", printers)
     return printers
 
+def get_default_printer():
+    conn = cups.Connection()
+    return conn.getDefault()
+
+def get_printer_attributes(name):
+    conn = cups.Connection()
+    return conn.getPrinterAttributes(name)
+
+
 def print_files(printer, filenames, title, options):
     if printer not in get_printers():
         raise Exception("invalid printer: '%s'" % printer)

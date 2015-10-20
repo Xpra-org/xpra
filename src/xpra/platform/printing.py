@@ -33,6 +33,12 @@ def err(*args):
 def get_printers():
     return {}
 
+def get_printer_attributes(name):
+    return []
+
+def get_default_printer():
+    return None
+
 def print_files(printer, filenames, title, options):
     raise Exception("no print implementation available")
 
@@ -60,6 +66,7 @@ platform_import(globals(), "printing", False,
                 "init_printing",
                 "cleanup_printing",
                 "get_printers",
+                "get_default_printer",
                 "print_files",
                 "printing_finished",
                 "MIMETYPES")
@@ -80,7 +87,7 @@ def main():
             pass
 
     from xpra.util import nonl, pver
-    def print_dict(d):
+    def dump_printers(d):
         for k in sorted(d.keys()):
             v = d[k]
             print("* %s" % k)
@@ -88,7 +95,12 @@ def main():
                 for pk,pv in v.items():
                     print("        %s : %s" % (pk.ljust(32), nonl(pver(pv))))
             except:
-                print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+                print("        %s : %s" % (k.ljust(32), nonl(pver(v))))
+            attr = get_printer_attributes(k)
+            if attr:
+                print(" attributes:")
+                for a in attr:
+                    print("        %s" % a)
     from xpra.platform import init, clean
     from xpra.log import enable_color
     from xpra.util import csv
@@ -96,7 +108,7 @@ def main():
         init("Printing", "Printing")
         enable_color()
         if len(sys.argv)<=1:
-            print_dict(get_printers())
+            dump_printers(get_printers())
             return 0
         printers = get_printers()
         if len(printers)==0:
@@ -107,9 +119,11 @@ def main():
             if not os.path.exists(filename):
                 print("Cannot print file '%s': file does not exist" % filename)
                 return 1
-            printer = printers.keys()[0]
-            if len(printers)>1:
-                print("More than one printer found: %s", csv(printer.keys()))
+            printer = get_default_printer()
+            if not printer:
+                printer = printers.keys()[0]
+                if len(printers)>1:
+                    print("More than one printer found: %s", csv(printer.keys()))
             print("Using printer '%s'" % printer)
             filenames = [filename]
         if len(sys.argv)>2:
