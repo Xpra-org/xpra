@@ -77,6 +77,7 @@ LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
 MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "20"))
+SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
@@ -125,6 +126,7 @@ class UIXpraClient(XpraClientBase):
         self.dpi = 0
         self.xscale = 1
         self.yscale = 1
+        self.scale_change_embargo = 0
         self.shadow_fullscreen = False
 
         #draw thread:
@@ -862,6 +864,9 @@ class UIXpraClient(XpraClientBase):
         if self.screen_size_change_pending:
             scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
             return
+        if time.time()<self.scale_change_embargo:
+            scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again", xchange, ychange)
+            return
         def clamp(v):
             return max(MIN_SCALING, min(MAX_SCALING, v))
         xscale = clamp(self.xscale*xchange)
@@ -910,6 +915,8 @@ class UIXpraClient(XpraClientBase):
         self.scale_reinit(xchange, ychange)
 
     def scale_reinit(self, xchange=1.0, ychange=1.0):
+        #wait at least one second before changing again:
+        self.scale_change_embargo = time.time()+SCALING_EMBARGO_TIME
         self.update_screen_size()
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
@@ -2582,30 +2589,32 @@ class UIXpraClient(XpraClientBase):
         sw, sh = self.cp(w, h)                                  #ie: upscaled to: 11520x4320 
         scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s", self.server_actual_desktop_size, self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
-        if sw>(max_w+1) or sh>(max_h+1):
-            #server size is too small for the client screen size with the current scaling value,
-            #calculate the minimum scaling to fit it:
-            def clamp(v):
-                return max(MIN_SCALING, min(MAX_SCALING, v))
-            x = clamp(float(w)/max_w)
-            y = clamp(float(h)/max_h)
-            def mint(v):
-                #prefer int over float:
-                try:
-                    return int(str(v).rstrip("0").rstrip("."))
-                except:
-                    return v
-            if self.server_is_shadow:
-                self.xscale = mint(x)
-                self.yscale = mint(y)
-            else:
-                #use the same scale for both axis:
-                self.xscale = mint(max(x, y))
-                self.yscale = self.xscale
-            scalinglog.warn("Warning: adjusting scaling to accomodate server")
-            scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
-            scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
-            self.scaling_changed()
+        if sw<(max_w+1) and sh<(max_h+1):
+            #no change needed
+            return
+        #server size is too small for the client screen size with the current scaling value,
+        #calculate the minimum scaling to fit it:
+        def clamp(v):
+            return max(MIN_SCALING, min(MAX_SCALING, v))
+        x = clamp(float(w)/max_w)
+        y = clamp(float(h)/max_h)
+        def mint(v):
+            #prefer int over float:
+            try:
+                return int(str(v).rstrip("0").rstrip("."))
+            except:
+                return v
+        if self.server_is_shadow:
+            self.xscale = mint(x)
+            self.yscale = mint(y)
+        else:
+            #use the same scale for both axis:
+            self.xscale = mint(max(x, y))
+            self.yscale = self.xscale
+        scalinglog.warn("Warning: adjusting scaling to accomodate server")
+        scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
+        scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
+        self.scaling_changed()
             
 
     def set_max_packet_size(self):
