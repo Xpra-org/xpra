@@ -15,6 +15,7 @@ import urllib
 
 
 from xpra.log import Logger
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 log = Logger("printing")
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
@@ -47,6 +48,29 @@ log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX,
 log("pycups settings: ALLOW=%s", ALLOW)
 log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
 log("pycups settings: SKIPPED_PRINTERS=%s", SKIPPED_PRINTERS)
+
+DEFAULT_CUPS_OPTIONS = {}
+dco = os.environ.get("XPRA_DEFAULT_CUPS_OPTIONS", "orientation-requested=3,fit-to-page=True")
+if dco:
+    for opt in dco.split(","):
+        opt = opt.strip(" ")
+        parts = opt.split("=", 1)
+        if len(parts)!=2:
+            log.warn("Warning: invalid cups option: '%s'", opt)
+            continue
+        #is it a boolean?
+        k,v = parts
+        if v.lower() in TRUE_OPTIONS:
+            v = True
+        elif v.lower() in FALSE_OPTIONS:
+            v = False
+        else:
+            try:
+                v = int(v)
+            except:
+                pass
+        DEFAULT_CUPS_OPTIONS[k] = v
+    log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
 
 
 #allows us to inject the lpadmin and lpinfo commands from the config file
@@ -334,9 +358,11 @@ def print_files(printer, filenames, title, options):
     if printer not in get_printers():
         raise Exception("invalid printer: '%s'" % printer)
     log("pycups.print_files%s", (printer, filenames, title, options))
+    actual_options = DEFAULT_CUPS_OPTIONS.copy()
+    actual_options.update(options)
     conn = cups.Connection()
-    printpid = conn.printFiles(printer, filenames, title, options)
-    log("pycups.print_files%s=%s", (printer, filenames, title, options), printpid)
+    printpid = conn.printFiles(printer, filenames, title, actual_options)
+    log("pycups %s.printFiles%s=%s", conn, (printer, filenames, title, actual_options), printpid)
     assert printpid>0, "printing failed and returned job id %s" % printpid
     return printpid
 
