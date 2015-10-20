@@ -2297,9 +2297,10 @@ class UIXpraClient(XpraClientBase):
             metadata = window._metadata
             override_redirect = window._override_redirect
             backing = window._backing
-            video_decoder, csc_decoder, decoder_lock = None, None, None
+            delta_pixel_data, video_decoder, csc_decoder, decoder_lock = None, None, None, None
             try:
                 if backing:
+                    delta_pixel_data = backing._delta_pixel_data
                     video_decoder = backing._video_decoder
                     csc_decoder = backing._csc_decoder
                     decoder_lock = backing._decoder_lock
@@ -2329,6 +2330,7 @@ class UIXpraClient(XpraClientBase):
                 window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
                 if video_decoder or csc_decoder:
                     backing = window._backing
+                    backing._delta_pixel_data = delta_pixel_data
                     backing._video_decoder = video_decoder
                     backing._csc_decoder = csc_decoder
                     backing._decoder_lock = decoder_lock
