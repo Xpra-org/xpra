@@ -309,9 +309,9 @@
 
   <distutils id="python-pillow">
      <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-2.9.0.zip"
-             hash="md5:cd4e6286fb28e277954c011c3ce05bc4"
-	     version="2.9.0"/>
+	     module="/packages/source/P/Pillow/Pillow-3.0.0.zip"
+             hash="md5:dd81f6cc3f3a5e5fe72f0f1d936339c3"
+	     version="3.0.0"/>
   </distutils>
 
   <distutils id="python-py2app">
