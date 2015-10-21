@@ -26,7 +26,7 @@ from xpra.net.crypto import ENCRYPTION_CIPHERS
 from xpra.util import csv
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
-    fixup_debug_option, fixup_options, \
+    fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
