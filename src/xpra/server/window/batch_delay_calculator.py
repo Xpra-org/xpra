@@ -84,6 +84,8 @@ def update_batch_delay(batch, factors):
     for x in factors:
         if len(x)!=4:
             log.warn("invalid factor line: %s" % str(x))
+        else:
+            log("update_batch_delay: %-28s : %.2f,%.2f  %s", x[0], x[2], x[3], x[1])
     valid_factors = [x for x in factors if x is not None and len(x)==4]
     all_factors_weight = sum([w for _,_,_,w in valid_factors])
     if all_factors_weight==0:
@@ -100,7 +102,6 @@ def update_batch_delay(batch, factors):
     batch.delay = max(mv, min(max_delay, tv // tw))
     batch.last_updated = now
     batch.factors = valid_factors
-
 
 def get_target_speed(wid, window_dimensions, batch, global_statistics, statistics, min_speed, speed_data):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
