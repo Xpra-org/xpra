@@ -1172,8 +1172,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.do_update_server_settings({"resource-manager"  : "",
                                         "xsettings-blob"    : (0, [])},
                                         reset = True,
-                                        dpi = self.default_dpi,
-                                        pulseaudio = self.pulseaudio)
+                                        dpi = self.default_dpi)
 
     def update_all_server_settings(self, reset=False):
         self.update_server_settings({"resource-manager"  : "",
@@ -1185,10 +1184,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         double_click_time = self.double_click_time
         double_click_distance = self.double_click_distance
         antialias = self.antialias
-        pulseaudio = self.pulseaudio
-        self.do_update_server_settings(settings, reset, dpi, double_click_time, double_click_distance, antialias, pulseaudio)
+        self.do_update_server_settings(settings, reset, dpi, double_click_time, double_click_distance, antialias)
 
-    def do_update_server_settings(self, settings, reset=False, dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias={}, pulseaudio=True):
+    def do_update_server_settings(self, settings, reset=False, dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias={}):
         if not self.xsettings_enabled:
             settingslog("ignoring xsettings update: %s", settings)
             return
@@ -1279,13 +1277,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     self.set_xsettings(v)
                 elif k == "resource-manager":
                     root_set("RESOURCE_MANAGER")
-                elif pulseaudio:
-                    if k == "pulse-cookie":
-                        root_set("PULSE_COOKIE")
-                    elif k == "pulse-id":
-                        root_set("PULSE_ID")
-                    elif k == "pulse-server":
-                        root_set("PULSE_SERVER")
 
 
     def init_dbus_server(self):
