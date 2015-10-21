@@ -1180,13 +1180,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
                                      reset=reset)
 
     def update_server_settings(self, settings, reset=False):
-        dpi = self.dpi
-        double_click_time = self.double_click_time
-        double_click_distance = self.double_click_distance
-        antialias = self.antialias
-        self.do_update_server_settings(settings, reset, dpi, double_click_time, double_click_distance, antialias)
+        self.do_update_server_settings(settings, reset,
+                                self.dpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
 
-    def do_update_server_settings(self, settings, reset=False, dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias={}):
+    def do_update_server_settings(self, settings, reset=False,
+                                  dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias={}, cursor_size=-1):
         if not self.xsettings_enabled:
             settingslog("ignoring xsettings update: %s", settings)
             return
@@ -1203,7 +1201,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._settings.update(settings)
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:
-            if k=="resource-manager" and (dpi>0 or antialias):
+            if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
                 value = v.decode("utf-8")
                 #parse the resources into a dict:
                 values={}
@@ -1211,10 +1209,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 for option in options:
                     if not option:
                         continue
-                    parts = option.split(":\t")
+                    parts = option.split(":\t", 1)
                     if len(parts)!=2:
+                        settingslog("skipped invalid option: '%s'", option)
                         continue
                     values[parts[0]] = parts[1]
+                if cursor_size>0:
+                    values["Xcursor.size"] = cursor_size
                 if dpi>0:
                     values["Xft.dpi"] = dpi
                     values["Xft/DPI"] = dpi*1024

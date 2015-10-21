@@ -113,6 +113,7 @@ class ServerBase(ServerCore):
         self.xdpi = 0
         self.ydpi = 0
         self.antialias = {}
+        self.cursor_size = 0
         self.idle_timeout = 0
         #duplicated from Server Source...
         self.double_click_time  = -1
@@ -202,10 +203,6 @@ class ServerBase(ServerCore):
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
-        self.dpi = 0
-        self.xdpi = 0
-        self.ydpi = 0
-        self.antialias = {}
         self.idle_timeout = opts.idle_timeout
         self.supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.clipboard_filter_file = opts.clipboard_filter_file
@@ -855,7 +852,8 @@ class ServerBase(ServerCore):
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
             self.antialias = c.dictget("antialias")
-            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias)
+            self.cursor_size = c.intget("cursor.size", 0)
+            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s, cursor_size=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
@@ -1555,6 +1553,7 @@ class ServerBase(ServerCore):
                              "y"            : self.ydpi
                              })
         updict(info, "antialias", self.antialias)
+        updict(info, "cursor.size", self.cursor_size)
         log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 

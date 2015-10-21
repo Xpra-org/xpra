@@ -102,6 +102,9 @@ def get_double_click_distance():
 def get_fixed_cursor_size():
     return -1, -1
 
+def get_cursor_size():
+    return -1
+
 def get_window_frame_size(x, y, w, h):
     return None
 
@@ -159,6 +162,7 @@ def get_info_base():
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
             "fixed_cursor_size"             : get_fixed_cursor_size(),
+            "cursor_size"                   : get_cursor_size(),
             "dpi.x"                         : get_xdpi(),
             "dpi.y"                         : get_ydpi(),
             "icon_size"                     : get_icon_size(),
@@ -188,7 +192,7 @@ platform_import(globals(), "gui", False,
                 "get_number_of_desktops", "get_desktop_names",
                 "get_antialias_info", "get_icon_size", "get_xdpi", "get_ydpi",
                 "get_double_click_time", "get_double_click_distance",
-                "get_fixed_cursor_size", "get_window_frame_sizes",
+                "get_fixed_cursor_size", "get_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
                 "get_info")

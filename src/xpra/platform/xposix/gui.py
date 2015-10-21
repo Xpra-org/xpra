@@ -322,6 +322,40 @@ def get_vrefresh():
     return v
 
 
+def _get_xresources():
+    try:
+        from xpra.x11.gtk_x11.prop import prop_get
+        import gtk.gdk
+        root = gtk.gdk.get_default_root_window()
+        v = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
+        log("RESOURCE_MANAGER=%s", v)
+        if v is None:
+            return None
+        value = v.decode("utf-8")
+        #parse the resources into a dict:
+        values={}
+        options = value.split("\n")
+        for option in options:
+            if not option:
+                continue
+            parts = option.split(":\t", 1)
+            if len(parts)!=2:
+                log("skipped invalid option: '%s'", option)
+                continue
+            values[parts[0]] = parts[1]
+        return values
+    except Exception as e:
+        log("_get_xresources error: %s", e)
+    return None
+
+def get_cursor_size():
+    d = _get_xresources() or {}
+    try:
+        return int(d.get("Xcursor.size", 0))
+    except:
+        return -1
+
+
 def _get_xsettings_int(name, default_value):
     d = _get_xsettings_dict()
     if name not in d:

@@ -503,6 +503,11 @@ def get_fixed_cursor_size():
         #best to try to use a limit anyway:
         return 32, 32
 
+def get_cursor_size():
+    w,h = get_fixed_cursor_size()
+    return (w+h)//2
+
+
 def get_window_frame_sizes():
     try:
         #normal resizable windows:
