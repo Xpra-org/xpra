@@ -948,11 +948,11 @@ class WindowSource(object):
         delay = options.get("delay", self.batch_config.delay)
         if now-self.statistics.last_resized<0.250:
             #recently resized, batch more
-            delay = min(50, delay+25)
+            delay = max(50, delay+25)
         qsize = self.queue_size()
         if qsize>4:
             #the queue is getting big, try to slow down progressively:
-            delay = min(10, delay) * (qsize/4.0)
+            delay = max(10, min(self.batch_config.min_delay, delay)) * (qsize/4.0)
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
