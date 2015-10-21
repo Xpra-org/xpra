@@ -934,7 +934,7 @@ class WindowSource(object):
             log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
                 x, y, w, h, options, self.wid, delayed[3], now-delayed[0])
             return
-        elif self.batch_config.delay < self.batch_config.min_delay and not self.batch_config.always:
+        elif self.batch_config.delay <= self.batch_config.min_delay and not self.batch_config.always:
             #work out if we have too many damage requests
             #or too many pixels in those requests
             #for the last time_unit, and if so we force batching on
