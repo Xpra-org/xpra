@@ -46,9 +46,14 @@ def get_host_info():
         info.update({
                     "pid"                   : os.getpid(),
                     "byteorder"             : sys.byteorder,
-                    "hostname"              : socket.gethostname(),
-                    "python.full_version"   : sys.version,
-                    "python.version"        : ".".join(str(x) for x in sys.version_info[:3]),
+                    "hostname"              : socket.gethostname()
+                    })
+        import struct
+        bits = struct.calcsize("P") * 8
+        updict(info, "python", { 
+                    "bits"                  : bits,
+                    "full_version"          : sys.version,
+                    "version"               : ".".join(str(x) for x in sys.version_info[:3]),
                     })
     except:
         pass
