@@ -100,6 +100,7 @@ def update_batch_delay(batch, factors):
     if batch.always:
         mv = batch.min_delay
     batch.delay = max(mv, min(max_delay, tv // tw))
+    log("update_batch_delay: delay=%i", batch.delay)
     batch.last_updated = now
     batch.factors = valid_factors
 
