@@ -175,6 +175,7 @@ def _get_xsettings_dpi():
     from xpra.x11.xsettings_prop import XSettingsTypeInteger
     d = _get_xsettings_dict()
     for k,div in {"Xft.dpi"         : 1,
+                  "Xft/DPI"         : 1024,
                   "gnome.Xft/DPI"   : 1024,
                   #"Gdk/UnscaledDPI" : 1024, ??
                   }.items():
