@@ -1273,16 +1273,19 @@ class UIXpraClient(XpraClientBase):
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
             })
-        if self.dpi>0:
-            #command line (or config file) override supplied:
-            capabilities["dpi"] = self.dpi
-        else:
-            #use platform detection code:
+        #command line (or config file) override supplied:
+        dpi = self.dpi
+        if self.dpi<=0:
+            #not supplied, use platform detection code:
+            xdpi = self.cx(get_xdpi())
+            ydpi = self.cy(get_ydpi())
+            dpi = int((xdpi+ydpi+0.5)/2.0)
+            #platforms may also provide per-axis dpi (later win32 versions do)
             capabilities.update({
-                                 "dpi"      : get_dpi(),
-                                 "dpi.x"    : get_xdpi(),
-                                 "dpi.y"    : get_ydpi(),
+                                 "dpi.x"    : xdpi,
+                                 "dpi.y"    : ydpi,
                                  })
+        capabilities["dpi"] = dpi
         capabilities["antialias"] = get_antialias_info()
         #generic rgb compression flags:
         for x in compression.ALL_COMPRESSORS:
