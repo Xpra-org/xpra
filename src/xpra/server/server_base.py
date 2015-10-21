@@ -1553,7 +1553,7 @@ class ServerBase(ServerCore):
                              "y"            : self.ydpi
                              })
         updict(info, "antialias", self.antialias)
-        updict(info, "cursor.size", self.cursor_size)
+        info["cursor.size"] = self.cursor_size
         log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
