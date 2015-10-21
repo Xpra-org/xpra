@@ -182,7 +182,7 @@ def _get_xsettings_dpi():
         if k in d:
             value_type, value = d.get(k)
             if value_type==XSettingsTypeInteger:
-                screenlog("get_dpi() found %s=%s", k, value)
+                screenlog("_get_xsettings_dpi() found %s=%s", k, value)
                 return max(10, min(1000, value/div))
     return -1
 
@@ -212,14 +212,6 @@ def get_ydpi():
         return dpi
     return _get_randr_dpi()[1]
 
-def get_dpi():
-    dpi = _get_xsettings_dpi()
-    if dpi>0:
-        return dpi
-    xdpi, ydpi = _get_randr_dpi()
-    if xdpi>0 and ydpi>0:
-        return (xdpi + ydpi)//2
-    return -1
 
 def get_antialias_info():
     info = {}

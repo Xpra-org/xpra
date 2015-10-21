@@ -349,13 +349,6 @@ def get_ydpi():
         log.warn("failed to get ydpi: %s", e)
     return -1
 
-def get_dpi():
-    try:
-        return (get_xdpi() + get_ydpi())//2
-    except Exception as e:
-        log.warn("failed to get dpi: %s", e)
-    return -1
-
 #those constants aren't found in win32con:
 SPI_GETFONTSMOOTHING            = 0x004A
 SPI_GETFONTSMOOTHINGCONTRAST    = 0x200C

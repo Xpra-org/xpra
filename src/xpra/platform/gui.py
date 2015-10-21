@@ -49,8 +49,6 @@ def get_native_notifier_classes():
     return []
 
 
-def get_dpi():
-    return -1
 
 def get_xdpi():
     return -1
@@ -60,7 +58,12 @@ def get_ydpi():
 
 
 def get_icon_size():
-    dpi = get_dpi()
+    xdpi = get_xdpi()
+    ydpi = get_ydpi()
+    if xdpi>0 and ydpi>0:
+        dpi = int((xdpi + ydpi + 0.5)/2.0)
+    else:
+        dpi = 96
     if dpi > 144:
         return 48
     elif dpi > 120:
@@ -156,7 +159,6 @@ def get_info_base():
             "double_click.time"             : get_double_click_time(),
             "double_click.distance"         : get_double_click_distance(),
             "fixed_cursor_size"             : get_fixed_cursor_size(),
-            "dpi"                           : get_dpi(),
             "dpi.x"                         : get_xdpi(),
             "dpi.y"                         : get_ydpi(),
             "icon_size"                     : get_icon_size(),
@@ -184,7 +186,7 @@ platform_import(globals(), "gui", False,
                 "get_native_notifier_classes",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
-                "get_antialias_info", "get_icon_size", "get_dpi", "get_xdpi", "get_ydpi",
+                "get_antialias_info", "get_icon_size", "get_xdpi", "get_ydpi",
                 "get_double_click_time", "get_double_click_distance",
                 "get_fixed_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
