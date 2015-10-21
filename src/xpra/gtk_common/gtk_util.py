@@ -712,7 +712,7 @@ def main():
     def print_dict(d, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
-            print("* %s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
+            print("* %-48s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
     from xpra.platform import init, clean
     try:
         init("GTK-Version-Info", "GTK Version Info")

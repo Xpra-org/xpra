@@ -51,8 +51,9 @@ class WindowWithMenu(gtk.Window):
         vbox.add(btn)
         #no services to begin with:
         self.window_actions_service, self.app_actions_service, self.menus_service = None, None, None
+        from xpra.dbus.common import init_session_bus
+        self.session_bus = init_session_bus(private=True)
         self.init_defaults()
-        
 
     def init_defaults(self):
         self.window_actions = {
@@ -149,9 +150,7 @@ class WindowWithMenu(gtk.Window):
         self.app_path = self.app_path_entry.get_text().decode()
         self.menu_path = u"%s/menus/appmenu" % self.app_path
         self.window_path = u"%s/window/1" % self.app_path
-        from xpra.dbus.common import init_session_bus
-        session_bus = init_session_bus()
-        self.bus_name = session_bus.get_unique_name().decode()
+        self.bus_name = self.session_bus.get_unique_name().decode()
 
     def stop_dbus_services(self):
         for x in (self.window_actions_service, self.app_actions_service, self.menus_service):
@@ -160,21 +159,19 @@ class WindowWithMenu(gtk.Window):
         self.window_actions_service, self.app_actions_service, self.menus_service = None, None, None
 
     def setup_dbus_services(self):
-        from xpra.dbus.common import init_session_bus
-        session_bus = init_session_bus()
-        self.window_actions_service = Actions(self.app_id, self.window_path, session_bus, self.window_actions)
-        self.app_actions_service = Actions(self.app_id, self.app_path, session_bus, self.app_actions)
-        self.menus_service = Menus(self.app_id, self.menu_path, session_bus, self.current_menus)
+        self.window_actions_service = Actions(self.app_id, self.window_path, self.session_bus, self.window_actions)
+        self.app_actions_service = Actions(self.app_id, self.app_path, self.session_bus, self.app_actions)
+        self.menus_service = Menus(self.app_id, self.menu_path, self.session_bus, self.current_menus)
 
     def set_X11_props(self):
         w = self.get_window()
         def pset(key, value):
             return prop_set(w, key, "utf8", value)
-        pset("_GTK_APP_MENU_OBJECT_PATH", self.menu_path)
-        pset("_GTK_WINDOW_OBJECT_PATH", self.window_path)
         pset("_GTK_APPLICATION_OBJECT_PATH", self.app_path)
+        pset("_GTK_WINDOW_OBJECT_PATH", self.window_path)
         pset("_GTK_UNIQUE_BUS_NAME", self.bus_name)
         pset("_GTK_APPLICATION_ID", self.app_id)
+        pset("_GTK_APP_MENU_OBJECT_PATH", self.menu_path)
 
     def remove_X11_props(self):
         w = self.get_window()
@@ -196,6 +193,7 @@ class WindowWithMenu(gtk.Window):
         self.current_menus = m
         if self.menus_service:
             self.menus_service.set_menus(self.current_menus)
+        self.set_X11_props()
 
     def new_window(self, *args):
         w = WindowWithMenu()
@@ -207,10 +205,8 @@ class WindowWithMenu(gtk.Window):
 
 
 def main(args):
-    from xpra.dbus.common import init_session_bus
     from xpra.dbus.common import loop_init
     loop_init()
-    init_session_bus()
     w = WindowWithMenu()
     w.show_all()
     gtk.main()

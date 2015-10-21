@@ -12,13 +12,13 @@ def loop_init():
     return _loop
 
 _session_bus = None
-def init_session_bus():
+def init_session_bus(private=False):
     global _session_bus
-    if _session_bus:
+    if _session_bus and not private:
         return _session_bus
     loop_init()
     import dbus
-    _session_bus = dbus.SessionBus()
+    _session_bus = dbus.SessionBus(private=private)
     return _session_bus
 
 _system_bus = None

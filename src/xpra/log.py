@@ -144,6 +144,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("file"         , "File transfers"),
                 ("keyboard"     , "Keyboard mapping and key event handling"),
                 ("screen"       , "Screen and workarea dimension"),
+                ("fps"          , "Frames per second"),
                 ("xsettings"    , "XSettings synchronization"),
                 ("dbus"         , "DBUS calls"),
                 ("rpc"          , "Remote Procedure Calls"),

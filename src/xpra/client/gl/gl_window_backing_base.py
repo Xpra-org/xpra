@@ -9,6 +9,7 @@ import time, math
 
 from xpra.log import Logger
 log = Logger("opengl", "paint")
+fpslog = Logger("opengl", "fps")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
 
@@ -568,6 +569,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         log("%s.do_present_fbo() done", self)
 
     def gl_show(self):
+        start = time.time()
         if self.glconfig.is_double_buffered():
             # Show the backbuffer on screen
             log("%s.gl_show() swapping buffers now", self)
@@ -577,6 +579,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             #just ensure stuff gets painted:
             log("%s.gl_show() flushing", self)
             glFlush()
+        end = time.time()
+        fpslog("gl_show took %ims", (end-start)*1000)
 
 
     def paint_box(self, encoding, is_delta, x, y, w, h):

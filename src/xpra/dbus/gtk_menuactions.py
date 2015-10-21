@@ -43,7 +43,8 @@ def ordered_ints(*lists):
 
 class Actions(dbus.service.Object):
     SUPPORTS_MULTIPLE_OBJECT_PATHS = True
- 
+    SUPPORTS_MULTIPLE_CONNECTIONS = True
+
     def __init__(self, name, path, session_bus, actions={}, default_callback=None):
         self.actions = actions
         self.default_callback = default_callback
@@ -61,10 +62,10 @@ class Actions(dbus.service.Object):
         # - a{sb} a list of actions that had their enabled flag changed
         # - a{sv} a list of actions that had their state changed
         # - a{s(bgav)} a list of new actions added in the same format as the return value of the DescribeAll method"""
-        removed = []
-        enabled_changed = []
-        state_changed = []
-        added = []
+        removed = dbus.Array(signature="s")
+        enabled_changed = dbus.Array(signature="a{sb}")
+        state_changed = dbus.Array(signature="a{sv}")
+        added = dbus.Array(signature="a{s(bgav)}")
         all_actions = list(set(oldactions.keys() + actions.keys()))
         self.log(".set_actions(..) all actions=%s", csv(all_actions))
         for action in all_actions:
@@ -73,20 +74,28 @@ class Actions(dbus.service.Object):
                 self.log(".set_actions(..) removed %s", action)
             elif action not in oldactions:
                 action_def = actions[action]
-                added.append(dbus.Struct(self._make_action(*action_def)))
+                a = dbus.Struct(self._make_action(*action_def))
+                v = dbus.Dictionary({ds(action) : a}, signature="s(bgav)")
+                added.append(v)
                 self.log(".set_actions(..) added %s=%s", action, action_def)
             else:   #maybe changed state?
                 oldaction = oldactions.get(action, [False, None, None]) #default value should be redundant
                 newaction = actions.get(action, [False, None, None])    #default value should be redundant
                 if oldaction[0]!=newaction[0]:
-                    enabled_changed.append((ds(action), dbus.Boolean(newaction[0])))
+                    v = dbus.Dictionary({ds(action) : dbus.Boolean(newaction[0])}, signature="sb")
+                    enabled_changed.append(v)
                     self.log(".set_actions(..) enabled changed for %s from %s to %s", action, oldaction[0], newaction[0])
                 if oldaction[2]!=newaction[2]:
-                    state_changed.append((ds(action), newaction[2]))
+                    v = dbus.Dictionary({ds(action) : newaction[2]}, signature="sv")
+                    state_changed.append(v)
                     self.log(".set_actions(..) state changed for %s from %s to %s", action, oldaction[2], newaction[2])
         self.log(".set_actions(..) changes: %s", (removed, enabled_changed, state_changed, added))
         if removed or enabled_changed or state_changed or added:
-            self.Changed(dbus.Array(removed), dbus.Array(enabled_changed), dbus.Array(state_changed), dbus.Array(added))
+            self.Changed(removed, enabled_changed, state_changed, added)
+
+    @dbus.service.signal(ACTIONS, signature='asa{sb}a{sv}a{s(bgav)}')
+    def Changed(self, removed, enabled_changed, state_changed, added):
+        pass
 
 
     def log(self, fmt, *args):
@@ -98,7 +107,7 @@ class Actions(dbus.service.Object):
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='v')
     def Get(self, property_name):
         raise dbus.exceptions.DBusException("this object does not have any properties")
- 
+
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
         return []
@@ -121,7 +130,7 @@ class Actions(dbus.service.Object):
 
     def _make_action(self, enabled, ptype, state, callback=None):
         return dbus.Boolean(enabled), dbus.Signature(ptype), dbus.Array(state)
- 
+
     @dbus.service.method(ACTIONS, in_signature="s", out_signature="(bgav)")
     def Describe(self, action):
         v = self.actions.get(action)
@@ -157,7 +166,7 @@ class Actions(dbus.service.Object):
         paction = str(action)
         pstate = n(state)
         ppdata = n(pdata)
-        self.log(".Activate(%s, %s, %s) calling %s%s", action, state, pdata, cb, (self, paction, pstate, ppdata))
+        self.log(".Activate%s calling %s%s", (action, state, pdata), cb, (self, paction, pstate, ppdata))
         try:
             cb(self, paction, pstate, ppdata)
         except Exception:
@@ -168,14 +177,11 @@ class Actions(dbus.service.Object):
     def SetState(self, s, v, a):
         return
 
-    @dbus.service.signal(ACTIONS, signature='asa{sb}a{sv}a{s(bgav)}')
-    def Changed(self, removed, enabled_changed, state_changed, added):
-        pass
-
 
 class Menus(dbus.service.Object):
     SUPPORTS_MULTIPLE_OBJECT_PATHS = True
- 
+    SUPPORTS_MULTIPLE_CONNECTIONS = True
+
     def __init__(self, name, path, session_bus, menus={}):
         self.menus = menus
         self.subscribed = {}
@@ -204,10 +210,15 @@ class Menus(dbus.service.Object):
                 self.log(".set_menus(..) found change at group=%i, menu_id=%i : from %s to %s", group_id, menu_id, oldmenu, menu)
                 delcount = len(oldmenu)     #remove all
                 insert = [self._make_menu_item(menu[i]) for i in range(len(menu))]
-                changed.append((di(group_id), di(menu_id), di(0), di(delcount), dbus.Array(insert)))
+                changed.append(dbus.Struct(di(group_id), di(menu_id), di(0), di(delcount), dbus.Array(dbus.Array(insert))))
         self.log(".set_menus(..) changed: %s", changed)
         if changed:
             self.Changed(dbus.Array(changed))
+
+    @dbus.service.signal(MENUS, signature='a(uuuuaa{sv})')
+    def Changed(self, changes):
+        pass
+
 
     def log(self, fmt, *args):
         log("%s(%s:%s)"+fmt, MENUS,  busnamestr(self), self._object_path, *args)
@@ -218,7 +229,7 @@ class Menus(dbus.service.Object):
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ss', out_signature='v')
     def Get(self, interface_name, property_name):
         raise dbus.exceptions.DBusException("this object does not have any properties")
- 
+
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='a{sv}')
     def GetAll(self, interface_name):
         return []
@@ -281,17 +292,13 @@ class Menus(dbus.service.Object):
                     menus.append((group, dbus.UInt32(n), menu_items))
         self.log(".Start(%s)=%s", ids, menus)
         return menus
- 
+
     @dbus.service.method(MENUS, in_signature="au")
     def End(self, ids):
         for group in ids:
             c = self.subscribed.get(group, 0)
             if c > 0:
                 self.subscribed[group] = c - 1
- 
-    @dbus.service.signal(MENUS, signature='a(uuuuaa{sv})')
-    def Changed(self, changes):
-        pass
 
 
 def get_actions_interface(bus_name, object_path):
@@ -375,6 +382,9 @@ def query_menu(bus_name, object_path, menu_cb=None, menu_err=None):
                         target = d.get("target")
                         if target:
                             menu["target"] = [n(target[x]) for x in range(len(target))]
+                accel = d.get("accel")
+                if accel:
+                    menu["accel"] = n(accel)
                 if menu:
                     dmenus.append(menu)
             menus.setdefault(ni(sgroup), {})[ni(menuno)] = dmenus
