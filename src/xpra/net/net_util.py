@@ -14,9 +14,11 @@ log = Logger("network", "util")
 
 
 has_netifaces = True
+netifaces_version = None
 try:
 	import netifaces				#@UnresolvedImport
 	log("netifaces loaded sucessfully")
+	netifaces_version = netifaces.version
 except:
 	has_netifaces = False
 	log.warn("python netifaces package is missing")
@@ -195,6 +197,8 @@ def main():
 		print("Protocol Capabilities:")
 		from xpra.net.protocol import get_network_caps
 		netcaps = get_network_caps()
+		if netifaces_version:
+			netcaps["netifaces.version"] = netifaces_version
 		for k in sorted(netcaps.keys()):
 			print("* %s : %s" % (str(k).ljust(20), pver(netcaps[k])))
 
