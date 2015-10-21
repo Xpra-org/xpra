@@ -1172,7 +1172,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.do_update_server_settings({"resource-manager"  : "",
                                         "xsettings-blob"    : (0, [])},
                                         reset = True,
-                                        dpi = self.default_dpi)
+                                        dpi = self.default_dpi,
+                                        cursor_size=24)
 
     def update_all_server_settings(self, reset=False):
         self.update_server_settings({"resource-manager"  : "",
