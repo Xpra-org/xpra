@@ -234,8 +234,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             focuslog("focus-out-event for wid=%s", self._id)
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)
-        if self._can_set_workspace:
-            self.connect("property-notify-event", self.property_changed)
+        self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
 
         #this will create the backing:
