@@ -418,7 +418,7 @@ class X11ServerBase(GTKServerBase):
                 wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
                 actual_xdpi = int(root_w * 25.4 / wmm + 0.5)
                 actual_ydpi = int(root_h * 25.4 / hmm + 0.5)
-                if actual_xdpi==xdpi and actual_ydpi==ydpi:
+                if abs(actual_xdpi-xdpi)<=1 and abs(actual_ydpi-ydpi)<=1:
                     log.info("DPI set to %s x %s", xdpi, ydpi)
                 else:
                     #should this be a warning:
