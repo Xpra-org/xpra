@@ -1730,7 +1730,7 @@ class ServerBase(ServerCore):
 
     def _add_new_window_common(self, window):
         props = window.get_dynamic_property_names()
-        windowlog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
+        metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
         for prop in props:
             window.connect("notify::%s" % prop, self._update_metadata)
         wid = self._max_window_id
