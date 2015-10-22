@@ -40,6 +40,11 @@ CLIENT_EXIT             = "client exit"
 WORKSPACE_UNSET = 65535
 WORKSPACE_ALL = 0xffffffff
 
+WORKSPACE_NAMES = {
+                   WORKSPACE_UNSET  : "unset",
+                   WORKSPACE_ALL    : "all",
+                   }
+
 #this default value is based on 0.14.19 clients,
 #later clients should provide the 'metadata.supported" capability instead
 DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",

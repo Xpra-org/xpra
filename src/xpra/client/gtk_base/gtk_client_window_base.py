@@ -25,7 +25,7 @@ menulog = Logger("menu")
 
 
 from xpra.os_util import memoryview_to_bytes
-from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL
+from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
@@ -103,6 +103,9 @@ WIN32 = sys.platform.startswith("win")
 PYTHON3 = sys.version_info[0] == 3
 if PYTHON3:
     unicode = str           #@ReservedAssignment
+
+def wn(w):
+    return WORKSPACE_NAMES.get(w, w)
 
 
 class GTKKeyEvent(AdHocStruct):
@@ -654,12 +657,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #call this method whenever something workspace related may have changed
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
-        workspacelog("do_workspace_changed(%s) (window, desktop): from %s to %s", info, (self._window_workspace, self._desktop_workspace), (window_workspace, desktop_workspace))
+        workspacelog("do_workspace_changed(%s) (window, desktop): from %s to %s", info, (wn(self._window_workspace), wn(self._desktop_workspace)), (wn(window_workspace), wn(desktop_workspace)))
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
         if not self._client.window_refresh_config:
-            workspacelog("sending configure event to update workspace value")
+            workspacelog("sending configure event to update workspace value to %s", wn(window_workspace))
             self.process_configure_event(True)
             return
         #we can tell the server using a "buffer-refresh" packet instead
@@ -669,7 +672,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         suspend_resume = None
         if desktop_workspace<0 or window_workspace is None:
             #maybe the property has been cleared? maybe the window is being scrubbed?
-            workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe", desktop_workspace, window_workspace)
+            workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe", wn(desktop_workspace), wn(window_workspace))
             suspend_resume = False
         elif window_workspace==WORKSPACE_UNSET:
             workspacelog("workspace unset: assume current")
@@ -678,11 +681,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("window is on all workspaces")
             suspend_resume = False
         elif desktop_workspace!=window_workspace:
-            workspacelog("window is on a different workspace, increasing its batch delay (desktop: %s, window: %s)", desktop_workspace, window_workspace)
+            workspacelog("window is on a different workspace, increasing its batch delay (desktop: %s, window: %s)", wn(desktop_workspace), wn(window_workspace))
             suspend_resume = True
         elif self._window_workspace!=self._desktop_workspace:
             assert desktop_workspace==window_workspace
-            workspacelog("window was on a different workspace, resetting its batch delay (was desktop: %s, window: %s, now both on %s)", self._window_workspace, self._desktop_workspace, desktop_workspace)
+            workspacelog("window was on a different workspace, resetting its batch delay (was desktop: %s, window: %s, now both on %s)", wn(self._window_workspace), wn(self._desktop_workspace), wn(desktop_workspace))
             suspend_resume = False
         self._client.control_refresh(self._id, suspend_resume, refresh=False, options=options, client_properties=client_properties)
         self._window_workspace = window_workspace
@@ -703,7 +706,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._client.control_refresh(self._id, False, False)
         if workspace<0:
             #this should not happen, workspace is unsigned! (CARDINAL)
-            workspacelog.warn("invalid workspace number: %s", workspace)
+            workspacelog.warn("invalid workspace number: %s", wn(workspace))
             workspace = WORKSPACE_UNSET
         self.when_realized("workspace", self.do_set_workspace, workspace)
 
@@ -726,7 +729,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspace = WORKSPACE_ALL
         else:
             workspace = max(0, min(ndesktops-1, workspace))
-        workspacelog("%s.set_workspace() ndesktops=%i, clamped workspace=%s", self, ndesktops, self._window_workspace)
+        workspacelog("%s.set_workspace() ndesktops=%i, clamped workspace=%s", self, ndesktops, wn(self._window_workspace))
         if not gdkwin.is_visible():
             #window is unmapped so we can set the window property directly:
             prop_set(gdkwin, "_NET_WM_DESKTOP", "u32", workspace)
@@ -841,7 +844,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 #not set, so assume it is on the current workspace:
                 workspace = self.get_desktop_workspace()
             if self._window_workspace!=workspace and workspace is not None:
-                workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, self._window_workspace, workspace)
+                workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, wn(self._window_workspace), wn(workspace))
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         if self._client.server_window_frame_extents and "frame" not in state:
@@ -912,7 +915,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             props["screen"] = self.get_screen().get_number()
             workspace = self.get_window_workspace()
             if self._window_workspace!=workspace and workspace is not None:
-                workspacelog("configure event: changed workspace from %s to %s", self._window_workspace, workspace)
+                workspacelog("configure event: changed workspace from %s to %s", wn(self._window_workspace), wn(workspace))
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         cx = self._client.cx

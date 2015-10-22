@@ -9,7 +9,7 @@ import sys, os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.util import typedict, bytestostr, WORKSPACE_UNSET
+from xpra.util import typedict, bytestostr, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")
@@ -71,7 +71,9 @@ class ClientWindowBase(ClientWidgetBase):
                 metadata["workspace"] = int(workspace)
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
         self._desktop_workspace = self.get_desktop_workspace()
-        workspacelog("init_window(..) workspace=%s, current workspace=%s", self._window_workspace, self._desktop_workspace)
+        def wn(w):
+            return WORKSPACE_NAMES.get(w, w)
+        workspacelog("init_window(..) workspace=%s, current workspace=%s", wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and b"size-constraints" not in metadata:
             #this ensures that we will set size-constraints and honour max_window_size:
             metadata[b"size-constraints"] = {}
