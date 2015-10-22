@@ -563,28 +563,37 @@ class ClientExtras(object):
         except ImportError as e:
             log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
 
-    def _handle_xsettings_changed(self, *args):
+    def _get_xsettings(self):
         try:
-            settings = self._xsettings_watcher.get_settings()
+            return self._xsettings_watcher.get_settings()
         except:
             log.error("failed to get XSETTINGS", exc_info=True)
-            return
+        return None
+
+    def _handle_xsettings_changed(self, *args):
+        settings = self._get_xsettings()
         log("xsettings_changed new value=%s", settings)
         if settings is not None:
             self.client.send("server-settings", {"xsettings-blob": settings})
 
-    def _handle_root_prop_changed(self, obj, prop):
-        log("root_prop_changed(%s, %s)", obj, prop)
-        if prop=="RESOURCE_MANAGER":
-            if not self.client.xsettings_tuple:
-                log.warn("xsettings tuple format not supported, update ignored")
-                return
+    def get_resource_manager(self):
+        try:
             import gtk.gdk
             root = gtk.gdk.get_default_root_window()
             from xpra.x11.gtk_x11.prop import prop_get
             value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
             if value is not None:
-                self.client.send("server-settings", {"resource-manager" : value.encode("utf-8")})
+                return value.encode("utf-8")
+        except:
+            log.error("failed to get RESOURCE_MANAGER", exc_info=True)
+        return None
+
+    def _handle_root_prop_changed(self, obj, prop):
+        log("root_prop_changed(%s, %s)", obj, prop)
+        if prop=="RESOURCE_MANAGER":
+            rm = self.get_resource_manager()
+            if rm is not None:
+                self.client.send("server-settings", {"resource-manager" : rm})
         elif prop=="_NET_WORKAREA":
             self.client.screen_size_changed("from %s event" % self._root_props_watcher)
         elif prop=="_NET_CURRENT_DESKTOP":
