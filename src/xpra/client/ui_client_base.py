@@ -1572,8 +1572,9 @@ class UIXpraClient(XpraClientBase):
                 from xpra.net.mmap_pipe import read_mmap_token
                 token = read_mmap_token(self.mmap)
                 if token!=mmap_token:
-                    log.warn("mmap token verification failed!")
-                    log.warn("expected '%s', found '%s'", mmap_token, token)
+                    log.error("Error: mmap token verification failed!")
+                    log.error(" expected '%s'", mmap_token)
+                    log.error(" found '%s'", token)
                     self.mmap_enabled = False
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
