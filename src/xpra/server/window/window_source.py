@@ -657,7 +657,9 @@ class WindowSource(object):
     def get_best_encoding_impl(self):
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
-        if self.encoding=="png/L":
+        if self._mmap and self._mmap_size>0:
+            return self.encoding_is_mmap
+        elif self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
             return self.get_strict_encoding
         elif self.strict:
@@ -692,6 +694,9 @@ class WindowSource(object):
     def get_best_encoding_impl_default(self):
         #stick to what is specified or use rgb for small regions:
         return self.get_current_or_rgb
+
+    def encoding_is_mmap(self, *args):
+        return "mmap"
 
     def encoding_is_rgb32(self, *args):
         return "rgb32"
