@@ -247,14 +247,6 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     return True
 
 
-def mmap_encode(coding, image, options):
-    """ Tightly coupled with mmap_send:
-        mmap_send will place the mmap pointers in options,
-        only those pointers are sent as data to the client.
-    """
-    data = options["mmap_data"]
-    return "mmap", data, {"rgb_format" : image.get_pixel_format()}, image.get_width(), image.get_height(), image.get_rowstride(), 32
-
 def mmap_send(mmap, mmap_size, image, rgb_formats, supports_transparency):
     if mmap_write is None:
         warn_encoding_once("mmap_write missing", "cannot use mmap!")

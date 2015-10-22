@@ -51,7 +51,7 @@ from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import webp_encode, rgb_encode, mmap_encode, mmap_send
+from xpra.server.picture_encode import webp_encode, rgb_encode, mmap_send
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
@@ -1628,8 +1628,8 @@ class WindowSource(object):
             by the 'encode' thread and returns a packet
             ready for sending by the network layer.
 
-            * 'mmap' will use 'mmap_send' + 'mmap_encode' - always if available, otherwise:
-            * 'jpeg' and 'png' are handled by 'pillow_encode'.
+            * 'mmap' will use 'mmap_encode'
+            * 'jpeg' and 'png' are handled by 'pillow_encode'
             * 'webp' uses 'webp_encode'
             * 'h264', 'h265', 'vp8' and 'vp9' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode'
@@ -1646,26 +1646,15 @@ class WindowSource(object):
         psize = isize*4
         log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
-        mmap_data = None
         delta, store, bucket, hits = -1, -1, -1, 0
         pixel_format = image.get_pixel_format()
-        if self._mmap and self._mmap_size>0 and psize>256:
-            mmap_data = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
-        if mmap_data:
-            #the mmap area has been populated, now tell the client about it:
-            mmap_info, mmap_free_size, written = mmap_data
-            self.global_statistics.mmap_bytes_sent += written
-            self.global_statistics.mmap_free_size = mmap_free_size
-            #hackish: pass data to mmap_encode using "options":
-            coding = "mmap"         #changed encoding!
-            options["mmap_data"] = mmap_info
         #use delta pre-compression for this encoding if:
         #* client must support delta (at least one bucket)
         #* encoding must be one that supports delta (usually rgb24/rgb32 or png)
         #* size is worth xoring (too small is pointless, too big is too expensive)
         #* the pixel format is supported by the client
         # (if we have to rgb_reformat the buffer, it really complicates things)
-        elif self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size and \
+        if self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size and \
             pixel_format in self.rgb_formats:
             #this may save space (and lower the cost of xoring):
             image.restride()
@@ -1714,7 +1703,7 @@ class WindowSource(object):
         coding, data, client_options, outw, outh, outstride, bpp = ret
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if mmap_data is None and (self.is_cancelled(sequence) or self.suspended):
+        if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #tell client about delta/store for this pixmap:
@@ -1754,7 +1743,6 @@ class WindowSource(object):
                 totals[0] = totals[0] + 1
                 totals[1] = totals[1] + w*h
                 deltalog("delta: client options=%s (for region %s)", client_options, (x, y, w, h))
-        encoding = coding
         if INTEGRITY_HASH and coding!="mmap":
             #could be a compressed wrapper or just raw bytes:
             try:
@@ -1768,7 +1756,7 @@ class WindowSource(object):
         #actual network packet:
         if self.supports_flush and flush is not None:
             client_options["flush"] = flush
-        packet = ("draw", wid, x, y, outw, outh, encoding, data, self._damage_packet_sequence, outstride, client_options)
+        packet = ("draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
                  (end-start)*1000.0, w, h, wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
@@ -1807,4 +1795,9 @@ class WindowSource(object):
         return enc_pillow.encode(coding, image, q, s, self.supports_transparency)
 
     def mmap_encode(self, coding, image, options):
-        return mmap_encode(coding, image, options)
+        assert self._mmap and self._mmap_size>0
+        mmap_info, mmap_free_size, written = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
+        self.global_statistics.mmap_bytes_sent += written
+        self.global_statistics.mmap_free_size = mmap_free_size
+        #the data we send is the index within the mmap area:
+        return "mmap", mmap_info, {"rgb_format" : image.get_pixel_format()}, image.get_width(), image.get_height(), image.get_rowstride(), 32
