@@ -1709,12 +1709,13 @@ class UIXpraClient(XpraClientBase):
 
 
     def handshake_complete(self):
-        for cb, args in self._on_handshake:
+        oh = self._on_handshake
+        self._on_handshake = None
+        for cb, args in oh:
             try:
                 cb(*args)
             except:
                 log.error("Error processing handshake callback %s", cb, exc_info=True)
-        self._on_handshake = None
 
     def after_handshake(self, cb, *args):
         if self._on_handshake is None:
