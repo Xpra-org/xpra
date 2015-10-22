@@ -512,9 +512,11 @@ def get_defaults():
                                            "Meta+Shift+plusminus:scaleup",          #the keyname on OSX...
                                            "Meta+Shift+minus:scaledown",
                                            "Meta+Shift+underscore:scaledown",
+                                           "Meta+Shift+emdash:scaledown",           #OSX
                                            "Meta+Shift+KP_Add:scaleup",
                                            "Meta+Shift+KP_Subtract:scaledown",
                                            "Meta+Shift+KP_Multiply:scalereset",
+                                           "Meta+Shift+degree:scalereset",          #OSX
                                            ],
                     "bind-tcp"          : [],
                     "start"             : [],
