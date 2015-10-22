@@ -126,12 +126,16 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def do_get_workspace(self, target, prop, default_value=None):
         if not self._can_set_workspace:
-            return  None              #windows and OSX do not have workspaces
+            workspacelog("do_get_workspace: not supported, returning %s", default_value)
+            return default_value        #windows and OSX do not have workspaces
+        if target is None:
+            workspacelog("do_get_workspace: target is None, returning %s", default_value)
+            return default_value        #window is not realized yet
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            workspacelog("do_get_workspace() found value=%s on window %#x property %s", value, target.xid, prop)
+            workspacelog("do_get_workspace %s=%s on window %#x", prop, value, target.xid)
             return value
-        workspacelog("do_get_workspace() value not found on window %#x for property %s", target.xid, prop)
+        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, target.xid, default_value)
         return  default_value
 
 
