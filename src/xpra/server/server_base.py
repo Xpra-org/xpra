@@ -21,6 +21,7 @@ clientlog = Logger("client")
 screenlog = Logger("screen")
 printlog = Logger("printing")
 netlog = Logger("network")
+metalog = Logger("metadata")
 windowlog = Logger("window")
 clipboardlog = Logger("clipboard")
 rpclog = Logger("rpc")
@@ -1721,7 +1722,7 @@ class ServerBase(ServerCore):
 
 
     def _update_metadata(self, window, pspec):
-        windowlog("updating metadata on %s: %s", window, pspec)
+        metalog("updating metadata on %s: %s", window, pspec)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.window_metadata(wid, window, pspec.name)

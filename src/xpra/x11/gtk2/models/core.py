@@ -506,10 +506,10 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         l = self.get_logger(name)
         if name in self._property_names:
             v = self.get_property(name)
-            l("get(%s, %s) using get_property=%s", name, v)
+            l("get(%s, %s) using get_property=%s", name, default_value, v)
         else:
             v = default_value
-            l("get(%s, %s) returning default value=%s", name, v)
+            l("get(%s, %s) returning default value=%s", name, default_value, v)
         return v
 
 
