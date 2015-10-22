@@ -852,10 +852,10 @@ class UIXpraClient(XpraClientBase):
 
 
     def scaleup(self):
-        self.scale_change(2, 2)
+        self.scale_change(1.5, 1.5)
 
     def scaledown(self):
-        self.scale_change(0.5, 0.5)
+        self.scale_change(2/3.0, 2/3.0)
 
     def scalereset(self):
         self.scale_change(1.0/self.xscale, 1.0/self.yscale)
