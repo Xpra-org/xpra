@@ -63,7 +63,6 @@ class GLClientWindow(ClientWindow):
     def new_backing(self, bw, bh):
         widget = ClientWindow.new_backing(self, bw, bh)
         self.add(widget)
-        widget.realize()
 
 
     def freeze(self):

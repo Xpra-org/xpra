@@ -79,7 +79,6 @@ class GLClientWindow(GTK2WindowBase):
         widget = GTK2WindowBase.new_backing(self, bw, bh)
         log("new_backing(%s, %s)=%s", bw, bh, widget)
         self.add(widget)
-        widget.realize()
 
 
     def freeze(self):
