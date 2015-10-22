@@ -303,7 +303,7 @@ class X11ServerBase(GTKServerBase):
             w, h = client_size
             max_w = max(max_w, w)
             max_h = max(max_h, h)
-        log("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
+        screenlog("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
         if max_w>0 and max_h>0:
             return self.set_screen_size(max_w, max_h)
         return  root_w, root_h
@@ -315,7 +315,7 @@ class X11ServerBase(GTKServerBase):
         #clients may supply "xdpi" and "ydpi" (v0.15 onwards), or just "dpi", or nothing...
         xdpi = self.xdpi or self.dpi
         ydpi = self.ydpi or self.dpi
-        log("set_screen_size(%s, %s) xdpi=%s, ydpi=%s", desired_w, desired_h, xdpi, ydpi)
+        screenlog("set_screen_size(%s, %s) xdpi=%s, ydpi=%s", desired_w, desired_h, xdpi, ydpi)
         if xdpi<=0 or ydpi<=0:
             #use some sane defaults: either the command line option, or fallback to 96
             #(96 is better than nothing, because we do want to set the dpi
@@ -339,7 +339,7 @@ class X11ServerBase(GTKServerBase):
                 #calculate "real" dpi:
                 xdpi = int(client_w * 25.4 / wmm + 0.5)
                 ydpi = int(client_h * 25.4 / hmm + 0.5)
-                log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
+                screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:
@@ -356,13 +356,13 @@ class X11ServerBase(GTKServerBase):
                     continue        #we found a better (smaller) candidate already
             new_size = w,h
         if not new_size:
-            log.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
+            screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
             if len(closest)>0:
                 new_size = sorted(closest.items())[0]
-                log.warn(" using %sx%s instead", *new_size)
+                screenlog.warn(" using %sx%s instead", *new_size)
             else:
                 return  root_w, root_h
-        log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
+        screenlog("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
         #now actually apply the new settings:
         w, h = new_size
         #fakeXinerama:
@@ -373,12 +373,12 @@ class X11ServerBase(GTKServerBase):
             source = ui_clients[0]
             screen_sizes = source.screen_sizes
         else:
-            log("fakeXinerama can only be enabled for a single client (found %s)" % len(ui_clients))
+            screenlog("fakeXinerama can only be enabled for a single client (found %s)" % len(ui_clients))
         xinerama_changed = save_fakeXinerama_config(self.fake_xinerama and len(ui_clients)==1, source, screen_sizes)
         #we can only keep things unchanged if xinerama was also unchanged
         #(many apps will only query xinerama again if they get a randr notification)
         if (w==root_w and h==root_h) and not xinerama_changed:
-            log.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
+            screenlog.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return  root_w, root_h
         try:
             if (w==root_w and h==root_h) and xinerama_changed:
@@ -393,36 +393,37 @@ class X11ServerBase(GTKServerBase):
                         #(so we can choose the closest resolution)
                         temp[abs((tw*th) - (w*h))] = (tw, th)
                 if len(temp)==0:
-                    log.warn("cannot find a temporary resolution for Xinerama workaround!")
+                    screenlog.warn("cannot find a temporary resolution for Xinerama workaround!")
                 else:
                     k = sorted(temp.keys())[0]
                     tw, th = temp[k]
-                    log.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
+                    screenlog.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
                     RandR.set_screen_size(tw, th)
-            log("calling RandR.set_screen_size(%s, %s)", w, h)
+            screenlog("calling RandR.set_screen_size(%s, %s)", w, h)
             with xsync:
                 RandR.set_screen_size(w, h)
-            log("calling RandR.get_screen_size()")
+            screenlog("calling RandR.get_screen_size()")
             root_w, root_h = RandR.get_screen_size()
-            log("RandR.get_screen_size()=%s,%s", root_w, root_h)
-            log("RandR.get_vrefresh()=%s", RandR.get_vrefresh())
+            screenlog("RandR.get_screen_size()=%s,%s", root_w, root_h)
+            screenlog("RandR.get_vrefresh()=%s", RandR.get_vrefresh())
             if root_w!=w or root_h!=h:
-                log.error("odd, failed to set the new resolution, "
-                          "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
+                screenlog.error("odd, failed to set the new resolution, "
+                                "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
             else:
                 msg = "server virtual display now set to %sx%s" % (root_w, root_h)
                 if desired_w!=root_w or desired_h!=root_h:
                     msg += " (best match for %sx%s)" % (desired_w, desired_h)
-                log.info(msg)
+                screenlog.info(msg)
             def show_dpi():
                 wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
+                screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
                 actual_xdpi = int(root_w * 25.4 / wmm + 0.5)
                 actual_ydpi = int(root_h * 25.4 / hmm + 0.5)
                 if abs(actual_xdpi-xdpi)<=1 and abs(actual_ydpi-ydpi)<=1:
-                    log.info("DPI set to %s x %s", xdpi, ydpi)
+                    screenlog.info("DPI set to %s x %s", xdpi, ydpi)
                 else:
                     #should this be a warning:
-                    l = log.info
+                    l = screenlog.info
                     maxdelta = max(abs(actual_xdpi-xdpi), abs(actual_ydpi-ydpi))
                     if maxdelta>=10:
                         l = log.warn
@@ -433,7 +434,7 @@ class X11ServerBase(GTKServerBase):
             #show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(show_dpi)
         except Exception as e:
-            log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
+            screenlog.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return  root_w, root_h
 
 
