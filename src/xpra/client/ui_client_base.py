@@ -830,12 +830,13 @@ class UIXpraClient(XpraClientBase):
         screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
         if self.dpi>0:
             #use command line value supplied, but scale it:
-            xdpi = self.cx(self.cy(2.0*self.dpi))
+            xdpi = self.sx(self.sy(2.0*self.dpi))
             ydpi = xdpi
         else:
             #not supplied, use platform detection code:
-            xdpi = self.cx(get_xdpi())
-            ydpi = self.cy(get_ydpi())
+            xdpi = self.sx(get_xdpi())
+            ydpi = self.sy(get_ydpi())
+            screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
         screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
         screenlog("update_screen_size()     new settings=%s", screen_settings)
         screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
@@ -1186,13 +1187,13 @@ class UIXpraClient(XpraClientBase):
         #command line (or config file) override supplied:
         if self.dpi>0:
             #scale it:
-            dpi = self.cx(self.cy(2.0*self.dpi))
-            xdpi = self.cx(dpi)
-            ydpi = self.cy(dpi)
+            dpi = self.sx(self.sy(2.0*self.dpi))
+            xdpi = self.sx(dpi)
+            ydpi = self.sy(dpi)
         else:
             #not supplied, use platform detection code:
-            xdpi = self.cx(get_xdpi())
-            ydpi = self.cy(get_ydpi())
+            xdpi = self.sx(get_xdpi())
+            ydpi = self.sy(get_ydpi())
             dpi = int((xdpi+ydpi+0.5)/2.0)
             #platforms may also provide per-axis dpi (later win32 versions do)
             capabilities.update({
