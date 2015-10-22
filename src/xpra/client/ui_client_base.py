@@ -76,7 +76,7 @@ LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 
 MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
-MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "20"))
+MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "8"))
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 
 PYTHON3 = sys.version_info[0] == 3
