@@ -209,9 +209,6 @@ class UIXpraClient(XpraClientBase):
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless = ()
-        self.change_quality = False
-        self.change_min_quality = False
-        self.change_speed = False
         self.readonly = False
         self.windows_enabled = True
         self.pings = False
@@ -1506,24 +1503,19 @@ class UIXpraClient(XpraClientBase):
     def send_quality(self):
         q = self.quality
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
-        if self.change_quality:
-            self.send("quality", q)
+        self.send("quality", q)
 
     def send_min_quality(self):
         q = self.min_quality
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
-        if self.change_min_quality:
-            #v0.8 onwards: set min
-            self.send("min-quality", q)
+        self.send("min-quality", q)
 
     def send_speed(self):
-        assert self.change_speed
         s = self.speed
         assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
         self.send("speed", s)
 
     def send_min_speed(self):
-        assert self.change_speed
         s = self.min_speed
         assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
         self.send("min-speed", s)
@@ -1594,10 +1586,6 @@ class UIXpraClient(XpraClientBase):
         self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",)) #old servers only supported x264
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
-        self.change_quality = c.boolget("change-quality")
-        self.change_min_quality = c.boolget("change-min-quality")
-        self.change_speed = c.boolget("change-speed")
-        self.change_min_speed = c.boolget("change-min-speed")
         if self.mmap_enabled:
             log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_filename)
         #the server will have a handle on the mmap file by now, safe to delete:
