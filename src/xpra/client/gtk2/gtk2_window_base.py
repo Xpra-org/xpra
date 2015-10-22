@@ -17,7 +17,10 @@ workspacelog = Logger("workspace")
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
-from xpra.util import WORKSPACE_UNSET
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES
+
+def wn(w):
+    return WORKSPACE_NAMES.get(w, w)
 
 
 GTK2_OR_TYPE_HINTS = (gdk.WINDOW_TYPE_HINT_DIALOG,
@@ -126,16 +129,16 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def do_get_workspace(self, target, prop, default_value=None):
         if not self._can_set_workspace:
-            workspacelog("do_get_workspace: not supported, returning %s", default_value)
+            workspacelog("do_get_workspace: not supported, returning %s", wn(default_value))
             return default_value        #windows and OSX do not have workspaces
         if target is None:
-            workspacelog("do_get_workspace: target is None, returning %s", default_value)
+            workspacelog("do_get_workspace: target is None, returning %s", wn(default_value))
             return default_value        #window is not realized yet
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            workspacelog("do_get_workspace %s=%s on window %#x", prop, value, target.xid)
+            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), target.xid)
             return value
-        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, target.xid, default_value)
+        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, target.xid, wn(default_value))
         return  default_value
 
 

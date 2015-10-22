@@ -45,7 +45,7 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings
-        from xpra.gtk_common.error import xsync, xswallow
+        from xpra.gtk_common.error import xsync
         from xpra.x11.gtk_x11.send_wm import send_wm_workspace
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
@@ -272,7 +272,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.on_realize_cb[identifier] = callback, args
 
     def on_realize(self, widget):
-        eventslog("on_realize(%s) gdk window=%s", widget, self.get_window())
+        eventslog("on_realize(%s) gdk window=%#x", widget, get_xid(self.get_window()))
         add_window_hooks(self)
         cb = self.on_realize_cb
         self.on_realize_cb = {}
@@ -694,48 +694,44 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def get_workspace_count(self):
         if not HAS_X11_BINDINGS:
-            return 1
+            return None
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
 
+
     def set_workspace(self, workspace):
-        if not self._can_set_workspace:
-            return None
+        workspacelog("set_workspace(%s)", workspace)
+        if not self._been_mapped:
+            #will be dealt with in the map event handler
+            #which will look at the window metadata again
+            workspacelog("workspace=%s will be set when the window is mapped", wn(workspace))
+            return
         desktop = self.get_desktop_workspace()
-        if self._been_mapped and (workspace==desktop or desktop is None):
+        ndesktops = self.get_workspace_count()
+        current = self.get_window_workspace()
+        workspacelog("set_workspace(%s) realized=%s, current workspace=%s, detected=%s, desktop workspace=%s, ndesktops=%s",
+                     wn(workspace), self.is_realized(), wn(self._window_workspace), wn(current), wn(desktop), ndesktops)
+        if not self._can_set_workspace or ndesktops is None:
+            return None
+        if workspace==desktop or workspace==WORKSPACE_ALL or desktop is None:
             #window is back in view
             self._client.control_refresh(self._id, False, False)
-        if workspace<0:
-            #this should not happen, workspace is unsigned! (CARDINAL)
-            workspacelog.warn("invalid workspace number: %s", wn(workspace))
+        if (workspace<0 or workspace>=ndesktops) and workspace not in(WORKSPACE_UNSET, WORKSPACE_ALL):
+            #this should not happen, workspace is unsigned (CARDINAL)
+            #and the server should have the same list of desktops that we have here
+            workspacelog.warn("Warning: invalid workspace number: %s", wn(workspace))
             workspace = WORKSPACE_UNSET
-        self.when_realized("workspace", self.do_set_workspace, workspace)
-
-    def do_set_workspace(self, workspace):
-        #we will need the gdk window:
-        gdkwin = self.get_window()
-        ndesktops = self.get_workspace_count()
-        if ndesktops is None or ndesktops<=1:
-            workspacelog("number of desktops not defined, cannot set workspace")
-            return None
         if workspace==WORKSPACE_UNSET:
-            #we want to remove the setting, so access the window property directly:
-            self._window_workspace = WORKSPACE_UNSET
-            xid = get_xid(gdkwin)
-            with xswallow:
-                X11Window.XDeleteProperty(xid, "_NET_WM_DESKTOP")
+            #we cannot unset via send_wm_workspace, so we have to choose one:
+            workspace = self.get_desktop_workspace()
+        if workspace in (None, WORKSPACE_UNSET):
+            workspacelog.warn("workspace=%s (doing nothing)", wn(workspace))
             return
-        #clamp to number of workspaces just in case we have a mismatch:
-        if workspace==WORKSPACE_ALL:
-            workspace = WORKSPACE_ALL
-        else:
-            workspace = max(0, min(ndesktops-1, workspace))
-        workspacelog("%s.set_workspace() ndesktops=%i, clamped workspace=%s", self, ndesktops, wn(self._window_workspace))
-        if not gdkwin.is_visible():
-            #window is unmapped so we can set the window property directly:
-            prop_set(gdkwin, "_NET_WM_DESKTOP", "u32", workspace)
-            self._window_workspace = workspace
+        #we will need the gdk window:
+        if current==workspace:
+            workspacelog("window workspace unchanged: %s", wn(workspace))
             return
-        #the window is visible, so we have to ask the window manager politely
+        gdkwin = self.get_window()
+        workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", gdkwin.xid, self.is_mapped(), gdkwin.is_visible())
         with xsync:
             send_wm_workspace(root, gdkwin, workspace)
 
@@ -828,7 +824,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         gtk.Window.do_map_event(self, event)
         if not self._override_redirect:
             self.process_map_event()
-        self._been_mapped = True
 
     def process_map_event(self):
         x, y, w, h = self.get_window_geometry()
@@ -836,17 +831,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         props = self._client_properties
         self._client_properties = {}
         self._window_state = {}
-        workspace = None
+        workspace = self.get_window_workspace()
+        workspacelog("process_map_event() workspace=%s, been_mapped=%s", workspace, self._been_mapped)
         if self._been_mapped:
             props["screen"] = self.get_screen().get_number()
-            workspace = self.get_window_workspace()
             if workspace is None:
                 #not set, so assume it is on the current workspace:
                 workspace = self.get_desktop_workspace()
-            if self._window_workspace!=workspace and workspace is not None:
-                workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, wn(self._window_workspace), wn(workspace))
-                self._window_workspace = workspace
-                props["workspace"] = workspace
+        else:
+            self._been_mapped = True
+            workspace = self._metadata.intget("workspace", -1)
+            self.set_workspace(workspace)
+        if self._window_workspace!=workspace and workspace is not None:
+            workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, wn(self._window_workspace), wn(workspace))
+            self._window_workspace = workspace
+        if workspace is not None:
+            props["workspace"] = workspace
         if self._client.server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
             if wfs:
