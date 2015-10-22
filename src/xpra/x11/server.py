@@ -1165,6 +1165,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return "hintnone"
 
 
+    def dpi_changed(self):
+        #re-apply the same settings, which will apply the new dpi override to it:
+        self.update_server_settings(self._settings)
+
+
     def init_all_server_settings(self):
         settingslog("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
         #almost like update_all, except we use the default_dpi,

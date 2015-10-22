@@ -831,7 +831,15 @@ class UIXpraClient(XpraClientBase):
         ndesktops = get_number_of_desktops()
         desktop_names = get_desktop_names()
         screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
-        screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h)
+        if self.dpi>0:
+            #use command line value supplied, but scale it:
+            xdpi = self.cx(self.cy(2.0*self.dpi))
+            ydpi = xdpi
+        else:
+            #not supplied, use platform detection code:
+            xdpi = self.cx(get_xdpi())
+            ydpi = self.cy(get_ydpi())
+        screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
         screenlog("update_screen_size()     new settings=%s", screen_settings)
         screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
         if self._last_screen_settings==screen_settings:
@@ -1178,7 +1186,25 @@ class UIXpraClient(XpraClientBase):
             root_w, root_h = u_root_w, u_root_h
             sss = ss
         capabilities["screen_sizes"] = sss
-        self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h)
+        #command line (or config file) override supplied:
+        if self.dpi>0:
+            #scale it:
+            dpi = self.cx(self.cy(2.0*self.dpi))
+            xdpi = self.cx(dpi)
+            ydpi = self.cy(dpi)
+        else:
+            #not supplied, use platform detection code:
+            xdpi = self.cx(get_xdpi())
+            ydpi = self.cy(get_ydpi())
+            dpi = int((xdpi+ydpi+0.5)/2.0)
+            #platforms may also provide per-axis dpi (later win32 versions do)
+            capabilities.update({
+                                 "dpi.x"    : xdpi,
+                                 "dpi.y"    : ydpi,
+                                 })
+        capabilities["dpi"] = dpi
+        self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
+
         if self.keyboard_helper:
             key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
             if key_repeat:
@@ -1273,19 +1299,6 @@ class UIXpraClient(XpraClientBase):
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
             })
-        #command line (or config file) override supplied:
-        dpi = self.dpi
-        if self.dpi<=0:
-            #not supplied, use platform detection code:
-            xdpi = self.cx(get_xdpi())
-            ydpi = self.cy(get_ydpi())
-            dpi = int((xdpi+ydpi+0.5)/2.0)
-            #platforms may also provide per-axis dpi (later win32 versions do)
-            capabilities.update({
-                                 "dpi.x"    : xdpi,
-                                 "dpi.y"    : ydpi,
-                                 })
-        capabilities["dpi"] = dpi
         capabilities["antialias"] = get_antialias_info()
         capabilities["cursor.size"] = int(2*get_cursor_size()/(self.xscale+self.yscale))
         #generic rgb compression flags:
@@ -1585,7 +1598,6 @@ class UIXpraClient(XpraClientBase):
         self.change_min_quality = c.boolget("change-min-quality")
         self.change_speed = c.boolget("change-speed")
         self.change_min_speed = c.boolget("change-min-speed")
-        self.xsettings_tuple = c.boolget("xsettings-tuple")
         if self.mmap_enabled:
             log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_filename)
         #the server will have a handle on the mmap file by now, safe to delete:

@@ -1795,6 +1795,14 @@ class ServerBase(ServerCore):
         if ss is None:
             return
         ss.desktop_size = (width, height)
+        if len(packet)>=10:
+            #added in 0.16 for scaled client displays:
+            xdpi, ydpi = packet[8:10]
+            if xdpi!=self.xdpi or ydpi!=self.ydpi:
+                self.xdpi, self.ydpi = xdpi, ydpi
+                screenlog("new dpi: %ix%i", self.xdpi, self.ydpi)
+                self.dpi = int((self.xdpi + self.ydpi + 0.5)//2)
+                self.dpi_changed()
         if len(packet)>=8:
             #added in 0.16 for scaled client displays:
             ss.desktop_size_unscaled = packet[6:8]
@@ -1811,6 +1819,9 @@ class ServerBase(ServerCore):
             screenlog.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
+
+    def dpi_changed(self):
+        pass
 
     def calculate_desktops(self):
         count = 1
