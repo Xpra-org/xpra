@@ -60,7 +60,8 @@ grablog("detail constants: %s", DETAIL_CONSTANTS)
 PROPERTIES_IGNORED = os.environ.get("XPRA_X11_PROPERTIES_IGNORED", "_NET_WM_OPAQUE_REGION").split(",")
 #make it easier to debug property changes, just add them here:
 #ie: {"WM_PROTOCOLS" : ["atom"]}
-PROPERTIES_DEBUG = {}
+X11_PROPERTIES_DEBUG = {}
+PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
 def sanestr(s):
@@ -474,31 +475,42 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         """ The properties that should not be exposed to the client """
         return self._internal_property_names
 
+    def get_logger(self, property_name):
+        if property_name in PROPERTIES_DEBUG:
+            return metalog.info
+        return metalog.debug
+
     def _updateprop(self, name, value):
         """ Updates the property and fires notify(),
             but only if the value has changed
             and if the window has finished setting up and it is still managed.
             Can only be used for AutoPropGObjectMixin properties.
         """
+        l = self.get_logger(name)
         cur = self._gproperties.get(name, None)
         if name not in self._gproperties or cur!=value:
-            metalog("updateprop(%s, %s) previous value=%s", name, value, cur)
+            l("updateprop(%s, %s) previous value=%s", name, value, cur)
             self._gproperties[name] = value
             if self._setup_done and self._managed:
                 self.notify(name)
             else:
-                metalog("not sending notify(%s) (setup done=%s, managed=%s)", name, self._setup_done, self._managed)
+                l("not sending notify(%s) (setup done=%s, managed=%s)", name, self._setup_done, self._managed)
             return True
-        metalog("updateprop(%s, %s) unchanged", name, value)
+        l("updateprop(%s, %s) unchanged", name, value)
         return False
 
     def get(self, name, default_value=None):
         """ Allows us the avoid defining all the attributes we may ever query,
             returns the default value if the property does not exist.
         """
+        l = self.get_logger(name)
         if name in self._property_names:
-            return self.get_property(name)
-        return default_value
+            v = self.get_property(name)
+            l("get(%s, %s) using get_property=%s", name, v)
+        else:
+            v = default_value
+            l("get(%s, %s) returning default value=%s", name, v)
+        return v
 
 
     #temporary? / convenience access methods:
@@ -577,8 +589,9 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
     def _handle_property_change(self, name):
         #ie: _handle_property_change("_NET_WM_NAME")
         metalog("Property changed on %#x: %s", self.xid, name)
-        if name in PROPERTIES_DEBUG:
-            metalog.info("%s=%s", name, self.prop_get(name, PROPERTIES_DEBUG[name], True, False))
+        x11proptype = X11_PROPERTIES_DEBUG.get(name)
+        if x11proptype is not None:
+            metalog.info("%s=%s", name, self.prop_get(name, x11proptype, True, False))
         if name in PROPERTIES_IGNORED:
             return
         handler = self._x11_property_handlers.get(name)
