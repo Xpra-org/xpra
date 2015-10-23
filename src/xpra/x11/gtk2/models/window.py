@@ -495,6 +495,28 @@ class WindowModel(BaseWindowModel):
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
 
+    def process_client_message_event(self, event):
+        if event.message_type=="_NET_MOVERESIZE_WINDOW":
+            #TODO: honour gravity, show source indication
+            geom = self.corral_window.get_geometry()
+            x, y, w, h, _ = geom
+            if event.data[0] & 0x100:
+                x = event.data[1]
+            if event.data[0] & 0x200:
+                y = event.data[2]
+            if event.data[0] & 0x400:
+                w = event.data[3]
+            if event.data[0] & 0x800:
+                h = event.data[4]
+            #honour hints:
+            hints = self.get_property("size-hints")
+            w, h, _, _ = calc_constrained_size(w, h, hints)
+            geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
+            with xswallow:
+                X11Window.configureAndNotify(self.xid, x, y, w, h)
+            return True
+        return BaseWindowModel.process_client_message_event(self, event)
+
 
     #########################################
     # X11 properties synced to Python objects

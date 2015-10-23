@@ -9,8 +9,8 @@ import os
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk2.models.core import CoreX11WindowModel, gobject, xswallow, gdk
-from xpra.x11.bindings.window_bindings import X11WindowBindings, constants              #@UnresolvedImport
-from xpra.x11.gtk2.gdk_bindings import get_pywindow, get_pyatom, calc_constrained_size  #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
+from xpra.x11.gtk2.gdk_bindings import get_pywindow, get_pyatom                 #@UnresolvedImport
 from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
 
 from xpra.log import Logger
@@ -185,17 +185,17 @@ class BaseWindowModel(CoreX11WindowModel):
                               "_NET_WM_FULLSCREEN_MONITORS",
                               "_NET_WM_BYPASS_COMPOSITOR",
                               "_NET_WM_STRUT",
-                              #redundant as it uses the same function as _NET_WM_STRUT:
-                              #"_NET_WM_STRUT_PARTIAL",
+                              "_NET_WM_STRUT_PARTIAL",      #redundant as it uses the same handler as _NET_WM_STRUT
                               "_NET_WM_WINDOW_OPACITY",
                               "WM_HINTS",
                               "_GTK_APP_MENU_OBJECT_PATH",
                               #redundant as they use the same function as _GTK_APP_MENU_OBJECT_PATH:
-                              #"_GTK_APPLICATION_ID",
-                              #"_GTK_UNIQUE_BUS_NAME",
-                              #"_GTK_APPLICATION_OBJECT_PATH",
-                              #"_GTK_APP_MENU_OBJECT_PATH",
-                              #"_GTK_WINDOW_OBJECT_PATH",
+                              #(but the code will make sure we only call it once during setup)
+                              "_GTK_APPLICATION_ID",
+                              "_GTK_UNIQUE_BUS_NAME",
+                              "_GTK_APPLICATION_OBJECT_PATH",
+                              "_GTK_APP_MENU_OBJECT_PATH",
+                              "_GTK_WINDOW_OBJECT_PATH",
                               ]
     _DEFAULT_NET_WM_ALLOWED_ACTIONS = ["_NET_WM_ACTION_%s" % x for x in (
         "CLOSE", "MOVE", "RESIZE", "FULLSCREEN",
@@ -720,24 +720,8 @@ class BaseWindowModel(CoreX11WindowModel):
             log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
             prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
             return True
-        elif event.message_type=="_NET_MOVERESIZE_WINDOW":
-            #TODO: honour gravity, show source indication
-            geom = self.corral_window.get_geometry()
-            x, y, w, h, _ = geom
-            if event.data[0] & 0x100:
-                x = event.data[1]
-            if event.data[0] & 0x200:
-                y = event.data[2]
-            if event.data[0] & 0x400:
-                w = event.data[3]
-            if event.data[0] & 0x800:
-                h = event.data[4]
-            #honour hints:
-            hints = self.get_property("size-hints")
-            w, h, _, _ = calc_constrained_size(w, h, hints)
-            geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
-            with xswallow:
-                X11Window.configureAndNotify(self.xid, x, y, w, h)
-            return True
+        #TODO: maybe we should process _NET_MOVERESIZE_WINDOW here?
+        # it may make sense to apply it to the client_window
+        # whereas the code in WindowModel assumes there is a corral window
         #not handled:
         return False
