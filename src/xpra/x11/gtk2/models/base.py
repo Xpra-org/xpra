@@ -385,6 +385,9 @@ class BaseWindowModel(CoreX11WindowModel):
             if self._setup_done:
                 self._update_client_geometry()
 
+    def _update_client_geometry(self):
+        pass        #overriden in WindowModel
+
 
     def _get_x11_menu_properties(self):
         props = {}
