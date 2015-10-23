@@ -741,14 +741,3 @@ class BaseWindowModel(CoreX11WindowModel):
             return True
         #not handled:
         return False
-
-    def do_xpra_configure_event(self, event):
-        if self.client_window is None or not self._managed:
-            return
-        #shouldn't the border width always be 0?
-        geom = (event.x, event.y, event.width, event.height, event.border_width)
-        geomlog("%s.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", self._MODELTYPE, event, self.xid, self._geometry, geom)
-        if geom!=self._geometry:
-            self._geometry = geom
-            #X11Window.MoveResizeWindow(self.xid, )
-            self.notify("geometry")
