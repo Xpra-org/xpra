@@ -459,7 +459,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def decrease_quality(self, *args):
         if self._client.quality>0:
-            #change fixed speed:
+            #change fixed quality:
             self._client.quality = max(1, self._client.quality - 10)
             self._client.send_quality()
             log("new quality=%s", self._client.quality)

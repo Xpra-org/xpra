@@ -714,12 +714,10 @@ class GTKTrayMenuBase(object):
 
     def set_speedmenu(self, *args):
         if self.speed:
-            can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_speed and self.client.change_speed
+            can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_speed
             set_sensitive(self.speed, can_use)
             if self.client.mmap_enabled:
                 self.speed.set_tooltip_text("Quality is always 100% with mmap")
-            elif not self.client.change_speed:
-                self.speed.set_tooltip_text("Server does not support changing speed")
             elif self.client.encoding!="h264":
                 self.speed.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
             else:
