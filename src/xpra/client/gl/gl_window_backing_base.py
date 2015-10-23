@@ -610,7 +610,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         if t==memoryview_type:
             if not zerocopy_upload:
                 #not safe, make a copy :(
-                return "copy:memoryview_to_bytes", img_data.tobytes()
+                return "copy:memoryview.tobytes", img_data.tobytes()
             return "zerocopy:memoryview", img_data
         elif t in (str, buffer_type) and zerocopy_upload:
             #we can zerocopy if we wrap it:

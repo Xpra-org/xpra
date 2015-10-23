@@ -735,7 +735,7 @@ class ColorspaceConverter(object):
             shape = strides[i], self.src_height//y_div
             plane = pixels[i]
             if type(plane)==_memoryview:
-                plane = memoryview_to_bytes(plane)
+                plane = plane.tobytes()
             if type(plane)==str:
                 flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
             else:
@@ -798,7 +798,7 @@ class ColorspaceConverter(object):
         log("convert_image() type=%s, input image format=%s, shape=%s, work size: local=%s, global=%s", type(pixels), iformat, shape, localWorkSize, globalWorkSize)
         idata = pixels
         if type(idata)==_memoryview:
-            idata = memoryview_to_bytes(idata)
+            idata = idata.tobytes()
         if type(idata)==str:
             #str is not a buffer, so we have to copy the data
             #alternatively, we could copy it first ourselves using this:

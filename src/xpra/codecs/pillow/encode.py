@@ -62,7 +62,8 @@ def encode(coding, image, quality, speed, supports_transparency):
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         #PIL cannot use the memoryview directly:
-        pixels = memoryview_to_bytes(pixels)
+        if type(pixels)!=buffer:
+            pixels = memoryview_to_bytes(pixels)
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image

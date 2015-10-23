@@ -11,7 +11,7 @@ import zlib
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import _memoryview
 
 
 lz4_version = None
@@ -183,19 +183,20 @@ class Uncompressed(object):
         raise Exception("compress() not defined on %s" % self)
 
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
-    bdata = memoryview_to_bytes(data)
+    if _memoryview and isinstance(data, _memoryview):
+        data = data.tobytes()
     if lz4:
         assert use_lz4, "cannot use lz4"
         algo = "lz4"
-        cl, cdata = lz4_compress(bdata, level)
+        cl, cdata = lz4_compress(data, level)
     elif lzo:
         assert use_lzo, "cannot use lzo"
         algo = "lzo"
-        cl, cdata = lzo_compress(bdata, level)
+        cl, cdata = lzo_compress(data, level)
     else:
         assert use_zlib, "cannot use zlib"
         algo = "zlib"
-        cl, cdata = zcompress(bdata, level)
+        cl, cdata = zcompress(data, level)
     return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)
 
 
