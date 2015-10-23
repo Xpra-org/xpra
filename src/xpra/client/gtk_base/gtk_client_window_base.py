@@ -840,8 +840,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 workspace = self.get_desktop_workspace()
         else:
             self._been_mapped = True
-            workspace = self._metadata.intget("workspace", -1)
-            self.set_workspace(workspace)
+            workspace = self._metadata.intget("workspace", WORKSPACE_UNSET)
+            if workspace!=WORKSPACE_UNSET:
+                self.set_workspace(workspace)
         if self._window_workspace!=workspace and workspace is not None:
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s", self._been_mapped, wn(self._window_workspace), wn(workspace))
             self._window_workspace = workspace
