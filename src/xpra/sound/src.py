@@ -12,7 +12,7 @@ from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, \
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, get_gst_version, \
                                 MP3, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
@@ -71,6 +71,13 @@ class SoundSource(SoundPipeline):
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
+        try:
+            if get_gst_version()<(1,0):
+                self.sink.set_property("enable-last-buffer", False)
+            else:
+                self.sink.set_property("enable-last-sample", False)
+        except Exception as e:
+            log("failed to disable last buffer: %s", e)
         self.caps = None
         self.skipped_caps = set()
         if JITTER>0:

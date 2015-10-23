@@ -154,6 +154,12 @@ gst_vinfo = None
 pygst_version = ""
 gst_version = ""
 
+def get_pygst_version():
+    return pygst_version
+
+def get_gst_version():
+    return gst_version
+
 
 def import_gst1():
     import gi
