@@ -25,6 +25,12 @@ NOWARN = ["nvenc4", "nvenc5", "opencl"]
 SELFTEST = os.environ.get("XPRA_CODEC_SELFTEST", "1")=="1"
 FULL_SELFTEST = os.environ.get("XPRA_CODEC_FULL_SELFTEST", "0")=="1"
 
+CODEC_FAIL_IMPORT = os.environ.get("XPRA_CODEC_FAIL_IMPORT", "").split(",")
+CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
+
+log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s, CODEC_FAIL_SELFTEST=%s",
+        SELFTEST, FULL_SELFTEST, CODEC_FAIL_IMPORT, CODEC_FAIL_SELFTEST)
+
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, *classnames):
@@ -32,6 +38,8 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
     try:
         try:
+            if name in CODEC_FAIL_IMPORT:
+                raise ImportError("codec found in fail import list")
             __import__(top_module, {}, {}, [])
         except ImportError as e:
             log("failed to import %s (%s)", description, name)
@@ -51,6 +59,8 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 selftest = getattr(ic, "selftest", None)
                 log("%s.selftest=%s", name, selftest)
                 if SELFTEST and selftest:
+                    if name in CODEC_FAIL_SELFTEST:
+                        raise ImportError("codec found in fail selftest list")
                     selftest(FULL_SELFTEST)
                 #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 log(" found %s : %s", name, ic)
@@ -168,7 +178,6 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_versions["buffer_api"] = buffer_api_version()
     except Exception as e:
         log("unknown buffer api version: %s", e)
-
 
     log("done loading codecs")
     log("found:")
@@ -289,13 +298,13 @@ def main():
                         cs = list(mod.get_input_colorspaces())
                         for c in list(cs):
                             cs += list(mod.get_output_colorspaces(c))
-                        print("                         %s" % ", ".join(list(set(cs))))
+                        print("                         colorspaces: %s" % ", ".join(list(set(cs))))
                     elif name.find("enc")>=0 or name.find("dec")>=0:
                         encodings = mod.get_encodings()
-                        print("                         %s" % ", ".join(encodings))
+                        print("                         encodings: %s" % ", ".join(encodings))
                     try:
                         i = mod.get_info()
-                        for k,v in i.items():
+                        for k,v in sorted(i.items()):
                             print("                         %s = %s" % (k,v))
                     except:
                         pass
