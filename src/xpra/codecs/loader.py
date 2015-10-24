@@ -295,7 +295,8 @@ def main():
                         print("                         %s" % ", ".join(encodings))
                     try:
                         i = mod.get_info()
-                        print("                         %s" % i)
+                        for k,v in i.items():
+                            print("                         %s = %s" % (k,v))
                     except:
                         pass
                 except Exception as e:
