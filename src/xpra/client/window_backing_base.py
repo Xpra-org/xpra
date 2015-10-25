@@ -402,9 +402,10 @@ class WindowBackingBase(object):
 
             img = self._video_decoder.decompress_image(img_data, options)
             if not img:
-                fire_paint_callbacks(callbacks, False, "video decoder %s did not return an image" % self._video_decoder)
-                log.error("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels using %s, options=%s",
-                      self.wid, coding, len(img_data), width, height, self._video_decoder, options)
+                fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (self._video_decoder.get_type(), len(img_data), coding))
+                log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
+                log.error(" %sx%s pixels using %s", width, height, self._video_decoder.get_type())
+                log.error(" decoding options=%s", options)
                 return False
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if self._backing is None:

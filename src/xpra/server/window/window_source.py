@@ -1613,7 +1613,11 @@ class WindowSource(object):
             self.soft_expired = 0
 
     def client_decode_error(self, window, error, message):
-        log.warn("client_decode_error: %s (%s)", message, error)
+        #don't print error code -1, which is just a generic code for error
+        emsg = {-1 : ""}.get(error, error)
+        if emsg:
+            emsg = " %s" % emsg
+        log.warn("Warning: client decoding error: %s%s", message, emsg)
         self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
