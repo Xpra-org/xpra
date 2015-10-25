@@ -377,7 +377,6 @@ class WindowBackingBase(object):
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             assert input_colorspace in decoder_colorspaces, "decoder does not support %s for %s" % (input_colorspace, coding)
 
-            log.info("frame=%i", options.get("frame"))
             vd = self._video_decoder
             if vd:
                 if vd.get_encoding()!=coding:
