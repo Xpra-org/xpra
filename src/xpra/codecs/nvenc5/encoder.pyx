@@ -1902,7 +1902,7 @@ cdef class Encoder:
         pixels = image.get_pixels()
         cdef unsigned int image_stride = image.get_rowstride()
         cdef unsigned long input_size = self.inputPitch * self.input_height
-        assert pixels, "failed to get pixels from %s" % image
+        assert pixels is not None, "failed to get pixels from %s" % image
         assert self.context!=NULL, "context is not initialized"
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
@@ -2076,8 +2076,8 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
-                    "frame"     : self.frames,
-                    "pts"       : image.get_timestamp()-self.first_frame_timestamp,
+                    "frame"     : int(self.frames),
+                    "pts"       : int(image.get_timestamp()-self.first_frame_timestamp),
                     "speed"     : self.speed,
                     }
         if self.lossless:
