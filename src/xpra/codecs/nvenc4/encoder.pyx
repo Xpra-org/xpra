@@ -1468,6 +1468,7 @@ cdef class Encoder:
         cdef GUID preset
         cdef NV_ENC_CONFIG *config = NULL
         cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
+        cdef uint32_t qmin, qmax
 
         preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
@@ -1506,8 +1507,8 @@ cdef class Encoder:
             config.frameIntervalP = 1
             config.gopLength = NVENC_INFINITE_GOPLENGTH
             #0=max quality, 63 lowest quality
-            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)//100))
-            qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)//100))
+            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, QP_MAX_VALUE*(self.quality+20)//100)
+            qmax = QP_MAX_VALUE-max(0, QP_MAX_VALUE*self.quality//100)
             if self.lossless:
                 config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1
                 config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP

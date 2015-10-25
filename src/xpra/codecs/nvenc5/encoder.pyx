@@ -1543,13 +1543,13 @@ cdef class Encoder:
             config.frameIntervalP = 1
             config.gopLength = NVENC_INFINITE_GOPLENGTH
             #0=max quality, 63 lowest quality
-            qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)//100))
-            qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)//100))
-            if self.lossless:
-                config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1
-                #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
-                qmin = 0
-                qmax = 0
+            #qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)//100))
+            #qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
+            #if self.lossless:
+            #    config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1
+            #    config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
+            #    qmin = 0
+            #    qmax = 0
             #config.rcParams.minQP.qpInterB = qmin
             #config.rcParams.minQP.qpInterP = qmin
             #config.rcParams.minQP.qpIntra = qmin
