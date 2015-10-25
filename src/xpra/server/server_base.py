@@ -2219,16 +2219,6 @@ class ServerBase(ServerCore):
             if ss:
                 window = self._id_to_window.get(wid)
                 ss.client_ack_damage(packet_sequence, wid, window, width, height, decode_time, message)
-            if decode_time<0:
-                #an error occurred, try to refresh:
-                ss.cancel_damage(wid)
-                def refresh():
-                    win = self._id_to_window.get(wid)
-                    ss = self._server_sources.get(proto)
-                    if ss and win:
-                        ss.refresh(wid, win, {})
-                #it could fail again, so throttle things with a delay:
-                self.timeout_add(250, refresh)
 
 
     def _damage(self, window, x, y, width, height, options=None):
