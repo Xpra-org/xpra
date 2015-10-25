@@ -377,34 +377,37 @@ class WindowBackingBase(object):
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             assert input_colorspace in decoder_colorspaces, "decoder does not support %s for %s" % (input_colorspace, coding)
 
-            if self._video_decoder:
-                if self._video_decoder.get_encoding()!=coding:
-                    log("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_encoding(), coding)
+            log.info("frame=%i", options.get("frame"))
+            vd = self._video_decoder
+            if vd:
+                if vd.get_encoding()!=coding:
+                    log("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
-                elif self._video_decoder.get_width()!=enc_width or self._video_decoder.get_height()!=enc_height:
-                    log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
+                elif vd.get_width()!=enc_width or vd.get_height()!=enc_height:
+                    log("paint_with_video_decoder: window dimensions have changed from %s to %s", (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
-                elif self._video_decoder.get_colorspace()!=input_colorspace:
+                elif vd.get_colorspace()!=input_colorspace:
                     #this should only happen on encoder restart, which means this should be the first frame:
                     l = log
                     if options.get("frame", 0)>1:
                         l = log.warn
-                    l("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), input_colorspace)
+                    l("paint_with_video_decoder: colorspace changed from %s to %s", vd.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
                 elif options.get("frame")==0:
                     log("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
                 log("paint_with_video_decoder: new %s(%s,%s,%s)", decoder_module.Decoder, width, height, input_colorspace)
-                self._video_decoder = decoder_module.Decoder()
-                self._video_decoder.init_context(coding, enc_width, enc_height, input_colorspace)
-                log("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
+                vd = decoder_module.Decoder()
+                vd.init_context(coding, enc_width, enc_height, input_colorspace)
+                self._video_decoder = vd
+                log("paint_with_video_decoder: info=%s", vd.get_info())
 
-            img = self._video_decoder.decompress_image(img_data, options)
+            img = vd.decompress_image(img_data, options)
             if not img:
-                fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (self._video_decoder.get_type(), len(img_data), coding))
+                fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (vd.get_type(), len(img_data), coding))
                 log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
-                log.error(" %sx%s pixels using %s", width, height, self._video_decoder.get_type())
+                log.error(" %sx%s pixels using %s", width, height, vd.get_type())
                 log.error(" decoding options=%s", options)
                 return False
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
@@ -418,20 +421,21 @@ class WindowBackingBase(object):
         #as some video formats like vpx can forward transparency
         #also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
-        if self._csc_decoder is not None:
-            if self._csc_decoder.get_src_format()!=pixel_format:
-                log("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
+        cd = self._csc_decoder
+        if cd is not None:
+            if cd.get_src_format()!=pixel_format:
+                log("do_video_paint csc: switching src format from %s to %s", cd.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
-            elif self._csc_decoder.get_dst_format() not in target_rgb_formats:
-                log("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), target_rgb_formats)
+            elif cd.get_dst_format() not in target_rgb_formats:
+                log("do_video_paint csc: switching dst format from %s to %s", cd.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
-            elif self._csc_decoder.get_src_width()!=enc_width or self._csc_decoder.get_src_height()!=enc_height:
+            elif cd.get_src_width()!=enc_width or cd.get_src_height()!=enc_height:
                 log("do_video_paint csc: switching src size from %sx%s to %sx%s",
-                         enc_width, enc_height, self._csc_decoder.get_src_width(), self._csc_decoder.get_src_height())
+                         enc_width, enc_height, cd.get_src_width(), cd.get_src_height())
                 self.do_clean_csc_decoder()
-            elif self._csc_decoder.get_dst_width()!=width or self._csc_decoder.get_dst_height()!=height:
+            elif cd.get_dst_width()!=width or cd.get_dst_height()!=height:
                 log("do_video_paint csc: switching src size from %sx%s to %sx%s",
-                         width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
+                         width, height, cd.get_dst_width(), cd.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
             #use higher quality csc to compensate for lower quality source
@@ -439,12 +443,13 @@ class WindowBackingBase(object):
             #or when upscaling the video:
             q = options.intget("quality", 50)
             csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
-            self._csc_decoder = self.make_csc(enc_width, enc_height, pixel_format,
+            cd = self.make_csc(enc_width, enc_height, pixel_format,
                                            width, height, target_rgb_formats, csc_speed)
-            log("do_video_paint new csc decoder: %s", self._csc_decoder)
-        rgb_format = self._csc_decoder.get_dst_format()
-        rgb = self._csc_decoder.convert_image(img)
-        log("do_video_paint rgb using %s.convert_image(%s)=%s", self._csc_decoder, img, rgb)
+            log("do_video_paint new csc decoder: %s", cd)
+            self._csc_decoder = cd
+        rgb_format = cd.get_dst_format()
+        rgb = cd.convert_image(img)
+        log("do_video_paint rgb using %s.convert_image(%s)=%s", cd, img, rgb)
         img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #make a new options dict and set the rgb format:
