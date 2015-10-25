@@ -29,6 +29,7 @@ log = Logger("info")
 N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
 SHOW_SOUND_STATS = True
+SHOW_RECV = True
 
 
 def pixelstr(v):
@@ -960,8 +961,12 @@ class SessionInfo(gtk.Window):
                     return "x%s%s" % (int(value), unit)
             net_in_scale, net_in_data = values_to_diff_scaled_values(list(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             net_out_scale, net_out_data = values_to_diff_scaled_values(list(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-            labels += ["recv %sB/s" % unit(net_in_scale), "sent %sB/s" % unit(net_out_scale)]
-            datasets += [net_in_data, net_out_data]
+            if SHOW_RECV:
+                labels += ["recv %sB/s" % unit(net_in_scale), "sent %sB/s" % unit(net_out_scale)]
+                datasets += [net_in_data, net_out_data]
+            else:
+                labels += ["recv %sB/s" % unit(net_in_scale)]
+                datasets += [net_in_data]
         if SHOW_PIXEL_STATS and self.client.windows_enabled:
             pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
             datasets.append(in_pixels)
