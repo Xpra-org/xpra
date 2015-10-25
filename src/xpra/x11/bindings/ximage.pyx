@@ -308,7 +308,10 @@ cdef class XImageWrapper:
             return self.pixels
         cdef XImage *image = self.image
         if image==NULL:
+            log.warn("get_pixels_ptr: image is NULL!")
             return NULL
+        if image.data is NULL:
+            log.warn("get_pixels_ptr: image.data is NULL!")
         return image.data
 
     def is_thread_safe(self):
