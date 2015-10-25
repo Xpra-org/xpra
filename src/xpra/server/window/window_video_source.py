@@ -426,11 +426,9 @@ class WindowVideoSource(WindowSource):
     def cancel_damage(self):
         self.video_subregion.cancel_refresh_timer()
         WindowSource.cancel_damage(self)
-        if self._last_sequence_queued<self._sequence:
-            #we must clean the video encoder to ensure
-            #we will resend a key frame because it looks like we will
-            #drop a frame which is being processed
-            self.cleanup_codecs()
+        #we must clean the video encoder to ensure
+        #we will resend a key frame because we may be missing a frame
+        self.cleanup_codecs()
 
 
     def full_quality_refresh(self, window, damage_options={}):
