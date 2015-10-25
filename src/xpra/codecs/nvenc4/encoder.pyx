@@ -2058,9 +2058,6 @@ cdef class Encoder:
         log("compress_image(..) %s %s returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms",
             get_type(), get_version(),
             size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
-        log.info("%i bytes, options=%s", len(data), client_options)
-        #import traceback
-        #traceback.print_stack()
         return data, client_options
 
 
