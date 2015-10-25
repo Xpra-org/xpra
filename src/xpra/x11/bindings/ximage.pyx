@@ -593,7 +593,7 @@ cdef class XShmImageWrapper(XImageWrapper):
             return self.pixels
         cdef XImage *image = self.image             #
         if image==NULL:
-            xshmdebug("XShmImageWrapper.get_pixels_ptr()=NULL (XImage is NULL) %s", self)
+            xshmdebug.warn("Warning: XShm get_pixels_ptr XImage is NULL")
             return NULL
         assert self.height>0
         #calculate offset (assuming 4 bytes "pixelstride"):
