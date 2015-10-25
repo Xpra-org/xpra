@@ -82,6 +82,7 @@ class SoundSink(SoundPipeline):
         decoder_str = plugin_str(decoder, codec_options)
         pipeline_els = []
         appsrc_el = ["appsrc",
+                     "do-timestamp=1",
                      "name=src",
                      "emit-signals=0",
                      "block=0",
@@ -265,14 +266,13 @@ class SoundSink(SoundPipeline):
             log("add_data(..) dropped")
             return
         #having a timestamp causes problems with the queue and overruns:
-        if "timestamp" in metadata:
-            del metadata["timestamp"]
         log("add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         buf = gst.new_buffer(data)
         if metadata:
-            ts = metadata.get("timestamp")
-            if ts is not None:
-                buf.timestamp = normv(ts)
+            #having a timestamp causes problems with the queue and overruns:
+            #ts = metadata.get("timestamp")
+            #if ts is not None:
+            #    buf.timestamp = normv(ts)
             d = metadata.get("duration")
             if d is not None:
                 d = normv(d)
