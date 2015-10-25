@@ -226,8 +226,8 @@ class WindowVideoSource(WindowSource):
     def do_csc_encoder_clean(self):
         csc_encoder = self._csc_encoder
         if csc_encoder:
-            csc_encoder.clean()
             self._csc_encoder = None
+            csc_encoder.clean()
 
     def video_encoder_clean(self):
         """ Calls self._video_encoder.clean() from the encode thread """
@@ -238,8 +238,8 @@ class WindowVideoSource(WindowSource):
     def do_video_encoder_clean(self):
         video_encoder = self._video_encoder
         if video_encoder:
-            video_encoder.clean()
             self._video_encoder = None
+            video_encoder.clean()
 
 
     def parse_csc_modes(self, full_csc_modes):
