@@ -79,9 +79,6 @@ class WindowModel(BaseWindowModel):
                   gobject.PARAM_READABLE),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
-        "actual-size": (gobject.TYPE_PYOBJECT,
-                        "Size of client window (actual (width,height))", "",
-                        gobject.PARAM_READABLE),
         "requested-position": (gobject.TYPE_PYOBJECT,
                                "Client-requested position on screen", "",
                                gobject.PARAM_READABLE),
@@ -193,13 +190,14 @@ class WindowModel(BaseWindowModel):
         self.client_reparented = True
 
         log("setup() geometry")
-        w,h = X11Window.getGeometry(self.xid)[2:4]
+        w, h, border = X11Window.geometry_with_border(self.xid)[2:5]
         hints = self.get_property("size-hints")
         log("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = calc_constrained_size(w, h, hints)
         if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
             #we can't handle windows that big!
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
+        self._geometry = x, y, nw, nh, border
         log("setup() resizing windows to %sx%s", nw, nh)
         self.corral_window.resize(nw, nh)
         self.client_window.resize(nw, nh)
@@ -207,7 +205,6 @@ class WindowModel(BaseWindowModel):
         #this is here to trigger X11 errors if any are pending
         #or if the window is deleted already:
         self.client_window.get_geometry()
-        self._internal_set_property("actual-size", (nw, nh))
 
 
     def _read_initial_X11_properties(self):
@@ -277,9 +274,6 @@ class WindowModel(BaseWindowModel):
 
     def raise_window(self):
         self.corral_window.raise_()
-
-    def get_dimensions(self):
-        return  self.get_property("actual-size")
 
     def unmap(self):
         with xsync:
@@ -405,7 +399,8 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         geomlog("_do_update_client_geometry: position=%ix%i", x, y)
         self.corral_window.move_resize(x, y, w, h)
-        self._internal_set_property("actual-size", (w, h))
+        border = self._geometry[4]
+        self._geometry = (x, y, w, h, border)
         with xswallow:
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
@@ -439,14 +434,12 @@ class WindowModel(BaseWindowModel):
         #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
         cox, coy, cow, coh = self.corral_window.get_geometry()[:4]
-        modded = False
-        if self._geometry[4]!=border:
-            modded = True
         #size changes (and position if any):
         hints = self.get_property("size-hints")
         w, h = calc_constrained_size(w, h, hints)
         geomlog("resize_corral_window() new constrained size=%ix%i", w, h)
         if cow!=w or coh!=h:
+            #at least resized, check for move:
             if (x, y) != (0, 0):
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
@@ -465,11 +458,9 @@ class WindowModel(BaseWindowModel):
             self.client_window.move(0, 0)
             cox, coy = x, y
             modded = True
-
-        #these two should be using geometry rather than duplicating it?
-        if self.get_property("actual-size")!=(w, h):
-            self._internal_set_property("actual-size", (w, h))
-            modded = True
+        else:
+            #no position or size change, maybe border?
+            modded = self._geometry[4]!=border
 
         if modded:
             self._geometry = (cox, coy, cow, coh, border)

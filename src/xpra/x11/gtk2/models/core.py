@@ -453,6 +453,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
 
 
     def get_dimensions(self):
+        #just extracts the size from the geometry:
         return self.do_get_property_geometry()[2:4]
 
 
