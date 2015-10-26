@@ -86,10 +86,6 @@ class BaseWindowModel(CoreX11WindowModel):
                       "Does this window ever accept keyboard input?", "",
                       True,
                       gobject.PARAM_READWRITE),
-        #from WM_NORMAL_HINTS
-        "size-hints": (gobject.TYPE_PYOBJECT,
-                       "Client hints on constraining its size", "",
-                       gobject.PARAM_READABLE),
         #from _NET_WM_BYPASS_COMPOSITOR
         "bypass-compositor": (gobject.TYPE_INT,
                        "hint that the window would benefit from running uncomposited ", "",
@@ -169,12 +165,12 @@ class BaseWindowModel(CoreX11WindowModel):
                        gobject.PARAM_READWRITE),
         })
     _property_names = CoreX11WindowModel._property_names + [
-                      "size-hints", "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
+                      "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
                       "menu",
                       #virtual attributes:
                       "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
-                              "size-hints", "attention-requested",
+                              "attention-requested",
                               "menu", "workspace",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
@@ -360,35 +356,6 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("can-focus", can_focus)
 
 
-    def _handle_wm_normal_hints_change(self):
-        with xswallow:
-            size_hints = X11Window.getSizeHints(self.xid)
-        metalog("WM_NORMAL_HINTS=%s", size_hints)
-        #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
-        #but we use a different naming (for historical reason and backwards compatibility)
-        #so rename the fields:
-        hints = {}
-        if size_hints:
-            for k,v in size_hints.items():
-                hints[{"min_size"       : "minimum-size",
-                       "max_size"       : "maximum-size",
-                       "base_size"      : "base-size",
-                       "resize_inc"     : "increment",
-                       "win_gravity"    : "gravity",
-                       }.get(k, k)] = v
-        sanitize_size_hints(hints)
-        # Don't send out notify and ConfigureNotify events when this property
-        # gets no-op updated -- some apps like FSF Emacs 21 like to update
-        # their properties every time they see a ConfigureNotify, and this
-        # reduces the chance for us to get caught in loops:
-        if self._updateprop("size-hints", hints):
-            if self._setup_done:
-                self._update_client_geometry()
-
-    def _update_client_geometry(self):
-        pass        #overriden in WindowModel
-
-
     def _get_x11_menu_properties(self):
         props = {}
         for k,x11name in {
@@ -498,7 +465,6 @@ class BaseWindowModel(CoreX11WindowModel):
         "_NET_WM_STRUT_PARTIAL"         : _handle_wm_strut_change,
         "_NET_WM_WINDOW_OPACITY"        : _handle_opacity_change,
         "WM_HINTS"                      : _handle_wm_hints_change,
-        "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
         "_GTK_APPLICATION_ID"           : _handle_gtk_app_menu_change,
         "_GTK_UNIQUE_BUS_NAME"          : _handle_gtk_app_menu_change,
         "_GTK_APPLICATION_OBJECT_PATH"  : _handle_gtk_app_menu_change,

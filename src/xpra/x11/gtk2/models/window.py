@@ -13,6 +13,7 @@ from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
 from xpra.x11.gtk2.models import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk2.models.base import BaseWindowModel, constants
 from xpra.x11.gtk2.models.core import sanestr, gobject, xswallow, xsync
@@ -98,6 +99,10 @@ class WindowModel(BaseWindowModel):
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
                    gobject.PARAM_READWRITE),
+        #from WM_NORMAL_HINTS
+        "size-hints": (gobject.TYPE_PYOBJECT,
+                       "Client hints on constraining its size", "",
+                       gobject.PARAM_READABLE),
         #from _NET_WM_ICON_NAME or WM_ICON_NAME
         "icon-title": (gobject.TYPE_PYOBJECT,
                        "Icon title (unicode or None)", "",
@@ -125,9 +130,9 @@ class WindowModel(BaseWindowModel):
         })
 
     _property_names         = BaseWindowModel._property_names + [
-                              "icon-title", "icon", "decorations"]
+                              "size-hints", "icon-title", "icon", "decorations"]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
-                              "icon-title", "icon", "decorations"]
+                              "size-hints", "icon-title", "icon", "decorations"]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
                               "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
                               "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
@@ -537,6 +542,32 @@ class WindowModel(BaseWindowModel):
         if motif_hints and motif_hints.flags&(2**MotifWMHints.DECORATIONS_BIT):
             self._updateprop("decorations", motif_hints.decorations)
 
+    def _handle_wm_normal_hints_change(self):
+        with xswallow:
+            size_hints = X11Window.getSizeHints(self.xid)
+        metalog("WM_NORMAL_HINTS=%s", size_hints)
+        #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
+        #but we use a different naming (for historical reason and backwards compatibility)
+        #so rename the fields:
+        hints = {}
+        if size_hints:
+            for k,v in size_hints.items():
+                hints[{"min_size"       : "minimum-size",
+                       "max_size"       : "maximum-size",
+                       "base_size"      : "base-size",
+                       "resize_inc"     : "increment",
+                       "win_gravity"    : "gravity",
+                       }.get(k, k)] = v
+        sanitize_size_hints(hints)
+        # Don't send out notify and ConfigureNotify events when this property
+        # gets no-op updated -- some apps like FSF Emacs 21 like to update
+        # their properties every time they see a ConfigureNotify, and this
+        # reduces the chance for us to get caught in loops:
+        if self._updateprop("size-hints", hints):
+            if self._setup_done:
+                self._update_client_geometry()
+
+
     def _handle_net_wm_icon_change(self):
         iconlog("_NET_WM_ICON changed on %#x, re-reading", self.xid)
         surf = self.prop_get("_NET_WM_ICON", "icon")
@@ -566,6 +597,7 @@ class WindowModel(BaseWindowModel):
         "WM_ICON_NAME"                  : _handle_icon_title_change,
         "_NET_WM_ICON_NAME"             : _handle_icon_title_change,
         "_MOTIF_WM_HINTS"               : _handle_motif_wm_hints_change,
+        "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
         "_NET_WM_ICON"                  : _handle_net_wm_icon_change,
        })
 
