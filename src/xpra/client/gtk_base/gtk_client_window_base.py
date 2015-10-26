@@ -943,12 +943,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._set_backing_size(w, h)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
-        statelog("move_resize%s", (x, y, w, h, resize_counter))
+        geomlog("move_resize%s", (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
         self._resize_counter = resize_counter
         window = self.get_window()
         if window.get_position()==(x, y):
+            geomlog("unchanged position %ix%i, using resize(%i, %i)", x, y, w, h)
             #same location, just resize:
             if self._size!=(w, h):
                 self.resize(w, h)
@@ -956,12 +957,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #we have to move:
         mw, mh = self._client.get_root_size()
         if not self.is_realized():
+            geomlog("window was not realized yet")
             self.realize()
         #adjust for window frame:
         ox, oy = window.get_origin()[-2:]
         rx, ry = window.get_root_origin()
         ax = x - (ox - rx)
         ay = y - (oy - ry)
+        geomlog("window origin=%ix%i, root origin=%ix%i, actual position=%ix%i", ox, oy, rx, ry, ax, ay)
         #validate against edge of screen (ensure window is shown):
         if (ax + w)<0:
             ax = -w + 1
@@ -971,12 +974,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             ay = -y + 1
         elif ay >= mh:
             ay = mh -1
+        geomlog("validated window position for total screen area %ix%i : %ix%i", mw, mh, ax, ay)
         if self._size==(w, h):
             #just move:
+            geomlog("window size unchanged: %ix%i, using move(%i, %i)", w, h, ax, ay)
             window.move(ax, ay)
             return
         #resize:
         self._size = (w, h)
+        geomlog("%s.move_resize%s", window, (ax, ay, w, h))
         window.move_resize(ax, ay, w, h)
         #re-init the backing with the new size
         self._set_backing_size(w, h)
