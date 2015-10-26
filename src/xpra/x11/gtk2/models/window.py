@@ -370,9 +370,8 @@ class WindowModel(BaseWindowModel):
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
-        geomlog("_update_client_geometry: owner=%s, setup_done=%s", owner, self._setup_done)
         if owner is not None:
-            geomlog("_update_client_geometry: using owner=%s", owner)
+            geomlog("_update_client_geometry: using owner=%s (setup_done=%s)", owner, self._setup_done)
             def window_size():
                 return  owner.window_size(self)
             def window_position(w, h):
@@ -386,10 +385,12 @@ class WindowModel(BaseWindowModel):
                 return self.get_property("requested-position")
             geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
             self._do_update_client_geometry(window_size, window_position)
+        else:
+            geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
         allocated_w, allocated_h = window_size_cb()
-        geomlog("_do_update_client_geometry: %ix%i", allocated_w, allocated_h)
+        geomlog("_do_update_client_geometry: allocated %ix%i", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
         w, h = calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
@@ -404,9 +405,13 @@ class WindowModel(BaseWindowModel):
         geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, self.corral_window.xid, self.xid, self._managed)
         if not self._managed:
             return
+        if event.window!=self.corral_window:
+            #we only care about events on the client window
+            geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", self.corral_window.xid)
+            return
         if event.window!=self.client_window:
             #we only care about events on the client window
-            geomlog("WindowModel.do_xpra_configure_event: event is not on the client window")
+            geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored", event.window.xid)
             return
         if self.corral_window is None or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
