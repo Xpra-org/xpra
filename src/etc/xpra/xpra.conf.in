@@ -446,6 +446,7 @@ sync-xvfb = 0
 #        +extension GLX +extension RANDR +extension RENDER \
 #        -auth $XAUTHORITY \
 #        -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log \
+#        -configdir ${HOME}/.xpra
 #        -config %(conf_dir)s/xorg.conf
 #
 # Selecting virtual X server:

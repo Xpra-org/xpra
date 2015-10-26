@@ -59,6 +59,7 @@ def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpr
           "+extension", "RENDER",
           "-auth", "$XAUTHORITY",
           "-logfile", "%s/Xorg.${DISPLAY}.log" % log_dir,
+          "-configdir", "${HOME}/.xpra",        #required on arch linux, but actually unused!
           "-config", xorg_conf]
 
 def get_Xvfb_command():
