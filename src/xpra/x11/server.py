@@ -592,7 +592,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _or_window_geometry_changed(self, window, pspec=None):
         (x, y, w, h) = window.get_property("geometry")
         if w>=32768 or h>=32768:
-            self.error("not sending new invalid window dimensions: %ix%i !", w, h)
+            windowlog.error("not sending new invalid window dimensions: %ix%i !", w, h)
             return
         windowlog("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
         wid = self._window_to_id[window]
