@@ -391,11 +391,10 @@ class WindowModel(BaseWindowModel):
         allocated_w, allocated_h = window_size_cb()
         geomlog("_do_update_client_geometry: %ix%i", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
-        geomlog("_do_update_client_geometry: hints=%s", hints)
         w, h = calc_constrained_size(allocated_w, allocated_h, hints)
-        geomlog.info("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
+        geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         x, y = window_position_cb(w, h)
-        geomlog("_do_update_client_geometry: position=%s", (x,y))
+        geomlog("_do_update_client_geometry: position=%ix%i", x, y)
         self.corral_window.move_resize(x, y, w, h)
         self._internal_set_property("actual-size", (w, h))
         with xswallow:
