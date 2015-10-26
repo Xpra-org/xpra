@@ -17,7 +17,12 @@ from xpra.os_util import _memoryview
 lz4_version = None
 try:
     import lz4
-    from lz4 import VERSION as lz4_VERSION                          #@UnresolvedImport
+    try:
+        from lz4 import VERSION as lz4_VERSION                          #@UnresolvedImport
+    except:
+        #older versions (0.7 and older):
+        import pkg_resources
+        lz4_VERSION = pkg_resources.get_distribution("lz4").version
     from lz4 import LZ4_compress, compressHC, LZ4_uncompress        #@UnresolvedImport
     has_lz4 = True
     if hasattr(lz4, "LZ4_compress_fast"):
