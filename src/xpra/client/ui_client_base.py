@@ -17,6 +17,7 @@ from collections import deque
 from xpra.log import Logger, set_global_logging_handler
 log = Logger("client")
 windowlog = Logger("client", "window")
+geomlog = Logger("client", "geometry")
 paintlog = Logger("client", "paint")
 focuslog = Logger("client", "focus")
 soundlog = Logger("client", "sound")
@@ -2382,13 +2383,15 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_move_resize(self, packet):
         (wid, x, y, w, h) = packet[1:6]
+        x = self.sx(x)
+        y = self.sy(y)
         w = max(1, self.sx(w))
         h = max(1, self.sy(h))
         resize_counter = -1
         if len(packet)>4:
             resize_counter = packet[4]
         window = self._id_to_window.get(wid)
-        windowlog("_process_window_resized moving / resizing window %s (id=%s) to %s", window, wid, (x, y, w, h))
+        geomlog("_process_window_resized moving / resizing window %s (id=%s) to %s", window, wid, (x, y, w, h))
         if window:
             window.move_resize(x, y, w, h, resize_counter)
 
@@ -2400,7 +2403,7 @@ class UIXpraClient(XpraClientBase):
         if len(packet)>4:
             resize_counter = packet[4]
         window = self._id_to_window.get(wid)
-        windowlog("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
+        geomlog("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
         if window:
             window.resize(w, h, resize_counter)
 
