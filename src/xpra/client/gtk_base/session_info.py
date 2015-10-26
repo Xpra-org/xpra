@@ -13,7 +13,7 @@ import sys
 import time
 import datetime
 
-from xpra.os_util import os_info, bytestostr
+from xpra.os_util import bytestostr
 from xpra.util import prettify_plug_name, typedict, csv, engs
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
@@ -106,8 +106,13 @@ class SessionInfo(gtk.Window):
         tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
         tb.inc()
 
-        def make_os_str(*args):
-            s = os_info(*args)
+        def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution):
+            from xpra.os_util import platform_name
+            s = [platform_name(sys_platform, platform_release)]
+            if platform_linux_distribution and len(platform_linux_distribution)==3 and len(platform_linux_distribution[0])>0:
+                s.append(" ".join([str(x) for x in platform_linux_distribution]))
+            elif platform_platform:
+                s.append(platform_platform)
             return "\n".join(s)
         distro = ""
         if hasattr(python_platform, "linux_distribution"):

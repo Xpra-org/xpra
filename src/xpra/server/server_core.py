@@ -861,6 +861,7 @@ class ServerCore(object):
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
                         "server_type"           : "core",
+                        "server.mode"           : self.get_server_mode(),
                         })
         if source.wants_features:
             capabilities["info-request"] = True

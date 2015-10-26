@@ -251,6 +251,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.enableCursors(True)
 
 
+    def get_server_mode(self):
+        return "X11 server"
+
+
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
         if source.wants_features:

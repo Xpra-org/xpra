@@ -11,7 +11,6 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk2.models.core import CoreX11WindowModel, gobject, xswallow, gdk
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.x11.gtk2.gdk_bindings import get_pywindow, get_pyatom                 #@UnresolvedImport
-from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
 
 from xpra.log import Logger
 log = Logger("x11", "window")

@@ -50,7 +50,7 @@ from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import Queue, os_info, platform_name, get_machine_id, get_user_uuid, bytestostr
+from xpra.os_util import Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -1617,11 +1617,14 @@ class UIXpraClient(XpraClientBase):
                 else:
                     log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
-        i = " ".join(os_info(self._remote_platform, self._remote_platform_release, self._remote_platform_platform, self._remote_platform_linux_distribution))
+        i = platform_name(self._remote_platform, c.strlistget("platform.linux_distribution") or c.strget("platform.release", ""))
         r = self._remote_version
         if self._remote_revision:
             r += "-r%s" % self._remote_revision
-        log.info("server: %s, Xpra version %s", std(i), std(r))
+        mode = c.strget("server.mode", "server")
+        log.info("Xpra %s version %s", mode, std(r))
+        if i:
+            log.info(" running on %s", std(i))
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
@@ -1644,6 +1647,7 @@ class UIXpraClient(XpraClientBase):
             if self.clipboard_enabled and self.server_supports_clipboard_enable_selections:
                 #tell the server about which selections we really want to sync with
                 #(could have been translated, or limited if the client only has one, etc)
+                clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
                 self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
         self.set_max_packet_size()
         self.send_deflate_level()
