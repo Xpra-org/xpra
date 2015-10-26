@@ -645,18 +645,18 @@ pkgconfig = exec_pkgconfig
 #*******************************************************************************
 def get_xorg_bin():
     # Detect Xorg Binary
-    if os.path.exists("/usr/libexec/Xorg.bin"):
-        #fedora 21?
-        return "/usr/libexec/Xorg.bin"
-    elif os.path.exists("/usr/libexec/Xorg"):
-        #fedora 22
-        return "/usr/libexec/Xorg"
-    else:
-        #look for it in $PATH:
-        for x in os.environ.get("PATH").split(os.pathsep):
-            xorg = os.path.join(x, "Xorg")
-            if os.path.isfile(xorg):
-                return xorg
+    for p in ("/usr/libexec/Xorg.bin",          #fedora 21?
+              "/usr/libexec/Xorg",              #fedora 22
+              "/usr/lib/xorg-server/Xorg.wrap"  #arch linux?
+              "/usr/lib/xorg-server/Xorg"       #arch linux?
+              ):
+        if os.path.exists(p):
+            return p
+    #look for it in $PATH:
+    for x in os.environ.get("PATH").split(os.pathsep):
+        xorg = os.path.join(x, "Xorg")
+        if os.path.isfile(xorg):
+            return xorg
     return None
 
 xorg_version = None
