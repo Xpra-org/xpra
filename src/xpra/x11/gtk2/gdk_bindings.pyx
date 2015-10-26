@@ -521,7 +521,7 @@ cdef extern from "gtk-2.0/gdk/gdkwindow.h":
 
 def calc_constrained_size(int width, int height, object hints):
     if hints is None:
-        return (width, height, width, height)
+        return width, height
 
     cdef cGdkGeometry geom
     cdef int new_width = 0, new_height = 0
@@ -546,15 +546,7 @@ def calc_constrained_size(int width, int height, object hints):
         geom.max_aspect = hints["max_aspect_ratio"]
     gdk_window_constrain_size(&geom, flags, width, height, &new_width, &new_height)
 
-    vis_width, vis_height = (new_width, new_height)
-    if "increment" in hints:
-        if "base-size" in hints:
-            vis_width = vis_width - hints["base-size"][0]
-            vis_height = vis_height - hints["base-size"][1]
-        vis_width = vis_width / hints["increment"][0]
-        vis_height = vis_height / hints["increment"][1]
-
-    return (new_width, new_height, vis_width, vis_height)
+    return new_width, new_height
 
 
 

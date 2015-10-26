@@ -82,9 +82,6 @@ class WindowModel(BaseWindowModel):
         "actual-size": (gobject.TYPE_PYOBJECT,
                         "Size of client window (actual (width,height))", "",
                         gobject.PARAM_READABLE),
-        "user-friendly-size": (gobject.TYPE_PYOBJECT,
-                               "Description of client window size for user", "",
-                               gobject.PARAM_READABLE),
         "requested-position": (gobject.TYPE_PYOBJECT,
                                "Client-requested position on screen", "",
                                gobject.PARAM_READABLE),
@@ -199,7 +196,7 @@ class WindowModel(BaseWindowModel):
         w,h = X11Window.getGeometry(self.xid)[2:4]
         hints = self.get_property("size-hints")
         log("setup() hints=%s size=%ix%i", hints, w, h)
-        nw, nh = calc_constrained_size(w, h, hints)[:2]
+        nw, nh = calc_constrained_size(w, h, hints)
         if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
             #we can't handle windows that big!
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
@@ -392,17 +389,15 @@ class WindowModel(BaseWindowModel):
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
         allocated_w, allocated_h = window_size_cb()
-        geomlog("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
+        geomlog("_do_update_client_geometry: %ix%i", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
         geomlog("_do_update_client_geometry: hints=%s", hints)
-        size = calc_constrained_size(allocated_w, allocated_h, hints)
-        geomlog("_do_update_client_geometry: size=%s", size)
-        w, h, wvis, hvis = size
+        w, h = calc_constrained_size(allocated_w, allocated_h, hints)
+        geomlog.info("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         x, y = window_position_cb(w, h)
         geomlog("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
         self._internal_set_property("actual-size", (w, h))
-        self._internal_set_property("user-friendly-size", (wvis, hvis))
         with xswallow:
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
@@ -437,9 +432,8 @@ class WindowModel(BaseWindowModel):
             modded = True
         #size changes (and position if any):
         hints = self.get_property("size-hints")
-        size = calc_constrained_size(w, h, hints)
-        geomlog("resize_corral_window() new constrained size=%s", size)
-        w, h, wvis, hvis = size
+        w, h = calc_constrained_size(w, h, hints)
+        geomlog("resize_corral_window() new constrained size=%ix%i", w, h)
         if cow!=w or coh!=h:
             if (x, y) != (0, 0):
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
@@ -463,9 +457,6 @@ class WindowModel(BaseWindowModel):
         #these two should be using geometry rather than duplicating it?
         if self.get_property("actual-size")!=(w, h):
             self._internal_set_property("actual-size", (w, h))
-            modded = True
-        if self.get_property("user-friendly-size")!=(wvis, hvis):
-            self._internal_set_property("user-friendly-size", (wvis, hvis))
             modded = True
 
         if modded:
@@ -515,7 +506,7 @@ class WindowModel(BaseWindowModel):
                 h = event.data[4]
             #honour hints:
             hints = self.get_property("size-hints")
-            w, h, _, _ = calc_constrained_size(w, h, hints)
+            w, h = calc_constrained_size(w, h, hints)
             geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
             with xswallow:
                 X11Window.configureAndNotify(self.xid, x, y, w, h)
