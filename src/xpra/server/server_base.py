@@ -968,24 +968,36 @@ class ServerBase(ServerCore):
 
     def parse_hello_ui_clipboard(self, ss, c):
         #take the clipboard if no-one else has it yet:
-        if ss.clipboard_enabled and self._clipboard_helper is not None and \
-            (self._clipboard_client is None or self._clipboard_client.is_closed()):
-            self._clipboard_client = ss
-            #deal with buggy win32 clipboards:
-            if "clipboard.greedy" not in c:
-                #old clients without the flag: take a guess based on platform:
-                client_platform = c.strget("platform", "")
-                greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
-            else:
-                greedy = c.boolget("clipboard.greedy")
-            self._clipboard_helper.set_greedy_client(greedy)
-            want_targets = c.boolget("clipboard.want_targets")
-            self._clipboard_helper.set_want_targets_client(want_targets)
-            #the selections the client supports (default to all):
-            from xpra.platform.features import CLIPBOARDS
-            client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-            clipboardlog("process_hello server has clipboards: %s, client initial selections: %s", self._clipboards, client_selections)
-            self._clipboard_helper.enable_selections(client_selections)
+        if not ss.clipboard_enabled:
+            clipboardlog("client does not support clipboard")
+            return
+        if not self._clipboard_helper:
+            clipboardlog("server does not support clipboard")
+            return
+        cc = self._clipboard_client
+        if cc and not cc.is_closed():
+            clipboardlog("another client already owns the clipboard")
+            return
+        self._clipboard_client = ss
+        #deal with buggy win32 clipboards:
+        if "clipboard.greedy" not in c:
+            #old clients without the flag: take a guess based on platform:
+            client_platform = c.strget("platform", "")
+            greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
+        else:
+            greedy = c.boolget("clipboard.greedy")
+        self._clipboard_helper.set_greedy_client(greedy)
+        want_targets = c.boolget("clipboard.want_targets")
+        self._clipboard_helper.set_want_targets_client(want_targets)
+        #the selections the client supports (default to all):
+        from xpra.platform.features import CLIPBOARDS
+        client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+        clipboardlog("client %s is the clipboard peer", ss)
+        clipboardlog(" greedy=%s", greedy)
+        clipboardlog(" want targets=%s", want_targets)
+        clipboardlog(" server has selections: %s", csv(self._clipboards))
+        clipboardlog(" client initial selections: %s", csv(client_selections))
+        self._clipboard_helper.enable_selections(client_selections)
 
     def parse_hello_ui_keyboard(self, ss, c):
         #keyboard:

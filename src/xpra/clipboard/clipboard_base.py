@@ -23,6 +23,7 @@ from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Uncompressed
+from xpra.util import csv
 
 
 MIN_CLIPBOARD_COMPRESSION_SIZE = 512
@@ -51,7 +52,7 @@ else:
         "^com\.apple\.",
         "^CorePasteboardFlavorType",
         "^dyn\."]
-log("DISCARD_TARGETS=%s", DISCARD_TARGETS)
+log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 DISCARD_TARGETS = [re.compile(x) for x in DISCARD_TARGETS]
 
 TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
@@ -482,11 +483,12 @@ class ClipboardProxy(gtk.Invisible):
         log("%s.set_greedy_client(%s)", self, greedy)
         self._greedy_client = greedy
 
-    def __str__(self):
+    def __repr__(self):
         return  "ClipboardProxy(%s)" % self._selection
 
     def do_owner_changed(self, *args):
-        log("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
+        #log("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
+        log("clipboard: %s owner_changed greedy_client=%s, block_owner_change=%s", self._selection, self._greedy_client, self._block_owner_change)
         if self._enabled and self._greedy_client and not self._block_owner_change:
             self._block_owner_change = True
             self._have_token = False
@@ -613,7 +615,7 @@ class ClipboardProxy(gtk.Invisible):
             glib.idle_add(self.remove_block)
 
     def remove_block(self, *args):
-        log("remove_block(%s)", args)
+        log("remove_block: %s", self._selection)
         self._block_owner_change = False
 
     def claim(self):
