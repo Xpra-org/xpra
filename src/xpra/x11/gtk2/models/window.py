@@ -349,6 +349,7 @@ class WindowModel(BaseWindowModel):
         else:
             winner = None
         old_owner = self.get_property("owner")
+        log("ownership_election() winner=%s, old owner=%s, candidates=%s", winner, old_owner, candidates)
         if old_owner is winner:
             return False
         if old_owner is not None:
@@ -412,7 +413,7 @@ class WindowModel(BaseWindowModel):
         geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, self.corral_window.xid, self.xid, self._managed)
         if not self._managed:
             return
-        if event.window!=self.corral_window:
+        if event.window==self.corral_window:
             #we only care about events on the client window
             geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", self.corral_window.xid)
             return
