@@ -647,8 +647,7 @@ def get_xorg_bin():
     # Detect Xorg Binary
     for p in ("/usr/libexec/Xorg.bin",          #fedora 21?
               "/usr/libexec/Xorg",              #fedora 22
-              "/usr/lib/xorg-server/Xorg.wrap"  #arch linux?
-              "/usr/lib/xorg-server/Xorg"       #arch linux?
+              "/usr/lib/xorg-server/Xorg"       #arch linux
               ):
         if os.path.exists(p):
             return p
