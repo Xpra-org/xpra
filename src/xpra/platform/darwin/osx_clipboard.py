@@ -146,7 +146,7 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
         #see "got_token" below
         return None
 
-    def __str__(self):
+    def __repr__(self):
         return "OSXClipboardProtocolHelper"
 
 

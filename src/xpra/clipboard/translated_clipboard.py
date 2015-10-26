@@ -43,6 +43,10 @@ class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):
         kwargs["clipboards.remote"] = [self.remote_clipboard]
         ClipboardProtocolHelperBase.__init__(self, *args, **kwargs)
 
+    def __repr__(self):
+        return "TranslatedClipboardProtocolHelper"
+
+
     def local_to_remote(self, selection):
         log("local_to_remote(%s) local_clipboard=%s, remote_clipboard=%s", selection, self.local_clipboard, self.remote_clipboard)
         if selection==self.local_clipboard:

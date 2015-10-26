@@ -78,7 +78,7 @@ class ClipboardProtocolHelperBase(object):
         self.init_proxies(kwargs.get("clipboards.local", CLIPBOARDS))
         self.remote_clipboards = kwargs.get("clipboards.remote", CLIPBOARDS)
 
-    def __str__(self):
+    def __repr__(self):
         return "ClipboardProtocolHelperBase"
 
     def get_info(self):
@@ -106,6 +106,7 @@ class ClipboardProtocolHelperBase(object):
         #when clients first connect or later through the "clipboard-enable-selections" packet,
         #they can tell us which clipboard selections they want enabled
         #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
+        log("enabling selections: %s", csv(selections))
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_enabled(selection in selections)
 
@@ -138,7 +139,7 @@ class ClipboardProtocolHelperBase(object):
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
             self._clipboard_proxies[clipboard] = proxy
-        log("%s.init_proxies : %s", type(self), self._clipboard_proxies)
+        log("%s.init_proxies : %s", self, self._clipboard_proxies)
 
     def local_to_remote(self, selection):
         #overriden in some subclasses (see: translated_clipboard)
@@ -392,7 +393,6 @@ class ClipboardProtocolHelperBase(object):
 
     def _process_clipboard_enable_selections(self, packet):
         selections = packet[1]
-        log("enabling selections: %s", selections)
         self.enable_selections(selections)
 
 

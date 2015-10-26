@@ -19,8 +19,9 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
         to and from a form suitable for transport over the wire.
     """
 
-    def __str__(self):
+    def __repr__(self):
         return "GDKClipboardProtocolHelper"
+
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
         if dataformat == 32 and datatype in ("ATOM", "ATOM_PAIR"):
