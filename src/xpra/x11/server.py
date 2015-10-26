@@ -490,7 +490,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._add_new_window_common(window)
         _, _, w, h, _ = window.get_property("client-window").get_geometry()
         x, y, _, _, _ = window.corral_window.get_geometry()
-        windowlog("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
+        log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
@@ -500,9 +500,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         nw, nh = window.get_property("actual-size")
         x, y = window.get_property("geometry")[:2]
         geom = self._desktop_manager.window_geometry(window)
-        windowlog("XpraServer._window_resized_signaled(%s,%s) position=%sx%s, actual-size=%sx%s, current geometry=%s", window, args, x, y, nw, nh, geom)
+        geomlog("XpraServer._window_resized_signaled(%s,%s) position=%sx%s, actual-size=%sx%s, current geometry=%s", window, args, x, y, nw, nh, geom)
         if geom[:4]==[x, y, nw, nh]:
-            windowlog("XpraServer._window_resized_signaled: unchanged")
+            geomlog("XpraServer._window_resized_signaled: unchanged")
             #unchanged
             return
         geom[:4] = [x, y, nw, nh]
@@ -516,14 +516,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.snc_timer = glib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce):
-        windowlog("size_notify_clients(%s, %s) last_client_configure_event=%s", window, lcce, self.last_client_configure_event)
+        geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s", window, lcce, self.last_client_configure_event)
         self.snc_timer = 0
         wid = self._window_to_id.get(window)
         if not wid:
-            windowlog("size_notify_clients: window is gone")
+            geomlog("size_notify_clients: window is gone")
             return
         if lcce!=self.last_client_configure_event:
-            windowlog("size_notify_clients: we have received a new client resize since")
+            geomlog("size_notify_clients: we have received a new client resize since")
             return
         geom = self._desktop_manager.window_geometry(window)
         x, y, nw, nh = geom[:4]
@@ -592,9 +592,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _or_window_geometry_changed(self, window, pspec=None):
         (x, y, w, h) = window.get_property("geometry")
         if w>=32768 or h>=32768:
-            windowlog.error("not sending new invalid window dimensions: %ix%i !", w, h)
+            geomlog.error("not sending new invalid window dimensions: %ix%i !", w, h)
             return
-        windowlog("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
+        geomlog("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.or_window_geometry(wid, window, x, y, w, h)
