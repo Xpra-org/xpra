@@ -369,6 +369,9 @@ class WindowModel(BaseWindowModel):
             self._update_client_geometry()
 
     def _update_client_geometry(self):
+        """ figure out where we're supposed to get the window geometry from,
+            and call do_update_client_geometry which will send a Configure and Notify
+        """
         owner = self.get_property("owner")
         if owner is not None:
             geomlog("_update_client_geometry: using owner=%s (setup_done=%s)", owner, self._setup_done)
@@ -376,7 +379,6 @@ class WindowModel(BaseWindowModel):
                 return  owner.window_size(self)
             def window_position(w, h):
                 return  owner.window_position(self, w, h)
-            self._do_update_client_geometry(window_size, window_position)
         elif not self._setup_done:
             #try to honour initial size and position requests during setup:
             def window_size():
@@ -384,9 +386,14 @@ class WindowModel(BaseWindowModel):
             def window_position(w=0, h=0):
                 return self.get_property("requested-position")
             geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
-            self._do_update_client_geometry(window_size, window_position)
         else:
             geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
+            def window_size():
+                return self.get_property("geometry")[2:4]
+            def window_position(w=0, h=0):
+                return self.get_property("geometry")[:2]
+        self._do_update_client_geometry(window_size, window_position)
+
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
         allocated_w, allocated_h = window_size_cb()
