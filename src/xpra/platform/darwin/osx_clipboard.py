@@ -127,6 +127,7 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
 
     def __init__(self, *args, **kwargs):
         init_pasteboard()
+        kwargs["clipboards.remote"] = ["CLIPBOARD"]
         GDKClipboardProtocolHelper.__init__(self, *args, **kwargs)
 
     def make_proxy(self, clipboard):
