@@ -494,7 +494,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _window_resized_signaled(self, window, *args):
         nw, nh = window.get_property("actual-size")
-        x, y = window.get_position()
+        x, y = window.get_property("geometry")[:2]
         geom = self._desktop_manager.window_geometry(window)
         windowlog("XpraServer._window_resized_signaled(%s,%s) position=%sx%s, actual-size=%sx%s, current geometry=%s", window, args, x, y, nw, nh, geom)
         if geom[:4]==[x, y, nw, nh]:

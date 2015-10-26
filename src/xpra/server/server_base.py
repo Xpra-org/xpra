@@ -1688,7 +1688,7 @@ class ServerBase(ServerCore):
              "override-redirect"    : window.is_OR(),
              "tray"                 : window.is_tray(),
              "size"                 : window.get_dimensions(),
-             "position"             : window.get_position()})
+             })
         return info
 
 

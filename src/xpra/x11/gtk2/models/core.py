@@ -452,9 +452,6 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         return (x, y, w + 2*b, h + 2*b)
 
 
-    def get_position(self):
-        return self.do_get_property_geometry()[:2]
-
     def get_dimensions(self):
         return self.do_get_property_geometry()[2:4]
 
