@@ -874,11 +874,6 @@ class XpraClientBase(object):
             printlog.error("Error: printer '%s' does not exist!", printer)
             printlog.error(" printers available: %s", csv(printers.keys()) or "none")
             return
-        job = print_files(printer, [filename], title, options)
-        printlog("printing %s, job=%s", filename, job)
-        if not job:
-            return
-        start = time.time()
         def delfile():
             if not DELETE_PRINTER_FILE:
                 return
@@ -887,6 +882,13 @@ class XpraClientBase(object):
             except:
                 printlog("failed to delete print job file '%s'", filename)
             return False
+        job = print_files(printer, [filename], title, options)
+        printlog("printing %s, job=%s", filename, job)
+        if job<=0:
+            printlog("printing failed and returned %i", job)
+            delfile()
+            return
+        start = time.time()
         def check_printing_finished():
             done = printing_finished(job)
             printlog("printing_finished(%s)=%s", job, done)
