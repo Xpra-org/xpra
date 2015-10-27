@@ -696,10 +696,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         #shouldn't the border width always be 0?
         geom = (event.x, event.y, event.width, event.height, event.border_width)
         geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", event, self.xid, self._geometry, geom)
-        if geom!=self._geometry:
-            self._geometry = geom
-            #X11Window.MoveResizeWindow(self.xid, )
-            self.notify("geometry")
+        self._updateprop("geometry", geom)
 
 
     def do_xpra_shape_event(self, event):
