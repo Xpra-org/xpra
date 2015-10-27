@@ -594,11 +594,7 @@ class BaseWindowModel(CoreX11WindowModel):
         #   _NET_RESTACK_WINDOW
         #   _NET_WM_STATE (more fully)
 
-        if event.message_type=="_NET_CLOSE_WINDOW":
-            log.info("_NET_CLOSE_WINDOW received by %s", self)
-            self.request_close()
-            return True
-        elif event.message_type=="_NET_WM_STATE":
+        if event.message_type=="_NET_WM_STATE":
             def update_wm_state(prop):
                 current = self.get_property(prop)
                 mode = event.data[0]
@@ -611,7 +607,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 else:
                     log.warn("invalid mode for _NET_WM_STATE: %s", mode)
                     return
-                log("do_xpra_client_message_event(%s) window %s=%s after %s (current state=%s)", event, prop, v, STATE_STRING.get(mode, mode), current)
+                log("process_client_message_event(%s) window %s=%s after %s (current state=%s)", event, prop, v, STATE_STRING.get(mode, mode), current)
                 if v!=current:
                     self.update_wm_state(prop, v)
             atom1 = get_pyatom(event.window, event.data[1])
@@ -644,7 +640,7 @@ class BaseWindowModel(CoreX11WindowModel):
             elif atom1=="_NET_WM_STATE_MODAL":
                 update_wm_state("modal")
             else:
-                log.info("do_xpra_client_message_event(%s) unhandled atom=%s", event, atom1)
+                log.info("process_client_message_event(%s) unhandled atom=%s", event, atom1)
             return True
         elif event.message_type=="WM_CHANGE_STATE":
             log("WM_CHANGE_STATE: %s", event.data[0])
@@ -689,4 +685,4 @@ class BaseWindowModel(CoreX11WindowModel):
         # it may make sense to apply it to the client_window
         # whereas the code in WindowModel assumes there is a corral window
         #not handled:
-        return False
+        return CoreX11WindowModel.process_client_message_event(self, event)

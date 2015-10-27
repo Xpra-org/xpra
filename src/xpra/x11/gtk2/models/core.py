@@ -677,6 +677,10 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             framelog("_NET_REQUEST_FRAME_EXTENTS")
             self._handle_frame_changed()
             return True
+        elif event.message_type=="_NET_MOVERESIZE_WINDOW":
+            #this is overriden in WindowModel, skipped everywhere else:
+            geomlog("_NET_MOVERESIZE_WINDOW skipped on %s (data=%s)", self, event.data)
+            return True
         #not handled:
         return False
 
