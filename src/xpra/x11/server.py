@@ -839,7 +839,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
         window = self._id_to_window.get(wid)
-        geomlog("client configured window %s - %s, at: %s", wid, window, (x, y, w, h))
         if not window:
             geomlog("cannot map window %s: already removed!", wid)
             return
@@ -855,6 +854,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.last_client_configure_event = time.time()
             if len(packet)>=9:
                 changes = self._set_window_state(proto, wid, window, packet[8])
+                metadatalog("window state changes: %s", changes)
                 damage = len(changes)>0
             if not skip_geometry:
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
@@ -862,7 +862,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
                 damage |= oww!=w or owh!=h
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, window, packet[6])
+            cprops = packet[6]
+            if cprops:
+                metadatalog("window client properties updates: %s", cprops)
+                self._set_client_properties(proto, wid, window, cprops)
         self.repaint_root_overlay()
         if damage:
             self._damage(window, 0, 0, w, h)
