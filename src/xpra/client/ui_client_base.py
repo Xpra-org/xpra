@@ -2382,30 +2382,30 @@ class UIXpraClient(XpraClientBase):
         self._window_to_id[tray] = wid
 
     def _process_window_move_resize(self, packet):
-        (wid, x, y, w, h) = packet[1:6]
-        x = self.sx(x)
-        y = self.sy(y)
-        w = max(1, self.sx(w))
-        h = max(1, self.sy(h))
+        wid, x, y, w, h = packet[1:6]
+        ax = self.sx(x)
+        ay = self.sy(y)
+        aw = max(1, self.sx(w))
+        ah = max(1, self.sy(h))
         resize_counter = -1
         if len(packet)>4:
             resize_counter = packet[4]
         window = self._id_to_window.get(wid)
-        geomlog("_process_window_resized moving / resizing window %s (id=%s) to %s", window, wid, (x, y, w, h))
+        geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s", packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
-            window.move_resize(x, y, w, h, resize_counter)
+            window.move_resize(ax, ay, aw, ah, resize_counter)
 
     def _process_window_resized(self, packet):
-        (wid, w, h) = packet[1:4]
-        w = max(1, self.sx(w))
-        h = max(1, self.sy(h))
+        wid, w, h = packet[1:4]
+        aw = max(1, self.sx(w))
+        ah = max(1, self.sy(h))
         resize_counter = -1
         if len(packet)>4:
             resize_counter = packet[4]
         window = self._id_to_window.get(wid)
-        geomlog("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
+        geomlog("_process_window_resized%s resizing window %s (id=%s) to %s", packet[1:], window, wid, (aw,ah))
         if window:
-            window.resize(w, h, resize_counter)
+            window.resize(aw, ah, resize_counter)
 
     def _process_draw(self, packet):
         self._draw_queue.put(packet)
@@ -2565,7 +2565,12 @@ class UIXpraClient(XpraClientBase):
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window[wid]
-        window.move_resize(x, y, w, h, -1)
+        ax = self.sx(x)
+        ay = self.sy(y)
+        aw = max(1, self.sx(w))
+        ah = max(1, self.sy(h))
+        geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s", packet[1:], window, wid, (ax,ay,aw,ah))
+        window.move_resize(ax, ay, aw, ah, -1)
 
     def _process_lost_window(self, packet):
         wid = packet[1]

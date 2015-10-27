@@ -943,15 +943,17 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._set_backing_size(w, h)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
-        geomlog("move_resize%s", (x, y, w, h, resize_counter))
+        geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
         self._resize_counter = resize_counter
         window = self.get_window()
         if window.get_position()==(x, y):
-            geomlog("unchanged position %ix%i, using resize(%i, %i)", x, y, w, h)
             #same location, just resize:
-            if self._size!=(w, h):
+            if self._size==(w, h):
+                geomlog("window unchanged")
+            else:
+                geomlog("unchanged position %ix%i, using resize(%i, %i)", x, y, w, h)
                 self.resize(w, h)
             return
         #we have to move:
