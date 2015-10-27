@@ -472,24 +472,36 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
-        (x, y) = self.get_property("requested-position")
+        ogeom = self._geometry
+        x, y, w, h = ogeom[:4]
+        rx, ry = self.get_property("requested-position")
         if event.value_mask & CWX:
             x = event.x
+            rx = x
         if event.value_mask & CWY:
             y = event.y
-        self._internal_set_property("requested-position", (x, y))
+            ry = y
+        self._updateprop("requested-position", (rx, ry))
 
-        (w, h) = self.get_property("requested-size")
+        rw, rh = self.get_property("requested-size")
         if event.value_mask & CWWidth:
             w = event.width
+            rw = w
         if event.value_mask & CWHeight:
             h = event.height
-        self._internal_set_property("requested-size", (w, h))
+            rh = h
+        self._updateprop("requested-size", (rw, rh))
+
+        hints = self.get_property("size-hints")
+        w, h = calc_constrained_size(w, h, hints)
+        #update the geometry now, as another request may come in
+        #before we've had a chance to process the ConfigureNotify that the code below will generate
+        self._geometry = (x, y, w, h, ogeom[4])
+        geomlog("do_child_configure_request_event updated requested geometry from %s to  %s", ogeom[:4], (x, y, w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
-        geomlog("do_child_configure_request_event updated requested geometry: %s", (x, y, w, h))
-        self._update_client_geometry()
-
+        with xswallow:
+            X11Window.configureAndNotify(self.xid, x, y, w, h)
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
