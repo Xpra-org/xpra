@@ -190,14 +190,14 @@ class WindowModel(BaseWindowModel):
         self.client_reparented = True
 
         log("setup() geometry")
-        w, h, border = X11Window.geometry_with_border(self.xid)[2:5]
+        w, h = X11Window.geometry_with_border(self.xid)[2:4]
         hints = self.get_property("size-hints")
         log("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = calc_constrained_size(w, h, hints)
         if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
             #we can't handle windows that big!
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
-        self._geometry = x, y, nw, nh, border
+        self._updateprop("geometry", (x, y, nw, nh))
         log("setup() resizing windows to %sx%s", nw, nh)
         self.corral_window.resize(nw, nh)
         self.client_window.resize(nw, nh)
@@ -399,8 +399,7 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         geomlog("_do_update_client_geometry: position=%ix%i", x, y)
         self.corral_window.move_resize(x, y, w, h)
-        border = self._geometry[4]
-        self._geometry = (x, y, w, h, border)
+        self._updateprop("geometry", (x, y, w, h))
         with xswallow:
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
@@ -425,8 +424,7 @@ class WindowModel(BaseWindowModel):
         try:
             #workaround applications whose windows disappear from underneath us:
             with xsync:
-                if self.resize_corral_window(event.x, event.y, event.width, event.height, event.border_width):
-                    self.notify("geometry")
+                self.resize_corral_window(event.x, event.y, event.width, event.height, event.border_width)
         except XError as e:
             geomlog.warn("failed to resize corral window: %s", e)
 
@@ -444,28 +442,15 @@ class WindowModel(BaseWindowModel):
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
                 self.client_window.move(0, 0)
-                cox, coy, cow, coh = x, y, w, h
             else:
                 #just resize:
                 geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
                 self.corral_window.resize(w, h)
-                cow, coh = w, h
-            modded = True
         #just position change:
         elif (x, y) != (0, 0):
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
-            cox, coy = x, y
-            modded = True
-        else:
-            #no position or size change, maybe border?
-            modded = self._geometry[4]!=border
-
-        if modded:
-            self._geometry = (cox, coy, cow, coh, border)
-        geomlog("resize_corral_window() modified=%s, geometry=%s", modded, self._geometry)
-        return modded
 
     def do_child_configure_request_event(self, event):
         geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask))

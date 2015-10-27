@@ -184,7 +184,6 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._managed = False
         self._managed_handlers = []
         self._setup_done = False
-        self._geometry = None
         self._composite = None
         self._damage_forward_handle = None
         self._kill_count = 0
@@ -219,7 +218,8 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         """
         try:
             with xsync:
-                self._geometry = X11Window.geometry_with_border(self.xid)
+                geom = X11Window.geometry_with_border(self.xid)
+                self._internal_set_property("geometry", geom[:4])
                 self._read_initial_X11_properties()
         except XError as e:
             raise Unmanageable(e)
@@ -365,7 +365,6 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         #try XShm:
         try:
-            #logger("get_image(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
             shm = self._composite.get_shm_handle()
             #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
@@ -443,18 +442,9 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
     # Property reading
     ################################
 
-    def do_get_property_geometry(self, pspec=None):
-        if self._geometry is None:
-            with xsync:
-                self._geometry = X11Window.geometry_with_border(self.xid)
-                geomlog("BaseWindowModel.do_get_property_geometry() synced update: geometry(%#x)=%s", self.xid, self._geometry)
-        x, y, w, h, b = self._geometry
-        return (x, y, w + 2*b, h + 2*b)
-
-
     def get_dimensions(self):
         #just extracts the size from the geometry:
-        return self.do_get_property_geometry()[2:4]
+        return self.get_property("geometry")[2:4]
 
 
     #########################################
@@ -694,8 +684,8 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         if self.client_window is None or not self._managed:
             return
         #shouldn't the border width always be 0?
-        geom = (event.x, event.y, event.width, event.height, event.border_width)
-        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, old geometry=%s, new geometry=%s", event, self.xid, self._geometry, geom)
+        geom = (event.x, event.y, event.width, event.height)
+        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, new geometry=%s", event, self.xid, geom)
         self._updateprop("geometry", geom)
 
 

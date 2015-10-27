@@ -36,7 +36,6 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         #Used by clients to tell us where the tray is located on screen
         log("SystemTrayModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
         self.client_window.move_resize(x, y, width, height)
-        border = self._geometry[4]
-        self._geometry = (x, y, width, height, border)
+        self._updateprop("geometry", (x, y, width, height))
 
 gobject.type_register(SystemTrayWindowModel)
