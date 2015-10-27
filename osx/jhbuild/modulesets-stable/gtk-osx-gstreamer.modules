@@ -116,9 +116,9 @@
   <autotools id="gst-plugins-ugly-1.0" autogenargs="--disable-tests"
              supports-non-srcdir-builds="no" makeargs="ERROR_CFLAGS="
              autogen-sh="configure">
-    <branch repo="gstreamer" version="1.4.3"
-            module="gst-plugins-ugly/gst-plugins-ugly-1.4.3.tar.xz"
-            hash="sha256:d581592a82cf3930361430d38436c30a58d8b6c249cad18f7f213b203e206d46"/>
+    <branch repo="gstreamer" version="1.4.5"
+            module="gst-plugins-ugly/gst-plugins-ugly-1.4.5.tar.xz"
+            hash="sha256:5cd5e81cf618944f4dc935f1669b2125e8bb2fe9cc7dc8dc15b72237aca49067"/>
     <dependencies>
       <dep package="gstreamer-1.0"/>
       <dep package="gst-plugins-base-1.0"/>
