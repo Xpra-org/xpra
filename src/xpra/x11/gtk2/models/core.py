@@ -89,7 +89,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
                 gobject.PARAM_READABLE),
         #FIXME: this is an ugly virtual property
         "geometry": (gobject.TYPE_PYOBJECT,
-                "current (border-corrected, relative to parent) coordinates (x, y, w, h) for the window", "",
+                "current coordinates (x, y, w, h, border) for the window", "",
                 gobject.PARAM_READABLE),
         #if the window depth is 32 bit
         "has-alpha": (gobject.TYPE_BOOLEAN,
