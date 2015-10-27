@@ -15,7 +15,6 @@ import urllib
 
 
 from xpra.log import Logger
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 log = Logger("printing")
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
@@ -60,15 +59,6 @@ if dco:
             continue
         #is it a boolean?
         k,v = parts
-        if v.lower() in TRUE_OPTIONS:
-            v = True
-        elif v.lower() in FALSE_OPTIONS:
-            v = False
-        else:
-            try:
-                v = int(v)
-            except:
-                pass
         DEFAULT_CUPS_OPTIONS[k] = v
     log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
 
