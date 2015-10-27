@@ -457,7 +457,7 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
-        ogeom = self._geometry
+        ogeom = self.get_property("geometry")
         x, y, w, h = ogeom[:4]
         rx, ry = self.get_property("requested-position")
         if event.value_mask & CWX:
@@ -481,8 +481,8 @@ class WindowModel(BaseWindowModel):
         w, h = calc_constrained_size(w, h, hints)
         #update the geometry now, as another request may come in
         #before we've had a chance to process the ConfigureNotify that the code below will generate
-        self._geometry = (x, y, w, h, ogeom[4])
-        geomlog("do_child_configure_request_event updated requested geometry from %s to  %s", ogeom[:4], (x, y, w, h))
+        self._updateprop("geometry", (x, y, w, h))
+        geomlog("do_child_configure_request_event updated requested geometry from %s to  %s", ogeom, (x, y, w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
         with xswallow:
