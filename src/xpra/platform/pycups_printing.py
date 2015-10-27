@@ -14,8 +14,12 @@ import getpass
 import urllib
 
 
+from xpra.util import engs
 from xpra.log import Logger
 log = Logger("printing")
+
+
+SIMULATE_PRINT_FAILURE = os.environ.get("XPRA_SIMULATE_PRINT_FAILURE", "0")=="1"
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
 RAW_MODE = os.environ.get("XPRA_PRINTER_RAW", "0")=="1"
@@ -350,10 +354,24 @@ def print_files(printer, filenames, title, options):
     log("pycups.print_files%s", (printer, filenames, title, options))
     actual_options = DEFAULT_CUPS_OPTIONS.copy()
     actual_options.update(options)
-    conn = cups.Connection()
-    printpid = conn.printFiles(printer, filenames, title, actual_options)
-    log("pycups %s.printFiles%s=%s", conn, (printer, filenames, title, actual_options), printpid)
-    assert printpid>0, "printing failed and returned job id %s" % printpid
+    if SIMULATE_PRINT_FAILURE:
+        log.warn("Warning: simulating print failure")
+        conn = None
+        printpid = -1
+    else:
+        conn = cups.Connection()
+        printpid = conn.printFiles(printer, filenames, title, actual_options)
+    if printpid<=0:
+        log.error("Error: pycups printing on '%s' failed for file%s", printer, engs(filenames))
+        for f in filenames:
+            log.error(" %s", f)
+        log.error(" using cups server connection: %s", conn)
+        if actual_options:
+            log.error(" printer options:")
+            for k,v in actual_options.items():
+                log.error("  %-24s : %s", k, v)
+    else:
+        log("pycups %s.printFiles%s=%s", conn, (printer, filenames, title, actual_options), printpid)
     return printpid
 
 def printing_finished(printpid):
