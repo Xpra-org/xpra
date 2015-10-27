@@ -87,6 +87,9 @@ class DesktopManager(gtk.Widget):
     def window_geometry(self, model):
         return self._models[model].geom
 
+    def update_window_geometry(self, model, x, y, w, h):
+        self._models[model].geom = [x, y, w, h]
+
     def get_resize_counter(self, window, inc=0):
         model = self._models[window]
         v = model.resize_counter+inc
@@ -309,6 +312,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         info = X11ServerBase.get_window_info(self, window)
         info["focused"] = self._has_focus and self._window_to_id.get(window, -1)==self._has_focus
         info["grabbed"] = self._has_grab and self._window_to_id.get(window, -1)==self._has_grab
+        info["geometry"] = window.get_property("geometry")
+        info["shown"] = self._desktop_manager.is_shown(window)
+        try:
+            info["client-geometry"] = self._desktop_manager.window_geometry(window)
+        except:
+            pass        #OR or tray window
         return info
 
 
@@ -435,7 +444,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #just for the new client too:
             if window.is_tray():
                 #code more or less duplicated from _send_new_tray_window_packet:
-                w, h = window.get_property("geometry")[2:4]
+                w, h = window.get_dimensions()
                 if ss.system_tray:
                     ss.new_tray(wid, window, w, h)
                     ss.damage(wid, window, 0, 0, w, h)
@@ -488,24 +497,22 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _add_new_window(self, window):
         self._add_new_window_common(window)
-        _, _, w, h, _ = window.get_property("client-window").get_geometry()
-        x, y, _, _, _ = window.corral_window.get_geometry()
-        log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
+        x, y, w, h = window.get_property("geometry")
+        log.info("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
 
 
     def _window_resized_signaled(self, window, *args):
-        geometry = window.get_property("geometry")
-        x, y, nw, nh = geometry[:4]
+        x, y, nw, nh = window.get_property("geometry")[:4]
         geom = self._desktop_manager.window_geometry(window)
-        geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s", window, args, geometry, geom)
-        if geom[:4]==[x, y, nw, nh]:
+        geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s", window, args, (x, y, nw, nh), geom)
+        if geom==[x, y, nw, nh]:
             geomlog("XpraServer._window_resized_signaled: unchanged")
             #unchanged
             return
-        geom[:4] = [x, y, nw, nh]
+        self._desktop_manager.update_window_geometry(window, x, y, nw, nh)
         lcce = self.last_client_configure_event
         if self.snc_timer>0:
             glib.source_remove(self.snc_timer)
@@ -525,11 +532,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if lcce!=self.last_client_configure_event:
             geomlog("size_notify_clients: we have received a new client resize since")
             return
-        geom = self._desktop_manager.window_geometry(window)
-        x, y, nw, nh = geom[:4]
+        x, y, nw, nh = self._desktop_manager.window_geometry(window)
         resize_counter = self._desktop_manager.get_resize_counter(window, 1)
         for ss in self._server_sources.values():
-            ss.move_resize_window(self._window_to_id[window], window, x, y, nw, nh, resize_counter)
+            ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
             #refresh to ensure the client gets the new window contents:
             #TODO: to save bandwidth, we should compare the dimensions and skip the refresh
             #if the window is smaller than before, or at least only send the new edges rather than the whole window
@@ -551,9 +557,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if window:
             if window.is_managed():
                 windowlog("found existing window model %s for %#x, will refresh it", type(window), xid)
-                geometry = window.get_property("geometry")
-                _, _, w, h = geometry
-                self._damage(window, 0, 0, w, h, options={"min_delay" : 50})
+                ww, wh = window.get_dimensions()
+                self._damage(window, 0, 0, ww, wh, options={"min_delay" : 50})
                 return
             windowlog("found existing model %s (but no longer managed!) for %#x", type(window), xid)
             #we could try to re-use the existing model and window ID,
@@ -590,7 +595,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #so we *should* get a signal when the window goes away
 
     def _or_window_geometry_changed(self, window, pspec=None):
-        (x, y, w, h) = window.get_property("geometry")
+        x, y, w, h = window.get_property("geometry")[:4]
         if w>=32768 or h>=32768:
             geomlog.error("not sending new invalid window dimensions: %ix%i !", w, h)
             return
@@ -694,14 +699,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
-        (_, _, w, h) = geometry
-        self._damage(window, 0, 0, w, h)
+        ww, wh = window.get_dimensions()
+        self._damage(window, 0, 0, ww, wh)
 
     def _send_new_tray_window_packet(self, wid, window):
-        (_, _, w, h) = window.get_property("geometry")
+        ww, wh = window.get_dimensions()
         for ss in self._server_sources.values():
-            ss.new_tray(wid, window, w, h)
-        self._damage(window, 0, 0, w, h)
+            ss.new_tray(wid, window, ww, wh)
+        self._damage(window, 0, 0, ww, wh)
 
 
     def _lost_window(self, window, wm_exiting=False):
@@ -910,10 +915,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def update_root_overlay(self, window, x, y, image):
         overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
         gc = overlaywin.new_gc()
-        if window.is_OR() or window.is_tray():
-            wx, wy = window.get_property("geometry")[:2]
-        else:
-            wx, wy = self._desktop_manager.window_geometry(window)[:2]
+        wx, wy = window.get_property("geometry")[:2]
         #FIXME: we should paint the root overlay directly
         # either using XCopyArea or XShmPutImage,
         # using GTK and having to unpremultiply then convert to RGB is just too slooooow
@@ -1012,10 +1014,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s", self._has_focus, self._has_grab, order)
         for k in sorted(order):
             window = order[k]
-            if window.is_OR() or window.is_tray():
-                x, y, w, h = window.get_property("geometry")[:4]
-            else:
-                x, y, w, h = self._desktop_manager.window_geometry(window)[:4]            
+            x, y, w, h = window.get_property("geometry")[:4]
             image = window.get_image(0, 0, w, h)
             if image:
                 self.update_root_overlay(window, 0, 0, image)
@@ -1074,13 +1073,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if not window.is_managed():
                 log("screenshot: window %s is not/no longer managed", wid)
                 continue
-            if window.is_OR() or window.is_tray():
-                x, y = window.get_property("geometry")[:2]
-            else:
-                x, y = self._desktop_manager.window_geometry(window)[:2]
-            log("screenshot: position(%s)=%s,%s", window, x, y)
-            w, h = window.get_dimensions()
-            log("screenshot: size(%s)=%sx%s", window, w, h)
+            x, y, w, h = window.get_property("geometry")[:4]
+            log("screenshot: geometry(%s)=%s", window, (x, y, w, h))
             try:
                 with xsync:
                     img = window.get_image(0, 0, w, h)
