@@ -245,7 +245,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gmplib" autogen-sh="ABI=`python -c 'import struct;print( 8 * struct.calcsize("P"))' configure">
+  <autotools id="gmplib" autogen-sh="ABI=`python -c 'import struct;print( 8 * struct.calcsize("P"))'` configure">
     <branch module="/pub/gmp-6.0.0/gmp-6.0.0a.tar.xz"
 			version="6.0.0a"
                         hash="md5:1e6da4e434553d2811437aa42c7f7c76"
