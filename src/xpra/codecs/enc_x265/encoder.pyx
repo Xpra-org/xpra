@@ -4,9 +4,13 @@
 # later version. See the file COPYING for details.
 
 import time
+import os
 
 from xpra.log import Logger
 log = Logger("encoder", "x265")
+
+LOG_NALS = os.environ.get("XPRA_X265_LOG_NALS", "0")=="1"
+
 
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_codec_spec
 
@@ -32,6 +36,33 @@ cdef extern from "x265.h":
 
     const char *x265_version_str
     int x265_max_bit_depth
+
+    int NAL_UNIT_CODED_SLICE_TRAIL_N
+    int NAL_UNIT_CODED_SLICE_TRAIL_R
+    int NAL_UNIT_CODED_SLICE_TSA_N
+    int NAL_UNIT_CODED_SLICE_TLA_R
+    int NAL_UNIT_CODED_SLICE_STSA_N
+    int NAL_UNIT_CODED_SLICE_STSA_R
+    int NAL_UNIT_CODED_SLICE_RADL_N
+    int NAL_UNIT_CODED_SLICE_RADL_R
+    int NAL_UNIT_CODED_SLICE_RASL_N
+    int NAL_UNIT_CODED_SLICE_RASL_R
+    int NAL_UNIT_CODED_SLICE_BLA_W_LP
+    int NAL_UNIT_CODED_SLICE_BLA_W_RADL
+    int NAL_UNIT_CODED_SLICE_BLA_N_LP
+    int NAL_UNIT_CODED_SLICE_IDR_W_RADL
+    int NAL_UNIT_CODED_SLICE_IDR_N_LP
+    int NAL_UNIT_CODED_SLICE_CRA
+    int NAL_UNIT_VPS
+    int NAL_UNIT_SPS
+    int NAL_UNIT_PPS
+    int NAL_UNIT_ACCESS_UNIT_DELIMITER
+    int NAL_UNIT_EOS
+    int NAL_UNIT_EOB
+    int NAL_UNIT_FILLER_DATA
+    int NAL_UNIT_PREFIX_SEI
+    int NAL_UNIT_SUFFIX_SEI
+    int NAL_UNIT_INVALID
 
     ctypedef struct rc:
         int         rateControlMode                 #explicit mode of rate-control, must be one of the X265_RC_METHODS enum values
@@ -201,6 +232,35 @@ cdef char *PROFILE_MAIN     = "main"
 cdef char *PROFILE_MAIN10   = "main10"
 cdef char *PROFILE_MAINSTILLPICTURE = "mainstillpicture"
 PROFILES = [PROFILE_MAIN, PROFILE_MAIN10, PROFILE_MAINSTILLPICTURE]
+
+NAL_TYPES = {
+    NAL_UNIT_CODED_SLICE_TRAIL_N        : "CODED_SLICE_TRAIL_N",
+    NAL_UNIT_CODED_SLICE_TRAIL_R        : "CODED_SLICE_TRAIL_R",
+    NAL_UNIT_CODED_SLICE_TSA_N          : "CODED_SLICE_TSA_N",
+    NAL_UNIT_CODED_SLICE_TLA_R          : "CODED_SLICE_TLA_R",
+    NAL_UNIT_CODED_SLICE_STSA_N         : "CODED_SLICE_STSA_N",
+    NAL_UNIT_CODED_SLICE_STSA_R         : "CODED_SLICE_STSA_R",
+    NAL_UNIT_CODED_SLICE_RADL_N         : "CODED_SLICE_RADL_N",
+    NAL_UNIT_CODED_SLICE_RADL_R         : "CODED_SLICE_RADL_R",
+    NAL_UNIT_CODED_SLICE_RASL_N         : "CODED_SLICE_RASL_N",
+    NAL_UNIT_CODED_SLICE_RASL_R         : "CODED_SLICE_RASL_R",
+    NAL_UNIT_CODED_SLICE_BLA_W_LP       : "CODED_SLICE_BLA_W_LP",
+    NAL_UNIT_CODED_SLICE_BLA_W_RADL     : "CODED_SLICE_BLA_W_RADL",
+    NAL_UNIT_CODED_SLICE_BLA_N_LP       : "CODED_SLICE_BLA_N_LP",
+    NAL_UNIT_CODED_SLICE_IDR_W_RADL     : "CODED_SLICE_IDR_W_RADL",
+    NAL_UNIT_CODED_SLICE_IDR_N_LP       : "CODED_SLICE_IDR_N_LP",
+    NAL_UNIT_CODED_SLICE_CRA            : "CODED_SLICE_CRA",
+    NAL_UNIT_VPS                        : "VPS",
+    NAL_UNIT_SPS                        : "SPS",
+    NAL_UNIT_PPS                        : "PPS",
+    NAL_UNIT_ACCESS_UNIT_DELIMITER      : "ACCESS_UNIT_DELIMITER",
+    NAL_UNIT_EOS                        : "EOS",
+    NAL_UNIT_EOB                        : "EOB",
+    NAL_UNIT_FILLER_DATA                : "FILLER_DATA",
+    NAL_UNIT_PREFIX_SEI                 : "PREFIX_SEI",
+    NAL_UNIT_SUFFIX_SEI                 : "SUFFIX_SEI",
+    NAL_UNIT_INVALID                    : "INVALID",
+    }
 
 #as per the source code: only these two formats are supported:
 COLORSPACES = ["YUV420P", "YUV444P"]
@@ -486,6 +546,9 @@ cdef class Encoder:
         for i in range(nnal):
             nal_size = nal[i].sizeBytes
             out = <char *>nal[i].payload
+            if LOG_NALS:
+                log.info(" nal %s type:%10s, payload=%#x, payload size=%#x",
+                         i, NAL_TYPES.get(nal[i].type, nal[i].type), <unsigned long> out, nal_size)
             frame_size += nal_size
             data.append(out[:nal_size])
         x265_picture_free(pic_out)
