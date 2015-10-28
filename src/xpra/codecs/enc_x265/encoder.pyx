@@ -247,7 +247,7 @@ def get_spec(encoding, colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return video_codec_spec(encoding=encoding, output_colorspaces=colorspace,
+    return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace],
                       codec_class=Encoder, codec_type=get_type(),
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
@@ -286,7 +286,6 @@ cdef class Encoder:
 
     cdef init_encoder(self):
         cdef const char *preset
-        cdef r
 
         self.param = x265_param_alloc()
         assert self.param!=NULL
@@ -425,7 +424,7 @@ cdef class Encoder:
         cdef int r = 0
         cdef x265_picture *pic_out
         cdef x265_picture *pic_in
-        cdef int frame_size = 0
+        cdef int nal_size, frame_size = 0
 
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
@@ -484,9 +483,11 @@ cdef class Encoder:
             x265_picture_free(pic_out)
             log.error("x265 encoding error: %s", r)
             return None
-        frame_size = nal[0].sizeBytes
-        out = <char *>nal[0].payload
-        data.append(out[:frame_size])
+        for i in range(nnal):
+            nal_size = nal[i].sizeBytes
+            out = <char *>nal[i].payload
+            frame_size += nal_size
+            data.append(out[:nal_size])
         x265_picture_free(pic_out)
         #quality and speed are not used (yet):
         client_options = {
