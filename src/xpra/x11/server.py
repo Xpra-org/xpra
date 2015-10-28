@@ -498,7 +498,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _add_new_window(self, window):
         self._add_new_window_common(window)
         x, y, w, h = window.get_property("geometry")
-        log.info("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
+        log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
