@@ -44,6 +44,8 @@ except:
 def do_init():
     osxapp = get_OSXApplication()
     log("do_init() osxapp=%s", osxapp)
+    if not osxapp:
+        return  #not much else we can do here
     from xpra.platform.paths import get_icon
     icon = get_icon("xpra.png")
     log("do_init() icon=%s", icon)
