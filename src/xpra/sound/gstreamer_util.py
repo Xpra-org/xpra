@@ -7,6 +7,7 @@
 import sys
 import os
 
+from xpra.util import csv
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -27,8 +28,11 @@ def get_queue_time(default_value=450, prefix=""):
     return queue_time
 
 
+WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
+
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
-DEFAULT_GSTREAMER1 = not sys.platform.startswith("win") and not sys.platform.startswith("darwin")
+DEFAULT_GSTREAMER1 = not WIN32 and not OSX
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", str(int(DEFAULT_GSTREAMER1)))=="1"
 MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
 def force_enabled(codec_name):
@@ -215,34 +219,42 @@ def import_gst0_10():
     return gst
 
 
+def get_version_str(version):
+    if version==1:
+        return "1.0"
+    else:
+        return "0.10"
+
 def import_gst():
     global gst, has_gst, gst_vinfo, gst_major_version
     if has_gst is not None:
         return gst
-    #ugly win32 hack to make it find the gstreamer plugins:
-    if sys.platform.startswith("win") and hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True):
-        from xpra.platform.paths import get_app_dir
-        if sys.version_info[0]<3:
-            #gstreamer-0.10
-            v = (0, 10)
-        else:
-            #gstreamer-1.0
-            v = (1, 0)
-        os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % (".".join([str(x) for x in v])))
 
     from xpra.gtk_common.gobject_compat import is_gtk3
     if is_gtk3():
-        imports = [ (import_gst1, 1, "1.x") ]
+        imports = [ (import_gst1,       1) ]
     else:
         imports = [
-               (import_gst0_10, 0, "0.10"),
-               (import_gst1, 1, "1.x"),
-               ]
+                    (import_gst0_10,    0),
+                    (import_gst1,       1),
+                  ]
         if GSTREAMER1:
             imports.reverse()  #try gst1 first:
     errs = {}
-    for import_function, MV, vinfo in imports:
+    for import_function, MV in imports:
+        vstr = get_version_str(MV)
+        #hacks to locate gstreamer plugins on win32 and osx:
+        if WIN32 and hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True):
+            from xpra.platform.paths import get_app_dir
+            os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)
+        elif OSX:
+            bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
+            if "GST_PLUGIN_PATH" not in os.environ and bundle_contents:
+                os.environ["GST_PLUGIN_PATH"] = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
+                os.environ["GST_PLUGIN_SCANNER"] = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
+
         try:
+            log("trying to import GStreamer %s using %s", get_version_str(MV), import_function)
             _gst = import_function()
             v = _gst.version()
             if v[-1]==0:
@@ -252,14 +264,14 @@ def import_gst():
             gst = _gst
             break
         except Exception as e:
-            log("failed to import GStreamer %s: %s", vinfo, e)
-            errs[vinfo] = e
+            log("failed to import GStreamer %s: %s", vstr, e)
+            errs[vstr] = e
     if gst:
         log("Python GStreamer version %s for Python %s.%s", gst_vinfo, sys.version_info[0], sys.version_info[1])
     else:
         log.warn("Warning: failed to import GStreamer:")
-        for vinfo,e in errs.items():
-            log.warn(" %s failed with: %s", vinfo, e)
+        for vstr,e in errs.items():
+            log.warn(" %s failed with: %s", vstr, e)
     has_gst = gst is not None
     return gst
 
@@ -314,7 +326,7 @@ def get_codecs():
             log.info("sound codec %s force enabled", encoding)
         elif encoding==FLAC:
             #flac problems:
-            if sys.platform.startswith("win") and gst_major_version==0 and encoding==FLAC:
+            if WIN32 and gst_major_version==0 and encoding==FLAC:
                 #the gstreamer 0.10 builds on win32 use the outdated oss build,
                 #which includes outdated flac libraries with known CVEs,
                 #so avoid using those:
@@ -334,7 +346,9 @@ def get_codecs():
             CODECS[encoding] = (encoder, muxer, decoder, demuxer)
     log("initialized sound codecs:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
-        log("* %s : %s", k, CODECS[k])
+        def ci(v):
+            return "%-12s" % v
+        log("* %-10s : %s", k, csv([ci(v) for v in CODECS[k]]))
     return CODECS
 
 def get_muxers():
@@ -410,9 +424,9 @@ def get_source_plugins():
     if has_pa():
         sources.append("pulsesrc")
     sources.append("autoaudiosrc")
-    if sys.platform.startswith("darwin"):
+    if OSX:
         sources.append("osxaudiosrc")
-    elif sys.platform.startswith("win"):
+    elif WIN32:
         sources.append("directsoundsrc")
     if os.name=="posix":
         sources += ["alsasrc", "jackaudiosrc",
@@ -571,7 +585,7 @@ def parse_sound_source(all_plugins, sound_source_plugin, remote):
 
 
 def sound_option_or_all(name, options, all_values):
-    from xpra.util import engs, csv
+    from xpra.util import engs
     if not options:
         v = all_values        #not specified on command line: use default
     else:

@@ -173,13 +173,13 @@ echo "**************************************************************************
 echo "Hacks"
 #HACKS
 #no idea why I have to do this by hand
-#add gtk .so
+echo " * add gtk .so"
 rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
 #add pygtk .py
 PYGTK_LIBDIR="$LIBDIR/pygtk/2.0/"
 rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
 rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
-#opengl: just take everything:
+echo " * add all OpenGL"
 rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
 #then remove what we know we don't need:
 pushd $LIBDIR/python/OpenGL
@@ -188,7 +188,9 @@ for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
 	rm -fr ./raw/$x
 done
 popd
-#remove numpy bits:
+echo " * add gobject-introspection (py2app refuses to do it)"
+rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
+echo " * trim numpy"
 pushd $LIBDIR/python/numpy
 rm -fr ./f2py/docs
 for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
@@ -201,34 +203,34 @@ pushd ${CONTENTS_DIR}
 ln -sf Resources/lib Frameworks
 pushd Resources/lib
 echo "removing extra gstreamer dylib deps:"
-for x in basevideo cdda \
-    check netbuffer photography \
-    rtp rtsp sdp signalprocessor \
-    video \
-    ; do
+for x in basevideo cdda check netbuffer photography rtp rtsp sdp signalprocessor; do
 	echo "* removing "$x
 	rm libgst${x}*
 done
+#only needed with gstreamer 1.x by gstpbutils, get rid of the 0.10 one:
+rm libgstvideo-0.10.*
 echo "removing extra gstreamer plugins:"
-GST_PLUGIN_DIR=./gstreamer-0.10
-KEEP=./gstreamer-0.10.keep
-mkdir ${KEEP}
-for x in app audio coreelements \
-	faac faad \
-    flac lame mad mpegaudioparse \
-    python \
-    ogg oss osxaudio speex gdp \
-    volume vorbis \
-    wav; do
-	echo "* keeping "$x
-	mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
+for GST_VERSION in "0.10" "1.0"; do
+	echo " * GStreamer $GST_VERSION"
+	GST_PLUGIN_DIR="./gstreamer-$GST_VERSION"
+	KEEP="./gstreamer-$GST_VERSION.keep"
+	mkdir ${KEEP}
+	PLUGINS="app audio coreelements faac faad flac ogg oss osxaudio speex gdp volume vorbis wav"
+	if [ $GST_VERSION == "0.10" ]; then
+		#only found in 0.10:
+		PLUGINS="$PLUGINS lame mad mpegaudioparse python"
+	fi
+	for x in $PLUGINS; do
+		echo "* keeping "$x
+		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
+	done
+	rm -fr ${GST_PLUGIN_DIR}
+	mv ${KEEP} ${GST_PLUGIN_DIR}
+	echo -n "GStreamer $GST_VERSION plugins shipped: "
+	ls ${GST_PLUGIN_DIR} | xargs
 done
-rm -fr ${GST_PLUGIN_DIR}
-mv ${KEEP} ${GST_PLUGIN_DIR}
-echo -n "GST Plugins shipped: "
-ls ${GST_PLUGIN_DIR} | xargs
-popd
-popd
+popd	#${CONTENTS_DIR}
+popd	#"Resources/lib"
 
 echo
 echo "*******************************************************************************"
@@ -250,7 +252,7 @@ echo
 echo "*******************************************************************************"
 echo "De-duplicate dylibs"
 pushd $LIBDIR
-for x in `ls *dylib | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u`; do
+for x in `ls *dylib | grep -v libgst | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u`; do
 	COUNT=`ls *dylib | grep $x | wc -l`
 	if [ "${COUNT}" -gt "1" ]; then
 		FIRST=`ls $x* | sort -n | head -n 1`
@@ -270,7 +272,7 @@ popd
 echo
 echo "*******************************************************************************"
 echo "copying application image to Desktop"
-rsync -rplogt "${IMAGE_DIR}" ~/Desktop/
+rsync --delete -rplogt "${IMAGE_DIR}" ~/Desktop/
 echo "Done"
 echo "*******************************************************************************"
 echo

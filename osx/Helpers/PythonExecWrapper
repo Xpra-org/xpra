@@ -40,8 +40,7 @@ export PANGO_RC_FILE="$bundle_etc/pango/pangorc"
 export PANGO_LIBDIR="$bundle_lib"
 export PANGO_SYSCONFDIR="$bundle_etc"
 
-export GST_PLUGIN_PATH="$bundle_lib/gstreamer-0.10"
-export GST_PLUGIN_SCANNER="$bundle_contents/Helpers/gst-plugin-scanner"
+export GST_BUNDLE_CONTENTS="$bundle_contents"
 
 #Set $PYTHON to point inside the bundle
 #This is not the real "python" but a copy of it named "$APPNAME"
