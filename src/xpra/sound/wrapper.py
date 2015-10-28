@@ -107,10 +107,13 @@ def run_sound(mode, error_cb, options, args):
     """
     from xpra.gtk_common.gobject_compat import want_gtk3
     want_gtk3(GSTREAMER1)
-    from xpra.platform import init
-    init("Xpra")
+    #we have to import gstreamer before init() on OSX,
+    #because init will end up import gobject,
+    #which means choosing between gi and gtk2 bindings
     from xpra.sound.gstreamer_util import import_gst
     gst = import_gst()
+    from xpra.platform import init
+    init("Xpra")
     log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
     if not gst:
         return 1
