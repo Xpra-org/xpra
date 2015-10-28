@@ -190,6 +190,10 @@ done
 popd
 echo " * add gobject-introspection (py2app refuses to do it)"
 rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
+mkdir $LIBDIR/girepository-1.0
+for t in Gst GObject GLib GModule; do
+	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
+done
 echo " * trim numpy"
 pushd $LIBDIR/python/numpy
 rm -fr ./f2py/docs

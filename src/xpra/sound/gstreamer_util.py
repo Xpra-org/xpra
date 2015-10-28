@@ -249,9 +249,15 @@ def import_gst():
             os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)
         elif OSX:
             bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
-            if "GST_PLUGIN_PATH" not in os.environ and bundle_contents:
-                os.environ["GST_PLUGIN_PATH"] = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
-                os.environ["GST_PLUGIN_SCANNER"] = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
+            log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
+            if bundle_contents:
+                if "GST_PLUGIN_PATH" not in os.environ:
+                    os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
+                if "GI_TYPELIB_PATH" not in os.environ:
+                    os.environ["GI_TYPELIB_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
+                if "GST_PLUGIN_SCANNER" not in os.environ:
+                    os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
+            log("OSX GStreamer environment: %s", dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI"))))
 
         try:
             log("trying to import GStreamer %s using %s", get_version_str(MV), import_function)
@@ -600,8 +606,11 @@ def sound_option_or_all(name, options, all_values):
                 else:
                     v.append(o)
         if len(invalid_options)>0:
-            log.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, csv(invalid_options))
-            log.warn(" valid option%s: %s", engs(all_values), csv(all_values))
+            if all_values:
+                log.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, csv(invalid_options))
+                log.warn(" valid option%s: %s", engs(all_values), csv(all_values))
+            else:
+                log.warn("Warning: no %ss available", name)
     log("%s=%s", name, csv(v))
     return v
 

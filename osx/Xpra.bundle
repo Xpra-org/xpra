@@ -76,6 +76,9 @@
 		${prefix}/lib/libgst*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libgirepository*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libz*.dylib
 	</binary>
 	<binary>
