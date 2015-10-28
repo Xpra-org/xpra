@@ -562,7 +562,7 @@ cdef class Decoder:
                         log.error(" frame %i, step %i of %i", self.frames, (step+1), steps)
                         log.error(" options=%s", options)
                         log.error(" decoder state:")
-                        for k,v in self.get_info():
+                        for k,v in self.get_info().items():
                             log.error("  %s = %s", k, v)
                         return None
                     self.actual_pix_fmt = av_frame.format
