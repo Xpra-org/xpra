@@ -15,7 +15,7 @@ from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REF
 from xpra.server.window.region import merge_all            #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import updict, parse_scaling_value
+from xpra.util import updict, parse_scaling_value, engs
 from xpra.log import Logger
 
 log = Logger("video", "encoding")
@@ -1146,6 +1146,9 @@ class WindowVideoSource(WindowSource):
         """
         assert width>0 and height>0, "invalid dimensions: %sx%s" % (width, height)
         start = time.time()
+        if len(scores)==0:
+            log.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
+            return False
         log("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
             try:
@@ -1164,7 +1167,11 @@ class WindowVideoSource(WindowSource):
             self.do_csc_encoder_clean()
             self.do_video_encoder_clean()
         end = time.time()
-        log.error("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
+        log("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
+        log.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
+        log.error(" tried the following option%s", engs(scores))
+        for option in scores:
+            log.error(" %s", option)
         return False
 
     def setup_pipeline_option(self, width, height, src_format,
@@ -1266,7 +1273,8 @@ class WindowVideoSource(WindowSource):
             log.error(" supported CSC modes: %s", ", ".join(supported_csc_modes))
             log.error(" supported encoders: %s", ", ".join(encoder_types))
             log.error(" encoders CSC modes: %s", ", ".join(ecsc))
-            log.error(" force csc: %s, mode: %s", FORCE_CSC, FORCE_CSC_MODE)
+            if FORCE_CSC:
+                log.error(" forceed csc mode: %s", FORCE_CSC_MODE)
             #find one that is not video:
             fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
             if not fallback_encodings:
