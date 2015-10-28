@@ -54,9 +54,6 @@ MARGIN = max(0, min(200, int(os.environ.get("XPRA_SOUND_MARGIN", "50"))))
 
 GST_FORMAT_BUFFERS = 4
 
-def sink_has_device_attribute(sink):
-    return sink not in ("autoaudiosink", "jackaudiosink", "directsoundsink")
-
 
 class SoundSink(SoundPipeline):
 
