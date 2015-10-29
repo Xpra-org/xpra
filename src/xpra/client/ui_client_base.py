@@ -1177,9 +1177,9 @@ class UIXpraClient(XpraClientBase):
             capabilities["desktop_size.unscaled"] = u_root_w, u_root_h
             def roundfloat(v):
                 return str(v)[:5].rstrip("0").rstrip(".")
-            log.info(" scaled using %s x %s to:", roundfloat(self.xscale), roundfloat(self.yscale))
-            sss = self.get_screen_sizes(self.xscale, self.yscale)
             root_w, root_h = self.cp(u_root_w, u_root_h)
+            log.info(" scaled using %s x %s to: %ix%i", roundfloat(self.xscale), roundfloat(self.yscale), root_w, root_h)
+            sss = self.get_screen_sizes(self.xscale, self.yscale)
             log_screen_sizes(root_w, root_h, sss)
         else:
             root_w, root_h = u_root_w, u_root_h
