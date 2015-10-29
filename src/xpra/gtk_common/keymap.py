@@ -63,8 +63,9 @@ def main():
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
         gtk_keymap = get_gtk_keymap()
+        sizes = [16, 28, 8, 8, 8]
         def pkey(*entries):
-            print(("".join([str(x).ljust(18) for x in entries])).strip())
+            print(("".join([str(x).ljust(sizes[i]) for i,x in enumerate(entries)])).strip())
         pkey("keyval", "name", "keycode", "group", "level")
         for x in gtk_keymap:
             pkey(*x)
