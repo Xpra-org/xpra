@@ -367,6 +367,7 @@ cdef class Encoder:
         self.param.bframes = 0
         self.param.bFrameAdaptive = 0
         self.param.lookaheadDepth = 0
+        self.param.logLevel = X265_LOG_WARNING
         if False:
             #unused settings:
             self.param.internalBitDepth = 8
