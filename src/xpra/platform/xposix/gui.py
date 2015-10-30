@@ -18,6 +18,7 @@ menulog = Logger("posix", "menu")
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
 device_bell = None
+GTK_MENUS = os.environ.get("XPRA_GTK_MENUS", "0")=="1"
 
 
 def get_native_system_tray_classes():
@@ -124,6 +125,8 @@ def _set_gtk_x11_window_menu(add, wid, window, menus, application_action_callbac
 _has_gtk_menu_support = None
 def has_gtk_menu_support():
     global _has_gtk_menu_support
+    if not GTK_MENUS:
+        _has_gtk_menu_support = False
     if _has_gtk_menu_support is not None:
         return _has_gtk_menu_support
     try:

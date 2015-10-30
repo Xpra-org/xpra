@@ -54,6 +54,8 @@ SPEED_OPTIONS[0]    = "Auto"
 SPEED_OPTIONS[1]    = "Lowest Bandwidth"
 SPEED_OPTIONS[100]  = "Lowest Latency"
 
+SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "1.25,1.5,2.0,3.0,4.0").split(",")]
+
 
 class TrayCheckMenuItem(gtk.CheckMenuItem):
     """ We add a button handler to catch clicks that somehow do not
@@ -265,19 +267,21 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_bugreportmenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
+        menu.append(self.make_notificationsmenuitem())
         if self.client.windows_enabled:
             menu.append(self.make_cursorsmenuitem())
-        if not self.client.readonly and self.client.keyboard_helper:
-            menu.append(self.make_layoutsmenuitem())
-        if self.client.windows_enabled and not self.client.readonly:
-            menu.append(self.make_keyboardsyncmenuitem())
-        menu.append(self.make_notificationsmenuitem())
-        if not self.client.readonly:
-            menu.append(self.make_clipboardmenuitem())
         if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
+        if self.client.windows_enabled and not self.client.readonly:
+            menu.append(self.make_keyboardsyncmenuitem())
+        if not self.client.readonly and self.client.keyboard_helper:
+            menu.append(self.make_layoutsmenuitem())
+        if not self.client.readonly:
+            menu.append(self.make_clipboardmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
+        if self.client.can_scale:
+            menu.append(self.make_scalingmenuitem())
         menu.append(self.make_qualitymenuitem())
         menu.append(self.make_speedmenuitem())
         if STARTSTOP_SOUND_MENU:
@@ -635,6 +639,30 @@ class GTKTrayMenuBase(object):
                 set_sensitive(x, encoding in self.client.server_encodings)
 
 
+    def make_scalingmenuitem(self):
+        self.scaling = self.menuitem("Scaling", "scaling.png", "Desktop Scaling")
+        scaling_submenu = gtk.Menu()
+        self.scaling.set_submenu(scaling_submenu)
+        self.popup_menu_workaround(scaling_submenu)
+        def scalecmp(v):
+            return abs(self.client.xscale-v)<0.1
+        def scalingitem(label, scalingvalue=1.0):
+            c = CheckMenuItem(label)
+            c.scalingvalue = scalingvalue
+            c.set_draw_as_radio(True)
+            c.set_active(scalecmp(scalingvalue))
+            def scaling_activated(item):
+                ensure_item_selected(scaling_submenu, item)
+                self.client.scaleset(item.scalingvalue, item.scalingvalue)
+            c.connect('activate', scaling_activated)
+            return c
+        #scaling_submenu.append(scalingitem("50%", scalecmp(0.5)))
+        scaling_submenu.append(scalingitem("None"))
+        for x in SCALING_OPTIONS:
+            scaling_submenu.append(scalingitem("%i%%" % int(100*x), x))
+        return self.scaling
+        
+
     def make_qualitymenuitem(self):
         self.quality = self.menuitem("Quality", "slider.png", "Picture quality", None)
         set_sensitive(self.quality, False)
@@ -866,7 +894,7 @@ class GTKTrayMenuBase(object):
             if variants:
                 for v in variants:
                     self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
-            for l in layouts:
+            for l in uniq(layouts):
                 if l!=layout:
                     self.layout_submenu.append(kbitem("%s" % l, l, ""))
         elif layout and variants and len(variants)>1:

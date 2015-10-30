@@ -859,7 +859,10 @@ class UIXpraClient(XpraClientBase):
         self.scale_change(2/3.0, 2/3.0)
 
     def scalereset(self):
-        self.scale_change(1.0/self.xscale, 1.0/self.yscale)
+        self.scaleset(1.0, 1.0)
+
+    def scaleset(self, xscale=1, yscale=1):
+        self.scale_change(xscale/self.xscale, yscale/self.yscale)
 
     def scale_change(self, xchange=1, ychange=1):
         if self.server_is_shadow and self.shadow_fullscreen:
