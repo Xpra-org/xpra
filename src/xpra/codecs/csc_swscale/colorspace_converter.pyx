@@ -152,6 +152,12 @@ cdef class SWSFlags:
     def get_flags(self):
         return self.flags
 
+    def __repr__(self):
+        try:
+            return "|".join(self.flags_strs)
+        except:
+            return str(self.flags_strs)
+
 
 #keeping this array in scope ensures the strings don't go away!
 FLAGS_OPTIONS = (
@@ -165,8 +171,9 @@ for speed, flags, flag_strs in FLAGS_OPTIONS:
     flag_value = 0
     for flag in flags:
         flag_value |= flag
-    log("speed=%s %s=%s", speed, "|".join(flag_strs), flag_value)
-    FLAGS.append((speed, SWSFlags(flag_value, flag_strs)))
+    swsf = SWSFlags(flag_value, flag_strs)
+    FLAGS.append((speed, swsf))
+    log("speed=%s %s=%s", speed, swsf, flag_value)
 log("swscale flags: %s", FLAGS)
 
 
