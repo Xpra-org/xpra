@@ -27,20 +27,21 @@ class GTKKeyboardHelper(KeyboardHelper):
             self._keymap = None
         self.update()
         if self._keymap:
-            self._keymap_change_handler_id = self._keymap.connect("keys-changed", self._keys_changed)
+            self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
 
-    def _keys_changed(self, *args):
-        log("keys_changed")
+    def keymap_changed(self, *args):
+        log("keymap_changed%s", args)
         if self._keymap_change_handler_id:
             self._keymap.disconnect(self._keymap_change_handler_id)
             self._keymap_change_handler_id = None
         self._keymap = gdk.keymap_get_default()
-        self._keymap_change_handler_id = self._keymap.connect("keys-changed", self._keys_changed)
         if self._keymap_changing:
             #timer due already
             return
         self._keymap_changing = True
         def do_keys_changed():
+            #re-register the change handler:
+            self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
             self._keymap_changing = False
             if self.locked:
                 #automatic changes not allowed!

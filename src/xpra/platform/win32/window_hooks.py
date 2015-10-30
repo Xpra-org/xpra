@@ -48,9 +48,9 @@ class Win32Hooks(object):
     def __init__(self, hwnd):
         self._hwnd = hwnd
         self._message_map = {}
-        if HOOK_MINMAXINFO:
-            self._message_map[win32con.WM_GETMINMAXINFO] = self.on_getminmaxinfo
         self.max_size = None
+        if HOOK_MINMAXINFO:
+            self.add_window_event_handler(win32con.WM_GETMINMAXINFO, self.on_getminmaxinfo)
         try:
             #we only use this code for resizable windows, so use SM_C?SIZEFRAME:
             self.frame_width = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
@@ -63,6 +63,9 @@ class Win32Hooks(object):
         log("Win32Hooks: window frame size is %sx%s", self.frame_width, self.frame_height)
         log("Win32Hooks: message_map=%s", self._message_map)
         self._oldwndproc = None
+
+    def add_window_event_handler(self, event, handler):
+        self._message_map[event] = handler
 
     def setup(self):
         assert self._oldwndproc is None

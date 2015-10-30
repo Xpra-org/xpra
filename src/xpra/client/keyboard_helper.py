@@ -58,6 +58,9 @@ class KeyboardHelper(object):
             pass
         self.send = nosend
 
+    def keymap_changed(self, *args):
+        pass
+
 
     def parse_shortcuts(self, strs):
         #TODO: maybe parse with re instead?

@@ -27,6 +27,7 @@ UNDECORATED_STYLE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_UNDECORATED_STYL
 DEFAULT_MAX_SIZE_HINT = sys.version_info[0]<3
 MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", str(int(DEFAULT_MAX_SIZE_HINT)))=="1"
 GEOMETRY = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GEOMETRY", "1")=="1"
+LANGCHANGE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_LANGCHANGE", "1")=="1"
 
 DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
 DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
@@ -307,7 +308,7 @@ def add_window_hooks(window):
             #call it at least once:
             window.fixup_window_style()
 
-    if MAX_SIZE_HINT:
+    if MAX_SIZE_HINT or LANGCHANGE:
         #glue code for gtk to win32 APIs:
         #add event hook class:
         win32hooks = Win32Hooks(handle)
@@ -323,6 +324,13 @@ def add_window_hooks(window):
             #apply current max-size from hints, if any:
             if window.geometry_hints:
                 apply_maxsize_hints(window, window.geometry_hints)
+
+        if LANGCHANGE:
+            def inputlangchange(hwnd, event, wParam, lParam):
+                log("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
+                window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
+            win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
+
 
 def remove_window_hooks(window):
     try:
@@ -601,10 +609,11 @@ class ClientExtras(object):
             import win32con                 #@Reimport @UnresolvedImport
             el = get_win32_event_listener(True)
             if el:
-                el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
-                el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
-                el.add_event_callback(win32con.WM_MOVE, self.wm_move)
-                el.add_event_callback(WM_WTSSESSION_CHANGE, self.session_change_event)
+                el.add_event_callback(win32con.WM_ACTIVATEAPP,      self.activateapp)
+                el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
+                el.add_event_callback(win32con.WM_MOVE,             self.wm_move)
+                el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
+                el.add_event_callback(win32con.WM_INPUTLANGCHANGE,  self.inputlangchange)
         except Exception as e:
             log.error("cannot register focus and power callbacks: %s", e)
 
@@ -634,6 +643,10 @@ class ClientExtras(object):
         if c and event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
             log("will freeze all the windows")
             c.freeze()
+
+
+    def inputlangchange(self, wParam, lParam):
+        log("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
 
 
     def activateapp(self, wParam, lParam):

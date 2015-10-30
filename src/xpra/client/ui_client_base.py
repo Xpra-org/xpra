@@ -1011,6 +1011,12 @@ class UIXpraClient(XpraClientBase):
         send_button(pressed)
 
 
+    def window_keyboard_layout_changed(self, window):
+        #win32 can change the keyboard mapping per window...
+        keylog("window_keyboard_layout_changed(%s)", window)
+        if self.keyboard_helper:
+            self.keyboard_helper.keymap_changed()
+
     def get_keymap_properties(self):
         props = self.keyboard_helper.get_keymap_properties()
         props["modifiers"] = self.get_current_modifiers()

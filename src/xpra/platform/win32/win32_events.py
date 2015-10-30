@@ -32,6 +32,7 @@ IGNORE_EVENTS = {
 LOG_EVENTS = {
             win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",
             win32con.WM_TIMECHANGE          : "WM_TIMECHANGE: time change event",
+            win32con.WM_INPUTLANGCHANGE     : "WM_INPUTLANGCHANGE: input language changed",
             WM_DWMCOMPOSITIONCHANGED        : "WM_DWMCOMPOSITIONCHANGED: Desktop Window Manager composition has been enabled or disabled",
             }
 KNOWN_WM_EVENTS = IGNORE_EVENTS.copy()

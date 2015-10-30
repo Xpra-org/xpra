@@ -16,6 +16,7 @@ plog = Logger("paint")
 focuslog = Logger("focus")
 mouselog = Logger("mouse")
 workspacelog = Logger("workspace")
+keylog = Logger("keyboard")
 metalog = Logger("metadata")
 
 
@@ -578,6 +579,12 @@ class ClientWindowBase(ClientWidgetBase):
 
     def log(self, message=""):
         log.info(message)
+
+
+    def keyboard_layout_changed(self, *args):
+        #used by win32 hooks to tell us about keyboard layout changes for this window
+        keylog("keyboard_layout_changed%s", args)
+        self._client.window_keyboard_layout_changed(self)
 
 
     def dbus_call(self, *args, **kwargs):
