@@ -492,7 +492,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)
         prop_set = getattr(window, "prop_set", None)
         if prop_set:
-            prop_set("_XPRA_WID", "u32", wid)
+            try:
+                prop_set("_XPRA_WID", "u32", wid)
+            except:
+                pass    #this can fail if the window disappears
+                #but we don't really care, it will get cleaned up soon enough
         return wid
 
     def _add_new_window(self, window):
