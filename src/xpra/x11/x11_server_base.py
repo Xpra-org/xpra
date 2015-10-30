@@ -77,7 +77,7 @@ class X11ServerBase(GTKServerBase):
         GTKServerBase.init(self, opts)
 
     def x11_init(self):
-        if not X11Keyboard.hasXFixes():
+        if not X11Keyboard.hasXFixes() and self.cursors:
             log.error("Error: cursor forwarding support disabled") 
         if not X11Keyboard.hasXTest():
             log.error("Error: keyboard and mouse disabled")
@@ -172,8 +172,11 @@ class X11ServerBase(GTKServerBase):
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["server_type"] = "Python/gtk/x11"
         if source.wants_features:
-            capabilities["resize_screen"] = self.randr
-            capabilities["force_ungrab"] = True
+            capabilities.update({
+                    "resize_screen"             : self.randr,
+                    "force_ungrab"              : True,
+                    "keyboard.fast-switching"   : True,
+                    })
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
@@ -199,6 +202,9 @@ class X11ServerBase(GTKServerBase):
         info["server.libfakeXinerama"] = fx or ""
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
         info["keyboard.state.keys_pressed"] = list(self.keys_pressed.keys())
+        info["keyboard.fast-switching"] = True
+        info["server.Xkb"] = X11Keyboard.hasXkb()
+        info["server.XTest"] = X11Keyboard.hasXTest()
         return info
 
     def get_window_info(self, window):
