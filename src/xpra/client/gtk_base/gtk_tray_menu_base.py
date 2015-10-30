@@ -641,8 +641,12 @@ class GTKTrayMenuBase(object):
 
     def make_scalingmenuitem(self):
         self.scaling = self.menuitem("Scaling", "scaling.png", "Desktop Scaling")
-        scaling_submenu = gtk.Menu()
+        scaling_submenu = self.make_scalingmenu()
         self.scaling.set_submenu(scaling_submenu)
+        return self.scaling
+
+    def make_scalingmenu(self):
+        scaling_submenu = gtk.Menu()
         self.popup_menu_workaround(scaling_submenu)
         def scalecmp(v):
             return abs(self.client.xscale-v)<0.1
@@ -656,11 +660,10 @@ class GTKTrayMenuBase(object):
                 self.client.scaleset(item.scalingvalue, item.scalingvalue)
             c.connect('activate', scaling_activated)
             return c
-        #scaling_submenu.append(scalingitem("50%", scalecmp(0.5)))
         scaling_submenu.append(scalingitem("None"))
         for x in SCALING_OPTIONS:
             scaling_submenu.append(scalingitem("%i%%" % int(100*x), x))
-        return self.scaling
+        return scaling_submenu
         
 
     def make_qualitymenuitem(self):
