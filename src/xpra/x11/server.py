@@ -1255,6 +1255,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     new_values.append((value_type, name, value, 0))
                     return serial, new_values
                 def set_xsettings_int(name, value):
+                    if value<0: #not set, return v unchanged
+                        return v
                     return set_xsettings_value(name, XSettingsTypeInteger, value)
                 if dpi>0:
                     v = set_xsettings_int("Xft/DPI", dpi*1024)
