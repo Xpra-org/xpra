@@ -460,7 +460,7 @@ cdef class Encoder:
         self.cfg.rc_undershoot_pct = 100
         self.cfg.rc_overshoot_pct = 100
         self.cfg.rc_target_bitrate = max(16, min(15000, int(self.width * self.height * self.initial_bitrate_per_pixel)))
-        info("update_cfg() bitrate(%i,%i,%.3f)=%i", self.width, self.height, self.initial_bitrate_per_pixel, self.cfg.rc_target_bitrate)
+        log("update_cfg() bitrate(%i,%i,%.3f)=%i", self.width, self.height, self.initial_bitrate_per_pixel, self.cfg.rc_target_bitrate)
         self.cfg.g_threads = self.max_threads
         self.cfg.rc_min_quantizer = MAX(0, MIN(63, int((80-self.quality) * 0.63)))
         self.cfg.rc_max_quantizer = MAX(self.cfg.rc_min_quantizer, MIN(63, int((100-self.quality) * 0.63)))
