@@ -918,7 +918,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase._damage(self, window, x, y, width, height, options)
         if self.root_overlay:
             image = window.get_image(x, y, width, height)
-            self.update_root_overlay(window, x, y, image)
+            if image:
+                self.update_root_overlay(window, x, y, image)
 
     def update_root_overlay(self, window, x, y, image):
         overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
