@@ -14,7 +14,7 @@ log = Logger("dbus", "server")
 class X11_DBUS_Server(DBUS_Server):
 
     @dbus.service.method(INTERFACE)
-    def SyncVfb(self):
+    def SyncXvfb(self):
         self.server.do_repaint_root_overlay()
     
     @dbus.service.method(INTERFACE)
