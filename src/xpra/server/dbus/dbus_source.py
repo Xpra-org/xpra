@@ -13,8 +13,8 @@ from xpra.log import Logger
 log = Logger("dbus", "server")
 
 BUS_NAME = "org.xpra.Server"
-INTERFACE = "org.xpra.Source"
-PATH = "/org/xpra/Source"
+INTERFACE = "org.xpra.Client"
+PATH = "/org/xpra/Client"
 
 def n(*args):
     return dbus_to_native(*args)
