@@ -109,7 +109,15 @@ class UI_thread_watcher(object):
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
             self.timeout_add(0, self.UI_thread_wakeup)
-            self.exit.wait(self.polling_timeout/1000.0)
+            wstart = time.time()
+            wait_time = self.polling_timeout/1000.0     #convert to seconds
+            self.exit.wait(wait_time)
+            if not self.exit.isSet():
+                wdelta = time.time() - wstart
+                log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
+                if wdelta>(wait_time+1):
+                    log.warn("Warning: long timer waiting time,")
+                    log.warn(" UI thread polling waited %.1f longer than intended (%.1f vs %.1f)", wdelta-wait_time, wdelta, wait_time)
         self.init_vars()
         log("poll_UI_loop() ended")
 
