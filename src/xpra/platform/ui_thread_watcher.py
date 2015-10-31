@@ -117,7 +117,7 @@ class UI_thread_watcher(object):
                 log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
                 if wdelta>(wait_time+1):
                     log.warn("Warning: long timer waiting time,")
-                    log.warn(" UI thread polling waited %.1f longer than intended (%.1f vs %.1f)", wdelta-wait_time, wdelta, wait_time)
+                    log.warn(" UI thread polling waited %.1f seconds longer than intended (%.1f vs %.1f)", wdelta-wait_time, wdelta, wait_time)
         self.init_vars()
         log("poll_UI_loop() ended")
 
