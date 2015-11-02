@@ -832,7 +832,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._desktop_manager.hide_window(window)
         self.repaint_root_overlay()
 
-    def _clamp_window(self, proto, wid, window, x, y, w, h):
+    def _clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
         rw, rh = self.get_root_window_size()
         #clamp to root window size
         if x>=rw or y>=rh:
@@ -842,7 +842,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #tell this client to honour the new location
             ss = self._server_sources.get(proto)
             if ss:
-                resize_counter = self._desktop_manager.get_resize_counter(window, 1)
+                resize_counter = max(resize_counter, self._desktop_manager.get_resize_counter(window, 1))
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return x, y, w, h
 
@@ -879,7 +879,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if not skip_geometry:
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                 geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-                ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
+                ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                 self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
                 damage |= owx!=ax or owy!=ay or oww!=aw or owh!=ah
         if len(packet)>=7:
