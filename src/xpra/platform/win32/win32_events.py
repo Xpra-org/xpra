@@ -25,11 +25,10 @@ IGNORE_EVENTS = {
             win32con.WM_WININICHANGE        : "WM_WININICHANGE",        #happens after resume too?
             win32con.WM_WINDOWPOSCHANGING   : "WM_WINDOWPOSCHANGING",
             win32con.WM_GETMINMAXINFO       : "WM_GETMINMAXINFO",
+            win32con.WM_SYSCOLORCHANGE      : "WM_SYSCOLORCHANGE",
             WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
             WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
             800                             : "screen background changed",  #I can't find this definition anywhere
-            0xc1b8                          : "something screen related",   #no idea where this is defined, happens when we add or remove screens?
-            0xc0aa                          : "something screen related",   #no idea where this is defined, happens when we add or remove screens?
             }
 LOG_EVENTS = {
             win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",
@@ -161,6 +160,7 @@ class Win32EventListener(object):
             #elif msg==win32con.WM_ACTIVATEAPP:
             #    log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
             else:
+                l = log.warn
                 if (msg>=0 and msg<=win32con.WM_USER) or msg>0xFFFF:
                     ut = "reserved system"
                 elif msg>=win32con.WM_USER and msg<=0x7FFF:
@@ -169,9 +169,10 @@ class Win32EventListener(object):
                     ut = "WM_APP"
                 elif msg>=0xC000 and msg<=0xFFFF:
                     ut = "string"
+                    l = log.info
                 else:
                     ut = "/ unexpected"
-                log.warn("unknown %s message: %s / %s / %s", ut, event_name, wParam, lParam)
+                l("unknown %s message: %s / %s / %s", ut, event_name, wParam, lParam)
         else:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
         # Pass all messages to the original WndProc

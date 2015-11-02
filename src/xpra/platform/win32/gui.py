@@ -82,7 +82,7 @@ def do_init():
         screenlog("SetProcessDPIAwareness(%s)=%s", DPI_AWARENESS, dpi_set)
     except Exception as e:
         screenlog("SetProcessDPIAwareness(%s) failed: %s", DPI_AWARENESS, e)
-        screenlog(" (not available on MS Windows before version 8")
+        screenlog(" (not available on MS Windows before version 8)")
 
 
 def get_native_notifier_classes():
@@ -611,6 +611,7 @@ class ClientExtras(object):
                 el.add_event_callback(win32con.WM_MOVE,             self.wm_move)
                 el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
                 el.add_event_callback(win32con.WM_INPUTLANGCHANGE,  self.inputlangchange)
+                el.add_event_callback(win32con.WM_WININICHANGE,     self.inichange)
         except Exception as e:
             log.error("cannot register focus and power callbacks: %s", e)
 
@@ -645,6 +646,13 @@ class ClientExtras(object):
     def inputlangchange(self, wParam, lParam):
         log("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
 
+    def inichange(self, wParam, lParam):
+        if lParam:
+            from ctypes import c_char_p
+            log("WM_WININICHANGE: %#x=%s", lParam, c_char_p(lParam).value)
+        else:
+            log("WM_WININICHANGE: %i, %i", wParam, lParam)
+        
 
     def activateapp(self, wParam, lParam):
         c = self.client
