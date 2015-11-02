@@ -15,7 +15,7 @@ import math
 from collections import deque
 
 from xpra.util import AdHocStruct, updict, rindex
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, _memoryview
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
@@ -1126,10 +1126,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
                      "XRGB"   : "RGB",
                      "BGRX"   : "RGB",
                      "BGRA"   : "RGBA"}.get(pixel_format, pixel_format)
+            pixels = img.get_pixels()
+            #PIL cannot use the memoryview directly:
+            if _memoryview and isinstance(pixels, _memoryview):
+                pixels = pixels.tobytes()
             try:
-                window_image = Image.frombuffer(target_format, (w, h), img.get_pixels(), "raw", pixel_format, img.get_rowstride())
+                window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())
             except:
-                log.warn("failed to parse window pixels in %s format", pixel_format)
+                log.error("Error parsing window pixels in %s format", pixel_format, exc_info=True)
                 continue
             tx = x-minx
             ty = y-miny
