@@ -139,7 +139,7 @@
   </autotools>
 
   <autotools id="gst-plugins-bad-1.0" supports-non-srcdir-builds="no"
-             autogenargs="--disable-tests --disable-x --disable-xvid --disable-gl --disable-cocoa"
+             autogenargs="--disable-xvid --disable-gl --disable-cocoa"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch repo="gstreamer" version="1.4.5"
             module="gst-plugins-bad/gst-plugins-bad-1.4.5.tar.xz"
