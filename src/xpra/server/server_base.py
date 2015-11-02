@@ -945,7 +945,7 @@ class ServerBase(ServerCore):
                 if not ss.screen_sizes:
                     screenlog.info(" client root window size is %sx%s", dw, dh)
                 else:
-                    screenlog.info(" client root window size is %sx%s with %s displays:", dw, dh, len(ss.screen_sizes))
+                    screenlog.info(" client root window size is %sx%s with %s display%s:", dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
                     log_screen_sizes(dw, dh, ss.screen_sizes)
             except:
                 dw, dh = None, None
@@ -1831,7 +1831,7 @@ class ServerBase(ServerCore):
         self.set_screen_size(width, height)
         if len(packet)>=4:
             screenlog.info("received updated display dimensions")
-            screenlog.info("client root window size is %sx%s with %s displays:", width, height, len(ss.screen_sizes))
+            screenlog.info("client root window size is %sx%s with %s display%s:", width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
 
