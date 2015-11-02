@@ -27,6 +27,7 @@ menulog = Logger("menu")
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
+from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
@@ -113,6 +114,10 @@ class GTKKeyEvent(AdHocStruct):
 
 
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
+
+    __gsignals__ = {
+        "state-updated" : no_arg_signal,
+        }
 
     #maximum size of the actual window:
     MAX_VIEWPORT_DIMS = 16*1024, 16*1024
@@ -379,7 +384,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     self.timeout_add(delay, tell_server)
             else:
                 self.process_map_event()
-        self.after_window_state_updated()
+        self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:
         if not self._client.window_configure_skip_geometry:
             #we can't do it: the server can't handle configure packets for OR windows!
@@ -390,12 +395,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.send_configure_event(True)
         if self._window_state:
             self.timeout_add(25, send_updated_window_state)
-
-    def after_window_state_updated(self):
-        #this is here to make it easier to hook some code
-        #after window_state_updated() has been called
-        #(used by the win32 platform workarounds)
-        pass
 
 
     def set_command(self, command):

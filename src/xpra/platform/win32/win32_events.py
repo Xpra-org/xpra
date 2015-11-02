@@ -28,6 +28,8 @@ IGNORE_EVENTS = {
             WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
             WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
             800                             : "screen background changed",  #I can't find this definition anywhere
+            0xc1b8                          : "something screen related",   #no idea where this is defined, happens when we add or remove screens?
+            0xc0aa                          : "something screen related",   #no idea where this is defined, happens when we add or remove screens?
             }
 LOG_EVENTS = {
             win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",

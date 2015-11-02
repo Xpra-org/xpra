@@ -218,12 +218,10 @@ def set_decorated(self, decorated):
     self.__set_decorated(decorated)         #call the original saved method
     self.fixup_window_style()
 
-def after_window_state_updated(self, *args):
-    """ override method which ensures that we call
-        fixup_window_style whenever the window state changes """
-    log("after_window_state_updated%s", args)
-    self.__after_window_state_updated()     #call the original saved method
-    self.fixup_window_style()
+def window_state_updated(window):
+    """ fixup_window_style whenever the window state changes """
+    log("window_state_updated(%s)", window)
+    fixup_window_style(window)
 
 def apply_maxsize_hints(window, hints):
     """ extracts the max-size hints from the hints,
@@ -303,8 +301,7 @@ def add_window_hooks(window):
             window.set_decorated = types.MethodType(set_decorated, window, type(window))
             #override after_window_state_updated so we can re-add the missing style options
             #(somehow doing it from on_realize which calls add_window_hooks is not enough)
-            window.__after_window_state_updated = window.after_window_state_updated
-            window.after_window_state_updated = types.MethodType(after_window_state_updated, window)
+            window.connect("state-updated", window_state_updated)
             #call it at least once:
             window.fixup_window_style()
 

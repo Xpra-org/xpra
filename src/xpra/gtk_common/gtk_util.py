@@ -463,11 +463,10 @@ def get_display_info():
             for i, d in enumerate(devices):
                 info[dk+"[%s]" % i] = d.get_name()
     else:
-        dk = "devices"
         devices = display.list_devices()
-        info[dk] = len(devices)
+        info["devices"] = len(devices)
         for i, d in enumerate(devices):
-            info[dk+"[%s]" % i] = d.get_name()
+            info["device[%s]" % i] = d.get_name()
     return info
 
 
