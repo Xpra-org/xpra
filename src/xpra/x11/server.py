@@ -794,20 +794,21 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return changes
 
     def _process_map_window(self, proto, packet):
-        wid, x, y, width, height = packet[1:6]
+        wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
-        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, width, height))
+        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
-        self._desktop_manager.configure_window(window, x, y, width, height)
+        ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
+        self._desktop_manager.configure_window(window, ax, ay, aw, ah)
         self._desktop_manager.show_window(window)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        self._damage(window, 0, 0, width, height)
+        self._damage(window, 0, 0, w, h)
 
 
     def _process_unmap_window(self, proto, packet):
@@ -830,6 +831,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
             window.set_property("iconic", True)
         self._desktop_manager.hide_window(window)
         self.repaint_root_overlay()
+
+    def _clamp_window(self, proto, wid, window, x, y, w, h):
+        rw, rh = self.get_root_window_size()
+        #clamp to root window size
+        if x>=rw or y>=rh:
+            log("clamping window position %ix%i to root window size %ix%i", x, y, rw, rh)
+            x = max(0, min(x, rw-w))
+            y = max(0, min(y, rh-h))
+            #tell this client to honour the new location
+            ss = self._server_sources.get(proto)
+            if ss:
+                resize_counter = self._desktop_manager.get_resize_counter(window, 1)
+                ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
+        return x, y, w, h
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
@@ -864,8 +879,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if not skip_geometry:
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                 geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-                self._desktop_manager.configure_window(window, x, y, w, h, resize_counter)
-                damage |= oww!=w or owh!=h
+                ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
+                self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
+                damage |= owx!=ax or owy!=ay or oww!=aw or owh!=ah
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:
