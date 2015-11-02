@@ -300,15 +300,19 @@ class X11ServerBase(GTKServerBase):
             return root_w, root_h
         max_w, max_h = 0, 0
         sss = self._server_sources.values()
+        if len(sss)>1:
+            screenlog.info("screen used by %i clients:", len(sss))
         for ss in sss:
             client_size = ss.desktop_size
             if not client_size:
-                continue
-            if ss.screen_sizes and len(sss)>1:
-                log.info("* %s:", ss.uuid)
-            w, h = client_size
-            max_w = max(max_w, w)
-            max_h = max(max_h, h)
+                size = "unknown"
+            else:
+                w, h = client_size
+                size = "%ix%i" % (w, h)
+                max_w = max(max_w, w)
+                max_h = max(max_h, h)
+            if len(sss)>1:
+                screenlog.info("* %s: %s", ss.uuid, size)
         screenlog("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
         if max_w>0 and max_h>0:
             return self.set_screen_size(max_w, max_h)
