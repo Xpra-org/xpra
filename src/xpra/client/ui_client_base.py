@@ -2316,6 +2316,7 @@ class UIXpraClient(XpraClientBase):
             except:
                 bw, bh = ww, wh
             client_properties = window._client_properties
+            resize_counter = window._resize_counter
             metadata = window._metadata
             override_redirect = window._override_redirect
             backing = window._backing
@@ -2350,6 +2351,7 @@ class UIXpraClient(XpraClientBase):
                 #which should honour the new state of the opengl_enabled flag if that's what we changed,
                 #or the new dimensions, etc
                 window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
+                window._resize_counter = resize_counter
                 if video_decoder or csc_decoder:
                     backing = window._backing
                     backing._delta_pixel_data = delta_pixel_data
