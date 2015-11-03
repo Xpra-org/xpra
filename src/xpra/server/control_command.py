@@ -6,6 +6,7 @@
 
 
 from xpra.log import Logger
+from xpra.util import csv
 log = Logger("util", "command")
 
 
@@ -129,5 +130,8 @@ class DebugControl(ArgsControlCommand):
             assert log_cmd=="disable"
             add_disabled_category(*categories)
             loggers = disable_debug_for(*categories)
-        log.info("%sd debugging for: %s", log_cmd, loggers)
-        return "logging %sd for %s" % (log_cmd, " + ".join(categories))
+        if not loggers:
+            log.info("no loggers matching: %s", csv(categories))
+        else:
+            log.info("%sd debugging for: %s", log_cmd, csv(loggers))
+        return "logging %sd for %s" % (log_cmd, csv(loggers))
