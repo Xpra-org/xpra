@@ -117,7 +117,10 @@ class DebugControl(ArgsControlCommand):
         log_cmd = args[0]
         if log_cmd not in ("enable", "disable"):
             self.raise_error("only 'enable' and 'disable' verbs are supported")
-        categories = args[1:]
+        #support both separate arguments and csv:
+        categories = []
+        for x in args[1:]:
+            categories += [v.strip() for v in x.split(",")]
         from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
         if log_cmd=="enable":
             add_debug_category(*categories)
