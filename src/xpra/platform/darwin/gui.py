@@ -4,8 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.log import Logger
 log = Logger("osx", "events")
+
+SLEEP_HANDLER = os.environ.get("XPRA_OSX_SLEEP_HANDLER", "1")=="1"
 
 
 exit_cb = None
@@ -297,7 +300,7 @@ class NotificationHandler(NSObject):
     """Class that handles the sleep notifications."""
 
     def handleSleepNotification_(self, aNotification):
-        log("handleSleepNotification(%s)", aNotification)
+        log("handleSleepNotification(%s) sleep_callback=%s", aNotification, self.sleep_callback)
         if self.sleep_callback:
             try:
                 self.sleep_callback()
@@ -305,7 +308,7 @@ class NotificationHandler(NSObject):
                 log.error("Error in sleep callback %s", self.sleep_callback, exc_info=True)
 
     def handleWakeNotification_(self, aNotification):
-        log("handleWakeNotification(%s)", aNotification)
+        log("handleWakeNotification(%s) wake_callback=%s", aNotification, self.wake_callback)
         if self.wake_callback:
             try:
                 self.wake_callback()
@@ -314,12 +317,14 @@ class NotificationHandler(NSObject):
 
 
 class ClientExtras(object):
-    def __init__(self, client, opts, blocking=False):
+    def __init__(self, client, opts):
         swap_keys = opts and opts.swap_keys
-        log("ClientExtras.__init__(%s, %s, %s) swap_keys=%s", client, opts, blocking, swap_keys)
+        log("ClientExtras.__init__(%s, %s) swap_keys=%s", client, opts, swap_keys)
         self.client = client
-        self.blocking = blocking
-        self.setup_event_loop()
+        self.notificationCenter = None
+        self.handler = None
+        if SLEEP_HANDLER:
+            self.setup_event_loop()
         if opts and client:
             log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
             if client.keyboard_helper and client.keyboard_helper.keyboard:
@@ -333,8 +338,6 @@ class ClientExtras(object):
     def stop_event_loop(self):
         if self.notificationCenter:
             self.notificationCenter = None
-            if self.blocking:
-                AppHelper.stopEventLoop()
         if self.handler:
             self.handler = None
 
@@ -347,8 +350,12 @@ class ClientExtras(object):
         ws = NSWorkspace.sharedWorkspace()
         self.notificationCenter = ws.notificationCenter()
         self.handler = NotificationHandler.new()
-        self.handler.sleep_callback = self.client.suspend
-        self.handler.wake_callback = self.client.resume
+        if self.client:
+            self.handler.sleep_callback = self.client.suspend
+            self.handler.wake_callback = self.client.resume
+        else:
+            self.handler.sleep_callback = None
+            self.handler.wake_callback = None
         self.notificationCenter.addObserver_selector_name_object_(
                  self.handler, "handleSleepNotification:",
                  AppKit.NSWorkspaceWillSleepNotification, None)
@@ -356,18 +363,25 @@ class ClientExtras(object):
                  self.handler, "handleWakeNotification:",
                  AppKit.NSWorkspaceDidWakeNotification, None)
         log("starting console event loop with notifcation center=%s and handler=%s", self.notificationCenter, self.handler)
-        if self.blocking:
-            #this is for running standalone
-            AppHelper.runConsoleEventLoop(installInterrupt=self.blocking)
-        #when not blocking, we rely on another part of the code
+
+
+    def run(self):
+        #this is for running standalone
+        AppHelper.runConsoleEventLoop(installInterrupt=True)
+        #when running from the GTK main loop, we rely on another part of the code
         #to run the event loop for us
+
+    def stop(self):
+        AppHelper.stopEventLoop()
 
 
 def main():
     from xpra.platform import init, clean
     try:
         init("OSX Extras")
-        ClientExtras(None, None, True)
+        log.enable_debug()
+        ce = ClientExtras(None, None)
+        ce.run()
     finally:
         clean()
 
