@@ -298,11 +298,19 @@ class NotificationHandler(NSObject):
 
     def handleSleepNotification_(self, aNotification):
         log("handleSleepNotification(%s)", aNotification)
-        self.sleep_callback()
+        if self.sleep_callback:
+            try:
+                self.sleep_callback()
+            except:
+                log.error("Error in sleep callback %s", self.sleep_callback, exc_info=True)
 
     def handleWakeNotification_(self, aNotification):
         log("handleWakeNotification(%s)", aNotification)
-        self.wake_callback()
+        if self.wake_callback:
+            try:
+                self.wake_callback()
+            except:
+                log.error("Error in wake callback %s", self.wake_callback, exc_info=True)
 
 
 class ClientExtras(object):
