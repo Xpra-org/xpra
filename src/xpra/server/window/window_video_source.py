@@ -674,10 +674,13 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        if not force_reload and time.time()-self._last_pipeline_check<1:
+        elapsed = time.time()-self._last_pipeline_check
+        if not force_reload and elapsed<1:
+            scorelog("cannot score: only %ims since last check", 1000*elapsed)
             #already checked not long ago
             return
         if not self.pixel_format:
+            scorelog("cannot score: no pixel format!")
             #we need to know what pixel format we create pipelines for!
             return
         def checknovideo(*info):
@@ -705,6 +708,7 @@ class WindowVideoSource(WindowSource):
         ve = self._video_encoder
         csce = self._csc_encoder
         if ve is None or ve.is_closed() or (csce is not None and csce.is_closed()):
+            scorelog("cannot score: closed or closing")
             #already being closed?
             return
 
