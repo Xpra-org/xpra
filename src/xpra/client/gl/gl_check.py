@@ -105,9 +105,17 @@ def raise_error(msg):
     raise ImportError(msg)
 gl_check_error = raise_error
 
+_version_warning_shown = False
 
 #support for memory views requires Python 2.7 and PyOpenGL 3.1
-def is_pyopengl_memoryview_safe(pyopengl_version):
+def is_pyopengl_memoryview_safe(pyopengl_version, accel_version):
+    if pyopengl_version!=accel_version:
+        global _version_warning_shown
+        if not _version_warning_shown:
+            log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
+            log.warn(" this may cause crashes")
+            _version_warning_shown = True
+        return False
     if sys.version_info[:2]<(2,7):
         #memoryview type requires python 2.7
         return False
@@ -194,9 +202,12 @@ def do_check_GL_support(force_enable):
         from OpenGL import version as OpenGL_version
         try:
             import OpenGL_accelerate
+            props["accelerate"] = OpenGL_accelerate.__version__
+            log("OpenGL_accelerate version %s", OpenGL_accelerate.__version__)
         except:
+            log("OpenGL_accelerate not found")
             OpenGL_accelerate = None
-        props["zerocopy"] = is_pyopengl_memoryview_safe(OpenGL_version.__version__) and bool(OpenGL_accelerate)
+        props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
 
         try:
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
