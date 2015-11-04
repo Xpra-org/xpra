@@ -1114,7 +1114,7 @@ def get_spec(encoding, colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=True,
                       codec_class=Encoder, codec_type=get_type(),
-                      quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
+                      quality=80+20*int(YUV444_ENABLED), speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=32, min_h=32,
                       max_w=4096, max_h=4096,

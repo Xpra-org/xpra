@@ -313,7 +313,8 @@ def get_spec(encoding, colorspace):
     has_lossless_mode = encoding=="vp9" and colorspace=="YUV444P"
     return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
-                            quality=50, speed=20, setup_cost=20, max_w=max_w, max_h=max_h)
+                            quality=50+50*int(has_lossless_mode), speed=20,
+                            setup_cost=20, max_w=max_w, max_h=max_h)
 
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:

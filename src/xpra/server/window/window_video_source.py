@@ -834,9 +834,8 @@ class WindowVideoSource(WindowSource):
             #we want lossless!
             qscore = quality + 80
         else:
-            #the lower the current quality
-            #the more we need an HQ encoder/csc to improve things:
-            qscore = max(0, (100.0-self._current_quality) * quality/100.0)
+            #how far are we from the current quality heuristics?
+            qscore = 100-abs(self._current_quality - quality)
             mq = self._fixed_min_quality
             if mq>=0:
                 #if the encoder quality is lower or close to min_quality
