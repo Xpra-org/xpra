@@ -218,26 +218,24 @@ class WindowVideoSource(WindowSource):
 
     def csc_encoder_clean(self):
         """ Calls self._csc_encoder.clean() from the encode thread """
-        if self._csc_encoder:
-            #call in encode thread:
-            self.call_in_encode_thread(self.do_csc_encoder_clean)
-
-    def do_csc_encoder_clean(self):
-        csc_encoder = self._csc_encoder
-        if csc_encoder:
+        csce = self._csc_encoder
+        if csce:
             self._csc_encoder = None
+            self.call_in_encode_thread(self.do_csc_encoder_clean, csce)
+
+    def do_csc_encoder_clean(self, csc_encoder):
+        if csc_encoder:
             csc_encoder.clean()
 
     def video_encoder_clean(self):
         """ Calls self._video_encoder.clean() from the encode thread """
-        if self._video_encoder:
-            #call in encode thread:
-            self.call_in_encode_thread(self.do_video_encoder_clean)
-
-    def do_video_encoder_clean(self):
-        video_encoder = self._video_encoder
-        if video_encoder:
+        ve = self._video_encoder
+        if ve:
             self._video_encoder = None
+            self.call_in_encode_thread(self.do_video_encoder_clean, ve)
+
+    def do_video_encoder_clean(self, video_encoder):
+        if video_encoder:
             video_encoder.clean()
 
 
@@ -705,9 +703,11 @@ class WindowVideoSource(WindowSource):
         #must copy reference to those objects because of threading races:
         ve = self._video_encoder
         csce = self._csc_encoder
-        if (ve is not None and ve.is_closed()) or (csce is not None and csce.is_closed()):
-            scorelog("cannot score: closed or closing")
-            #already being closed?
+        if ve is not None and ve.is_closed():
+            scorelog("cannot score: video encoder is closed or closing")
+            return
+        if csce is not None and csce.is_closed():
+            scorelog("cannot score: csc is closed or closing")
             return
 
         width, height = self.window_dimensions
@@ -1082,8 +1082,10 @@ class WindowVideoSource(WindowSource):
             return True  #OK!
 
         #cleanup existing one if needed:
-        self.do_csc_encoder_clean()
-        self.do_video_encoder_clean()
+        self.do_csc_encoder_clean(self._csc_encoder)
+        self._csc_encoder = None
+        self.do_video_encoder_clean(self._video_encoder)
+        self._video_encoder = None
         #and make a new one:
         scores = self.get_video_pipeline_options(encoding, width, height, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
@@ -1172,8 +1174,10 @@ class WindowVideoSource(WindowSource):
             except:
                 log.warn("setup_pipeline failed for %s", option, exc_info=True)
             #we're here because an exception occurred, cleanup before trying again:
-            self.do_csc_encoder_clean()
-            self.do_video_encoder_clean()
+            self.do_csc_encoder_clean(self._csc_encoder)
+            self._csc_encoder = None
+            self.do_video_encoder_clean(self._video_encoder)
+            self._video_encoder = None
         end = time.time()
         log("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
         log.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
@@ -1290,7 +1294,8 @@ class WindowVideoSource(WindowSource):
             encode_fn = self._encoders[fallback_encoding]
             log.warn(" will use '%s' as fallback using %s", fallback_encoding, encode_fn)
             return encode_fn(fallback_encoding, image, options)
-        assert self._video_encoder
+        ve = self._video_encoder
+        assert ve
 
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
@@ -1302,7 +1307,7 @@ class WindowVideoSource(WindowSource):
         start = time.time()
         quality = max(0, min(100, self._current_quality))
         speed = max(0, min(100, self._current_speed))
-        ret = self._video_encoder.compress_image(csc_image, quality, speed, options)
+        ret = ve.compress_image(csc_image, quality, speed, options)
         if ret is None:
             log.error("video_encode: ouch, %s compression failed", encoding)
             return None
@@ -1321,7 +1326,7 @@ class WindowVideoSource(WindowSource):
             client_options["scaled_size"] = enc_width, enc_height
         log("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                             encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
-        return self._video_encoder.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
+        return ve.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
 
     def csc_image(self, image, width, height):
         """
@@ -1333,12 +1338,13 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        if self._csc_encoder is None:
+        csce = self._csc_encoder
+        if csce is None:
             #no csc step!
             return image, image.get_pixel_format(), width, height
 
         start = time.time()
-        csc_image = self._csc_encoder.convert_image(image)
+        csc_image = csce.convert_image(image)
         end = time.time()
         #the image comes from the UI server, free it in the UI thread:
         self.idle_add(image.free)
@@ -1346,6 +1352,6 @@ class WindowVideoSource(WindowSource):
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
         if not csc_image:
-            raise Exception("csc_image: conversion of %s to %s failed" % (image, self._csc_encoder.get_dst_format()))
-        assert self._csc_encoder.get_dst_format()==csc_image.get_pixel_format()
-        return csc_image, self._csc_encoder.get_dst_format(), self._csc_encoder.get_dst_width(), self._csc_encoder.get_dst_height()
+            raise Exception("csc_image: conversion of %s to %s failed" % (image, csce.get_dst_format()))
+        assert csce.get_dst_format()==csc_image.get_pixel_format()
+        return csc_image, csce.get_dst_format(), csce.get_dst_width(), csce.get_dst_height()
