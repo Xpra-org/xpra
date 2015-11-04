@@ -1052,10 +1052,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     top = max(1, top)
                     bottom = max(1, bottom)
                     rectangles = (
-                                  (x-left,      y,          left,           h,      True),       #left side
-                                  (x-left,      y-top,      w+left+right,   top,    True),       #top
-                                  (x+w,         y,          right,          h,      True),       #right
-                                  (x-left,      y+height,   w+left+right,   bottom, True),
+                                  (x-left,      y,          left,           h,      True),      #left side
+                                  (x-left,      y-top,      w+left+right,   top,    True),      #top
+                                  (x+w,         y,          right,          h,      True),      #right
+                                  (x-left,      y+h,        w+left+right,   bottom, True),      #bottom
                                  )
                 else:
                     rectangles = (
