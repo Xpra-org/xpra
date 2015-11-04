@@ -826,14 +826,12 @@ class WindowSource(object):
     def set_min_speed(self, min_speed):
         if self._fixed_min_speed!=min_speed:
             self._fixed_min_speed = min_speed
-            self.reconfigure()
+            self.reconfigure(True)
 
     def set_speed(self, speed):
         if self._fixed_speed != speed:
-            prev_speed = self._fixed_speed
             self._fixed_speed = speed
-            #force a reload when switching to/from 100% speed:
-            self.reconfigure(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
+            self.reconfigure(True)
 
     def get_speed(self, coding):
         return self._current_speed
@@ -864,14 +862,16 @@ class WindowSource(object):
         self._encoding_quality.append((time.time(), info, self._current_quality))
 
     def set_min_quality(self, min_quality):
-        self._fixed_min_quality = min_quality
-        self.update_quality()
+        if self._fixed_min_quality!=min_quality:
+            self._fixed_min_quality = min_quality
+            self.update_quality()
+            self.reconfigure(True)
 
     def set_quality(self, quality):
         if self._fixed_quality!=quality:
             self._fixed_quality = quality
             self._current_quality = quality
-            self.reconfigure()
+            self.reconfigure(True)
 
     def get_quality(self, encoding):
         #overriden in window video source
@@ -879,12 +879,9 @@ class WindowSource(object):
 
 
     def reconfigure(self, force_reload=False):
-        if self.batch_config.locked and not force_reload:
-            return False
         self.update_quality()
         self.update_speed()
         self.update_encoding_options(force_reload)
-        return True
 
 
     def damage(self, window, x, y, w, h, options={}):
