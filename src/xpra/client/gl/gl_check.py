@@ -320,6 +320,7 @@ def do_check_GL_support(force_enable):
             log.warn("OpenGL glEnablei is not available, disabling transparency")
             global GL_ALPHA_SUPPORTED
             GL_ALPHA_SUPPORTED = False
+        props["transparency"] = GL_ALPHA_SUPPORTED
 
         #check for framebuffer functions we need:
         from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
