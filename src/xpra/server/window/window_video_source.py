@@ -93,7 +93,6 @@ class WindowVideoSource(WindowSource):
         self.height_mask = 0xFFFF
         self.actual_scaling = (1, 1)
 
-        self.pixel_format = None                            #ie: BGRX
         self.last_pipeline_params = None
         self.last_pipeline_scores = []
         self.last_pipeline_time = 0
@@ -663,8 +662,7 @@ class WindowVideoSource(WindowSource):
 
         if force_reload:
             self.cleanup_codecs()
-        if self._video_encoder or force_reload:
-            self.check_pipeline_score(force_reload)
+        self.check_pipeline_score(force_reload)
 
     def check_pipeline_score(self, force_reload):
         """
@@ -1251,9 +1249,7 @@ class WindowVideoSource(WindowSource):
         x, y, w, h = image.get_geometry()[:4]
         assert self.supports_video_subregion or (x==0 and y==0), "invalid position: %s,%s" % (x,y)
         src_format = image.get_pixel_format()
-        if self.pixel_format is None:
-            self.pixel_format = src_format
-        elif self.pixel_format!=src_format:
+        if self.pixel_format!=src_format:
             log.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
