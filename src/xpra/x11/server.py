@@ -1051,14 +1051,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     right = max(1, right)
                     top = max(1, top)
                     bottom = max(1, bottom)
-                    rectangles = [
+                    rectangles = (
                                   (x-left,      y,          left,           h,      True),       #left side
                                   (x-left,      y-top,      w+left+right,   top,    True),       #top
                                   (x+w,         y,          right,          h,      True),       #right
                                   (x-left,      y+height,   w+left+right,   bottom, True),
-                                  ]
+                                 )
                 else:
-                    rectangles = (x, y, w, h, False)
+                    rectangles = (
+                                  (x, y, w, h, False),
+                                 )
                 log("rectangles for window frame=%s and geometry=%s : %s", frame, (x, y, w, h), rectangles)
                 for x, y, w, h, fill in rectangles:
                     cr.new_path()
