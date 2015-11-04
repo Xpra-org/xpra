@@ -713,24 +713,31 @@ class WindowVideoSource(WindowSource):
         width, height = self.window_dimensions
         scores = self.get_video_pipeline_options(encoding, width, height, self.pixel_format, force_reload)
         if len(scores)==0:
-            log("check_pipeline_score(%s) no pipeline options found!", force_reload)
+            scorelog("check_pipeline_score(%s) no pipeline options found!", force_reload)
             return
 
-        log("check_pipeline_score(%s) best=%s", force_reload, scores[0])
+        scorelog("check_pipeline_score(%s) best=%s", force_reload, scores[0])
         _, _, _, csc_width, csc_height, csc_spec, enc_in_format, _, enc_width, enc_height, encoder_spec = scores[0]
         if csce:
-            if csc_spec is None or \
-               type(csce)!=csc_spec.codec_class or \
-               csce.get_dst_format()!=enc_in_format or \
-               csce.get_src_width()!=csc_width or \
-               csce.get_src_height()!=csc_height:
-                log("check_pipeline_score(%s) found a better csc encoder: %s", force_reload, scores[0])
+            if csc_spec is None:
+                scorelog("check_pipeline_score(%s) csc is no longer needed: %s", force_reload, scores[0])
                 self.csc_encoder_clean()
-        if type(ve)!=encoder_spec.codec_class or \
-           ve.get_src_format()!=enc_in_format or \
-           ve.get_width()!=enc_width or \
-           ve.get_height()!=enc_height:
-            log("check_pipeline_score(%s) found a better video encoder: %s", force_reload, scores[0])
+            elif csce.get_dst_format()!=enc_in_format:
+                scorelog("check_pipeline_score(%s) change of csc output format from %s to %s", force_reload, csce.get_dst_format(), enc_in_format)
+                self.csc_encoder_clean()
+            elif csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
+                scorelog("check_pipeline_score(%s) change of csc input dimensions from %ix%i to %ix%i", force_reload, csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
+                self.csc_encoder_clean()
+        if ve is None:
+            pass    #nothing to check or clean
+        elif ve.get_src_format()!=enc_in_format:
+            scorelog("check_pipeline_score(%s) change of video input format from %s to %s", force_reload, ve.get_src_format(), enc_in_format)
+            self.video_encoder_clean()
+        elif ve.get_width()!=enc_width or ve.get_height()!=enc_height:
+            scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i", force_reload, ve.get_src_width(), ve.get_src_height(), enc_width, enc_height)
+            self.video_encoder_clean()
+        elif type(ve)!=encoder_spec.codec_class:
+            scorelog("check_pipeline_score(%s) found a better video encoder class than %s: %s", force_reload, type(ve), scores[0])
             self.video_encoder_clean()
         self._last_pipeline_check = time.time()
 
