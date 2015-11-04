@@ -707,7 +707,7 @@ class WindowVideoSource(WindowSource):
         #must copy reference to those objects because of threading races:
         ve = self._video_encoder
         csce = self._csc_encoder
-        if ve is None or ve.is_closed() or (csce is not None and csce.is_closed()):
+        if (ve is not None and ve.is_closed()) or (csce is not None and csce.is_closed()):
             scorelog("cannot score: closed or closing")
             #already being closed?
             return
