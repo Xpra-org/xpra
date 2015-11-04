@@ -613,7 +613,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 #TODO: don't bother if unchanged
                 self._current_frame_extents = v
                 statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
-                self._window_state["frame"] = v
+                self._window_state["frame"] = self._client.crect(*v)
                 self.send_configure_event(True)
         elif event.atom=="XKLAVIER_STATE":
             #unused for now, but log it:
@@ -850,7 +850,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._client.server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
             if wfs:
-                state["frame"] = wfs
+                state["frame"] = self._client.crect(*wfs)
                 self._current_frame_extents = wfs
         geomlog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
         cx = self._client.cx
