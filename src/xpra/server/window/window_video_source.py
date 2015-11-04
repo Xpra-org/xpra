@@ -704,7 +704,7 @@ class WindowVideoSource(WindowSource):
         #must copy reference to those objects because of threading races:
         ve = self._video_encoder
         csce = self._csc_encoder
-        if ve is None or csce is None or ve.is_closed() or csce.is_closed():
+        if ve is None or ve.is_closed() or (csce is not None and csce.is_closed()):
             #already being closed?
             return
 
