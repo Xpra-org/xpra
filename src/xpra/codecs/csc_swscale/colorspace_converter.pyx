@@ -8,7 +8,6 @@ import os
 import time
 
 from xpra.log import Logger
-from xpra.codecs.dec_avcodec2.decoder import av_enum
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.csc_cython import colorspace_converter
 from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces,\
