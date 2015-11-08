@@ -734,7 +734,7 @@ class WindowVideoSource(WindowSource):
             scorelog("check_pipeline_score(%s) change of video input format from %s to %s", force_reload, ve.get_src_format(), enc_in_format)
             self.video_encoder_clean()
         elif ve.get_width()!=enc_width or ve.get_height()!=enc_height:
-            scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i", force_reload, ve.get_src_width(), ve.get_src_height(), enc_width, enc_height)
+            scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i", force_reload, ve.get_width(), ve.get_height(), enc_width, enc_height)
             self.video_encoder_clean()
         elif type(ve)!=encoder_spec.codec_class:
             scorelog("check_pipeline_score(%s) found a better video encoder class than %s: %s", force_reload, type(ve), scores[0])
