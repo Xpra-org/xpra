@@ -56,16 +56,9 @@ def do_init():
         screenlog.warn("SetProcessDPIAware not set due to environment override")
         return
     try:
-        from ctypes import WINFUNCTYPE
-        from ctypes.wintypes import BOOL, UINT
-    except Exception as e:
-        screenlog.error("Error setting DPI: %s", e)
-        return
-    try:
-        prototype = WINFUNCTYPE(BOOL)
-        SetProcessDPIAware = prototype(("SetProcessDPIAware", windll.user32))
-        dpi_set = SetProcessDPIAware()
-        screenlog("SetProcessDPIAware()=%s", dpi_set)
+        SetProcessDPIAware = windll.user32.SetProcessDPIAware
+        dpiaware = SetProcessDPIAware()
+        screenlog("SetProcessDPIAware: %s()=%s", SetProcessDPIAware, dpiaware)
     except Exception as e:
         screenlog("SetProcessDPIAware() failed: %s", e)
     if DPI_AWARENESS<=0:
@@ -76,13 +69,12 @@ def do_init():
         Process_DPI_Unaware             = 0
         Process_Per_Monitor_DPI_Aware   = 2
         assert DPI_AWARENESS in (Process_System_DPI_Aware, Process_DPI_Unaware, Process_Per_Monitor_DPI_Aware)
-        prototype = WINFUNCTYPE(BOOL, UINT)
-        SetProcessDPIAwareness = prototype(("SetProcessDPIAwareness", windll.user32))
-        dpi_set = SetProcessDPIAwareness(UINT(DPI_AWARENESS))
-        screenlog("SetProcessDPIAwareness(%s)=%s", DPI_AWARENESS, dpi_set)
+        SetProcessDpiAwarenessInternal = windll.user32.SetProcessDpiAwarenessInternal
+        dpiawareness = SetProcessDpiAwarenessInternal(DPI_AWARENESS)
+        screenlog("SetProcessDPIAwareness: %s(%s)=%s", SetProcessDpiAwarenessInternal, DPI_AWARENESS, dpiawareness)
     except Exception as e:
-        screenlog("SetProcessDPIAwareness(%s) failed: %s", DPI_AWARENESS, e)
-        screenlog(" (not available on MS Windows before version 8)")
+        screenlog("SetProcessDpiAwarenessInternal(%s) failed: %s", DPI_AWARENESS, e)
+        screenlog(" (not available on MS Windows before version 8.1)")
 
 
 def get_native_notifier_classes():
