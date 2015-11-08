@@ -169,8 +169,6 @@ def import_gst1():
     import gi
     gi.require_version('Gst', '1.0')
     from gi.repository import Gst           #@UnresolvedImport
-    #gi.require_version('Gst', '0.10')
-    gi.require_version('Gst', '1.0')
     Gst.init(None)
     #make it look like pygst (gstreamer-0.10):
     Gst.registry_get_default = Gst.Registry.get
