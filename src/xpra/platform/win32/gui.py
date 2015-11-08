@@ -59,6 +59,7 @@ def do_init():
         SetProcessDPIAware = windll.user32.SetProcessDPIAware
         dpiaware = SetProcessDPIAware()
         screenlog("SetProcessDPIAware: %s()=%s", SetProcessDPIAware, dpiaware)
+        assert dpiaware!=0
     except Exception as e:
         screenlog("SetProcessDPIAware() failed: %s", e)
     if DPI_AWARENESS<=0:
@@ -72,6 +73,7 @@ def do_init():
         SetProcessDpiAwarenessInternal = windll.user32.SetProcessDpiAwarenessInternal
         dpiawareness = SetProcessDpiAwarenessInternal(DPI_AWARENESS)
         screenlog("SetProcessDPIAwareness: %s(%s)=%s", SetProcessDpiAwarenessInternal, DPI_AWARENESS, dpiawareness)
+        assert dpiawareness==0
     except Exception as e:
         screenlog("SetProcessDpiAwarenessInternal(%s) failed: %s", DPI_AWARENESS, e)
         screenlog(" (not available on MS Windows before version 8.1)")
