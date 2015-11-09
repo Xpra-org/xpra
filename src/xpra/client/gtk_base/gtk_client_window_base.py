@@ -277,7 +277,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.on_realize_cb[identifier] = callback, args
 
     def on_realize(self, widget):
-        eventslog("on_realize(%s) gdk window=%#x", widget, self.get_window())
+        eventslog("on_realize(%s) gdk window=%s", widget, self.get_window())
         add_window_hooks(self)
         cb = self.on_realize_cb
         self.on_realize_cb = {}
