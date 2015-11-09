@@ -106,6 +106,7 @@ class XpraClientBase(object):
         self.printer_attributes = []
         self.send_printers_pending = False
         self.exported_printers = None
+        self.open_files = False
         self.open_command = None
         #protocol stuff:
         self._protocol = None
@@ -143,6 +144,7 @@ class XpraClientBase(object):
         self.file_size_limit = opts.file_size_limit
         self.printing = opts.printing
         self.open_command = opts.open_command
+        self.open_files = opts.open_files
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -904,6 +906,11 @@ class XpraClientBase(object):
             self.timeout_add(10000, check_printing_finished)
 
     def _open_file(self, filename):
+        if not self.open_files:
+            log.warn("Warning: opening files automatically is disabled,")
+            log.warn(" ignoring uploaded file:")
+            log.warn(" '%s'", filename)
+            return
         import subprocess, shlex
         command = shlex.split(self.open_command)+[filename]
         proc = subprocess.Popen(command)
