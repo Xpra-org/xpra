@@ -252,7 +252,6 @@ class XpraClientBase(object):
     def init_packet_handlers(self):
         self._packet_handlers = {
             "hello"             : self._process_hello,
-            "send-file"         : self._process_send_file,
             }
         self._ui_packet_handlers = {
             "challenge":                self._process_challenge,
@@ -264,8 +263,7 @@ class XpraClientBase(object):
             }
 
     def init_authenticated_packet_handlers(self):
-        #for subclasses to override
-        pass
+        self._packet_handlers["send-file"] = self._process_send_file
 
 
     def init_aliases(self):
