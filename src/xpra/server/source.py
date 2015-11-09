@@ -1672,8 +1672,7 @@ class ServerSource(object):
         cdata = self.compressed_wrapper("file-data", data)
         assert len(cdata)<=filesize     #compressed wrapper ensures this is true
         if filesize>self.file_size_limit*1024*1024:
-            b = os.path.basename(filename)
-            l.warn("Warning: cannot %s the file '%s'", action, b)
+            l.warn("Warning: cannot %s the file '%s'", action, basefilename)
             l.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
             l.warn(" the file size limit for %s is %iMB", self, self.file_size_limit)
             return False

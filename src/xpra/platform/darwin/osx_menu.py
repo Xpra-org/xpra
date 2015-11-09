@@ -198,10 +198,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
             actions_menu.add(self.make_raisewindowsmenuitem())
             #set_sensitive(bool) does not work on OSX,
             #so we only add the menu item if it does something
-            def addsnc(*args):
+            def add_ah(*args):
                 if self.client.start_new_commands:
-                    actions_menu.add(self.make_startnewcommandmenuitem(True))
-            self.client.after_handshake(addsnc)
+                    actions_menu.add(self.make_startnewcommandmenuitem())
+                if self.client.server_file_transfer:
+                    actions_menu.add(self.make_uploadmenuitem())
+            self.client.after_handshake(add_ah)
             menus.append(("Actions", actions_menu))
         menus.append((SEPARATOR+"-EXTRAS", None))
         return menus

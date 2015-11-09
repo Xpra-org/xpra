@@ -29,14 +29,8 @@ from xpra.net.crypto import get_iterations, get_iv, get_salt, choose_padding, \
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, csv
-
-try:
-    import xpra.platform.printing
-    assert xpra.platform.printing
-    HAS_PRINTING = True
-except:
-    HAS_PRINTING = False
+from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
+from xpra.net.file_transfer import HAS_PRINTING, FileTransferHandler
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -62,7 +56,7 @@ DETECT_LEAKS = os.environ.get("XPRA_DETECT_LEAKS", "0")=="1"
 DELETE_PRINTER_FILE = os.environ.get("XPRA_DELETE_PRINTER_FILE", "1")=="1"
 
 
-class XpraClientBase(object):
+class XpraClientBase(FileTransferHandler):
     """ Base class for Xpra clients.
         Provides the glue code for:
         * sending packets via Protocol
@@ -74,6 +68,7 @@ class XpraClientBase(object):
     """
 
     def __init__(self):
+        FileTransferHandler.__init__(self)
         #this may be called more than once,
         #skip doing internal init again:
         if not hasattr(self, "exit_code"):
@@ -100,14 +95,9 @@ class XpraClientBase(object):
         self.min_quality = 0
         self.speed = 0
         self.min_speed = -1
-        self.file_transfer = False
-        self.file_size_limit = 10
-        self.printing = False
         self.printer_attributes = []
         self.send_printers_pending = False
         self.exported_printers = None
-        self.open_files = False
-        self.open_command = None
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -140,11 +130,8 @@ class XpraClientBase(object):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
-        self.file_transfer = opts.file_transfer
-        self.file_size_limit = opts.file_size_limit
-        self.printing = opts.printing
-        self.open_command = opts.open_command
-        self.open_files = opts.open_files
+        #printing and file transfer:
+        FileTransferHandler.init(self, opts)
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -249,21 +236,39 @@ class XpraClientBase(object):
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         netlog("setup_connection(%s) protocol=%s", conn, self._protocol)
 
+
+    def set_packet_handlers(self, to, defs):
+        """ configures the given packet handlers,
+            and make sure we remove any existing ones with the same key
+            (which can be useful for subclasses, not here)
+        """
+        log("set_packet_handlers(%s, %s)", to, defs)
+        def delhandler(k):
+            #remove any existing mappings:
+            for d in (self._packet_handlers, self._ui_packet_handlers):
+                try:
+                    del d[k]
+                except:
+                    pass
+        for k,v in defs.items():
+            delhandler(k)
+            to[k] = v
+
     def init_packet_handlers(self):
-        self._packet_handlers = {
-            "hello"             : self._process_hello,
-            }
-        self._ui_packet_handlers = {
+        self._packet_handlers = {}
+        self._ui_packet_handlers = {}
+        self.set_packet_handlers(self._packet_handlers, {"hello" : self._process_hello})
+        self.set_packet_handlers(self._ui_packet_handlers, {
             "challenge":                self._process_challenge,
             "disconnect":               self._process_disconnect,
             "set_deflate":              self._process_set_deflate,
             Protocol.CONNECTION_LOST:   self._process_connection_lost,
             Protocol.GIBBERISH:         self._process_gibberish,
             Protocol.INVALID:           self._process_invalid,
-            }
+            })
 
     def init_authenticated_packet_handlers(self):
-        self._packet_handlers["send-file"] = self._process_send_file
+        self.set_packet_handlers(self._packet_handlers, {"send-file" : self._process_send_file})
 
 
     def init_aliases(self):
@@ -274,6 +279,7 @@ class XpraClientBase(object):
             self._aliases[i] = key
             self._reverse_aliases[key] = i
             i += 1
+
 
     def send_hello(self, challenge_response=None, client_salt=None):
         try:
@@ -313,9 +319,6 @@ class XpraClientBase(object):
                 "version"               : local_version,
                 "encoding.generic"      : True,
                 "namespace"             : True,
-                "file-transfer"         : self.file_transfer,
-                "file-size-limit"       : self.file_size_limit,
-                "printing"              : self.printing,
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
                 "username"              : self.username,
@@ -325,6 +328,7 @@ class XpraClientBase(object):
                 "compression_level"     : self.compression_level,
                 "argv"                  : sys.argv,
                 })
+        capabilities.update(self.get_file_transfer_features())
         if self.display:
             capabilities["display"] = self.display
         def up(prefix, d):
@@ -445,6 +449,7 @@ class XpraClientBase(object):
     def warn_and_quit(self, exit_code, message):
         log.warn(message)
         self.quit(exit_code)
+
 
     def _process_disconnect(self, packet):
         #ie: ("disconnect", "version error", "incompatible version")
@@ -780,146 +785,6 @@ class XpraClientBase(object):
         #legacy, should not be used for anything
         pass
 
-
-    def _process_send_file(self, packet):
-        #send-file basefilename, printit, openit, filesize, 0, data)
-        from xpra.platform.paths import get_download_dir
-        basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:11]
-        options = typedict(options)
-        if printit:
-            l = printlog
-            assert self.printing
-        else:
-            l = filelog
-            assert self.file_transfer
-        l("received file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
-        assert filesize>0, "invalid file size: %s" % filesize
-        assert file_data, "no data!"
-        if len(file_data)!=filesize:
-            l.error("Error: invalid data size for file '%s'", basefilename)
-            l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
-            return
-        if filesize>self.file_size_limit*1024*1024:
-            l.error("Error: file '%s' is too large:", basefilename)
-            l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
-            return            
-        #check digest if present:
-        import hashlib
-        def check_digest(algo="sha1", libfn=hashlib.sha1):
-            digest = options.get(algo)
-            if not digest:
-                return
-            u = libfn()
-            u.update(file_data)
-            l("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
-            if digest!=u.hexdigest():
-                l.error("Error: data does not match, invalid %s file digest for %s", algo, basefilename)
-                l.error(" received %s, expected %s", u.hexdigest(), digest)
-                return
-        check_digest("sha1", hashlib.sha1)
-        check_digest("md5", hashlib.md5)
-
-        #make sure we use a filename that does not exist already:
-        dd = os.path.expanduser(get_download_dir())
-        wanted_filename = os.path.abspath(os.path.join(dd, os.path.basename(basefilename)))
-        EXTS = {"application/postscript"    : "ps",
-                "application/pdf"           : "pdf",
-                "raw"                       : "raw",
-                }
-        ext = EXTS.get(mimetype)
-        if ext:
-            #on some platforms (win32),
-            #we want to force an extension
-            #so that the file manager can display them properly when you double-click on them
-            if not wanted_filename.endswith("."+ext):
-                wanted_filename += "."+ext
-        filename = wanted_filename
-        base = 0
-        while os.path.exists(filename):
-            l("cannot save file as %s: file already exists", filename)
-            root, ext = os.path.splitext(wanted_filename)
-            base += 1
-            filename = root+("-%s" % base)+ext
-        flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
-        try:
-            flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
-        except:
-            pass
-        fd = os.open(filename, flags)
-        try:
-            os.write(fd, file_data)
-        finally:
-            os.close(fd)
-        l.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "unknown"), ["", " for printing"][int(printit)])
-        l.info(" %s", filename)
-        if printit:
-            printer = options.strget("printer")
-            title   = options.strget("title")
-            print_options = options.dictget("options")
-            #TODO: how do we print multiple copies?
-            #copies = options.intget("copies")
-            #whitelist of options we can forward:
-            safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
-            l("safe print options(%s) = %s", options, safe_print_options)
-            self._print_file(filename, mimetype, printer, title, safe_print_options)
-            return
-        elif openit:
-            self._open_file(filename)
-
-    def _print_file(self, filename, mimetype, printer, title, options):
-        import time
-        from xpra.platform.printing import print_files, printing_finished, get_printers
-        printers = get_printers()
-        if printer not in printers:
-            printlog.error("Error: printer '%s' does not exist!", printer)
-            printlog.error(" printers available: %s", csv(printers.keys()) or "none")
-            return
-        def delfile():
-            if not DELETE_PRINTER_FILE:
-                return
-            try:
-                os.unlink(filename)
-            except:
-                printlog("failed to delete print job file '%s'", filename)
-            return False
-        job = print_files(printer, [filename], title, options)
-        printlog("printing %s, job=%s", filename, job)
-        if job<=0:
-            printlog("printing failed and returned %i", job)
-            delfile()
-            return
-        start = time.time()
-        def check_printing_finished():
-            done = printing_finished(job)
-            printlog("printing_finished(%s)=%s", job, done)
-            if done:
-                delfile()
-                return False
-            if time.time()-start>10*60:
-                printlog.warn("print job %s timed out", job)
-                delfile()
-                return False
-            return True #try again..
-        if check_printing_finished():
-            self.timeout_add(10000, check_printing_finished)
-
-    def _open_file(self, filename):
-        if not self.open_files:
-            log.warn("Warning: opening files automatically is disabled,")
-            log.warn(" ignoring uploaded file:")
-            log.warn(" '%s'", filename)
-            return
-        import subprocess, shlex
-        command = shlex.split(self.open_command)+[filename]
-        proc = subprocess.Popen(command)
-        cr = getChildReaper()
-        def open_done(*args):
-            returncode = proc.poll()
-            log("open_done: command %s has ended, returncode=%s", command, returncode)
-            if returncode!=0:
-                log.warn("Warning: failed to open the downloaded file")
-                log.warn(" '%s %s' returned", self.open_command, filename, returncode)
-        cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
 
     def _process_gibberish(self, packet):
         (_, message, data) = packet

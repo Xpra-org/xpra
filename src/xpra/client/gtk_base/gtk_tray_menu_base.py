@@ -296,6 +296,7 @@ class GTKTrayMenuBase(object):
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_startnewcommandmenuitem())
+        menu.append(self.make_uploadmenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
@@ -979,18 +980,26 @@ class GTKTrayMenuBase(object):
                     win.present()
         return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
 
-    def make_startnewcommandmenuitem(self, handshake_done=False):
+    def make_startnewcommandmenuitem(self):
         self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
         def enable_start_new_command(*args):
             log("enable_start_new_command%s start_new_command=%s", args, self.client.start_new_commands)
             set_sensitive(self.startnewcommand, self.client.start_new_commands)
             if not self.client.start_new_commands:
                 self.startnewcommand.set_tooltip_text("Not supported by the server")
-        if not handshake_done:
-            self.client.after_handshake(enable_start_new_command)
-        else:
-            enable_start_new_command()
+        self.client.after_handshake(enable_start_new_command)
         return self.startnewcommand
+
+    def make_uploadmenuitem(self):
+        self.upload = self.menuitem("Upload File", "upload.png", "Send a file to the server", self.client.show_file_upload)
+        def enable_upload(*args):
+            log("enable_upload%s server_file_transfer=%s", args, self.client.server_file_transfer)
+            set_sensitive(self.upload, self.client.server_file_transfer)
+            if not self.client.server_file_transfer:
+                self.upload.set_tooltip_text("Not supported by the server")
+        self.client.after_handshake(enable_upload)
+        return self.upload
+
 
     def make_disconnectmenuitem(self):
         def menu_quit(*args):

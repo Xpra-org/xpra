@@ -43,6 +43,7 @@ from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTION
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
+from xpra.net.file_transfer import HAS_PRINTING, FileTransferHandler
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
@@ -73,7 +74,7 @@ def parse_env(env):
     return d
 
 
-class ServerBase(ServerCore):
+class ServerBase(ServerCore, FileTransferHandler):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -83,6 +84,7 @@ class ServerBase(ServerCore):
 
     def __init__(self):
         ServerCore.__init__(self)
+        FileTransferHandler.__init__(self)
         log("ServerBase.__init__()")
         self.init_uuid()
 
@@ -124,10 +126,8 @@ class ServerBase(ServerCore):
         self.dbus_helper = None
         self.dbus_control = False
         self.dbus_server = None
-        self.file_transfer = False
-        self.file_size_limit = 10
-        self.printing = False
         self.lpadmin = ""
+        self.lpinfo = ""
         self.exit_with_children = False
         self.start_new_commands = False
         self.remote_logging = False
@@ -213,14 +213,14 @@ class ServerBase(ServerCore):
         self.remote_logging = opts.remote_logging
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
-        self.file_transfer = opts.file_transfer
-        self.file_size_limit = opts.file_size_limit
+        #printing and file transfer:
+        FileTransferHandler.init(self, opts)
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
         self.av_sync = opts.av_sync
         self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
-        if os.name=="posix" and opts.printing:
+        if os.name=="posix" and HAS_PRINTING and opts.printing:
             try:
                 from xpra.platform import pycups_printing
                 pycups_printing.set_lpadmin_command(self.lpadmin)
@@ -539,6 +539,7 @@ class ServerBase(ServerCore):
             "logging":                              self._process_logging,
             "command_request":                      self._process_command_request,
             "printers":                             self._process_printers,
+            "send-file":                            self._process_send_file,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -1083,16 +1084,13 @@ class ServerBase(ServerCore):
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "rpc-types"                    : self.rpc_handlers.keys(),
-                 "file-transfer"                : self.file_transfer,
-                 #not exposed as this is currently unused by the client (we only transfer from server to client)
-                 #"file-size-limit"              : self.file_size_limit,
-                 "printing"                     : self.printing,
                  "sharing"                      : self.sharing,
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
                  })
+            capabilities.update(self.get_file_transfer_features())
             for x in self.get_server_features():
                 capabilities[x] = True
         #this is a feature, but we would need the hello request
@@ -1444,6 +1442,10 @@ class ServerBase(ServerCore):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
 
+    def _process_send_file(self, proto, packet):
+        #superclass does not take the protocol as argument:
+        FileTransferHandler._process_send_file(self, packet)
+
     def _process_print(self, proto, packet):
         #ie: from the xpraforwarder we call this command:
         #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
@@ -1631,6 +1633,7 @@ class ServerBase(ServerCore):
         def up(prefix, d, suffix=""):
             updict(info, prefix, d, suffix)
 
+        up("file",      self.get_file_transfer_info())
         up("printing",  self.get_printing_info())
         up("features",  self.get_features_info())
         up("clipboard", self.get_clipboard_info())

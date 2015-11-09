@@ -21,6 +21,7 @@ cursorlog = Logger("gtk", "client", "cursor")
 screenlog = Logger("gtk", "client", "screen")
 framelog = Logger("gtk", "client", "frame")
 menulog = Logger("gtk", "client", "menu")
+filelog = Logger("gtk", "client", "file")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -146,6 +147,26 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.start_new_command = getStartNewCommand(run_command_cb, self.server_supports_sharing and self.server_supports_window_filters)
         self.start_new_command.show()
         return self.start_new_command
+
+    def show_file_upload(self, *args):
+        filelog("show_file_upload%s can open=%s", args, self.server_open_files)
+        buttons = [gtk.STOCK_CANCEL,    gtk.RESPONSE_CANCEL]
+        if self.server_open_files:
+            buttons += [gtk.STOCK_OPEN,      gtk.RESPONSE_ACCEPT]
+        buttons += [gtk.STOCK_OK,        gtk.RESPONSE_OK]
+        dialog = gtk.FileChooserDialog("File to upload", parent=None, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=tuple(buttons))
+        dialog.set_default_response(gtk.RESPONSE_OK)
+        v = dialog.run()
+        if v not in (gtk.RESPONSE_OK, gtk.RESPONSE_ACCEPT):
+            filelog("dialog response code %s", v)
+            dialog.destroy()
+            return
+        filename = dialog.get_filename()
+        gfile = dialog.get_file()
+        data, filesize, entity = gfile.load_contents()
+        filelog("load_contents: filename=%s, %i bytes, entity=%s, response=%s", filename, filesize, entity, v)
+        dialog.destroy()
+        self.send_file(filename, data, filesize, openit=(v==gtk.RESPONSE_ACCEPT))
 
 
     def show_about(self, *args):
