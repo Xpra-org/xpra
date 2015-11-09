@@ -95,7 +95,7 @@ postscript-printer = %(postscript_printer)s
 # pdf-printer = /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
 pdf-printer = %(pdf_printer)s
 
-# How to open filee:
+# How to open files:
 #open-command = xdg-open
 
 # Open files
