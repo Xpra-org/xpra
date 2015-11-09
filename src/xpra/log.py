@@ -113,6 +113,10 @@ def setloghandler(lh):
     logging.root.addHandler(lh)
 
 def enable_color(to=sys.stdout, formatter=NOPREFIX_FORMAT):
+    if not hasattr(to, "fileno"):
+        #on win32 sys.stdout can be a "Blackhole",
+        #which does not have a fileno
+        return
     from xpra.colorstreamhandler import ColorStreamHandler
     from logging import Formatter
     csh = ColorStreamHandler(to)
