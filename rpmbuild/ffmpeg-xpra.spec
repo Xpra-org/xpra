@@ -14,11 +14,6 @@ BuildRequires:	x264-xpra-devel
 BuildRequires:	yasm
 
 
-%if 0%{?fc24}
-#Fedora 24 seems to have problems with debug packages
-%define debug_package %{nil}
-%endif
-
 %description
 ffmpeg libraries for xpra
 
@@ -63,6 +58,8 @@ This package contains the development files for %{name}.
     --enable-decoder=vp8 \
     --enable-decoder=vp9 \
     --enable-shared \
+	--enable-debug \
+	--disable-stripping \
     --disable-symver
     #--enable-static \
 
