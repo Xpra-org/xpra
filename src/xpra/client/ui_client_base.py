@@ -1618,16 +1618,16 @@ class UIXpraClient(XpraClientBase):
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = c.intget("mmap_token")
-            if mmap_token:
-                from xpra.net.mmap_pipe import read_mmap_token
-                token = read_mmap_token(self.mmap)
-                if token!=mmap_token:
-                    log.error("Error: mmap token verification failed!")
-                    log.error(" expected '%s'", mmap_token)
-                    log.error(" found '%s'", token)
-                    self.mmap_enabled = False
-                    self.quit(EXIT_MMAP_TOKEN_FAILURE)
-                    return
+            from xpra.net.mmap_pipe import read_mmap_token
+            token = read_mmap_token(self.mmap)
+            if token!=mmap_token:
+                log.error("Error: mmap token verification failed!")
+                log.error(" expected '%s'", mmap_token)
+                log.error(" found '%s'", token)
+                self.mmap_enabled = False
+                self.quit(EXIT_MMAP_TOKEN_FAILURE)
+                return
+            log.info(" using fast mmap transfers")
         server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
         if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
             log.warn("server does not support auto-refresh!")
