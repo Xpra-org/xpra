@@ -88,6 +88,12 @@ WIN32 = sys.platform.startswith("win")
 RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
 
+def r4cmp(v):    #ignore small differences in floats for scale values
+    return int(v*1000.0 + 0.5)
+def fequ(v1, v2):
+    return r4cmp(v1)==r4cmp(v2)
+
+
 """
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
@@ -888,9 +894,7 @@ class UIXpraClient(XpraClientBase):
         yscale = clamp(self.yscale*ychange)
         scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
         scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
-        def rcmp(v):    #ignore small differences in floats for scale values
-            return int(v*1000.0 + 0.5)
-        if rcmp(xscale)==rcmp(self.xscale) and rcmp(yscale)==rcmp(self.yscale):
+        if fequ(xscale, self.xscale) and fequ(yscale, self.yscale):
             scalinglog("scaling unchanged: %sx%s", self.xscale, self.yscale)
             return
         #re-calculate change values against clamped scale:
@@ -1630,7 +1634,7 @@ class UIXpraClient(XpraClientBase):
             log.info(" using fast mmap transfers")
         server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
         if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
-            log.warn("server does not support auto-refresh!")
+            log.warn("Warning: server does not support auto-refresh!")
         self.server_encodings = c.strlistget("encodings")
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
@@ -1705,6 +1709,17 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_sharing = c.boolget("sharing")
         self.server_supports_window_filters = c.boolget("window-filters")
         self.server_is_shadow = c.boolget("shadow")
+        if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
+            #scaling is used, make sure that we need it and that the server can support it
+            #(without rounding support, size-hints can cause resize loops)
+            if self.mmap_enabled:
+                log.info(" no need for scaling with mmap")
+                self.scalereset()
+                self.can_scale = False
+            elif not c.boolget("window.constrain.rounding"):
+                log.info("Server does not support rounding, disabling scaling")
+                self.scalereset()
+                self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
         if not self.server_is_shadow:
@@ -2228,10 +2243,10 @@ class UIXpraClient(XpraClientBase):
 
     def sx(self, v):
         """ convert X coordinate from server to client """
-        return int(v*self.xscale)
+        return int(v*self.xscale+0.5)
     def sy(self, v):
         """ convert Y coordinate from server to client """
-        return int(v*self.yscale)
+        return int(v*self.yscale+0.5)
     def srect(self, x, y, w, h):
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
@@ -2241,10 +2256,10 @@ class UIXpraClient(XpraClientBase):
 
     def cx(self, v):
         """ convert X coordinate from client to server """
-        return int(v/self.xscale)
+        return int(v/self.xscale+0.5)
     def cy(self, v):
         """ convert Y coordinate from client to server """
-        return int(v/self.yscale)
+        return int(v/self.yscale+0.5)
     def crect(self, x, y, w, h):
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)

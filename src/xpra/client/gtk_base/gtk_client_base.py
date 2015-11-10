@@ -401,9 +401,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def get_screen_sizes(self, xscale=1, yscale=1):
         def xs(v):
-            return int(v/xscale)
+            return int(v/xscale+0.5)
         def ys(v):
-            return int(v/yscale)
+            return int(v/yscale+0.5)
         def swork(*workarea):
             return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
         display = display_get_default()

@@ -164,7 +164,7 @@ class DesktopManager(gtk.Widget):
     def window_position(self, model, w, h):
         [x, y, w0, h0] = self._models[model].geom
         if abs(w0-w)>1 or abs(h0-h)>1:
-            log.warn("Uh-oh, our size doesn't fit window sizing constraints: "
+            log("Uh-oh, our size doesn't fit window sizing constraints: "
                      "%sx%s vs %sx%s", w0, h0, w, h)
         return x, y
 
@@ -268,6 +268,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
+                "constrain.rounding"     : True,
                 })
         return capabilities
 

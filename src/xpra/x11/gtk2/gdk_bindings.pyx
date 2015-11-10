@@ -525,6 +525,7 @@ def calc_constrained_size(int width, int height, object hints):
 
     cdef cGdkGeometry geom
     cdef int new_width = 0, new_height = 0
+    cdef int new_larger_width = 0, new_larger_height = 0
     cdef int flags = 0
 
     if "maximum-size" in hints:
@@ -545,7 +546,14 @@ def calc_constrained_size(int width, int height, object hints):
         geom.min_aspect = hints["min_aspect_ratio"]
         geom.max_aspect = hints["max_aspect_ratio"]
     gdk_window_constrain_size(&geom, flags, width, height, &new_width, &new_height)
-
+    if (new_width!=width or new_height!=height) and "increment" in hints:
+        #we will change the dimensions specified and gdk_window_constrain_size rounds down,
+        #try to see if bigger is closer to what we really want and use that:
+        gdk_window_constrain_size(&geom, flags, width+geom.width_inc, height+geom.height_inc, &new_larger_width, &new_larger_height)
+        if abs(new_larger_width-width)<abs(new_width-width):
+            new_width = new_larger_width
+        if abs(new_larger_height-height)+abs(new_height-height):
+            new_height = new_larger_height
     return new_width, new_height
 
 
