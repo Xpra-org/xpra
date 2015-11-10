@@ -32,6 +32,9 @@ X.Org X11 dummy video driver.
 %prep
 %setup -q -n %{tarball}-%{version}
 %patch0 -p1 -b .mibstore
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
 
 %build
 autoreconf -vif
