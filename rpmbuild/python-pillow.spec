@@ -280,7 +280,7 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 * Wed Jun 10 2015 Antoine Martin <antoine@devloop.org.uk - 2.8.2-1
 - new upstream release
 
-* Mon Apr 05 2015 Antoine Martin <antoine@devloop.org.uk - 2.8.1-1
+* Sun Apr 05 2015 Antoine Martin <antoine@devloop.org.uk - 2.8.1-1
 - new upstream release
 
 * Mon Jan 19 2015 Antoine Martin <antoine@devloop.org.uk - 2.7.0-1
