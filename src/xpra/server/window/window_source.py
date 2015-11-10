@@ -1371,12 +1371,9 @@ class WindowSource(object):
         self.queue_damage_packet(packet, damage_time, process_damage_time)
 
         if not self.can_refresh(window):
+            self.cancel_refresh_timer()
             return
         encoding = packet[6]
-        if options.get("auto_refresh", False):
-            refreshlog("auto-refresh %s packet sent", encoding)
-            #don't trigger a loop:
-            return
         #the actual encoding used may be different from the global one we specify
         x, y, w, h = packet[2:6]
         client_options = packet[10]     #info about this packet from the encoder
@@ -1387,7 +1384,7 @@ class WindowSource(object):
         lossy_csc = encoding=="jpeg" or client_options.get("csc") in LOSSY_PIXEL_FORMATS
         scaled = client_options.get("scaled_size") is not None
         region = rectangle(x, y, w, h)
-        if actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled:
+        if options.get("auto_refresh", False) or (actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled):
             #this screen update is lossless or high quality
             if not self.refresh_regions:
                 #nothing due for refresh, still nothing to do
