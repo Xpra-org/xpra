@@ -1631,7 +1631,9 @@ class UIXpraClient(XpraClientBase):
                 self.mmap_enabled = False
                 self.quit(EXIT_MMAP_TOKEN_FAILURE)
                 return
-            log.info(" using fast mmap transfers")
+            log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
+        #the server will have a handle on the mmap file by now, safe to delete:
+        self.clean_mmap()
         server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
         if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
             log.warn("Warning: server does not support auto-refresh!")
@@ -1641,10 +1643,6 @@ class UIXpraClient(XpraClientBase):
         self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",)) #old servers only supported x264
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
-        if self.mmap_enabled:
-            log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_filename)
-        #the server will have a handle on the mmap file by now, safe to delete:
-        self.clean_mmap()
         self.server_start_time = c.intget("start_time", -1)
         self.server_platform = c.strget("platform")
         self.toggle_cursors_bell_notify = c.boolget("toggle_cursors_bell_notify")
