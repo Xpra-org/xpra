@@ -454,7 +454,7 @@ class UIXpraClient(XpraClientBase):
             y = parse_item(values[1])
             if y is None:
                 return 1, 1
-        scalinglog("parse_scaling(%s) parsed items=%s", (x, y))
+        scalinglog("parse_scaling(%s) parsed items=%s", desktop_scaling, (x, y))
         #normalize absolute values into floats:
         if x>MAX_SCALING or y>MAX_SCALING:
             scalinglog(" normalizing dimensions to a ratio of %ix%i", root_w, root_h)
@@ -952,6 +952,10 @@ class UIXpraClient(XpraClientBase):
     def scale_reinit(self, xchange=1.0, ychange=1.0):
         #wait at least one second before changing again:
         self.scale_change_embargo = time.time()+SCALING_EMBARGO_TIME
+        if fequ(self.xscale, self.yscale):
+            scalinglog.info("setting scaling to %i%%:", int(100*self.xscale + 0.5))
+        else:
+            scalinglog.info("setting scaling to %i%% x %i%%:", int(100*self.xscale + 0.5), int(100*self.yscale + 0.5))
         self.update_screen_size()
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
@@ -1234,10 +1238,12 @@ class UIXpraClient(XpraClientBase):
         if self.xscale!=1 or self.yscale!=1:
             capabilities["screen_sizes.unscaled"] = ss
             capabilities["desktop_size.unscaled"] = u_root_w, u_root_h
-            def roundfloat(v):
-                return str(v)[:5].rstrip("0").rstrip(".")
             root_w, root_h = self.cp(u_root_w, u_root_h)
-            log.info(" %sscaled using %s x %s to: %ix%i", ["up", "down"][int(u_root_w>root_w or u_root_h>root_h)], roundfloat(self.xscale), roundfloat(self.yscale), root_w, root_h)
+            if fequ(self.xscale, self.yscale):
+                sinfo = "%i%%" % int(self.xscale*100 + 0.5)
+            else:
+                sinfo = "%i%% x %i%%" % (int(self.xscale*100 + 0.5), int(self.yscale*100 + 0.5))
+            log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
             sss = self.get_screen_sizes(self.xscale, self.yscale)
             log_screen_sizes(root_w, root_h, sss)
         else:
