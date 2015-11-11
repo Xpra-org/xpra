@@ -80,6 +80,7 @@ LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
 MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "8"))
+SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.5,0.666,1,1.25,1.5,2.0,3.0,4.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 
 PYTHON3 = sys.version_info[0] == 3
@@ -88,8 +89,8 @@ WIN32 = sys.platform.startswith("win")
 RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
 
-def r4cmp(v):    #ignore small differences in floats for scale values
-    return int(v*1000.0 + 0.5)
+def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
+    return int(v*rounding + 0.5)
 def fequ(v1, v2):
     return r4cmp(v1)==r4cmp(v2)
 
@@ -105,6 +106,7 @@ class UIXpraClient(XpraClientBase):
         "first-ui-received"         : no_arg_signal,
 
         "clipboard-toggled"         : no_arg_signal,
+        "scaling-changed"           : no_arg_signal,
         "keyboard-sync-toggled"     : no_arg_signal,
         "speaker-changed"           : no_arg_signal,        #bitrate or pipeline state has changed
         "microphone-changed"        : no_arg_signal,        #bitrate or pipeline state has changed
@@ -864,10 +866,24 @@ class UIXpraClient(XpraClientBase):
 
 
     def scaleup(self):
-        self.scale_change(1.5, 1.5)
+        scaling = max(self.xscale, self.yscale)
+        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)>r4cmp(scaling, 10)]
+        scalinglog("scaleup() options>%s : %s", r4cmp(scaling, 1000)/1000.0, options)
+        if options:
+            self._scaleto(min(options))
 
     def scaledown(self):
-        self.scale_change(2/3.0, 2/3.0)
+        scaling = max(self.xscale, self.yscale)
+        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10)]
+        scalinglog("scaledown() options<%s : %s", r4cmp(scaling, 1000)/1000.0, options)
+        if options:
+            self._scaleto(max(options))
+
+    def _scaleto(self, new_scaling):
+        scaling = max(self.xscale, self.yscale)
+        scalinglog("_scaleto(%s) current value=%s", r4cmp(new_scaling, 1000)/1000.0, r4cmp(scaling, 1000)/1000.0)
+        if new_scaling>0:
+            self.scale_change(new_scaling/self.xscale, new_scaling/self.yscale)
 
     def scalereset(self):
         self.scaleset(1.0, 1.0)
@@ -944,12 +960,7 @@ class UIXpraClient(XpraClientBase):
                 minx, miny = self.max_window_size
             return max(1, min(minx, int(w*xchange))), max(1, min(miny, int(h*ychange)))
         self.reinit_windows(new_size_fn)
-        self.scaling_changed()
-
-    def scaling_changed(self):
-        #some clients may re-initialize things here
-        #(gtk resets the cursors)
-        pass
+        self.emit("scaling-changed")
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
@@ -2698,7 +2709,7 @@ class UIXpraClient(XpraClientBase):
         scalinglog.warn("Warning: adjusting scaling to accomodate server")
         scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
         scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
-        self.scaling_changed()
+        self.emit("scaling-changed")
             
 
     def set_max_packet_size(self):

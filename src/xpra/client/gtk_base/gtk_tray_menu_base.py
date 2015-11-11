@@ -54,8 +54,6 @@ SPEED_OPTIONS[0]    = "Auto"
 SPEED_OPTIONS[1]    = "Lowest Bandwidth"
 SPEED_OPTIONS[100]  = "Lowest Latency"
 
-SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "1.25,1.5,2.0,3.0,4.0").split(",")]
-
 
 class TrayCheckMenuItem(gtk.CheckMenuItem):
     """ We add a button handler to catch clicks that somehow do not
@@ -648,22 +646,39 @@ class GTKTrayMenuBase(object):
 
     def make_scalingmenu(self):
         scaling_submenu = gtk.Menu()
+        scaling_submenu.updating = False
         self.popup_menu_workaround(scaling_submenu)
         def scalecmp(v):
             return abs(self.client.xscale-v)<0.1
-        def scalingitem(label, scalingvalue=1.0):
+        from xpra.client.ui_client_base import SCALING_OPTIONS
+        def scalingitem(scalingvalue=1.0):
+            pct = int(100.0*scalingvalue + 0.5)
+            label = {100 : "None"}.get(pct, "%i%%" % pct)
             c = CheckMenuItem(label)
             c.scalingvalue = scalingvalue
             c.set_draw_as_radio(True)
             c.set_active(scalecmp(scalingvalue))
             def scaling_activated(item):
+                if scaling_submenu.updating:
+                    return
                 ensure_item_selected(scaling_submenu, item)
                 self.client.scaleset(item.scalingvalue, item.scalingvalue)
             c.connect('activate', scaling_activated)
             return c
-        scaling_submenu.append(scalingitem("None"))
         for x in SCALING_OPTIONS:
-            scaling_submenu.append(scalingitem("%i%%" % int(100*x), x))
+            scaling_submenu.append(scalingitem(x))
+        def scaling_changed(*args):
+            log("scaling_changed%s updating selected tray menu item", args)
+            #find the nearest scaling option to show as current:
+            scaling = (self.client.xscale + self.client.yscale)/2.0
+            by_distance = dict((abs(scaling-x),x) for x in SCALING_OPTIONS)
+            closest = by_distance.get(sorted(by_distance)[0], 1)
+            scaling_submenu.updating = True
+            for x in scaling_submenu.get_children():
+                scalingvalue = getattr(x, "scalingvalue", -1)
+                x.set_active(scalingvalue==closest)
+            scaling_submenu.updating = False
+        self.client.connect("scaling-changed", scaling_changed)
         return scaling_submenu
         
 

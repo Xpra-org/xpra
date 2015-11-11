@@ -70,6 +70,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
         self._set_window_menu = get_menu_support_function()
+        self.connect("scaling-changed", self.reset_windows_cursors)
 
 
     def init(self, opts):
@@ -460,9 +461,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return screen_sizes
 
 
-    def scaling_changed(self):
-        UIXpraClient.scaling_changed(self)
-        cursorlog("scaling_changed() resetting cursors for: %s", self._cursors.keys())
+    def reset_windows_cursors(self, *args):
+        cursorlog("reset_windows_cursors() resetting cursors for: %s", self._cursors.keys())
         for w,cursor_data in list(self._cursors.items()):
             self.set_windows_cursor([w], cursor_data)
 
