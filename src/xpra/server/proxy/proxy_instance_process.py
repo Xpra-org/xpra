@@ -181,6 +181,8 @@ class ProxyInstanceProcess(Process):
         self.server_protocol.large_packets.append("window-icon")
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
+        if self.caps.boolget("file-transfer"):
+            self.server_protocol.large_packets.append("send-file")
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
         self.server_protocol.enable_default_encoder()
 
@@ -551,14 +553,19 @@ class ProxyInstanceProcess(Process):
         elif packet_type=="hello":
             c = typedict(packet[1])
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
-            proto.max_packet_size = maxw*maxh*4*4
-
             caps = self.filter_server_caps(c)
             #add new encryption caps:
             if self.cipher:
                 padding_options = self.caps.strlistget("cipher.padding.options", [DEFAULT_PADDING])
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key, padding_options)
                 caps.update(auth_caps)
+            #may need to bump packet size:
+            proto.max_packet_size = maxw*maxh*4*4
+            file_transfer = self.caps.boolget("file-transfer") and c.boolget("file-transfer")
+            file_size_limit = max(self.caps.intget("file-size-limit"), c.intget("file-size-limit"))
+            file_max_packet_size = int(file_transfer) * (1024 + file_size_limit*1024*1024)
+            self.client_protocol.max_packet_size = max(self.client_protocol.max_packet_size, file_max_packet_size)
+            self.server_protocol.max_packet_size = max(self.server_protocol.max_packet_size, file_max_packet_size)
             packet = ("hello", caps)
         elif packet_type=="info-response":
             #adds proxy info:

@@ -889,6 +889,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         log("process_hello serversource=%s", ss)
         try:
             ss.parse_hello(c)
+            proto.max_packet_size = max(proto.max_packet_size, int(ss.file_transfer) * (1024 + ss.file_size_limit*1024*1024))
         except:
             #close it already
             ss.close()
@@ -897,6 +898,12 @@ class ServerBase(ServerCore, FileTransferHandler):
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
+
+    def accept_client(self, proto, c):
+        ServerCore.accept_client(self, proto, c)
+        #may need to bump file size limit for file transfers:
+        proto.max_packet_size = max(proto.max_packet_size, int(self.file_transfer) * (1024 + self.file_size_limit*1024*1024))
+
 
     def get_server_source_class(self):
         from xpra.server.source import ServerSource
