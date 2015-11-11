@@ -883,7 +883,7 @@ class UIXpraClient(XpraClientBase):
         scaling = max(self.xscale, self.yscale)
         scalinglog("_scaleto(%s) current value=%s", r4cmp(new_scaling, 1000)/1000.0, r4cmp(scaling, 1000)/1000.0)
         if new_scaling>0:
-            self.scale_change(new_scaling/self.xscale, new_scaling/self.yscale)
+            self.scale_change(new_scaling/scaling, new_scaling/scaling)
 
     def scalereset(self):
         self.scaleset(1.0, 1.0)
