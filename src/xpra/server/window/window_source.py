@@ -136,6 +136,7 @@ class WindowSource(object):
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
+        self.last_auto_refresh_message = None
         self.video_helper = video_helper
         if window.is_shadow():
             self.max_delta_size = -1
@@ -354,6 +355,12 @@ class WindowSource(object):
                  "auto-refresh"         : self.client_refresh_encodings,
                  "rgb_formats"          : self.rgb_formats,
                  })
+        larm = self.last_auto_refresh_message
+        if larm:
+            up("encodings.auto-refresh.last-event", {
+                "elapsed"               : int(1000*(time.time()-larm[0])),
+                "message"               : larm[1],
+                                                     })
         up("icons", self.icons_encoding_options)
         idata = self.window_icon_data
         if idata:
@@ -1439,6 +1446,7 @@ class WindowSource(object):
                     sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100))
                     self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                     msg = "re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
+        self.last_auto_refresh_message = time.time(), msg
         refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
