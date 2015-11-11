@@ -237,21 +237,22 @@ class XpraClientBase(FileTransferHandler):
         netlog("setup_connection(%s) protocol=%s", conn, self._protocol)
 
 
+    def remove_packet_handlers(self, *keys):
+        for k in keys:
+            for d in (self._packet_handlers, self._ui_packet_handlers):
+                try:
+                    del d[k]
+                except:
+                    pass
+
     def set_packet_handlers(self, to, defs):
         """ configures the given packet handlers,
             and make sure we remove any existing ones with the same key
             (which can be useful for subclasses, not here)
         """
         log("set_packet_handlers(%s, %s)", to, defs)
-        def delhandler(k):
-            #remove any existing mappings:
-            for d in (self._packet_handlers, self._ui_packet_handlers):
-                try:
-                    del d[k]
-                except:
-                    pass
+        self.remove_packet_handlers(*defs.keys())
         for k,v in defs.items():
-            delhandler(k)
             to[k] = v
 
     def init_packet_handlers(self):
@@ -544,6 +545,7 @@ class XpraClientBase(FileTransferHandler):
         if digest:
             authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
         self.password_sent = True
+        self.remove_packet_handlers("challenge")
         self.send_hello(challenge_response, client_salt)
 
     def set_server_encryption(self, caps, key):
