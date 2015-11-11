@@ -1237,7 +1237,7 @@ class UIXpraClient(XpraClientBase):
             def roundfloat(v):
                 return str(v)[:5].rstrip("0").rstrip(".")
             root_w, root_h = self.cp(u_root_w, u_root_h)
-            log.info(" scaled using %s x %s to: %ix%i", roundfloat(self.xscale), roundfloat(self.yscale), root_w, root_h)
+            log.info(" %sscaled using %s x %s to: %ix%i", ["up", "down"][int(u_root_w>root_w or u_root_h>root_h)], roundfloat(self.xscale), roundfloat(self.yscale), root_w, root_h)
             sss = self.get_screen_sizes(self.xscale, self.yscale)
             log_screen_sizes(root_w, root_h, sss)
         else:
