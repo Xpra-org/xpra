@@ -10,7 +10,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
 gtk = import_gtk()
 glib = import_glib()
 
-from xpra.util import CLIENT_EXIT
+from xpra.util import CLIENT_EXIT, iround
 from xpra.os_util import bytestostr
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, BUTTON_PRESS_MASK
 from xpra.client.client_base import EXIT_OK
@@ -652,7 +652,7 @@ class GTKTrayMenuBase(object):
             return abs(self.client.xscale-v)<0.1
         from xpra.client.ui_client_base import SCALING_OPTIONS
         def scalingitem(scalingvalue=1.0):
-            pct = int(100.0*scalingvalue + 0.5)
+            pct = iround(100.0*scalingvalue)
             label = {100 : "None"}.get(pct, "%i%%" % pct)
             c = CheckMenuItem(label)
             c.scalingvalue = scalingvalue

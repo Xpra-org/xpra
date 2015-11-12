@@ -15,6 +15,7 @@ dbuslog = Logger("posix", "dbus")
 traylog = Logger("posix", "menu")
 menulog = Logger("posix", "menu")
 
+from xpra.util import iround
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
 device_bell = None
@@ -195,8 +196,8 @@ def _get_randr_dpi():
         randr_bindings = RandRBindings()
         wmm, hmm = randr_bindings.get_screen_size_mm()
         w, h =  randr_bindings.get_screen_size()
-        dpix = int(w * 25.4 / wmm + 0.5)
-        dpiy = int(h * 25.4 / hmm + 0.5)
+        dpix = iround(w * 25.4 / wmm)
+        dpiy = iround(h * 25.4 / hmm)
         screenlog("dpix=%s, dpiy=%s", dpix, dpiy)
         return dpix, dpiy
     except Exception as e:

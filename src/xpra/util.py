@@ -480,6 +480,9 @@ def repr_ellipsized(obj, limit=100):
 def rindex(alist, avalue):
     return len(alist) - alist[::-1].index(avalue) - 1
 
+def iround(v):
+    return int(v+0.5)
+
 
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix

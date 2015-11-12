@@ -30,6 +30,7 @@ grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
 
+from xpra.util import iround
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
@@ -347,8 +348,8 @@ class X11ServerBase(GTKServerBase):
                         hmm = max(hmm, s[4])
             if wmm>0 and hmm>0 and client_w>0 and client_h>0:
                 #calculate "real" dpi:
-                xdpi = int(client_w * 25.4 / wmm + 0.5)
-                ydpi = int(client_h * 25.4 / hmm + 0.5)
+                xdpi = iround(client_w * 25.4 / wmm)
+                ydpi = iround(client_h * 25.4 / hmm)
                 screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
         self.set_dpi(xdpi, ydpi)
 
@@ -427,8 +428,8 @@ class X11ServerBase(GTKServerBase):
             def show_dpi():
                 wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
                 screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
-                actual_xdpi = int(root_w * 25.4 / wmm + 0.5)
-                actual_ydpi = int(root_h * 25.4 / hmm + 0.5)
+                actual_xdpi = iround(root_w * 25.4 / wmm)
+                actual_ydpi = iround(root_h * 25.4 / hmm)
                 if abs(actual_xdpi-xdpi)<=1 and abs(actual_ydpi-ydpi)<=1:
                     screenlog.info("DPI set to %s x %s", xdpi, ydpi)
                 else:

@@ -54,7 +54,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, CLIENT_EXIT
+from xpra.util import nonl, std, iround, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -90,7 +90,7 @@ RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
 
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
-    return int(v*rounding + 0.5)
+    return iround(v*rounding)
 def fequ(v1, v2):
     return r4cmp(v1)==r4cmp(v2)
 
@@ -953,9 +953,9 @@ class UIXpraClient(XpraClientBase):
         #wait at least one second before changing again:
         self.scale_change_embargo = time.time()+SCALING_EMBARGO_TIME
         if fequ(self.xscale, self.yscale):
-            scalinglog.info("setting scaling to %i%%:", int(100*self.xscale + 0.5))
+            scalinglog.info("setting scaling to %i%%:", iround(100*self.xscale))
         else:
-            scalinglog.info("setting scaling to %i%% x %i%%:", int(100*self.xscale + 0.5), int(100*self.yscale + 0.5))
+            scalinglog.info("setting scaling to %i%% x %i%%:", iround(100*self.xscale), iround(100*self.yscale))
         self.update_screen_size()
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
@@ -1233,16 +1233,16 @@ class UIXpraClient(XpraClientBase):
         desktop_names = get_desktop_names()
         capabilities["desktop.names"] = desktop_names
         ss = self.get_screen_sizes()
-        log.info(" desktop size is %sx%s with %s screen(s):", u_root_w, u_root_h, len(ss))
+        log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
         log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale!=1 or self.yscale!=1:
             capabilities["screen_sizes.unscaled"] = ss
             capabilities["desktop_size.unscaled"] = u_root_w, u_root_h
             root_w, root_h = self.cp(u_root_w, u_root_h)
             if fequ(self.xscale, self.yscale):
-                sinfo = "%i%%" % int(self.xscale*100 + 0.5)
+                sinfo = "%i%%" % iround(self.xscale*100)
             else:
-                sinfo = "%i%% x %i%%" % (int(self.xscale*100 + 0.5), int(self.yscale*100 + 0.5))
+                sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
             log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
             sss = self.get_screen_sizes(self.xscale, self.yscale)
             log_screen_sizes(root_w, root_h, sss)
@@ -1260,7 +1260,7 @@ class UIXpraClient(XpraClientBase):
             #not supplied, use platform detection code:
             xdpi = self.cx(get_xdpi())
             ydpi = self.cy(get_ydpi())
-            dpi = int((xdpi+ydpi+0.5)/2.0)
+            dpi = iround((xdpi+ydpi)/2.0)
             #platforms may also provide per-axis dpi (later win32 versions do)
             capabilities.update({
                                  "dpi.x"    : xdpi,
@@ -2258,10 +2258,10 @@ class UIXpraClient(XpraClientBase):
 
     def sx(self, v):
         """ convert X coordinate from server to client """
-        return int(v*self.xscale+0.5)
+        return iround(v*self.xscale)
     def sy(self, v):
         """ convert Y coordinate from server to client """
-        return int(v*self.yscale+0.5)
+        return iround(v*self.yscale)
     def srect(self, x, y, w, h):
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
@@ -2271,10 +2271,10 @@ class UIXpraClient(XpraClientBase):
 
     def cx(self, v):
         """ convert X coordinate from client to server """
-        return int(v/self.xscale+0.5)
+        return iround(v/self.xscale)
     def cy(self, v):
         """ convert Y coordinate from client to server """
-        return int(v/self.yscale+0.5)
+        return iround(v/self.yscale)
     def crect(self, x, y, w, h):
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)

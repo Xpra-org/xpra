@@ -25,7 +25,7 @@ filelog = Logger("gtk", "client", "file")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import bytestostr, updict, pver, DEFAULT_METADATA_SUPPORTED
+from xpra.util import bytestostr, updict, pver, iround, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -403,9 +403,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def get_screen_sizes(self, xscale=1, yscale=1):
         def xs(v):
-            return int(v/xscale+0.5)
+            return iround(v/xscale)
         def ys(v):
-            return int(v/yscale+0.5)
+            return iround(v/yscale)
         def swork(*workarea):
             return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
         display = display_get_default()
@@ -492,7 +492,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         display = display_get_default()
         cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s", len(cursor_data)>=9, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         #named cursors cannot be scaled (round to 10 to compare so 0.95 and 1.05 are considered the same as 1.0, no scaling):
-        if len(cursor_data)>=9 and cursor_types and int(0.5+self.xscale*10)==10 and int(0.5+self.yscale*10)==10:
+        if len(cursor_data)>=9 and cursor_types and iround(self.xscale*10)==10 and iround(self.yscale*10)==10:
             cursor_name = bytestostr(cursor_data[8])
             if cursor_name and USE_LOCAL_CURSORS:
                 gdk_cursor = cursor_types.get(cursor_name.upper())

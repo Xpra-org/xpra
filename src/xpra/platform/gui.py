@@ -61,7 +61,8 @@ def get_icon_size():
     xdpi = get_xdpi()
     ydpi = get_ydpi()
     if xdpi>0 and ydpi>0:
-        dpi = int((xdpi + ydpi + 0.5)/2.0)
+        from xpra.util import iround
+        dpi = iround((xdpi + ydpi)/2.0)
     else:
         dpi = 96
     if dpi > 144:
