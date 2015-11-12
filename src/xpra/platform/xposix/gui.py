@@ -260,7 +260,7 @@ def get_current_desktop():
             v = struct.unpack("=I", d)[0]
     except Exception as e:
         log.warn("failed to get current desktop: %s", e)
-    log("get_current_desktop() %s=%s", binascii.hexlify(d), v)
+    log("get_current_desktop() %s=%s", binascii.hexlify(d or ""), v)
     return v
 
 def get_workarea():
@@ -295,7 +295,7 @@ def get_number_of_desktops():
     except Exception as e:
         screenlog.warn("failed to get number of desktop: %s", e)
     v = max(1, v)
-    screenlog("get_number_of_desktops() %s=%s", binascii.hexlify(d), v)
+    screenlog("get_number_of_desktops() %s=%s", binascii.hexlify(d or ""), v)
     return v
 
 def get_desktop_names():
