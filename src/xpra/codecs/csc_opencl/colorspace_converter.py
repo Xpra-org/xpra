@@ -14,7 +14,7 @@ import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 
 from xpra.util import updict, engs
-from xpra.os_util import memoryview_to_bytes, _memoryview
+from xpra.os_util import _memoryview
 
 PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
 PREFERRED_DEVICE_NAME = os.environ.get("XPRA_OPENCL_DEVICE_NAME", "")
