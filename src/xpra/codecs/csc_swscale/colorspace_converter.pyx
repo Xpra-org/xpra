@@ -10,9 +10,7 @@ import time
 from xpra.log import Logger
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.csc_cython import colorspace_converter
-from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces,\
-    get_output_colorspaces
-from xpra.codecs.enc_x264.encoder import MAX_HEIGHT
+from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, get_output_colorspaces
 log = Logger("csc", "swscale")
 
 from xpra.os_util import is_Ubuntu
