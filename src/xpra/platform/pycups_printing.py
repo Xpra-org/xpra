@@ -52,6 +52,13 @@ log("pycups settings: ALLOW=%s", ALLOW)
 log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
 log("pycups settings: SKIPPED_PRINTERS=%s", SKIPPED_PRINTERS)
 
+MIMETYPE_TO_PRINTER = {"application/postscript" : "Generic PostScript Printer",
+                       "application/pdf"        : "Generic PDF Printer"}
+MIMETYPE_TO_PPD = {"application/postscript"     : "CUPS-PDF.ppd",
+                   "application/pdf"            : "Generic-PDF_Printer-PDF.ppd"}
+MIMETYPES = os.environ.get("XPRA_PRINTING_MIMETYPES", "application/postscript,application/pdf").split(",")
+
+
 DEFAULT_CUPS_OPTIONS = {}
 dco = os.environ.get("XPRA_DEFAULT_CUPS_OPTIONS", "orientation-requested=3,fit-to-page=True")
 if dco:
@@ -83,10 +90,10 @@ def find_ppd_file(short_name, filename):
         log("using environment override for %s ppd file: %s", short_name, ev)
         return ev
     paths = ["/usr/share/cups/model",           #used on Fedora and others
-              "/usr/share/ppd/cups-pdf",        #used on Ubuntu
-              "/usr/share/ppd/cupsfilters",
-              "/usr/local/share/cups/model",    #install from source with /usr/local prefix
-              #if your distro uses something else, please file a bug so we can add it
+             "/usr/share/ppd/cups-pdf",         #used on Ubuntu
+             "/usr/share/ppd/cupsfilters",
+             "/usr/local/share/cups/model",     #install from source with /usr/local prefix
+             #if your distro uses something else, please file a bug so we can add it
             ]
     for p in paths:
         f = os.path.join(p, filename)
@@ -144,7 +151,7 @@ def add_printer_def(mimetype, definition):
 
 PRINTER_DEF = None
 def get_printer_definitions():
-    global PRINTER_DEF, UNPROBED_PRINTER_DEFS
+    global PRINTER_DEF, UNPROBED_PRINTER_DEFS, MIMETYPE_TO_PRINTER
     if PRINTER_DEF is not None:
         return PRINTER_DEF
     log("get_printer_definitions() UNPROBED_PRINTER_DEFS=%s, GENERIC=%s", UNPROBED_PRINTER_DEFS, GENERIC)
@@ -155,19 +162,25 @@ def get_printer_definitions():
         PRINTER_DEF["raw"] = ["-o", "raw"]
     #now probe for generic printers via lpinfo:
     if GENERIC:
-        for mt,x in {"application/postscript"   : "Generic PostScript Printer",
-                     "application/pdf"          : "Generic PDF Printer"}.items():
+        for mt in MIMETYPES:
             if mt in PRINTER_DEF:
                 continue    #we have a pre-defined one already
+            x = MIMETYPE_TO_PRINTER.get(mt)
+            if not x:
+                log.warn("Warning: unknown mimetype '%s', cannot find printer definition", mt)
+                continue
             drv = get_lpinfo_drv(x)
             if drv:
                 #ie: ["-m", "drv:///sample.drv/generic.ppd"]
                 PRINTER_DEF[mt] = ["-m", drv]
     #fallback to locating ppd files:
-    for mt,x in {"application/postscript"   : "CUPS-PDF.ppd",
-                 "application/pdf"          : "Generic-PDF_Printer-PDF.ppd"}.items():
+    for mt in MIMETYPES:
         if mt in PRINTER_DEF:
             continue        #we have a generic or pre-defined one already
+        x = MIMETYPE_TO_PPD.get(mt)
+        if not x:
+            log.warn("Warning: unknown mimetype '%s', cannot find corresponding PPD file", mt)
+            continue
         f = find_ppd_file(mt.replace("application/", "").upper(), x)
         if f:
             #ie: ["-P", "/usr/share/cups/model/Generic-PDF_Printer-PDF.ppd"]
