@@ -1,5 +1,11 @@
 #!/bin/bash
 
+STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
+STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
+STRIP_SOURCE="${STRIP_SOURCE:$STRIP_DEFAULT}"
+STRIP_OPENGL="${STRIP_OPENGL:$STRIP_DEFAULT}"
+STRIP_NUMPY="${STRIP_NUMPY:$STRIP_DEFAULT}"
+
 IMAGE_DIR="./image/Xpra.app"
 CONTENTS_DIR="${IMAGE_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -137,16 +143,19 @@ for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
 	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm "{}" \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
 done
-echo "removing py if we have the pyc:"
-#only remove ".py" source if we have a binary ".pyc" for it:
-for x in `find $LIBDIR/python/xpra -name "*.py" -type f`; do
-	d="`dirname $x`"
-	f="`basename $x`"
-	if [ -r "$d/${f}c" ]; then
-		echo "* $x"
-		rm "$x"
-	fi
-done
+
+if [ "$STRIP_SOURCE" == "1" ]; then
+	echo "removing py if we have the pyc:"
+	#only remove ".py" source if we have a binary ".pyc" for it:
+	for x in `find $LIBDIR/python/xpra -name "*.py" -type f`; do
+		d="`dirname $x`"
+		f="`basename $x`"
+		if [ -r "$d/${f}c" ]; then
+			echo "* $x"
+			rm "$x"
+		fi
+	done
+fi
 
 
 echo
@@ -181,55 +190,63 @@ rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
 rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
 echo " * add all OpenGL"
 rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
-#then remove what we know we don't need:
-pushd $LIBDIR/python/OpenGL
-for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
-	rm -fr ./$x
-	rm -fr ./raw/$x
-done
-popd
+if [ "$STRIP_OPENGL" == "1" ]; then
+	#then remove what we know we don't need:
+	pushd $LIBDIR/python/OpenGL
+	for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
+		rm -fr ./$x
+		rm -fr ./raw/$x
+	done
+	popd
+fi
 echo " * add gobject-introspection (py2app refuses to do it)"
 rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
 mkdir $LIBDIR/girepository-1.0
 for t in Gst GObject GLib GModule; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
 done
-echo " * trim numpy"
-pushd $LIBDIR/python/numpy
-rm -fr ./f2py/docs
-for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
-	rm -fr ./$x/tests
-done
-popd
+if [ "$STRIP_NUMPY" == "1" ]; then
+	echo " * trim numpy"
+	pushd $LIBDIR/python/numpy
+	rm -fr ./f2py/docs
+	for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
+		rm -fr ./$x/tests
+	done
+	popd
+fi
 
 #gst bits expect to find dylibs in Frameworks!?
 pushd ${CONTENTS_DIR}
 ln -sf Resources/lib Frameworks
 pushd Resources/lib
-echo "removing extra gstreamer dylib deps:"
-for x in basevideo cdda check netbuffer photography rtp rtsp sdp signalprocessor; do
-	echo "* removing "$x
-	rm libgst${x}*
-done
+if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
+	echo "removing extra gstreamer dylib deps:"
+	for x in basevideo cdda check netbuffer photography rtp rtsp sdp signalprocessor; do
+		echo "* removing "$x
+		rm libgst${x}*
+	done
+fi
 #only needed with gstreamer 1.x by gstpbutils, get rid of the 0.10 one:
 rm libgstvideo-0.10.*
 echo "removing extra gstreamer plugins:"
 for GST_VERSION in "0.10" "1.0"; do
 	echo " * GStreamer $GST_VERSION"
 	GST_PLUGIN_DIR="./gstreamer-$GST_VERSION"
-	KEEP="./gstreamer-$GST_VERSION.keep"
-	mkdir ${KEEP}
-	PLUGINS="app audio coreelements faac faad flac ogg oss osxaudio speex gdp volume vorbis wav"
-	if [ $GST_VERSION == "0.10" ]; then
-		#only found in 0.10:
-		PLUGINS="$PLUGINS lame mad mpegaudioparse python"
+	if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
+		KEEP="./gstreamer-$GST_VERSION.keep"
+		mkdir ${KEEP}
+		PLUGINS="app audio coreelements faac faad flac ogg oss osxaudio speex gdp volume vorbis wav"
+		if [ $GST_VERSION == "0.10" ]; then
+			#only found in 0.10:
+			PLUGINS="$PLUGINS lame mad mpegaudioparse python"
+		fi
+		for x in $PLUGINS; do
+			echo "* keeping "$x
+			mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
+		done
+		rm -fr ${GST_PLUGIN_DIR}
+		mv ${KEEP} ${GST_PLUGIN_DIR}
 	fi
-	for x in $PLUGINS; do
-		echo "* keeping "$x
-		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
-	done
-	rm -fr ${GST_PLUGIN_DIR}
-	mv ${KEEP} ${GST_PLUGIN_DIR}
 	echo -n "GStreamer $GST_VERSION plugins shipped: "
 	ls ${GST_PLUGIN_DIR} | xargs
 done
