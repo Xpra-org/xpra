@@ -1077,7 +1077,7 @@ class UIXpraClient(XpraClientBase):
         if filesize>self.file_size_limit*1024*1024:
             filelog.warn("Warning: cannot upload the file '%s'", basefilename)
             filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            filelog.warn(" the file size limit is %iMB", self, self.file_size_limit)
+            filelog.warn(" the file size limit is %iMB", self.file_size_limit)
             return False
         if filesize>self.server_file_size_limit*1024*1024:
             filelog.warn("Warning: cannot upload the file '%s'", basefilename)
