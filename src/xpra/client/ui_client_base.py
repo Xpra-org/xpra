@@ -1724,20 +1724,23 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_sharing = c.boolget("sharing")
         self.server_supports_window_filters = c.boolget("window-filters")
         self.server_is_shadow = c.boolget("shadow")
+        skip_vfb_size_check = False           #if we decide not to use scaling, skip warnings
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
             #scaling is used, make sure that we need it and that the server can support it
             #(without rounding support, size-hints can cause resize loops)
             if self.mmap_enabled:
                 log.info(" no need for scaling with mmap")
+                skip_vfb_size_check = self.xscale>1 or self.yscale>1
                 self.scalereset()
                 self.can_scale = False
             elif not c.boolget("window.constrain.rounding"):
                 log.info("Server does not support rounding, disabling scaling")
+                skip_vfb_size_check = self.xscale>1 or self.yscale>1
                 self.scalereset()
                 self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
-        if not self.server_is_shadow:
+        if not self.server_is_shadow and not skip_vfb_size_check:
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
