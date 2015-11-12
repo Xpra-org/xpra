@@ -738,25 +738,3 @@ def choose_file(parent_window, title, action, action_button, callback, file_filt
         return
     filename = filenames[0]
     callback(filename)
-
-
-def main():
-    from xpra.util import nonl, pver
-    def print_dict(d, vformat=pver):
-        for k in sorted(d.keys()):
-            v = d[k]
-            print("* %-48s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
-    from xpra.platform import init, clean
-    try:
-        init("GTK-Version-Info", "GTK Version Info")
-        print("GTK Version:")
-        print_dict(get_gtk_version_info())
-        print("Display:")
-        print_dict(get_display_info(), vformat=str)
-    finally:
-        clean()
-
-
-if __name__ == "__main__":
-    main()
-    sys.exit(0)
