@@ -336,6 +336,7 @@ else:
 def get_display_info():
     display = display_get_default()
     info = {
+            "root"                  : get_default_root_window().get_geometry(),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),
             "pointer"               : display.get_pointer()[1:3],
@@ -352,6 +353,11 @@ def get_display_info():
     for i in range(display.get_n_screens()):
         screen = display.get_screen(i)
         sk = "screen[%s]" % i
+        try:
+            w = screen.get_root_window()
+            info[sk+".root"] = w.get_geometry()
+        except:
+            pass
         info[sk+".name"] = screen.make_display_name()
         for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
             fn = getattr(screen, "get_"+x)
