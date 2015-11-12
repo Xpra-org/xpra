@@ -8,7 +8,6 @@ from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 import sys
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gtk                   #@UnresolvedImport
-from gi.repository import Gdk                   #@UnresolvedImport
 
 #this is an entry point, so do thread init early:
 #GObject.threads_init()
@@ -82,27 +81,5 @@ class XpraClient(GTKXpraClient):
         p = self.get_root_window().get_pointer()
         return self.client.sp(p[0] or 0, p[1] or 0)
 
-    def get_root_size(self):
-        if WIN32:
-            #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?
-            #we do it the hard way because the root window geometry is invalid on win32:
-            #and even just querying it causes this warning:
-            #"GetClientRect failed: Invalid window handle."
-            display = Gdk.Display.get_default()
-            n = display.get_n_screens()
-            w, h = 0, 0
-            for i in range(n):
-                screen = display.get_screen(i)
-                w += screen.get_width()
-                h += screen.get_height()
-        else:
-            #the easy way for platforms that work out of the box:
-            root = self.get_root_window()
-            w, h = root.get_geometry()[2:]
-        if w<=0 or h<=0 or w>32768 or h>32768:
-            log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
-            w, h = 1920, 1080
-            log.warn(" using %ix%i instead", w, h)
-        return w, h
 
 GObject.type_register(XpraClient)

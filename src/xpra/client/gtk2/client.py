@@ -339,10 +339,6 @@ class XpraClient(GTKXpraClient):
             self.UI_watcher.add_fail_callback(UI_failed)
 
 
-    def get_root_size(self):
-        return self.get_root_window().get_size()
-
-
     def _process_raise_window(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)

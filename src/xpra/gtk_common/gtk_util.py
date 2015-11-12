@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,6 +20,8 @@ PixbufLoader = import_pixbufloader()
 from xpra.log import Logger
 log = Logger("gtk", "util")
 
+
+WIN32 = sys.platform.startswith("win")
 
 GTK_VERSION_INFO = {}
 def get_gtk_version_info():
@@ -76,6 +78,29 @@ if is_gtk3():
         return w.get_xid()
     def get_default_root_window():
         return gdk.Screen.get_default().get_root_window()
+    def get_root_size():
+        if WIN32:
+            #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?
+            #we do it the hard way because the root window geometry is invalid on win32:
+            #and even just querying it causes this warning:
+            #"GetClientRect failed: Invalid window handle."
+            display = gdk.Display.get_default()
+            n = display.get_n_screens()
+            w, h = 0, 0
+            for i in range(n):
+                screen = display.get_screen(i)
+                w += screen.get_width()
+                h += screen.get_height()
+        else:
+            #the easy way for platforms that work out of the box:
+            root = get_default_root_window()
+            w, h = root.get_geometry()[2:4]
+        if w<=0 or h<=0 or w>32768 or h>32768:
+            log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
+            w, h = 1920, 1080
+            log.warn(" using %ix%i instead", w, h)
+        return w, h
+    
     keymap_get_for_display  = gdk.Keymap.get_for_display
 
     def get_default_cursor():
@@ -222,6 +247,8 @@ else:
             return widget.get_realized()
 
     get_default_root_window = gdk.get_default_root_window
+    def get_root_size():
+        return get_default_root_window().get_size()
     keymap_get_for_display  = gdk.keymap_get_for_display
 
     def get_default_cursor():
@@ -337,6 +364,7 @@ def get_display_info():
     display = display_get_default()
     info = {
             "root"                  : get_default_root_window().get_geometry(),
+            "root-size"             : get_root_size(),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),
             "pointer"               : display.get_pointer()[1:3],
