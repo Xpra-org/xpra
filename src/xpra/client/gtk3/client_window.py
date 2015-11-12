@@ -156,11 +156,11 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
             k = bytestostr(k)
             if k in INT_FIELDS:
                 if k.find("width")>=0:
-                    v = self.client.sx(v)
+                    v = self._client.sx(v)
                 elif k.find("height")>=0:
-                    v = self.client.sy(v)
+                    v = self._client.sy(v)
                 elif k.find("size")>=0:
-                    v = self.client.sp(v)
+                    v = self._client.sp(v)
                 setattr(geom, k, int(v))
                 mask |= int(name_to_hint.get(k, 0))
             elif k in ASPECT_FIELDS:

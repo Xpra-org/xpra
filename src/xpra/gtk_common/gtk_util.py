@@ -171,11 +171,11 @@ if is_gtk3():
     MOD4_MASK       = mt.MOD4_MASK
     MOD5_MASK       = mt.MOD5_MASK
 
-    GTK3_BUTTON_MASK = {mt.BUTTON1_MASK : 1,
-                        mt.BUTTON2_MASK : 2,
-                        mt.BUTTON3_MASK : 3,
-                        mt.BUTTON4_MASK : 4,
-                        mt.BUTTON5_MASK : 5}
+    BUTTON_MASK = {mt.BUTTON1_MASK : 1,
+                   mt.BUTTON2_MASK : 2,
+                   mt.BUTTON3_MASK : 3,
+                   mt.BUTTON4_MASK : 4,
+                   mt.BUTTON5_MASK : 5}
     del mt
 
     em = gdk.EventMask

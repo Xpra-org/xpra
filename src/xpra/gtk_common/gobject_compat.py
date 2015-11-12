@@ -50,6 +50,8 @@ def try_import_GdkX11():
         #this is a workaround for this GTK bug:
         #https://bugzilla.gnome.org/show_bug.cgi?id=656314
         try:
+            import gi
+            gi.require_version('GdkX11', '3.0')
             from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
         except:
             pass
@@ -86,6 +88,8 @@ def import_gtk2():
     import gtk
     return gtk
 def import_gtk3():
+    import gi
+    gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk                   #@UnresolvedImport
     try_import_GdkX11()
     return Gtk

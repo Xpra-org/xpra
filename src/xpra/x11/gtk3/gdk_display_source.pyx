@@ -34,6 +34,8 @@ cdef extern from "gtk-3.0/gdk/gdkx.h":
 
 
 #this import magic will make the window.get_xid() available!
+import gi
+gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
 
 def init_gdk_display_source():
