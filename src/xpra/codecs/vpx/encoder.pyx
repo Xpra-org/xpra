@@ -247,7 +247,9 @@ def get_abi_version():
 
 def get_version():
     v = vpx_codec_version_str()
-    return v.decode("latin1")
+    vstr = v.decode("latin1")
+    log("vpx_codec_version_str()=%s", vstr)
+    return vstr
 
 def get_type():
     return "vpx"
@@ -310,10 +312,29 @@ def get_spec(encoding, colorspace):
     #setup cost is reasonable (usually about 5ms)
     global MAX_SIZE
     max_w, max_h = MAX_SIZE[encoding]
-    has_lossless_mode = encoding=="vp9" and colorspace=="YUV444P"
+    if encoding=="vp8":
+        has_lossless_mode = False
+        speed = 70
+        quality = 50
+    else:
+        has_lossless_mode = colorspace=="YUV444P"
+        speed = 20
+        quality = 50 + 50*int(has_lossless_mode)
+        v = get_version()
+        if v and v.startswith("v"):
+            v = v[1:]   #strip "v"
+            def intor0(s):
+                try:
+                    return int(s)
+                except:
+                    return 0
+            vnum = [intor0(x) for x in v.split(".")]
+            if vnum>=[1,5]:
+                #libvpx 1.5 made some significant performance improvements with vp9:
+                speed = 50
     return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
-                            quality=50+50*int(has_lossless_mode), speed=20,
+                            quality=50+50*int(has_lossless_mode), speed=speed,
                             setup_cost=20, max_w=max_w, max_h=max_h)
 
 
