@@ -1,14 +1,235 @@
-v0.16.0 (2015-05-03)
+v0.16.0 (2015-11-13)
 ======================
-	-- remove more legacy code
+	-- remove more legacy code, cleanups, etc
+	-- switch to GStreamer 1.x on most platforms
+	-- mostly gapless audio playback
 	-- audio-video synchronization
-	-- use newer memoryview interface by default on Python 2.7 and later
+	-- zero copy memoryview buffers (Python 2.7 and later), safer read-only buffers
+	-- improved vp9 support
+	-- handling of very high client resolutions (8k and above)
+	-- more reliable window positioning and geometry
 	-- enable OpenGL accelerated rendering by default on all platforms
 	-- add more sanity checks to codecs and csc modules
-	-- improved Python3 support
-	-- use XShm for override-redirect windows
-	-- use palib for in-process access to pulseaudio API
+	-- network and protocol improvements: safety checks, threading
+	-- encryption improvements: support TCP only encryption, PKCS#7 padding
+	-- improved printer forwarding
+	-- improved DPI and anti-alias synchronization and handling
+	-- better multi-monitor support
+	-- support for screen capture tools (disabled by default)
+	-- automatic desktop scaling to save bandwidth and CPU (upscale on client)
+	-- support remote SSH start without specifying a display
+	-- support multiple socket directories
+	-- lz4 faster modes with automatic speed tuning
+	-- server file upload from system tray
+	-- new subcommand: "xpra showconfig"
+	-- option to select a specific clibpoard to synchronize with (MS Windows only)
+	-- faster OpenGL screen updates: group screen updates
+	-- dbus server for easier runtime control
 	-- replace calls to setxkbmap with native X11 API
+	-- XShm for override-redirect windows and shadow servers
+	-- faster X11 shadow servers
+	-- XShape forwarding for X11 clients
+	-- improved logging and debugging tools, fault injection
+	-- more robust error handling and recovery from client errors
+	-- NVENC support for MS Windows shadow servers
+
+
+v0.15.8 (2015-11-10)
+======================
+	-- fix missing files from build clean target
+	-- fix unnecessary auto-refresh events
+	-- fix x265 encoder
+	-- fix libvpx bitrate calculations, reduce logging spam
+	-- fix validation of mmap security token
+	-- fix handling of file transfers before authentication (disallowed)
+	-- fix handling of requests to open files (honour command line / config flag)
+	-- fix MS Windows multiple monitor bug (when primary monitor is re-added)
+	-- fix video encoding automatic selection for encoders that accept RGB directly
+	-- fix the session info sound graphs when sound stops
+	-- fix RPM packaging of the cups backend
+	-- fix the speed and quality values reported to the clients for x264 encoder
+	-- fix OSX El Capitan sound compatibility issue
+	-- fix codec import error handler
+	-- fix compatibility with Python Pillow 3.0.0 (logging issue)
+	-- fix support for Ubuntu Vivid (Xorg still unusable)
+	-- fix batch delay heuristics during resizing and queue overload
+	-- fix "always batch" mode
+	-- fix missing network-send-speed accounting
+	-- fix error in override redirect window geometry handling
+	-- fix invalid error logging call
+	-- fix error in XSettings handling causing connection failures
+	-- fix race condition causing corrupted video streams
+	-- fix unnecessary double refresh on client decoding error
+	-- fix encoding bug triggered when dependencies are missing
+	-- fix window size hints handling
+	-- support Xorg location and arguments required by Arch Linux
+	-- improved lz4 version detection workaround code
+	-- support Xft/DPI
+	-- safer OSX power event handling code
+	-- workaround clients supplying a password when none is required
+	-- log OpenGL driver information
+	-- clamp desktop size to the maximum screen size
+	-- avoid potential errors with bytes-per-pixel confusion with rgb modes
+	-- disable workspace support by default (compatibility issues with some WM)
+	-- always watch for property changes, even without workspace support
+	-- workaround clients supplying a password when none is required
+	-- export shadow servers flag
+	-- run the window opengl cleanup code
+
+
+v0.15.7 (2015-10-13)
+======================
+	-- fix inband info requests
+	-- fix monitor hotplugging workaround code
+	-- fix OSX menus which should not be shown
+	-- fix cursor lookup by name in local theme
+	-- fix max-size support on MS Windows
+	-- fix max-size handling for windows without any constraints (all platforms)
+	-- fix repaint when using the magic key to toggle window borders
+	-- fix iconification handling
+	-- fix connection error when there are XSettings already present
+	-- fix parsing of invalid display structures
+	-- fix video region detection after resize
+	-- fix vpx quality setting
+	-- fix cursor crashes on Ubuntu
+	-- don't show opengl toggle menu if opengl is not supported
+	-- add new common X11 modes (4k, 5k, etc)
+	-- add missing logging category for x265 (fixes warnings on start)
+
+
+v0.15.6 (2015-09-13)
+======================
+	-- fix missing auth argument with Xdummy
+	-- fix oversize print jobs causing disconnections
+	-- fix server-side copy of the client's desktop dimensions
+	-- fix X11 client errors when window managers clear the window state
+	-- fix spurious warnings if X11 desktop properties are not present
+	-- fix server failing to report sound failures (dangling process)
+	-- fix paint errors with cairo backing
+	-- fix window positioning issues when monitors are added (osx and win32)
+
+
+v0.15.5 (2015-08-19)
+======================
+	-- fix encryption not enabled when pycrypto is missing: error out
+	-- fix encryption information leak, free network packets after use
+	-- fix authentication plugins
+	-- fix latency with many sound codecs: vorbis, flac, opus, speex
+	-- fix the desktop naming code (worked by accident)
+	-- fix OpenGL errors with windows too big for the driver
+	-- fix some subcommands when encryption is enabled
+	-- fix spurious errors on closed connections
+	-- fix incorrect colours using CSC Cython fallback module
+	-- fix size limits on Cython fallback module
+	-- fix some invalid Xorg dummy modelines
+	-- fix aspect ratio not honoured and associated warnings
+	-- fix printing file compression
+	-- fix errors in packet layer accounting
+	-- fix regression in python-lz4 version guessing code
+	-- fix RPM packaging: prefer our private libraries to the system ones
+	-- fix pactl output parsing
+	-- fix error on Posix desktop environments without virtual desktops
+	-- fix unlikely connection closing errors
+	-- fix value overflows when unpremultiplying alpha channel
+	-- ship a default configuration file on OSX
+	-- try not to downscale windows from shadow servers
+	-- add vpx-xpra to the RPM dependency list so we get VPX 1.9 support
+	-- make it possible to generate the EXE installer without running it
+	-- allow the user to remove some atoms from _NET_SUPPORTED
+	-- show maximum OpenGL texture size in diagnostics and bug reports
+	-- minor python3 fixes
+
+
+v0.15.4 (2015-08-02)
+======================
+	-- fix delta compression errors
+	-- fix VP8 and VP9 performance when speed command line option is used
+	-- fix application deadlocks on exit
+	-- fix NVENC on cards with over 4GB of RAM
+	-- fix csc Cython red and blue colours swapped on little endian systems
+	-- fix byteswapping fallback code
+	-- fix cleanup error on MS Windows, preventing process termination
+	-- fix pulseaudio device count reported
+	-- fix timer warnings in GTK2 notifier (mostly used on OSX)
+	-- fix sound communication errors not causing subprocess termination
+	-- fix Xorg path detection for Fedora 22 onwards
+	-- fix invalid list of output colorspaces with x264
+	-- fix bug report tool window so it can be used more than once
+	-- fix bug report tool log file error with Vista onwards
+	-- fix bug report screenshots on MS Windows with multiple screens
+	-- fix shadow mode on MS Windows with multiple screens
+	-- fix OpenCL csc module with Python3
+	-- fix OpenCL platform selection override
+	-- fix Python3 Pillow encoding level (must be an integer)
+	-- fix capture of subprocesses return code
+	-- fix Xvfb dependencies for Ubuntu
+	-- fix ldconfig warning on Debian and Ubuntu
+	-- fix warnings with X11 desktop environments without virtual desktops
+	-- fix use of deprecated ffmpeg enum names
+	-- fix client error if built without webp support
+	-- include the CUDA pre-compiled kernels on Debian / Ubuntu (NVENC)
+	-- packaging fixes for printing on Debian / Ubuntu
+	-- updated dependency list for Debian and Ubuntu distros
+	-- don't require a nonsensical display name on OSX and win32
+	-- safer x264 API initialization call
+	-- safer OpenGL platform checks (prevents crashes with wine)
+	-- safer NVENC API call
+	-- safer lz4 version checking code
+	-- workaround invalid "help" options in config files
+	-- ensure any client decoding errors cause a window refresh
+	-- MS Windows build environment cleanup
+	-- Fedora: update PyOpenGL package dependency
+
+
+v0.15.3 (2015-07-07)
+======================
+	-- fix invalid X11 atom
+	-- fix unhandled failure code from libav
+	-- fix default socket permissions when config file is missing
+	-- fix error handling for missing cuda kernels
+	-- fix OpenGL paint early errors
+	-- fix "print" control command with multiple clients
+	-- skip sending invalid packet to client for the "name" control command
+	-- more helpful dpi warning
+	-- support connecting to named unix domain sockets
+	-- OpenGL option can force enable despite platform checks
+	-- replace unsafe deprecated API call in HTML5 client
+	-- more reliable and clean shutdown of connections and threads
+	-- log internal system failures as errors
+
+
+v0.15.2 (2015-06-28)
+======================
+	-- fix rgb encodings can use speed setting
+	-- fix propagation of dynamic attributes for OR windows
+	-- fix invalid warnings in parsing client connection options
+	-- fix handling of the window decorations flag
+	-- fix missing lock around Python logger callback
+	-- fix size-hints with shadow servers
+	-- fix max-size switch
+	-- fix sound process communication errors during failures
+	-- fix invalid options shown in default config file
+	-- add missing file to clean list
+	-- skip unnecessary workarounds with GTK3 client
+	-- cleaner thread cleanup on server exit
+	-- use the safer and slower code with non-OpenGL clients
+
+
+v0.15.1 (2015-06-18)
+======================
+	-- fix window transparency
+	-- fix displayfd Xorg version check: require version 1.13
+	-- fix GUI debug script on OSX
+	-- fix typo in list of supported X11 atoms
+	-- fix exit-with-children: support sharing mode
+	-- fix html option for client only builds
+	-- fix pulseaudio not killed on exit on Ubuntu
+	-- fix signal leak when client disconnects
+	-- include shared mime info file mapping
+	-- blacklist Ubuntu Vivid, which broke Xdummy, again
+	-- don't reject clients providing a password when none is expected
+	-- raise maximum clipboard requests per second to 20
+	-- remove old VP9 performance warnings
 
 
 v0.15.0 (2015-04-28)
