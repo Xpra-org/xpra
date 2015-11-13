@@ -23,7 +23,7 @@ BuildRequires:  python-setuptools
 %else
 BuildRequires:  python-setuptools-devel
 %endif
-Requires:       PyOpenGL
+Requires:       PyOpenGL = 3.1.1a1
 
 %description
 This set of C (Cython) extensions provides acceleration of common operations for slow points in PyOpenGL 3.x.
