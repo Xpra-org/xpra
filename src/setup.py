@@ -1008,17 +1008,18 @@ if WIN32:
     #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     #but we use something more generic, without the version numbers:
     vpx_path = ""
-    for p in (WIN32_BUILD_LIB_PREFIX + "vpx-1.4", WIN32_BUILD_LIB_PREFIX + "vpx-1.3"):
+    for v in ("vpx", "vpx-1.5", "vpx-1.4", "vpx-1.3"):
+        p = WIN32_BUILD_LIB_PREFIX + v
         if os.path.exists(p) and os.path.isdir(p):
             vpx_path = p
             break
     vpx_include_dir     = os.path.join(vpx_path, "include")
     vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
     vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
-    if os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
+    if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
+        vpx_lib_names = ["vpxmd"]             #msvc builds only?
+    elif os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
         vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
-    elif os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
-        vpx_lib_names = ["vpxmd"]             #for libvpx 1.2.0
     else:
         vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
 
