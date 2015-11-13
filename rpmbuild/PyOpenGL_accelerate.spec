@@ -7,9 +7,11 @@
 %define with_python3 1
 %endif
 
+%global VERSION 3.1.1a1
+
 Name:           PyOpenGL-accelerate
-Version:        3.1.1a1
-Release:        1%{?dist}
+Version:        %{VERSION}
+Release:        2%{?dist}
 Summary:        Acceleration code for PyOpenGL
 License:        BSD
 Group:          System Environment/Libraries
@@ -23,7 +25,7 @@ BuildRequires:  python-setuptools
 %else
 BuildRequires:  python-setuptools-devel
 %endif
-Requires:       PyOpenGL = 3.1.1a1
+Requires:       PyOpenGL = %{VERSION}
 
 %description
 This set of C (Cython) extensions provides acceleration of common operations for slow points in PyOpenGL 3.x.
@@ -81,7 +83,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Sun Jul 12 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1
+* Fri Nov 13 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1-2
+- Force rebuild with version lockstep change
+
+* Sun Jul 12 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1-1
 - Force rebuild to workaround breakage caused by Fedora packaging differences
 - Use new alpha build (no issues found so far)
 
