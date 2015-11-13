@@ -51,6 +51,7 @@ workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
 menulog  = Logger("x11", "menu")
+eventlog = Logger("x11", "event")
 
 import xpra
 from xpra.util import nonl, typedict
@@ -177,6 +178,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         "xpra-child-map-event"  : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
         "xpra-motion-event"     : one_arg_signal,
+        "server-event"          : one_arg_signal,
         }
 
     def __init__(self, clobber):
@@ -194,6 +196,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.init_all_server_settings()
         if self.global_menus:
             self.rpc_handlers["menu"] = self._handle_menu_rpc
+        def log_server_event(_, event):
+            eventlog("server-event: %s", event)
+        self.connect("server-event", log_server_event)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
@@ -256,6 +261,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def get_server_mode(self):
         return "X11 server"
+
+
+    def server_event(self, *args):
+        X11ServerBase.server_event(self, *args)
+        self.emit("server-event", args)
 
 
     def make_hello(self, source):

@@ -630,6 +630,11 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, max_args=1, validation=[from0to100])
 
 
+    def server_is_ready(self):
+        ServerCore.server_is_ready(self)
+        self.server_event("ready")
+
+
     def run(self):
         if self.send_pings:
             self.timeout_add(1000, self.send_ping)

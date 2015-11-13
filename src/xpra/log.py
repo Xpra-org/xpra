@@ -136,7 +136,6 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("paint"        , "Client window paint code"),
                 ("cairo"        , "Cairo paint code used with the GTK3 client"),
                 ("opengl"       , "Client OpenGL rendering"),
-                ("events"       , "System and window events"),
                 ("info"         , "About and Session info dialogs"),
                 ("launcher"     , "The client launcher program"),
                 ])),
@@ -153,6 +152,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("dbus"         , "DBUS calls"),
                 ("rpc"          , "Remote Procedure Calls"),
                 ("menu"         , "Menus"),
+                ("events"       , "System and window events"),
                 ])),
     ("Window", OrderedDict([
                 ("window"       , "All window code"),

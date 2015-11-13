@@ -384,12 +384,14 @@ class ServerCore(object):
                     log.error("error on %s: %s", x, e)
         self.idle_add(start_ready_callbacks)
         self.idle_add(self.reset_server_timeout)
-        def print_ready():
-            log.info("xpra is ready.")
-            sys.stdout.flush()
-        self.idle_add(print_ready)
+        self.idle_add(self.server_is_ready)
         self.do_run()
         return self._upgrading
+
+
+    def server_is_ready(self):
+        log.info("xpra is ready.")
+        sys.stdout.flush()
 
     def do_run(self):
         raise NotImplementedError()
