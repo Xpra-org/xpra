@@ -1849,6 +1849,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             screenlog.info("client display size is %sx%s with %s screen%s:", width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
+        #ensures that DPI and antialias information gets reset:
+        self.update_all_server_settings()
 
     def dpi_changed(self):
         pass

@@ -1289,10 +1289,18 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     values["gnome.Xft/DPI"] = dpi*1024
                 if antialias:
                     ad = typedict(antialias)
+                    subpixel_order = "none"
+                    sss = self._server_sources.values()
+                    if len(sss)==1:
+                        #only honour sub-pixel hinting if a single client is connected
+                        #and only when it is not using any scaling:
+                        ss = sss[0]
+                        if ss.desktop_size_unscaled or ss.desktop_size_unscaled==ss.desktop_size:
+                            subpixel_order = ad.strget("orientation", "none").lower()
                     values.update({
                                    "Xft.antialias"  : ad.intget("enabled", -1),
                                    "Xft.hinting"    : ad.intget("hinting", -1),
-                                   "Xft.rgba"       : ad.strget("orientation", "none").lower(),
+                                   "Xft.rgba"       : subpixel_order,
                                    "Xft.hintstyle"  : self._get_antialias_hintstyle(ad)})
                 settingslog("server_settings: resource-manager values=%s", nonl(values))
                 #convert the dict back into a resource string:
