@@ -57,7 +57,7 @@ else:
     RGBX_R, RGBX_G, RGBX_B, RGBX_X = 0, 1, 2, 3
     BGR_R, BGR_G, BGR_B = 0, 1, 2
     RGB_R, RGB_G, RGB_B = 2, 1, 0
-    
+
 log("csc_cython: %s endian:", sys.byteorder)
 log("csc_cython: byteorder(BGRX)=%s", (BGRX_B, BGRX_G, BGRX_R, BGRX_X))
 log("csc_cython: byteorder(RGBX)=%s", (RGBX_R, RGBX_G, RGBX_B, RGBX_X))

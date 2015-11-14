@@ -495,7 +495,7 @@ cdef extern from "nvEncodeAPI.h":
                                                         #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
                                                         #sliceMode = 2, sliceModeData specifies # of CTU rows in each slice (except last slice)
                                                         #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
-        uint32_t    maxTemporalLayersMinus1             #[in]: Specifies the max temporal layer used for hierarchical coding. 
+        uint32_t    maxTemporalLayersMinus1             #[in]: Specifies the max temporal layer used for hierarchical coding.
         uint32_t    reserved1[246]                      #[in]: Reserved and must be set to 0.
         void*       reserved2[64]                       #[in]: Reserved and must be set to NULL
 

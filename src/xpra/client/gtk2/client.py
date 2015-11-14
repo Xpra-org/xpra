@@ -193,7 +193,7 @@ class XpraClient(GTKXpraClient):
             #try to match the string specified:
             filtered = [x for x in clipboard_options if x.lower().find(self.client_clipboard_type)>=0]
             if len(filtered)>0:
-                clipboardlog(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type) 
+                clipboardlog(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type)
             else:
                 clipboardlog.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
             clipboard_options = filtered
@@ -211,7 +211,7 @@ class XpraClient(GTKXpraClient):
         #first add the platform specific one, (may be None):
         kwargs= {"clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
                  "clipboards.remote"    : self.server_clipboards}       #all the remote clipboards supported
-        #only allow translation overrides if we have a way of telling the server about them: 
+        #only allow translation overrides if we have a way of telling the server about them:
         if self.server_supports_clipboard_enable_selections:
             kwargs.update({
                  "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)

@@ -100,7 +100,7 @@ if is_gtk3():
             w, h = 1920, 1080
             log.warn(" using %ix%i instead", w, h)
         return w, h
-    
+
     keymap_get_for_display  = gdk.Keymap.get_for_display
 
     def get_default_cursor():

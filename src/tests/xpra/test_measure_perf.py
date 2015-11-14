@@ -754,7 +754,7 @@ def test_xpra():
                                                     if XPRA_VERSION_NO>=[0, 15]:
                                                         cmd.append("--readonly=yes")
                                                     else:
-                                                        cmd.append("--readonly")                                                        
+                                                        cmd.append("--readonly")
                                                     cmd += get_auth_args()
                                                     if packet_encoders:
                                                         cmd += ["--packet-encoders=%s" % packet_encoders]

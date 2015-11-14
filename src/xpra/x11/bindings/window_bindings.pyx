@@ -330,7 +330,7 @@ cdef extern from "X11/extensions/Xfixes.h":
 
     XserverRegion XFixesCreateRegion(Display *dpy, XRectangle *rectangles, int nrectangles)
     void XFixesDestroyRegion(Display *dpy, XserverRegion region)
-    
+
     void XFixesSetWindowShapeRegion(Display *dpy, Window win, int shape_kind, int x_off, int y_off, XserverRegion region)
 
 

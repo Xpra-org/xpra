@@ -31,7 +31,7 @@ def main(args):
         if wid.startswith("0x"):
             dump_xshape(int(wid[2:], 16))
         else:
-            dump_xshape(int(wid))        
+            dump_xshape(int(wid))
 
 
 if __name__ == '__main__':

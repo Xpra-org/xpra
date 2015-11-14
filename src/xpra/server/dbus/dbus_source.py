@@ -29,7 +29,7 @@ def ns(*args):
 sequence = AtomicInteger()
 
 class DBUS_Source(dbus.service.Object):
-    SUPPORTS_MULTIPLE_OBJECT_PATHS = True    
+    SUPPORTS_MULTIPLE_OBJECT_PATHS = True
 
     def __init__(self, source=None, extra=""):
         self.source = source

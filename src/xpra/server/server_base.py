@@ -1597,7 +1597,7 @@ class ServerBase(ServerCore, FileTransferHandler):
              "cursors"          : self.cursors,
              "bell"             : self.bell,
              "notifications"    : self.notifications_forwarder is not None,
-             "sharing"          : self.sharing,             
+             "sharing"          : self.sharing,
              "pulseaudio"       : self.pulseaudio,
              "pulseaudio.command" : self.pulseaudio_command,
              "dbus_proxy"       : self.supports_dbus_proxy,

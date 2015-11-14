@@ -123,7 +123,7 @@ cdef extern from "X11/extensions/XKBrules.h":
     ctypedef struct XkbRF_RulesRec:
         pass
 
-    ctypedef XkbRF_RulesRec* XkbRF_RulesPtr    
+    ctypedef XkbRF_RulesRec* XkbRF_RulesPtr
 
     ctypedef struct XkbRF_VarDefsRec:
         char *                  model

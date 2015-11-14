@@ -680,7 +680,7 @@ class GTKTrayMenuBase(object):
             scaling_submenu.updating = False
         self.client.connect("scaling-changed", scaling_changed)
         return scaling_submenu
-        
+
 
     def make_qualitymenuitem(self):
         self.quality = self.menuitem("Quality", "slider.png", "Picture quality", None)

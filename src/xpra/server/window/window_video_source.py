@@ -867,7 +867,7 @@ class WindowVideoSource(WindowSource):
                     mult += (div_x+div_y)/2.0/3.0
             #average and add 0.25 for the extra cost of doing the csc step:
             speed = (encoder_spec.speed * mult + csc_spec.speed) / 2.25
-            
+
         #the lower the current speed
         #the more we need a fast encoder/csc to cancel it out:
         sscore = max(0, (100.0-self._current_speed) * speed/100.0)

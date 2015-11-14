@@ -79,7 +79,7 @@ class X11ServerBase(GTKServerBase):
 
     def x11_init(self):
         if not X11Keyboard.hasXFixes() and self.cursors:
-            log.error("Error: cursor forwarding support disabled") 
+            log.error("Error: cursor forwarding support disabled")
         if not X11Keyboard.hasXTest():
             log.error("Error: keyboard and mouse disabled")
         elif not X11Keyboard.hasXkb():

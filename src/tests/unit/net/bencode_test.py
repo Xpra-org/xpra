@@ -123,7 +123,7 @@ def _cmp(o, r):
 
 
 class TestBencoderFunctions(object):
-   
+
     def test_decoding(self):
 
         def t(s, ev, remainder=""):
@@ -142,9 +142,9 @@ class TestBencoderFunctions(object):
             _cmp(rv, ev)
             rrstr = g_str[rr:]
             assert rrstr.endswith("asdf")
-    
+
         #t("l16:configure-windowi2ei555ei340ei649ei381ed9:maximizedi0e6:screeni0e9:maximizedi0eee", [], "")
-    
+
         t("i12345e", 12345)
         t("i-12345e", -12345)
         t("i12345eQQQ", 12345, "QQQ")
@@ -155,12 +155,12 @@ class TestBencoderFunctions(object):
 
         t("d4:asdfli1ei2ei3ei4ee5:otheri-55e2:qqd2:qql2:hieee",
           {"asdf": [1, 2, 3, 4], "qq": {"qq": ["hi"]}, "other": -55})
-    
+
         t("l0:e", [""])
-    
+
         # Keys do not have to be strings:
         t("di0ei0ee", {0 : 0})
-    
+
         def te(s, exc):
             #log(" "+s)
             v = None
@@ -170,12 +170,12 @@ class TestBencoderFunctions(object):
                 pass
             else:
                 assert False, "didn't raise exception, returned: %s for %s" % (v, s)
-    
+
         te("iie", ValueError)
         te("i0x0e", ValueError)
         t("i0e", 0)
         te("i00e", ValueError)
-    
+
         te("0x2:aa", ValueError)
         te("-1:aa", ValueError)
         te("02:aa", ValueError)
@@ -208,14 +208,14 @@ class TestBencoderFunctions(object):
 
     def test_encoding_hello(self):
         self.t(hello)
-    
+
     def test_encoding_large_hello(self):
         self.t(large_hello)
-    
+
     def test_nested_dicts(self):
         self.t(nested_dicts, nested_dicts_output)
-    
-    
+
+
 class TestBencoder(unittest.TestCase, TestBencoderFunctions):
 
     def setUp(self):

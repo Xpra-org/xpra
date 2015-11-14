@@ -399,7 +399,7 @@ cdef class XImageWrapper:
         #is it worth re-striding to save space:
         #(save at least 1KB and 10%)
         if newstride==0 and size-newsize<1024 or newsize*110/100>size:
-            log("restride(%s) not enough savings with stride=%s: size=%s, newsize=%s", newstride, rowstride, size, newsize) 
+            log("restride(%s) not enough savings with stride=%s: size=%s, newsize=%s", newstride, rowstride, size, newsize)
             return False
         #Note: we could also change the pixel format whilst we're at it
         # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
@@ -418,7 +418,7 @@ cdef class XImageWrapper:
             memcpy(to, img_buf, rowstride)
             to += rowstride
             img_buf += oldstride
-        log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)", 
+        log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)",
             newstride, self.pixel_format, 100-100*newsize/size, self.rowstride, size, rowstride, newsize)
         #we can now free the pixels buffer if present
         #(but not the ximage - this is not running in the UI thread!)

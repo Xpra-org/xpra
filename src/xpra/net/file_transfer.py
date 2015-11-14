@@ -83,7 +83,7 @@ class FileTransferHandler(object):
         if filesize>self.file_size_limit*1024*1024:
             l.error("Error: file '%s' is too large:", basefilename)
             l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
-            return            
+            return
         #check digest if present:
         import hashlib
         def check_digest(algo="sha1", libfn=hashlib.sha1):

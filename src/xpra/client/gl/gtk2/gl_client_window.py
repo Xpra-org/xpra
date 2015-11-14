@@ -90,7 +90,7 @@ class GLClientWindow(GTK2WindowBase):
             b.close()
             self._backing = None
         self.iconify()
-        
+
 
     def magic_key(self, *args):
         b = self._backing

@@ -198,14 +198,14 @@ def main():
     try:
         init("OSX Clipboard Change Test")
         log.enable_debug()
-    
+
         #init UI watcher with gobject (required by pasteboard monitoring code)
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         gobject.threads_init()
         import gtk.gdk
         gtk.gdk.threads_init()
         get_UI_watcher(glib.timeout_add)
-    
+
         log.info("testing pasteboard")
         if not init_pasteboard():
             log.warn("failed to initialize a pasteboard!")

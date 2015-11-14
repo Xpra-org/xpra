@@ -755,7 +755,7 @@ class ServerSource(object):
                 self.add_window_filter(object_name, property_name, operator, value)
         except Exception as e:
             log.error("Error parsing window-filters: %s", e)
-            
+
 
     def parse_encoding_caps(self, c):
         self.set_encoding(c.strget("encoding", None), None)

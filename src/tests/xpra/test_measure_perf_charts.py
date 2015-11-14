@@ -23,8 +23,8 @@ import collections, math
 # vpx is now vp8
 # x264 is now h264
 #
-# TODO 
-# -- Move the legend into the chart title area 
+# TODO
+# -- Move the legend into the chart title area
 # -- Abbreviate the app names so they fit on the chart
 # -- Update the documentation to describe how to use multiple unique
 #    directories containing files with same key, instead of one directory

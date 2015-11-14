@@ -940,8 +940,8 @@ class UIXpraClient(XpraClientBase):
             scalinglog.warn(" using %s x %s -> %i x %i", v, v, int(root_w / v), int(root_h / v))
             xscale = v
             yscale = v
-            xchange = xscale / self.xscale 
-            ychange = yscale / self.yscale 
+            xchange = xscale / self.xscale
+            ychange = yscale / self.yscale
             scalinglog("xscale was %s, now %s", self.xscale, xscale)
             scalinglog("yscale was %s, now %s", self.yscale, yscale)
         self.xscale = xscale
@@ -1605,7 +1605,7 @@ class UIXpraClient(XpraClientBase):
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
-        from xpra.platform import set_name    
+        from xpra.platform import set_name
         set_name("Xpra", self.session_name or "Xpra")
         self.window_unmap = c.boolget("window_unmap")
         self.window_configure_skip_geometry = c.boolget("window.configure.skip-geometry")
@@ -2692,7 +2692,7 @@ class UIXpraClient(XpraClientBase):
         assert self.can_scale
         max_w, max_h = self.server_max_desktop_size             #ie: server limited to 8192x4096?
         w, h = self.get_root_size()                             #ie: 5760, 2160
-        sw, sh = self.cp(w, h)                                  #ie: upscaled to: 11520x4320 
+        sw, sh = self.cp(w, h)                                  #ie: upscaled to: 11520x4320
         scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s", self.server_actual_desktop_size, self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
         if sw<(max_w+1) and sh<(max_h+1):
@@ -2721,7 +2721,7 @@ class UIXpraClient(XpraClientBase):
         scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
         scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
         self.emit("scaling-changed")
-            
+
 
     def set_max_packet_size(self):
         root_w, root_h = self.cp(*self.get_root_size())

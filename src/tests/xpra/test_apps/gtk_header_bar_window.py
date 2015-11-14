@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio  #@UnresolvedImport
 
 class HeaderBarWindow(Gtk.Window):
 
@@ -19,7 +19,7 @@ class HeaderBarWindow(Gtk.Window):
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         button.add(image)
         hb.pack_end(button)
-        
+
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(box.get_style_context(), "linked")
 
@@ -32,7 +32,7 @@ class HeaderBarWindow(Gtk.Window):
         box.add(button)
 
         hb.pack_start(box)
-        
+
         self.add(Gtk.TextView())
 
 win = HeaderBarWindow()

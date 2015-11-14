@@ -50,7 +50,7 @@ def get_host_info():
                     })
         import struct
         bits = struct.calcsize("P") * 8
-        updict(info, "python", { 
+        updict(info, "python", {
                     "bits"                  : bits,
                     "full_version"          : sys.version,
                     "version"               : ".".join(str(x) for x in sys.version_info[:3]),

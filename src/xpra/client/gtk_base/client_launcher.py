@@ -757,7 +757,7 @@ def main():
         except Exception:
             exception_dialog("Error parsing command line")
             return 1
-    
+
         try:
             app = ApplicationWindow()
             def app_signal(signum, frame):

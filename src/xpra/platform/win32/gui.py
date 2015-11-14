@@ -646,7 +646,7 @@ class ClientExtras(object):
             log("WM_WININICHANGE: %#x=%s", lParam, c_char_p(lParam).value)
         else:
             log("WM_WININICHANGE: %i, %i", wParam, lParam)
-        
+
 
     def activateapp(self, wParam, lParam):
         c = self.client
