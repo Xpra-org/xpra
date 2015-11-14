@@ -2371,7 +2371,7 @@ class UIXpraClient(XpraClientBase):
                 continue
             if window.is_tray():
                 #trays are never GL enabled, so don't bother re-creating them
-                #might cause problems anyway if we did anyway
+                #might cause problems anyway if we did
                 #just send a configure event in case they are moved / scaled
                 window.send_configure()
                 continue
@@ -2409,7 +2409,8 @@ class UIXpraClient(XpraClientBase):
                 self.destroy_window(wid, window)
                 #explicitly tell the server we have unmapped it:
                 #(so it will reset the video encoders, etc)
-                self.send("unmap-window", wid)
+                if not window.is_OR():
+                    self.send("unmap-window", wid)
                 try:
                     del self._id_to_window[wid]
                 except:
@@ -2432,6 +2433,7 @@ class UIXpraClient(XpraClientBase):
             finally:
                 if decoder_lock:
                     decoder_lock.release()
+        self.send_refresh_all()
 
 
     def get_group_leader(self, wid, metadata, override_redirect):
