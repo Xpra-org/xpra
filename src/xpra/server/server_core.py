@@ -465,6 +465,7 @@ class ServerCore(object):
         protocol = Protocol(self, sc, self.process_packet)
         self._potential_protocols.append(protocol)
         protocol.large_packets.append("info-response")
+        protocol.challenge_sent = False
         protocol.authenticator = None
         if socktype=="tcp":
             protocol.auth_class = self.tcp_auth_class
@@ -678,7 +679,7 @@ class ServerCore(object):
             return  False
 
         def auth_failed(msg):
-            authlog.warn("authentication failed: %s", msg)
+            authlog.warn("Warning: authentication failed: %s", msg)
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
         #authenticator:
@@ -729,13 +730,16 @@ class ServerCore(object):
         if (proto.authenticator and proto.authenticator.requires_challenge()) or c.get("challenge") is not None:
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
-            authlog("processing authentication with %s, response=%s, client_salt=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""))
+            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""), proto.challenge_sent)
             #send challenge if this is not a response:
             if not challenge_response:
+                if proto.challenge_sent:
+                    auth_failed("invalid state, challenge already sent - no response!")
+                    return False                
                 if proto.authenticator:
                     challenge = proto.authenticator.get_challenge()
                     if challenge is None:
-                        auth_failed("invalid authentication state: unexpected challenge response")
+                        auth_failed("invalid state, unexpected challenge response")
                         return False
                     salt, digest = challenge
                     authlog.info("Authentication required, %s sending challenge for '%s' using digest %s", proto.authenticator, username, digest)
@@ -748,6 +752,7 @@ class ServerCore(object):
                     from xpra.os_util import get_hex_uuid
                     salt = get_hex_uuid()+get_hex_uuid()
                     digest = "hmac"
+                proto.challenge_sent = True
                 proto.send_now(("challenge", salt, auth_caps or "", digest))
                 return False
 
