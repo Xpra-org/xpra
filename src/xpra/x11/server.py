@@ -60,6 +60,7 @@ from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.net.compression import Compressed
 
 REPARENT_ROOT = os.environ.get("XPRA_REPARENT_ROOT", "1")=="1"
+SCALED_FONT_ANTIALIAS = os.environ.get("XPRA_SCALED_FONT_ANTIALIAS", "0")=="1"
 
 
 class DesktopManager(gtk.Widget):
@@ -1293,9 +1294,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     sss = self._server_sources.values()
                     if len(sss)==1:
                         #only honour sub-pixel hinting if a single client is connected
-                        #and only when it is not using any scaling:
+                        #and only when it is not using any scaling (or overriden with SCALED_FONT_ANTIALIAS):
                         ss = sss[0]
-                        if ss.desktop_size_unscaled or ss.desktop_size_unscaled==ss.desktop_size:
+                        if SCALED_FONT_ANTIALIAS or (not ss.desktop_size_unscaled or ss.desktop_size_unscaled==ss.desktop_size):
                             subpixel_order = ad.strget("orientation", "none").lower()
                     values.update({
                                    "Xft.antialias"  : ad.intget("enabled", -1),
