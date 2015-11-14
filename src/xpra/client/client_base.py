@@ -512,19 +512,16 @@ class XpraClientBase(FileTransferHandler):
                 return
             if not self.set_server_encryption(server_cipher, key):
                 return
-        digest = b"hmac"
-        client_can_salt = len(packet)>=4
-        client_salt = None
-        if client_can_salt:
-            #server supports client salt, and tells us which digest to use:
-            digest = packet[3]
-            client_salt = get_hex_uuid()+get_hex_uuid()
-            #TODO: use some key stretching algorigthm? (meh)
-            try:
-                from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-                salt = xor_str(salt, client_salt)
-            except:
-                salt = xor(salt, client_salt)
+        #all server versions support a client salt,
+        #they also tell us which digest to use:
+        digest = packet[3]
+        client_salt = get_hex_uuid()+get_hex_uuid()
+        #TODO: use some key stretching algorigthm? (meh)
+        try:
+            from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+            salt = xor_str(salt, client_salt)
+        except:
+            salt = xor(salt, client_salt)
         if digest==b"hmac":
             import hmac, hashlib
             try:
