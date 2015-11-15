@@ -48,6 +48,9 @@ class RootWindowModel(object):
     def acknowledge_changes(self):
         pass
 
+    def get_dimensions(self):
+        return self.window.get_size()
+
     def get_image(self, x, y, width, height):
         raise NotImplementedError()
 
