@@ -23,6 +23,12 @@ SINKS = ["autoaudiosink"]
 DEFAULT_SINK = SINKS[0]
 if has_pa():
     SINKS.append("pulsesink")
+    #warning: this is fugly!
+    #to avoid timestamp warnings with gstreamer 0.10 and vorbis,
+    #we prefer pulsesink to autoaudiosink, but only do this if it looks like pulseaudio is running:
+    from xpra.sound.pulseaudio_common_util import get_pulse_server_x11_property
+    if get_pulse_server_x11_property():
+        DEFAULT_SINK = "pulsesink"
 if sys.platform.startswith("darwin"):
     SINKS.append("osxaudiosink")
     DEFAULT_SINK = "osxaudiosink"
