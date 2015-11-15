@@ -68,10 +68,10 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 return ic
         except ImportError as e:
             codec_errors[name] = e
-            l = log.warn
+            l = log.error
             if name in NOWARN:
                 l = log.debug
-            l("failed to import %s (%s)", description, name)
+            l("Error importing %s (%s)", description, name)
             l(" %s", e)
             log("", exc_info=True)
     except Exception as e:
