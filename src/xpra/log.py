@@ -262,6 +262,9 @@ for category, d in STRUCT_KNOWN_FILTERS.items():
         KNOWN_FILTERS[k] = v
 
 
+def isenvdebug(category):
+    return os.environ.get("XPRA_%s_DEBUG" % category.upper(), "0")=="1"
+
 # A wrapper around 'logging' with some convenience stuff.  In particular:
 #    -- You initialize it with a list of categories
 #       If unset, the default logging target is set to the name of the module where
@@ -291,7 +294,7 @@ class Logger(object):
         for cat in self.categories:
             if cat in debug_disabled_categories:
                 disabled = True
-            if "all" in debug_enabled_categories or cat in debug_enabled_categories or os.environ.get("XPRA_%s_DEBUG" % cat.upper(), "0")=="1":
+            if "all" in debug_enabled_categories or cat in debug_enabled_categories or isenvdebug(cat) or isenvdebug("ALL"):
                 enabled = True
         self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
