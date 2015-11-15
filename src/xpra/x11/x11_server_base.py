@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import gtk.gdk
 
 #ensure that we use gtk as display source:
@@ -36,6 +37,7 @@ from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
 
 MAX_CONCURRENT_CONNECTIONS = 20
+RANDR = os.environ.get("XPRA_RANDR", "1")=="1"
 
 
 def window_name(window):
@@ -85,9 +87,8 @@ class X11ServerBase(GTKServerBase):
         elif not X11Keyboard.hasXkb():
             log.error("Error: limited keyboard support")
         self.init_x11_atoms()
-        self.randr = RandR.has_randr()
+        self.randr = RANDR and RandR.has_randr()
         if self.randr and len(RandR.get_screen_sizes())<=1:
-            log.info("no RandR support")
             #disable randr when we are dealing with a Xvfb
             #with only one resolution available
             #since we don't support adding them on the fly yet
@@ -99,6 +100,8 @@ class X11ServerBase(GTKServerBase):
                 screen = display.get_screen(i)
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
+        else:
+            log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
         log("randr enabled: %s", self.randr)
 
     def init_x11_atoms(self):
