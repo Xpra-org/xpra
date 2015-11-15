@@ -7,7 +7,7 @@ import os
 import time
 import sys
 
-from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, parse_element_options, \
+from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, parse_element_options, format_element_options, \
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names, GSTREAMER1
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
@@ -280,7 +280,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
     def __init__(self, plugin, options, codecs, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound-source")
         self.large_packets = ["new-buffer"]
-        self.command = get_sound_command()+["_sound_record", "-", "-", plugin or "", "", ",".join(codecs), "", str(volume)]
+        self.command = get_sound_command()+["_sound_record", "-", "-", plugin or "", format_element_options(element_options), ",".join(codecs), "", str(volume)]
         _add_debug_args(self.command)
 
     def __repr__(self):
@@ -296,7 +296,7 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         sound_subprocess_wrapper.__init__(self, "sound-sink")
         self.large_packets = ["add_data"]
         self.codec = codec
-        self.command = get_sound_command()+["_sound_play", "-", "-", plugin or "", "", codec, "", str(volume)]
+        self.command = get_sound_command()+["_sound_play", "-", "-", plugin or "", format_element_options(element_options), codec, "", str(volume)]
         _add_debug_args(self.command)
 
     def add_data(self, data, metadata):
@@ -326,7 +326,7 @@ def start_sending_sound(plugins, sound_source_plugin, codec, volume, remote_deco
         log("parsed '%s':", sound_source_plugin)
         log("plugin=%s", plugin)
         log("options=%s", options)
-        return source_subprocess_wrapper(plugin, options, remote_decoders, volume, {})
+        return source_subprocess_wrapper(plugin, options, remote_decoders, volume, options)
     except Exception as e:
         log.error("error setting up sound: %s", e, exc_info=True)
         return None

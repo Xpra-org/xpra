@@ -536,6 +536,9 @@ def parse_element_options(options_str):
             log.warn("failed to parse plugin option '%s': %s", s, e)
     return options
 
+def format_element_options(options):
+    return csv("%s=%s" % (k,v) for k,v in options.items())
+
 
 def get_sound_source_options(plugin, options_str, remote):
     """
