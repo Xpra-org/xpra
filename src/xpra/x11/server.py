@@ -51,7 +51,7 @@ workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
 menulog  = Logger("x11", "menu")
-eventlog = Logger("x11", "event")
+eventlog = Logger("x11", "events")
 
 import xpra
 from xpra.util import nonl, typedict
