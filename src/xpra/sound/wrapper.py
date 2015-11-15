@@ -335,7 +335,7 @@ def start_sending_sound(plugins, sound_source_plugin, codec, volume, remote_deco
 def start_receiving_sound(codec):
     log("start_receiving_sound(%s)", codec)
     try:
-        return sink_subprocess_wrapper(None, {}, codec, {}, 1.0)
+        return sink_subprocess_wrapper(None, {}, codec, 1.0, {})
     except:
         log.error("failed to start sound sink", exc_info=True)
         return None
