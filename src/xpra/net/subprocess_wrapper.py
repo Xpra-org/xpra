@@ -120,7 +120,8 @@ class subprocess_callee(object):
             self.run()
             return 0
         except KeyboardInterrupt as e:
-            log.warn("%s", e)
+            if str(e):
+                log.warn("%s", e)
             return 0
         except Exception:
             log.error("error in main loop", exc_info=True)
