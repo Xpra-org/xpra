@@ -111,6 +111,8 @@ class ShadowServerBase(object):
         log("loading existing windows")
         self.root_window_model = self.makeRootWindowModel()
         self._add_new_window(self.root_window_model)
+        w, h = self.root_window_model.get_dimensions()
+        self.min_mmap_size = w*h*4*2        #at least big enough for 2 frames of BGRX pixel data
 
     def makeRootWindowModel(self):
         return RootWindowModel(self.root)

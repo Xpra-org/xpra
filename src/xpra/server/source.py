@@ -591,7 +591,7 @@ class ServerSource(object):
             self.schedule_idle_timeout()
 
 
-    def parse_hello(self, c):
+    def parse_hello(self, c, min_mmap_size):
         #batch options:
         def batch_value(prop, default, minv=None, maxv=None):
             assert default is not None
@@ -748,7 +748,7 @@ class ServerSource(object):
         if not self.send_windows:
             log("windows/pixels forwarding is disabled for this client")
         else:
-            self.parse_encoding_caps(c)
+            self.parse_encoding_caps(c, min_mmap_size)
         #window filters:
         try:
             for object_name, property_name, operator, value in c.listget("window-filters"):
@@ -757,7 +757,7 @@ class ServerSource(object):
             log.error("Error parsing window-filters: %s", e)
 
 
-    def parse_encoding_caps(self, c):
+    def parse_encoding_caps(self, c, min_mmap_size):
         self.set_encoding(c.strget("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
@@ -834,8 +834,15 @@ class ServerSource(object):
                 from xpra.os_util import get_int_uuid
                 new_token = get_int_uuid()
                 self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token)
+                mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
-                    self.mmap_client_token = new_token
+                    if self.mmap_size<min_mmap_size:
+                        mmaplog.warn("Warning: client supplied mmap area is too small, discarding it")
+                        mmaplog.warn(" we need at least %i bytes and this area is %i", min_mmap_size, self.mmap_size)
+                        self.mmap = None
+                        self.mmap_size = 0
+                    else:
+                        self.mmap_client_token = new_token
 
         if self.mmap_size>0:
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
