@@ -1804,7 +1804,10 @@ class WindowSource(object):
 
     def mmap_encode(self, coding, image, options):
         assert self._mmap and self._mmap_size>0
-        mmap_info, mmap_free_size, written = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
+        v = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
+        if v is None:
+            return None
+        mmap_info, mmap_free_size, written = v
         self.global_statistics.mmap_bytes_sent += written
         self.global_statistics.mmap_free_size = mmap_free_size
         #the data we send is the index within the mmap area:
