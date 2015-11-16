@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
+from xpra.util import csv
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
@@ -362,6 +363,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 return bool(m)
 
         def change_mask(modifiers, press, info):
+            failed = []
             for modifier in modifiers:
                 if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
                     log("modifier is server managed: %s", modifier)
@@ -395,6 +397,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 #full key press + key release (so act accordingly in the loop below)
                 nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
                 log("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
+                modkeycode = None
                 for keycode in keycodes:
                     if nuisance:
                         X11Keyboard.xtest_fake_key(keycode, True)
@@ -404,6 +407,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     new_mask = self.get_current_mask()
                     success = (modifier in new_mask)==press
                     if success:
+                        modkeycode = keycode
                         log("change_mask(%s) %s modifier %s using %s", info, modifier_list, modifier, keycode)
                         break   #we're done for this modifier
                     log("%s %s with keycode %s did not work", info, modifier, keycode)
@@ -414,11 +418,30 @@ class KeyboardConfig(KeyboardConfigBase):
                         new_mask = self.get_current_mask()
                         if (modifier in new_mask)==press:
                             break
+                    log("change_mask(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
+                if not modkeycode:
+                    failed.append(modifier)
+            return failed
 
         current = set(self.get_current_mask())
         wanted = set(modifier_list or [])
         if current==wanted:
             return
         log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
+        fr = change_mask(current.difference(wanted), False, "remove")
+        fa = change_mask(wanted.difference(current), True, "add")
+        if fr:
+            log.warn("Warning: failed to remove the following modifiers: %s", csv(fr))
+        elif fa:
+            log.warn("Warning: failed to add the following modifiers: %s", csv(fa))
+        else:
+            return  #all good!
+        #this should never happen.. but if it does?
+        #something didn't work, use the big hammer and start again from scratch:
+        log.warn(" keys still pressed=%s", X11Keyboard.get_keycodes_down())
+        X11Keyboard.unpress_all_keys()
+        log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
+        #and try to set the modifiers one last time:
+        current = set(self.get_current_mask())
         change_mask(current.difference(wanted), False, "remove")
         change_mask(wanted.difference(current), True, "add")
