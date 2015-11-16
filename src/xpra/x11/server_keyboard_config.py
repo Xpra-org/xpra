@@ -409,12 +409,14 @@ class KeyboardConfig(KeyboardConfigBase):
                         X11Keyboard.xtest_fake_key(keycode, press)
                     new_mask = self.get_current_mask()
                     success = (modifier in new_mask)==press
-                    log("make_keymask_match(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
+                    log("change_mask(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
                     if success:
                         break
                     elif not nuisance:
-                        log("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
-                        X11Keyboard.xtest_fake_key(keycode, not press)
+                        log("%s %s with keycode %s did not work", info, modifier, keycode)
+                        if press:
+                            log(" trying to unpress it!", info, modifier, keycode)
+                            X11Keyboard.xtest_fake_key(keycode, False)
                         new_mask = self.get_current_mask()
                         #maybe doing the full keypress (down+up or u+down) worked:
                         if (modifier in new_mask)==press:
