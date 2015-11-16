@@ -361,12 +361,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
                 return bool(m)
 
-        current = set(self.get_current_mask())
-        wanted = set(modifier_list or [])
-        if current==wanted:
-            return
-        log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
-
         def change_mask(modifiers, press, info):
             for modifier in modifiers:
                 if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
@@ -409,18 +403,22 @@ class KeyboardConfig(KeyboardConfigBase):
                         X11Keyboard.xtest_fake_key(keycode, press)
                     new_mask = self.get_current_mask()
                     success = (modifier in new_mask)==press
-                    log("change_mask(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
                     if success:
-                        break
-                    elif not nuisance:
-                        log("%s %s with keycode %s did not work", info, modifier, keycode)
-                        if press:
-                            log(" trying to unpress it!", info, modifier, keycode)
-                            X11Keyboard.xtest_fake_key(keycode, False)
+                        log("change_mask(%s) %s modifier %s using %s", info, modifier_list, modifier, keycode)
+                        break   #we're done for this modifier
+                    log("%s %s with keycode %s did not work", info, modifier, keycode)
+                    if press and not nuisance:
+                        log(" trying to unpress it!", info, modifier, keycode)
+                        X11Keyboard.xtest_fake_key(keycode, False)
+                        #maybe doing the full keypress (down+up) worked:
                         new_mask = self.get_current_mask()
-                        #maybe doing the full keypress (down+up or u+down) worked:
                         if (modifier in new_mask)==press:
                             break
 
+        current = set(self.get_current_mask())
+        wanted = set(modifier_list or [])
+        if current==wanted:
+            return
+        log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
         change_mask(current.difference(wanted), False, "remove")
         change_mask(wanted.difference(current), True, "add")
