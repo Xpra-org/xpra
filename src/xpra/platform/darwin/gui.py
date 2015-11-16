@@ -192,7 +192,11 @@ def window_focused(window, event):
             callback(menu_item, action, state, pdata)
     for group_id in sorted(window_menu.keys()):
         group = window_menu[group_id]
-        title = window.get_title() or "Application"
+        try:
+            title = str(window._metadata.get("title"))
+            assert title
+        except:
+            title = window.get_title() or "Application"
         app_menu = mh.make_menu()
         for menuid in sorted(group.keys()):
             menu_entries = group[menuid]
