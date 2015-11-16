@@ -32,6 +32,14 @@ class ShadowServerBase(object):
     def get_server_mode(self):
         return "shadow"
 
+    def print_screen_info(self):
+        w, h = self.root_window_model.get_dimensions()
+        display = os.environ.get("DISPLAY")
+        if display:
+            log.info(" on display %s of size %ix%i", display, w, h)
+        else:
+            log.info(" on display of size %ix%i", w, h)
+
     def make_hello(self, source):
         return {"shadow" : True}
 

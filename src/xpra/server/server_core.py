@@ -354,26 +354,8 @@ class ServerCore(object):
         return "server"
 
     def run(self):
-        try:
-            from xpra.src_info import REVISION
-            rev_info = "-r%s" % REVISION
-        except:
-            rev_info = ""
-        dinfo = ""
-        try:
-            display = os.environ.get("DISPLAY")
-            if display and display.startswith(":"):
-                dinfo = " on display %s" % display
-        except:
-            pass
-        log.info("xpra %s version %s%s%s", self.get_server_mode(), local_version, rev_info, dinfo)
-        try:
-            pinfo = get_platform_info()
-            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
-        except:
-            log("platform name error:", exc_info=True)
-            osinfo = ""
-        log.info("running with pid %s%s", os.getpid(), osinfo)
+        self.print_run_info()
+        self.print_screen_info()
         signal.signal(signal.SIGTERM, self.signal_quit)
         signal.signal(signal.SIGINT, self.signal_quit)
         def start_ready_callbacks():
@@ -387,6 +369,26 @@ class ServerCore(object):
         self.idle_add(self.server_is_ready)
         self.do_run()
         return self._upgrading
+
+    def print_run_info(self):
+        try:
+            from xpra.src_info import REVISION
+            rev_info = "-r%s" % REVISION
+        except:
+            rev_info = ""
+        log.info("xpra %s version %s%s", self.get_server_mode(), local_version, rev_info)
+        try:
+            pinfo = get_platform_info()
+            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
+        except:
+            log("platform name error:", exc_info=True)
+            osinfo = ""
+        log.info(" running with pid %s%s", os.getpid(), osinfo)
+
+    def print_screen_info(self):
+        display = os.environ.get("DISPLAY")
+        if display and display.startswith(":"):
+            log.info(" on display %s", display)
 
 
     def server_is_ready(self):
