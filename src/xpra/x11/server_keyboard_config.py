@@ -398,6 +398,13 @@ class KeyboardConfig(KeyboardConfigBase):
                 nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
                 log("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
                 modkeycode = None
+                if not press:
+                    #since we want to unpress something,
+                    #let's try the keycodes we know are pressed first:
+                    kdown = X11Keyboard.get_keycodes_down()
+                    pressed = [x for x in keycodes if x in kdown]
+                    others = [x for x in keycodes if x not in kdown]
+                    keycodes = pressed+others
                 for keycode in keycodes:
                     if nuisance:
                         X11Keyboard.xtest_fake_key(keycode, True)
