@@ -54,7 +54,8 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         assert size>=1024*1024, "mmap size is too small: %s (minimum is 1MB)" % to_std_unit(size)
         assert size<=1024*1024*1024, "mmap is too big: %s (maximum is 1GB)" % to_std_unit(size)
         unit = max(4096, mmap.PAGESIZE)
-        mmap_size = roundup(size, unit)
+        #add 8 bytes for the mmap area control header zone:
+        mmap_size = roundup(size + 8, unit)
         log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
         os.lseek(fd, mmap_size-1, os.SEEK_SET)
         assert os.write(fd, b'\x00')
@@ -178,22 +179,29 @@ def mmap_write(mmap_area, mmap_size, data):
     mmap_data_end = int_from_buffer(mmap_area, 4)
     start = max(8, mmap_data_start.value)
     end = max(8, mmap_data_end.value)
+    l = len(data)
+    log("mmap: start=%i, end=%i, size of data to write=%i", start, end, l)
     if end<start:
         #we have wrapped around but the client hasn't yet:
         #[++++++++E--------------------S+++++]
-        #so there is one chunk available (from E to S):
+        #so there is one chunk available (from E to S) which we will use:
+        #[++++++++************E--------S+++++]
         available = start-end
         chunk = available
     else:
         #we have not wrapped around yet, or the client has wrapped around too:
         #[------------S++++++++++++E---------]
         #so there are two chunks available (from E to the end, from the start to S):
+        #[****--------S++++++++++++E*********]
         chunk = mmap_size-end
         available = chunk+(start-8)
-    l = len(data)
     #update global mmap stats:
     mmap_free_size = available-l
-    if mmap_free_size<=0:
+    if l>(mmap_size-8):
+        log.warn("Warning: mmap area is too small!")
+        log.warn(" we need to store %s bytes but the mmap area is limited to %i", l, (mmap_size-8))
+        return None, mmap_free_size
+    elif mmap_free_size<=0:
         log.warn("Warning: mmap area is full!")
         log.warn(" we need to store %s bytes but only have %s free space left", l, available)
         return None, mmap_free_size
