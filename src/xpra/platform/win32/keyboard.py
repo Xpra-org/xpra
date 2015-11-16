@@ -4,12 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.log import Logger
 log = Logger("keyboard")
+
+EMULATE_ALTGR = os.environ.get("XPRA_EMULATE_ALTGR", "1")=="1"
 
 
 class Keyboard(KeyboardBase):
@@ -23,6 +26,7 @@ class Keyboard(KeyboardBase):
         KeyboardBase.__init__(self)
         self.emulate_altgr = False
         self.num_lock_modifier = None
+        self.altgr_modifier = None
         self.last_key_event_sent = None
         #workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
         #translate "period" with keyval=46 and keycode=110 to KP_Decimal:
@@ -34,7 +38,13 @@ class Keyboard(KeyboardBase):
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
-        log("set_modifier_mappings found 'Num_Lock' modifier value: %s", self.num_lock_modifier)
+        log("set_modifier_mappings found 'Num_Lock' with modifier value: %s", self.num_lock_modifier)
+        for x in ("ISO_Level3_Shift", "Mode_switch"):
+            mod = self.modifier_keys.get(x)
+            if mod:
+                self.altgr_modifier = mod
+                log("set_modifier_mappings found 'AltGr'='%s' with modifier value: %s", x, self.altgr_modifier)
+                break
 
     def mask_to_names(self, mask):
         """ Patch NUMLOCK and AltGr """
@@ -60,11 +70,12 @@ class Keyboard(KeyboardBase):
     def AltGr_modifiers(self, modifiers, pressed=True):
         add = []
         clear = ["mod1", "mod2", "control"]
-        if pressed:
-            add.append("mod5")
-        else:
-            clear.append("mod5")
-        log("AltGr_modifiers(%s, %s) add=%s, clear=%s", modifiers, pressed, add, clear)
+        if self.altgr_modifier:
+            if pressed:
+                add.append(self.altgr_modifier)
+            else:
+                clear.append(self.altgr_modifier)
+        log("AltGr_modifiers(%s, %s) AltGr=%s, add=%s, clear=%s", modifiers, pressed, self.altgr_modifier, add, clear)
         for x in add:
             if x not in modifiers:
                 modifiers.append(x)
@@ -131,19 +142,16 @@ class Keyboard(KeyboardBase):
         #self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
         #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         #if we have modifier_mappings
-        if key_event.keyname=="Alt_R" and len(self.modifier_mappings)>0:
-            keyname = "ISO_Level3_Shift"
-            altgr_keycodes = self.modifier_keycodes.get(keyname, [])
-            if len(altgr_keycodes)>0:
-                self.emulate_altgr = key_event.pressed
-                if key_event.pressed and self.last_key_event_sent:
-                    #check for spurious control and undo it
-                    last_wid, last_key_event = self.last_key_event_sent
-                    if last_wid==wid and last_key_event.keyname=="Control_L" and last_key_event.pressed==True:
-                        #undo it:
-                        last_key_event.pressed = False
-                        KeyboardBase.process_key_event(self, send_key_action_cb, last_wid, last_key_event)
-                self.AltGr_modifiers(key_event.modifiers, not key_event.pressed)
+        if EMULATE_ALTGR and self.altgr_modifier and key_event.keyname=="Alt_R" and len(self.modifier_mappings)>0:
+            self.emulate_altgr = key_event.pressed
+            if key_event.pressed and self.last_key_event_sent:
+                #check for spurious control and undo it
+                last_wid, last_key_event = self.last_key_event_sent
+                if last_wid==wid and last_key_event.keyname=="Control_L" and last_key_event.pressed==True:
+                    #undo it:
+                    last_key_event.pressed = False
+                    KeyboardBase.process_key_event(self, send_key_action_cb, last_wid, last_key_event)
+            self.AltGr_modifiers(key_event.modifiers, not key_event.pressed)
         self.last_key_event_sent = (wid, key_event)
         #now fallback to default behaviour:
         KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
