@@ -194,7 +194,8 @@ def mmap_write(mmap_area, mmap_size, data):
     #update global mmap stats:
     mmap_free_size = available-l
     if mmap_free_size<=0:
-        log.warn("mmap area full: we need more than %s but only %s left! ouch!", l, available)
+        log.warn("Warning: mmap area is full!")
+        log.warn(" we need to store %s bytes but only have %s free space left", l, available)
         return None, mmap_free_size
     if l<chunk:
         """ data fits in the first chunk """
