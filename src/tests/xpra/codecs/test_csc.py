@@ -8,12 +8,7 @@ import time
 from xpra.codecs.image_wrapper import ImageWrapper
 #from tests.xpra.test_util import dump_resource_usage, dump_threads
 from tests.xpra.codecs.test_codec import dump_pixels, make_rgb_input, make_planar_input
-
-try:
-    import builtins                     #@UnresolvedImport @UnusedImport (python3)
-except:
-    import __builtin__ as builtins      #@Reimport @UnusedImport
-_memoryview = builtins.__dict__.get("memoryview")
+from xpra.os_util import _memoryview, _buffer
 
 
 DEBUG = False
@@ -31,9 +26,9 @@ def check_plane(info, data, expected, tolerance=3, pixel_stride=4, ignore_byte=-
     assert data is not None
     print("check_plane(%s, %s:%s, %s:%s" % (info, type(data), len(data), type(expected), len(expected)))
     #chop data to same size as expected sample:
-    if type(data) in (_memoryview, buffer, str):
+    if type(data) in (_memoryview, _buffer, str):
         data = bytearray(data)
-    if type(expected) in (buffer, str):
+    if type(expected) in (_buffer, str):
         expected = bytearray(expected)
     actual_data = data[:len(expected)]
     if actual_data==expected:
