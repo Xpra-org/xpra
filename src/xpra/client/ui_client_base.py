@@ -1689,7 +1689,7 @@ class UIXpraClient(XpraClientBase):
         if self._remote_revision:
             r += "-r%s" % self._remote_revision
         mode = c.strget("server.mode", "server")
-        log.info("Xpra %s version %s", mode, std(r))
+        log.info("Xpra %s server version %s", mode, std(r))
         if i:
             log.info(" running on %s", std(i))
         if c.boolget("proxy"):

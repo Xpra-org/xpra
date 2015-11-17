@@ -261,7 +261,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def get_server_mode(self):
-        return "X11 server"
+        return "X11"
 
 
     def server_event(self, *args):

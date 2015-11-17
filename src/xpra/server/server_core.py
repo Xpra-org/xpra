@@ -351,7 +351,7 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def get_server_mode(self):
-        return "server"
+        return "core"
 
     def run(self):
         self.print_run_info()
