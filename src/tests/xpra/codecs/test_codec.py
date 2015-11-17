@@ -7,6 +7,7 @@
 import time
 import binascii
 from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.os_util import _buffer
 
 DEBUG = False
 
@@ -30,7 +31,7 @@ def dump_pixels(pixels):
         add = ["..."]
     else:
         v = pixels
-    if t==buffer:
+    if t==_buffer:
         l = binascii.hexlify(v) + str(add)
     elif t==bytearray:
         l = binascii.hexlify(str(v)) + str(add)

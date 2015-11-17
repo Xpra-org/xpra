@@ -6,8 +6,7 @@
 from xpra.log import Logger
 log = Logger("encoder", "pillow")
 
-from xpra.os_util import BytesIOClass
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import BytesIOClass, memoryview_to_bytes, _buffer
 from xpra.net import compression
 
 import PIL                      #@UnresolvedImport
@@ -62,7 +61,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         #PIL cannot use the memoryview directly:
-        if type(pixels)!=buffer:
+        if type(pixels)!=_buffer:
             pixels = memoryview_to_bytes(pixels)
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
