@@ -291,6 +291,7 @@ class UIXpraClient(XpraClientBase):
                 #the main script does some checking, but we could be called from a config file launch
                 log.warn("Warning: invalid window max-size specified: %s", opts.max_size)
                 self.max_window_size = 0, 0
+        self.desktop_scaling = opts.desktop_scaling
         self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
         if self.can_scale:
             self.xscale, self.yscale = self.parse_scaling(opts.desktop_scaling)
@@ -923,7 +924,7 @@ class UIXpraClient(XpraClientBase):
         sh = int(root_h / yscale)
         scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)
         scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
-        if sw>(maxw+1) or sh>(maxh+1):
+        if not self.server_is_shadow and (sw>(maxw+1) or sh>(maxh+1)):
             #would overflow..
             v = clamp(max(float(root_w)/maxw, float(root_h)/maxh))
             #prefer int over float:
@@ -1728,7 +1729,13 @@ class UIXpraClient(XpraClientBase):
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
             #scaling is used, make sure that we need it and that the server can support it
             #(without rounding support, size-hints can cause resize loops)
-            if self.mmap_enabled:
+            if self.server_is_shadow and not self.shadow_fullscreen:
+                #don't honour auto mode in this case
+                if self.desktop_scaling=="auto":
+                    log.info(" not scaling a shadow server")
+                    skip_vfb_size_check = self.xscale>1 or self.yscale>1
+                    self.scalereset()
+            elif self.mmap_enabled:
                 log.info(" no need for scaling with mmap")
                 skip_vfb_size_check = self.xscale>1 or self.yscale>1
                 self.scalereset()
