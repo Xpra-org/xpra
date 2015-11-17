@@ -278,7 +278,7 @@ class sound_subprocess_wrapper(subprocess_caller):
 class source_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codecs, volume, element_options):
-        sound_subprocess_wrapper.__init__(self, "sound-source")
+        sound_subprocess_wrapper.__init__(self, "sound source")
         self.large_packets = ["new-buffer"]
         self.command = get_sound_command()+["_sound_record", "-", "-", plugin or "", format_element_options(element_options), ",".join(codecs), "", str(volume)]
         _add_debug_args(self.command)
@@ -293,7 +293,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codec, volume, element_options):
-        sound_subprocess_wrapper.__init__(self, "sound-sink")
+        sound_subprocess_wrapper.__init__(self, "sound output")
         self.large_packets = ["add_data"]
         self.codec = codec
         self.command = get_sound_command()+["_sound_play", "-", "-", plugin or "", format_element_options(element_options), codec, "", str(volume)]
