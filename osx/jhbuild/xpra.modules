@@ -157,9 +157,9 @@
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/webp/libwebp-0.4.3.tar.gz"
-			version="0.4.3"
-                        hash="md5:08813525eeeffe7e305b4cbfade8ae9b"
+    <branch module="/releases/webp/libwebp-0.4.4.tar.gz"
+			version="0.4.4"
+                        hash="md5:b737062cf688e502b940b460ddc3015f"
             repo="downloads.webmproject.org"/>
   </autotools>
 
@@ -176,9 +176,9 @@
 --disable-filter=atrim --disable-filter=null
 --disable-programs --disable-avfilter --disable-doc"
              autogen-sh="configure">
-    <branch module="/releases/ffmpeg-2.8.1.tar.bz2"
-            version="2.8.1"
-            hash="md5:63b2cfeea930e942ff7579fd0064c5be"
+    <branch module="/releases/ffmpeg-2.8.2.tar.bz2"
+            version="2.8.2"
+            hash="md5:99f31723326dfe1bfd1bc7521338f2d2"
             repo="ffmpeg.org"/>
   <dependencies>
       <dep package="x264"/>
