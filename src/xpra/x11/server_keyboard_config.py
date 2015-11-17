@@ -362,18 +362,25 @@ class KeyboardConfig(KeyboardConfigBase):
                 log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
                 return bool(m)
 
-        def change_mask(modifiers, press, info):
-            failed = []
+        def filtered_modifiers_set(modifiers):
+            m = set()
             for modifier in modifiers:
                 if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
                     log("modifier is server managed: %s", modifier)
                     continue
                 keynames = self.keynames_for_mod.get(modifier)
-                if not keynames:
-                    log.error("unknown modifier: %s", modifier)
-                    continue
                 if is_ignored(modifier, keynames):
                     log("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
+                    continue
+                m.add(modifier)
+            return m
+
+        def change_mask(modifiers, press, info):
+            failed = []
+            for modifier in modifiers:
+                keynames = self.keynames_for_mod.get(modifier)
+                if not keynames:
+                    log.error("unknown modifier: %s", modifier)
                     continue
                 #find the keycodes that match the keynames for this modifier
                 keycodes = []
@@ -430,8 +437,8 @@ class KeyboardConfig(KeyboardConfigBase):
                     failed.append(modifier)
             return failed
 
-        current = set(self.get_current_mask())
-        wanted = set(modifier_list or [])
+        current = filtered_modifiers_set(self.get_current_mask())
+        wanted = filtered_modifiers_set(modifier_list or [])
         if current==wanted:
             return
         log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
@@ -449,6 +456,6 @@ class KeyboardConfig(KeyboardConfigBase):
         X11Keyboard.unpress_all_keys()
         log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
         #and try to set the modifiers one last time:
-        current = set(self.get_current_mask())
+        current = filtered_modifiers_set(self.get_current_mask())
         change_mask(current.difference(wanted), False, "remove")
         change_mask(wanted.difference(current), True, "add")
