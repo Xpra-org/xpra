@@ -32,7 +32,7 @@ WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
-DEFAULT_GSTREAMER1 = not WIN32 and not OSX
+DEFAULT_GSTREAMER1 = not WIN32
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", str(int(DEFAULT_GSTREAMER1)))=="1"
 MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
 def force_enabled(codec_name):
