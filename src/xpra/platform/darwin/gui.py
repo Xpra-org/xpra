@@ -8,7 +8,7 @@ import os
 from xpra.log import Logger
 log = Logger("osx", "events")
 
-SLEEP_HANDLER = os.environ.get("XPRA_OSX_SLEEP_HANDLER", "1")=="1"
+SLEEP_HANDLER = os.environ.get("XPRA_OSX_SLEEP_HANDLER", "0")=="1"
 
 
 exit_cb = None
