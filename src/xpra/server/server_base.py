@@ -1832,7 +1832,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             if xdpi!=self.xdpi or ydpi!=self.ydpi:
                 self.xdpi, self.ydpi = xdpi, ydpi
                 screenlog("new dpi: %ix%i", self.xdpi, self.ydpi)
-                self.dpi = iround((self.xdpi + self.ydpi)//2)
+                self.dpi = iround((self.xdpi + self.ydpi)/2.0)
                 self.dpi_changed()
         if len(packet)>=8:
             #added in 0.16 for scaled client displays:

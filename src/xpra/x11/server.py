@@ -14,7 +14,7 @@ import time
 import math
 from collections import deque
 
-from xpra.util import AdHocStruct, updict, rindex
+from xpra.util import AdHocStruct, updict, rindex, iround
 from xpra.os_util import memoryview_to_bytes, _memoryview
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
@@ -1343,7 +1343,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     try:
                         x,y = double_click_distance
                         if x>0 and y>0:
-                            d = (x+y)//2
+                            d = iround((x+y)/2.0)
                             d = max(1, min(128, d))     #sanitize it a bit
                             v = set_xsettings_int("Net/DoubleClickDistance", d)
                     except Exception as e:
