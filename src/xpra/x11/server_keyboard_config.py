@@ -401,7 +401,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     continue
                 #nuisance keys (lock, num, scroll) are toggled by a
                 #full key press + key release (so act accordingly in the loop below)
-                nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
+                nuisance = modifier in self.xkbmap_mod_nuisance
                 log("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
                 modkeycode = None
                 if not press:
