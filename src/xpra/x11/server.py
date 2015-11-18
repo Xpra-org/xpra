@@ -922,12 +922,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
     def _move_pointer(self, wid, pos):
-        window = self._id_to_window.get(wid)
-        if not window:
-            mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
-        else:
-            mouselog("raising %s", window)
-            window.raise_window()
+        if wid>=0:
+            window = self._id_to_window.get(wid)
+            if not window:
+                mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
+            else:
+                mouselog("raising %s", window)
+                window.raise_window()
         X11ServerBase._move_pointer(self, wid, pos)
 
 
