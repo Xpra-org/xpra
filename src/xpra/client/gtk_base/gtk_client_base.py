@@ -531,7 +531,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
                 cursor_pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)
                 xratio, yratio = float(w)/fw, float(h)/fh
-                x, y = int(x/xratio), int(y/yratio)
+                x, y = iround(x/xratio), iround(y/yratio)
         else:
             sx, sy, sw, sh = x, y, w, h
             #scale the cursors:
@@ -543,18 +543,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if sw>cmaxw or sh>cmaxh:
                 ratio = max(float(w)/cmaxw, float(h)/cmaxh)
                 cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
-                sx, sy, sw, sh = int(x/ratio), int(y/ratio), min(cmaxw, int(w/ratio)), min(cmaxh, int(h/ratio))
+                sx, sy, sw, sh = iround(x/ratio), iround(y/ratio), min(cmaxw, iround(w/ratio)), min(cmaxh, iround(h/ratio))
             if sw!=w or sh!=h:
                 cursorlog("scaling cursor from %ix%i hotspot at %ix%i to %ix%i hotspot at %ix%i", w, h, x, y, sw, sh, sx, sy)
                 cursor_pixbuf = pixbuf.scale_simple(sw, sh, INTERP_BILINEAR)
-                x, y, w, h = sx, sy, sw, sh
+                x, y = sx, sy
             else:
                 cursor_pixbuf = pixbuf
         #clamp to pixbuf size:
         w = cursor_pixbuf.get_width()
         h = cursor_pixbuf.get_height()
-        x = max(0, min(w-1))
-        y = max(0, min(h-1))
+        x = max(0, min(x, w-1))
+        y = max(0, min(y, h-1))
         try:
             c = new_Cursor_from_pixbuf(display, cursor_pixbuf, x, y)
         except RuntimeError as e:
