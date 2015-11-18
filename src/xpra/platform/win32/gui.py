@@ -16,7 +16,7 @@ screenlog = Logger("win32", "screen")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, csv
 import ctypes
 from ctypes import windll, byref
 
@@ -185,6 +185,36 @@ def win32_propsys_set_group_leader(self, leader):
     except Exception as e:
         log.error("failed to set group leader: %s", e)
 
+WS_NAMES = {
+            win32con.WS_BORDER              : "BORDER",
+            win32con.WS_CAPTION             : "CAPTION",
+            win32con.WS_CHILD               : "CHILD",
+            win32con.WS_CHILDWINDOW         : "CHILDWINDOW",
+            win32con.WS_CLIPCHILDREN        : "CLIPCHILDREN",
+            win32con.WS_CLIPSIBLINGS        : "CLIPSIBLINGS",
+            win32con.WS_DISABLED            : "DISABLED",
+            win32con.WS_DLGFRAME            : "DLGFRAME",
+            win32con.WS_GROUP               : "GROUP",
+            win32con.WS_HSCROLL             : "HSCROLL",
+            win32con.WS_ICONIC              : "ICONIC",
+            win32con.WS_MAXIMIZE            : "MAXIMIZE",
+            win32con.WS_MAXIMIZEBOX         : "MAXIMIZEBOX",
+            win32con.WS_MINIMIZE            : "MINIMIZE",
+            win32con.WS_MINIMIZEBOX         : "MINIMIZEBOX",
+            win32con.WS_OVERLAPPED          : "OVERLAPPED",
+            win32con.WS_POPUP               : "POPUP",
+            win32con.WS_SIZEBOX             : "SIZEBOX",
+            win32con.WS_SYSMENU             : "SYSMENU",
+            win32con.WS_TABSTOP             : "TABSTOP",
+            win32con.WS_THICKFRAME          : "THICKFRAME",
+            win32con.WS_TILED               : "TILED",
+            win32con.WS_VISIBLE             : "VISIBLE",
+            win32con.WS_VSCROLL             : "VSCROLL",
+            }
+
+def style_str(style):
+    return csv([s for c,s in WS_NAMES.items() if (c & style)==c])
+
 def fixup_window_style(self, *args):
     """ a fixup function we want to call from other places """
     hwnd = get_window_handle(self)
@@ -199,10 +229,10 @@ def fixup_window_style(self, *args):
         #can always minimize:
         style |= win32con.WS_MINIMIZEBOX
         if style!=cur_style:
-            log("fixup_window_style() using %#x instead of %#x on window %#x", style, cur_style, hwnd)
+            log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x", style_str(style), style, style_str(cur_style), cur_style, hwnd)
             win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style)
         else:
-            log("fixup_window_style() unchanged style %#x on window %#x", style, hwnd)
+            log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
     except:
         log.warn("failed to fixup window style", exc_info=True)
 
