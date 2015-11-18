@@ -531,7 +531,7 @@ class ClientWindowBase(ClientWidgetBase):
                     pass
                 elif REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
                     w, h = self.get_size()
-                    self.queue_draw(*self._client.srect(0, 0, w, h))
+                    self.queue_draw(0, 0, w, h)
                 else:
                     self.queue_draw(*self._client.srect(x, y, width, height))
         #only register this callback if we actually need it:
