@@ -550,12 +550,17 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 x, y, w, h = sx, sy, sw, sh
             else:
                 cursor_pixbuf = pixbuf
+        #clamp to pixbuf size:
+        w = cursor_pixbuf.get_width()
+        h = cursor_pixbuf.get_height()
+        x = max(0, min(w-1))
+        y = max(0, min(h-1))
         try:
             c = new_Cursor_from_pixbuf(display, cursor_pixbuf, x, y)
         except RuntimeError as e:
             log.error("Error: failed to create cursor:")
             log.error(" %s", e)
-            log.error(" using %s of size %ix%i with hotspot at %ix%i", cursor_pixbuf, cursor_pixbuf.get_width(), cursor_pixbuf.get_height(), x, y)
+            log.error(" using %s of size %ix%i with hotspot at %ix%i", cursor_pixbuf, w, h, x, y)
             c = None
         return c
 
