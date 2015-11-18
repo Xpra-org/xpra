@@ -352,14 +352,12 @@ class KeyboardConfig(KeyboardConfigBase):
             #this is not a keyboard event, ignore modifiers in "mod_pointermissing"
             def is_ignored(modifier, modifier_keynames):
                 m = modifier in (self.xkbmap_mod_pointermissing or [])
-                log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
                 return m
         else:
             #keyboard event: ignore the keynames specified
             #(usually the modifier key being pressed/unpressed)
             def is_ignored(modifier, modifier_keynames):
                 m = set(modifier_keynames) & set(ignored_modifier_keynames)
-                log("is_ignored(%s, %s)=%s", modifier, modifier_keynames, m)
                 return bool(m)
 
         def filtered_modifiers_set(modifiers):
@@ -373,6 +371,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     log("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 m.add(modifier)
+            log("filtered_modifiers_set(%s)=%s", modifiers, csv(list(m)))
             return m
 
         def change_mask(modifiers, press, info):
@@ -435,6 +434,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     log("change_mask(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
                 if not modkeycode:
                     failed.append(modifier)
+            log("change_mask(%s, %s, %s) failed=%s", modifiers, press, info, failed)
             return failed
 
         current = filtered_modifiers_set(self.get_current_mask())
