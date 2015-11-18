@@ -324,8 +324,10 @@ class X11ServerBase(GTKServerBase):
 
     def set_screen_size(self, desired_w, desired_h):
         root_w, root_h = self.root_window.get_size()
+        if not RANDR:
+            return root_w,root_h
         if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
-            return    root_w,root_h    #unlikely: perfect match already!
+            return root_w,root_h    #unlikely: perfect match already!
         #clients may supply "xdpi" and "ydpi" (v0.15 onwards), or just "dpi", or nothing...
         xdpi = self.xdpi or self.dpi
         ydpi = self.ydpi or self.dpi
