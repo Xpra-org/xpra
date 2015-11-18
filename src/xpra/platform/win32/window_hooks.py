@@ -73,7 +73,7 @@ class Win32Hooks(object):
         self._oldwndproc = SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
-        if self.max_size:
+        if self.max_size and lparam:
             info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
             width, height = self.max_size
             style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
@@ -86,9 +86,9 @@ class Win32Hooks(object):
             point  = POINT(w, h)
             info.ptMaxSize       = point
             info.ptMaxTrackSize  = point
-            log("on_getminmaxinfo%s max_size=%s, frame=%sx%s, minmaxinfo size=%sx%s", (hwnd, msg, wparam, lparam), self.max_size, fw, fh, w, h)
+            log("on_getminmaxinfo window=%#x max_size=%s, frame=%sx%s, minmaxinfo size=%sx%s", hwnd, self.max_size, fw, fh, w, h)
         else:
-            log("on_getminmaxinfo%s max_size=%s", (hwnd, msg, wparam, lparam), self.max_size)
+            log("on_getminmaxinfo window=%#x max_size=%s", hwnd, self.max_size)
 
     def cleanup(self, *args):
         log("cleanup%s", args)
