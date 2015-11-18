@@ -221,18 +221,24 @@ def fixup_window_style(self, *args):
     if not hwnd:
         return
     try:
+        #warning: accessing "_metadata" on the client window class is fugly..
+        metadata = getattr(self, "_metadata", {})
+        if metadata.get("modal", False):
+            #window is not / no longer meant to be decorated
+            #(this is what GTK does for modal windows - keep it consistent)
+            return
         cur_style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
         #re-add taskbar menu:
         style = cur_style
-        style |= win32con.WS_SYSMENU
-        style |= win32con.WS_MAXIMIZEBOX
-        #can always minimize:
-        style |= win32con.WS_MINIMIZEBOX
-        if style!=cur_style:
-            log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x", style_str(style), style, style_str(cur_style), cur_style, hwnd)
-            win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style)
-        else:
-            log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
+        if cur_style & win32con.WS_CAPTION:
+            style |= win32con.WS_SYSMENU
+            style |= win32con.WS_MAXIMIZEBOX
+            style |= win32con.WS_MINIMIZEBOX
+            if style!=cur_style:
+                log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s", style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
+                win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style)
+            else:
+                log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
     except:
         log.warn("failed to fixup window style", exc_info=True)
 
