@@ -527,9 +527,7 @@ class ClientWindowBase(ClientWidgetBase):
                 return
             backing = self._backing
             if backing and backing.draw_needs_refresh:
-                if REPAINT_ALL=="0":
-                    pass
-                elif REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
+                if REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
                     w, h = self.get_size()
                     self.queue_draw(0, 0, w, h)
                 else:
