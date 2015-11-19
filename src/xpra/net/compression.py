@@ -14,6 +14,7 @@ from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
 from xpra.os_util import _memoryview
 
 
+python_lz4_version = None
 lz4_version = None
 try:
     import lz4
@@ -40,8 +41,8 @@ try:
                 return level | LZ4_FLAG, compressHC(packet)
             return level | LZ4_FLAG, LZ4_compress(packet)
     #try to figure out the version number:
-    lz4_version = lz4_VERSION
-    assert lz4_version>="0.7", "python-lz4 version %s is older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715" % lz4_version
+    python_lz4_version = lz4_VERSION
+    assert python_lz4_version>="0.7", "python-lz4 version %s is older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715" % lz4_version
     #now try to check the underlying "liblz4" version
     #which is only available with python-lz4 0.8.0 onwards:
     if hasattr(lz4, "LZ4_VERSION"):
@@ -52,7 +53,7 @@ try:
         else:
             #last known security issue:
             assert LooseVersion(lz4.LZ4_VERSION)>=LooseVersion("r119"), "lz4 version %s is vulnerable and should not be used, see CVE-2014-4715" % lz4.LZ4_VERSION
-        lz4_version += "-"+lz4.LZ4_VERSION
+        lz4_version = lz4.LZ4_VERSION
 except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
@@ -60,10 +61,12 @@ except Exception as e:
     def lz4_compress(packet, level):
         raise Exception("lz4 is not supported!")
 
+python_lzo_version = None
 lzo_version = None
 try:
     import lzo
     has_lzo = True
+    python_lzo_version = lzo.__version__
     lzo_version = lzo.LZO_VERSION_STRING
     def lzo_compress(packet, level):
         return level | LZO_FLAG, lzo.compress(packet)
@@ -121,8 +124,12 @@ def get_compression_caps():
            }
     if lzo_version:
         caps["lzo.version"] = lzo_version
+    if python_lzo_version:
+        caps["python-lzo.version"] = python_lzo_version
     if lz4_version:
         caps["lz4.version"] = lz4_version
+    if python_lz4_version:
+        caps["python-lz4.version"] = python_lz4_version
     return caps
 
 def get_enabled_compressors(order=ALL_COMPRESSORS):
