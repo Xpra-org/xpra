@@ -59,7 +59,7 @@ from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.net.compression import Compressed
 
-REPARENT_ROOT = os.environ.get("XPRA_REPARENT_ROOT", "1")=="1"
+REPARENT_ROOT = os.environ.get("XPRA_REPARENT_ROOT", "0")=="1"
 SCALED_FONT_ANTIALIAS = os.environ.get("XPRA_SCALED_FONT_ANTIALIAS", "0")=="1"
 
 
