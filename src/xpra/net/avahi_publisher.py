@@ -91,7 +91,8 @@ class AvahiPublishers:
 			if publisher.start():
 				all_err = False
 		if all_err:
-			log.warn(" you may want to disable mdns support to avoid this warning")
+			log.warn(" to avoid this warning, disable mdns support ")
+			log.warn(" using the 'mdns=no' option")
 
 	def stop(self):
 		log("stopping: %s", self.publishers)
