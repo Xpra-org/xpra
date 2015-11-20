@@ -530,6 +530,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         self._desktop_manager.update_window_geometry(window, x, y, nw, nh)
         lcce = self.last_client_configure_event
+        if not self._desktop_manager.is_shown(window):
+            self.size_notify_clients(window)
+            return
         if self.snc_timer>0:
             glib.source_remove(self.snc_timer)
         #TODO: find a better way to choose the timer delay:
@@ -538,14 +541,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
         delay = max(100, min(250, 250 + 1000 * (lcce-time.time())))
         self.snc_timer = glib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
-    def size_notify_clients(self, window, lcce):
+    def size_notify_clients(self, window, lcce=-1):
         geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s", window, lcce, self.last_client_configure_event)
         self.snc_timer = 0
         wid = self._window_to_id.get(window)
         if not wid:
             geomlog("size_notify_clients: window is gone")
             return
-        if lcce!=self.last_client_configure_event:
+        if lcce>0 and lcce!=self.last_client_configure_event:
             geomlog("size_notify_clients: we have received a new client resize since")
             return
         x, y, nw, nh = self._desktop_manager.window_geometry(window)
