@@ -2363,14 +2363,17 @@ def init_module():
     v = get_nvidia_module_version()
     if not v:
         log.warn("Warning: unknown NVidia driver version")
+        bl = None
     else:
         bl = is_blacklisted()
-        if bl is True:
-            raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
-        elif bl is None:
-            log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
-            log.warn(" recommended driver versions: up to 350 only")
+    if bl is True:
+        raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
+    elif bl is None:
+        log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
+        log.warn(" recommended driver versions: up to 350 only")
+        if os.environ.get("XPRA_NVENC_YUV444P", "0")!="1":
             log.warn(" disabling YUV444P support")
+            log.warn(" use XPRA_NVENC_YUV444P=1 to force enable it")
             YUV444_ENABLED = False
 
     #load the library / DLL:
