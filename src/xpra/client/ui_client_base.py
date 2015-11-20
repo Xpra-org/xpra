@@ -2301,7 +2301,7 @@ class UIXpraClient(XpraClientBase):
         metadata = self.cook_metadata(True, packet[6])
         windowlog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
-        if w<=1 or h<=1:
+        if w<1 or h<1:
             windowlog.error("window dimensions are wrong: %sx%s", w, h)
             w, h = 1, 1
         x = self.sx(x)
