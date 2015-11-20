@@ -1,12 +1,17 @@
 Name:	     x264-xpra	
-Version:     20150909
+Version:     20151119
+%if 0%{?beta} < 1
+%define SNAPSHOTTYPE -stable
 Release:     1%{?dist}
-Summary:     x264 library for xpra	
+%else
+Release:     0%{?dist}
+%endif
+Summary:     x264 library for xpra
 
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
-Source0:     http://download.videolan.org/pub/x264/snapshots/x264-snapshot-%{version}-2245-stable.tar.bz2
+Source0:     http://download.videolan.org/pub/x264/snapshots/x264-snapshot-%{version}-2245%{?SNAPSHOTTYPE}.tar.bz2
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
@@ -30,7 +35,7 @@ This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n x264-snapshot-%{version}-2245-stable
+%setup -q -n x264-snapshot-%{version}-2245%{?SNAPSHOTTYPE}
 
 
 %build
@@ -71,6 +76,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Fri Nov 20 2015 Antoine Martin <antoine@devloop.org.uk> 20151119
+- new upstream release
+
 * Thu Sep 10 2015 Antoine Martin <antoine@devloop.org.uk> 20150909
 - new upstream release
 
