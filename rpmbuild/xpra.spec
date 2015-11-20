@@ -72,6 +72,11 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %endif
 %endif
 
+%if 0%{?el7}
+#distro version is too old replace with our private libraries
+%define libwebp libwebp-xpra
+%endif
+
 %if 0%{?fedora}
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
