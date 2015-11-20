@@ -434,9 +434,11 @@ class Wm(gobject.GObject):
         # accurate info on what the app is actually requesting.
         model = self._windows.get(event.window)
         if model:
-            log("do_child_configure_request_event(%s) value_mask=%s, should be handled by %s", event, configure_bits(event.value_mask), model)
-            #should we be forwarding this?
-            #model.do_child_configure_request_event(event)
+            #the window has been reparented already,
+            #but we're getting the configure request event on the root window
+            #forward it to the model
+            log("do_child_configure_request_event(%s) value_mask=%s, forwarding to %s", event, configure_bits(event.value_mask), model)
+            model.do_child_configure_request_event(event)
             return
         log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window", event, configure_bits(event.value_mask))
         with xswallow:
