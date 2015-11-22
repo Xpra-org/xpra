@@ -666,7 +666,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config
-        client_properties = {"workspace" : window_workspace}
+        client_properties = {}
+        if window_workspace is not None:
+            client_properties = {"workspace" : window_workspace}
         options = {"refresh-now" : False}               #no need to refresh it
         suspend_resume = None
         if desktop_workspace<0 or window_workspace is None:
