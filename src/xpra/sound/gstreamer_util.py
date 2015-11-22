@@ -166,9 +166,12 @@ def get_gst_version():
 
 
 def import_gst1():
+    log("import_gst1()")
     import gi
+    log("import_gst1() gi=%s", gi)
     gi.require_version('Gst', '1.0')
     from gi.repository import Gst           #@UnresolvedImport
+    log("import_gst1() Gst=%s", Gst)
     Gst.init(None)
     #make it look like pygst (gstreamer-0.10):
     Gst.registry_get_default = Gst.Registry.get
@@ -196,8 +199,10 @@ def import_gst1():
     return Gst
 
 def import_gst0_10():
+    log("import_gst0_10()")
     global gst_version, pygst_version
     import pygst
+    log("import_gst0_10() pygst=%s", pygst)
     pygst.require("0.10")
     #initializing gstreamer parses sys.argv
     #which interferes with our own command line arguments
@@ -243,20 +248,20 @@ def import_gst():
     for import_function, MV in imports:
         vstr = get_version_str(MV)
         #hacks to locate gstreamer plugins on win32 and osx:
-        if WIN32 and hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True):
-            from xpra.platform.paths import get_app_dir
-            os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)
+        if WIN32:
+            frozen = hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True)
+            log("gstreamer_util: frozen=%s", frozen)
+            if frozen:
+                from xpra.platform.paths import get_app_dir
+                os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)
         elif OSX:
             bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
             log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
             if bundle_contents:
-                if "GST_PLUGIN_PATH" not in os.environ:
-                    os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
-                if "GI_TYPELIB_PATH" not in os.environ:
-                    os.environ["GI_TYPELIB_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
-                if "GST_PLUGIN_SCANNER" not in os.environ:
-                    os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
-            log("OSX GStreamer environment: %s", dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI"))))
+                os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
+                os.environ["GI_TYPELIB_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
+                os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
+        log("GStreamer %s environment: %s", vstr, dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI"))))
 
         try:
             log("trying to import GStreamer %s using %s", get_version_str(MV), import_function)
@@ -269,7 +274,7 @@ def import_gst():
             gst = _gst
             break
         except Exception as e:
-            log("failed to import GStreamer %s: %s", vstr, e)
+            log("Warning failed to import GStreamer %s", vstr, exc_info=True)
             errs[vstr] = e
     if gst:
         log("Python GStreamer version %s for Python %s.%s", gst_vinfo, sys.version_info[0], sys.version_info[1])
