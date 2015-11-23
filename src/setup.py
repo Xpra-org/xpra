@@ -1073,6 +1073,10 @@ if WIN32:
     #END OF HARDCODED SECTION
     ###########################################################
 
+    #ie: C:\Python3.5\Lib\site-packages\
+    site_dir = site.getsitepackages()[1]
+    #this is where the win32 gi installer will put things:
+    gnome_include_path = os.path.join(site_dir, "gnome")
 
     #only add the py2exe / cx_freeze specific options
     #if we aren't just building the Cython bits with "build_ext":
@@ -1082,11 +1086,6 @@ if WIN32:
         external_includes += ["win32con", "win32gui", "win32process", "win32api"]
         if PYTHON3:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
-
-            #ie: C:\Python3.5\Lib\site-packages\
-            site_dir = site.getsitepackages()[1]
-            #this is where the installer I have used put things:
-            include_dll_path = os.path.join(site_dir, "gnome")
 
             #cx_freeze doesn't use "data_files"...
             del setup_options["data_files"]
@@ -1103,7 +1102,7 @@ if WIN32:
 
             #pass a potentially nested dictionary representing the tree
             #of files and directories we do want to include
-            #relative to include_dll_path
+            #relative to gnome_include_path
             def add_dir(base, defs):
                 print("add_dir(%s, %s)" % (base, defs))
                 if type(defs) in (list, tuple):
@@ -1112,7 +1111,7 @@ if WIN32:
                             add_dir(base, sub)
                         else:
                             assert type(sub)==str
-                            add_data_files(base, [os.path.join(include_dll_path, base, sub)])
+                            add_data_files(base, [os.path.join(gnome_include_path, base, sub)])
                 else:
                     assert type(defs)==dict
                     for d, sub in defs.items():
@@ -1132,8 +1131,8 @@ if WIN32:
                 dll_files = []
                 import re
                 version_re = re.compile("\-[0-9\.\-]+$")
-                for x in os.listdir(include_dll_path):
-                    pathname = os.path.join(include_dll_path, x)
+                for x in os.listdir(gnome_include_path):
+                    pathname = os.path.join(gnome_include_path, x)
                     x = x.lower()
                     if os.path.isdir(pathname) or not x.startswith("lib") or not x.endswith(".dll"):
                         continue
@@ -1152,11 +1151,11 @@ if WIN32:
                         dll_files.append(x)
                         dll_names.remove(dll_name)
                 if len(dll_names)>0:
-                    print("some DLLs could not be found in '%s':" % include_dll_path)
+                    print("some DLLs could not be found in '%s':" % gnome_include_path)
                     for x in dll_names:
                         print(" - lib%s*.dll" % x)
                     sys.exit(1)
-                add_data_files("", [os.path.join(include_dll_path, dll) for dll in dll_files])
+                add_data_files("", [os.path.join(gnome_include_path, dll) for dll in dll_files])
 
 
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
@@ -1230,7 +1229,7 @@ if WIN32:
             #I am reluctant to add these to py2exe because it figures it out already:
             external_includes += ["encodings", "multiprocessing", ]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
-            os.environ["PATH"] = include_dll_path+";"+os.environ.get("PATH", "")
+            os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
             cx_freeze_options = {
                                 "compressed"        : False,
                                 "includes"          : external_includes,
@@ -1295,6 +1294,7 @@ if WIN32:
                             "curand64_55.dll", "curand64_60.dll", "curand64_65.dll", "curand64_70.dll"]
             py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
             py2exe_options = {
+                              #"bundle_files"   : 3,
                               "skip_archive"   : not zip_ENABLED,
                               "optimize"       : 0,    #WARNING: do not change - causes crashes
                               "unbuffered"     : True,
