@@ -149,25 +149,30 @@ if %errorlevel% NEQ 0 (
 REM Delete all GStreamer DLLs and only add those we actually want
 DEL dist\gst*dll
 ECHO ****** Adding GStreamer Main DLLs
+SET GST_PLUGIN_DIR=dist\gstreamer-0.10
+MKDIR %GST_PLUGIN_DIR%
+SET GST_BIN_DIR=dist\
+REM To install the gstreamer libraries into a subdirectory instead:
+REM MKDIR dist\gstreamer-0.10\bin
+REM SET GST_BIN_DIR=dist\gstreamer-0.10\bin
 FOR %%a in (audio base controller dataprotocol fft interfaces net reamer app riff tag) DO (
-	COPY /B /Y /V "%GSTREAMER%\bin\libgst%%a*.dll" dist\
+	COPY /B /Y /V "%GSTREAMER%\bin\libgst%%a*.dll" %GST_BIN_DIR%
 )
 FOR %%a in (a52 faa FLAC id3tag mad mp3lame ogg orc speex vorbis wav) DO (
-	COPY /B /Y /V "%GSTREAMER%\bin\lib%%a*.dll" dist\
+	COPY /B /Y /V "%GSTREAMER%\bin\lib%%a*.dll" %GST_BIN_DIR%
 )
-COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" %GST_BIN_DIR%
 ECHO ****** Adding GStreamer Plugin DLLs
-MKDIR dist\gstreamer-0.10
 FOR %%a in (a52dec audiofx audioparsersbad audiorate audioresample audiotestsrc app coreelements flac lame mad ogg gdp mpegaudioparse speex volume vorbis wavpack waveenc wavparse) DO (
 	COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgst%%a.dll" dist\gstreamer-0.10\
 )
-COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstaudio*.dll" dist\gstreamer-0.10\
-COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstdirectsound*.dll" dist\gstreamer-0.10\
-COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" dist\
-COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" dist\
-COPY /B /Y /V "%GSTREAMER%\bin\gst-inspect.exe" dist\
-REM DEL dist\av*dll
-REM DEL dist\libdvd*dll
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstaudio*.dll" %GST_PLUGIN_DIR%
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstdirectsound*.dll" %GST_PLUGIN_DIR%
+COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" %GST_BIN_DIR%
+COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" %GST_BIN_DIR%
+COPY /B /Y /V "%GSTREAMER%\bin\gst-inspect.exe" %GST_BIN_DIR%
+REM DEL %GST_BIN_DIR%\av*dll
+REM DEL %GST_BIN_DIR%\libdvd*dll
 
 REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
 ECHO ****** Fix GTK DLLs
