@@ -245,23 +245,50 @@ def import_gst():
         if GSTREAMER1:
             imports.reverse()  #try gst1 first:
     errs = {}
+    saved_sys_path = sys.path[:]
+    saved_os_environ = os.environ.copy()
     for import_function, MV in imports:
+        #restore os.environ and sys.path
+        sys.path = saved_sys_path[:]
+        os.environ.clear()
+        os.environ.update(saved_os_environ)
         vstr = get_version_str(MV)
         #hacks to locate gstreamer plugins on win32 and osx:
         if WIN32:
             frozen = hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True)
             log("gstreamer_util: frozen=%s", frozen)
             if frozen:
+                #on win32, we keep separate trees
+                #because GStreamer 0.10 and 1.x were built using different and / or incompatible version of the same libraries:
                 from xpra.platform.paths import get_app_dir
-                os.environ["GST_PLUGIN_PATH"] = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)
+                gst_dir = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)     #ie: C:\Program Files\Xpra\gstreamer-0.10
+                os.environ["GST_PLUGIN_PATH"] = gst_dir
+                if MV==1:
+                    gst_bin_dir = os.path.join(gst_dir, "bin")                       #ie: C:\Program Files\Xpra\gstreamer-0.10\bin
+                    os.environ["PATH"] = os.pathsep.join(x for x in (gst_bin_dir, os.environ.get("PATH", "")) if x)
+                    sys.path.insert(0, gst_bin_dir)
+                    scanner = os.path.join(gst_bin_dir, "gst-plugin-scanner.exe")
+                    if os.path.exists(scanner):
+                        os.environ["GST_PLUGIN_SCANNER"]    = scanner
+                    gi_dir = os.path.join(get_app_dir(), "girepository-%s" % vstr)
+                    os.environ["GI_TYPELIB_PATH"]       = gi_dir
         elif OSX:
             bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
             log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
             if bundle_contents:
                 os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
-                os.environ["GI_TYPELIB_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
                 os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
-        log("GStreamer %s environment: %s", vstr, dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI"))))
+                if MV==1:
+                    gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
+                    os.environ["GI_TYPELIB_PATH"]       = gi_dir
+        if MV<1:
+            #we should not be loading the gi bindings
+            try:
+                del os.environ["GI_TYPELIB_PATH"]
+            except:
+                pass
+        log("GStreamer %s environment: %s", vstr, dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
+        log("GStreamer %s sys.path=%s", vstr, csv(sys.path))
 
         try:
             log("trying to import GStreamer %s using %s", get_version_str(MV), import_function)
