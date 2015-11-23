@@ -20,14 +20,13 @@ VERSION_REQ = {"nouveau" : [3, 0],      #older versions have issues
 BLACKLIST = {"vendor" : ["Humper", "VMware, Inc."],
              "renderer" : ["Software Rasterizer"]}
 
+#the Intel driver causes too many problems:
+GREYLIST.setdefault("vendor", []).append("Intel Inc.")
 if False:
     #for testing:
     BLACKLIST["vendor"].append("NVIDIA Corporation")
     WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
 
-    if sys.platform.startswith("darwin") or sys.platform.startswith("win"):
-        #crashes were reported with the Intel driver on OSX and win32:
-        GREYLIST.setdefault("vendor", []).append("Intel Inc.")
     if sys.platform.startswith("darwin"):
         #frequent crashes on osx with GT 650M: (see ticket #808)
         GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
