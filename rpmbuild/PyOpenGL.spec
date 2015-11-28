@@ -14,7 +14,7 @@
 
 Name:           PyOpenGL
 Version:        %{RPMVERSION}
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 Group:          System Environment/Libraries

@@ -12,7 +12,7 @@
 
 Name:           PyOpenGL-accelerate
 Version:        %{RPMVERSION}
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Acceleration code for PyOpenGL
 License:        BSD
 Group:          System Environment/Libraries
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Nov 28 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1r1-1
+- Force bump to ensure this supercedes the previous "final" builds
+
 * Fri Nov 13 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1-2
 - Force rebuild with version lockstep change
 
