@@ -17,7 +17,7 @@ Summary:        Acceleration code for PyOpenGL
 License:        BSD
 Group:          System Environment/Libraries
 URL:            http://pyopengl.sourceforge.net/
-Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{version}.tar.gz
+Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{VERSION}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python-devel Cython PyOpenGL
 #see: http://fedoraproject.org/wiki/Changes/Remove_Python-setuptools-devel
