@@ -476,7 +476,11 @@ def check_support(force_enable=False, check_colormap=False):
 
     props = {}
     #this will import gtk.gtkgl / gdkgl or gi.repository.GtkGLExt / GdkGLExt:
-    from xpra.client.gl.gtk_compat import get_info, gdkgl, Config_new_by_mode, MODE_DOUBLE, GLDrawingArea
+    try:
+        from xpra.client.gl.gtk_compat import get_info, gdkgl, Config_new_by_mode, MODE_DOUBLE, GLDrawingArea
+    except RuntimeError as e:
+        gl_check_error(str(e))
+        return {}
     props.update(get_info())
     display_mode = get_DISPLAY_MODE()
     glconfig = Config_new_by_mode(display_mode)
