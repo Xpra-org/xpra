@@ -8,9 +8,10 @@
 %endif
 
 %global VERSION 3.1.1a1
+%global RPMVERSION %{VERSION}r1
 
 Name:           PyOpenGL-accelerate
-Version:        %{VERSION}
+Version:        %{RPMVERSION}
 Release:        2%{?dist}
 Summary:        Acceleration code for PyOpenGL
 License:        BSD
@@ -25,7 +26,7 @@ BuildRequires:  python-setuptools
 %else
 BuildRequires:  python-setuptools-devel
 %endif
-Requires:       PyOpenGL = %{VERSION}
+Requires:       PyOpenGL = %{RPMVERSION}
 
 %description
 This set of C (Cython) extensions provides acceleration of common operations for slow points in PyOpenGL 3.x.

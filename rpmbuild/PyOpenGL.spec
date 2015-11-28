@@ -10,7 +10,7 @@
 %endif
 
 %global VERSION 3.1.1a1
-%global RPMVERSION %{VERSION}
+%global RPMVERSION %{VERSION}r1
 
 Name:           PyOpenGL
 Version:        %{RPMVERSION}
@@ -121,6 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Nov 28 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1r1-1
+- Force bump to ensure this supercedes the previous "final" builds
+
 * Fri Nov 13 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1-2
 - Force rebuild with version lockstep change
 
