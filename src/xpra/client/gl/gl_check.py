@@ -104,16 +104,12 @@ def raise_error(msg):
     raise ImportError(msg)
 gl_check_error = raise_error
 
-_version_warning_shown = False
 
+_version_warning_shown = False
 #support for memory views requires Python 2.7 and PyOpenGL 3.1
 def is_pyopengl_memoryview_safe(pyopengl_version, accel_version):
-    if pyopengl_version!=accel_version:
-        global _version_warning_shown
-        if not _version_warning_shown:
-            log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
-            log.warn(" this may cause crashes")
-            _version_warning_shown = True
+    if accel_version is not None and pyopengl_version!=accel_version:
+        #mismatch is not safe!
         return False
     if sys.version_info[:2]<(2,7):
         #memoryview type requires python 2.7
@@ -199,14 +195,30 @@ def do_check_GL_support(force_enable):
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
 
         from OpenGL import version as OpenGL_version
+        pyopengl_version = OpenGL_version.__version__
         try:
             import OpenGL_accelerate
-            props["accelerate"] = OpenGL_accelerate.__version__
-            log("OpenGL_accelerate version %s", OpenGL_accelerate.__version__)
+            accel_version = OpenGL_accelerate.__version__
+            props["accelerate"] = accel_version
+            log("OpenGL_accelerate version %s", accel_version)
         except:
             log("OpenGL_accelerate not found")
             OpenGL_accelerate = None
-        props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
+            accel_version = None
+
+        if accel_version is not None and pyopengl_version!=accel_version:
+            global _version_warning_shown
+            if not _version_warning_shown:
+                log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
+                log.warn(" this may cause crashes")
+                _version_warning_shown = True
+        vsplit = pyopengl_version.split('.')
+        #we now require PyOpenGL 3.1 or later
+        if vsplit[:2]<['3','1'] and not force_enable:
+            gl_check_error("PyOpenGL version 3.1 or later is required (found version %s)", pyopengl_version)
+            return {}
+
+        props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(pyopengl_version, accel_version)
 
         try:
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
