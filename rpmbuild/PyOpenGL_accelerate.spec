@@ -43,7 +43,7 @@ This set of C (Cython) extensions provides acceleration of common operations for
 
 
 %prep
-%setup -q -n %{name}-%{version}
+%setup -q -n %{name}-%{VERSION}
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
