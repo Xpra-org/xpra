@@ -22,6 +22,12 @@ BLACKLIST = {"vendor" : ["Humper", "VMware, Inc."],
 
 #the Intel driver causes too many problems:
 GREYLIST.setdefault("vendor", []).append("Intel Inc.")
+GREYLIST.setdefault("vendor", []).append("Intel Open Source Technology Center")
+from xpra.os_util import getUbuntuVersion
+uv = getUbuntuVersion()
+if uv and uv<[15]:
+    #Ubuntu 14.x drivers are just too old
+    GREYLIST.setdefault("vendor", []).append("X.Org")
 if False:
     #for testing:
     BLACKLIST["vendor"].append("NVIDIA Corporation")
