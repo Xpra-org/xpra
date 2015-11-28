@@ -27,10 +27,13 @@ BuildRequires:  python-setuptools
 BuildRequires:  python-setuptools-devel
 %endif
 BuildArch:      noarch
-Requires:       numpy python-setuptools freeglut
+Requires:       numpy
+Requires:       python-setuptools
 
-# in some other repositories this is named python-opengl
 %if 0%{?suse_version}==0
+# not sure what we should depend on with suse, this is Fedora / CentOS only:
+Requires:       freeglut
+# in some other repositories this is named python-opengl
 Provides:       python-opengl = %{VERSION}-%{release}
 Obsoletes:      python-opengl < %{VERSION}-%{release}
 %endif

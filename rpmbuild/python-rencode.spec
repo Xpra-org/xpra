@@ -1,10 +1,7 @@
 # Remove private provides from .so files in the python_sitearch directory
 %global __provides_exclude_from ^%{python_sitearch}/.*\\.so$
-
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?__python2: %define __python2 python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
 
 #this spec file is for both Fedora and CentOS
 #only Fedora has Python3 at present:
@@ -20,8 +17,13 @@ License:        GPLv3+ and BSD
 URL:            http://code.google.com/p/rencode/
 Source0:        rencode-%{version}.tar.xz
 
+%if 0%{?suse_version}
+BuildRequires:  python-devel
+BuildRequires:  python-Cython
+%else
 BuildRequires:  python2-devel
 BuildRequires:  Cython
+%endif
 %if 0%{?with_python3}
 BuildRequires:  python3-devel
 BuildRequires:  python3-Cython

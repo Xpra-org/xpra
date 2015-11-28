@@ -4,6 +4,9 @@
 %global name3 python3-pillow
 
 %global lcms lcms
+%global libjpeg libjpeg
+%global tkinter tkinter
+%global PyQt4 PyQt4
 # none of these RHEL versions have python 3
 %if 0%{?el6}
 	%global with_python3 0
@@ -26,9 +29,13 @@
 	%global with_webp 1
 %endif
 %if 0%{?suse_version}
-	%global with_python3 1
-	%global with_filter 1
+	%global with_python3 0
+	%global with_filter 0
 	%global with_webp 1
+	%global lcms liblcms
+	%global libjpeg libjpeg8
+	%global tkinter python-tk
+	%global PyQt4 python-qt4
 %endif
 
 
@@ -42,19 +49,24 @@ License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
 Source:        	https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
 
+%if 0%{?suse_version}
+BuildRequires:  python-devel
+%else
 BuildRequires:  python2-devel
+%endif
+
 BuildRequires:  python-setuptools
-BuildRequires:  tkinter
+BuildRequires:  %{tkinter}
 BuildRequires:  tk-devel
 #BuildRequires:  python-sphinx
-BuildRequires:  libjpeg-devel
+BuildRequires:  %{libjpeg}-devel
 BuildRequires:  zlib-devel
 BuildRequires:  freetype-devel
 BuildRequires:  %{lcms}-devel
 %if 0%{with_webp} > 0
 BuildRequires:  libwebp-devel
 %endif
-BuildRequires:  PyQt4
+BuildRequires:  %{PyQt4}
 BuildRequires:  numpy
 
 %if 0%{with_python3}
