@@ -14,7 +14,14 @@ Group:          System Environment/Libraries
 Source:         http://xpra.org/src/libfakeXinerama-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
-BuildRequires:  gcc, libXinerama-devel, libX11-devel, glibc-headers
+BuildRequires:  gcc
+BuildRequires:  libXinerama-devel
+BuildRequires:  libX11-devel
+%if 0%{?suse_version}
+BuildRequires:  linux-glibc-devel
+%else
+BuildRequires:  glibc-headers
+%endif
 
 %description
 This package provides a fake Xinerama library which can be used

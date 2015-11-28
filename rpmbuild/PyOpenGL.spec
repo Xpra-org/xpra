@@ -1,7 +1,5 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
-%endif
+%{!?__python2: %define __python2 python2}
 
 #this spec file is for both Fedora and CentOS
 #only Fedora has Python3 at present:
@@ -23,16 +21,19 @@ Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{VERSION}.tar
 BuildRoot:      %{_tmppath}/%{name}-%{RPMVERSION}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python-devel
 #see: http://fedoraproject.org/wiki/Changes/Remove_Python-setuptools-devel
-%if 0%{?fedora}
+%if 0%{?fedora}%{?suse_version}
 BuildRequires:  python-setuptools
 %else
 BuildRequires:  python-setuptools-devel
 %endif
 BuildArch:      noarch
 Requires:       numpy python-setuptools freeglut
+
 # in some other repositories this is named python-opengl
+%if 0%{?suse_version}==0
 Provides:       python-opengl = %{VERSION}-%{release}
 Obsoletes:      python-opengl < %{VERSION}-%{release}
+%endif
 
 %description
 PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It

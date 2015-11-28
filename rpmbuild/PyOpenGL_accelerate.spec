@@ -19,9 +19,16 @@ Group:          System Environment/Libraries
 URL:            http://pyopengl.sourceforge.net/
 Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{VERSION}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  python-devel Cython PyOpenGL
+BuildRequires:  python-devel
+BuildRequires:  PyOpenGL
+%if 0%{suse_version}
+BuildRequires:  python-Cython
+%else
+BuildRequires:  Cython
+%endif
+
 #see: http://fedoraproject.org/wiki/Changes/Remove_Python-setuptools-devel
-%if 0%{?fedora}
+%if 0%{?fedora}%{?suse_version}
 BuildRequires:  python-setuptools
 %else
 BuildRequires:  python-setuptools-devel

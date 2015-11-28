@@ -25,6 +25,11 @@
 	%endif
 	%global with_webp 1
 %endif
+%if 0%{?suse_version}
+	%global with_python3 1
+	%global with_filter 1
+	%global with_webp 1
+%endif
 
 
 Name:           python-pillow
@@ -46,13 +51,13 @@ BuildRequires:  libjpeg-devel
 BuildRequires:  zlib-devel
 BuildRequires:  freetype-devel
 BuildRequires:  %{lcms}-devel
-%if %{with_webp} > 0
+%if 0%{with_webp} > 0
 BuildRequires:  libwebp-devel
 %endif
 BuildRequires:  PyQt4
 BuildRequires:  numpy
 
-%if %{with_python3}
+%if 0%{with_python3}
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-tkinter
@@ -64,7 +69,7 @@ BuildRequires:  python3-numpy
 Provides:       python-imaging = %{version}-%{release}
 Obsoletes:      python-imaging <= 1.1.7-12
 
-%if %{with_filter} > 0
+%if 0%{with_filter} > 0
 %filter_provides_in %{python_sitearch}
 %filter_provides_in %{python3_sitearch}
 %filter_setup
@@ -124,7 +129,7 @@ Provides:       python-imaging-qt = %{version}-%{release}
 PIL image wrapper for Qt.
 
 
-%if %{with_python3}
+%if 0%{with_python3}
 %package -n %{name3}
 Summary:        Python 3 image processing library
 Provides:       python3-imaging = %{version}-%{release}
