@@ -95,11 +95,6 @@ cdef class RandRBindings(X11CoreBindings):
         return False
 
     def has_randr(self):
-        if self._has_randr is None:
-            try:
-                self._has_randr = self.check_randr()
-            except Exception as e:
-                log.warn("Warning: %s", e)
         return bool(self._has_randr)
 
     cdef _get_screen_sizes(self):
