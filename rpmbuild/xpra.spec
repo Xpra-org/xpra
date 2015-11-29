@@ -13,6 +13,12 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
+%define CFLAGS -O2
+%define LDFLAGS -Wl,-rpath=%{_libdir}/xpra
+%if 0%{?suse_version}
+%define CFLAGS -O2 -fno-strict-aliasing
+%endif
+
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define dummy --with-Xdummy
@@ -240,7 +246,8 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH
-CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python3} setup.py build %{dummy} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS=%{LDFLAGS} %{__python3} setup.py build %{dummy} --with-tests
+%{__python3} setup.py build %{dummy} --with-tests
 popd
 %endif
 
@@ -249,7 +256,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH
-CFLAGS=-O2 LDFLAGS=-Wl,-rpath=%{_libdir}/xpra %{__python2} setup.py build %{dummy} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS=%{LDFLAGS} %{__python2} setup.py build %{dummy} --with-tests
 popd
 
 
