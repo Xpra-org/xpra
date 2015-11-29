@@ -1,8 +1,15 @@
-%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?__python2: %global __python2 python2}
+%{!?__python3: %define __python3 python3}
 %{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%define with_python3 0%{?fedora}
+%{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
+%define with_python3 0%{?fedora}%{?suse_version}
 
+%if 0%{?suse_version}
+Name:		python-Cython
+%else
 Name:		Cython
+%endif
+
 Version:	0.23.4
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
@@ -37,7 +44,7 @@ for writing Python extension modules.
 
 
 %prep
-%setup -q -n %{name}-%{version}
+%setup -q -n Cython-%{version}
 
 %if %{with_python3}
 rm -rf %{py3dir}

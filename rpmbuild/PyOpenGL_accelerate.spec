@@ -21,7 +21,7 @@ Source0:        http://downloads.sourceforge.net/pyopengl/%{name}-%{VERSION}.tar
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python-devel
 BuildRequires:  PyOpenGL
-%if 0%{suse_version}
+%if 0%{?suse_version}
 BuildRequires:  python-Cython
 %else
 BuildRequires:  Cython
