@@ -253,7 +253,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH
-CFLAGS="%{CFLAGS}" LDFLAGS=%{LDFLAGS} %{__python3} setup.py build %{dummy} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{dummy} --with-tests
 %{__python3} setup.py build %{dummy} --with-tests
 popd
 %endif
@@ -263,7 +263,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH
-CFLAGS="%{CFLAGS}" LDFLAGS=%{LDFLAGS} %{__python2} setup.py build %{dummy} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{dummy} --with-tests
 popd
 
 
