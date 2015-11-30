@@ -28,6 +28,7 @@
 %define requires_cython Cython
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
+%define requires_dbus_python dbus-python
 %define py3requires_lzo %{nil}
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
@@ -101,14 +102,22 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %endif
 
 %if 0%{?suse_version}
+#causes problems with automatic dependency calculations:
+%global __requires_exclude typelib\\(.*\\)
 %define requires_xorg xauth, xf86-video-dummy
+%define requires_lzo %{nil}
+%define libwebp libwebp-xpra
 %define requires_cython python-Cython
 %define requires_pygobject2 python-gobject2
 %define requires_pygtk2 python-gtk
+%define requires_printing , python-cups
+%define requires_dbus_python dbus-1-python
 %define gstreamer1 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly
-%define requires_sound %{gstreamer1}, python-gstreamer, pulseaudio, pulseaudio-utils
-%define py3requires_sound %{gstreamer1}, python3-gstreamer, pulseaudio, pulseaudio-utils
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext, numpy
+#no python-gstreamer or pygtkglext in the standard repos:
+#(see recommends below)
+%define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
+%define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
+%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, numpy
 %endif
 
 Name: xpra
@@ -128,7 +137,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing}
 Requires: python-lz4
 Requires: %{requires_pygtk2}
-Requires: dbus-python
+Requires: %{requires_dbus_python}
 Requires: python-crypto
 #we cannot depend on 'avahi-ui-tools' which we need for mdns support
 #(it provides the avahi python bindings)
@@ -144,6 +153,13 @@ Requires: %{libwebp}
 Requires: x264-xpra
 Requires: ffmpeg-xpra
 Requires: xpra-common = %{version}-%{build_no}%{dist}
+%if 0%{?suse_version}
+#only use recommends because these are not in the standard repos: 
+Recommends: python-gtkglext
+Recommends: python-gstreamer
+Recommends: cups-pdf
+Recommends: cups-filters
+%endif
 
 BuildRequires: pkgconfig
 BuildRequires: %{requires_cython}
