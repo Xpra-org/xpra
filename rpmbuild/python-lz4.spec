@@ -10,10 +10,11 @@
 %define with_python3 1
 %endif
 
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?__python2: %global __python2 python2}
+%{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
+%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+
 
 Name:           python-lz4
 Version:        0.8.0
@@ -26,7 +27,9 @@ Source:         https://www.xpra.org/src/python-lz4-%{version}.tar.xz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
+%if 0%{?suse_version}==0
 BuildRequires:  lz4-devel
+%endif
 Requires: 		lz4
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
