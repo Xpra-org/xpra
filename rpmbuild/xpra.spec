@@ -22,7 +22,7 @@
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define dummy --with-Xdummy
-%define dummy_driver xorg-x11-drv-dummy
+%define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , python-lzo
 %define requires_cython Cython
@@ -101,13 +101,14 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %endif
 
 %if 0%{?suse_version}
-%define dummy_driver xf86-video-dummy
+%define requires_xorg xauth, xf86-video-dummy
 %define requires_cython python-Cython
 %define requires_pygobject2 python-gobject2
 %define requires_pygtk2 python-gtk
 %define gstreamer1 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly
 %define requires_sound %{gstreamer1}, python-gstreamer, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, python3-gstreamer, pulseaudio, pulseaudio-utils
+%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext, numpy
 %endif
 
 Name: xpra
@@ -137,7 +138,7 @@ Requires: python-rencode
 Requires: python-pillow
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
-Requires: xorg-x11-server-utils, %{dummy_driver}, xorg-x11-xauth
+Requires: %{requires_xorg}
 Requires: %{libvpx}
 Requires: %{libwebp}
 Requires: x264-xpra
