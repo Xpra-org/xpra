@@ -97,7 +97,7 @@ def platform_name(sys_platform, release):
                 values += list(release)
             else:
                 values.append(release)
-        return " ".join(values)
+        return " ".join([str(x) for x in values if x])
     for k,v in PLATFORMS.items():
         regexp = re.compile(k)
         if regexp.match(sys_platform):
