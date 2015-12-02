@@ -4,7 +4,6 @@ set DIR=%CD%
 
 SETLOCAL EnableExtensions EnableDelayedExpansion
 
-SET XPRA_WIN32_BUILD_LIB_PREFIX=C:\
 IF EXIST "E:\Xpra-Build-Libs\" (
 	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs\
 )
