@@ -1,6 +1,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
+%define pygtk2 pygtk2
+%if 0%{?suse_version}
+%define pygtk2 python-gtk
+%endif
+
+
 Name:           pygtkglext
 Version:        1.1.0
 Release:        16%{?dist}
@@ -10,8 +16,16 @@ Group:          System Environment/Libraries
 URL:            http://www.k-3d.org/gtkglext/Main_Page
 Source:         http://downloads.sourceforge.net/gtkglext/%{name}-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  gtkglext-devel pygtk2-devel python-devel
-Requires:       pygtk2 PyOpenGL
+BuildRequires:  gtkglext-devel
+BuildRequires:  python-devel
+BuildRequires:  %{pygtk2}-devel
+Requires:       %{pygtk2}
+Requires:       PyOpenGL
+%if 0%{?suse_version}
+Patch0:			pygtkgl-version.patch
+Patch1:			pygtkgl-overrides.patch
+Patch2:			pygtkgl-constants.patch
+%endif
 
 %description
 Python bindings for GtkGLExt.
@@ -34,6 +48,11 @@ iconv -f EUC-JP -t UTF8 AUTHORS > tmp
 mv tmp AUTHORS
 iconv -f EUC-JP -t UTF8 README > tmp
 mv tmp README
+%if 0%{?suse_version}
+%patch0 -p1
+%patch1 -p1
+%patch2 -p1
+%endif
 
 
 %build

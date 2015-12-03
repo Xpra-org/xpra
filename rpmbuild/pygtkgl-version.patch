@@ -1,0 +1,38 @@
+diff --git a/gtk/gdkgl/gdkglext.override b/gtk/gdkgl/gdkglext.override
+index 9f71de1..e588e44 100644
+--- a/gtk/gdkgl/gdkglext.override
++++ b/gtk/gdkgl/gdkglext.override
+@@ -127,6 +127,7 @@ _wrap_gdk_gl_config_new(PyGObject *self, PyObject *args, PyObject *kwargs)
+ 
+         /* Use gdk_gl_config_new_by_mode() */
+         
++#define GDK_TYPE_GL_CONFIG_MODE 0
+         if (pyg_flags_get_value(GDK_TYPE_GL_CONFIG_MODE, py_mode, (gint *)&mode)) {
+             PyErr_SetString(PyExc_RuntimeError,
+                             "could not get display mode bitmask value");
+diff --git a/gtk/gdkgl/gdkglmodule.c b/gtk/gdkgl/gdkglmodule.c
+index d1caf9b..5f2f04b 100644
+--- a/gtk/gdkgl/gdkglmodule.c
++++ b/gtk/gdkgl/gdkglmodule.c
+@@ -83,9 +83,9 @@ init_gdkgl(void)
+ 
+     /* GdkGLExt version */
+     tuple = Py_BuildValue("(iii)",
+-                          gdkglext_major_version,
+-                          gdkglext_minor_version,
+-                          gdkglext_micro_version);
++                          gdk_gl_get_major_version(),   /* gdkglext_major_version */
++                          gdk_gl_get_minor_version(),   /* gdkglext_minor_version */
++                          gdk_gl_get_micro_version());  /* gdkglext_micro_version */
+     PyDict_SetItemString(d, "gdkglext_version", tuple);    
+     Py_DECREF(tuple);
+ 
+@@ -106,7 +106,7 @@ init_gdkgl(void)
+     pygdkglext_register_classes(d);
+ 
+     /* add enum and flag constants */
+-    pygdkglext_add_constants(m, "GDK_GL_");
++    //pygdkglext_add_constants(m, "GDK_GL_");
+ 
+     /* additional constants */
+     PyModule_AddIntConstant(m, "SUCCESS", GDK_GL_SUCCESS);

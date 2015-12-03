@@ -1,0 +1,115 @@
+diff --git a/gtk/gdkgl/__init__.py b/gtk/gdkgl/__init__.py
+index a8976f1..f389883 100644
+--- a/gtk/gdkgl/__init__.py
++++ b/gtk/gdkgl/__init__.py
+@@ -21,3 +21,110 @@ del gobject
+ from _gdkgl import *
+ from ext import *
+ 
++# These constants were generated like so:
++# cat ../gtkglext-1.2.0/gdk/gdkgltokens.h  | grep "^#define" | grep GDK_GL | sed 's+  GDK_GL_++g' | sed 's+,.*++g' | sed 's+/\*.*++g'  | grep -v "TOKENS_H" | sed 's+#define ++g' | awk '{print $1" = "$2}' >>  gtk/gdkgl/__init__.py
++# cat ../gtkglext-1.2.0/gdk/gdkgltokens.h  | grep GDK_GL | sed 's+  GDK_GL_++g' | sed 's+,.*++g' | sed 's+/\*.*++g' | grep -v "^#" >> gtk/gdkgl/__init__.py
++# cat ../gtkglext-1.2.0/gdk/gdkglconfig.h  | grep GDK_GL | sed 's+  GDK_GL_++g' | sed 's+,.*++g' | sed 's+/\*.*++g' | grep -v "^#" >> gtk/gdkgl/__init__.py 
++
++
++USE_GL                     = 1
++BUFFER_SIZE                = 2
++LEVEL                      = 3
++RGBA                       = 4
++DOUBLEBUFFER               = 5
++STEREO                     = 6
++AUX_BUFFERS                = 7
++RED_SIZE                   = 8
++GREEN_SIZE                 = 9
++BLUE_SIZE                  = 10
++ALPHA_SIZE                 = 11
++DEPTH_SIZE                 = 12
++STENCIL_SIZE               = 13
++ACCUM_RED_SIZE             = 14
++ACCUM_GREEN_SIZE           = 15
++ACCUM_BLUE_SIZE            = 16
++ACCUM_ALPHA_SIZE           = 17
++CONFIG_CAVEAT              = 0x20
++X_VISUAL_TYPE              = 0x22
++TRANSPARENT_TYPE           = 0x23
++TRANSPARENT_INDEX_VALUE    = 0x24
++TRANSPARENT_RED_VALUE      = 0x25
++TRANSPARENT_GREEN_VALUE    = 0x26
++TRANSPARENT_BLUE_VALUE     = 0x27
++TRANSPARENT_ALPHA_VALUE    = 0x28
++DRAWABLE_TYPE              = 0x8010
++RENDER_TYPE                = 0x8011
++X_RENDERABLE               = 0x8012
++FBCONFIG_ID                = 0x8013
++MAX_PBUFFER_WIDTH          = 0x8016
++MAX_PBUFFER_HEIGHT         = 0x8017
++MAX_PBUFFER_PIXELS         = 0x8018
++VISUAL_ID                  = 0x800B
++SCREEN                     = 0x800C
++SAMPLE_BUFFERS             = 100000
++SAMPLES                    = 100001
++CONFIG_CAVEAT_DONT_CARE    = 0xFFFFFFFF
++CONFIG_CAVEAT_NONE         = 0x8000
++SLOW_CONFIG                = 0x8001
++NON_CONFORMANT_CONFIG      = 0x800D
++VISUAL_TYPE_DONT_CARE      = 0xFFFFFFFF
++TRUE_COLOR                 = 0x8002
++DIRECT_COLOR               = 0x8003
++PSEUDO_COLOR               = 0x8004
++STATIC_COLOR               = 0x8005
++GRAY_SCALE                 = 0x8006
++STATIC_GRAY                = 0x8007
++TRANSPARENT_NONE           = 0x8000
++TRANSPARENT_RGB            = 0x8008
++TRANSPARENT_INDEX          = 0x8009
++WINDOW_BIT                 = 1 << 0
++PIXMAP_BIT                 = 1 << 1
++PBUFFER_BIT                = 1 << 2  
++RGBA_BIT                   = 1 << 0
++COLOR_INDEX_BIT            = 1 << 1  
++FRONT_LEFT_BUFFER_BIT      = 1 << 0
++FRONT_RIGHT_BUFFER_BIT     = 1 << 1
++BACK_LEFT_BUFFER_BIT       = 1 << 2
++BACK_RIGHT_BUFFER_BIT      = 1 << 3
++AUX_BUFFERS_BIT            = 1 << 4
++DEPTH_BUFFER_BIT           = 1 << 5
++STENCIL_BUFFER_BIT         = 1 << 6
++ACCUM_BUFFER_BIT           = 1 << 7  
++BAD_SCREEN                 = 1
++BAD_ATTRIBUTE              = 2
++NO_EXTENSION               = 3
++BAD_VISUAL                 = 4
++BAD_CONTEXT                = 5
++BAD_VALUE                  = 6
++BAD_ENUM                   = 7  
++RGBA_TYPE                  = 0x8014
++COLOR_INDEX_TYPE           = 0x8015
++PRESERVED_CONTENTS         = 0x801B
++LARGEST_PBUFFER            = 0x801C
++WIDTH                      = 0x801D
++HEIGHT                     = 0x801E
++EVENT_MASK                 = 0x801F
++PBUFFER_PRESERVED_CONTENTS = 0x801B
++PBUFFER_LARGEST_PBUFFER    = 0x801C
++PBUFFER_HEIGHT             = 0x8040
++PBUFFER_WIDTH              = 0x8041
++PBUFFER_CLOBBER_MASK       = 1 << 27  
++DAMAGED                    = 0x8020
++SAVED                      = 0x8021
++WINDOW                     = 0x8022
++PBUFFER                    = 0x8023
++GDK_GL_SUCCESS = 0
++GDK_GL_ATTRIB_LIST_NONE = 0
++GDK_GL_DONT_CARE = 0xFFFFFFFF
++GDK_GL_NONE = 0x8000
++MODE_RGB         = 0
++MODE_RGBA        = 0
++MODE_INDEX       = 1 << 0
++MODE_SINGLE      = 0
++MODE_DOUBLE      = 1 << 1
++MODE_STEREO      = 1 << 2
++MODE_ALPHA       = 1 << 3
++MODE_DEPTH       = 1 << 4
++MODE_STENCIL     = 1 << 5
++MODE_ACCUM       = 1 << 6
++MODE_MULTISAMPLE = 1 << 7   
