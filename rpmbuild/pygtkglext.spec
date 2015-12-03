@@ -9,7 +9,7 @@
 
 Name:           pygtkglext
 Version:        1.1.0
-Release:        16%{?dist}
+Release:        16.xpra1%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
@@ -96,52 +96,5 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-16
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
-
-* Sun Aug 04 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-15
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
-
-* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-14
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
-
-* Sat Jul 21 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-13
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
-
-* Sat Jan 14 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-12
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
-
-* Tue Dec 06 2011 Adam Jackson <ajax@redhat.com> - 1.1.0-11
-- Rebuild for new libpng
-
-* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-10
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Wed Jul 21 2010 David Malcolm <dmalcolm@redhat.com> - 1.1.0-9
-- Rebuilt for https://fedoraproject.org/wiki/Features/Python_2.7/MassRebuild
-
-* Thu Jan  7 2010 Hans de Goede <hdegoede@redhat.com> 1.1.0-8
-- Change python_foo macros to use %%global as the new rpm will break
-  using %%define here, see:
-  https://www.redhat.com/archives/fedora-devel-list/2010-January/msg00093.html
-
-* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-7
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
-
-* Thu Feb 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.0-6
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
-
-* Sat Nov 29 2008 Ignacio Vazquez-Abrams <ivazqueznet+rpm@gmail.com> - 1.1.0-5
-- Rebuild for Python 2.6
-
-* Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 1.1.0-4
-- Autorebuild for GCC 4.3
-
-* Wed Aug 15 2007 Hans de Goede <j.w.r.degoede@hhs.nl> 1.1.0-3
-- Update License tag for new Licensing Guidelines compliance
-
-* Thu Mar 29 2007 Hans de Goede <j.w.r.degoede@hhs.nl> 1.1.0-2
-- Various specfile improvements (bz 234122)
-
-* Sat Mar 24 2007 Hans de Goede <j.w.r.degoede@hhs.nl> 1.1.0-1
-- Initial Fedora Extras package
+* Thu Dec 03 2015 Antoine Martin <antoine@nagafix.co.uk> - 1.1.0-16.xpra1
+- Added support for building on openSUSE

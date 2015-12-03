@@ -113,11 +113,12 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %define requires_printing , python-cups
 %define requires_dbus_python dbus-1-python
 %define gstreamer1 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly
-#no python-gstreamer or pygtkglext in the standard repos:
+#no python-gstreamer in the standard repos:
 #(see recommends below)
 %define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, numpy
+#different naming prefix ("python-") for pygtkglext and numpy:
+%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext, python-numpy
 %endif
 
 Name: xpra
@@ -155,7 +156,6 @@ Requires: ffmpeg-xpra
 Requires: xpra-common = %{version}-%{build_no}%{dist}
 %if 0%{?suse_version}
 #only use recommends because these are not in the standard repos: 
-Recommends: python-gtkglext
 Recommends: python-gstreamer
 Recommends: cups-pdf
 Recommends: cups-filters
