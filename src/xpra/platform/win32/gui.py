@@ -471,6 +471,7 @@ def get_workarea():
 
 #ie: for a 60 pixel bottom bar on the second monitor at 1280x800:
 # [(0,0,1920,1080), (0,0,1280,740)]
+MONITORINFOF_PRIMARY = 1
 def get_workareas():
     try:
         workareas = []
@@ -487,7 +488,13 @@ def get_workareas():
             rx2 = max(0, min(mx2-mx1, wx2-mx1))
             ry2 = max(0, min(my2-my1, wy2-my1))
             assert rx1<rx2 and ry1<ry2, "invalid relative workarea coordinates"
-            workareas.append((rx1, ry1, rx2-rx1, ry2-ry1))
+            geom = rx1, ry1, rx2-rx1, ry2-ry1
+            #GTK will return the PRIMARY monitor first,
+            #so we have to do the same thing:
+            if mi['Flags'] & MONITORINFOF_PRIMARY:
+                workareas.insert(0, geom)
+            else:
+                workareas.append(geom)
         assert len(workareas)>0
         screenlog("get_workareas()=%s", workareas)
         return workareas
