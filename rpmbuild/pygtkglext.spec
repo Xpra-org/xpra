@@ -35,7 +35,8 @@ Python bindings for GtkGLExt.
 Summary:        Development files for %{name}
 Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
-Requires:       pkgconfig pygtk2-devel
+Requires:       pkgconfig
+Requires:       %{pygtk2}-devel
 
 %description    devel
 The %{name}-devel package contains libraries and header files for
