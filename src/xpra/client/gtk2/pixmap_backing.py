@@ -105,7 +105,7 @@ class PixmapBacking(GTK2WindowBacking):
         in_format = rgb_format.replace("X", "A")
         PIL = get_codec("PIL")
         img = PIL.Image.frombuffer(target_format, (width, height), img_data, "raw", in_format, rowstride)
-        data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
+        data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
         img_data = data_fn("raw", target_format)
         log.warn("%s converted to %s", rgb_format, target_format)
         return img_data, width*len(target_format)

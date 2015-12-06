@@ -227,7 +227,7 @@ class WindowBackingBase(object):
                 img = img.convert("RGB")
 
         #use tobytes() if present, fallback to tostring():
-        data_fn = getattr(img, "tobytes", getattr(img, "tostring"))
+        data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
         raw_data = data_fn("raw", img.mode)
         paint_options = typedict(options)
         if img.mode=="RGB":
