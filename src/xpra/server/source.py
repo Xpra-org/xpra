@@ -277,6 +277,7 @@ class ServerSource(object):
         self.av_sync = av_sync
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
+        self.av_sync_delta = AV_SYNC_DELTA
 
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
@@ -1052,8 +1053,12 @@ class ServerSource(object):
             return "new sequence is %s" % self.sound_source_sequence
         elif action=="sync":
             assert self.av_sync, "av-sync is not enabled"
-            self.set_av_sync_delay(args[0])
+            self.set_av_sync_delay(int(args[0]))
             return "av-sync delay set to %ims" % self.av_sync_delay
+        elif action=="av-sync-delta":
+            assert self.av_sync, "av-sync is not enabled"
+            self.set_av_sync_delta(int(args[0]))
+            return "av-sync delta set to %ims" % self.av_sync_delta
         #elif action=="quality":
         #    assert self.sound_source
         #    quality = args[0]
@@ -1095,6 +1100,12 @@ class ServerSource(object):
                 return
         self.sound_sink.add_data(data, metadata)
 
+
+    def set_av_sync_delta(self, delta):
+        avsynclog("set_av_sync_delta(%i)", delta)
+        self.av_sync_delta = delta
+        self.update_av_sync_delay_total()
+
     def set_av_sync_delay(self, v):
         #update all window sources with the given delay
         self.av_sync_delay = v
@@ -1113,8 +1124,8 @@ class ServerSource(object):
                 except Exception as e:
                     encoder_latency = 0
                     avsynclog("failed to get encoder latency for %s: %s", ss.codec, e)
-            self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + AV_SYNC_DELTA + encoder_latency))
-            avsynclog("av-sync set to %ims (from client queue latency=%s, %sencoder latency=%s, env delta=%s)", self.av_sync_delay_total, self.av_sync_delay, cinfo, encoder_latency, AV_SYNC_DELTA)
+            self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + self.av_sync_delta + encoder_latency))
+            avsynclog("av-sync set to %ims (from client queue latency=%s, %sencoder latency=%s, delta=%s)", self.av_sync_delay_total, self.av_sync_delay, cinfo, encoder_latency, self.av_sync_delta)
         else:
             avsynclog("av-sync support is disabled, setting it to 0")
             self.av_sync_delay_total = 0
@@ -1352,7 +1363,7 @@ class ServerSource(object):
         up("connection",    self.protocol.get_info())
         up("av-sync",       {"client.delay"         : self.av_sync_delay,
                              "total"                : self.av_sync_delay_total,
-                             "delta"                : AV_SYNC_DELTA})
+                             "delta"                : self.av_sync_delta})
         if self.window_frame_sizes:
             up("window.frame-sizes", self.window_frame_sizes)
         if self.window_filters:

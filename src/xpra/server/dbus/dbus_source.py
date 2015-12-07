@@ -141,6 +141,11 @@ class DBUS_Source(dbus.service.Object):
         self.source.stop_sending_sound()
 
 
+    @dbus.service.method(INTERFACE, in_signature='i')
+    def SetAVSyncDelay(self, delay):
+        self.source.set_av_sync_delay(delay)
+
+
     @dbus.service.method(INTERFACE, in_signature='as')
     def SendClientCommand(self, args):
         self.source.send_client_command(*args)
