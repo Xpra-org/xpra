@@ -221,7 +221,7 @@ def do_check_GL_support(force_enable):
         vsplit = pyopengl_version.split('.')
         #we now require PyOpenGL 3.1 or later
         if vsplit[:2]<['3','1'] and not force_enable:
-            gl_check_error("PyOpenGL version 3.1 or later is required (found version %s)", pyopengl_version)
+            gl_check_error("PyOpenGL version 3.1 or later is required (found version %s)" % pyopengl_version)
             return {}
 
         props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(pyopengl_version, accel_version)
