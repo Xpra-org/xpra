@@ -591,6 +591,7 @@ class WindowSource(object):
         self.schedule_av_sync_update()
 
     def schedule_av_sync_update(self, delay=0):
+        avsynclog("schedule_av_sync_update(%i) wid=%i, delay=%i, target=%i, timer=%s", delay, self.wid, self.av_sync_delay, self.av_sync_delay_target, self.av_sync_timer)
         if not self.av_sync:
             self.av_sync_delay = 0
             return
@@ -607,7 +608,7 @@ class WindowSource(object):
             return
         #limit the rate of change:
         rdelta = min(AV_SYNC_RATE_CHANGE, max(-AV_SYNC_RATE_CHANGE, delta))
-        avsynclog("update_av_sync_delay() current=%s, target=%s, adding %s (capped to +-%s from %s)", self.av_sync_delay, self.av_sync_delay_target, rdelta, AV_SYNC_RATE_CHANGE, delta)
+        avsynclog("update_av_sync_delay() wid=%i, current=%s, target=%s, adding %s (capped to +-%s from %s)", self.wid, self.av_sync_delay, self.av_sync_delay_target, rdelta, AV_SYNC_RATE_CHANGE, delta)
         self.av_sync_delay += rdelta
         if self.av_sync_delay!=self.av_sync_delay_target:
             self.schedule_av_sync_update(AV_SYNC_TIME_CHANGE)
