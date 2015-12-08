@@ -693,6 +693,12 @@ class WindowVideoSource(WindowSource):
         ww, wh = self.window_dimensions
         w = ww & self.width_mask
         h = wh & self.height_mask
+        vs = self.video_subregion
+        if vs:
+            r = vs.rectangle
+            if r:
+                w = r.width & self.width_mask
+                h = r.height & self.width_mask
         if w<self.min_w or w>self.max_w or h<self.min_h or h>self.max_h:
             return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)", w, h, self.min_w, self.min_h, self.max_w, self.max_h)
         if time.time()-self.statistics.last_resized<0.500:
@@ -708,8 +714,7 @@ class WindowVideoSource(WindowSource):
             scorelog("cannot score: csc is closed or closing")
             return
 
-        width, height = self.window_dimensions
-        scores = self.get_video_pipeline_options(encoding, width, height, self.pixel_format, force_reload)
+        scores = self.get_video_pipeline_options(encoding, w, h, self.pixel_format, force_reload)
         if len(scores)==0:
             scorelog("check_pipeline_score(%s) no pipeline options found!", force_reload)
             return
