@@ -137,6 +137,8 @@ class codec_spec(object):
                 return self.codec_type
             if self.codec_type==s:
                 return self.codec_type
+            if s.startswith(self.codec_type):
+                return s
             return "%s:%s" % (self.codec_type, s)
         except:
             return "%s" % (self.codec_type or self.codec_class)
