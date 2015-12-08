@@ -53,7 +53,6 @@ class WindowVideoSource(WindowSource):
         #this will call init_vars():
         WindowSource.__init__(self, *args)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
-        self.supports_video_reinit = self.encoding_options.boolget("video_reinit", False)
         self.supports_video_subregion = VIDEO_SUBREGION and self.encoding_options.boolget("video_subregion", False)
 
     def init_encoders(self):
@@ -98,7 +97,6 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_time = 0
 
         self.supports_video_scaling = False
-        self.supports_video_reinit = False
         self.supports_video_subregion = False
 
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
@@ -129,7 +127,6 @@ class WindowVideoSource(WindowSource):
     def get_client_info(self):
         info = {
             "supports_video_scaling"    : self.supports_video_scaling,
-            "supports_video_reinit"     : self.supports_video_reinit,
             "supports_video_subregion"  : self.supports_video_subregion,
             }
         for enc, csc_modes in (self.full_csc_modes or {}).items():
@@ -896,16 +893,6 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        ve = self._video_encoder
-        if ve is not None and not self.supports_video_reinit \
-            and ve.get_encoding()==encoder_spec.encoding \
-            and ve.get_type()!=encoder_spec.codec_type:
-            #client does not support video decoder reinit,
-            #so we cannot swap for another encoder of the same type
-            #(which would generate a new stream)
-            scorelog("encoding (%s vs %s) or type (%s vs %s) mismatch, without support for reinit",
-                     ve.get_encoding(), encoder_spec.encoding, ve.get_type(), encoder_spec.codec_type)
-            return None
         def clamp(v):
             return max(0, min(100, v))
         qscore = clamp(self.get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling))
@@ -966,6 +953,7 @@ class WindowVideoSource(WindowSource):
             return None
 
         ee_score = 100
+        ve = self._video_encoder
         if ve is None or ve.get_type()!=encoder_spec.codec_type or \
            ve.get_src_format()!=enc_in_format or \
            ve.get_width()!=enc_width or ve.get_height()!=enc_height:
