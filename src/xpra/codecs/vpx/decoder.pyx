@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os, sys
-from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
+from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.os_util import bytestostr
 

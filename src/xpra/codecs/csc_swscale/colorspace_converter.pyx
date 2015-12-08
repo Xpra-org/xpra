@@ -14,7 +14,7 @@ from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, g
 log = Logger("csc", "swscale")
 
 from xpra.os_util import is_Ubuntu
-from xpra.codecs.codec_constants import codec_spec
+from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 
@@ -255,7 +255,7 @@ def get_spec(in_colorspace, out_colorspace):
     #setup cost is very low (usually less than 1ms!)
     #there are restrictions on dimensions (8x2 minimum!)
     #swscale can be used to scale (obviously)
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), setup_cost=20, min_w=8, min_h=2, can_scale=True, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+    return csc_spec(ColorspaceConverter, codec_type=get_type(), setup_cost=20, min_w=8, min_h=2, can_scale=True, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 MIN_SWSCALE_VERSION = (2, 1, 1)

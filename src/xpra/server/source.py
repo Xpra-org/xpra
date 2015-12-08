@@ -35,7 +35,7 @@ from xpra.server.window.window_source import WindowSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.codecs.codec_constants import codec_spec
+from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.make_thread import make_thread
@@ -863,7 +863,7 @@ class ServerSource(object):
             for colorspace, spec_props in colorspace_specs.items():
                 for spec_prop in spec_props:
                     #make a new spec based on spec_props:
-                    spec = codec_spec(Encoder)
+                    spec = video_spec(Encoder)
                     for k,v in spec_prop.items():
                         setattr(spec, k, v)
                     proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)

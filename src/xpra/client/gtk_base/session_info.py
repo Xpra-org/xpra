@@ -918,7 +918,7 @@ class SessionInfo(gtk.Window):
                         wid = int(wid_str)
                     except:
                         #wid_str may be invalid, ie:
-                        #window[1].pipeline_option[1].encoder=codec_spec(xpra.codecs.enc_x264.encoder.Encoder)
+                        #window[1].pipeline_option[1].encoder=video_spec(xpra.codecs.enc_x264.encoder.Encoder)
                         # -> wid_str= "1].pipeline_option[1"
                         continue
                     ekey = k[(pos+len("].encoder")):]   #ie: "" or ".frames"

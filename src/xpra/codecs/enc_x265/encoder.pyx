@@ -12,7 +12,7 @@ log = Logger("encoder", "x265")
 LOG_NALS = os.environ.get("XPRA_X265_LOG_NALS", "0")=="1"
 
 
-from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_codec_spec
+from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -307,7 +307,7 @@ def get_spec(encoding, colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace],
+    return video_spec(encoding=encoding, output_colorspaces=[colorspace],
                       codec_class=Encoder, codec_type=get_type(),
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)

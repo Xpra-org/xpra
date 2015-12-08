@@ -20,7 +20,7 @@ except ImportError:
 from xpra.log import Logger
 log = Logger("csc", "cython")
 
-from xpra.codecs.codec_constants import codec_spec
+from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 
 cdef extern from "stdlib.h":
@@ -125,7 +125,7 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     #low score as this should be used as fallback only:
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, max_w=16*1024, max_h=16*1024, can_scale=True)
+    return csc_spec(ColorspaceConverter, codec_type=get_type(), quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, max_w=16*1024, max_h=16*1024, can_scale=True)
 
 
 class CythonImageWrapper(ImageWrapper):

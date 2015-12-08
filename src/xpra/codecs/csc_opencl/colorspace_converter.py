@@ -447,7 +447,7 @@ def build_kernels():
 
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
+from xpra.codecs.codec_constants import csc_spec, get_subsampling_divs
 
 
 def init_module():
@@ -524,7 +524,7 @@ def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
     global selected_device_cpu_cost, selected_device_gpu_cost, selected_device_setup_cost, selected_device_max_size
     max_w, max_h = selected_device_max_size
-    return codec_spec(ColorspaceConverter, codec_type=get_type(),
+    return csc_spec(ColorspaceConverter, codec_type=get_type(),
                       speed=100,
                       setup_cost=selected_device_setup_cost,
                       cpu_cost=selected_device_cpu_cost, gpu_cost=selected_device_gpu_cost, min_w=128, min_h=128, can_scale=True, max_w=max_w, max_h=max_h)

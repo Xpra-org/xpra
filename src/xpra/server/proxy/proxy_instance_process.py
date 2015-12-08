@@ -231,7 +231,7 @@ class ProxyInstanceProcess(Process):
                     #only deal with encoders that can handle plain RGB directly
                     continue
 
-                for spec in especs:                             #ie: codec_spec("x264")
+                for spec in especs:                             #ie: video_spec("x264")
                     spec_props = spec.to_dict()
                     del spec_props["codec_class"]               #not serializable!
                     spec_props["score_boost"] = 50              #we want to win scoring so we get used ahead of other encoders

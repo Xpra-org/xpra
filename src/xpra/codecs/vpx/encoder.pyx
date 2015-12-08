@@ -6,7 +6,7 @@
 import time
 import os
 from collections import deque
-from xpra.codecs.codec_constants import video_codec_spec
+from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr
 
 from xpra.log import Logger
@@ -332,7 +332,7 @@ def get_spec(encoding, colorspace):
             if vnum>=[1,5]:
                 #libvpx 1.5 made some significant performance improvements with vp9:
                 speed = 50
-    return video_codec_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
+    return video_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
                             quality=50+50*int(has_lossless_mode), speed=speed,
                             setup_cost=20, max_w=max_w, max_h=max_h)

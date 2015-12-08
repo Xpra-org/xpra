@@ -21,7 +21,7 @@ from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
-from xpra.codecs.codec_constants import video_codec_spec, TransientCodecException
+from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, is_blacklisted
 
@@ -1148,7 +1148,7 @@ def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
-    cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
+    cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:

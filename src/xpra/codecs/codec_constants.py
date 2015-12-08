@@ -39,7 +39,7 @@ class TransientCodecException(Exception):
     pass
 
 
-class codec_spec(object):
+class _codec_spec(object):
 
     #I can't imagine why someone would have more than this many
     #encoders or csc modules active at the same time!
@@ -82,7 +82,7 @@ class codec_spec(object):
 
     def make_instance(self):
         cur = self.get_instance_count()
-        if (self.max_instances>0 and cur>=self.max_instances) or cur>=codec_spec.WARN_LIMIT:
+        if (self.max_instances>0 and cur>=self.max_instances) or cur>=_codec_spec.WARN_LIMIT:
             log.warn("Warning: already %s active instances of %s: %s", cur, self.codec_class, list(self.instances.keys()))
             from xpra.util import dump_references
             dump_references(log, self.instances.keys())
@@ -116,9 +116,6 @@ class codec_spec(object):
             return max(0, 1.0 - (1.0*ic/mi)**2)
         return 1.0
 
-    def __repr__(self):
-        return "codec_spec(%s)" % self.info()
-
     def info(self):
         try:
             s = str(self.codec_class)
@@ -144,14 +141,23 @@ class codec_spec(object):
             return "%s" % (self.codec_type or self.codec_class)
 
 
-class video_codec_spec(codec_spec):
+class video_spec(_codec_spec):
 
     def __init__(self, encoding=None, output_colorspaces=None, has_lossless_mode=False, **kwargs):
-        codec_spec.__init__(self, **kwargs)
+        _codec_spec.__init__(self, **kwargs)
         self.encoding = encoding                        #ie: "h264"
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
         self.has_lossless_mode = has_lossless_mode
         self._exported_fields += ["encoding", "output_colorspaces"]
+
+    def __repr__(self):
+        return "video_spec(%s)" % self.info()
+
+
+class csc_spec(_codec_spec):
+
+    def __repr__(self):
+        return "video_spec(%s)" % self.info()
 
 
 def main():
