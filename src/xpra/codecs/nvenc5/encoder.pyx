@@ -1148,7 +1148,7 @@ def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
-    cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=True,
+    cs = video_codec_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
