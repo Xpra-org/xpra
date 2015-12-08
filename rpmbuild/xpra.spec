@@ -25,14 +25,15 @@
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , python-lzo
+%define numpy numpy
 %define requires_cython Cython
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
 %define requires_dbus_python dbus-python
 %define py3requires_lzo %{nil}
 #OpenGL bits:
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext, numpy
-%define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate, numpy
+%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext
+%define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate
 %define requires_printing , python-cups, cups-filters, cups-pdf
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
@@ -92,9 +93,9 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
 #Fedora now has PyOpenGL... and they include PyOpenGL-accelerate bindings. PITA for us.
-%define requires_opengl , PyOpenGL, pygtkglext, numpy
+%define requires_opengl , PyOpenGL, pygtkglext
 #note: probably not working since we don't have gtkglext for Python3?
-%define py3requires_opengl , python3-PyOpenGL, numpy
+%define py3requires_opengl , python3-PyOpenGL
 %endif
 %if 0%{?fedora}>=23
 #Fedora 23 has libvpx 1.4, no need for our own libvpx-xpra packages:
@@ -104,6 +105,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %if 0%{?suse_version}
 #causes problems with automatic dependency calculations:
 %global __requires_exclude typelib\\(.*\\)
+%define numpy python-numpy
 %define requires_xorg xauth, xf86-video-dummy
 %define requires_lzo %{nil}
 %define libwebp libwebp-xpra
@@ -117,8 +119,8 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 #(see recommends below)
 %define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
-#different naming prefix ("python-") for pygtkglext and numpy:
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext, python-numpy
+#different naming prefix ("python-") for pygtkglext:
+%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext
 %endif
 
 Name: xpra
@@ -153,6 +155,7 @@ Requires: %{libvpx}
 Requires: %{libwebp}
 Requires: x264-xpra
 Requires: ffmpeg-xpra
+Requires: %{numpy}
 Requires: xpra-common = %{version}-%{build_no}%{dist}
 %if 0%{?suse_version}
 #only use recommends because these are not in the standard repos: 
@@ -178,12 +181,15 @@ BuildRequires: %{libwebp}-devel
 BuildRequires: x264-xpra-devel
 BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
+#needed for running tests
+BuildRequires: %{numpy}
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
 %if %{with_python3}
 BuildRequires: python3-devel
 BuildRequires: python3-Cython
+BuildRequires: python3-numpy
 BuildRequires: gtk3-devel
 BuildRequires: python3-gobject
 BuildRequires: gobject-introspection-devel
@@ -223,6 +229,7 @@ Requires: python3-crypto
 Requires: python3-netifaces
 Requires: python3-rencode
 Requires: python3-pillow
+Requires: python3-numpy
 Requires: libfakeXinerama
 Requires: gtk3-immodule-xim
 Requires: xorg-x11-server-utils

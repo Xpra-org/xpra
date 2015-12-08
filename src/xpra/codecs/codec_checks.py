@@ -27,14 +27,10 @@ TEST_COMPRESSED_DATA = {
              "YUV444P" : binascii.unhexlify("a249834200002e001ec007048383000000040000223fffffeea76800c7ffffffeea7680677ffffff753b40081000")},
 }
 
-try:
+def makebuf(size):
     import numpy
-    def makebuf(size):
-        a = numpy.empty(size, dtype=numpy.byte)
-        return a.data
-except:
-    def makebuf(size):
-        return bytes(size)
+    a = numpy.empty(size, dtype=numpy.byte)
+    return a.data
 
 
 def make_test_image(pixel_format, w, h):
