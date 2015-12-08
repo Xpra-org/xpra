@@ -1075,7 +1075,7 @@ class WindowVideoSource(WindowSource):
         if self.do_check_pipeline(encoding, width, height, src_format):
             return True  #OK!
 
-        videolog("check_pipeline%s setting up a new pipeline", (encoding, width, height, src_format))
+        videolog("check_pipeline%s setting up a new pipeline as check failed", (encoding, width, height, src_format))
         #cleanup existing one if needed:
         self.do_csc_encoder_clean(self._csc_encoder)
         self._csc_encoder = None
@@ -1237,8 +1237,8 @@ class WindowVideoSource(WindowSource):
         self.max_h = max_h
         enc_end = time.time()
         self._video_encoder = ve
-        videolog("setup_pipeline: video encoder=%s, info: %s, setup took %.2fms",
-                ve, ve.get_info(), (enc_end-enc_start)*1000.0)
+        videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
+                csce, ve, ve.get_info(), (enc_end-enc_start)*1000.0)
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return  True
 
