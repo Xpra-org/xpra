@@ -42,19 +42,19 @@ def log_output(args):
 def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2, quality=20, speed=0):
     encoder_module.init_module()
     log("test_encoder(%s, %s)", encoder_module, dimensions)
-    ics = encoder_module.get_input_colorspaces()
-    log("input colorspaces=%s", ics)
-    for ic in ics:
-        for encoding in encoder_module.get_encodings():
-            ocs = encoder_module.get_output_colorspaces(encoding, ic)
-            for c in ocs:
-                log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, ic)))
     log("version=%s" % str(encoder_module.get_version()))
     log("type=%s" % encoder_module.get_type())
     ec = getattr(encoder_module, "Encoder")
     log("encoder class=%s" % ec)
 
     for encoding in encoder_module.get_encodings():
+        ics = encoder_module.get_input_colorspaces(encoding)
+        log("input colorspaces(%s)=%s", encoding, ics)
+        for ic in ics:
+            for encoding in encoder_module.get_encodings():
+                ocs = encoder_module.get_output_colorspaces(encoding, ic)
+                for c in ocs:
+                    log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, ic)))
         for src_format in ics:
             spec = encoder_module.get_spec(encoding, src_format)
             for w,h in dimensions:
