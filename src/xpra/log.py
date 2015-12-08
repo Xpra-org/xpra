@@ -166,9 +166,9 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("frame"        , "Window frame")
                 ])),
     ("Encoding", OrderedDict([
-                ("codec"        , "FIXME: only nvenc4 and nvenc5, loader and video helper"),
+                ("codec"        , "Codec loader and video helper"),
                 ("loader"       , "Pixel compression codec loader"),
-                ("video"        , "Video codecs"),
+                ("video"        , "Video encoding"),
                 ("score"        , "Video pipeline scoring and selection"),
                 ("encoding"     , "Server side encoding selection and compression"),
                 ("scaling"      , "Picture scaling"),
