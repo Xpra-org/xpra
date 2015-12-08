@@ -340,7 +340,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.frames = 0
         self.time = 0
-        self.preset = "ultrafast"
+        self.preset = b"ultrafast"
         self.profile = PROFILE_MAIN
         self.init_encoder()
 
@@ -352,7 +352,7 @@ cdef class Encoder:
         x265_param_default(self.param)
         if x265_param_apply_profile(self.param, self.profile)!=0:
             raise Exception("failed to set profile: %s" % self.profile)
-        if x265_param_default_preset(self.param, self.preset, "zero-latency")!=0:
+        if x265_param_default_preset(self.param, self.preset, b"zero-latency")!=0:
             raise Exception("failed to set preset: %s" % self.preset)
 
         self.param.sourceWidth = self.width
@@ -564,7 +564,7 @@ cdef class Encoder:
         self.time += end-start
         self.frames += 1
         log("x265 compressed data size: %s, client options=%s", frame_size, client_options)
-        return  "".join(data), client_options
+        return  b"".join(data), client_options
 
 
 def selftest(full=False):
