@@ -1206,10 +1206,10 @@ class WindowVideoSource(WindowSource):
             csce.init_context(csc_width, csc_height, src_format,
                                    enc_width, enc_height, enc_in_format, csc_speed)
             csc_end = time.time()
-            self._csc_encoder = csce
             videolog("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
                   csce, csce.get_info(), (csc_end-csc_start)*1000.0)
         else:
+            csce = None
             #use the encoder's mask directly since that's all we have to worry about!
             width_mask = encoder_spec.width_mask
             height_mask = encoder_spec.height_mask
@@ -1221,6 +1221,7 @@ class WindowVideoSource(WindowSource):
             if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
                 videolog("scaling is now enabled, so skipping %s", encoder_spec)
                 return False
+        self._csc_encoder = csce
         enc_start = time.time()
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
