@@ -2372,9 +2372,10 @@ def init_module():
         log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
         log.warn(" recommended driver versions: up to 350 only")
         if os.environ.get("XPRA_NVENC_YUV444P", "0")!="1":
-            log.warn(" disabling YUV444P support")
+            log.warn(" disabling YUV444P and lossless mode")
             log.warn(" use XPRA_NVENC_YUV444P=1 to force enable it")
             YUV444_ENABLED = False
+            LOSSLESS_ENABLED = False
 
     #load the library / DLL:
     init_nvencode_library()
@@ -2389,11 +2390,14 @@ def init_module():
             try:
                 test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
                 #check for YUV444 support
-                if not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
+                if YUV444_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
+                    log.warn("Warning: hardware or nvenc library version does not support YUV444")
                     YUV444_ENABLED = False
+                    LOSSLESS_ENABLED = False
                 log("%s YUV444 support: %s", encoding, YUV444_ENABLED)
                 #check for lossless:
-                if not YUV444_ENABLED or not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
+                if LOSSLESS_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
+                    log.warn("Warning: hardware or nvenc library version does not support lossless mode")
                     LOSSLESS_ENABLED = False
                 log("%s lossless support: %s", encoding, LOSSLESS_ENABLED)
             except NVENCException as e:
