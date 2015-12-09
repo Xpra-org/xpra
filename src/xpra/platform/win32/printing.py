@@ -10,6 +10,7 @@ import subprocess
 import win32print       #@UnresolvedImport
 import win32con         #@UnresolvedImport
 
+from xpra.util import csv
 #ensure we can find gsprint.exe in a subdirectory:
 try:
     from xpra.platform.paths import get_app_dir
@@ -27,6 +28,31 @@ except Exception as e:
 
 #allows us to skip some printers we don't want to export
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
+
+
+PRINTER_ENUM_VALUES = {}
+PRINTER_ENUM_NAMES = {}
+for k in ("LOCAL", "NAME", "SHARED", "CONNECTIONS",
+          "NETWORK", "REMOTE", "CATEGORY_3D", "CATEGORY_ALL"):
+    v = getattr(win32print, "PRINTER_ENUM_%s" % k, None)
+    if v is not None:
+        PRINTER_ENUM_VALUES[k] = v
+        PRINTER_ENUM_NAMES[v] = k
+log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
+
+PRINTER_LEVEL = int(os.environ.get("XPRA_WIN32_PRINTER_LEVEL", "1"))
+PRINTER_FLAGS = [x.strip() for x in os.environ.get("XPRA_WIN32_PRINTER_FLAGS", "LOCAL").split(",")]
+log("PRINTER_FLAGS=%s", csv(PRINTER_FLAGS))
+VALID_PRINTER_FLAGS = ("LOCAL", "SHARED", "CONNECTIONS", "NETWORK", "REMOTE")
+if PRINTER_FLAGS:
+    PRINTER_ENUMS = [v for v in PRINTER_FLAGS if v in VALID_PRINTER_FLAGS]
+    invalid = set(PRINTER_FLAGS)- set(VALID_PRINTER_FLAGS)
+    if invalid:
+        log.warn("Warning: the following printer flags are invalid and will be ignored: %s", csv(list(invalid)))
+else:
+    assert "LOCAL" in PRINTER_ENUM_VALUES
+    PRINTER_ENUMS = ["LOCAL"]
+log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 
 
 #emulate pycups job id
@@ -62,21 +88,36 @@ def get_printers():
     printers = {}
     if not gsview_dir:
         #without gsprint, we can't handle printing!
+        log("get_printers() gsview is missing, not querying any printers")
         return printers
     #default_printer = win32print.GetDefaultPrinter()
-    for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL, None, 1):
-        flags, desc, name, comment = p
-        if name in SKIPPED_PRINTERS:
-            log("skipped printer: %s, %s, %s, %s", flags, desc, name, comment)
-            continue
-        log("found printer: %s, %s, %s, %s", flags, desc, name, comment)
-        #strip duplicated and empty strings from the description:
-        desc_els = []
-        [desc_els.append(x) for x in desc.split(",") if (x and not desc_els.count(x))]
-        info = {"printer-info"            : ",".join(desc_els)}
-        if comment:
-            info["printer-make-and-model"] = comment
-        printers[name] = info
+    for penum in PRINTER_ENUMS:
+        try:
+            eprinters = []
+            enum_val = PRINTER_ENUM_VALUES.get(penum)
+            assert enum_val is not None, "invalid printer enum %s" % penum
+            log("querying %s printers", penum)
+            for p in win32print.EnumPrinters(enum_val, None, PRINTER_LEVEL):
+                flags, desc, name, comment = p
+                if name in SKIPPED_PRINTERS:
+                    log("skipped printer: %s, %s, %s, %s", flags, desc, name, comment)
+                    continue
+                if name in printers:
+                    log("skipped duplicate printer: %s, %s, %s, %s", flags, desc, name, comment)
+                    continue
+                log("found printer: %s, %s, %s, %s", flags, desc, name, comment)
+                #strip duplicated and empty strings from the description:
+                desc_els = []
+                [desc_els.append(x) for x in desc.split(",") if (x and not desc_els.count(x))]
+                info = {"printer-info"            : ",".join(desc_els),
+                        "type"                    : penum}
+                if comment:
+                    info["printer-make-and-model"] = comment
+                printers[name] = info
+                eprinters.append(name)
+            log("%s printers: %s", penum, eprinters)
+        except Exception as e:
+            log.warn("Warning: failed to query %s printers: %s", penum, e)
     log("win32.get_printers()=%s", printers)
     return printers
 
