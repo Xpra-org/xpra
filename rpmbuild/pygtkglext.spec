@@ -2,12 +2,14 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 %define pygtk2 pygtk2
+%define pygtkglext pygtkglext
 %if 0%{?suse_version}
 %define pygtk2 python-gtk
+%define pygtkglext python-gtkglext
 %endif
 
 
-Name:           pygtkglext
+Name:           %{pygtkglext}
 Version:        1.1.0
 Release:        16.xpra1%{?dist}
 Summary:        Python bindings for GtkGLExt
