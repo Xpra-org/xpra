@@ -316,7 +316,7 @@ class BugReport(object):
         basenoext, _ = os.path.splitext(os.path.basename(filename))
         data = self.get_text_data()
         import zipfile, time
-        zf = zipfile.ZipFile(filename, mode='w')
+        zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
             for title, tooltip, dtype, s in data:
                 cfile = os.path.join(basenoext, title.replace(" ", "_")+"."+dtype)
@@ -325,6 +325,6 @@ class BugReport(object):
                 #very poorly documented:
                 info.external_attr = 0o644 << 16
                 info.comment = strtobytes(tooltip)
-                zf.writestr(info, s, compress_type=zipfile.ZIP_DEFLATED)
+                zf.writestr(info, s)
         finally:
             zf.close()
