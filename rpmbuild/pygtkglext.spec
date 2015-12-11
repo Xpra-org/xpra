@@ -16,8 +16,8 @@ Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
 URL:            http://www.k-3d.org/gtkglext/Main_Page
-Source:         http://downloads.sourceforge.net/gtkglext/%{name}-%{version}.tar.bz2
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Source:         http://downloads.sourceforge.net/gtkglext/pygtkglext-%{version}.tar.bz2
+BuildRoot:      %{_tmppath}/pygtkglext-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  gtkglext-devel
 BuildRequires:  python-devel
 BuildRequires:  %{pygtk2}-devel
@@ -46,7 +46,7 @@ developing applications that use %{name}.
 
 
 %prep
-%setup -q
+%setup -q -n pygtkglext-%{version}
 iconv -f EUC-JP -t UTF8 AUTHORS > tmp
 mv tmp AUTHORS
 iconv -f EUC-JP -t UTF8 README > tmp
