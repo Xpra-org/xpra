@@ -46,6 +46,9 @@ if sys.platform.startswith("win"):
     WSAECONNRESET   = 10054
     WSAENOTCONN     = 10057
     WSAESHUTDOWN    = 10058
+    WSAETIMEDOUT    = 10060
+    WSAEHOSTUNREACH = 10065
+    WSAEDISCON      = 10101
     ABORT.update({
         WSAECONNABORTED     : "WSAECONNABORTED",
         WSAECONNRESET       : "WSAECONNRESET",
@@ -53,6 +56,9 @@ if sys.platform.startswith("win"):
         WSAENETUNREACH      : "WSAENETUNREACH",
         WSAENOTCONN         : "WSAENOTCONN",
         WSAESHUTDOWN        : "WSAESHUTDOWN",
+        WSAETIMEDOUT        : "WSAETIMEDOUT",
+        WSAEHOSTUNREACH     : "WSAEHOSTUNREACH",
+        WSAEDISCON          : "WSAEDISCON",
         })
     #on win32, we want to wait just a little while,
     #to prevent servers spinning wildly on non-blocking sockets:
