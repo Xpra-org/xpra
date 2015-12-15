@@ -84,6 +84,7 @@ class BugReport(object):
         self.description.set_justification(JUSTIFY_LEFT)
         self.description.set_border_width(2)
         self.description.set_size_request(300, 80)
+        self.description.modify_bg(STATE_NORMAL, gdk.Color(red=32768, green=32768, blue=32768))
         ibox.pack_start(self.description, expand=False, fill=False)
 
         # Toggles:
