@@ -574,6 +574,9 @@ class ClientWindowBase(ClientWidgetBase):
     def show_start_new_command(self, *args):
         self._client.show_start_new_command(*args)
 
+    def show_bug_report(self, *args):
+        self._client.show_bug_report(*args)
+
     def show_file_upload(self, *args):
         self._client.show_file_upload(*args)
 
