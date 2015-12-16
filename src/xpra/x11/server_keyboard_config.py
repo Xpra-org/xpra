@@ -217,7 +217,8 @@ class KeyboardConfig(KeyboardConfigBase):
                           self.xkbmap_print, self.xkbmap_query)
         except:
             log.error("error setting new keymap", exc_info=True)
-        self.is_native_keymap = self.xkbmap_print!="" or self.xkbmap_query!=""
+        self.is_native_keymap = bool(self.xkbmap_print) or bool(self.xkbmap_query)
+        log("set_keymap() is_native_keymap=%s, print=%s, query=%s", self.is_native_keymap, self.xkbmap_print, self.xkbmap_query)
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
