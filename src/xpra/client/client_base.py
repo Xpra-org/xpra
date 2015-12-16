@@ -195,6 +195,10 @@ class XpraClientBase(FileTransferHandler):
         pass
 
     def disconnect_and_quit(self, exit_code, reason):
+        #make sure that we set the exit code early,
+        #so the protocol shutdown won't set a different one:
+        if self.exit_code is None:
+            self.exit_code = exit_code
         #try to tell the server we're going, then quit
         log("disconnect_and_quit(%s, %s)", exit_code, reason)
         p = self._protocol
