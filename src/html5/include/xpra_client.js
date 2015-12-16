@@ -650,6 +650,8 @@ XpraClient.prototype._make_hello = function() {
 		"keyboard"					: true,
 		"xkbmap_layout"				: this._get_keyboard_layout(),
 		"xkbmap_keycodes"			: this._get_keycodes(),
+		"xkbmap_print"				: "",
+		"xkbmap_query"				: "",
 		"desktop_size"				: this._get_desktop_size(),
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
