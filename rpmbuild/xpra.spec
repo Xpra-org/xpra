@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.16.0
+%define version 0.17.0
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -385,8 +385,42 @@ fi
 
 
 %changelog
-* Wed Jul 01 2015 Antoine Martin <antoine@devloop.org.uk> 0.16.0-1
+* Wed Dec 16 2015 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1
 - TODO
+
+* Wed Dec 16 2015 Antoine Martin <antoine@devloop.org.uk> 0.16.0-1
+- remove more legacy code, cleanups, etc
+- switch to GStreamer 1.x on most platforms
+- mostly gapless audio playback
+- audio-video synchronization
+- zero copy memoryview buffers (Python 2.7 and later), safer read-only buffers
+- improved vp9 support
+- handling of very high client resolutions (8k and above)
+- more reliable window positioning and geometry
+- enable OpenGL accelerated rendering by default on all platforms
+- add more sanity checks to codecs and csc modules
+- network and protocol improvements: safety checks, threading
+- encryption improvements: support TCP only encryption, PKCS#7 padding
+- improved printer forwarding
+- improved DPI and anti-alias synchronization and handling
+- better multi-monitor support
+- support for screen capture tools (disabled by default)
+- automatic desktop scaling to save bandwidth and CPU (upscale on client)
+- support remote SSH start without specifying a display
+- support multiple socket directories
+- lz4 faster modes with automatic speed tuning
+- server file upload from system tray
+- new subcommand: "xpra showconfig"
+- option to select a specific clibpoard to synchronize with (MS Windows only)
+- faster OpenGL screen updates: group screen updates
+- dbus server for easier runtime control
+- replace calls to setxkbmap with native X11 API
+- XShm for override-redirect windows and shadow servers
+- faster X11 shadow servers
+- XShape forwarding for X11 clients
+- improved logging and debugging tools, fault injection
+- more robust error handling and recovery from client errors
+- NVENC support for MS Windows shadow servers
 
 * Tue Apr 28 2015 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
 -printer forwarding
