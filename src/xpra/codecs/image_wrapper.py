@@ -7,9 +7,16 @@
 import time
 
 try:
-    memoryview_type = memoryview
+    #python 2.7 onwards have memoryview:
+    assert memoryview
+    def clone_plane(plane):
+        if type(plane)==memoryview:
+            return plane.tobytes()
+        return plane[:]
 except:
-    memoryview_type = None
+    def clone_plane(plane):
+        return plane[:]
+
 
 class ImageWrapper(object):
 
@@ -110,11 +117,6 @@ class ImageWrapper(object):
         #some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
 
-    def clone_plane(self, plane):
-        if type(plane)==memoryview_type:
-            return plane.tobytes()
-        return plane[:]
-
     def clone_pixel_data(self):
         pixels = self.pixels
         planes = self.planes
@@ -124,10 +126,10 @@ class ImageWrapper(object):
         assert pixels, "no pixel data to clone"
         if planes == 0:
             #no planes, simple buffer:
-            self.pixels = self.clone_plane(pixels)
+            self.pixels = clone_plane(pixels)
         else:
             assert planes>0
-            self.pixels = [self.clone_plane(pixels[i]) for i in range(planes)]
+            self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
         self.thread_safe = True
         if self.freed:
             #could be a race since this can run threaded
