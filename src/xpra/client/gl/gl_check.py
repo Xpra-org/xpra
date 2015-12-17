@@ -21,6 +21,7 @@ BLACKLIST = {"vendor" : ["Humper", "VMware, Inc."],
              "renderer" : ["Software Rasterizer"]}
 
 #the Intel driver causes too many problems:
+GREYLIST.setdefault("vendor", []).append("Intel")
 GREYLIST.setdefault("vendor", []).append("Intel Inc.")
 GREYLIST.setdefault("vendor", []).append("Intel Open Source Technology Center")
 from xpra.os_util import getUbuntuVersion
