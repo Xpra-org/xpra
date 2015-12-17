@@ -1259,6 +1259,17 @@ class WindowVideoSource(WindowSource):
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
+        def video_fallback():
+            #find one that is not video:
+            fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
+            if not fallback_encodings:
+                log.error("no non-video fallback encodings are available!")
+                return None
+            fallback_encoding = fallback_encodings[0]
+            encode_fn = self._encoders[fallback_encoding]
+            videolog.warn("using '%s' as non-video fallback using %s", fallback_encoding, encode_fn)
+            return encode_fn(fallback_encoding, image, options)
+
         if not self.check_pipeline(encoding, w, h, src_format):
             #just for diagnostics:
             supported_csc_modes = self.full_csc_modes.get(encoding, [])
@@ -1279,18 +1290,11 @@ class WindowVideoSource(WindowSource):
             videolog.error(" supported encoders: %s", ", ".join(encoder_types))
             videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))
             if FORCE_CSC:
-                log.error(" forceed csc mode: %s", FORCE_CSC_MODE)
-            #find one that is not video:
-            fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
-            if not fallback_encodings:
-                log.error(" no fallback encodings available!")
-                return None
-            fallback_encoding = fallback_encodings[0]
-            encode_fn = self._encoders[fallback_encoding]
-            videolog.warn(" will use '%s' as fallback using %s", fallback_encoding, encode_fn)
-            return encode_fn(fallback_encoding, image, options)
+                log.error(" forced csc mode: %s", FORCE_CSC_MODE)
+            return video_fallback()
         ve = self._video_encoder
-        assert ve
+        if not ve:
+            return video_fallback()
 
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask

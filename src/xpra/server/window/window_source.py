@@ -1707,6 +1707,7 @@ class WindowSource(object):
                 raise Exception("BUG: no encoder not found for %s" % coding)
         ret = encoder(coding, image, options)
         if ret is None:
+            log("%s%s returned None", encoder, (coding, image, options))
             #something went wrong.. nothing we can do about it here!
             return  None
 
