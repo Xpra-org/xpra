@@ -207,7 +207,8 @@ class WindowVideoSource(WindowSource):
     def cleanup_codecs(self):
         """ Video encoders (x264, nvenc and vpx) and their csc helpers
             require us to run cleanup code to free the memory they use.
-            But some cleanups may be slow, so run them in a worker thread.
+            We have to do this from the encode thread to be safe.
+            (the encoder and csc module may be in use by that thread)
         """
         if self._csc_encoder:
             self.csc_encoder_clean()
@@ -219,22 +220,14 @@ class WindowVideoSource(WindowSource):
         csce = self._csc_encoder
         if csce:
             self._csc_encoder = None
-            self.call_in_encode_thread(self.do_csc_encoder_clean, csce)
-
-    def do_csc_encoder_clean(self, csc_encoder):
-        if csc_encoder:
-            csc_encoder.clean()
+            self.call_in_encode_thread(csce.clean)
 
     def video_encoder_clean(self):
         """ Calls self._video_encoder.clean() from the encode thread """
         ve = self._video_encoder
         if ve:
             self._video_encoder = None
-            self.call_in_encode_thread(self.do_video_encoder_clean, ve)
-
-    def do_video_encoder_clean(self, video_encoder):
-        if video_encoder:
-            video_encoder.clean()
+            self.call_in_encode_thread(ve.clean)
 
 
     def parse_csc_modes(self, full_csc_modes):
@@ -1071,16 +1064,19 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        #must be called with video lock held!
         if self.do_check_pipeline(encoding, width, height, src_format):
             return True  #OK!
 
         videolog("check_pipeline%s setting up a new pipeline as check failed", (encoding, width, height, src_format))
         #cleanup existing one if needed:
-        self.do_csc_encoder_clean(self._csc_encoder)
-        self._csc_encoder = None
-        self.do_video_encoder_clean(self._video_encoder)
-        self._video_encoder = None
+        csce = self._csc_encoder
+        if csce:
+            self._csc_encoder = None
+            csce.clean()
+        ve = self._video_encoder
+        if ve:
+            self._video_encoder = None
+            ve.clean()
         #and make a new one:
         scores = self.get_video_pipeline_options(encoding, width, height, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
@@ -1169,10 +1165,14 @@ class WindowVideoSource(WindowSource):
             except:
                 videolog.warn("setup_pipeline failed for %s", option, exc_info=True)
             #we're here because an exception occurred, cleanup before trying again:
-            self.do_csc_encoder_clean(self._csc_encoder)
-            self._csc_encoder = None
-            self.do_video_encoder_clean(self._video_encoder)
-            self._video_encoder = None
+            csce = self._csc_encoder
+            if csce:
+                self._csc_encoder = None
+                csce.clean()
+            ve = self._video_encoder
+            if ve:
+                self._video_encoder = None
+                ve.clean()
         end = time.time()
         videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
         videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
