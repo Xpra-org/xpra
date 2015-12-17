@@ -46,16 +46,21 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
     #turn it into a string:
     cdef char buffer[256]
     cdef int r
-    r = vsnprintf(buffer, 256, fmt, vl)
-    if r<0:
-        log.error("av_log: vsnprintf returned %s on format string '%s'", r, fmt)
-        return
-    s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
-    if s.startswith("Warning: data is not aligned!"):
-        #silence this crap, since there is nothing we can do about it
-        l = log.debug
-    #l("log_callback_override(%#x, %i, %s, ..)", <unsigned long> avcl, level, fmt)
-    l("libav: %s", s)
+    try:
+        r = vsnprintf(buffer, 256, fmt, vl)
+        if r<0:
+            log.error("av_log: vsnprintf returned %s on format string '%s'", r, fmt)
+            return
+        s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
+        if s.startswith("Warning: data is not aligned!"):
+            #silence this crap, since there is nothing we can do about it
+            l = log.debug
+        #l("log_callback_override(%#x, %i, %s, ..)", <unsigned long> avcl, level, fmt)
+        l("libav: %s", s)
+    except Exception as e:
+        log.error("Error in log callback at level %i", level)
+        log.error(" on format string '%s':", nonl(fmt))
+        log.error(" %s: %s", type(e), e)
 
 cdef int nesting_level = 0
 
