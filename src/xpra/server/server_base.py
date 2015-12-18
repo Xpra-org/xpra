@@ -1067,20 +1067,26 @@ class ServerBase(ServerCore, FileTransferHandler):
     def get_server_features(self):
         #these are flags that have been added over time with new versions
         #to expose new server features:
-        return ("toggle_cursors_bell_notify", "toggle_keyboard_sync",
-                "window_configure", "window_unmap", "window_refresh_config",
+        return (
+                #all these flags are assumed enabled in 0.17 (they are present in 0.14.x onwards):
+                "window_refresh_config",
+                "toggle_cursors_bell_notify",
+                "toggle_keyboard_sync",
+                "window_unmap",
                 "xsettings-tuple",
+                "encoding.generic",
+                "event_request",
+                "sound_sequence",
+                "sound.eos-sequence",
+                "notify-startup-complete",
+                "suspend-resume",
+                "server-events",
                 "change-quality", "change-min-quality", "change-speed", "change-min-speed",
-                "client_window_properties",
-                "sound_sequence", "notify-startup-complete", "suspend-resume",
-                "encoding.generic", "encoding.strict_control",
-                "sound.server_driven", "sound.ogg-latency-fix",
+                #newer flags:
+                "sound.ogg-latency-fix",
                 "clipboard.enable-selections",
                 "av-sync",
-                "window-filters",
-                "command_request",
-                "event_request", "server-events",
-                "sound.eos-sequence")
+                "window-filters")
 
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)

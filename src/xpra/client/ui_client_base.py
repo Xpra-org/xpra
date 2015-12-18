@@ -54,7 +54,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, iround, AtomicInteger, AdHocStruct, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
+from xpra.util import nonl, std, iround, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -178,7 +178,6 @@ class UIXpraClient(XpraClientBase):
         #sound state:
         self.on_sink_ready = None
         self.sound_sink = None
-        self.server_sound_sequence = False
         self.min_sound_sequence = 0
         self.server_sound_eos_sequence = False
         self.sound_source = None
@@ -209,11 +208,6 @@ class UIXpraClient(XpraClientBase):
         #features:
         self.opengl_enabled = False
         self.opengl_props = {}
-        self.toggle_cursors_bell_notify = False
-        self.toggle_keyboard_sync = False
-        self.force_ungrab = False
-        self.window_unmap = False
-        self.window_refresh_config = False
         self.server_encodings = []
         self.server_core_encodings = []
         self.server_encodings_problematic = PROBLEMATIC_ENCODINGS
@@ -548,36 +542,31 @@ class UIXpraClient(XpraClientBase):
 
     def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
         packet = ["buffer-refresh", wid, 0, quality]
-        if self.window_refresh_config:
-            options["refresh-now"] = bool(refresh)
-            if suspend_resume is True:
-                options["batch"] = {"reset"     : True,
-                                    "delay"     : 1000,
-                                    "locked"    : True,
-                                    "always"    : True}
-            elif suspend_resume is False:
-                options["batch"] = {"reset"     : True}
-            else:
-                pass    #batch unchanged
-            log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
-            packet.append(options)
-            packet.append(client_properties)
-        elif not refresh:
-            #we don't really want a refresh, we want to use the "window_refresh_config" feature
-            #but since the server doesn't support it, we can't do anything
-            return
+        options["refresh-now"] = bool(refresh)
+        if suspend_resume is True:
+            options["batch"] = {"reset"     : True,
+                                "delay"     : 1000,
+                                "locked"    : True,
+                                "always"    : True}
+        elif suspend_resume is False:
+            options["batch"] = {"reset"     : True}
+        else:
+            pass    #batch unchanged
+        log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
+        packet.append(options)
+        packet.append(client_properties)
         self.send(*packet)
 
     def send_refresh(self, wid):
-        packet = ["buffer-refresh", wid, 0, 100]
-        if self.window_refresh_config:
-            #explicit refresh (should be assumed True anyway),
-            #also force a reset of batch configs:
-            packet.append({
-                           "refresh-now"    : True,
-                           "batch"          : {"reset" : True}
-                           })
-            packet.append({})   #no client_properties
+        packet = ["buffer-refresh", wid, 0, 100,
+        #explicit refresh (should be assumed True anyway),
+        #also force a reset of batch configs:
+                       {
+                       "refresh-now"    : True,
+                       "batch"          : {"reset" : True}
+                       },
+                       {}   #no client_properties
+                 ]
         self.send(*packet)
 
     def send_refresh_all(self):
@@ -1135,40 +1124,6 @@ class UIXpraClient(XpraClientBase):
             #ungrab via dedicated server packet:
             self.send_force_ungrab(wid)
             return
-        #fallback for older servers: try to find a key to press:
-        kh = self.keyboard_helper
-        if not kh:
-            if not self.kh_warning:
-                self.kh_warning = True
-                grablog.warn("no keyboard support, cannot simulate keypress to lose grab!")
-            return
-        #xkbmap_keycodes is a list of: (keyval, name, keycode, group, level)
-        ungrab_keys = [x for x in kh.xkbmap_keycodes if x[1]==UNGRAB_KEY]
-        if len(ungrab_keys)==0:
-            if not self.kh_warning:
-                self.kh_warning = True
-                grablog.warn("ungrab key %s not found, cannot simulate keypress to lose grab!", UNGRAB_KEY)
-            return
-        #ungrab_keys.append((65307, "Escape", 27, 0, 0))     #ugly hardcoded default value
-        ungrab_key = ungrab_keys[0]
-        grablog("lost focus whilst window %s has grab, simulating keypress: %s", wid, ungrab_key)
-        key_event = AdHocStruct()
-        key_event.keyname = ungrab_key[1]
-        key_event.pressed = True
-        key_event.modifiers = []
-        key_event.keyval = ungrab_key[0]
-        keycode = ungrab_key[2]
-        try:
-            key_event.string = chr(keycode)
-        except:
-            key_event.string = str(keycode)
-        key_event.keycode = keycode
-        key_event.group = 0
-        #press:
-        kh.send_key_action(wid, key_event)
-        #unpress:
-        key_event.pressed = False
-        kh.send_key_action(wid, key_event)
 
     def _process_pointer_grab(self, packet):
         wid = packet[1]
@@ -1303,7 +1258,6 @@ class UIXpraClient(XpraClientBase):
             "screen-scaling.enabled"    : (self.xscale!=1 or self.yscale!=1),
             "screen-scaling.values"     : (int(1000*self.xscale), int(1000*self.yscale)),
             #mouse and cursors:
-            "compressible_cursors"      : True,
             "mouse.echo"                : MOUSE_ECHO,
             "mouse.initial-position"    : self.get_mouse_position(),
             "named_cursors"             : False,
@@ -1319,7 +1273,6 @@ class UIXpraClient(XpraClientBase):
             "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
             #window meta data and handling:
-            "generic_window_types"      : True,
             "server-window-move-resize" : True,
             "server-window-resize"      : True,
             #encoding related:
@@ -1356,7 +1309,6 @@ class UIXpraClient(XpraClientBase):
             "client_options"            : True,
             "csc_atoms"                 : True,
             #TODO: check for csc support (swscale only?)
-            "video_subregion"           : True,
             "video_reinit"              : True,
             "video_scaling"             : True,
             #separate plane is only supported by avcodec2:
@@ -1608,13 +1560,9 @@ class UIXpraClient(XpraClientBase):
             self.session_name = c.strget("session_name", "")
         from xpra.platform import set_name
         set_name("Xpra", self.session_name or "Xpra")
-        self.window_unmap = c.boolget("window_unmap")
         self.window_configure_skip_geometry = c.boolget("window.configure.skip-geometry")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
-        self.force_ungrab = c.boolget("force_ungrab")
-        self.window_refresh_config = c.boolget("window_refresh_config")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
-        self.suspend_resume = c.boolget("suspend-resume")
         self.server_supports_notifications = c.boolget("notifications")
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
         self.server_supports_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
@@ -1663,8 +1611,6 @@ class UIXpraClient(XpraClientBase):
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.server_start_time = c.intget("start_time", -1)
         self.server_platform = c.strget("platform")
-        self.toggle_cursors_bell_notify = c.boolget("toggle_cursors_bell_notify")
-        self.toggle_keyboard_sync = c.boolget("toggle_keyboard_sync")
 
         self.server_display = c.strget("display")
         self.server_max_desktop_size = c.intpair("max_desktop_size")
@@ -1672,8 +1618,6 @@ class UIXpraClient(XpraClientBase):
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
-        self.server_sound_sequence = c.boolget("sound_sequence")
-        self.server_sound_eos_sequence = c.boolget("sound.eos-sequence")
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         self.server_info_request = c.boolget("info-request")
@@ -1785,16 +1729,13 @@ class UIXpraClient(XpraClientBase):
         if self.server_supports_clipboard:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
-        if self.toggle_keyboard_sync:
-            self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
+        self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
         if self.pings:
             self.timeout_add(1000, self.send_ping)
         else:
             self.timeout_add(10*1000, self.send_ping)
-        if not c.boolget("notify-startup-complete"):
-            #we won't get notified, so assume it is now:
-            self._startup_complete()
+
 
     def _startup_complete(self, *args):
         log("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
@@ -2052,9 +1993,8 @@ class UIXpraClient(XpraClientBase):
         self.speaker_enabled = False
         if tell_server:
             self.send("sound-control", "stop")
-        if self.server_sound_sequence:
-            self.min_sound_sequence += 1
-            self.send("sound-control", "new-sequence", self.min_sound_sequence)
+        self.min_sound_sequence += 1
+        self.send("sound-control", "new-sequence", self.min_sound_sequence)
         if ss is None:
             return
         self.sound_sink = None
@@ -2202,19 +2142,16 @@ class UIXpraClient(XpraClientBase):
     def send_notify_enabled(self):
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
         assert self.server_supports_notifications, "cannot toggle notifications: the feature is disabled by the server"
-        assert self.toggle_cursors_bell_notify, "cannot toggle notifications: server lacks the feature"
         self.send("set-notify", self.notifications_enabled)
 
     def send_bell_enabled(self):
         assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
         assert self.server_supports_bell, "cannot toggle bell: the feature is disabled by the server"
-        assert self.toggle_cursors_bell_notify, "cannot toggle bell: server lacks the feature"
         self.send("set-bell", self.bell_enabled)
 
     def send_cursors_enabled(self):
         assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
         assert self.server_supports_cursors, "cannot toggle cursors: the feature is disabled by the server"
-        assert self.toggle_cursors_bell_notify, "cannot toggle cursors: server lacks the feature"
         self.send("set-cursors", self.cursors_enabled)
 
     def send_force_ungrab(self, wid):
@@ -2371,7 +2308,6 @@ class UIXpraClient(XpraClientBase):
 
 
     def reinit_windows(self, new_size_fn=None):
-        assert self.window_unmap, "server support for 'window_unmap' is required for reinitializing windows"
         def fake_send(*args):
             log("fake_send%s", args)
         #now replace all the windows with new ones:

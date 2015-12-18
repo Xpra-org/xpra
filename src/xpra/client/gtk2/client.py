@@ -330,13 +330,12 @@ class XpraClient(GTKXpraClient):
         GTKXpraClient.process_ui_capabilities(self)
         self.UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:
-        if self.suspend_resume:
-            def UI_resumed():
-                self.send("resume", True, self._id_to_window.keys())
-            def UI_failed():
-                self.send("suspend", True, self._id_to_window.keys())
-            self.UI_watcher.add_resume_callback(UI_resumed)
-            self.UI_watcher.add_fail_callback(UI_failed)
+        def UI_resumed():
+            self.send("resume", True, self._id_to_window.keys())
+        def UI_failed():
+            self.send("suspend", True, self._id_to_window.keys())
+        self.UI_watcher.add_resume_callback(UI_resumed)
+        self.UI_watcher.add_fail_callback(UI_failed)
 
 
     def _process_raise_window(self, packet):

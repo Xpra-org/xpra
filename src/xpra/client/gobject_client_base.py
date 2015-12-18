@@ -241,9 +241,6 @@ class MonitorXpraClient(SendCommandConnectClient):
         #self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
     def do_command(self):
-        if not self.server_capabilities.get("server-events") or not self.server_capabilities.get("event_request"):
-            self.warn_and_quit(EXIT_UNSUPPORTED, "this server does not support event monitor mode")
-            return
         log.info("waiting for server events")
 
     def _process_server_event(self, packet):

@@ -687,7 +687,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return [self.GLClientWindowClass, self.ClientWindowClass]
 
     def toggle_opengl(self, *args):
-        assert self.window_unmap, "server support for 'window_unmap' is required for toggling opengl at runtime"
         self.opengl_enabled = not self.opengl_enabled
         opengllog("opengl_toggled: %s", self.opengl_enabled)
         def fake_send(*args):

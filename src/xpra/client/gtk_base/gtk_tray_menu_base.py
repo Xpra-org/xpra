@@ -385,7 +385,7 @@ class GTKTrayMenuBase(object):
             v = self.bell_menuitem.get_active()
             changed = self.client.bell_enabled != v
             self.client.bell_enabled = v
-            if changed and self.client.toggle_cursors_bell_notify:
+            if changed:
                 self.client.send_bell_enabled()
             log("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
@@ -394,7 +394,7 @@ class GTKTrayMenuBase(object):
             log("set_bell_menuitem%s enabled=%s", args, self.client.bell_enabled)
             self.bell_menuitem.set_active(self.client.bell_enabled)
             c = self.client
-            can_toggle_bell = c.toggle_cursors_bell_notify and c.server_supports_bell and c.client_supports_bell
+            can_toggle_bell = c.server_supports_bell and c.client_supports_bell
             set_sensitive(self.bell_menuitem, can_toggle_bell)
             if can_toggle_bell:
                 self.bell_menuitem.set_tooltip_text("Forward system bell")
@@ -408,7 +408,7 @@ class GTKTrayMenuBase(object):
             v = self.cursors_menuitem.get_active()
             changed = self.client.cursors_enabled != v
             self.client.cursors_enabled = v
-            if changed and self.client.toggle_cursors_bell_notify:
+            if changed:
                 self.client.send_cursors_enabled()
             if not self.client.cursors_enabled:
                 self.client.reset_cursor()
@@ -419,7 +419,7 @@ class GTKTrayMenuBase(object):
             log("set_cursors_menuitem%s enabled=%s", args, self.client.cursors_enabled)
             self.cursors_menuitem.set_active(self.client.cursors_enabled)
             c = self.client
-            can_toggle_cursors = c.toggle_cursors_bell_notify and c.server_supports_cursors and c.client_supports_cursors
+            can_toggle_cursors = c.server_supports_cursors and c.client_supports_cursors
             set_sensitive(self.cursors_menuitem, can_toggle_cursors)
             if can_toggle_cursors:
                 self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
@@ -434,7 +434,7 @@ class GTKTrayMenuBase(object):
             changed = self.client.notifications_enabled != v
             self.client.notifications_enabled = v
             log("notifications_toggled%s active=%s changed=%s", args, v, changed)
-            if changed and self.client.toggle_cursors_bell_notify:
+            if changed:
                 self.client.send_notify_enabled()
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         set_sensitive(self.notifications_menuitem, False)
@@ -442,7 +442,7 @@ class GTKTrayMenuBase(object):
             log("set_notifications_menuitem%s enabled=%s", args, self.client.notifications_enabled)
             self.notifications_menuitem.set_active(self.client.notifications_enabled)
             c = self.client
-            can_notify = c.toggle_cursors_bell_notify and c.server_supports_notifications and c.client_supports_notifications
+            can_notify = c.server_supports_notifications and c.client_supports_notifications
             set_sensitive(self.notifications_menuitem, can_notify)
             if can_notify:
                 self.notifications_menuitem.set_tooltip_text("Forward system notifications")
@@ -557,8 +557,6 @@ class GTKTrayMenuBase(object):
         def set_keyboard_sync_tooltip():
             if not self.client.keyboard_helper:
                 self.keyboard_sync_menuitem.set_tooltip_text("Keyboard support is not loaded")
-            elif not self.client.toggle_keyboard_sync:
-                self.keyboard_sync_menuitem.set_tooltip_text("This server does not support changes to keyboard synchronization")
             elif self.client.keyboard_helper.keyboard_sync:
                 self.keyboard_sync_menuitem.set_tooltip_text("Disable keyboard synchronization (prevents spurious key repeats on high latency connections)")
             else:
@@ -573,7 +571,7 @@ class GTKTrayMenuBase(object):
         def set_keyboard_sync_menuitem(*args):
             log("set_keyboard_sync_menuitem%s enabled=%s", args, self.client.keyboard_helper.keyboard_sync)
             self.keyboard_sync_menuitem.set_active(self.client.keyboard_helper.keyboard_sync)
-            set_sensitive(self.keyboard_sync_menuitem, self.client.toggle_keyboard_sync)
+            set_sensitive(self.keyboard_sync_menuitem, True)
             set_keyboard_sync_tooltip()
         self.client.after_handshake(set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
@@ -581,13 +579,9 @@ class GTKTrayMenuBase(object):
     def make_openglmenuitem(self):
         gl = self.checkitem("OpenGL")
         def gl_set(*args):
-            log("gl_set(%s) opengl_enabled=%s, window_unmap=%s", args, self.client.opengl_enabled, self.client.window_unmap)
+            log("gl_set(%s) opengl_enabled=%s, ", args, self.client.opengl_enabled)
             gl.set_active(self.client.opengl_enabled)
-            can_gl = self.client.window_unmap and self.client.client_supports_opengl
-            set_sensitive(gl, can_gl)
-            if not self.client.window_unmap:
-                gl.set_tooltip_text("no server support for runtime switching")
-                return
+            set_sensitive(gl, self.client.client_supports_opengl)
             def opengl_toggled(*args):
                 log("opengl_toggled%s", args)
                 self.client.toggle_opengl()

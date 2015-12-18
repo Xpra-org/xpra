@@ -117,13 +117,10 @@ class WindowSource(object):
         self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression (not to be confused with 'rgb24zlib'...)
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
-        self.webp_leaks = encoding_options.boolget("webp_leaks", True)  #all clients leaked memory until this flag got added
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
         self.supports_flush = encoding_options.get("flush")
-        ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg"))     #default encodings for auto-refresh
-        if self.webp_leaks:
-            ropts.remove("webp")                        #don't use webp if the client is going to leak with it!
+        ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg", "webp"))     #default encodings for auto-refresh
         ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
         ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", list(ropts))
@@ -634,8 +631,6 @@ class WindowSource(object):
         #"rgb" is a pseudo encoding and needs special code:
         if "rgb24" in  common_encodings or "rgb32" in common_encodings:
             common_encodings.append("rgb")
-        if self.webp_leaks and "webp" in common_encodings:
-            common_encodings.remove("webp")
         self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s)" % (", ".join(self._encoders.keys()), ", ".join(self.core_encodings)))

@@ -660,10 +660,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
-        if not self._client.window_refresh_config:
-            workspacelog("sending configure event to update workspace value to %s", wn(window_workspace))
-            self.process_configure_event(True)
-            return
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config
         client_properties = {}

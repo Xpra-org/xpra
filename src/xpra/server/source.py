@@ -409,7 +409,6 @@ class ServerSource(object):
         self.pulseaudio_server = None
         self.sound_decoders = []
         self.sound_encoders = []
-        self.server_driven = False
 
         self.keyboard_config = None
         self.send_cursor_pending = False
@@ -673,7 +672,6 @@ class ServerSource(object):
         self.named_cursors = c.boolget("named_cursors")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
-        self.notify_startup_complete = c.boolget("notify-startup-complete")
         self.control_commands = c.strlistget("control_commands")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
         self.show_desktop_allowed = c.boolget("show-desktop")
@@ -699,7 +697,6 @@ class ServerSource(object):
         self.sound_encoders = c.strlistget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
-        self.server_driven = c.boolget("sound.server_driven")
         av_sync = c.boolget("av-sync")
         self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
@@ -780,11 +777,10 @@ class ServerSource(object):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c[k]
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
-                if stripped_k in ("transparency", "csc_atoms", "client_options",
+                if stripped_k in ("transparency",
                                   "video_separateplane",
                                   "rgb_zlib", "rgb_lz4", "rgb_lzo",
-                                  "webp_leaks", "video_subregion",
-                                  "video_scaling", "video_reinit"):
+                                  "video_scaling"):
                     v = c.boolget(k)
                 elif stripped_k in ("initial_quality", "initial_speed",
                                     "min-quality", "quality",
@@ -872,8 +868,7 @@ class ServerSource(object):
 
     def startup_complete(self):
         log("startup_complete()")
-        if self.notify_startup_complete:
-            self.send("startup-complete")
+        self.send("startup-complete")
 
     def start_sending_sound(self, codec=None, volume=1.0):
         soundlog("start_sending_sound(%s)", codec)
@@ -952,10 +947,9 @@ class ServerSource(object):
             ss.cleanup()
 
     def send_eos(self, codec, sequence=0):
-        if self.server_driven:
-            #tell the client this is the end:
-            self.send("sound-data", codec, "", {"end-of-stream" : True,
-                                                "sequence"      : sequence})
+        #tell the client this is the end:
+        self.send("sound-data", codec, "", {"end-of-stream" : True,
+                                            "sequence"      : sequence})
 
 
     def new_stream(self, sound_source, codec):
@@ -964,12 +958,11 @@ class ServerSource(object):
             soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
         sound_source.codec = codec
-        if self.server_driven:
-            #tell the client this is the start:
-            self.send("sound-data", sound_source.codec, "",
-                      {"start-of-stream"    : True,
-                       "codec"              : sound_source.codec,
-                       "sequence"           : sound_source.sequence})
+        #tell the client this is the start:
+        self.send("sound-data", sound_source.codec, "",
+                  {"start-of-stream"    : True,
+                   "codec"              : sound_source.codec,
+                   "sequence"           : sound_source.sequence})
         self.update_av_sync_delay_total()
 
     def new_sound_buffer(self, sound_source, data, metadata):

@@ -615,7 +615,6 @@ XpraClient.prototype._make_hello = function() {
 		"auto_refresh_delay"		: 500,
 		"randr_notify"				: true,
 		"sound.server_driven"		: true,
-		"generic_window_types"		: true,
 		"server-window-resize"		: true,
 		"notify-startup-complete"	: true,
 		"generic-rgb-encodings"		: true,
@@ -641,7 +640,6 @@ XpraClient.prototype._make_hello = function() {
 		"sound.send"				: false,
 		"sound.decoders"			: ["wav"],
 		// encoding stuff
-		"compressible_cursors"		: true,
 		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
 		"encoding.rgb_lz4"			: true,

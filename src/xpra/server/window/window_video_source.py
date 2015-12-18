@@ -54,7 +54,7 @@ class WindowVideoSource(WindowSource):
         #this will call init_vars():
         WindowSource.__init__(self, *args)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
-        self.supports_video_subregion = VIDEO_SUBREGION and self.encoding_options.boolget("video_subregion", False)
+        self.supports_video_subregion = VIDEO_SUBREGION
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
