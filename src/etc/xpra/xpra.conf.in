@@ -285,6 +285,7 @@ keyboard-sync = yes
 ssh = %(ssh_command)s
 
 # Key Shortcuts:
+key-shortcut = Meta+Shift+F1:show_menu
 key-shortcut = Meta+Shift+F2:show_start_new_command
 key-shortcut = Meta+Shift+F3:show_bug_report
 key-shortcut = Meta+Shift+F4:quit
@@ -346,6 +347,10 @@ shadow-fullscreen = no
 # when using exit-with-children.
 # This causes the server to terminate when the last child has exited:
 exit-with-children = no
+
+# A wrapper for executing commands
+# exec-wrapper=vglrun
+# exec-wrapper=vglrun -d :1
 
 # Allows clients to start new commands in the server context:
 #start-new-commands = yes
