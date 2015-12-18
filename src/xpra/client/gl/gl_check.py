@@ -250,7 +250,7 @@ def do_check_GL_support(force_enable):
                 return str(v)
         for d,s,fatal in (("vendor",     GL_VENDOR,      True),
                           ("renderer",   GL_RENDERER,    True),
-                          ("shading language version", GL_SHADING_LANGUAGE_VERSION, False)):
+                          ("shading-language-version", GL_SHADING_LANGUAGE_VERSION, False)):
             try:
                 v = glGetString(s)
                 v = fixstring(v.decode())
@@ -274,7 +274,7 @@ def do_check_GL_support(force_enable):
                     gl_check_error("OpenGL version %i.%i is too old, %i.%i is required for %s" % (gl_major, gl_minor, req_maj, req_min, vendor))
 
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
-        for d,s in {"GLU version": GLU_VERSION, "GLU extensions":GLU_EXTENSIONS}.items():
+        for d,s in {"GLU.version": GLU_VERSION, "GLU.extensions":GLU_EXTENSIONS}.items():
             v = gluGetString(s)
             v = v.decode()
             log("%s: %s", d, v)
@@ -544,7 +544,7 @@ def check_support(force_enable=False, check_colormap=False):
     return props
 
 
-def main():
+def main(force_enable=False):
     from xpra.platform import init,clean
     from xpra.platform.gui import init as gui_init
     from xpra.util import pver
@@ -565,7 +565,7 @@ def main():
             log.error("ERROR: %s", msg)
             errors.append(msg)
         gl_check_error = log_error
-        props = check_support(True, verbose)
+        props = check_support(force_enable, verbose)
         log.info("")
         if len(errors)>0:
             log.info("OpenGL errors:")

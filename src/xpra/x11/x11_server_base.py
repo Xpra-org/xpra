@@ -30,6 +30,7 @@ mouselog = Logger("x11", "server", "mouse")
 grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
+gllog = Logger("screen", "opengl")
 
 from xpra.util import iround
 from xpra.server.gtk_server_base import GTKServerBase
@@ -78,6 +79,7 @@ class X11ServerBase(GTKServerBase):
         self.current_xinerama_config = None
         self.x11_init()
         GTKServerBase.init(self, opts)
+        self.query_opengl()
 
     def x11_init(self):
         if not X11Keyboard.hasXFixes() and self.cursors:
@@ -103,6 +105,30 @@ class X11ServerBase(GTKServerBase):
         else:
             log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
         log("randr enabled: %s", self.randr)
+
+    def query_opengl(self):
+        self.opengl_props = {}
+        try:
+            import subprocess
+            cmd = self.get_full_child_command(["xpra", "opengl"])
+            env = self.get_child_env()
+            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=False, close_fds=True)
+            out,err = proc.communicate()
+            gllog("out(xpra opengl)=%s", out)
+            gllog("err(xpra opengl)=%s", err)
+            if proc.returncode==0:
+                #parse output:
+                for line in out.splitlines():
+                    parts = line.split("=")
+                    if len(parts)!=2:
+                        continue
+                    k = parts[0].strip()
+                    v = parts[1].strip()
+                    self.opengl_props[k] = v
+            gllog("OpenGL: %s", self.opengl_props)
+        except Exception as e:
+            gllog.warn("Warning: failed to query OpenGL properties")
+            gllog.warn(" %s", e)
 
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
@@ -184,7 +210,10 @@ class X11ServerBase(GTKServerBase):
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
+        from xpra.util import updict
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
+        if self.opengl_props:
+            updict(info, "opengl", self.opengl_props)
         info["server.type"] = "Python/gtk/x11"
         try:
             from xpra.x11.gtk2.composite import CompositeHelper

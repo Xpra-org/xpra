@@ -185,9 +185,9 @@ class SessionInfo(gtk.Window):
         pygst_version = props.get("pygst.version", "")
         tb.new_row("GStreamer", label(make_version_str(gst_version)), label(server_version_info("sound.gst.version", "gst_version")))
         tb.new_row("pygst", label(make_version_str(pygst_version)), label(server_version_info("sound.pygst.version", "pygst_version")))
-        tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))
-        tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label("n/a"))
-        tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))
+        tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label(server_version_info("opengl.opengl")))
+        tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label(server_version_info("opengl.vendor")))
+        tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label(server_version_info("opengl.pyopengl")))
 
         # Features Table:
         vbox = self.vbox_tab("features.png", "Features", self.populate_features)

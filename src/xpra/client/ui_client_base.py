@@ -1744,7 +1744,7 @@ class UIXpraClient(XpraClientBase):
         gui_ready()
         if self.tray:
             self.tray.ready()
-
+        self.send_info_request()
 
     def handshake_complete(self):
         oh = self._on_handshake
