@@ -235,10 +235,10 @@ for GST_VERSION in "0.10" "1.0"; do
 	if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 		KEEP="./gstreamer-$GST_VERSION.keep"
 		mkdir ${KEEP}
-		PLUGINS="app audio coreelements faac faad flac ogg oss osxaudio speex gdp volume vorbis wav"
+		PLUGINS="app audio coreelements faac faad flac ogg oss osxaudio speex gdp volume vorbis wav lame mad"
 		if [ $GST_VERSION == "0.10" ]; then
 			#only found in 0.10:
-			PLUGINS="$PLUGINS lame mad mpegaudioparse python"
+			PLUGINS="$PLUGINS mpegaudioparse python"
 		fi
 		for x in $PLUGINS; do
 			echo "* keeping "$x
