@@ -479,9 +479,9 @@ def get_sink_plugins():
     elif sys.platform.startswith("win"):
         SINKS.append("directsoundsink")
     from xpra.sound.pulseaudio_util import has_pa
+    SINKS.append("autoaudiosink")
     if has_pa():
         SINKS.append("pulsesink")
-    SINKS.append("autoaudiosink")
     if os.name=="posix":
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS
@@ -496,12 +496,7 @@ def get_default_sink():
             return DEFAULT_SINK
     from xpra.sound.pulseaudio_util import has_pa
     if has_pa():
-        #warning: this is fugly!
-        #to avoid timestamp warnings with gstreamer 0.10 and vorbis,
-        #we prefer pulsesink to autoaudiosink, but only do this if it looks like pulseaudio is running:
-        from xpra.sound.pulseaudio_common_util import get_pulse_server_x11_property
-        if get_pulse_server_x11_property():
-            return "pulsesink"
+        return "pulsesink"
     SINKS = get_sink_plugins()
     return SINKS[0]
 
