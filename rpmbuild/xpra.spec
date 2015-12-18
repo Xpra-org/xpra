@@ -37,11 +37,7 @@
 %define requires_printing , python-cups, cups-filters, cups-pdf
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
-%define gstreamer0 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good gstreamer-plugins-ugly
 %define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly, gstreamer1-plugins-bad-free
-#for gstreamer0:
-#requires_sound: gstreamer0 + gstreamer-python + pulseaudio + pulseaudio-utils
-#for gstreamer1:
 %define requires_sound %{gstreamer1}, python-gstreamer1, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, python3-gstreamer1, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
