@@ -577,7 +577,7 @@ def main():
             v = props[k]
             #skip not human readable:
             if k not in ("extensions", "glconfig"):
-                log.info("* %s : %s", str(k).rstrip(".version").ljust(24), pver(v))
+                log.info("* %s : %s", str(k).ljust(24), pver(v))
         return len(errors)
     finally:
         clean()
