@@ -243,6 +243,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                       help="program to spawn in new server, taken into account by the exit-with-children option (may be repeated). Default: %default.")
+    group.add_option("--exec-wrapper", action="store",
+                      dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
+                      help="Wrapper for executing commands. Default: %default.")
     group.add_option("--exit-with-children", action="store_true",
                       dest="exit_with_children", default=defaults.exit_with_children,
                       help="Terminate the server when the last --start-child command(s) exit")
@@ -833,7 +836,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print"):
+    if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl"):
         to = sys.stdout
     if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "version", "print", "showconfig"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
@@ -932,6 +935,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 error_cb("no sound support!")
             from xpra.sound.wrapper import run_sound
             return run_sound(mode, error_cb, options, args)
+        elif mode=="opengl":
+            return run_glcheck(options)
         elif mode == "initenv":
             from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_script
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
@@ -1507,6 +1512,18 @@ def no_gtk():
         #which insert a fake gtk module to trigger exceptions
         return
     raise Exception("the gtk module is already loaded: %s" % gtk)
+
+
+def run_glcheck(opts):
+    from xpra.util import pver
+    from xpra.client.gl.gl_check import check_support
+    props = check_support(force_enable=opts.opengl)
+    for k in sorted(props.keys()):
+        v = props[k]
+        #skip not human readable:
+        if k not in ("extensions", "glconfig"):
+            sys.stdout.write("%s=%s\n" % (str(k), pver(v)))
+    return 0
 
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):

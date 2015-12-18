@@ -133,6 +133,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.start_new_commands = False
         self.remote_logging = False
         self.env = []
+        self.exec_wrapper = None
         self.child_reaper = getChildReaper(self.reaper_exit)
         self.send_pings = False
         self.scaling_control = False
@@ -211,6 +212,9 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children
         self.start_new_commands = opts.start_new_commands
+        if opts.exec_wrapper:
+            import shlex
+            self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.remote_logging = opts.remote_logging
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
@@ -386,7 +390,10 @@ class ServerBase(ServerCore, FileTransferHandler):
             else:
                 soundlog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
-        self.pulseaudio_proc = self.start_child("pulseaudio", self.pulseaudio_command, True, callback=pulseaudio_ended)
+        import subprocess
+        env = self.get_child_env()
+        self.pulseaudio_proc = subprocess.Popen(self.pulseaudio_command, stdin=None, env=env, shell=True, close_fds=True)
+        self.add_process(self.pulseaudio_proc, "pulseaudio", self.pulseaudio_command, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
             soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
 
@@ -650,17 +657,23 @@ class ServerBase(ServerCore, FileTransferHandler):
         env.update(self.env)
         return env
 
-    def start_child(self, name, child_cmd, ignore=False, callback=None):
-        log("start_child(%s, %s, %s)", name, child_cmd, ignore)
+    def get_full_child_command(self, cmd, use_wrapper=True):
+        #make sure we have it as a list:
+        if type(cmd) not in (list, tuple):
+            cmd = [str(cmd)]
+        if not use_wrapper or not self.exec_wrapper:
+            return cmd
+        return self.exec_wrapper + cmd
+
+    def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, **kwargs):
+        log("start_child%s", (name, child_cmd, ignore, callback, use_wrapper))
         import subprocess
         env = self.get_child_env()
         try:
-            proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
-            self.add_process(proc, name, child_cmd, ignore=ignore, callback=callback)
-            if type(child_cmd) in (list, tuple):
-                info = " ".join(child_cmd)
-            else:
-                info = str(child_cmd)
+            real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
+            proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=False, close_fds=True, **kwargs)
+            self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
+            info = " ".join(real_cmd)
             if ignore:
                 log("started command '%s' with pid %s (ignored)", info, proc.pid)
             else:

@@ -313,6 +313,7 @@ OPTION_TYPES = {
                     "speaker"           : str,
                     "sound-source"      : str,
                     "socket-permissions": str,
+                    "exec-wrapper"      : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -444,6 +445,7 @@ def get_defaults():
                     "sound-source"      : "",
                     "html"              : "",
                     "socket-permissions": "600",
+                    "exec-wrapper"      : "",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,
