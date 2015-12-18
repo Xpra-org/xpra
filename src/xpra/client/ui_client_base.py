@@ -704,6 +704,10 @@ class UIXpraClient(XpraClientBase):
         return None
 
 
+    def show_menu(self, *args):
+        if self.menu_helper:
+            self.menu_helper.activate()
+
     def setup_xpra_tray(self, tray_icon_filename):
         tray = None
         #this is our own tray

@@ -503,6 +503,7 @@ def get_defaults():
                     "compressors"       : ["all"],
                     "packet-encoders"   : ["all"],
                     "key-shortcut"      : [
+                                           "Meta+Shift+F1:show_menu",
                                            "Meta+Shift+F2:show_start_new_command",
                                            "Meta+Shift+F4:quit",
                                            "Meta+Shift+F5:increase_quality",
