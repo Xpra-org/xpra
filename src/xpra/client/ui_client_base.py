@@ -1311,8 +1311,6 @@ class UIXpraClient(XpraClientBase):
             #TODO: check for csc support (swscale only?)
             "video_reinit"              : True,
             "video_scaling"             : True,
-            #separate plane is only supported by avcodec2:
-            "video_separateplane"       : get_codec("dec_avcodec2") is not None,
             "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,

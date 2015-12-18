@@ -255,7 +255,7 @@ class AVImageWrapper(ImageWrapper):
     """
 
     def __repr__(self):                          #@DuplicatedSignature
-        return ImageWrapper.__repr__(self)+"-(%s)" % self.av_frames
+        return ImageWrapper.__repr__(self)+"-(%s)" % self.av_frame
 
     def free(self):                             #@DuplicatedSignature
         log("AVImageWrapper.free()")
@@ -268,11 +268,11 @@ class AVImageWrapper(ImageWrapper):
         self.xpra_free_frame()
 
     def xpra_free_frame(self):
-        log("AVImageWrapper.xpra_free_frame() av_frames=%s", self.av_frames)
-        if self.av_frames:
-            for av_frame in self.av_frames:
-                av_frame.xpra_free()
-            self.av_frames = None
+        av_frame = self.av_frame
+        log("AVImageWrapper.xpra_free_frame() av_frame=%s", av_frame)
+        if av_frame:
+            self.av_frame = None
+            av_frame.xpra_free()
 
 
 cdef class Decoder:
@@ -287,10 +287,8 @@ cdef class Decoder:
     cdef AVPixelFormat pix_fmt
     cdef AVPixelFormat actual_pix_fmt
     cdef object colorspace
-    cdef object framewrappers
     cdef object weakref_images
-    #we usually use just one, but 3-pass decoding will use all 3
-    cdef AVFrame *av_frames[3]
+    cdef AVFrame *av_frame
     #this is the actual number of images we have returned
     cdef unsigned long frames
     cdef int width
@@ -362,15 +360,12 @@ cdef class Decoder:
             self.clean_decoder()
             return  False
         #up to 3 AVFrame objects used:
-        for i in range(3):
-            self.av_frames[i] = av_frame_alloc()
-            if self.av_frames[i]==NULL:
-                log.error("could not allocate an AVFrame for decoding")
-                self.clean_decoder()
-                return  False
+        self.av_frame = av_frame_alloc()
+        if self.av_frame==NULL:
+            log.error("could not allocate an AVFrame for decoding")
+            self.clean_decoder()
+            return  False
         self.frames = 0
-        #to keep track of frame wrappers:
-        self.framewrappers = {}
         #to keep track of images not freed yet:
         #(we want a weakref.WeakSet() but this is python2.7+ only..)
         self.weakref_images = []
@@ -385,10 +380,8 @@ cdef class Decoder:
         self.pix_fmt = 0
         self.actual_pix_fmt = 0
         self.colorspace = ""
-        self.framewrappers = {}
         self.weakref_images = []
-        for i in range(3):
-            self.av_frames[i] = NULL                #should be redundant
+        self.av_frame = NULL                        #should be redundant
         self.frames = 0
         self.width = 0
         self.height = 0
@@ -410,10 +403,9 @@ cdef class Decoder:
                 if not img.freed:
                     img.clone_pixel_data()
 
-        for i in range(3):
-            if self.av_frames[i]!=NULL:
-                log("clean_decoder() freeing AVFrame: %#x", <unsigned long> self.av_frames[i])
-                av_frame_free(&self.av_frames[i])
+        if self.av_frame!=NULL:
+            log("clean_decoder() freeing AVFrame: %#x", <unsigned long> self.av_frame)
+            av_frame_free(&self.av_frame)
             #redundant: self.frame = NULL
 
         cdef unsigned long ctx_key          #@DuplicatedSignature
@@ -449,8 +441,6 @@ cdef class Decoder:
                 "width"     : self.width,
                 "height"    : self.height,
                 }
-        if self.framewrappers is not None:
-            info["buffers"] = len(self.framewrappers)
         if self.colorspace:
             info["colorspace"] = self.colorspace
             info["actual_colorspace"] = self.get_actual_colorspace()
@@ -483,10 +473,8 @@ cdef class Decoder:
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
-        cdef int offset
         cdef int size
         cdef int len = 0
-        cdef int step, steps
         cdef int nplanes
         cdef int got_picture
         cdef AVPacket avpkt
@@ -494,7 +482,6 @@ cdef class Decoder:
         cdef AVFrameWrapper framewrapper
         cdef AVFrame *av_frame
         cdef object img
-        cdef object plane_offsets, plane_sizes
         assert self.codec_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.codec!=NULL
 
@@ -504,116 +491,88 @@ cdef class Decoder:
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 128)
 
-        #support for separate colour planes:
-        #(each plane is sent in its own frame)
-        plane_sizes = options.get("plane_sizes")
-        if plane_sizes is not None:
-            #this is the separate colour plane format
-            #each loop iteration will decode one plane (Y, U then V):
-            steps = 3
-            nplanes = 1
-            #the actual format is fixed:
-            assert options.get("csc")=="YUV444P", "separate plane sizes is only supported for YUV444P mode, got %s instead" % options.get("csc")
-            self.actual_pix_fmt = FORMAT_TO_ENUM["YUV444P"]
-            plane_offsets = [0, plane_sizes[0], plane_sizes[0]+plane_sizes[1]]
-        else:
-            #regular format (not using separate colour planes)
-            #either RGB or YUV output
-            #for YUV output, we need 3 planes:
-            steps = 1
-            nplanes = 3
-            plane_offsets = [0]
-            plane_sizes = [buf_len]
         #note: plain RGB output, will redefine those:
         out = []
         strides = []
         outsize = 0
-        framewrappers = []
-        for step in range(steps):
-            offset = plane_offsets[step]
-            size = plane_sizes[step]
 
-            av_frame = self.av_frames[step]
-            #ensure we can detect if the frame buffer got allocated:
-            clear_frame(av_frame)
-            #now safe to run without gil:
-            log("decompress_image() step %s/%s using offset=%s and size=%s", step+1, steps, offset, size)
-            with nogil:
-                av_init_packet(&avpkt)
-                avpkt.data = <uint8_t *> (padded_buf+offset)
-                avpkt.size = size
-                len = avcodec_decode_video2(self.codec_ctx, av_frame, &got_picture, &avpkt)
-            if len<0:
-                av_frame_unref(av_frame)
-                log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
-                log.error("avcodec_decode_video2 %s decoding failure:", self.encoding)
-                log.error(" %s", self.av_error_str(len))
+        #ensure we can detect if the frame buffer got allocated:
+        clear_frame(self.av_frame)
+        #now safe to run without gil:
+        with nogil:
+            av_init_packet(&avpkt)
+            avpkt.data = <uint8_t *> (padded_buf)
+            avpkt.size = buf_len
+            len = avcodec_decode_video2(self.codec_ctx, self.av_frame, &got_picture, &avpkt)
+        if len<0:
+            av_frame_unref(self.av_frame)
+            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
+            log.error("avcodec_decode_video2 %s decoding failure:", self.encoding)
+            log.error(" %s", self.av_error_str(len))
+            return None
+        if len==0:
+            av_frame_unref(self.av_frame)
+            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
+            log.error("avcodec_decode_video2 %s decoding failure - no stream", self.encoding)
+            return None
+
+        if self.actual_pix_fmt!=self.av_frame.format:
+            if self.av_frame.format==-1:
+                log.error("avcodec error decoding %i bytes of %s data", buf_len, self.encoding)
+                log.error(" frame %i", self.frames)
+                log.error(" options=%s", options)
+                log.error(" decoder state:")
+                for k,v in self.get_info().items():
+                    log.error("  %s = %s", k, v)
                 return None
-            if len==0:
-                av_frame_unref(av_frame)
-                log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
-                log.error("avcodec_decode_video2 %s decoding failure - no stream", self.encoding)
+            self.actual_pix_fmt = self.av_frame.format
+            if self.actual_pix_fmt not in ENUM_TO_FORMAT:
+                av_frame_unref(self.av_frame)
+                log.error("unknown output pixel format: %s, expected %s (%s)", self.actual_pix_fmt, self.pix_fmt, self.colorspace)
                 return None
+            log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
-            if steps==1:
-                if self.actual_pix_fmt!=av_frame.format:
-                    if av_frame.format==-1:
-                        log.error("avcodec error decoding %i bytes of %s data", buf_len, self.encoding)
-                        log.error(" frame %i, step %i of %i", self.frames, (step+1), steps)
-                        log.error(" options=%s", options)
-                        log.error(" decoder state:")
-                        for k,v in self.get_info().items():
-                            log.error("  %s = %s", k, v)
-                        return None
-                    self.actual_pix_fmt = av_frame.format
-                    if self.actual_pix_fmt not in ENUM_TO_FORMAT:
-                        av_frame_unref(av_frame)
-                        log.error("unknown output pixel format: %s, expected %s (%s)", self.actual_pix_fmt, self.pix_fmt, self.colorspace)
-                        return None
-                    log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
+        cs = self.get_actual_colorspace()
+        if cs.endswith("P"):
+            divs = get_subsampling_divs(cs)
+            nplanes = 3
+            for i in range(3):
+                _, dy = divs[i]
+                if dy==1:
+                    height = self.codec_ctx.height
+                elif dy==2:
+                    height = (self.codec_ctx.height+1)>>1
+                else:
+                    av_frame_unref(self.av_frame)
+                    raise Exception("invalid height divisor %s" % dy)
+                stride = self.av_frame.linesize[i]
+                size = height * stride
+                outsize += size
 
-            cs = self.get_actual_colorspace()
-            if cs.endswith("P"):
-                divs = get_subsampling_divs(cs)
-                for i in range(nplanes):
-                    _, dy = divs[i]
-                    if dy==1:
-                        height = self.codec_ctx.height
-                    elif dy==2:
-                        height = (self.codec_ctx.height+1)>>1
-                    else:
-                        av_frame_unref(av_frame)
-                        raise Exception("invalid height divisor %s" % dy)
-                    stride = av_frame.linesize[i]
-                    size = height * stride
-                    outsize += size
+                out.append(memory_as_pybuffer(<void *>self.av_frame.data[i], size, True))
+                strides.append(stride)
+                log("decompress_image() read back yuv plane %s: %s bytes", i, size)
+        else:
+            #RGB mode: "out" is a single buffer
+            strides = self.av_frame.linesize[0]+self.av_frame.linesize[1]+self.av_frame.linesize[2]
+            outsize = self.codec_ctx.height * strides
+            out = memory_as_pybuffer(<void *>self.av_frame.data[0], outsize, True)
+            nplanes = 0
+            log("decompress_image() read back rgb buffer: %s bytes", outsize)
 
-                    out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, True))
-                    strides.append(stride)
-                    log("decompress_image() read back yuv plane %s: %s bytes", i, size)
-            else:
-                assert steps==1
-                #RGB mode: "out" is a single buffer
-                strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
-                outsize = self.codec_ctx.height * strides
-                out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, True)
-                nplanes = 0
-                log("decompress_image() read back rgb buffer: %s bytes", outsize)
+        #FIXME: we could lose track of framewrappers if an error occurs before the end:
+        framewrapper = AVFrameWrapper()
+        framewrapper.set_context(self.codec_ctx, self.av_frame)
 
-            #FIXME: we could lose track of framewrappers if an error occurs before the end:
-            framewrapper = AVFrameWrapper()
-            framewrapper.set_context(self.codec_ctx, av_frame)
-            framewrappers.append(framewrapper)
-
-            if outsize==0:
-                av_frame_unref(av_frame)
-                raise Exception("output size is zero!")
+        if outsize==0:
+            av_frame_unref(self.av_frame)
+            raise Exception("output size is zero!")
 
         free(padded_buf)
         assert self.codec_ctx.width>=self.width, "codec width is smaller than our width: %s<%s" % (self.codec_ctx.width, self.width)
         assert self.codec_ctx.height>=self.height, "codec height is smaller than our height: %s<%s" % (self.codec_ctx.height, self.height)
-        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes*steps, thread_safe=False)
-        img.av_frames = framewrappers
+        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes, thread_safe=False)
+        img.av_frame = framewrapper
         self.frames += 1
         #add to weakref list after cleaning it up:
         self.weakref_images = [x for x in self.weakref_images if x() is not None]

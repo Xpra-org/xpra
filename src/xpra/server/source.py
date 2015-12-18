@@ -778,7 +778,6 @@ class ServerSource(object):
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
                 if stripped_k in ("transparency",
-                                  "video_separateplane",
                                   "rgb_zlib", "rgb_lz4", "rgb_lzo",
                                   "video_scaling"):
                     v = c.boolget(k)
