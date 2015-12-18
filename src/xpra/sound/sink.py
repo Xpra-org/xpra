@@ -9,8 +9,8 @@ from collections import deque
 from threading import Lock
 
 from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
-from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, MP3, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
+                                        MP3, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 
 from xpra.scripts.config import InitExit
 from xpra.util import updict, csv
@@ -19,24 +19,8 @@ from xpra.log import Logger
 log = Logger("sound")
 
 
-SINKS = ["autoaudiosink"]
-DEFAULT_SINK = SINKS[0]
-if has_pa():
-    SINKS.append("pulsesink")
-    #warning: this is fugly!
-    #to avoid timestamp warnings with gstreamer 0.10 and vorbis,
-    #we prefer pulsesink to autoaudiosink, but only do this if it looks like pulseaudio is running:
-    from xpra.sound.pulseaudio_common_util import get_pulse_server_x11_property
-    if get_pulse_server_x11_property():
-        DEFAULT_SINK = "pulsesink"
-if sys.platform.startswith("darwin"):
-    SINKS.append("osxaudiosink")
-    DEFAULT_SINK = "osxaudiosink"
-elif sys.platform.startswith("win"):
-    SINKS.append("directsoundsink")
-    DEFAULT_SINK = "directsoundsink"
-if os.name=="posix":
-    SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
+SINKS = get_sink_plugins()
+DEFAULT_SINK = get_default_sink()
 
 SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync"    : False,
                                   "async"   : True,
@@ -47,10 +31,6 @@ SINK_DEFAULT_ATTRIBUTES = {
                            "pulsesink"  : {"client" : "Xpra"}
                            }
 
-DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
-if DEFAULT_SINK not in SINKS:
-    log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
-    DEFAULT_SINK = SINKS[0]
 QUEUE_SILENT = 0
 QUEUE_TIME = get_queue_time(450)
 

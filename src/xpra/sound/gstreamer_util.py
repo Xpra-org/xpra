@@ -472,6 +472,39 @@ def get_source_plugins():
     sources.append("audiotestsrc")
     return sources
 
+def get_sink_plugins():
+    SINKS = []
+    if sys.platform.startswith("darwin"):
+        SINKS.append("osxaudiosink")
+    elif sys.platform.startswith("win"):
+        SINKS.append("directsoundsink")
+    from xpra.sound.pulseaudio_util import has_pa
+    if has_pa():
+        SINKS.append("pulsesink")
+    SINKS.append("autoaudiosink")
+    if os.name=="posix":
+        SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
+    return SINKS
+
+def get_default_sink():
+    DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK")
+    if DEFAULT_SINK:
+        SINKS = get_sink_plugins()
+        if DEFAULT_SINK not in SINKS:
+            log.error("invalid default sound sink: '%s' is not in %s", DEFAULT_SINK, csv(SINKS))
+        else:
+            return DEFAULT_SINK
+    from xpra.sound.pulseaudio_util import has_pa
+    if has_pa():
+        #warning: this is fugly!
+        #to avoid timestamp warnings with gstreamer 0.10 and vorbis,
+        #we prefer pulsesink to autoaudiosink, but only do this if it looks like pulseaudio is running:
+        from xpra.sound.pulseaudio_common_util import get_pulse_server_x11_property
+        if get_pulse_server_x11_property():
+            return "pulsesink"
+    SINKS = get_sink_plugins()
+    return SINKS[0]
+
 
 def get_test_defaults(remote):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
@@ -669,15 +702,19 @@ def main():
             log.enable_debug()
         import_gst()
         print("Loaded Python GStreamer version %s for Python %s.%s" % (gst_vinfo, sys.version_info[0], sys.version_info[1]))
-        print("GStreamer plugins found: %s" % ", ".join(get_all_plugin_names()))
+        apn = get_all_plugin_names()
+        print("GStreamer plugins found: %s" % csv(apn))
         print("")
         print("GStreamer version: %s" % ".".join([str(x) for x in gst_version]))
         print("PyGStreamer version: %s" % ".".join([str(x) for x in pygst_version]))
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
-        print("encoders supported: %s" % ", ".join(encs))
-        print("decoders supported: %s" % ", ".join(decs))
+        print("encoders supported: %s" % csv(encs))
+        print("decoders supported: %s" % csv(decs))
+        print("source plugins: %s" % csv([x for x in get_source_plugins() if x in apn]))
+        print("sink plugins: %s" % csv([x for x in get_sink_plugins() if x in apn]))
+        print("source plugins: %s" % get_default_sink())
     finally:
         clean()
 
