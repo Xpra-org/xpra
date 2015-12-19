@@ -821,7 +821,7 @@ class ServerCore(object):
             v = command.run(*args[1:])
             return 0, v
         except ControlError as e:
-            commandlog.error("error %s processing control command %s", e.code, name)
+            commandlog.error("error %s processing control command '%s'", e.code, name)
             msgs = [" %s" % e]
             if e.help:
                 msgs.append(" '%s': %s" % (name, e.help))
@@ -829,7 +829,7 @@ class ServerCore(object):
                 commandlog.error(msg)
             return e.code, "\n".join(msgs)
         except Exception as e:
-            commandlog.error("error processing control command %s", name, exc_info=True)
+            commandlog.error("error processing control command '%s'", name, exc_info=True)
             return 127, "error processing control command: %s" % e
 
 
