@@ -123,6 +123,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Dec 20 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.4-1
+- new upstream release
+
 * Sun Nov 29 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.3-1
 - new upstream release
 
