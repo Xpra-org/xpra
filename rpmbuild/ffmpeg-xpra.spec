@@ -1,6 +1,6 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     2.8.3
+Version:     2.8.4
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra	
 
