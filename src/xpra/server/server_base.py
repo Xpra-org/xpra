@@ -1421,7 +1421,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         for ws, window in self._control_windowsources_from_args(*wids).items():
             ws.set_new_encoding(encoding, strict)
             ws.refresh(window, {})
-        return 0, "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
+        return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
 
 
     def control_command_key(self, keycode_str, press = True):
