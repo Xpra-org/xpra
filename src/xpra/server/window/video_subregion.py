@@ -29,6 +29,8 @@ class VideoSubregion(object):
         self.init_vars()
 
     def init_vars(self):
+        self.enabled = True
+        self.detection = True
         self.rectangle = None
         self.counter = 0
         self.set_at = 0
@@ -51,6 +53,21 @@ class VideoSubregion(object):
         return "VideoSubregion(%s)" % self.get_info()
 
 
+    def set_enabled(self, enabled):
+        self.enabled = enabled
+        if not enabled:
+            self.novideoregion("disabled")
+
+    def set_detection(self, detection):
+        self.detection = detection
+
+    def set_region(self, x, y, w, h):
+        sslog("set_region%s", (x, y, w, h))
+        if self.detection:
+            sslog("video region detection is on - the given region may or may not stick")
+        self.rectangle = rectangle(x, y, w, h)
+
+
     def set_auto_refresh_delay(self, d):
         refreshlog("subregion auto-refresh delay: %s", d)
         self.auto_refresh_delay = d
@@ -65,17 +82,21 @@ class VideoSubregion(object):
 
     def get_info(self):
         r = self.rectangle
-        if r is None:
-            return {}
-        info = {"x"         : r.x,
-                "y"         : r.y,
-                "width"     : r.width,
-                "height"    : r.height,
+        info = {"enabled"   : self.enabled,
+                "detection" : self.detection,
                 "counter"   : self.counter,
-                "set_at"    : self.set_at,
-                "time"      : int(self.time),
-                "non_waited": self.non_waited,
-                "non_max_wait" :  self.non_max_wait}
+                }
+        if r is None:
+            return info
+        info.update({"x"            : r.x,
+                     "y"            : r.y,
+                     "width"        : r.width,
+                     "height"       : r.height,
+                     "rectangle"    : (r.x, r.y, r.width, r.height),
+                     "set_at"       : self.set_at,
+                     "time"         : int(self.time),
+                     "non_waited"   : self.non_waited,
+                     "non_max_wait" : self.non_max_wait})
         rr = list(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):
@@ -137,6 +158,11 @@ class VideoSubregion(object):
         self.counter = 0
 
     def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0):
+        if not self.detection:
+            return
+        if not self.enabled:
+            #could have been disabled since we started this method!
+            self.novideoregion("disabled")
         sslog("%s.identify_video_subregion(..)", self)
         sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
 
@@ -148,6 +174,11 @@ class VideoSubregion(object):
             sslog("setting new region %s: "+msg, rect, *args)
             self.set_at = damage_events_count
             self.counter = damage_events_count
+            if not self.enabled:
+                #could have been disabled since we started this method!
+                self.novideoregion("disabled")
+            if not self.detection:
+                return
             self.rectangle = rect
 
         if damage_events_count < self.set_at:

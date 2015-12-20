@@ -39,7 +39,7 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
-from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTIONS
+from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
@@ -600,6 +600,14 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def init_control_commands(self):
         super(ServerBase, self).init_control_commands()
+        def parse_boolean_value(v):
+            if str(v).lower() in TRUE_OPTIONS:
+                return True
+            elif str(v).lower() in FALSE_OPTIONS:
+                return False
+            else:
+                raise ControlError("a boolean is required, not %s" % v)
+
         from xpra.util import parse_scaling_value, from0to100
         for cmd in (
             ArgsControlCommand("focus",                 "give focus to the window id",      validation=[int]),
@@ -629,6 +637,9 @@ class ServerBase(ServerCore, FileTransferHandler):
             ArgsControlCommand("auto-refresh",          "set a specific auto-refresh value", min_args=1, validation=[float]),
             ArgsControlCommand("refresh",               "refresh some or all windows",      min_args=0),
             ArgsControlCommand("encoding",              "picture encoding",                 min_args=1, max_args=1),
+            ArgsControlCommand("video-region-enabled",  "enable video region",              min_args=2, max_args=2, validation=[int, parse_boolean_value]),
+            ArgsControlCommand("video-region-detection","enable video detection",           min_args=2, max_args=2, validation=[int, parse_boolean_value]),
+            ArgsControlCommand("video-region",          "set the video region",             min_args=5, max_args=5, validation=[int, int, int, int, int]),
             ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
             self.control_commands[cmd.name] = cmd
@@ -1422,6 +1433,39 @@ class ServerBase(ServerCore, FileTransferHandler):
             ws.set_new_encoding(encoding, strict)
             ws.refresh(window, {})
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
+
+
+    def _control_video_subregions_from_wid(self, wid):
+        if wid not in self._id_to_window:
+            raise ControlError("invalid window %i" % wid)
+        video_subregions = []
+        for ws in self._control_windowsources_from_args(wid).keys():
+            vs = getattr(ws, "video_subregion", None)
+            if not vs:
+                log.warn("Warning: cannot set video region enabled flag on window %i:", wid)
+                log.warn(" no video subregion attribute found in %s", type(ws))
+                continue
+            video_subregions.append(vs)
+        return video_subregions
+
+    def control_command_video_region_enabled(self, wid, enabled):
+        assert type(wid)==int, "window id is not an int"
+        assert type(enabled)==bool, "enabled flag is not a boolean"
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_enabled(enabled)
+        return "video region %s for window %i" % (["disabled", "enabled"][int(enabled)], wid)
+
+    def control_command_video_region_detection(self, wid, detection):
+        assert type(wid)==int, "window id is not an int"
+        assert type(detection)==bool, "detection flag is not a boolean"
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_detection(detection)
+        return "video region detection %s for window %i" % (["disabled", "enabled"][int(detection)], wid)
+
+    def control_command_video_region(self, wid, x, y, w, h):
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_region(x, y, w, h)
+        return "video region set to %s for window %i" % ((x, y, w, h), wid)
 
 
     def control_command_key(self, keycode_str, press = True):

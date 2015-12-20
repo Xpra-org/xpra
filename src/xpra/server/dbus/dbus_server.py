@@ -156,6 +156,19 @@ class DBUS_Server(dbus.service.Object):
         self.server.set_workarea(workarea)
 
 
+    @dbus.service.method(INTERFACE, in_signature='iiiii')
+    def SetVideoRegion(self, wid, x, y, w, h):
+        self.server.control_command_video_region(wid, x, y, w, h)
+
+    @dbus.service.method(INTERFACE, in_signature='ib')
+    def SetVideoRegionEnabled(self, wid, enabled):
+        self.server.control_command_video_region(wid, enabled)
+
+    @dbus.service.method(INTERFACE, in_signature='ib')
+    def SetVideoRegionDetection(self, wid, detection):
+        self.server.control_command_video_region_detection(detection)
+
+
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
     def ListWindows(self):
         d = {}
