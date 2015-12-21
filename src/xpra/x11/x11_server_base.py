@@ -125,10 +125,13 @@ class X11ServerBase(GTKServerBase):
                     k = parts[0].strip()
                     v = parts[1].strip()
                     self.opengl_props[k] = v
-            gllog("OpenGL: %s", self.opengl_props)
+            else:
+                self.opengl_props["error"] = str(err)
         except Exception as e:
             gllog.warn("Warning: failed to query OpenGL properties")
             gllog.warn(" %s", e)
+            self.opengl_props["error"] = str(e)
+        gllog("OpenGL: %s", self.opengl_props)
 
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
