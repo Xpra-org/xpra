@@ -203,10 +203,6 @@ class ServerCore(object):
             authlog.warn("Warning: 'password-file' used without an authentication module for %ss", socket_type)
             authlog.warn(" using 'file' based authentication")
             auth = "file"
-        if not auth:
-            authlog.warn("no authentication module specified for %ss", socket_type)
-            authlog.warn(" using 'file' based authentication")
-            auth = "file"
         if auth=="":
             return None
         elif auth=="sys":
