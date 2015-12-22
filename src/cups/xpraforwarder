@@ -55,9 +55,10 @@ def exec_command(command, env=os.environ.copy(), shell=True):
 	PIPE = subprocess.PIPE
 	proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
 	out,err = proc.communicate()
-	info("returncode(%s)=%s" % (command, proc.returncode))
-	info("stdout=%s" % out)
-	info("stderr=%s" % err)
+	info("returncode=%s" % proc.returncode)
+	if proc.returncode!=0:
+		info("stdout=%s" % out)
+		info("stderr=%s" % err)
 	return proc.returncode
 
 def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
@@ -105,11 +106,10 @@ def do_main():
 	info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
 
 	dev_uri = os.environ['DEVICE_URI']
+	info("DEVICE_URI=%s" % dev_uri)
 	parsed_url = urlparse.urlparse(dev_uri)
-	info("urlparse(%s)=%s" % (dev_uri, parsed_url))
-	#write_dir = parsed_url.path
 	attributes = urlparse.parse_qs(parsed_url.query)
-	info("attributes(%s)=%s" % (parsed_url.query, attributes))
+	info("parsed attributes=%s" % attributes)
 	def aget(k, default_value=""):
 		v =  attributes.get(k)
 		if v is None:
