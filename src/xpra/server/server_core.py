@@ -199,12 +199,13 @@ class ServerCore(object):
 
     def get_auth_module(self, socket_type, auth, opts):
         authlog("get_auth_module(%s, %s, %s)", socket_type, auth, opts)
-        if not auth and opts.password_file:
-            authlog.warn("Warning: 'password-file' used without an authentication module for %ss", socket_type)
-            authlog.warn(" using 'file' based authentication")
-            auth = "file"
-        if auth=="":
-            return None
+        if not auth:
+            if opts.password_file:
+                authlog.warn("Warning: 'password-file' used without an authentication module for %ss", socket_type)
+                authlog.warn(" using 'file' based authentication")
+                auth = "file"
+            else:
+                return None
         elif auth=="sys":
             #resolve virtual "sys" auth:
             if sys.platform.startswith("win"):
