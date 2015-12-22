@@ -349,6 +349,9 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({"use-display"   : False,
                 "xvfb"          : '',
                 "fake-xinerama" : defaults.fake_xinerama})
+    group.add_option("--resize-display", action="store",
+                      dest="resize_display", default=defaults.resize_display, metavar="yes|no",
+                      help="Whether the server display should be resized to match the client resolution. Default: %s." % enabled_str(defaults.resize_display))
     if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
