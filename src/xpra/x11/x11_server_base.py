@@ -356,7 +356,7 @@ class X11ServerBase(GTKServerBase):
 
     def set_screen_size(self, desired_w, desired_h):
         root_w, root_h = self.root_window.get_size()
-        if not RANDR:
+        if not self.randr:
             return root_w,root_h
         if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:
             return root_w,root_h    #unlikely: perfect match already!
