@@ -398,7 +398,7 @@ cdef class XImageWrapper:
         cdef int size = self.rowstride*self.height
         #is it worth re-striding to save space:
         #(save at least 1KB and 10%)
-        if newstride==0 and size-newsize<1024 or newsize*110/100>size:
+        if newstride==0 and (size-newsize<1024 or newsize*110/100>size):
             log("restride(%s) not enough savings with stride=%s: size=%s, newsize=%s", newstride, rowstride, size, newsize)
             return False
         #Note: we could also change the pixel format whilst we're at it
