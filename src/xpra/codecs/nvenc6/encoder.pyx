@@ -108,6 +108,8 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_EXPOSED_COUNT
         NV_ENC_CAPS_SUPPORT_YUV444_ENCODE
         NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE
+        NV_ENC_CAPS_SUPPORT_SAO
+        NV_ENC_CAPS_SUPPORT_MEONLY_MODE
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
@@ -165,6 +167,9 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_BUFFER_FORMAT_YV12_PL
         NV_ENC_BUFFER_FORMAT_IYUV_PL
         NV_ENC_BUFFER_FORMAT_YUV444_PL
+        NV_ENC_BUFFER_FORMAT_ARGB
+        NV_ENC_BUFFER_FORMAT_ARGB10
+        NV_ENC_BUFFER_FORMAT_AYUV
 
     ctypedef enum NV_ENC_PIC_FLAGS:
         NV_ENC_PIC_FLAG_FORCEINTRA
@@ -215,6 +220,20 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_LEVEL_H264_42
         NV_ENC_LEVEL_H264_5
         NV_ENC_LEVEL_H264_51
+        NV_ENC_LEVEL_H264_52
+        NV_ENC_LEVEL_HEVC_1
+        NV_ENC_LEVEL_HEVC_2
+        NV_ENC_LEVEL_HEVC_21
+        NV_ENC_LEVEL_HEVC_3
+        NV_ENC_LEVEL_HEVC_31
+        NV_ENC_LEVEL_HEVC_4
+        NV_ENC_LEVEL_HEVC_41
+        NV_ENC_LEVEL_HEVC_5
+        NV_ENC_LEVEL_HEVC_51
+        NV_ENC_LEVEL_HEVC_52
+        NV_ENC_LEVEL_HEVC_6
+        NV_ENC_LEVEL_HEVC_61
+        NV_ENC_LEVEL_HEVC_62        
 
     ctypedef enum NV_ENC_PARAMS_RC_MODE:
         NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode
@@ -325,6 +344,7 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_H264_PROFILE_HIGH_444_GUID
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
     GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
+    GUID NV_ENC_H264_PROFILE_PROGRESSIVE_HIGH_GUID
     GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
 
     GUID NV_ENC_HEVC_PROFILE_MAIN_GUID
@@ -418,7 +438,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    enableLTR           #[in]: Currently this feature is not available and must be set to 0. Set to 1 to enable LTR support and auto-mark the first
         uint32_t    qpPrimeYZeroTransformBypassFlag #[in]  To enable lossless encode set this to 1, set QP to 0 and RC_mode to NV_ENC_PARAMS_RC_CONSTQP and profile to HIGH_444_PREDICTIVE_PROFILE
                                                     #Check support for lossless encoding using ::NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE caps.
-        uint32_t    reservedBitFields[16]       #[in]: Reserved bitfields and must be set to 0
+        uint32_t    useConstrainedIntraPred         #[in]: Set 1 to enable constrained intra prediction.
+        uint32_t    reservedBitFields[15]       #[in]: Reserved bitfields and must be set to 0
         uint32_t    level               #[in]: Specifies the encoding level. Client is recommended to set this to NV_ENC_LEVEL_AUTOSELECT in order to enable the NvEncodeAPI interface to select the correct level.
         uint32_t    idrPeriod           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
         uint32_t    separateColourPlaneFlag     #[in]: Set to 1 to enable 4:4:4 separate colour planes
@@ -452,7 +473,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    ltrTrustMode        #[in]: Specifies the LTR operating mode. Set to 0 to disallow encoding using LTR frames until later specified. Set to 1 to allow encoding using LTR frames unless later invalidated.
         uint32_t    chromaFormatIDC     #[in]: Specifies the chroma format. Should be set to 1 for yuv420 input, 3 for yuv444 input.
                                         #Check support for YUV444 encoding using ::NV_ENC_CAPS_SUPPORT_YUV444_ENCODE caps.
-        uint32_t    reserved1[271]      #[in]: Reserved and must be set to 0
+        uint32_t    maxTemporalLayers   #[in]: Specifies the max temporal layer used for hierarchical coding.
+        uint32_t    reserved1[270]      #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
     ctypedef struct NV_ENC_CONFIG_HEVC:
@@ -793,6 +815,7 @@ cdef extern from "nvEncodeAPI.h":
     unsigned int NV_ENC_ERR_RESOURCE_REGISTER_FAILED
     unsigned int NV_ENC_ERR_RESOURCE_NOT_REGISTERED
     unsigned int NV_ENC_ERR_RESOURCE_NOT_MAPPED
+
     unsigned int NV_ENC_CAPS_MB_PER_SEC_MAX
     unsigned int NV_ENC_CAPS_SUPPORT_YUV444_ENCODE
     unsigned int NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE
@@ -1006,6 +1029,7 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_HIGH_GUID)              : "high",
         guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
         guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
+        guidstr(NV_ENC_H264_PROFILE_PROGRESSIVE_HIGH_GUID)  : "progressive-high",
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
         #new in SDK v4:
         guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
@@ -1075,6 +1099,9 @@ BUFFER_FORMAT = {
         NV_ENC_BUFFER_FORMAT_YV12_PL                : "YV12_PL",
         NV_ENC_BUFFER_FORMAT_IYUV_PL                : "IYUV_PL",
         NV_ENC_BUFFER_FORMAT_YUV444_PL              : "YUV444_PL",
+        NV_ENC_BUFFER_FORMAT_ARGB                   : "ARGB",
+        NV_ENC_BUFFER_FORMAT_ARGB10                 : "ARGB10",
+        NV_ENC_BUFFER_FORMAT_AYUV                   : "AYUV",
         }
 
 
@@ -1144,7 +1171,7 @@ def get_spec(encoding, colorspace):
     return cs
 
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
-PRETTY_VERSION = [int(NVENCAPI_VERSION)//16, int(NVENCAPI_VERSION)%16, 0]
+PRETTY_VERSION = [int(NVENCAPI_VERSION), int(NVENCAPI_VERSION)>>24, 0]
 
 def get_version():
     return ".".join((str(x) for x in PRETTY_VERSION))
