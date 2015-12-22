@@ -1055,7 +1055,8 @@ class WindowSource(object):
         window      = delayed[1]
         options     = delayed[4]
         elapsed = int(1000.0 * (time.time() - region_time))
-        log.warn("delayed_region_timeout: region is %ims old, bad connection?", elapsed)
+        log.warn("Warning: delayed region timeout")
+        log.warn(" region is %i seconds old, will retry - bad connection?", elapsed/1000)
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
         self.cancel_expire_timer()
