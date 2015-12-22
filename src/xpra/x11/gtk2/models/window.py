@@ -603,13 +603,18 @@ class WindowModel(BaseWindowModel):
         if not wmclass_name:
             return None
         it = gtk.icon_theme_get_default()
-        i = it.lookup_icon(wmclass_name, 48, 0)
-        iconlog("%s.lookup_icon(%s)=%s", it, wmclass_name, i)
-        if not i:
-            return None
-        p = i.load_icon()
-        iconlog("%s.load_icon()=%s", i, p)
-        if not p:
+        p = None
+        for fmt in ("%s-color", "%s", "%s_48x48", "application-x-%s", "%s-symbolic", "%s.symbolic"):
+            icon_name = fmt % wmclass_name
+            i = it.lookup_icon(icon_name, 48, 0)
+            iconlog("%s.lookup_icon(%s)=%s", it, icon_name, i)
+            if not i:
+                continue
+            p = i.load_icon()
+            iconlog("%s.load_icon()=%s", i, p)
+            if p:
+                break
+        if p is None:
             return None
         #to make it consistent with the "icon" property,
         #return a cairo surface..
