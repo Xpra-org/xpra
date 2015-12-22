@@ -1613,12 +1613,8 @@ class ServerSource(object):
             attributes["password-file"] = makeabs(password_file)
         if encryption:
             if not encryption_keyfile:
-                if password_file:
-                    log.warn("Warning: using password file as encryption keyfile")
-                    encryption_keyfile = password_file
-                else:
-                    log.error("Error: no encryption keyfile found for printing")
-            if encryption_keyfile:
+                log.error("Error: no encryption keyfile found for printing")
+            else:
                 attributes["encryption"] = encryption
                 attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
         #if we can, tell it exactly where to connect:

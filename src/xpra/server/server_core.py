@@ -203,8 +203,8 @@ class ServerCore(object):
             authlog.warn("Warning: 'password-file' used without an authentication module for %ss", socket_type)
             authlog.warn(" using 'file' based authentication")
             auth = "file"
-        if not auth and os.environ.get('XPRA_PASSWORD'):
-            authlog.warn("no authentication module specified for %ss with 'XPRA_PASSWORD'", socket_type)
+        if not auth:
+            authlog.warn("no authentication module specified for %ss", socket_type)
             authlog.warn(" using 'file' based authentication")
             auth = "file"
         if auth=="":
@@ -792,9 +792,6 @@ class ServerCore(object):
         if v is None and self.password_file:
             authlog("trying to load encryption key from password file: %s", self.password_file)
             v = self.filedata_nocrlf(self.password_file)
-        if v is None and os.environ.get('XPRA_PASSWORD'):
-            authlog("using encryption key from %s environment variable", 'XPRA_PASSWORD')
-            v = os.environ.get('XPRA_PASSWORD')
         return v
 
     def hello_oked(self, proto, packet, c, auth_caps):

@@ -776,6 +776,10 @@ def do_parse_cmdline(cmdline, defaults):
         except:
             raise InitException("invalid max-size: %s" % options.max_size)
         options.max_size = "%sx%s" % (w, h)
+    if options.encryption_keyfile and not options.encryption:
+        options.encryption = "AES"
+    if options.tcp_encryption_keyfile and not options.tcp_encryption:
+        options.tcp_encryption = "AES"
     if options.encryption or options.tcp_encryption:
         if not ENCRYPTION_CIPHERS:
             raise InitException("cannot use encryption: no ciphers available (pycrypto must be installed)")
@@ -783,13 +787,14 @@ def do_parse_cmdline(cmdline, defaults):
             raise InitException("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
         if options.tcp_encryption and options.tcp_encryption not in ENCRYPTION_CIPHERS:
             raise InitException("encryption %s is not supported, try: %s" % (options.tcp_encryption, ", ".join(ENCRYPTION_CIPHERS)))
-        #password file can be used as fallback for encryption keys:
-        has_key = options.password_file or os.environ.get('XPRA_PASSWORD') or os.environ.get('XPRA_ENCRYPTION_KEY')
-        if not has_key:
-            if options.encryption and not options.encryption_keyfile:
-                raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
-            if options.tcp_encryption and not options.tcp_encryption_keyfile:
-                raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % options.tcp_encryption)
+        if options.encryption and not options.encryption_keyfile:
+            raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
+        if options.tcp_encryption and not options.tcp_encryption_keyfile:
+            raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % options.tcp_encryption)
+        if options.encryption and options.password_file==options.encryption_keyfile:
+            raise InitException("encryption %s should not use the same file as the password authentication file" % options.encryption)
+        if options.tcp_encryption and options.password_file==options.tcp_encryption_keyfile:
+            raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % options.tcp_encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
     return options, args

@@ -71,8 +71,6 @@ def load_auth_file():
                 log.error("error loading %s: %s", password_file, e)
                 data = ""
             log("loaded %s bytes from %s", len(data), password_file)
-        else:
-            data = os.environ.get('XPRA_PASSWORD', "")
         i = 0
         for line in data.splitlines():
             i += 1
