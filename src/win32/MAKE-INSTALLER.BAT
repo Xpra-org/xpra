@@ -145,6 +145,11 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 
+REM Use a custom script to move the PyOpenGL bits back into the library.zip
+REM (ugly, but hacking py2exe is worse?)
+ECHO %PYTHON_EXE% win32\move_to_zip.py dist\library.zip dist\OpenGL dist\OpenGL_accelerate
+%PYTHON_EXE% win32\move_to_zip.py dist\library.zip dist\OpenGL dist\OpenGL_accelerate
+
 REM Delete all GStreamer DLLs and only add those we actually want
 DEL dist\gst*dll
 ECHO ****** Adding GStreamer Main DLLs
