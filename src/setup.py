@@ -154,6 +154,7 @@ if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
     nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.1_sdk"
+    nvenc6_sdk = WIN32_BUILD_LIB_PREFIX + "nvidia_video_sdk_6.0.1"
     nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
     try:
         import pycuda
@@ -161,9 +162,11 @@ if WIN32:
         pycuda = None
     nvenc4_ENABLED          = pycuda and os.path.exists(nvenc4_sdk) and is_msvc()
     nvenc5_ENABLED          = pycuda and os.path.exists(nvenc5_sdk) and is_msvc()
+    nvenc6_ENABLED          = pycuda and os.path.exists(nvenc6_sdk) and is_msvc()
 else:
     nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
     nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
+    nvenc6_ENABLED          = pkg_config_ok("--exists", "nvenc6")
 
 csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
@@ -180,7 +183,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265",
-            "nvenc4", "nvenc5",
+            "nvenc4", "nvenc5", "nvenc6",
             "vpx", "webp", "pillow",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython",
@@ -895,6 +898,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/vpx/constants.pxi",
                    "xpra/codecs/nvenc4/encoder.c",
                    "xpra/codecs/nvenc5/encoder.c",
+                   "xpra/codecs/nvenc6/encoder.c",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
@@ -1521,7 +1525,7 @@ if WIN32:
             add_keywords([webp_bin_dir], [webp_include_dir],
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
-        elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]):
+        elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]) or ("nvenc6" in pkgs_options[0]):
             for x in ("pycuda", "pytools"):
                 if x not in external_includes:
                     external_includes.append(x)
@@ -1529,8 +1533,13 @@ if WIN32:
                 nvenc_path = nvenc4_sdk
                 nvenc_include_dir       = nvenc_path + "\\Samples\\nvEncodeApp\\inc"
                 nvenc_core_include_dir  = nvenc_path + "\\Samples\\core\\include"
-            else:
+            elif "nvenc5" in pkgs_options[0]:
                 nvenc_path = nvenc5_sdk
+                nvenc_include_dir       = nvenc_path + "\\Samples\\common\\inc"
+                nvenc_core_include_dir  = nvenc_path + "\\Samples\\common\\inc"     #FIXME!
+            else:
+                assert "nvenc6" in pkgs_options[0]
+                nvenc_path = nvenc6_sdk
                 nvenc_include_dir       = nvenc_path + "\\Samples\\common\\inc"
                 nvenc_core_include_dir  = nvenc_path + "\\Samples\\common\\inc"     #FIXME!
             #let's not use crazy paths, just copy the dll somewhere that makes sense:
@@ -1934,14 +1943,15 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
-toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
-if (nvenc4_ENABLED or nvenc5_ENABLED) and WIN32:
+toggle_packages(nvenc6_ENABLED, "xpra.codecs.nvenc6")
+toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
+if (nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED) and WIN32:
     cython_add(Extension("xpra.codecs.nvapi_version",
                 ["xpra/codecs/nvapi_version.pyx"],
                 **pkgconfig("nvapi")
                 ))
 
-if nvenc4_ENABLED or nvenc5_ENABLED:
+if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
@@ -2047,7 +2057,8 @@ if nvenc4_ENABLED or nvenc5_ENABLED:
         CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
     for nvenc_version, _nvenc_version_enabled in {4 : nvenc4_ENABLED,
-                                                  5 : nvenc5_ENABLED}.items():
+                                                  5 : nvenc5_ENABLED,
+                                                  6 : nvenc6_ENABLED}.items():
         if not _nvenc_version_enabled:
             continue
         nvencmodule = "nvenc%s" % nvenc_version

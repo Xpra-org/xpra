@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,7 +20,7 @@ if sys.version > '3':
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc4", "nvenc5", "opencl"]
+NOWARN = ["nvenc4", "nvenc5", "nvenc6", "opencl"]
 
 SELFTEST = os.environ.get("XPRA_CODEC_SELFTEST", "1")=="1"
 FULL_SELFTEST = os.environ.get("XPRA_CODEC_FULL_SELFTEST", "0")=="1"
@@ -142,7 +142,7 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
         add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
 
-        for v in (4, 5):
+        for v in (4, 5, 6):
             codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
             add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
 
