@@ -385,6 +385,8 @@ cdef class XImageWrapper:
 
     def restride(self, const int newstride=0):
         #NOTE: this must be called from the UI thread!
+        #passing in a non-zero value must do a restride,
+        #only the default value of 0 may or may not restride
         cdef int rowstride = newstride
         if newstride==0:
             #if not given a newstride, assume it is optional and check if it is worth doing at all:
