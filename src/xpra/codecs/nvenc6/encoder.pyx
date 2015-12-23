@@ -403,6 +403,22 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    qpInterB
         uint32_t    qpIntra
 
+    ctypedef struct NV_ENC_CONFIG_HEVC_VUI_PARAMETERS:
+        uint32_t    overscanInfoPresentFlag         #[in]: if set to 1 , it specifies that the overscanInfo is present
+        uint32_t    overscanInfo                    #[in]: Specifies the overscan info(as defined in Annex E of the ITU-T Specification).
+        uint32_t    videoSignalTypePresentFlag      #[in]: If set to 1, it specifies  that the videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present. */
+        uint32_t    videoFormat                     #[in]: Specifies the source video format(as defined in Annex E of the ITU-T Specification).*/
+        uint32_t    videoFullRangeFlag              #[in]: Specifies the output range of the luma and chroma samples(as defined in Annex E of the ITU-T Specification). */
+        uint32_t    colourDescriptionPresentFlag    #[in]: If set to 1, it specifies that the colourPrimaries, transferCharacteristics and colourMatrix are present. */
+        uint32_t    colourPrimaries                 #[in]: Specifies color primaries for converting to RGB(as defined in Annex E of the ITU-T Specification) */
+        uint32_t    transferCharacteristics         #[in]: Specifies the opto-electronic transfer characteristics to use (as defined in Annex E of the ITU-T Specification) */
+        uint32_t    colourMatrix                    #[in]: Specifies the matrix coefficients used in deriving the luma and chroma from the RGB primaries (as defined in Annex E of the ITU-T Specification). */
+        uint32_t    chromaSampleLocationFlag        #[in]: if set to 1 , it specifies that the chromaSampleLocationTop and chromaSampleLocationBot are present.*/
+        uint32_t    chromaSampleLocationTop         #[in]: Specifies the chroma sample location for top field(as defined in Annex E of the ITU-T Specification) */
+        uint32_t    chromaSampleLocationBot         #[in]: Specifies the chroma sample location for bottom field(as defined in Annex E of the ITU-T Specification) */
+        uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it specifies the bitstream restriction parameters are present in the bitstream.*/
+        uint32_t    reserved[15]
+
     ctypedef struct NV_ENC_CONFIG_H264_VUI_PARAMETERS:
         uint32_t    overscanInfoPresentFlag         #[in]: if set to 1 , it specifies that the overscanInfo is present
         uint32_t    overscanInfo                    #[in]: Specifies the overscan info(as defined in Annex E of the ITU-T Specification).
@@ -510,7 +526,8 @@ cdef extern from "nvEncodeAPI.h":
                                                         #sliceMode = 2, sliceModeData specifies # of CTU rows in each slice (except last slice)
                                                         #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
         uint32_t    maxTemporalLayersMinus1             #[in]: Specifies the max temporal layer used for hierarchical coding.
-        uint32_t    reserved1[246]                      #[in]: Reserved and must be set to 0.
+        NV_ENC_CONFIG_HEVC_VUI_PARAMETERS hevcVUIParameters #Specifies the HEVC video usability info pamameters
+        uint32_t    reserved1[218]                      #[in]: Reserved and must be set to 0.
         void*       reserved2[64]                       #[in]: Reserved and must be set to NULL
 
     ctypedef struct NV_ENC_CODEC_CONFIG:
@@ -576,7 +593,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reportSliceOffsets  #[in]: Set this to 1 to enable reporting slice offsets in ::_NV_ENC_LOCK_BITSTREAM. Currently supported only for H264. Client must set this to 0 if NV_ENC_CONFIG_H264::sliceMode is 1
         uint32_t    enableSubFrameWrite #[in]: Set this to 1 to write out available bitstream to memory at subframe intervals
         uint32_t    enableExternalMEHints   #[in]: Set to 1 to enable external ME hints for the current frame. Currently this feature is supported only if NV_ENC_INITIALIZE_PARAMS::enablePTD to 0 or\p frameIntervalP = 1 (i.e no B frames).
-        uint32_t    reservedBitFields   #[in]: Reserved bitfields and must be set to 0
+        uint32_t    enableMEOnlyMode    #[in] Set to 1 to enable ME Only Mode
+        uint32_t    reservedBitFields[28]   #[in]: Reserved bitfields and must be set to 0
         uint32_t    privDataSize        #[in]: Reserved private data buffer size and must be set to 0
         void        *privData           #[in]: Reserved private data buffer and must be set to NULL
         NV_ENC_CONFIG *encodeConfig     #[in]: Specifies the advanced codec specific structure. If client has sent a valid codec config structure, it will override parameters set by the NV_ENC_INITIALIZE_PARAMS::presetGUID parameter. If set to NULL the NvEncodeAPI interface will use the NV_ENC_INITIALIZE_PARAMS::presetGUID to set the codec specific parameters.
@@ -611,6 +629,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    payloadSize         #[in] SEI payload size in bytes. SEI payload must be byte aligned, as described in Annex D
         uint32_t    payloadType         #[in] SEI payload types and syntax can be found in Annex D of the H.264 Specification.
         uint8_t     *payload            #[in] pointer to user data
+    ctypedef NV_ENC_H264_SEI_PAYLOAD NV_ENC_SEI_PAYLOAD
 
     ctypedef struct NV_ENC_PIC_PARAMS_H264:
         uint32_t    displayPOCSyntax    #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
@@ -633,7 +652,7 @@ cdef extern from "nvEncodeAPI.h":
                                         #all other array elements should be set to NV_ENC_SLICE_TYPE_DEFAULT
         uint32_t    sliceTypeArrayCnt   #[in]: Client should set this to the number of elements allocated in sliceTypeData array. If sliceTypeData is NULL then this should be set to 0
         uint32_t    seiPayloadArrayCnt  #[in]: Specifies the number of elements allocated in  seiPayloadArray array.
-        NV_ENC_H264_SEI_PAYLOAD *seiPayloadArray    #[in]: Array of SEI payloads which will be inserted for this frame.
+        NV_ENC_SEI_PAYLOAD *seiPayloadArray    #[in]: Array of SEI payloads which will be inserted for this frame.
         uint32_t    sliceMode           #[in]: This parameter in conjunction with sliceModeData specifies the way in which the picture is divided into slices
                                         #sliceMode = 0 MB based slices, sliceMode = 1 Byte based slices, sliceMode = 2 MB row based slices, sliceMode = 3, numSlices in Picture
                                         #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
@@ -652,6 +671,17 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef union NV_ENC_CODEC_PIC_PARAMS:
         NV_ENC_PIC_PARAMS_H264 h264PicParams    #[in]: H264 encode picture params.
         uint32_t               reserved[256]    #[in]: Reserved and must be set to 0.
+
+    ctypedef struct NV_ENC_MEONLY_PARAMS:
+        uint32_t    version             #[in]: Struct version. Must be set to NV_ENC_MEONLY_PARAMS_VER.
+        uint32_t    inputWidth          #[in]: Specifies the input buffer width
+        uint32_t    inputHeight         #[in]: Specifies the input buffer height
+        NV_ENC_INPUT_PTR inputBuffer    #[in]: Specifies the input buffer pointer. Client must use a pointer obtained from NvEncCreateInputBuffer() or NvEncMapInputResource() APIs.
+        NV_ENC_INPUT_PTR referenceFrame #[in]: Specifies the reference frame pointer
+        NV_ENC_OUTPUT_PTR outputMV      #[in,out]: Specifies the pointer to output motion vector data buffer allocated by NvEncCreateMVBuffer.
+        NV_ENC_BUFFER_FORMAT bufferFmt  #[in]: Specifies the input buffer format.
+        uint32_t    reserved1[252]      #[in]: Reserved and must be set to 0
+        void* reserved2[61]             #[in]: Reserved and must be set to NULL
 
     ctypedef struct NVENC_EXTERNAL_ME_HINT:
         int32_t     mvx                 #[in]: Specifies the x component of integer pixel MV (relative to current MB) S12.0.

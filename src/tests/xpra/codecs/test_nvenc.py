@@ -100,9 +100,10 @@ def test_context_limits():
     MAX_ENCODER_CONTEXTS_PER_DEVICE = 64
     log("")
     for encoding in encoder_module.get_encodings():
+        log.info("test_context_limits() with %s", encoding)
         for w,h in TEST_DIMENSIONS:
             log("test_context_limits() %s @ %sx%s" % (encoding, w, h))
-            src_format = encoder_module.get_input_colorspaces()[0]
+            src_format = encoder_module.get_input_colorspaces(encoding)[0]
             dst_formats = encoder_module.get_output_colorspaces(encoding, src_format)
             for device_id in cuda_devices:
                 device_info = get_device_info(device_id)
