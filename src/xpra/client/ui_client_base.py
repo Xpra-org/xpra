@@ -1994,7 +1994,7 @@ class UIXpraClient(XpraClientBase):
         ss = self.sound_sink
         self.speaker_enabled = False
         if tell_server:
-            self.send("sound-control", "stop")
+            self.send("sound-control", "stop", self.min_sound_sequence)
         self.min_sound_sequence += 1
         self.send("sound-control", "new-sequence", self.min_sound_sequence)
         if ss is None:

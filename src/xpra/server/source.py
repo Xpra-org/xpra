@@ -988,6 +988,12 @@ class ServerSource(object):
     def sound_control(self, action, *args):
         soundlog("sound_control(%s, %s)", action, args)
         if action=="stop":
+            if len(args)>0:
+                sequence = int(args[0])
+                if sequence!=self.sound_source_sequence:
+                    log.warn("sound sequence mismatch: %i vs %i", sequence, self.sound_source_sequence)
+                    return "not stopped"
+                soundlog("stop: sequence number matches")
             self.stop_sending_sound()
             return "stopped"
         elif action in ("start", "fadein"):
