@@ -718,9 +718,16 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     return pw
 
 
-from core_bindings cimport X11CoreBindings
+from core_bindings cimport _X11CoreBindings
 
-cdef class XImageBindings(X11CoreBindings):
+cdef _XImageBindings singleton = None
+def XImageBindings():
+    global singleton
+    if singleton is None:
+        singleton = _XImageBindings()
+    return singleton
+
+cdef class _XImageBindings(_X11CoreBindings):
 
     def get_XShmWrapper(self, xwindow):
         cdef XWindowAttributes attrs

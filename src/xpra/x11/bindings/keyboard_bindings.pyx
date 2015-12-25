@@ -227,10 +227,16 @@ cdef s(const char *v):
 # to the original C xmodmap code
 
 
-from core_bindings cimport X11CoreBindings
+from core_bindings cimport _X11CoreBindings
 
+cdef _X11KeyboardBindings singleton = None
+def X11KeyboardBindings():
+    global singleton
+    if singleton is None:
+        singleton = _X11KeyboardBindings()
+    return singleton
 
-cdef class X11KeyboardBindings(X11CoreBindings):
+cdef class _X11KeyboardBindings(_X11CoreBindings):
 
     cdef XModifierKeymap* work_keymap
     cdef int min_keycode

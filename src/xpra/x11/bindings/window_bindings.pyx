@@ -393,11 +393,18 @@ class PropertyOverflow(PropertyError):
     pass
 
 
-from core_bindings cimport X11CoreBindings
+from core_bindings cimport _X11CoreBindings
 
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
-cdef class X11WindowBindings(X11CoreBindings):
+cdef _X11WindowBindings singleton = None
+def X11WindowBindings():
+    global singleton
+    if singleton is None:
+        singleton = _X11WindowBindings()
+    return singleton
+
+cdef class _X11WindowBindings(_X11CoreBindings):
 
     cdef object has_xshape
 

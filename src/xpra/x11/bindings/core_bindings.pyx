@@ -48,7 +48,14 @@ cdef extern from "X11/Xlib.h":
 from display_source cimport get_display
 from display_source import get_display_name
 
-cdef class X11CoreBindings:
+cdef _X11CoreBindings singleton = None
+def X11CoreBindings():
+    global singleton
+    if singleton is None:
+        singleton = _X11CoreBindings()
+    return singleton
+
+cdef class _X11CoreBindings:
 
     def __cinit__(self):
         self.display = get_display()
