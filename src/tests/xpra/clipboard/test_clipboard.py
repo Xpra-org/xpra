@@ -5,7 +5,7 @@ pygtk.require('2.0')
 import gtk
 import gobject
 
-from xpra.platform import init
+from xpra.platform import program_context
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 
 SELECTION="CLIPBOARD"
@@ -39,17 +39,16 @@ class FakeRemoteClipboard(object):
 
 
 def main():
-	init("Clipboard-Test", "Primary Clipboard Test Tool")
-
-	frc = FakeRemoteClipboard()
-	gobject.timeout_add(1000, frc.fake_token)
-	#gobject.timeout_add(1200, fake_target, 0)
-	#gobject.timeout_add(1400, fake_target, 1)
-	#gobject.timeout_add(1600, fake_target, 2)
-	#gobject.timeout_add(1800, fake_data, 2)
-	#gobject.timeout_add(2500, fake_data, 3)
-	#gobject.timeout_add(3500, fake_data, 5)
-	gtk.main()
+	with program_context("Clipboard-Test", "Primary Clipboard Test Tool"):
+		frc = FakeRemoteClipboard()
+		gobject.timeout_add(1000, frc.fake_token)
+		#gobject.timeout_add(1200, fake_target, 0)
+		#gobject.timeout_add(1400, fake_target, 1)
+		#gobject.timeout_add(1600, fake_target, 2)
+		#gobject.timeout_add(1800, fake_data, 2)
+		#gobject.timeout_add(2500, fake_data, 3)
+		#gobject.timeout_add(3500, fake_data, 5)
+		gtk.main()
 
 
 if __name__ == "__main__":

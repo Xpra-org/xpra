@@ -82,16 +82,12 @@ def main():
     from xpra.x11.gtk2 import gdk_display_source
     assert gdk_display_source
     from xpra.util import nonl
-    from xpra.platform import init as platform_init, clean as platform_clean
-    try:
-        platform_init("GTK-Keyboard", "GTK Keyboard")
-
+    from xpra.platform import program_context
+    with program_context("GTK-Keyboard", "GTK Keyboard"):
         x = GTKKeyboardHelper(None, True, "")
         x.query_xkbmap()
         for k,v in x.get_keymap_properties().items():
             print("%s=%s" % (k,nonl(v)))
-    finally:
-        platform_clean()
 
 if __name__ == "__main__":
     main()

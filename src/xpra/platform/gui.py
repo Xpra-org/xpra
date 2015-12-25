@@ -200,11 +200,10 @@ platform_import(globals(), "gui", False,
 
 
 def main():
-    from xpra.platform import init as platform_init,clean
+    from xpra.platform import program_context
     from xpra.util import nonl
     from xpra.log import enable_color
-    try:
-        platform_init("GUI-Properties")
+    with program_context("GUI-Properties"):
         enable_color()
         init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
@@ -224,8 +223,6 @@ def main():
         for k in sorted(i.keys()):
             v = i[k]
             print("* %s : %s" % (k.ljust(32), nonl(v)))
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

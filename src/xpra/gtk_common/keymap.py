@@ -55,10 +55,9 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
 
 def main():
     import sys
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
-    try:
-        init("Keymap-Tool", "Keymap Information Tool")
+    with program_context("Keymap-Tool", "Keymap Information Tool"):
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
@@ -69,8 +68,6 @@ def main():
         pkey("keyval", "name", "keycode", "group", "level")
         for x in gtk_keymap:
             pkey(*x)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

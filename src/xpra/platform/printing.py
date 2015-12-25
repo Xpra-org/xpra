@@ -101,11 +101,10 @@ def main():
                 print(" attributes:")
                 for a in attr:
                     print("        %s" % a)
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.util import csv
-    try:
-        init("Printing", "Printing")
+    with program_context("Printing", "Printing"):
         enable_color()
         if len(sys.argv)<=1:
             dump_printers(get_printers())
@@ -139,8 +138,6 @@ def main():
         print("Printing: %s" % csv(filenames))
         print_files(printer, filenames, "Print Command", {})
         return 0
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

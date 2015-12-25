@@ -95,17 +95,13 @@ def close_about(*args):
 
 
 def main():
+    from xpra.platform import program_context
+    from xpra.platform.gui import init as gui_init
+    with program_context("About"):
+        gui_init()
     about(on_close=gtk.main_quit)
     gtk.main()
 
 
 if __name__ == "__main__":
-    from xpra.platform import init, clean
-    from xpra.platform.gui import init as gui_init
-    try:
-        init("About")
-        gui_init()
-        v = main()
-    finally:
-        clean()
-    sys.exit(v)
+    main()

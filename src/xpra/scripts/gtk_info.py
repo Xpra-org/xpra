@@ -11,9 +11,8 @@ def main():
         for k in sorted(d.keys()):
             v = d[k]
             print("* %-48s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
-    from xpra.platform import init, clean
-    try:
-        init("GTK-Version-Info", "GTK Version Info")
+    from xpra.platform import program_context
+    with program_context("GTK-Version-Info", "GTK Version Info"):
         from xpra.platform.gui import init as gui_init, ready
         gui_init()
         ready()
@@ -22,8 +21,6 @@ def main():
         print_dict(get_gtk_version_info())
         print("Display:")
         print_dict(get_display_info(), vformat=str)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

@@ -67,15 +67,13 @@ def main():
         for k in sorted(d.keys()):
             v = d[k]
             print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
-    from xpra.platform import init, clean
-    try:
-        init("Features-Info", "Features Info")
+    from xpra.platform import program_context
+    with program_context("Features-Info", "Features Info"):
         d = {}
         for k in sorted(_features_list_):
             d[k] = globals()[k]
         print_dict(d)
-    finally:
-        clean()
+
 
 if __name__ == "__main__":
     main()

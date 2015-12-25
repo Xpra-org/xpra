@@ -226,12 +226,10 @@ def main():
         for k in sorted(d.keys()):
             v = d[k]
             print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
-    from xpra.platform import init, clean
-    try:
-        init("Path-Info", "Path Info")
+    from xpra.platform import program_context
+    with program_context("Path-Info", "Path Info"):
         print_dict(get_info())
-    finally:
-        clean()
+
 
 if __name__ == "__main__":
     main()

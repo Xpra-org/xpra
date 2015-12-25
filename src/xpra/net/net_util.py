@@ -161,10 +161,9 @@ def get_info():
 
 
 def main():
-	from xpra.platform import init, clean
+	from xpra.platform import program_context
 	from xpra.log import enable_color
-	try:
-		init("Network-Info", "Network Info")
+	with program_context("Network-Info", "Network Info"):
 		enable_color()
 		verbose = "-v" in sys.argv or "--verbose" in sys.argv
 		if verbose:
@@ -201,10 +200,6 @@ def main():
 			netcaps["netifaces.version"] = netifaces_version
 		for k in sorted(netcaps.keys()):
 			print("* %s : %s" % (str(k).ljust(20), pver(netcaps[k])))
-
-	finally:
-		#this will wait for input on win32:
-		clean()
 
 
 if __name__ == "__main__":

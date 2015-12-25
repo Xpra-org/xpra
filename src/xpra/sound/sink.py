@@ -298,9 +298,8 @@ gobject.type_register(SoundSink)
 
 
 def main():
-    from xpra.platform import init, clean
-    init("Sound-Record")
-    try:
+    from xpra.platform import program_context
+    with program_context("Sound-Record"):
         from xpra.gtk_common.gobject_compat import import_glib
         glib = import_glib()
         args = sys.argv
@@ -367,8 +366,6 @@ def main():
 
         glib_mainloop.run()
         return 0
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

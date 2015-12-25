@@ -262,14 +262,10 @@ def decompress_by_name(data, algo):
 
 
 def main():
-    from xpra.platform import init, clean
-    try:
-        init("Compression", "Compression Info")
+    from xpra.platform import program_context
+    with program_context("Compression", "Compression Info"):
         for k,v in sorted(get_compression_caps().items()):
             print(k.ljust(20)+": "+str(v))
-    finally:
-        #this will wait for input on win32:
-        clean()
 
 
 if __name__ == "__main__":

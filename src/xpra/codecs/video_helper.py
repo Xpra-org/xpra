@@ -428,9 +428,8 @@ def getVideoHelper():
 def main():
     from xpra.codecs.loader import log as loader_log, load_codecs
     from xpra.log import enable_color
-    from xpra.platform import init, clean
-    try:
-        init("Video Helper")
+    from xpra.platform import program_context
+    with program_context("Video Helper"):
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:
             loader_log.enable_debug()
@@ -446,8 +445,6 @@ def main():
             if type(v) in (list, tuple):
                 v = csv(v)
             log.info("%s=%s", k, v)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

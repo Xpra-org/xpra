@@ -194,9 +194,8 @@ gobject.type_register(OSXClipboardProxy)
 def main():
     global change_count
     import time
-    from xpra.platform import init, clean
-    try:
-        init("OSX Clipboard Change Test")
+    from xpra.platform import program_context
+    with program_context("OSX Clipboard Change Test"):
         log.enable_debug()
 
         #init UI watcher with gobject (required by pasteboard monitoring code)
@@ -228,8 +227,7 @@ def main():
             time.sleep(1)
         if v==cc:
             log.info("no clipboard change detected")
-    finally:
-        clean()
+
 
 if __name__ == "__main__":
     main()

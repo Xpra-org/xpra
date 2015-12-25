@@ -161,18 +161,15 @@ class csc_spec(_codec_spec):
 
 
 def main():
-    from xpra.platform import init, clean
-    try:
-        init("Codec-Constants", "Codec Constants Info")
+    from xpra.platform import program_context
+    with program_context("Codec-Constants", "Codec Constants Info"):
         import sys
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
         log.info("LOSSY_PIXEL_FORMATS=%s", LOSSY_PIXEL_FORMATS)
         log.info("PIXEL_SUBSAMPLING=%s", PIXEL_SUBSAMPLING)
         log.info("RGB_FORMATS=%s", RGB_FORMATS)
-    finally:
-        #this will wait for input on win32:
-        clean()
+
 
 if __name__ == "__main__":
     main()

@@ -55,12 +55,9 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
-    from xpra.platform import init, clean
-    try:
-        init("Nvidia-Info", "Nvidia Info")
+    from xpra.platform import program_context
+    with program_context("Nvidia-Info", "Nvidia Info"):
         log.info("%s", get_driver_version())
-    finally:
-        clean()
 
 if __name__ == "__main__":
     main()

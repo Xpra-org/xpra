@@ -740,11 +740,10 @@ def main():
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
 
-    from xpra.platform import init as platform_init, clean as platform_clean
+    from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready
     from xpra.log import enable_color
-    try:
-        platform_init("Xpra-Launcher", "Xpra Connection Launcher")
+    with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
         enable_color()
         gui_init()
         try:
@@ -808,8 +807,6 @@ def main():
         except KeyboardInterrupt:
             pass
         return 0
-    finally:
-        platform_clean()
 
 
 if __name__ == "__main__":

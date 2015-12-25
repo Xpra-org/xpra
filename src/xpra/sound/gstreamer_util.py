@@ -688,10 +688,9 @@ def loop_warning(mode="speaker", machine_id=""):
 
 def main():
     global pygst_version, gst_version, gst_vinfo
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
-    try:
-        init("GStreamer-Info", "GStreamer Information")
+    with program_context("GStreamer-Info", "GStreamer Information"):
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
@@ -710,8 +709,6 @@ def main():
         print("source plugins: %s" % csv([x for x in get_source_plugins() if x in apn]))
         print("sink plugins: %s" % csv([x for x in get_sink_plugins() if x in apn]))
         print("source plugins: %s" % get_default_sink())
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

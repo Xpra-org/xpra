@@ -16,9 +16,8 @@ def main():
         for k in sorted(d.keys()):
             v = d[k]
             print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
-    from xpra.platform import init, clean
-    try:
-        init("Version-Info", "Version Info")
+    from xpra.platform import program_context
+    with program_context("Version-Info", "Version Info"):
         print("Build:")
         print_dict(get_version_info())
         print("")
@@ -39,8 +38,6 @@ def main():
         except:
             pass
         print_dict(d)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

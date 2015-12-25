@@ -788,10 +788,9 @@ def main():
             if type(v)==list:
                 v = ", ".join(str(x) for x in v)
             print("* %-32s : %s" % (k, nonl(v)))
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
-    try:
-        init("Config-Info", "Config Info")
+    with program_context("Config-Info", "Config Info"):
         enable_color()
         args = list(sys.argv[1:])
         if "-v" in args or "--verbose" in sys.argv:
@@ -812,8 +811,6 @@ def main():
                 d = read_config(filename)
                 config = dict_to_validated_config(d)
                 print_options(config)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

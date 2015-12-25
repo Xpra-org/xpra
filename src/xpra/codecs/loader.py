@@ -270,10 +270,9 @@ def encoding_help(encoding):
 
 
 def main():
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
-    try:
-        init("Loader", "Encoding Info")
+    with program_context("Loader", "Encoding Info"):
         enable_color()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
@@ -321,9 +320,7 @@ def main():
         for name in sorted(codec_versions.keys()):
             version = codec_versions[name]
             print("* %s : %s" % (name.ljust(20), pver(version)))
-    finally:
-        #this will wait for input on win32:
-        clean()
+
 
 if __name__ == "__main__":
     main()

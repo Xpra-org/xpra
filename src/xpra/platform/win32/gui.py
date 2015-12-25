@@ -759,9 +759,8 @@ class ClientExtras(object):
 
 
 def main():
-    from xpra.platform import init, clean
-    try:
-        init("Platform-Events", "Platform Events Test")
+    from xpra.platform import program_context
+    with program_context("Platform-Events", "Platform Events Test"):
         if "-v" in sys.argv or "--verbose" in sys.argv:
             from xpra.platform.win32.win32_events import log as win32_event_logger
             log.enable_debug()
@@ -791,9 +790,7 @@ def main():
             loop.run()
         except KeyboardInterrupt:
             log.info("exiting on keyboard interrupt")
-    finally:
-        #this will wait for input on win32:
-        clean()
+
 
 if __name__ == "__main__":
     main()

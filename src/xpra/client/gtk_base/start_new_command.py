@@ -146,11 +146,9 @@ class StartNewCommand(object):
 
 
 def main():
-    from xpra.platform import init as platform_init, clean as platform_clean
+    from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready
-    try:
-        platform_init("Start-New-Command", "Start New Command")
-
+    with program_context("Start-New-Command", "Start New Command"):
         #logging init:
         if "-v" in sys.argv:
             enable_debug_for("util")
@@ -174,8 +172,6 @@ def main():
         except KeyboardInterrupt:
             pass
         return 0
-    finally:
-        platform_clean()
 
 
 if __name__ == "__main__":

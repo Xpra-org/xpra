@@ -415,10 +415,9 @@ def main():
         except:
             pass
 
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
-    try:
-        init("PyCUPS Printing")
+    with program_context("PyCUPS Printing"):
         enable_color()
         validate_setup()
         log.info("")
@@ -434,8 +433,6 @@ def main():
                 if pk=="printer-state" and pv in PRINTER_STATE:
                     pv = "%s (%s)" % (pv, PRINTER_STATE.get(pv))
                 log.info("    %-32s: %s", pk, pv)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

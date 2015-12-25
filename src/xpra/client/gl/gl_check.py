@@ -545,12 +545,11 @@ def check_support(force_enable=False, check_colormap=False):
 
 
 def main(force_enable=False):
-    from xpra.platform import init,clean
+    from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     from xpra.util import pver
     from xpra.log import enable_color
-    try:
-        init("OpenGL-Check")
+    with program_context("OpenGL-Check"):
         gui_init()
         enable_color()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
@@ -579,8 +578,6 @@ def main(force_enable=False):
             if k not in ("extensions", "glconfig"):
                 log.info("* %s : %s", str(k).ljust(24), pver(v))
         return len(errors)
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

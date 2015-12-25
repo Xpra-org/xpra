@@ -27,6 +27,18 @@ def do_init():
     pass
 
 
+class program_context(object):
+    def __init__(self, prgname=None, appname=None):
+        self.prgname = prgname
+        self.appname = appname
+    def __enter__(self):
+        init(self.prgname, self.appname)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        clean()
+    def __repr__(self):
+        return "gui_context(%s, %s)" % (self.prgname, self.appname)
+
+
 _prgname = None
 _appname = None
 def set_default_name(prgname=None, appname=None):
@@ -148,5 +160,5 @@ def platform_import(where, pm, required, *imports):
         where[x] = v
 
 platform_import(globals(), None, True, "do_init", "do_clean")
-platform_import(globals(), None, False, "set_prgname", "set_application_name",
+platform_import(globals(), None, False, "set_prgname", "set_application_name", "program_context",
                 "command_error", "command_info", "get_main_fallback", "do_get_username")

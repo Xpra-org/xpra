@@ -112,69 +112,69 @@ def run_sound(mode, error_cb, options, args):
     #which means choosing between gi and gtk2 bindings
     from xpra.sound.gstreamer_util import import_gst
     gst = import_gst()
-    from xpra.platform import init
-    init("Xpra")
-    log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
-    if not gst:
-        return 1
-    if mode=="_sound_record":
-        subproc = sound_record
-        info = "record"
-    elif mode=="_sound_play":
-        subproc = sound_play
-        info = "play"
-    elif mode=="_sound_query":
-        plugins = get_all_plugin_names()
-        sources = [x for x in get_source_plugins() if x in plugins]
-        from xpra.sound.gstreamer_util import gst_version, pygst_version
-        d = {"encoders"         : can_encode(),
-             "decoders"         : can_decode(),
-             "sources"          : sources,
-             "muxers"           : get_muxers(),
-             "demuxers"         : get_demuxers(),
-             "gst.version"      : gst_version,
-             "pygst.version"    : pygst_version,
-             "plugins"          : plugins,
-            }
-        for k,v in d.items():
-            print("%s=%s" % (k, ",".join(str(x) for x in v)))
-        return 0
-    else:
-        log.error("unknown mode: %s" % mode)
-        return 1
-    assert len(args)>=6, "not enough arguments"
-
-    #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
-    plugin = args[2]
-    #plugin options (ie: "device=monitor_device,something=value")
-    options = parse_element_options(args[3])
-    #codecs:
-    codecs = [x.strip() for x in args[4].split(",")]
-    #codec options:
-    codec_options = parse_element_options(args[5])
-    #volume (optional):
-    try:
-        volume = int(args[6])
-    except:
-        volume = 1.0
-
-    ss = None
-    try:
-        ss = subproc(plugin, options, codecs, codec_options, volume)
-        ss.start()
-        return 0
-    except InitExit as e:
-        log.error("%s: %s", info, e)
-        return e.status
-    except InitException as e:
-        log.error("%s: %s", info, e)
-        return 1
-    except Exception:
-        log.error("run_sound%s error", (mode, error_cb, options, args), exc_info=True)
-        return 1
-    finally:
-        if ss:
-            ss.stop()
+    from xpra.platform import program_context
+    with program_context("Xpra"):
+        log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
+        if not gst:
+            return 1
+        if mode=="_sound_record":
+            subproc = sound_record
+            info = "record"
+        elif mode=="_sound_play":
+            subproc = sound_play
+            info = "play"
+        elif mode=="_sound_query":
+            plugins = get_all_plugin_names()
+            sources = [x for x in get_source_plugins() if x in plugins]
+            from xpra.sound.gstreamer_util import gst_version, pygst_version
+            d = {"encoders"         : can_encode(),
+                 "decoders"         : can_decode(),
+                 "sources"          : sources,
+                 "muxers"           : get_muxers(),
+                 "demuxers"         : get_demuxers(),
+                 "gst.version"      : gst_version,
+                 "pygst.version"    : pygst_version,
+                 "plugins"          : plugins,
+                }
+            for k,v in d.items():
+                print("%s=%s" % (k, ",".join(str(x) for x in v)))
+            return 0
+        else:
+            log.error("unknown mode: %s" % mode)
+            return 1
+        assert len(args)>=6, "not enough arguments"
+    
+        #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
+        plugin = args[2]
+        #plugin options (ie: "device=monitor_device,something=value")
+        options = parse_element_options(args[3])
+        #codecs:
+        codecs = [x.strip() for x in args[4].split(",")]
+        #codec options:
+        codec_options = parse_element_options(args[5])
+        #volume (optional):
+        try:
+            volume = int(args[6])
+        except:
+            volume = 1.0
+    
+        ss = None
+        try:
+            ss = subproc(plugin, options, codecs, codec_options, volume)
+            ss.start()
+            return 0
+        except InitExit as e:
+            log.error("%s: %s", info, e)
+            return e.status
+        except InitException as e:
+            log.error("%s: %s", info, e)
+            return 1
+        except Exception:
+            log.error("run_sound%s error", (mode, error_cb, options, args), exc_info=True)
+            return 1
+        finally:
+            if ss:
+                ss.stop()
 
 
 def _add_debug_args(command):

@@ -208,9 +208,8 @@ gobject.type_register(SoundSource)
 
 
 def main():
-    from xpra.platform import init, clean
-    init("Xpra-Sound-Source")
-    try:
+    from xpra.platform import program_context
+    with program_context("Xpra-Sound-Source"):
         import os.path
         if "-v" in sys.argv:
             log.enable_debug()
@@ -297,8 +296,6 @@ def main():
             f.close()
             f = None
         return 0
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

@@ -155,9 +155,8 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
-    from xpra.platform import init, clean
-    try:
-        init("Nvidia-Info", "Nvidia Info")
+    from xpra.platform import program_context
+    with program_context("Nvidia-Info", "Nvidia Info"):
         #this will log the version number:
         get_nvidia_module_version()
         if is_blacklisted():
@@ -168,8 +167,7 @@ def main():
             log.info("* version %s: %s key(s)", v or "common", len(keys))
             for k in keys:
                 log.info("  %s", k)
-    finally:
-        clean()
+
 
 if __name__ == "__main__":
     main()

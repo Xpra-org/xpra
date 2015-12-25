@@ -283,18 +283,15 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
 
 
 def main():
-    from xpra.platform import init, clean
-    try:
-        init("Shadow-Test", "Shadow Server Screen Capture Test")
+    from xpra.platform import program_context
+    with program_context("Shadow-Test", "Shadow Server Screen Capture Test"):
         rwm = Win32RootWindowModel(None)
         pngdata = rwm.take_screenshot()
         FILENAME = "screenshot.png"
         with open(FILENAME , "wb") as f:
             f.write(pngdata[4])
         print("saved screenshot as %s" % FILENAME)
-    finally:
-        #this will wait for input on win32:
-        clean()
+
 
 if __name__ == "__main__":
     main()

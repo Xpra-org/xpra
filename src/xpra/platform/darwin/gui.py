@@ -380,14 +380,11 @@ class ClientExtras(object):
 
 
 def main():
-    from xpra.platform import init, clean
-    try:
-        init("OSX Extras")
+    from xpra.platform import program_context
+    with program_context("OSX Extras"):
         log.enable_debug()
         ce = ClientExtras(None, None)
         ce.run()
-    finally:
-        clean()
 
 
 if __name__ == "__main__":

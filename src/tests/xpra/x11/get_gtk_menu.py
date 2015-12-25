@@ -68,10 +68,9 @@ def dump_menuactions(display, xid):
 
 
 def main(args):
-    from xpra.platform import init, clean
+    from xpra.platform import program_context
     from xpra.log import enable_color
-    try:
-        init("GTK-Menu Info")
+    with program_context("GTK-Menu Info"):
         enable_color()
         if "-q" in sys.argv:
             sys.argv.remove("-q")
@@ -103,8 +102,6 @@ def main(args):
             v = dump_menuactions(display, xid)
             loop.run()
             del v
-    finally:
-        clean()
 
 
 if __name__ == '__main__':

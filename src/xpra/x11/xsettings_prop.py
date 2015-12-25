@@ -158,9 +158,8 @@ def set_settings(disp, d):
 
 def main():
     from xpra.platform.gui import init as gui_init
-    from xpra.platform import init as platform_init,clean
-    try:
-        platform_init("XSettings")
+    from xpra.platform import program_context
+    with program_context("XSettings"):
         gui_init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
@@ -188,8 +187,6 @@ def main():
         for s in settings:
             print(s)
         return 0
-    finally:
-        clean()
 
 
 if __name__ == "__main__":
