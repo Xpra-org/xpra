@@ -12,6 +12,7 @@ import socket
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
+from xpra.net import ConnectionClosedException
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
@@ -95,7 +96,10 @@ def untilConcludes(is_active_cb, f, *a, **kw):
                 if wait<continue_wait:
                     wait += 1
                 continue
-            log("untilConcludes(%s, %s, %s, %s) %s / %s (raised)", is_active_cb, f, a, kw, ABORT.get(code, code), e)
+            abort = ABORT.get(code, code)
+            if abort is not None:
+                raise ConnectionClosedException(e)
+            log("untilConcludes(%s, %s, %s, %s) %s / %s (raised)", is_active_cb, f, a, kw, abort, e)
             raise
 
 def pretty_socket(s):

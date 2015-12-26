@@ -21,6 +21,7 @@ cryptolog = Logger("network", "crypto")
 
 from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized, updict, csv
+from xpra.net import ConnectionClosedException
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding
@@ -85,10 +86,6 @@ def sanity_checks():
     """ warns the user if important modules are missing """
     compression_sanity_checks()
     packet_encoding_sanity_checks()
-
-
-class ConnectionClosedException(Exception):
-    pass
 
 
 class Protocol(object):
@@ -609,8 +606,8 @@ class Protocol(object):
         if self._closed:
             return
         ei = exc_info
-        if exc and exc:
-            ei = None
+        if exc:
+            ei = None   #log it separately below
         log.error("internal error: %s", message, exc_info=ei)
         if exc:
             log.error(" %s", exc, exc_info=exc_info)

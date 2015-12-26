@@ -1194,7 +1194,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     dtype = display_desc["type"]
     conn = None
     if dtype == "ssh":
-        from xpra.net.protocol import ConnectionClosedException
+        from xpra.net import ConnectionClosedException
         cmd = display_desc["full_ssh"]
         proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
         if INITENV_COMMAND:
