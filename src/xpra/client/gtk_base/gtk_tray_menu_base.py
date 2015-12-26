@@ -6,13 +6,13 @@
 
 import sys
 import os
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
 
 from xpra.util import CLIENT_EXIT, iround
 from xpra.os_util import bytestostr
-from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, BUTTON_PRESS_MASK
+from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem
 from xpra.client.client_base import EXIT_OK
 from xpra.client.gtk_base.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
@@ -53,41 +53,6 @@ SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
 SPEED_OPTIONS[0]    = "Auto"
 SPEED_OPTIONS[1]    = "Lowest Bandwidth"
 SPEED_OPTIONS[100]  = "Lowest Latency"
-
-
-class TrayCheckMenuItem(gtk.CheckMenuItem):
-    """ We add a button handler to catch clicks that somehow do not
-        trigger the "toggled" signal on some platforms (win32?) when we
-        show the tray menu with a right click and click on the item with the left click.
-        (or the other way around?)
-    """
-    def __init__(self, label, tooltip=None):
-        gtk.CheckMenuItem.__init__(self, label)
-        self.label = label
-        if tooltip:
-            self.set_tooltip_text(tooltip)
-        self.add_events(BUTTON_PRESS_MASK)
-        self.connect("button-release-event", self.on_button_release_event)
-
-    def on_button_release_event(self, *args):
-        log("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
-        self.active_state = self.get_active()
-        def recheck():
-            log("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s", self.active_state, self.get_active())
-            state = self.active_state
-            self.active_state = None
-            if state is not None and state==self.get_active():
-                #toggle did not fire after the button release, so force it:
-                self.set_active(not state)
-        glib.idle_add(recheck)
-
-def set_use_tray_workaround(enabled):
-    global CheckMenuItem
-    if enabled and sys.platform.startswith("win"):
-        CheckMenuItem = TrayCheckMenuItem
-    else:
-        CheckMenuItem = gtk.CheckMenuItem
-set_use_tray_workaround(True)
 
 
 def set_sensitive(widget, sensitive):
@@ -320,9 +285,11 @@ class GTKTrayMenuBase(object):
         self.menu_shown = False
 
     def activate(self):
+        log("activate()")
         self.show_menu(1, 0)
 
     def popup(self, button, time):
+        log("popup(%s, %s)", button, time)
         self.show_menu(button, time)
 
     def show_menu(self, button, time):
@@ -358,7 +325,6 @@ class GTKTrayMenuBase(object):
             check_item.connect("toggled", cb)
         check_item.show()
         return check_item
-
 
 
     def make_aboutmenuitem(self):
@@ -1020,33 +986,4 @@ class GTKTrayMenuBase(object):
 
 
     def popup_menu_workaround(self, menu):
-        #win32 workaround:
-        if sys.platform.startswith("win") and not is_gtk3():
-            self.add_popup_menu_workaround(menu)
-
-    def add_popup_menu_workaround(self, menu):
-        """ windows does not automatically close the popup menu when we click outside it
-            so we workaround it by using a timer and closing the menu when the mouse
-            has stayed outside it for more than 0.5s.
-            This code must be added to all the sub-menus of the popup menu too!
-        """
-        def enter_menu(*args):
-            log("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
-            self.mouse_in_tray_menu_counter += 1
-            self.mouse_in_tray_menu = True
-        def leave_menu(*args):
-            log("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
-            self.mouse_in_tray_menu_counter += 1
-            self.mouse_in_tray_menu = False
-            def check_menu_left(expected_counter):
-                if self.mouse_in_tray_menu:
-                    return    False
-                if expected_counter!=self.mouse_in_tray_menu_counter:
-                    return    False            #counter has changed
-                self.close_menu()
-            glib.timeout_add(500, check_menu_left, self.mouse_in_tray_menu_counter)
-        self.mouse_in_tray_menu_counter = 0
-        self.mouse_in_tray_menu = False
-        log("popup_menu_workaround: adding events callbacks")
-        menu.connect("enter-notify-event", enter_menu)
-        menu.connect("leave-notify-event", leave_menu)
+        popup_menu_workaround(menu, self.close_menu)

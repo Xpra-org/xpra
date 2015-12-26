@@ -15,6 +15,7 @@ import win32process     #@UnresolvedImport
 from xpra.log import Logger
 from xpra.util import AdHocStruct
 log = Logger("shadow", "win32")
+traylog = Logger("tray")
 shapelog = Logger("shape")
 
 from xpra.os_util import StringIOClass
@@ -231,6 +232,117 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
         GTKServerBase.__init__(self)
         self.keycodes = {}
+        self.menu = None
+        self.menu_shown = False
+        self.tray_widget = None
+        self.tray = False
+        self.delay_tray = False
+        self.tray_icon = None
+
+    def init(self, opts):
+        GTKServerBase.init(self, opts)
+        self.tray = opts.tray
+        self.delay_tray = opts.delay_tray
+        self.tray_icon = opts.tray_icon or "xpra.ico"
+        if self.tray:
+            self.setup_tray()
+
+    ############################################################################
+    # system tray methods, mostly copied from the gtk client...
+    # (most of these should probably be moved to a common location instead)
+
+    def setup_tray(self):
+        try:
+            from xpra.gtk_common.gobject_compat import import_gtk
+            gtk = import_gtk()
+            from xpra.gtk_common.gtk_util import popup_menu_workaround
+            #menu:
+            self.menu = gtk.Menu()
+            self.menu.set_title("Xpra Server")
+            from xpra.gtk_common.about import about
+            self.menu.append(self.menuitem("About Xpra", "information.png", None, about))
+            self.menu.append(self.menuitem("Exit", "quit.png", None, self.quit))
+            self.menu.append(self.menuitem("Close Menu", "close.png", None, self.close_menu))
+            #maybe add: session info, clipboard, sharing, etc
+            #control: disconnect clients
+            self.menu.connect("deactivate", self.menu_deactivated)
+            popup_menu_workaround(self.menu, self.close_menu)
+            #tray:
+            from xpra.platform.paths import get_icon_dir
+            icon_filename = os.path.join(get_icon_dir(), self.tray_icon)
+            from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
+            self.tray_widget = win32NotifyIcon("Xpra Server", None, self.click_callback, self.exit_callback)
+            self.tray_widget.set_icon(icon_filename)
+        except ImportError as e:
+            traylog.warn("Warning: failed to load systemtray:")
+            traylog.warn(" %s", e)
+        except Exception as e:
+            traylog.error("Error setting up system tray", exc_info=True)
+
+    def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
+        """ Utility method for easily creating an ImageMenuItem """
+        from xpra.gtk_common.gtk_util import menuitem
+        image = None
+        if icon_name:
+            from xpra.platform.gui import get_icon_size
+            icon_size = get_icon_size()
+            image = self.get_image(icon_name, icon_size)
+        return menuitem(title, image, tooltip, cb)
+
+    def get_pixbuf(self, icon_name):
+        from xpra.platform.paths import get_icon_filename
+        from xpra.gtk_common.gtk_util import pixbuf_new_from_file
+        try:
+            if not icon_name:
+                traylog("get_pixbuf(%s)=None", icon_name)
+                return None
+            icon_filename = get_icon_filename(icon_name)
+            traylog("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
+            if icon_filename:
+                return pixbuf_new_from_file(icon_filename)
+        except:
+            traylog.error("get_pixbuf(%s)", icon_name, exc_info=True)
+        return  None
+
+    def get_image(self, icon_name, size=None):
+        from xpra.gtk_common.gtk_util import scaled_image
+        try:
+            pixbuf = self.get_pixbuf(icon_name)
+            traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
+            if not pixbuf:
+                return  None
+            return scaled_image(pixbuf, size)
+        except:
+            traylog.error("get_image(%s, %s)", icon_name, size, exc_info=True)
+            return  None
+
+
+    def menu_deactivated(self, *args):
+        self.menu_shown = False
+
+    def click_callback(self, button, pressed):
+        traylog("click_callback(%s, %s)", button, pressed)
+        if pressed:
+            self.close_menu()
+        self.menu.popup(None, None, None, button, 0)
+        self.menu_shown = True
+
+    def exit_callback(self, *args):
+        self.quit(False)
+
+    def close_menu(self, *args):
+        if self.menu_shown:
+            self.menu.popdown()
+            self.menu_shown = False
+
+    def cleanup(self):
+        GTKServerBase.cleanup(self)
+        if self.tray_widget:
+            self.tray_widget.close()
+            self.tray_widget = None
+
+    ############################################################################
+
 
     def makeRootWindowModel(self):
         return Win32RootWindowModel(self.root)
@@ -279,6 +391,8 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         info = GTKServerBase.get_info(self, proto)
         info["features.shadow"] = True
         info["server.type"] = "Python/gtk2/win32-shadow"
+        info["server.tray"] = self.tray
+        info["server.tray-icon"] = self.tray_icon or ""
         return info
 
 

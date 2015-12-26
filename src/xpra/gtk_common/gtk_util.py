@@ -65,6 +65,11 @@ def get_gtk_version_info():
     return GTK_VERSION_INFO.copy()
 
 
+def popup_menu_workaround(*args):
+    #only implemented with GTK2 on win32 below
+    pass
+
+
 if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
@@ -358,6 +363,81 @@ else:
                 gtk.main()
             finally:
                 gdk.threads_leave()
+
+    if WIN32:
+        traylog = Logger("tray", "win32")
+        mouse_in_tray_menu_counter = 0
+        mouse_in_tray_menu = False
+        def popup_menu_workaround(menu, close_cb):
+            """ MS Windows does not automatically close the popup menu when we click outside it
+                so we workaround it by using a timer and closing the menu when the mouse
+                has stayed outside it for more than 0.5s.
+                This code must be added to all the sub-menus of the popup menu too!
+            """
+            global mouse_in_tray_menu, mouse_in_tray_menu_counter
+            def enter_menu(*args):
+                global mouse_in_tray_menu, mouse_in_tray_menu_counter
+                traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
+                mouse_in_tray_menu_counter += 1
+                mouse_in_tray_menu = True
+            def leave_menu(*args):
+                global mouse_in_tray_menu, mouse_in_tray_menu_counter
+                traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
+                mouse_in_tray_menu_counter += 1
+                mouse_in_tray_menu = False
+                def check_menu_left(expected_counter):
+                    if mouse_in_tray_menu:
+                        return    False
+                    if expected_counter!=mouse_in_tray_menu_counter:
+                        return    False            #counter has changed
+                    close_cb()
+                gobject.timeout_add(500, check_menu_left, mouse_in_tray_menu_counter)
+            mouse_in_tray_menu_counter = 0
+            mouse_in_tray_menu = False
+            traylog("popup_menu_workaround: adding events callbacks")
+            menu.connect("enter-notify-event", enter_menu)
+            menu.connect("leave-notify-event", leave_menu)
+
+
+class TrayCheckMenuItem(gtk.CheckMenuItem):
+    """ We add a button handler to catch clicks that somehow do not
+        trigger the "toggled" signal on some platforms (win32?) when we
+        show the tray menu with a right click and click on the item with the left click.
+        (or the other way around?)
+    """
+    def __init__(self, label, tooltip=None):
+        gtk.CheckMenuItem.__init__(self, label)
+        self.label = label
+        if tooltip:
+            self.set_tooltip_text(tooltip)
+        self.add_events(BUTTON_PRESS_MASK)
+        self.connect("button-release-event", self.on_button_release_event)
+
+    def on_button_release_event(self, *args):
+        log("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
+        self.active_state = self.get_active()
+        def recheck():
+            log("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s", self.active_state, self.get_active())
+            state = self.active_state
+            self.active_state = None
+            if state is not None and state==self.get_active():
+                #toggle did not fire after the button release, so force it:
+                self.set_active(not state)
+        gobject.idle_add(recheck)
+
+CheckMenuItemClass = gtk.CheckMenuItem
+def CheckMenuItem(*args, **kwargs):
+    global CheckMenuItemClass
+    return CheckMenuItemClass(*args, **kwargs)
+
+def set_use_tray_workaround(enabled):
+    global CheckMenuItemClass
+    if enabled and WIN32:
+        CheckMenuItemClass = TrayCheckMenuItem
+    else:
+        CheckMenuItemClass = gtk.CheckMenuItem
+set_use_tray_workaround(True)
+
 
 
 def get_display_info():
@@ -667,20 +747,6 @@ def ensure_item_selected(submenu, item):
     #if not then keep this one active:
     item.set_active(True)
     return item
-
-
-def CheckMenuItem(label, tooltip=None):
-    """ adds a get_label() method for older versions of gtk which do not have it
-        beware that this label is not mutable!
-    """
-    cmi = gtk.CheckMenuItem(label)
-    if not hasattr(cmi, "get_label"):
-        def get_label():
-            return  label
-        cmi.get_label = get_label
-    if tooltip:
-        cmi.set_tooltip_text(tooltip)
-    return cmi
 
 
 class TableBuilder(object):

@@ -336,7 +336,7 @@ class ServerCore(object):
                 for l in x.splitlines():
                     log("%s", l)
 
-    def quit(self, upgrading):
+    def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
         log.info("xpra is terminating.")

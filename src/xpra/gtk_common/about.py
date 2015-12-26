@@ -8,7 +8,6 @@
     about.py
 """
 
-import sys
 import os.path
 
 from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3

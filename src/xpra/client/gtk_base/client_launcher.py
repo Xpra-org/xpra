@@ -34,12 +34,12 @@ gui_init()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
-                                    OptionMenu, choose_file, \
+                                    OptionMenu, choose_file, set_use_tray_workaround, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.os_util import thread
-from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, set_use_tray_workaround, \
+from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
 from xpra.net.crypto import ENCRYPTION_CIPHERS
