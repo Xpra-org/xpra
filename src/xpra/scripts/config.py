@@ -403,10 +403,14 @@ def get_defaults():
         xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER)
     else:
         xvfb = get_Xvfb_command()
+    def addtrailingslash(v):
+        if v.endswith("/"):
+            return v
+        return v+"/"
     if WIN32:
         bind_dirs = []
     else:
-        bind_dirs = [get_socket_dirs()[0]]
+        bind_dirs = [addtrailingslash(get_socket_dirs()[0])]
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",

@@ -823,7 +823,11 @@ def build_xpra_conf(install_dir):
     if WIN32:
         bind = ""
     else:
-        bind = socket_dirs[0]
+        def addtrailingslash(v):
+            if v.endswith("/"):
+                return v
+            return v+"/"
+        bind = addtrailingslash(socket_dirs[0])
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
     if os.name=="posix" and printing_ENABLED:

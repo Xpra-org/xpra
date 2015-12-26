@@ -21,7 +21,7 @@ import traceback
 from xpra.scripts.main import TCP_NODELAY, warn, no_gtk
 from xpra.scripts.config import InitException
 from xpra.os_util import SIGNAMES
-from xpra.dotxpra import DotXpra, norm_makepath
+from xpra.dotxpra import DotXpra, norm_makepath, osexpand
 
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
@@ -341,18 +341,12 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     continue
                 elif b=="auto":
                     sockpath = dotxpra.socket_path(display_name)
-                elif b.startswith("sockdir:"):
-                    sockdir = b[len("sockdir:"):]
-                    sockpath = norm_makepath(sockdir, display_name)
                 else:
-                    if b.startswith("/"):
-                        sockpath = b
-                    elif b.startswith("~"):
-                        sockpath = os.path.expanduser(b)
-                    if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                    sockpath = osexpand(b)
+                    if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
                         sockpath = os.path.abspath(sockpath)
                         if not os.path.exists(sockpath):
-                            os.mkdir(sockpath)
+                            os.makedirs(sockpath)
                         sockpath = norm_makepath(sockpath, display_name)
                     else:
                         sockpath = dotxpra.socket_path(display_name)
