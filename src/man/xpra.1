@@ -42,6 +42,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-bind\fP=\fIBIND_LOCATION\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-tcp\-encryption\fP=\fICIPHER\fP]
@@ -125,6 +126,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
 [\fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
+[\fB\-\-bind\fP=\fISOCKET|DIRECTORY\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
@@ -317,6 +319,12 @@ attach\fP alone will attach to the lone xpra server on the current
 machine regardless of its number, \fBxpra attach ssh:frodo\fP will
 similarly attach to the lone xpra session on a remote machine.
 
+Connecting using the display number assumes that the client and server
+use the same configuration for socket directories, or at least that
+the client can find at least one of the directories used by
+the unix domain sockets (see \fIbind\fP, \fIsocket\-dir\fP and
+\fIsocket\-dirs\fP).
+
 If the xpra server was given the \fB\-\-bind\-tcp\fP option when
 started then you can also connect to it using a display of
 the form \fBtcp:HOST:PORT\fP.  (Notice that \fBssh:\fP takes an optional
@@ -503,7 +511,8 @@ all require their respective shared libraries,
 as well as the xpra codec that uses them.
 
 Note: when selecting a video encoding (usually \fBh264\fP, \fBvp8\fP or fBvp9\fP),
-some of the smaller screen updates will be sent using
+it will only be used if the screen is updating quickly enough,
+some of the smaller screen updates will also be sent using
 one of the other non-video encodings.
 .TP
 
@@ -541,6 +550,7 @@ command line argument, or joined together by the path separator (\fB:\fP on Posi
 The paths will be expanded.
 (ie: \fI\-\-socket-dirs=~/.xpra:/tmp\fP)
 
+
 .SS Options for start, upgrade, proxy and shadow
 .TP
 \fB\-\-daemon\fP=\fIyes\fP|\fIno\fP
@@ -548,18 +558,46 @@ By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
 .TP
-\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
-Enable or disable the publication of new sessions via mDNS.
+\fB\-\-bind\fP=\fIBIND_LOCATION\fP
+Create a local Unix domain socket for each \fBbind\fP option specified.
+
+This option can be specified multiple times to specify multiple
+socket locations.
+These sockets support local connections with the \fB:7\fP-style display
+address, and remote connections with the \fBssh:frodo:7\fP-style
+display address.
+
+The location can take the form:
+.RS
+.IP \fBnone\fP
+do not create a socket
+.IP \fBauto\fP
+backwards compatible default which uses the current \fIsocket\-dir\fP
+.IP \fBsockdir:DIRECTORY\fP
+create a socket in the directory specified, if the directory
+already exists the "sockdir:" prefix may be omitted, if not then it
+will be created
+.IP \fBPATH\fP
+create the socket using the path specified
+.RE
+.PP
 .TP
-\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP
-Allows the client to forward dbus calls to the server.
-.TP
-\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP
-Start a dbus server which can be used to interact with the server
-process.
+\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
+Create a TCP socket for each \fB\-\-bind-\-tcp\fP option specified.
+If the host portion is omitted, then 127.0.0.1 (localhost) will be
+used.  If you wish to accept connections on all interfaces, pass
+0.0.0.0 for the host portion.
+
+Using this switch without using the \fIauth\fP option is not recommended,
+and is a major security risk (especially when passing 0.0.0.0)!
+Anyone at all may connect to this port and access your session.
+Use it only if you have special needs, and understand the consequences
+of your actions.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
-Specifies the authentication module to use.
+Specifies the authentication module to use for unix domain sockets
+created using the \fBbind\fP switch.
+
 This can be used to secure sockets in a different way from
 the \fB\-\-encryption\fP switch: authentication modules can
 validate a username and password against a variety of backend modules:
@@ -571,11 +609,10 @@ and should only be used for testing
 always fails authentication, useful for testing
 .IP \fBfile\fP
 checks the password against the file specified using
-\fBpassword\-file\fP switch or data provided via the
-\fBXPRA_PASSWORD\fP environment variable.  They can either contain
-a single password, in which case it will be used for all
-usernames, or a list of user credentials of the form (one
-per line):
+\fBpassword\-file\fP switch.
+It can either contain a single password,
+in which case it will be used for all usernames,
+or a list of user credentials of the form (one per line):
 \fIusername|password|uid|gid|displays|env_opts|session_opts\fP
 .IP \fBpam\fP
 validates the username and password using the PAM system
@@ -583,7 +620,7 @@ validates the username and password using the PAM system
 validates the username and password using Microsoft Windows
 authentication
 .IP \fBsys\fP
-chooses the most appropriate system authentication module
+chooses the appropriate system authentication module
 automatically (either \fBpam\fP or \fBwin32\fP)
 .RE
 .PP
@@ -592,6 +629,17 @@ automatically (either \fBpam\fP or \fBwin32\fP)
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 .TP
+\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
+Enable or disable the publication of new sessions via mDNS.
+.TP
+\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP
+Allows the client to forward dbus calls to the server.
+.TP
+\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP
+Start a dbus server which can be used to interact with the server
+process.
+.TP
+
 
 .SS Options for start, upgrade
 .TP
@@ -600,13 +648,10 @@ After starting the server, runs the command \fICMD\fP using the
 default shell.  The command is run with its \fB$DISPLAY\fP set to point to
 the newly-started server.  This option may be given multiple times to
 start multiple commands.
+.TP
 \fB\-\-start\-child\fP=\fICMD\fP
 Identical to \fB\-\-start\fP, except that the commands are taken into
 account by \fB\-\-exit\-with\-children\fP.
-.TP
-\fB\-\-env\fP=\fIKEY=VALUE\fP
-Extra environment variables which will only affect commands started using
-fB\-\-start\fP or fB\-\-start\-child\fP.
 .TP
 \fB\-\-exit\-with\-children\fP
 This option may only be used if \fB\-\-start\-child\fP is also
@@ -614,11 +659,16 @@ given.  If it is given, then the xpra server will monitor the status
 of the children started by \fB\-\-start\-child\fP, and will
 automatically terminate itself when the last of them has exited.
 .TP
+\fB\-\-env\fP=\fIKEY=VALUE\fP
+Extra environment variables which will only affect commands started using
+fB\-\-start\fP or fB\-\-start\-child\fP.
+.TP
 \fB\-\-use\-display\fP
 Use an existing display rather than starting one with xvfb.
 You are responsible for starting the display yourself.
 This can also be used to rescue an existing display whose
-xpra server instance crashed.
+xpra server instance crashed or for running xpra against
+an accelerated X11 server.
 .TP
 \fB\-\-xvfb\fP=\fICMD\fP
 When starting a seamless server, xpra starts a virtual X server to
@@ -639,24 +689,8 @@ Warning: this extra painting is expensive and quite slow, which is why
 it is not enabled by default.
 .TP
 
+
 .SS Options for start, upgrade, shadow
-.TP
-\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
-The xpra server always listens for connections on a local Unix domain
-socket, and supports local connections with the \fB:7\fP-style display
-address, and remote connections with the \fBssh:frodo:7\fP-style
-display address.  If you want, it can also listen for connections on a
-raw TCP socket.  This behavior is enabled with \fB\-\-bind-\-tcp\fP.  If
-the host portion is omitted, then 127.0.0.1 (localhost) will be
-used.  If you wish to accept connections on all interfaces, pass
-0.0.0.0 for the host portion.
-
-Using this switch without using the auth option is not recommended,
-and is a major security risk (especially when passing 0.0.0.0)!
-Anyone at all may connect to this port and access your session.
-Use it only if you have special needs, and understand the consequences
-of your actions.
-
 .TP
 \fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP
 Specifies the address to which non-xpra packets will be forwarded.
@@ -764,13 +798,6 @@ This numeric value should be in the range 10 to 500 to be useful.
 Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
-.TP
-\fB\-\-mouse\-polling\fP=\fIVALUE\fP
-How often to poll the mouse position when the cursor is not hovering
-over one of our windows, this is measured in seconds.
-If you do not wish the server to be able to have a rough overview
-of your mouse movements, or if you simply wish to disable the feature,
-use the special value '0'.
 .TP
 \fB\-\-cursors\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of custom application mouse cursors.
@@ -1145,7 +1172,8 @@ Xpra uses the directory \fI~/.xpra\fP to store a number of files.
 (The examples below are given for the display \fI:7\fP.)
 .TP
 \fI~/.xpra/:7\fP
-The unix domain socket that clients use to contact the xpra server.
+The unix domain socket that clients use to contact the xpra server,
+if the system configuration uses this directory.
 .TP
 \fI~/.xpra/:7.log\fP
 When run in daemon mode (the default), the xpra server directs all
@@ -1175,7 +1203,7 @@ input events will be misdirected).  This is not a problem when using
 Xdummy, see the \fB\-\-xvfb\fP= switch for details.
 .\" --------------------------------------------------------------------
 .SH REPORTING BUGS
-Send any questions or bugs reports to <antoine@devloop.org.uk>.
+Send any questions or bugs reports to http://xpra.org/trac/
 .\" --------------------------------------------------------------------
 .SH SEE ALSO
 \fBscreen\fP(1)

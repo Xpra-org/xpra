@@ -820,6 +820,10 @@ def build_xpra_conf(install_dir):
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
+    if WIN32:
+        bind = ""
+    else:
+        bind = socket_dirs[0]
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
     if os.name=="posix" and printing_ENABLED:
@@ -847,6 +851,7 @@ def build_xpra_conf(install_dir):
             'has_displayfd'         : bstr(has_displayfd),
             'pulseaudio_command'    : DEFAULT_PULSEAUDIO_COMMAND,
             'conf_dir'              : conf_dir,
+            'bind'                  : bind,
             'socket_dirs'           : "\nsocket-dirs = ".join(socket_dirs),
             'log_dir'               : get_default_log_dir(),
             'mdns'                  : bstr(not WIN32),

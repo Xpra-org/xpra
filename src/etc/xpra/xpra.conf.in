@@ -235,11 +235,6 @@ compression_level = 1
 #packet-encoders = all
 packet-encoders = rencode, bencode, yaml
 
-# Log files:
-#log-dir = ~/.xpra
-#log-dir = /tmp
-log-dir = %(log_dir)s
-
 # Socket directories (may be specified more than once):
 #socket-dirs = /tmp
 #socket-dirs = ~/.xpra
@@ -335,6 +330,14 @@ shadow-fullscreen = no
 ########################################################################
 # Server Options:
 
+# Directory for server log files:
+#log-dir = ~/.xpra
+#log-dir = /tmp
+log-dir = %(log_dir)s
+
+# Log file:
+log-file = $DISPLAY.log
+
 # Commands to start by default
 #  (may be specified more than once):
 # examples:
@@ -355,6 +358,14 @@ exit-with-children = no
 # Allows clients to start new commands in the server context:
 #start-new-commands = yes
 start-new-commands = no
+
+# Where to create local sockets:
+# bind=none
+# bind=auto
+# bind=sockdir:~/.xpra/
+# bind=FILENAME
+# bind=/path/to/socketfilename
+bind = %(bind)s
 
 # Authentication module to use:
 #auth=fail
@@ -394,9 +405,6 @@ wm-name = Xpra
 #html = yes
 #html = :20000
 #html = 127.0.0.1:20000
-
-# Log file:
-log-file = $DISPLAY.log
 
 # Publish sessions:
 #mdns = no

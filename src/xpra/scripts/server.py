@@ -227,9 +227,18 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
     orig_umask = os.umask(umask)
-    listener.bind(sockpath)
-    os.umask(orig_umask)
-    return listener
+    try:
+        listener.bind(sockpath)
+    finally:
+        os.umask(orig_umask)
+    def cleanup_socket():
+        from xpra.log import Logger
+        Logger("network").info("removing socket %s", sockpath)
+        try:
+            os.unlink(sockpath)
+        except:
+            pass
+    return listener, cleanup_socket
 
 def create_tcp_socket(host, iport):
     if host.find(":")<0:
@@ -313,28 +322,60 @@ def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wai
     return sockpath
 
 
-def setup_local_socket(socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions):
-    if sys.platform.startswith("win"):
-        return None, None
-    from xpra.log import Logger
-    log = Logger("network")
+def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions):
     dotxpra = DotXpra(socket_dir or socket_dirs[0])
     try:
         dotxpra.mksockdir()
         display_name = normalize_local_display_name(display_name)
-        sockpath = dotxpra.socket_path(display_name)
     except Exception as e:
         raise InitException("socket path error: %s" % e)
-    setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
-    sock = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
-    def cleanup_socket():
-        log.info("removing socket %s", sockpath)
-        try:
-            os.unlink(sockpath)
-        except:
-            pass
-    _cleanups.append(cleanup_socket)
-    return ("unix-domain", sock, sockpath), cleanup_socket
+    from xpra.log import Logger
+    defs = []
+    sockpaths = set()
+    log = Logger("network")
+    try:
+        for b in bind:
+            sockpath = b
+            try:
+                if b=="none" or b=="":
+                    continue
+                elif b=="auto":
+                    sockpath = dotxpra.socket_path(display_name)
+                elif b.startswith("sockdir:"):
+                    sockdir = b[len("sockdir:"):]
+                    sockpath = norm_makepath(sockdir, display_name)
+                else:
+                    if b.startswith("/"):
+                        sockpath = b
+                    elif b.startswith("~"):
+                        sockpath = os.path.expanduser(b)
+                    if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                        sockpath = os.path.abspath(sockpath)
+                        if not os.path.exists(sockpath):
+                            os.mkdir(sockpath)
+                        sockpath = norm_makepath(sockpath, display_name)
+                    else:
+                        sockpath = dotxpra.socket_path(display_name)
+                if sockpath in sockpaths:
+                    log.warn("Warning: skipping duplicate socket path %s", sockpath)
+                    continue
+                setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
+                sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
+                log.info("created unix domain socket: %s", sockpath)
+                defs.append((("unix", sock, sockpath), cleanup_socket))
+                sockpaths.add(sockpath)
+            except Exception as e:
+                log.error("failed to create socket %s" % sockpath, exc_info=True)
+                raise InitException("failed to create socket %s" % sockpath)
+    except:
+        for sock, cleanup_socket in defs:
+            try:
+                cleanup_socket()
+            except Exception as e:
+                log.warn("error cleaning up socket %s", sock)
+        defs = []
+        raise
+    return defs
 
 
 def get_free_tcp_port():
@@ -890,13 +931,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         return  1
 
     #setup unix domain socket:
-    socket, cleanup_socket = setup_local_socket(opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
-    if socket:      #win32 returns None!
+    local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
+    for socket, cleanup_socket in local_sockets:
+        #ie: ("unix-domain", sock, sockpath), cleanup_socket
         sockets.append(socket)
+        _cleanups.append(cleanup_socket)
         if opts.mdns:
             ssh_port = get_ssh_port()
-            if ssh_port:
-                mdns_recs.append(("ssh", [("", ssh_port)]))
+            rec = "ssh", [("", ssh_port)]
+            if ssh_port and rec not in mdns_recs:
+                mdns_recs.append(rec)
 
     #publish mdns records:
     if opts.mdns:

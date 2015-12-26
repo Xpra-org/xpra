@@ -353,6 +353,10 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",
                       help="Whether the server display should be resized to match the client resolution. Default: %s." % enabled_str(defaults.resize_display))
     if supports_server or supports_shadow:
+        group.add_option("--bind", action="append",
+                          dest="bind", default=list(defaults.bind or []),
+                          metavar="SOCKET",
+                          help="Listen for connections over unix domain sockets. You may specify this option multiple times to listen on different locations.")
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
                           metavar="[HOST]:PORT",

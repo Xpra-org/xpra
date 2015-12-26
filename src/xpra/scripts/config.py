@@ -378,6 +378,7 @@ OPTION_TYPES = {
                     "key-shortcut"      : list,
                     "start"             : list,
                     "start-child"       : list,
+                    "bind"              : list,
                     "bind-tcp"          : list,
                     "env"               : list,
                }
@@ -390,7 +391,7 @@ def get_defaults():
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV, CAN_DAEMONIZE
-    from xpra.platform.paths import get_download_dir, get_default_log_dir
+    from xpra.platform.paths import get_download_dir, get_default_log_dir, get_socket_dirs
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -402,6 +403,10 @@ def get_defaults():
         xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER)
     else:
         xvfb = get_Xvfb_command()
+    if WIN32:
+        bind_dirs = []
+    else:
+        bind_dirs = [get_socket_dirs()[0]]
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
@@ -526,6 +531,7 @@ def get_defaults():
                                            "Meta+Shift+KP_Multiply:scalereset",
                                            "Meta+Shift+degree:scalereset",          #OSX
                                            ],
+                    "bind"              : bind_dirs,
                     "bind-tcp"          : [],
                     "start"             : [],
                     "start-child"       : [],
