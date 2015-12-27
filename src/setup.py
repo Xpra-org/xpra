@@ -925,7 +925,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
                    "xpra/client/gtk3/cairo_workaround.c",
-                   "xpra/server/stats/cystats.c",
+                   "xpra/server/cystats.c",
                    "xpra/server/window/region.c",
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra.conf in build (see #891):
@@ -937,6 +937,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
             if WIN32:
                 #on win32, the build creates ".pyd" files, clean those too:
                 CLEAN_FILES.append(x[:-2]+".pyd")
+        if x.endswith(".pxi"):
+            #clean the Cython annotated html files:
+            CLEAN_FILES.append(x[:-2]+".html")
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
