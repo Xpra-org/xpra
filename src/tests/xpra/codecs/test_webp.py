@@ -54,7 +54,8 @@ def test_encode():
     buf = BytesIO(img_data)
     img = PIL.Image.open(buf)
     img = img.convert("RGBA")
-    rgb_data = img.tostring("raw", "BGRA")
+    data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
+    rgb_data = data_fn("raw", "BGRA")
     w, h = img.size
     do_test_encode(rgb_data, w, h)
 
@@ -79,7 +80,8 @@ def test_files(filenames=[], d="", extensions=[".png", ".jpg"], recurse=True):
             has_alpha = img.mode=="RGBA"
             if not has_alpha:
                 img = img.convert("RGBA")
-            rgb_data = img.tostring("raw", "BGRA")
+            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
+            rgb_data = data_fn("raw", "BGRA")
             w, h = img.size
             print("testing with file: %s (%sx%s)" % (p, w, h))
             do_test_encode(rgb_data, w, h, N=1, Q=[0, 50, 99, 100], S=[0, 2, 4, 6], has_alpha=has_alpha)

@@ -15,7 +15,8 @@ def test_webp_memleak():
     from io import BytesIO
     buf = BytesIO(img_data)
     img = Image.open(buf)
-    rgb_data = img.tostring("raw", img.mode)
+    data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
+    rgb_data = data_fn("raw", img.mode)
     assert len(rgb_data)==49152
     #print("webp input buffer of size %s, decoded to %s bytes of rgb" % (len(img_data), len(rgb_data)))
 

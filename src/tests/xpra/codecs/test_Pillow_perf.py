@@ -63,7 +63,8 @@ def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
             img.load()
             has_alpha = img.mode=="RGBA"
             img = img.convert("RGBA")
-            rgb_data = img.tostring("raw", img.mode)
+            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))            
+            rgb_data = data_fn("raw", img.mode)
             w, h = img.size
             assert len(rgb_data)==w*h*len(img.mode)
             print("testing with file: %s (%sx%s)" % (x, w, h))
@@ -76,7 +77,8 @@ def test_encode():
     buf = BytesIO(img_data)
     img = Image.open(buf)
     img = img.convert("RGBA")
-    rgb_data = img.tostring("raw", img.mode)
+    data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
+    rgb_data = data_fn("raw", img.mode)
     w, h = img.size
     do_test_encode(rgb_data, w, h)
 
