@@ -209,12 +209,14 @@ XpraClient.prototype.close = function() {
 
 XpraClient.prototype.enable_encoding = function(encoding) {
 	// add an encoding to our hello.encodings list
+	console.log("enable",encoding);
 	this.enabled_encodings.push(encoding);
 }
 
 XpraClient.prototype.disable_encoding = function(encoding) {
 	// remove an encoding from our hello.encodings.core list
 	// as if we don't support it
+	console.log("disable",encoding);
 	var index = this.supported_encodings.indexOf(encoding);
 	if(index > -1) {
 		this.supported_encodings.splice(index, 1);
@@ -486,8 +488,10 @@ XpraClient.prototype._get_screen_sizes = function() {
 XpraClient.prototype._get_encodings = function() {
 	if(this.enabled_encodings.length == 0) {
 		// return all supported encodings
+		console.log("return all encodings");
 		return this.supported_encodings;
 	} else {
+		console.log("return just enabled encoding");
 		return this.enabled_encodings;
 	}
 }
@@ -496,6 +500,7 @@ XpraClient.prototype._update_capabilities = function(appendobj) {
 	for (var attr in appendobj) {
 		this.capabilities[attr] = appendobj[attr];
 	}
+	console.log(this.capabilities);
 }
 
 XpraClient.prototype._check_server_echo = function(ping_sent_time) {
