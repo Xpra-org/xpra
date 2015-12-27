@@ -767,6 +767,11 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			img_data = inflated.slice(0, uncompressedSize);
 		}
 		// set the imagedata rgb32 method
+		if(img_data.length > img.data.length) {
+			console.error("data size mismatch: wanted",img.data.length,", got",img_data.length, ", stride",rowstride);
+		} else {
+			console.log("got ",img_data.length,"to paint with stride",rowstride);
+		}
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
 		// send decode callback once we actually decoded
