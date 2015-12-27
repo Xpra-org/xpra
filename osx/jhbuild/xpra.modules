@@ -330,9 +330,9 @@
 
   <distutils id="python-numpy">
      <branch repo="pypi.python.org"
-	     module="/packages/source/n/numpy/numpy-1.9.2.tar.gz"
-	     version="1.9.2"
-	     hash="md5:a1ed53432dbcd256398898d35bc8e645"
+	     module="/packages/source/n/numpy/numpy-1.10.2.tar.gz"
+	     version="1.10.2"
+	     hash="md5:816518282f1617636aaf26e7cd9b127b"
 	     />
   </distutils>
 
