@@ -602,6 +602,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         if is_msvc():
             add_to_keywords(kw, 'extra_compile_args', "/wd4005")    #macro redifined with vpx vs stdint.h
             add_to_keywords(kw, 'extra_compile_args', "/wd4146")    #MSVC error in __Pyx_PyInt_As_size_t
+            add_to_keywords(kw, 'extra_compile_args', "/wd4293")    #MSVC error in __Pyx_PyFloat_DivideObjC
             add_to_keywords(kw, 'extra_compile_args', "/WX")
             add_to_keywords(kw, 'extra_link_args', "/WX")
         else:
@@ -1480,6 +1481,7 @@ if WIN32:
 
         if strict_ENABLED:
             add_to_keywords(kw, 'extra_compile_args', "/wd4146")    #MSVC error on __Pyx_PyInt_As_size_t
+            add_to_keywords(kw, 'extra_compile_args', "/wd4293")    #MSVC error in __Pyx_PyFloat_DivideObjC
 
         #always add the win32 include dirs for VC,
         #so codecs can find the inttypes.h and stdint.h:
