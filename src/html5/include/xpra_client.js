@@ -225,20 +225,14 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 	// ctx refers to `this` because we came through a callback
 	var packet_type = "";
 	var fn = "";
-	try {
-		packet_type = packet[0];
-		console.log("received a " + packet_type + " packet");
-		fn = ctx.packet_handlers[packet_type];
-		if (fn==undefined) {
-			console.error("no packet handler for "+packet_type+"!");
-			console.log(packet);
-		}
-		else
-			fn(packet, ctx);
-	}
-	catch (e) {
-		console.error("error processing '"+packet_type+"' with '"+fn+"': "+e);
-		throw e;
+	packet_type = packet[0];
+	console.log("received a " + packet_type + " packet");
+	fn = ctx.packet_handlers[packet_type];
+	if (fn==undefined) {
+		console.error("no packet handler for "+packet_type+"!");
+		console.log(packet);
+	} else {
+		fn(packet, ctx);
 	}
 }
 
