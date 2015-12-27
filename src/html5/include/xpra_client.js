@@ -24,7 +24,7 @@ function XpraClient(container) {
 	this.capabilities = {};
 	this.OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
-	this.supported_encodings = ["h264", "jpeg", "png", "rgb32"];
+	this.supported_encodings = ["h264", "jpeg", "png", "rgb", "rgb32"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
 	this.username = "html5user";
