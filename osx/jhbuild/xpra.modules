@@ -157,9 +157,9 @@
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/webp/libwebp-0.4.4.tar.gz"
-			version="0.4.4"
-                        hash="md5:b737062cf688e502b940b460ddc3015f"
+    <branch module="/releases/webp/libwebp-0.5.0.tar.gz"
+			version="0.5.0"
+                        hash="md5:ba81eb9bf23e3c69a2f5cc8dcdb5938f"
             repo="downloads.webmproject.org"/>
   </autotools>
 
