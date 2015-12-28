@@ -13,12 +13,11 @@ v0.16.0 (2015-11-13)
 	-- improved vp9 support
 	-- handling of very high client resolutions (8k and above)
 	-- more reliable window positioning and geometry
-	-- enable OpenGL accelerated rendering by default on all platforms
 	-- add more sanity checks to codecs and csc modules
 	-- network and protocol improvements: safety checks, threading
 	-- encryption improvements: support TCP only encryption, PKCS#7 padding
 	-- improved printer forwarding
-	-- improved DPI and anti-alias synchronization and handling
+	-- improved DPI and anti-alias synchronization and handling (incomplete)
 	-- better multi-monitor support
 	-- support for screen capture tools (disabled by default)
 	-- automatic desktop scaling to save bandwidth and CPU (upscale on client)
