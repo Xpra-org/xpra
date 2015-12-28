@@ -45,6 +45,7 @@ This package development files for %{name}.
 
 %build
 sed -i -e 's/^\(\s*hardcode_libdir_flag_spec\s*=\).*/\1/' configure
+sed -i -e '/xmmintrin\.h/d' configure
 %ifarch %{ix86}
 export CFLAGS="$RPM_OPT_FLAGS -ffast-math"
 %endif
