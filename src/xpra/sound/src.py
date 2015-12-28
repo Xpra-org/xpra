@@ -121,7 +121,14 @@ class SoundSource(SoundPipeline):
         buf = sample.get_buffer()
         #info = sample.get_info()
         size = buf.get_size()
-        data = buf.extract_dup(0, size)
+        extract_dup = getattr(buf, "extract_dup", None)
+        if extract_dup:
+            data = extract_dup(0, size)
+        else:
+            #crappy gi bindings detected, using workaround:
+            from xpra.sound.gst_hacks import map_gst_buffer
+            with map_gst_buffer(buf) as a:
+                data = bytes(a[:])
         return self.emit_buffer(data, {"timestamp"  : normv(buf.pts),
                                    "duration"   : normv(buf.duration),
                                    })
