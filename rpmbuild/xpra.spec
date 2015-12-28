@@ -121,7 +121,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 
 Name: xpra
 Version: %{version}
-Release: %{build_no}%{dist}
+Release: %{build_no}%{?dist}
 Summary: Xpra gives you "persistent remote applications" for X.
 
 Group: Networking
