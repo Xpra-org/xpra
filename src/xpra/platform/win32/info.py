@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import win32api        #@UnresolvedImport
+
 def get_sys_info():
     return  {}
 
@@ -11,7 +13,6 @@ def get_username():
     return getpass.getuser()
 
 def get_name():
-    import win32api        #@UnresolvedImport
     return win32api.GetUserName()
 
 def get_pywin32_version():
@@ -26,7 +27,6 @@ def get_pywin32_version():
     except:
         pass
     try:
-        import win32api    #@UnresolvedImport
         fixed_file_info = win32api.GetFileVersionInfo(win32api.__file__, '\\')
         v = fixed_file_info['FileVersionLS'] >> 16
         return v

@@ -7,6 +7,9 @@
 import os.path
 import sys
 
+import win32api             #@UnresolvedImport
+import win32con             #@UnresolvedImport
+
 
 def _get_data_dir():
     #if not running from a binary, return current directory:
@@ -54,7 +57,6 @@ def do_get_user_conf_dirs():
 
 
 def get_registry_value(key, reg_path, entry):
-    import win32api             #@UnresolvedImport
     hKey = win32api.RegOpenKey(key, reg_path)
     value, _ = win32api.RegQueryValueEx(hKey, entry)
     win32api.RegCloseKey(hKey)
@@ -70,7 +72,6 @@ def do_get_download_dir():
     try:
         #use the internet explorer registry key:
         #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
-        import win32con             #@UnresolvedImport
         DOWNLOAD_PATH = get_registry_value(win32con.HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer", "Download Directory")
     except:
         #fallback to what the documentation says is the default:

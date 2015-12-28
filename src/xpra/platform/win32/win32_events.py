@@ -4,7 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import win32ts, win32con, win32api, win32gui        #@UnresolvedImport
+import win32ts          #@UnresolvedImport
+import win32con         #@UnresolvedImport
+import win32api         #@UnresolvedImport
+import win32gui         #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("events", "win32")

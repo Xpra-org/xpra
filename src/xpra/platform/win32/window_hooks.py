@@ -9,7 +9,8 @@ from xpra.log import Logger
 log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
 
-import win32con, win32api     #@UnresolvedImport
+import win32con         #@UnresolvedImport
+import win32api         #@UnresolvedImport
 import ctypes
 from ctypes import c_int, c_long
 from ctypes.wintypes import POINT

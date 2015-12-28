@@ -8,6 +8,8 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 
+from ctypes import windll
+
 # Try and use XP features, so we get alpha-blending etc.
 try:
     from winxpgui import NIF_INFO, NIIF_INFO, NIM_MODIFY
@@ -102,7 +104,6 @@ def notify(hwnd, title, message, timeout=5000):
     #WM_TRAYICON = win32con.WM_USER + 20
     #nid.uCallbackMessage = WM_TRAYICON
     # Call the Windows function, not the wrapped one
-    from ctypes import windll
     Shell_NotifyIcon = windll.shell32.Shell_NotifyIconA
     Shell_NotifyIcon(NIM_MODIFY, nid.pack())
 

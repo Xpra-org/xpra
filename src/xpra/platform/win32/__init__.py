@@ -10,6 +10,10 @@ import errno
 import os.path
 import sys
 
+import win32con         #@UnresolvedImport
+import win32api         #@UnresolvedImport
+import win32console     #@UnresolvedImport
+
 #redirect output if we are launched from py2exe's gui mode:
 REDIRECT_OUTPUT = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
 if getattr(sys, 'frozen', False):
@@ -31,7 +35,6 @@ if getattr(sys, 'frozen', False):
 
 def is_wine():
     try:
-        import win32con, win32api     #@UnresolvedImport
         hKey = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
         return hKey is not None
     except:
@@ -45,7 +48,6 @@ def set_prgname(name):
     global prg_name
     prg_name = name
     try:
-        import win32api                     #@UnresolvedImport
         win32api.SetConsoleTitle(name)
         import glib
         glib.set_prgname(name)
@@ -216,7 +218,6 @@ def set_wait_for_input():
         _wait_for_input = False
         return
     try:
-        import win32console, win32con       #@UnresolvedImport
         handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
         #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
         console_info = handle.GetConsoleScreenBufferInfo()
@@ -257,16 +258,11 @@ def do_init():
 
 
 CONSOLE_EXIT_EVENTS = []
-try:
-    import win32con     #@UnresolvedImport
-    CONSOLE_EXIT_EVENTS = [win32con.CTRL_C_EVENT,
-                           win32con.CTRL_LOGOFF_EVENT,
-                           win32con.CTRL_BREAK_EVENT,
-                           win32con.CTRL_SHUTDOWN_EVENT,
-                           win32con.CTRL_CLOSE_EVENT]
-except:
-    pass
-
+CONSOLE_EXIT_EVENTS = [win32con.CTRL_C_EVENT,
+                       win32con.CTRL_LOGOFF_EVENT,
+                       win32con.CTRL_BREAK_EVENT,
+                       win32con.CTRL_SHUTDOWN_EVENT,
+                       win32con.CTRL_CLOSE_EVENT]
 class console_event_catcher(object):
     def __init__(self, event_cb, events=CONSOLE_EXIT_EVENTS):
         self.event_cb = event_cb
@@ -276,7 +272,6 @@ class console_event_catcher(object):
         self.log = Logger("win32")
     def __enter__(self):
         try:
-            import win32api     #@UnresolvedImport
             self.result = win32api.SetConsoleCtrlHandler(self.handle_console_event, 1)
             if self.result == 0:
                 self.log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
@@ -284,7 +279,6 @@ class console_event_catcher(object):
             self.log.error("SetConsoleCtrlHandler error: %s", e)
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            import win32api     #@UnresolvedImport
             win32api.SetConsoleCtrlHandler(None, 0)
         except:
             pass
@@ -309,7 +303,6 @@ def _show_message(message, uType):
     if SHOW_MESSAGEBOX and GUI_MODE:
         #try to use an alert box since no console output will be shown:
         try:
-            import win32api         #@UnresolvedImport
             win32api.MessageBox(0, message, prg_name, uType)
             return
         except:

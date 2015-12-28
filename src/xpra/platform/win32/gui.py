@@ -20,6 +20,10 @@ from xpra.util import AdHocStruct, csv
 import ctypes
 from ctypes import windll, byref
 
+import win32con     #@UnresolvedImport
+import win32api     #@UnresolvedImport
+import win32gui     #@UnresolvedImport
+
 WINDOW_HOOKS = os.environ.get("XPRA_WIN32_WINDOW_HOOKS", "1")=="1"
 GROUP_LEADER = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GROUP_LEADER", "1")=="1"
 UNDECORATED_STYLE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_UNDECORATED_STYLE", "1")=="1"
@@ -36,7 +40,6 @@ DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
 try:
-    import win32con             #@UnresolvedImport
     for x in dir(win32con):
         if x.endswith("_EVENT"):
             v = getattr(win32con, x)
@@ -44,8 +47,6 @@ try:
         if x.startswith("PBT_"):
             v = getattr(win32con, x)
             POWER_EVENTS[v] = x
-    import win32api             #@UnresolvedImport
-    import win32gui             #@UnresolvedImport
 except Exception as e:
     log.warn("error loading pywin32: %s", e)
 
@@ -640,7 +641,6 @@ class ClientExtras(object):
         self._kh_warning = False
         self._console_handler_registered = self.setup_console_event_listener(True)
         try:
-            import win32con                 #@Reimport @UnresolvedImport
             el = get_win32_event_listener(True)
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP,      self.activateapp)
