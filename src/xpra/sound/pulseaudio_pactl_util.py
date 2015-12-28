@@ -9,6 +9,7 @@ import os.path
 
 from xpra.sound.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.scripts.exec_util import safe_exec
+from xpra.util import nonl
 
 from xpra.log import Logger
 log = Logger("sound")
@@ -49,7 +50,7 @@ def get_pactl_bin():
 def pactl_output(log_errors=True, *pactl_args):
     pactl_bin = get_pactl_bin()
     if not pactl_bin:
-        return -1, None
+        return -1, None, None
     #ie: "pactl list"
     cmd = [pactl_bin] + list(pactl_args)
     #force "C" locale so that we can parse the output as expected
@@ -57,15 +58,15 @@ def pactl_output(log_errors=True, *pactl_args):
     env["LC_ALL"] = "C"
     kwargs = {"env" : env}
     try:
-        code, out, _ = safe_exec(cmd, log_errors=log_errors, **kwargs)
+        code, out, err = safe_exec(cmd, log_errors=log_errors, **kwargs)
         log("pactl_output%s returned %s", pactl_args, code)
-        return  code, out
+        return  code, out, err
     except Exception as e:
         if log_errors:
             log.error("failed to execute %s: %s", cmd, e)
         else:
             log("failed to execute %s: %s", cmd, e)
-        return  -1, None
+        return  -1, None, None
 
 def is_pa_installed():
     pactl_bin = get_pactl_bin()
@@ -80,15 +81,18 @@ def has_pa():
 
 
 def set_source_mute(device, mute=False):
-    code, out = pactl_output(True, "set-source-mute", device, str(int(mute)))
-    log("set_source_mute: output=%s", out)
+    code, out, err = pactl_output(True, "set-source-mute", device, str(int(mute)))
+    log("set_source_mute: output=%s, err=%s", out, err)
     return code==0
 
 def get_pactl_stat_line(prefix):
     if not has_pa():
         return ""
-    code, out = pactl_output(True, "stat")
+    code, out, err = pactl_output(False, "stat")
     if code!=0:
+        log.warn("Warning: failed to query pulseaudio using 'pactl list'")
+        if err:
+            log.warn(" %s", nonl(err))
         return    ""
     stat = ""
     for line in out.splitlines():
@@ -127,7 +131,7 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     """
     if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
         return {}
-    status, out = pactl_output(False, "list")
+    status, out, _ = pactl_output(False, "list")
     if status!=0 or not out:
         return  {}
     return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices, log_errors)
