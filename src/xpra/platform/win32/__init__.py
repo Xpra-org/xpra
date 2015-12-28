@@ -256,6 +256,48 @@ def do_init():
     sys.stderr = sys.stdout
 
 
+CONSOLE_EXIT_EVENTS = []
+try:
+    import win32con     #@UnresolvedImport
+    CONSOLE_EXIT_EVENTS = [win32con.CTRL_C_EVENT,
+                           win32con.CTRL_LOGOFF_EVENT,
+                           win32con.CTRL_BREAK_EVENT,
+                           win32con.CTRL_SHUTDOWN_EVENT,
+                           win32con.CTRL_CLOSE_EVENT]
+except:
+    pass
+
+class console_event_catcher(object):
+    def __init__(self, event_cb, events=CONSOLE_EXIT_EVENTS):
+        self.event_cb = event_cb
+        self.events = events
+        self.result = 0
+        from xpra.log import Logger
+        self.log = Logger("win32")
+    def __enter__(self):
+        try:
+            import win32api     #@UnresolvedImport
+            self.result = win32api.SetConsoleCtrlHandler(self.handle_console_event, 1)
+            if self.result == 0:
+                self.log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
+        except Exception as e:
+            self.log.error("SetConsoleCtrlHandler error: %s", e)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            import win32api     #@UnresolvedImport
+            win32api.SetConsoleCtrlHandler(None, 0)
+        except:
+            pass
+    def __repr__(self):
+        return "console_event_catcher(%s, %s)" % (self.event_cb, self.events)
+
+    def handle_console_event(self, event):
+        self.log("handle_console_event(%s)", event)
+        if event in self.events:
+            self.log.info("received console event %s", event)
+            self.event_cb(event)
+
+
 SHOW_MESSAGEBOX = os.environ.get("XPRA_MESSAGEBOX", "1")=="1"
 MB_ICONEXCLAMATION  = 0x00000030
 MB_ICONINFORMATION  = 0x00000040
