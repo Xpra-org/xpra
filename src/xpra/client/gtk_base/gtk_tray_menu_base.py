@@ -14,7 +14,7 @@ from xpra.util import CLIENT_EXIT, iround
 from xpra.os_util import bytestostr
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem
 from xpra.client.client_base import EXIT_OK
-from xpra.client.gtk_base.about import about, close_about
+from xpra.gtk_common.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
 from xpra.platform.gui import get_icon_size
 

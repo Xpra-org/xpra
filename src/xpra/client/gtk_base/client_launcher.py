@@ -41,7 +41,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
 from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
-from xpra.client.gtk_base.about import about
+from xpra.gtk_common.about import about
 from xpra.net.crypto import ENCRYPTION_CIPHERS
 from xpra.scripts.main import connect_to, make_client, configure_network
 from xpra.platform.paths import get_icon_dir

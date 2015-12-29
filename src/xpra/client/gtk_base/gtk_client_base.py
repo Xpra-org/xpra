@@ -171,7 +171,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def show_about(self, *args):
-        from xpra.client.gtk_base.about import about
+        from xpra.gtk_common.about import about
         about()
 
     def show_session_info(self, *args):

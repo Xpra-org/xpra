@@ -52,7 +52,7 @@ class BugReport(object):
         hbox = gtk.HBox(False, 0)
         icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf and self.show_about:
-            from xpra.client.gtk_base.about import about
+            from xpra.gtk_common.about import about
             logo_button = gtk.Button("")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)

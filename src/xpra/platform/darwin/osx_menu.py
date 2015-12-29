@@ -8,7 +8,7 @@ import os
 from xpra.gtk_common.gobject_compat import import_gtk
 gtk = import_gtk()
 from xpra.gtk_common.gtk_util import scaled_image
-from xpra.client.gtk_base.about import about
+from xpra.gtk_common.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
