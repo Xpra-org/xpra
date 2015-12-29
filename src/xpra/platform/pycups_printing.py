@@ -60,7 +60,7 @@ MIMETYPES = os.environ.get("XPRA_PRINTING_MIMETYPES", "application/postscript,ap
 
 
 DEFAULT_CUPS_OPTIONS = {}
-dco = os.environ.get("XPRA_DEFAULT_CUPS_OPTIONS", "orientation-requested=3,fit-to-page=True")
+dco = os.environ.get("XPRA_DEFAULT_CUPS_OPTIONS", "fit-to-page=True")
 if dco:
     for opt in dco.split(","):
         opt = opt.strip(" ")
