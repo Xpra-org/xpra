@@ -41,13 +41,17 @@ def cleanup_printing():
     pass
 
 
-DEFAULT_MIMETYPES = "application/pdf,application/postscript"
+DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 
 MIMETYPES = None
 def get_mimetypes():
     global MIMETYPES, DEFAULT_MIMETYPES
     if MIMETYPES is None:
-        MIMETYPES = os.environ.get("XPRA_PRINTING_MIMETYPES", DEFAULT_MIMETYPES).split(",")
+        v = os.environ.get("XPRA_PRINTING_MIMETYPES", )
+        if v is not None:
+            MIMETYPES = v.split(",")
+        else:
+            MIMETYPES = DEFAULT_MIMETYPES
         if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
             MIMETYPES.append("raw")
         #make it easier to test different mimetypes:
@@ -63,10 +67,17 @@ def get_mimetypes():
     return MIMETYPES
 
 
+def get_info():
+    return {
+            "mimetypes"         : get_mimetypes(),
+            "mimetypes.default" : DEFAULT_MIMETYPES,
+            }
+
+
 #default implementation uses pycups:
 from xpra.platform import platform_import
 try:
-    from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing
+    from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info
     assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
 except Exception as e:
     #ignore the error on win32:
@@ -81,6 +92,7 @@ platform_import(globals(), "printing", False,
                 "get_default_printer",
                 "print_files",
                 "printing_finished",
+                "get_info",
                 "DEFAULT_MIMETYPES")
 
 
@@ -99,24 +111,29 @@ def main():
             pass
 
     from xpra.util import nonl, pver
+    def dump_dict(d):
+        pk = None
+        try:
+            for pk,pv in d.items():
+                try:
+                    if type(pv)==unicode:
+                        sv = pv.encode("utf8")
+                    else:
+                        sv = nonl(pver(pv))
+                except Exception as e:
+                    sv = repr(pv)
+                print("        %s : %s" % (pk.ljust(32), sv))
+        except Exception as e:
+            print("        error on %s: %s" % (pk, e))
+            print("        raw attributes: " % d)
+    def dump_info(d):
+        print("System Configuration:")
+        dump_dict(d)
     def dump_printers(d):
         for k in sorted(d.keys()):
             v = d[k]
             print("* %s" % k)
-            pk = None
-            try:
-                for pk,pv in v.items():
-                    try:
-                        if type(pv)==unicode:
-                            sv = pv.encode("utf8")
-                        else:
-                            sv = nonl(pver(pv))
-                    except Exception as e:
-                        sv = repr(pv)
-                    print("        %s : %s" % (pk.ljust(32), sv))
-            except Exception as e:
-                print("        error on %s: %s" % (pk, e))
-                print("        raw attributes: " % v)
+            dump_dict(v)
             attr = get_printer_attributes(k)
             if attr:
                 print(" attributes:")
@@ -129,6 +146,7 @@ def main():
         enable_color()
         if len(sys.argv)<=1:
             dump_printers(get_printers())
+            dump_info(get_info())
             return 0
         printers = get_printers()
         if len(printers)==0:

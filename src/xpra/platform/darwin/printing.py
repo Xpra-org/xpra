@@ -5,4 +5,4 @@
 
 # Printing PDF in landscape orientation does not work properly on OSX,
 # so we use PS instead:
-DEFAULT_MIMETYPES = "application/postscript"
+DEFAULT_MIMETYPES = ["application/postscript"]
