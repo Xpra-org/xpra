@@ -362,9 +362,10 @@ start-new-commands = no
 # Where to create local sockets:
 # bind=none
 # bind=auto
-# bind=sockdir:~/.xpra/
+# bind=~/.xpra/
 # bind=FILENAME
 # bind=/path/to/socketfilename
+# bind=/run/user/$UID/xpra/
 bind = %(bind)s
 
 # Authentication module to use:
