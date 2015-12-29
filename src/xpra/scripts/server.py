@@ -467,8 +467,8 @@ def close_all_fds(exceptions=[]):
 def shellsub(s, subs={}):
     """ shell style string substitution using the dictionary given """
     for var,value in subs.items():
-        s = s.replace("$%s" % var, value)
-        s = s.replace("${%s}" % var, value)
+        s = s.replace("$%s" % var, str(value))
+        s = s.replace("${%s}" % var, str(value))
     return s
 
 def open_log_file(logpath):
@@ -605,6 +605,8 @@ def start_Xvfb(xvfb_str, display_name):
     #apply string substitutions:
     subs = {"XAUTHORITY"    : xauthority,
             "USER"          : os.environ.get("USER", "unknown-user"),
+            "UID"           : os.getuid(),
+            "GID"           : os.getgid(),
             "HOME"          : os.environ.get("HOME", os.getcwd()),
             "DISPLAY"       : display_name}
     xvfb_str = shellsub(xvfb_str, subs)
@@ -839,7 +841,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
-        log_dir = os.path.expanduser(opts.log_dir)
+        log_dir = osexpand(opts.log_dir)
         if not os.path.exists(log_dir):
             os.mkdir(log_dir, 0o700)
 

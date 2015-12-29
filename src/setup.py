@@ -770,8 +770,10 @@ def detect_xorg_setup(install_dir=None):
                     use_wrapper = True
                 else:
                     use_wrapper = False
+        from xpra.platform.paths import get_default_log_dir
+        log_dir = get_default_log_dir()
         from xpra.scripts.config import get_Xdummy_command
-        return (get_Xdummy_command(use_wrapper, xorg_conf=xorg_conf), has_displayfd, use_wrapper)
+        return (get_Xdummy_command(use_wrapper, log_dir=log_dir, xorg_conf=xorg_conf), has_displayfd, use_wrapper)
 
     if Xdummy_ENABLED is False:
         return Xvfb()

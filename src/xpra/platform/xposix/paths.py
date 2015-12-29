@@ -56,3 +56,8 @@ def do_get_socket_dirs():
         #for shared sockets:
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
+
+def do_get_default_log_dir():
+    if os.path.exists("/run/user") and os.path.isdir("/run/user"):
+        return "/run/user/$UID/xpra"
+    return "~/.xpra"
