@@ -1652,8 +1652,12 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def get_printing_info(self):
-        return {"enabled"   : self.printing,
-                "lpadmin"   : self.lpadmin}
+        d = {"enabled"   : self.printing,
+             "lpadmin"   : self.lpadmin}
+        if self.printing:
+            from xpra.platform.printing import get_info
+            d.update(get_info())
+        return d
 
     def get_features_info(self):
         i = {
