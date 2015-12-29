@@ -27,6 +27,11 @@ if PREFERRED_MIMETYPE:
         log.warn(" allowed mimetypes: %s", MIMETYPES)
 
 
+py3 = sys.version >= '3'
+if py3:
+    unicode = str       #@ReservedAssignment
+
+
 def err(*args):
     log.error(*args)
 
@@ -91,11 +96,20 @@ def main():
         for k in sorted(d.keys()):
             v = d[k]
             print("* %s" % k)
+            pk = None
             try:
                 for pk,pv in v.items():
-                    print("        %s : %s" % (pk.ljust(32), nonl(pver(pv))))
-            except:
-                print("        %s : %s" % (k.ljust(32), nonl(pver(v))))
+                    try:
+                        if type(pv)==unicode:
+                            sv = pv.encode("utf8")
+                        else:
+                            sv = nonl(pver(pv))
+                    except Exception as e:
+                        sv = repr(pv)
+                    print("        %s : %s" % (pk.ljust(32), sv))
+            except Exception as e:
+                print("        error on %s: %s" % (pk, e))
+                print("        raw attributes: " % v)
             attr = get_printer_attributes(k)
             if attr:
                 print(" attributes:")
