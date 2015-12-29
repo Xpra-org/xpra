@@ -10,22 +10,6 @@ import sys, os
 from xpra.log import Logger
 log = Logger("printing")
 
-MIMETYPES = [
-             "application/pdf",
-             "application/postscript",
-            ]
-#make it easier to test different mimetypes:
-PREFERRED_MIMETYPE = os.environ.get("XPRA_PRINTING_PREFERRED_MIMETYPE")
-if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
-    MIMETYPES.append("raw")
-if PREFERRED_MIMETYPE:
-    if PREFERRED_MIMETYPE in MIMETYPES:
-        MIMETYPES.remove(PREFERRED_MIMETYPE)
-        MIMETYPES.insert(0, PREFERRED_MIMETYPE)
-    else:
-        log.warn("Warning: ignoring invalid preferred printing mimetype: %s", PREFERRED_MIMETYPE)
-        log.warn(" allowed mimetypes: %s", MIMETYPES)
-
 
 py3 = sys.version >= '3'
 if py3:
@@ -56,6 +40,29 @@ def init_printing(printers_modified_callback=None):
 def cleanup_printing():
     pass
 
+
+DEFAULT_MIMETYPES = "application/pdf,application/postscript"
+
+MIMETYPES = None
+def get_mimetypes():
+    global MIMETYPES, DEFAULT_MIMETYPES
+    if MIMETYPES is None:
+        MIMETYPES = os.environ.get("XPRA_PRINTING_MIMETYPES", DEFAULT_MIMETYPES).split(",")
+        if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
+            MIMETYPES.append("raw")
+        #make it easier to test different mimetypes:
+        PREFERRED_MIMETYPE = os.environ.get("XPRA_PRINTING_PREFERRED_MIMETYPE")
+        if PREFERRED_MIMETYPE:
+            if PREFERRED_MIMETYPE in MIMETYPES:
+                MIMETYPES.remove(PREFERRED_MIMETYPE)
+                MIMETYPES.insert(0, PREFERRED_MIMETYPE)
+            else:
+                log.warn("Warning: ignoring invalid preferred printing mimetype: %s", PREFERRED_MIMETYPE)
+                log.warn(" allowed mimetypes: %s", MIMETYPES)
+    log("get_mimetype()=%s", MIMETYPES)
+    return MIMETYPES
+
+
 #default implementation uses pycups:
 from xpra.platform import platform_import
 try:
@@ -74,7 +81,7 @@ platform_import(globals(), "printing", False,
                 "get_default_printer",
                 "print_files",
                 "printing_finished",
-                "MIMETYPES")
+                "DEFAULT_MIMETYPES")
 
 
 def main():

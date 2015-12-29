@@ -1647,7 +1647,8 @@ class ServerSource(object):
                 self.printers[name] = props
             add_printer(name, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
-            printlog.warn("failed to add printer %s: %s", name, e)
+            printlog.warn("Warning: failed to add printer %s: %s", name, e)
+            printlog("setup_printer(%s, %s, %s)", name, props, attributes, exc_info=True)
 
     def remove_printers(self):
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:

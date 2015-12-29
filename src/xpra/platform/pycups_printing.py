@@ -56,7 +56,6 @@ MIMETYPE_TO_PRINTER = {"application/postscript" : "Generic PostScript Printer",
                        "application/pdf"        : "Generic PDF Printer"}
 MIMETYPE_TO_PPD = {"application/postscript"     : "CUPS-PDF.ppd",
                    "application/pdf"            : "Generic-PDF_Printer-PDF.ppd"}
-MIMETYPES = os.environ.get("XPRA_PRINTING_MIMETYPES", "application/postscript,application/pdf").split(",")
 
 
 DEFAULT_CUPS_OPTIONS = {}
@@ -155,6 +154,8 @@ def get_printer_definitions():
     if PRINTER_DEF is not None:
         return PRINTER_DEF
     log("get_printer_definitions() UNPROBED_PRINTER_DEFS=%s, GENERIC=%s", UNPROBED_PRINTER_DEFS, GENERIC)
+    from xpra.platform.printing import get_mimetypes
+    mimetypes = get_mimetypes()
     #first add the user-supplied definitions:
     PRINTER_DEF = UNPROBED_PRINTER_DEFS.copy()
     #raw mode if supported:
@@ -162,7 +163,7 @@ def get_printer_definitions():
         PRINTER_DEF["raw"] = ["-o", "raw"]
     #now probe for generic printers via lpinfo:
     if GENERIC:
-        for mt in MIMETYPES:
+        for mt in mimetypes:
             if mt in PRINTER_DEF:
                 continue    #we have a pre-defined one already
             x = MIMETYPE_TO_PRINTER.get(mt)
@@ -174,7 +175,7 @@ def get_printer_definitions():
                 #ie: ["-m", "drv:///sample.drv/generic.ppd"]
                 PRINTER_DEF[mt] = ["-m", drv]
     #fallback to locating ppd files:
-    for mt in MIMETYPES:
+    for mt in mimetypes:
         if mt in PRINTER_DEF:
             continue        #we have a generic or pre-defined one already
         x = MIMETYPE_TO_PPD.get(mt)
@@ -246,6 +247,9 @@ def sanitize_name(name):
 def add_printer(name, options, info, location, attributes={}, success_cb=None):
     log("add_printer%s", (name, options, info, location, attributes, success_cb))
     mimetypes = options.get("mimetypes", [DEFAULT_MIMETYPE])
+    if not mimetypes:
+        log.error("Error: no mimetypes specified for printer %s", name)
+        return
     #find a matching definition:
     mimetype, printer_def = None, None
     defs = get_printer_definitions()

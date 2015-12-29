@@ -677,7 +677,7 @@ class XpraClientBase(FileTransferHandler):
     def do_send_printers(self):
         try:
             self.send_printers_pending = False
-            from xpra.platform.printing import get_printers, MIMETYPES
+            from xpra.platform.printing import get_printers, get_mimetypes
             printers = get_printers()
             printlog("do_send_printers() found printers=%s", printers)
             #remove xpra-forwarded printers to avoid loops and multi-forwards,
@@ -706,7 +706,7 @@ class XpraClientBase(FileTransferHandler):
                     continue
                 attrs = used_attrs(v)
                 #add mimetypes:
-                attrs["mimetypes"] = MIMETYPES
+                attrs["mimetypes"] = get_mimetypes()
                 exported_printers[k.encode("utf8")] = attrs
             if self.exported_printers is None:
                 #not been sent yet, ensure we can use the dict below:

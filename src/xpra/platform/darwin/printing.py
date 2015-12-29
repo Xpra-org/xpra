@@ -3,4 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# darwin: assume cups support (no overrides needed here)
+# Printing PDF in landscape orientation does not work properly on OSX,
+# so we use PS instead:
+DEFAULT_MIMETYPES = "application/postscript"
