@@ -1116,6 +1116,8 @@ class ServerSource(object):
             cinfo = ""
             if ss:
                 try:
+                    encoder_latency = ss.last_info.get("queue.cur", 0)
+                    avsynclog("server side queue level: %s", encoder_latency)
                     from xpra.sound.gstreamer_util import ENCODER_LATENCY
                     encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
                     cinfo = "%s " % ss.codec

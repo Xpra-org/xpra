@@ -12,14 +12,15 @@ from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline, gobject
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, get_gst_version, \
-                                MP3, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, get_gst_version, get_queue_time, \
+                                MP3, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
 
 APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
 JITTER = int(os.environ.get("XPRA_SOUND_SOURCE_JITTER", "0"))
+SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
 
 class SoundSource(SoundPipeline):
@@ -62,6 +63,16 @@ class SoundSource(SoundPipeline):
         encoder_str = plugin_str(encoder, codec_options or ENCODER_DEFAULT_OPTIONS.get(encoder, {}))
         fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
         pipeline_els = [source_str]
+        if SOURCE_QUEUE_TIME>0:
+            queue_el = ["queue",
+                        "name=queue",
+                        "min-threshold-time=0",
+                        "max-size-buffers=0",
+                        "max-size-bytes=0",
+                        "max-size-time=%s" % (50*MS_TO_NS),
+                        "leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM,
+                        "silent=1"]
+            pipeline_els += [" ".join(queue_el)]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
         pipeline_els.append("volume name=volume volume=%s" % volume)
@@ -71,6 +82,10 @@ class SoundSource(SoundPipeline):
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
+        if SOURCE_QUEUE_TIME>0:
+            self.queue  = self.pipeline.get_by_name("queue")
+        else:
+            self.queue = None
         try:
             if get_gst_version()<(1,0):
                 self.sink.set_property("enable-last-buffer", False)
@@ -104,6 +119,8 @@ class SoundSource(SoundPipeline):
         info = SoundPipeline.get_info(self)
         if self.caps:
             info["caps"] = self.caps
+        if self.queue:
+            info["queue.cur"] = self.queue.get_property("current-level-time")//MS_TO_NS
         return info
 
 
