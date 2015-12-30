@@ -225,25 +225,9 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.av_sync = opts.av_sync
         self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
-        if os.name=="posix" and HAS_PRINTING and opts.printing:
-            try:
-                from xpra.platform import pycups_printing
-                pycups_printing.set_lpadmin_command(self.lpadmin)
-                pycups_printing.set_lpinfo_command(self.lpinfo)
-                if opts.postscript_printer:
-                    pycups_printing.add_printer_def("application/postscript", opts.postscript_printer)
-                if opts.pdf_printer:
-                    pycups_printing.add_printer_def("application/pdf", opts.pdf_printer)
-                self.printing = pycups_printing.validate_setup()
-            except ImportError as e:
-                printlog("printing module is not installed: %s", e)
-                self.printing = False
-            except Exception:
-                printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
-                self.printing = False
-            if self.printing and opts.auth and opts.auth!="none":
-                log.warn("Warning: printing conflicts with socket authentication module '%s'", opts.auth)
-                self.printing = False
+        self.printing = os.name=="posix" and HAS_PRINTING and opts.printing
+        self.postscript_printer = opts.postscript_printer
+        self.pdf_printer = opts.pdf_printer
         self.notifications_forwarder = None
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -276,6 +260,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         getVideoHelper().init()
         #re-init list of encodings now that we have video initialized
         self.init_encodings()
+        self.init_printing()
         log("threaded_init() end")
 
     def init_encodings(self):
@@ -334,6 +319,28 @@ class ServerBase(ServerCore, FileTransferHandler):
             log.warn("ignored invalid default encoding option: %s", cmdline_encoding)
         else:
             self.default_encoding = cmdline_encoding
+
+    def init_printing(self):
+        try:
+            from xpra.platform import pycups_printing
+            pycups_printing.set_lpadmin_command(self.lpadmin)
+            pycups_printing.set_lpinfo_command(self.lpinfo)
+            if self.postscript_printer:
+                pycups_printing.add_printer_def("application/postscript", self.postscript_printer)
+            if self.pdf_printer:
+                pycups_printing.add_printer_def("application/pdf", self.pdf_printer)
+            self.printing = pycups_printing.validate_setup()
+        except ImportError as e:
+            printlog("printing module is not installed: %s", e)
+            self.printing = False
+        except Exception:
+            printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
+            self.printing = False
+        #verify that we can talk to the socket:
+        if self.printing and self.auth_class and self.auth_class!="none":
+            log.warn("Warning: printing conflicts with socket authentication module '%s'", self.auth_class)
+            self.printing = False
+        printlog("init_printing() printing=%s", self.printing)
 
 
     def init_uuid(self):
