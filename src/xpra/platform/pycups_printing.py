@@ -12,7 +12,7 @@ import subprocess
 import shlex
 import getpass
 import urllib
-
+from threading import Lock
 
 from xpra.util import engs
 from xpra.log import Logger
@@ -149,44 +149,46 @@ def add_printer_def(mimetype, definition):
 
 
 PRINTER_DEF = None
+PRINTER_DEF_LOCK = Lock()
 def get_printer_definitions():
-    global PRINTER_DEF, UNPROBED_PRINTER_DEFS, MIMETYPE_TO_PRINTER
-    if PRINTER_DEF is not None:
-        return PRINTER_DEF
-    log("get_printer_definitions() UNPROBED_PRINTER_DEFS=%s, GENERIC=%s", UNPROBED_PRINTER_DEFS, GENERIC)
-    from xpra.platform.printing import get_mimetypes
-    mimetypes = get_mimetypes()
-    #first add the user-supplied definitions:
-    PRINTER_DEF = UNPROBED_PRINTER_DEFS.copy()
-    #raw mode if supported:
-    if RAW_MODE:
-        PRINTER_DEF["raw"] = ["-o", "raw"]
-    #now probe for generic printers via lpinfo:
-    if GENERIC:
+    global PRINTER_DEF, PRINTER_DEF_LOCK, UNPROBED_PRINTER_DEFS, MIMETYPE_TO_PRINTER
+    with PRINTER_DEF_LOCK:
+        if PRINTER_DEF is not None:
+            return PRINTER_DEF
+        log("get_printer_definitions() UNPROBED_PRINTER_DEFS=%s, GENERIC=%s", UNPROBED_PRINTER_DEFS, GENERIC)
+        from xpra.platform.printing import get_mimetypes
+        mimetypes = get_mimetypes()
+        #first add the user-supplied definitions:
+        PRINTER_DEF = UNPROBED_PRINTER_DEFS.copy()
+        #raw mode if supported:
+        if RAW_MODE:
+            PRINTER_DEF["raw"] = ["-o", "raw"]
+        #now probe for generic printers via lpinfo:
+        if GENERIC:
+            for mt in mimetypes:
+                if mt in PRINTER_DEF:
+                    continue    #we have a pre-defined one already
+                x = MIMETYPE_TO_PRINTER.get(mt)
+                if not x:
+                    log.warn("Warning: unknown mimetype '%s', cannot find printer definition", mt)
+                    continue
+                drv = get_lpinfo_drv(x)
+                if drv:
+                    #ie: ["-m", "drv:///sample.drv/generic.ppd"]
+                    PRINTER_DEF[mt] = ["-m", drv]
+        #fallback to locating ppd files:
         for mt in mimetypes:
             if mt in PRINTER_DEF:
-                continue    #we have a pre-defined one already
-            x = MIMETYPE_TO_PRINTER.get(mt)
+                continue        #we have a generic or pre-defined one already
+            x = MIMETYPE_TO_PPD.get(mt)
             if not x:
-                log.warn("Warning: unknown mimetype '%s', cannot find printer definition", mt)
+                log.warn("Warning: unknown mimetype '%s', cannot find corresponding PPD file", mt)
                 continue
-            drv = get_lpinfo_drv(x)
-            if drv:
-                #ie: ["-m", "drv:///sample.drv/generic.ppd"]
-                PRINTER_DEF[mt] = ["-m", drv]
-    #fallback to locating ppd files:
-    for mt in mimetypes:
-        if mt in PRINTER_DEF:
-            continue        #we have a generic or pre-defined one already
-        x = MIMETYPE_TO_PPD.get(mt)
-        if not x:
-            log.warn("Warning: unknown mimetype '%s', cannot find corresponding PPD file", mt)
-            continue
-        f = find_ppd_file(mt.replace("application/", "").upper(), x)
-        if f:
-            #ie: ["-P", "/usr/share/cups/model/Generic-PDF_Printer-PDF.ppd"]
-            PRINTER_DEF[mt] = ["-P", f]
-    log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
+            f = find_ppd_file(mt.replace("application/", "").upper(), x)
+            if f:
+                #ie: ["-P", "/usr/share/cups/model/Generic-PDF_Printer-PDF.ppd"]
+                PRINTER_DEF[mt] = ["-P", f]
+        log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
     return PRINTER_DEF
 
 
