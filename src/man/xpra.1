@@ -1196,11 +1196,13 @@ X protocol.  It does, however, degrade gracefully, and patches for each
 feature would be gratefully accepted.
 
 The xpra server allocates an over-large framebuffer when using Xvfb;
-this wastes memory, and can cause applications to misbehave (e.g.,
-by letting menus go off-screen).  Conversely, if the framebuffer is ever
-insufficiently large, clients will misbehave in other ways (e.g.,
-input events will be misdirected).  This is not a problem when using
-Xdummy, see the \fB\-\-xvfb\fP= switch for details.
+this wastes memory.
+If the Xvfb does not support RandR this can also cause applications
+to misbehave (e.g. by letting menus go off\-screen). This is not a
+problem when using Xdummy, see the \fB\-\-xvfb\fP= switch for details.
+Conversely, if the framebuffer is ever insufficiently large,
+clients will misbehave in other ways (e.g., input events will be
+misdirected).
 .\" --------------------------------------------------------------------
 .SH REPORTING BUGS
 Send any questions or bugs reports to http://xpra.org/trac/
