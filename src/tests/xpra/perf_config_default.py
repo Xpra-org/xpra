@@ -170,7 +170,7 @@ class Config():
     #XPRA_PACKET_ENCODERS_OPTIONS = ["rencode", "bencode", "yaml"]
     XPRA_PACKET_ENCODERS_OPTIONS = ["rencode"]
 
-    #XPRA_CONNECT_OPTIONS = [("ssh", None), ("tcp", None), ("unix", None)]
+    #XPRA_CONNECT_OPTIONS = [("ssh", None), ("tcp", None), ("unix-domain", None)]
     XPRA_CONNECT_OPTIONS = [("tcp", None)]
     #if XPRA_VERSION_NO>=[0, 7]:
     #    XPRA_CONNECT_OPTIONS.append(("tcp", "AES"))

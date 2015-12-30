@@ -715,7 +715,7 @@ def test_xpra():
     tests = []
     for connect_option, encryption in config.XPRA_CONNECT_OPTIONS:
         shaping_options = config.TRICKLE_SHAPING_OPTIONS
-        if connect_option=="unix":
+        if connect_option=="unix-domain":
             shaping_options = [config.NO_SHAPING]
         for down,up,latency in shaping_options:
             for x11_test_command in config.X11_TEST_COMMANDS:
