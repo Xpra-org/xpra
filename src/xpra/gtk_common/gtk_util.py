@@ -243,6 +243,8 @@ else:
         return w.xid
     #gtk2:
     if gtk.gtk_version<(2,18):
+        raise Exception("your version of GTK is too old: %s" % str(gtk.gtk_version))
+    if gtk.pygtk_version<(2,16):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
 
     if not hasattr(gtk.Widget, "get_realized"):
