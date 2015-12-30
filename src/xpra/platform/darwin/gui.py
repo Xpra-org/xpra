@@ -33,7 +33,7 @@ def get_OSXApplication():
         try:
             import gtkosx_application        #@UnresolvedImport
             macapp = gtkosx_application.Application()
-            macapp.connect("NSApplicationBlockTermination", quit_handler)
+            macapp.connect("NSApplicationWillTerminate", quit_handler)
         except:
             pass
     return macapp
