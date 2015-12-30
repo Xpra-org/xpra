@@ -6,9 +6,10 @@
 
 import unittest
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib, is_gtk3
 gobject = import_gobject()
-gobject.threads_init()
+if not is_gtk3():
+    gobject.threads_init()
 glib = import_glib()
 
 from xpra.log import enable_debug_for
