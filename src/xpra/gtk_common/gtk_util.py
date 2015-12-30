@@ -245,7 +245,7 @@ else:
     if gtk.gtk_version<(2,18):
         raise Exception("your version of PyGTK is too old: %s" % str(gtk.pygtk_version))
 
-    if gtk.gtk_version<(2,22):
+    if not hasattr(gtk.Widget, "get_realized"):
         def is_realized(widget):
             return widget.flags() & gtk.REALIZED
     else:
