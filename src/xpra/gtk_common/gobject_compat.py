@@ -69,6 +69,12 @@ def import_gobject2():
     return gobject
 def import_gobject3():
     from gi.repository import GObject               #@UnresolvedImport
+    #silence a GTK3 warning about threads_init not beeing needed:
+    v = getattr(GObject, "pygobject_version", (0))
+    if v>=(3,10):
+        def noop(*args):
+            pass
+        GObject.threads_init = noop
     return GObject
 def import_gobject():
     return  _try_import(import_gobject3, import_gobject2)
