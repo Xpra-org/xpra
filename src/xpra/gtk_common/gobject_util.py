@@ -9,7 +9,8 @@ gobject = import_gobject()
 
 
 def n_arg_signal(n):
-    return (gobject.SIGNAL_RUN_LAST,
+    from xpra.gtk_common.gtk_util import SIGNAL_RUN_LAST
+    return (SIGNAL_RUN_LAST,
             gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,) * n)
 no_arg_signal = n_arg_signal(0)
 one_arg_signal = n_arg_signal(1)
