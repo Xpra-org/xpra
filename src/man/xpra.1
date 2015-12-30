@@ -573,10 +573,10 @@ The location can take the form:
 do not create a socket
 .IP \fBauto\fP
 backwards compatible default which uses the current \fIsocket\-dir\fP
-.IP \fBsockdir:DIRECTORY\fP
-create a socket in the directory specified, if the directory
-already exists the "sockdir:" prefix may be omitted, if not then it
-will be created
+.IP \fBDIRECTORY/\fP
+create a socket in the directory specified, if the directory does
+not exist then it will be created - you should include the trailing
+slash to prevent the confusion with the \fIPATH\fP form:
 .IP \fBPATH\fP
 create the socket using the path specified
 .RE
