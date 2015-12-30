@@ -143,7 +143,7 @@ class ServerCore(object):
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout = 0.1
         self._socket_dir = None
-        self.main_socket_path = ""
+        self.unix_socket_paths = []
 
         self.session_name = ""
 
@@ -178,7 +178,7 @@ class ServerCore(object):
         self.session_name = opts.session_name
         set_name("Xpra", self.session_name or "Xpra")
 
-        self.main_socket_path = ""
+        self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
         self._tcp_proxy = opts.tcp_proxy
         self.encryption = opts.encryption
@@ -247,12 +247,13 @@ class ServerCore(object):
     def init_sockets(self, sockets):
         ### All right, we're ready to accept customers:
         for socktype, sock, info in sockets:
-            netlog("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
+            netlog.warn("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
             self.idle_add(self.add_listen_socket, socktype, sock)
             if socktype=="unix-domain" and info:
                 try:
-                    self.main_socket_path = os.path.abspath(info)
-                    netlog("main socket path: %s", self.main_socket_path)
+                    p = os.path.abspath(info)
+                    self.unix_socket_paths.append(p)
+                    netlog.warn("added unix socket path: %s", p)
                 except Exception as e:
                     log.error("failed to set socket path to %s: %s", info, e)
 

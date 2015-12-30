@@ -356,7 +356,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
                 sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
                 log.info("created unix domain socket: %s", sockpath)
-                defs.append((("unix", sock, sockpath), cleanup_socket))
+                defs.append((("unix-domain", sock, sockpath), cleanup_socket))
                 sockpaths.add(sockpath)
             except Exception as e:
                 log.error("failed to create socket %s" % sockpath, exc_info=True)

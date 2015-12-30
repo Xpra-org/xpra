@@ -911,7 +911,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         ss = ServerSourceClass(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
-                          self._socket_dir, self.main_socket_path, self.dbus_control,
+                          self._socket_dir, self.unix_socket_paths, self.dbus_control,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.window_filters,

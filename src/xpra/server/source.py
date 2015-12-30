@@ -204,7 +204,7 @@ class ServerSource(object):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
-                 socket_dir, main_socket_path, dbus_control,
+                 socket_dir, unix_socket_paths, dbus_control,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  window_filters,
@@ -218,7 +218,7 @@ class ServerSource(object):
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
-                 socket_dir, main_socket_path, dbus_control,
+                 socket_dir, unix_socket_paths, dbus_control,
                  get_transient_for, get_focus,
                  get_window_id,
                  window_filters,
@@ -246,7 +246,7 @@ class ServerSource(object):
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
         self.socket_dir = socket_dir
-        self.main_socket_path = main_socket_path
+        self.unix_socket_paths = unix_socket_paths
         self.dbus_control = dbus_control
         self.dbus_server = None
         #pass it to window source:
@@ -1610,10 +1610,8 @@ class ServerSource(object):
             except Exception as e:
                 printlog.warn("failed to remove printer %s: %s", k, e)
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
-        from xpra.dotxpra import osexpand
         attributes = {"display"         : os.environ.get("DISPLAY"),
-                      "source"          : self.uuid,
-                      "socket-dir"      : osexpand(self.socket_dir)}
+                      "source"          : self.uuid}
         def makeabs(filename):
             #convert to an absolute path since the backend may run as a different user:
             return os.path.abspath(os.path.expanduser(filename))
@@ -1626,8 +1624,14 @@ class ServerSource(object):
                 attributes["encryption"] = encryption
                 attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
         #if we can, tell it exactly where to connect:
-        if self.main_socket_path:
-            attributes["socket-path"] = self.main_socket_path
+        if self.unix_socket_paths:
+            #prefer sockets in public paths:
+            spath = self.unix_socket_paths[0]
+            for x in self.unix_socket_paths:
+                if x.startswith("/tmp") or x.startswith("/var") or x.startswith("/run"):
+                    spath = x
+            attributes["socket-path"] = spath
+        log("printer attributes: %s", attributes)
         for k,props in printers.items():
             if k not in self.printers:
                 self.setup_printer(k, props, attributes)
