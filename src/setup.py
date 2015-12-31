@@ -39,9 +39,10 @@ setup_options["author_email"] = "antoine@devloop.org.uk"
 setup_options["version"] = xpra.__version__
 setup_options["url"] = "http://xpra.org/"
 setup_options["download_url"] = "http://xpra.org/src/"
-setup_options["description"] = "Xpra: 'screen for X' utility"
+setup_options["description"] = "Xpra: multi-platform screen and application forwarding system"
 
-xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
+xpra_desc = "Xpra is a multi platform persistent remote display server and client for " + \
+            "forwarding applications and desktop screens. Also known as 'screen for X11'."
 setup_options["long_description"] = xpra_desc
 data_files = []
 setup_options["data_files"] = data_files
