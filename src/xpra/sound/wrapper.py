@@ -135,6 +135,7 @@ def run_sound(mode, error_cb, options, args):
                  "gst.version"      : gst_version,
                  "pygst.version"    : pygst_version,
                  "plugins"          : plugins,
+                 "python.version"   : sys.version_info[:3],
                 }
             for k,v in d.items():
                 print("%s=%s" % (k, ",".join(str(x) for x in v)))

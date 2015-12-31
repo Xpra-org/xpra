@@ -436,6 +436,11 @@ class ServerBase(ServerCore, FileTransferHandler):
                 from xpra.sound.gstreamer_util import sound_option_or_all
                 from xpra.sound.wrapper import query_sound
                 self.sound_properties = query_sound()
+                def vinfo(k):
+                    val = self.sound_properties.get(k)
+                    assert val, "%s not found in sound properties" % k
+                    return ".".join(val[:2])
+                log.info("GStreamer version %s for Python %s", vinfo("gst.version"), vinfo("python.version"))
             except Exception as e:
                 soundlog.error("Error: failed to query sound subsystem:")
                 soundlog.error(" %s", e)
