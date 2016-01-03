@@ -307,6 +307,7 @@ class UIXpraClient(XpraClientBase):
                 from xpra.sound.gstreamer_util import sound_option_or_all
                 from xpra.sound.wrapper import query_sound
                 self.sound_properties = query_sound()
+                assert self.sound_properties, "query did not return any data"
                 def vinfo(k):
                     val = self.sound_properties.get(k)
                     assert val, "%s not found in sound properties" % k
