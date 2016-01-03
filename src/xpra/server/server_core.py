@@ -247,13 +247,13 @@ class ServerCore(object):
     def init_sockets(self, sockets):
         ### All right, we're ready to accept customers:
         for socktype, sock, info in sockets:
-            netlog.warn("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
+            netlog("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
             self.idle_add(self.add_listen_socket, socktype, sock)
             if socktype=="unix-domain" and info:
                 try:
                     p = os.path.abspath(info)
                     self.unix_socket_paths.append(p)
-                    netlog.warn("added unix socket path: %s", p)
+                    netlog("added unix socket path: %s", p)
                 except Exception as e:
                     log.error("failed to set socket path to %s: %s", info, e)
 
