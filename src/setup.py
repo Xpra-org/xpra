@@ -1131,7 +1131,11 @@ if WIN32:
                             add_dir(base, sub)
                         else:
                             assert type(sub)==str
-                            add_data_files(base, [os.path.join(gnome_include_path, base, sub)])
+                            filename = os.path.join(gnome_include_path, base, sub)
+                            if os.path.exists(filename):
+                                add_data_files(base, [filename])
+                            else:
+                                print("Warning: missing '%s'" % filename)
                 else:
                     assert type(defs)==dict
                     for d, sub in defs.items():
@@ -1146,6 +1150,12 @@ if WIN32:
                 add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
 
             def add_DLLs(*dll_names):
+                try:
+                    do_add_DLLs(*dll_names)
+                except:
+                    sys.exit(1)
+
+            def do_add_DLLs(*dll_names):
                 print("adding DLLs %s" % ", ".join(dll_names))
                 dll_names = list(dll_names)
                 dll_files = []
@@ -1174,18 +1184,18 @@ if WIN32:
                     print("some DLLs could not be found in '%s':" % gnome_include_path)
                     for x in dll_names:
                         print(" - lib%s*.dll" % x)
-                    sys.exit(1)
                 add_data_files("", [os.path.join(gnome_include_path, dll) for dll in dll_files])
 
 
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")
             add_DLLs('atk', 'cairo-gobject',
-                     'dbus', 'dbus-glib', 'gdk', 'gdk_pixbuf',
-                     'jasper', 'javascriptcoregtk',
-                     'gdkglext', 'gio', 'girepository', 'glib',
+                     'dbus', 'dbus-glib',
+                     'gdk', 'gdk_pixbuf', 'gtk',
+                     'jasper', "epoxy", "harfbuzz", "tiff",
+                     'gio', 'giolibproxy', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
-                     'gtk', 'gtkglext', 'harfbuzz-gobject',
+                     'harfbuzz-gobject',
                      'intl', 'jpeg', 'orc',
                      'p11-kit', 'proxy',
                      'pango', 'pangocairo', 'pangoft2', 'pangowin32',
@@ -1193,9 +1203,12 @@ if WIN32:
                      'rsvg', 'webp',
                      'winpthread',
                      'zzz')
+            #these are missing in newer aio installers (sigh):
+            do_add_DLLs('javascriptcoregtk',
+                     'gdkglext', 'gtkglext')
             if os.environ.get("VCINSTALLDIR"):
-                #Visual Studio links our avcodec2 module against libiconv...
-                add_DLLs("iconv")
+                #Visual Studio may link our avcodec2 module against libiconv...
+                do_add_DLLs("iconv")
             #this one may be missing in pygi-aio 3.14?
             #ie: libpyglib-gi-2.0-python34
             # pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1])
@@ -1211,11 +1224,13 @@ if WIN32:
             #FIXME: remove version from those filenames:
             add_gi("Atk-1.0", "cairo-1.0", "fontconfig-2.0",
                    "freetype2-2.0", "GDesktopEnums-3.0",
-                   "Gdk-3.0", "GdkGLExt-3.0", "GdkPixbuf-2.0",
+                   "Gdk-3.0",
+                   "GdkGLExt-3.0", "GtkGLExt-3.0",
+                   "GdkPixbuf-2.0",
                    "Gio-2.0", "GIRepository-2.0",
                    "GL-1.0", "Glib-2.0", "GModule-2.0",
                    "GObject-2.0",
-                   "Gtk-3.0", "GtkGLExt-3.0", "HarfBuzz-0.0",
+                   "Gtk-3.0", "HarfBuzz-0.0",
                    "Libproxy-1.0", "libxml2-2.0",
                    "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
                    "Rsvg-2.0", "win32-1.0")
@@ -1244,6 +1259,11 @@ if WIN32:
                                )
                 add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
                 #END OF SOUND
+
+            #pillow needs urllib:
+            external_excludes.remove("urllib")
+            #pillow links against zlib, but expects the DLL to be named z.dll:
+            data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
 
             packages.append("gi")
             #I am reluctant to add these to py2exe because it figures it out already:
