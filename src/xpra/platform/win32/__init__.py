@@ -31,7 +31,7 @@ if frozen:
     addsyspath('bin\\lib')
     addsyspath('bin\\share')
     addsyspath('bin\\library.zip')
-    os.environ['GI_TYPELIB_PATH'] = jedir('lib\girepository-1.0')
+    os.environ['GI_TYPELIB_PATH'] = jedir('lib\\girepository-1.0')
 
 
 def is_wine():
