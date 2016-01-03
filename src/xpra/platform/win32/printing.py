@@ -71,8 +71,7 @@ def init_printing(callback):
 
 def init_winspool_listener():
     from xpra.platform.win32.win32_events import get_win32_event_listener
-    el = get_win32_event_listener()
-    el.add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
+    get_win32_event_listener().add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
 
 def on_devmodechange(wParam, lParam):
     global printers_modified_callback
@@ -85,6 +84,7 @@ def on_devmodechange(wParam, lParam):
 
 
 def get_printers():
+    global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL
     printers = {}
     if not gsview_dir:
         #without gsprint, we can't handle printing!
@@ -123,8 +123,8 @@ def get_printers():
 
 def print_files(printer, filenames, title, options):
     log("win32.print_files%s", (printer, filenames, title, options))
+    global JOB_ID, PROCESSES, gsview_dir
     assert gsview_dir, "cannot print files without gsprint!"
-    global JOB_ID, PROCESSES
     processes = []
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
