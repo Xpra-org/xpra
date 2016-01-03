@@ -188,7 +188,10 @@ def main():
 							s += ", "
 					s += str(v[i])
 				return s
-			elif type(v)==str and v.startswith("v"):
+			if type(v)==bytes:
+				from xpra.util import bytestostr
+				v = bytestostr(v)
+			if type(v)==str and v.startswith("v"):
 				return v[1:]
 			return str(v)
 
@@ -199,7 +202,8 @@ def main():
 		if netifaces_version:
 			netcaps["netifaces.version"] = netifaces_version
 		for k in sorted(netcaps.keys()):
-			print("* %s : %s" % (str(k).ljust(20), pver(netcaps[k])))
+			v = netcaps[k]
+			print("* %s : %s" % (str(k).ljust(20), pver(v)))
 
 
 if __name__ == "__main__":
