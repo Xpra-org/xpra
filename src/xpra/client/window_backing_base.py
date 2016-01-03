@@ -196,7 +196,7 @@ class WindowBackingBase(object):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
         PIL = get_codec("PIL")
-        assert PIL, "PIL not found"
+        assert PIL.Image, "PIL.Image not found"
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
