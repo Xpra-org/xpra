@@ -329,7 +329,7 @@ def add_window_hooks(window):
             window.fixup_window_style = types.MethodType(fixup_window_style, window)
             #override set_decorated so we can preserve the taskbar menu for undecorated windows
             window.__set_decorated = window.set_decorated
-            window.set_decorated = types.MethodType(set_decorated, window, type(window))
+            window.set_decorated = types.MethodType(set_decorated, window)
             #override after_window_state_updated so we can re-add the missing style options
             #(somehow doing it from on_realize which calls add_window_hooks is not enough)
             window.connect("state-updated", window_state_updated)
