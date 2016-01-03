@@ -145,11 +145,6 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 
-REM Use a custom script to move the PyOpenGL bits back into the library.zip
-REM (ugly, but hacking py2exe is worse?)
-ECHO %PYTHON_EXE% win32\move_to_zip.py dist\library.zip dist OpenGL
-%PYTHON_EXE% win32\move_to_zip.py dist\library.zip dist OpenGL
-
 REM Delete all GStreamer DLLs and only add those we actually want
 DEL dist\gst*dll
 ECHO ****** Adding GStreamer Main DLLs
@@ -207,6 +202,12 @@ if %errorlevel% NEQ 0 (
 
 
 :MAKEINSTALLER
+
+REM Use a custom script to move the PyOpenGL bits back into the library.zip
+REM (ugly, but hacking py2exe is worse?)
+ECHO ****** Moving OpenGL into library.zip
+ECHO %PYTHON_EXE% win32\move_to_zip.py dist\library.zip dist OpenGL
+%PYTHON_EXE% win32\move_to_zip.py dist\library.zip dist OpenGL
 
 ECHO ****** Generating HTML Manual Page
 REM "Add mingw to the path unconditionally so we can find groff"
