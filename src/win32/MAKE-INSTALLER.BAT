@@ -85,9 +85,6 @@ FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
 IF [%REVISION%]==[] set REVISION=%SVNVERSION%
 SET FULL_VERSION=%VERSION%-r%REVISION%
 ECHO Full version           %FULL_VERSION%
-SET ZIP_DIR=Xpra%EXTRA_VERSION%%BUILD_TYPE%_%FULL_VERSION%
-SET ZIP_FILENAME=%ZIP_DIR%.zip
-SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
 
 
 if "%DO_BUILD%"=="0" (
@@ -215,14 +212,17 @@ COPY /B /Y /V %TORTOISESVN%\Putty-LICENSE.txt dist\ > NUL
 if "%DO_ZIP%"=="1" (
 	ECHO ***************************************************************
 	ECHO ****** Creating ZIP file
-	ECHO RD /S /Q %ZIP_DIR%
-	RD /S /Q %ZIP_DIR% > NUL
-	DEL %ZIP_FILENAME% > NUL
-	ECHO XCOPY /S /I /X /Q dist %ZIP_DIR%
-	XCOPY /S /I /X /Q dist %ZIP_DIR%
-	ECHO %ZIP7% a -r %ZIP_FILENAME% %ZIP_DIR% ^> NUL
-	%ZIP7% a -r %ZIP_FILENAME% %ZIP_DIR% > NUL
-	dir %ZIP_FILENAME%
+	SET ZIP_DIR=Xpra%EXTRA_VERSION%%BUILD_TYPE%_%FULL_VERSION%
+	SET ZIP_FILENAME=!ZIP_DIR!.zip
+	ECHO RD /S /Q !ZIP_DIR! ^> NUL
+	RD /S /Q !ZIP_DIR! > NUL
+	ECHO DEL !ZIP_FILENAME! ^> NUL
+	DEL !ZIP_FILENAME! > NUL
+	ECHO XCOPY /S /I /X /Q dist !ZIP_DIR!
+	XCOPY /S /I /X /Q dist !ZIP_DIR!
+	ECHO %ZIP7% a -r !ZIP_FILENAME! !ZIP_DIR! ^> NUL
+	%ZIP7% a -r !ZIP_FILENAME! !ZIP_DIR! > NUL
+	dir !ZIP_FILENAME!
 )
 
 if "%DO_INSTALLER%"=="1" (
@@ -238,14 +238,14 @@ if "%DO_INSTALLER%"=="1" (
 
 	ECHO ***************************************************************
 	ECHO ****** Finished - running the new installer
-	MOVE /Y Output\Xpra_Setup.exe %INSTALLER_FILENAME%
+	SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
+	MOVE /Y Output\Xpra_Setup.exe !INSTALLER_FILENAME!
 	RMDIR Output
-	dir %INSTALLER_FILENAME%
-	
+	dir !INSTALLER_FILENAME!
 	if "%DO_NOTRUN%"=="1" (
 		ECHO ****** Not Running Installer
 	) else (
-		%INSTALLER_FILENAME% %ARGS%
+		!INSTALLER_FILENAME! %ARGS%
 	)
 )
 GOTO END
