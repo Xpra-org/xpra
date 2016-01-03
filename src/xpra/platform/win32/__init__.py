@@ -15,8 +15,9 @@ import win32api         #@UnresolvedImport
 import win32console     #@UnresolvedImport
 
 #redirect output if we are launched from py2exe's gui mode:
-REDIRECT_OUTPUT = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
-if getattr(sys, 'frozen', False):
+frozen = getattr(sys, 'frozen', False)
+REDIRECT_OUTPUT = frozen=="windows_exe"
+if frozen:
     #cx_freeze paths:
     def jedir(relpathname):
         return os.path.join(os.path.dirname(sys.executable), relpathname)
@@ -30,7 +31,7 @@ if getattr(sys, 'frozen', False):
     addsyspath('bin\\lib')
     addsyspath('bin\\share')
     addsyspath('bin\\library.zip')
-    os.environ['GI_TYPELIB_PATH'] = jedir('bin\\lib\girepository-1.0')
+    os.environ['GI_TYPELIB_PATH'] = jedir('bin\lib\girepository-1.0')
 
 
 def is_wine():
