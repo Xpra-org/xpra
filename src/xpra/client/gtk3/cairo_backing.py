@@ -19,8 +19,9 @@ log = Logger("paint", "cairo")
 try:
     from xpra.client.gtk3.cairo_workaround import set_image_surface_data    #@UnresolvedImport
 except ImportError as e:
-    log.warn("failed to load the gtk3 cairo workaround: %s", e)
-    log.warn("rendering will be slow!")
+    log.warn("Warning: failed to load the gtk3 cairo workaround:")
+    log.warn(" %s", e)
+    log.warn(" rendering will be slow!")
     set_image_surface_data = None
 
 
