@@ -1378,6 +1378,10 @@ if WIN32:
                     if os.path.exists(f):
                         add_data_files('', [f])
                         break
+            # MS-Windows theme
+            add_data_files('etc/gtk-2.0', ['win32/gtkrc'])
+            engines_dir = os.path.join(site_dir, 'gtk-2.0/runtime/lib/gtk-2.0/2.10.0/engines')
+            add_data_files('lib/gtk-2.0/2.10.0/engines', glob.glob(engines_dir+"/*.dll"))
             #END OF py2exe SECTION
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
