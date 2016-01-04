@@ -138,13 +138,13 @@ sound_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
-enc_x264_ENABLED        = DEFAULT       #too important to detect
+enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
-webp_ENABLED            = DEFAULT and pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
-vpx_ENABLED             = DEFAULT and (pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32))
+webp_ENABLED            = DEFAULT and pkg_config_ok("--atleast-version=0.4", "libwebp", fallback=WIN32)
+vpx_ENABLED             = DEFAULT and pkg_config_ok("--atleast-version=1.3", "vpx", fallback=WIN32)
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = DEFAULT and pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = DEFAULT and pkg_config_ok("--atleast-version=56", "libavcodec", fallback=WIN32)
 # some version strings I found:
 # Fedora:
 # * 19: 54.92.100
@@ -272,7 +272,9 @@ if "clean" not in sys.argv:
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)
-
+    if not enc_x264_ENABLED and not vpx_ENABLED:
+        print("Warning: no x264 and no vpx support!")
+        print(" you should enable at least one of these two video encodings")
 
 #*******************************************************************************
 # default sets:
