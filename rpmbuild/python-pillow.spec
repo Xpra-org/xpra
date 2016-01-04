@@ -288,6 +288,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Mon Jan 04 2016 Antoine Martin <antoine@devloop.org.uk - 3.1.0-1
+- new upstream release
+
 * Sun Oct 18 2015 Antoine Martin <antoine@devloop.org.uk - 3.0.0-1
 - new upstream release
 
