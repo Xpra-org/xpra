@@ -8,7 +8,8 @@ import sys, os, time
 from collections import deque
 from threading import Lock
 
-from xpra.sound.sound_pipeline import SoundPipeline, gobject, one_arg_signal
+from xpra.sound.sound_pipeline import SoundPipeline
+from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
                                         MP3, CODEC_ORDER, gst, QUEUE_LEAK, MS_TO_NS
 

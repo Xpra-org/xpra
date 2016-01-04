@@ -109,37 +109,42 @@ def is_msvc():
     #ugly: assume we want to use visual studio if we find the env var:
     return os.environ.get("VCINSTALLDIR") is not None
 
+DEFAULT = True
+if "--minimal" in sys.argv:
+    sys.argv.remove("--minimal")
+    DEFAULT = False
+
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
-shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3       #shadow servers use some GTK2 code..
-server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3
-client_ENABLED = True
+shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3 and DEFAULT       #shadow servers use some GTK2 code..
+server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3 and DEFAULT
+client_ENABLED = DEFAULT
 
-x11_ENABLED = not WIN32 and not OSX
-dbus_ENABLED = x11_ENABLED
-gtk_x11_ENABLED = not WIN32 and not OSX
-gtk2_ENABLED = client_ENABLED and not PYTHON3
-gtk3_ENABLED = PYTHON3
-opengl_ENABLED = client_ENABLED
-html5_ENABLED = not WIN32 and not OSX
+x11_ENABLED = DEFAULT and not WIN32 and not OSX
+dbus_ENABLED = DEFAULT and x11_ENABLED
+gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
+gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
+gtk3_ENABLED = DEFAULT and PYTHON3
+opengl_ENABLED = DEFAULT and client_ENABLED
+html5_ENABLED = DEFAULT and not WIN32 and not OSX
 
-bencode_ENABLED         = True
-cython_bencode_ENABLED  = True
-clipboard_ENABLED       = not PYTHON3
+bencode_ENABLED         = DEFAULT
+cython_bencode_ENABLED  = DEFAULT
+clipboard_ENABLED       = DEFAULT and not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
 if WIN32 or OSX:
     Xdummy_ENABLED = False
-sound_ENABLED           = True
-printing_ENABLED        = True
+sound_ENABLED           = DEFAULT
+printing_ENABLED        = DEFAULT
 
-enc_proxy_ENABLED       = True
-enc_x264_ENABLED        = True          #too important to detect
-enc_x265_ENABLED        = pkg_config_ok("--exists", "x265")
-pillow_ENABLED          = True
-webp_ENABLED            = pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
-vpx_ENABLED             = pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32)
+enc_proxy_ENABLED       = DEFAULT
+enc_x264_ENABLED        = DEFAULT       #too important to detect
+enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
+pillow_ENABLED          = DEFAULT
+webp_ENABLED            = DEFAULT and pkg_config_ok("--atleast-version=0.3", "libwebp", fallback=WIN32)
+vpx_ENABLED             = DEFAULT and (pkg_config_ok("--atleast-version=1.0", "vpx", fallback=WIN32) or pkg_config_ok("--atleast-version=1.0", "libvpx", fallback=WIN32))
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = DEFAULT and pkg_config_ok("--atleast-version=55", "libavcodec", fallback=WIN32)
 # some version strings I found:
 # Fedora:
 # * 19: 54.92.100
@@ -149,8 +154,8 @@ dec_avcodec2_ENABLED    = pkg_config_ok("--atleast-version=55", "libavcodec", fa
 # * jessie and sid: (last updated 2014-05-26): 55.34.1
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
-csc_swscale_ENABLED     = pkg_config_ok("--exists", "libswscale", fallback=WIN32)
-csc_cython_ENABLED      = True
+csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
+csc_cython_ENABLED      = DEFAULT
 if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
@@ -161,17 +166,18 @@ if WIN32:
         import pycuda
     except:
         pycuda = None
-    nvenc4_ENABLED          = pycuda and os.path.exists(nvenc4_sdk) and is_msvc()
-    nvenc5_ENABLED          = pycuda and os.path.exists(nvenc5_sdk) and is_msvc()
-    nvenc6_ENABLED          = pycuda and os.path.exists(nvenc6_sdk) and is_msvc()
+    nvenc4_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc4_sdk) and is_msvc()
+    nvenc5_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc5_sdk) and is_msvc()
+    nvenc6_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc6_sdk) and is_msvc()
 else:
-    nvenc4_ENABLED          = pkg_config_ok("--exists", "nvenc4")
-    nvenc5_ENABLED          = pkg_config_ok("--exists", "nvenc5")
-    nvenc6_ENABLED          = pkg_config_ok("--exists", "nvenc6")
+    nvenc4_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc4")
+    nvenc5_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc5")
+    nvenc6_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc6")
 
-csc_opencl_ENABLED      = pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
+csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
 
+#Cython / gcc / packagingt build options:
 annotate_ENABLED        = True
 warn_ENABLED            = True
 strict_ENABLED          = True
@@ -259,9 +265,9 @@ if "clean" not in sys.argv:
         exit(1)
     if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
-    if not client_ENABLED and not server_ENABLED:
+    if DEFAULT and (not client_ENABLED and not server_ENABLED):
         print("Warning: you probably want to build at least the client or server!")
-    if not pillow_ENABLED:
+    if DEFAULT and not pillow_ENABLED:
         print("Warning: including Python Pillow is VERY STRONGLY recommended")
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
@@ -271,11 +277,15 @@ if "clean" not in sys.argv:
 #*******************************************************************************
 # default sets:
 
-external_includes = ["Crypto", "Crypto.Cipher",
-                     "hashlib",
+external_includes = ["hashlib",
                      "ctypes", "platform"]
+if DEFAULT:
+    external_includes += ["Crypto", "Crypto.Cipher"]
+else:
+    excludes += ["Crypto", "Crypto.Cipher"]
 
-if gtk3_ENABLED:
+
+if gtk3_ENABLED or (sound_ENABLED and PYTHON3):
     external_includes += ["gi"]
 elif gtk2_ENABLED or x11_ENABLED:
     external_includes += "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms"
@@ -294,7 +304,10 @@ external_excludes = [
                     "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
                     "distutils", "setuptools", "doctest"
                     ]
-
+if not client_ENABLED and not server_ENABLED:
+    excludes += ["PIL"]
+if not dbus_ENABLED:
+    excludes += ["dbus"]
 
 
 #because of differences in how we specify packages and modules
@@ -1186,26 +1199,28 @@ if WIN32:
                         print(" - lib%s*.dll" % x)
                 add_data_files("", [os.path.join(gnome_include_path, dll) for dll in dll_files])
 
-
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")
-            add_DLLs('atk', 'cairo-gobject',
-                     'dbus', 'dbus-glib',
-                     'gdk', 'gdk_pixbuf', 'gtk',
-                     'jasper', "epoxy", "harfbuzz", "tiff",
-                     'gio', 'stdc++', 'girepository', 'glib',
-                     'gnutls', 'gobject', 'gthread',
-                     'harfbuzz-gobject',
-                     'intl', 'jpeg', 'orc',
-                     'p11-kit', 'proxy',
-                     'pango', 'pangocairo', 'pangoft2', 'pangowin32',
-                     'png16',
-                     'rsvg', 'webp',
-                     'winpthread',
-                     'zzz')
-            #these are missing in newer aio installers (sigh):
-            do_add_DLLs('javascriptcoregtk',
-                     'gdkglext', 'gtkglext')
+            if sound_ENABLED or gtk3_ENABLED:
+                add_DLLs('gio', 'girepository', 'glib',
+                         'gnutls', 'gobject', 'gthread',
+                         'orc', 'stdc++',
+                         'proxy',
+                         'winpthread',
+                         'zzz')
+            if gtk3_ENABLED:
+                add_DLLs('atk',
+                         'dbus', 'dbus-glib',
+                         'gdk', 'gdk_pixbuf', 'gtk',
+                         'cairo-gobject', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
+                         'harfbuzz', 'harfbuzz-gobject',
+                         'jasper', 'epoxy',
+                         'intl',
+                         'p11-kit',
+                         'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
+                #these are missing in newer aio installers (sigh):
+                do_add_DLLs('javascriptcoregtk',
+                         'gdkglext', 'gtkglext')
             if os.environ.get("VCINSTALLDIR"):
                 #Visual Studio may link our avcodec2 module against libiconv...
                 do_add_DLLs("iconv")
@@ -1213,27 +1228,30 @@ if WIN32:
             #ie: libpyglib-gi-2.0-python34
             # pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1])
 
-            add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
-            add_dir('lib', ["gdk-pixbuf-2.0", "gio", "gtk-3.0",
-                            "libvisual-0.4", "p11-kit", "pkcs11"])
-            add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
-                              "icons", "p11-kit", "xml",
-                              {"locale" : ["en"]},
-                              {"themes" : ["Default"]}
-                             ])
-            #FIXME: remove version from those filenames:
-            add_gi("Atk-1.0", "cairo-1.0", "fontconfig-2.0",
-                   "freetype2-2.0", "GDesktopEnums-3.0",
-                   "Gdk-3.0",
-                   "GdkGLExt-3.0", "GtkGLExt-3.0",
-                   "GdkPixbuf-2.0",
-                   "Gio-2.0", "GIRepository-2.0",
-                   "GL-1.0", "Glib-2.0", "GModule-2.0",
-                   "GObject-2.0",
-                   "Gtk-3.0", "HarfBuzz-0.0",
-                   "Libproxy-1.0", "libxml2-2.0",
-                   "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
-                   "Rsvg-2.0", "win32-1.0")
+            if gtk3_ENABLED:
+                add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
+                add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
+                                "libvisual-0.4", "p11-kit", "pkcs11"])
+                add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
+                                  "icons", "p11-kit", "xml",
+                                  {"locale" : ["en"]},
+                                  {"themes" : ["Default"]}
+                                 ])
+            if gtk3_ENABLED or sound_ENABLED:
+                add_dir('lib', ["gio"])
+                packages.append("gi")
+                add_gi("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
+                       "GObject-2.0", "win32-1.0")
+            if gtk3_ENABLED:
+                add_gi("Atk-1.0",
+                       "fontconfig-2.0", "freetype2-2.0",
+                       "GDesktopEnums-3.0",
+                       "GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0",
+                       "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0"
+                       "HarfBuzz-0.0",
+                       "Libproxy-1.0", "libxml2-2.0",
+                       "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
+                       "Rsvg-2.0")
 
             if sound_ENABLED:
                 add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
@@ -1260,12 +1278,12 @@ if WIN32:
                 add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
                 #END OF SOUND
 
-            #pillow needs urllib:
-            external_excludes.remove("urllib")
-            #pillow links against zlib, but expects the DLL to be named z.dll:
-            data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
+            if client_ENABLED or sound_ENABLED:
+                #pillow needs urllib:
+                external_excludes.remove("urllib")
+                #pillow links against zlib, but expects the DLL to be named z.dll:
+                data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
 
-            packages.append("gi")
             #I am reluctant to add these to py2exe because it figures it out already:
             external_includes += ["encodings", "multiprocessing", ]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
@@ -1406,24 +1424,28 @@ if WIN32:
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
-        add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+        if DEFAULT:
+            add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
+            add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
         add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
-        add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
-        if not PYTHON3:
+        if gtk2_ENABLED:
             #these need porting..
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
+        add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
         add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
-        add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
-        add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
-        add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
-        add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
+        if gtk2_ENABLED or gtk3_ENABLED:
+            add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
+            add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
+        if client_ENABLED:
+            add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
         add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
         add_console_exe("xpra/platform/features.py",        "features.ico",     "Feature_info")
-        add_console_exe("xpra/platform/gui.py",             "browse.ico",       "NativeGUI_info")
+        if client_ENABLED:
+            add_console_exe("xpra/platform/gui.py",             "browse.ico",       "NativeGUI_info")
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
             add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")

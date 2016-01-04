@@ -10,8 +10,8 @@ import time
 
 from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv
-from xpra.sound.sound_pipeline import SoundPipeline, gobject
-from xpra.gtk_common.gobject_util import n_arg_signal
+from xpra.sound.sound_pipeline import SoundPipeline
+from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, get_gst_version, get_queue_time, \
                                 MP3, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.scripts.config import InitExit

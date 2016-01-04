@@ -11,10 +11,8 @@ from xpra.log import Logger
 log = Logger("sound")
 
 from xpra.util import csv
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
-from xpra.gtk_common.gobject_util import one_arg_signal
-gobject = import_gobject()
-gobject.threads_init()
+from xpra.gtk_common.gobject_compat import import_glib
+from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 
 FAULT_RATE = int(os.environ.get("XPRA_SOUND_FAULT_INJECTION_RATE", "0"))
 _counter = 0

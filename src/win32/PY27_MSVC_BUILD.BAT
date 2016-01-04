@@ -11,7 +11,10 @@ SET PYTHON=C:\Python27
 SET BUILD_ARGS=
 SET COMPILER_ARGS=--compiler=msvc
 SET DIST=dist
-SET BUNDLE_GSTREAMER1=0
+SET BUNDLE_GSTREAMER1=1
+
+RMDIR /S /Q %DIST%
+MKDIR %DIST%
 
 CALL win32\BUILD.BAT
 if %ERRORLEVEL% NEQ 0 (
@@ -35,7 +38,7 @@ if "%BUNDLE_GSTREAMER1%"=="1" (
 	SET CL_VERSION=2010
 	SET PYTHON=C:\Python34
 	SET DIST=dist\Sound
-	SET BUILD_ARGS=--minimal --with-bencode --with-cython_bencode --with-sound
+	SET BUILD_ARGS=--minimal --with-bencode --with-cython_bencode --with-sound --with-gtk3 --with-client
 	CALL win32\BUILD.BAT
 	if %ERRORLEVEL% NEQ 0 (
 		ECHO "build error, see output above"

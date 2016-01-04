@@ -27,7 +27,7 @@ SET EXTRA_VERSION=
 
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version_info.major)"') DO set PYTHON_MAJOR_VERSION=%%i
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version_info.minor)"') DO set PYTHON_MINOR_VERSION=%%i
-ECHO Found Python version %PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERSION%
+ECHO Found Python version   %PYTHON_MAJOR_VERSION%.%PYTHON_MINOR_VERSION%
 
 REM "FLAGS TO DISABLE / ENABLE FEATURES"
 SET SHOW_DEPENDENCIES=0
@@ -41,7 +41,7 @@ if "%DO_BUILD%"=="1" (
 
 SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(__version__)"') DO set VERSION=%%i
-ECHO Building Xpra Version  %VERSION%
+ECHO Building Xpra version  %VERSION%
 SET SVNVERSION=ERROR
 FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n ..') DO set SVNVERSION=%%i
 ECHO Found svnversion       %SVNVERSION%

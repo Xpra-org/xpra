@@ -32,8 +32,7 @@ WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
-DEFAULT_GSTREAMER1 = not WIN32 or sys.version_info[0]>=3
-GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", str(int(DEFAULT_GSTREAMER1)))=="1"
+GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "1")=="1"
 MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
@@ -234,8 +233,18 @@ def import_gst():
     if has_gst is not None:
         return gst
 
-    from xpra.gtk_common.gobject_compat import is_gtk3
-    if is_gtk3():
+    GTK3 = GSTREAMER1
+    #the GTK gi bindings may not have been included if we're using a minimal build:
+    try:
+        from xpra.gtk_common.gobject_util import gobject
+        GTK3 = gobject.pygobject_version[0]>=3
+    except ValueError as e:
+        log("cannot probe GTK3 support: %s", e)
+        pass
+    except ImportError as e:
+        log("cannot probe GTK3 support: %s", e)
+        pass
+    if GTK3:
         imports = [ (import_gst1,       1) ]
     else:
         imports = [
