@@ -1193,7 +1193,7 @@ if WIN32:
                      'dbus', 'dbus-glib',
                      'gdk', 'gdk_pixbuf', 'gtk',
                      'jasper', "epoxy", "harfbuzz", "tiff",
-                     'gio', 'giolibproxy', 'girepository', 'glib',
+                     'gio', 'stdc++', 'girepository', 'glib',
                      'gnutls', 'gobject', 'gthread',
                      'harfbuzz-gobject',
                      'intl', 'jpeg', 'orc',
