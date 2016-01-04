@@ -1250,12 +1250,12 @@ if WIN32:
                           ):
                     add_DLLs('gst%s' % p)
                 #add the gstreamer plugins we need:
-                GST_PLUGINS = ("app",
+                GST_PLUGINS = ("app", "gdp", "opus",
                                "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
                                "coreelements", "directsoundsink", "directsoundsrc",
                                "flac", "lame", "mad", "mpg123", "ogg", "speex",
                                "volume", "vorbis", "wavenc", "wavpack", "wavparse",
-                               #a52dec, opus, faac, faad, voaacenc
+                               #a52dec, faac, faad, voaacenc
                                )
                 add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
                 #END OF SOUND
