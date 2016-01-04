@@ -708,7 +708,7 @@ def main():
         print("decoders supported: %s" % csv(decs))
         print("source plugins: %s" % csv([x for x in get_source_plugins() if x in apn]))
         print("sink plugins: %s" % csv([x for x in get_sink_plugins() if x in apn]))
-        print("source plugins: %s" % get_default_sink())
+        print("default source plugin: %s" % get_default_sink())
 
 
 if __name__ == "__main__":
