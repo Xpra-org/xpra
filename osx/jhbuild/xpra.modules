@@ -310,7 +310,7 @@
   <distutils id="python-pillow">
      <branch repo="pypi.python.org"
 	     module="/packages/source/P/Pillow/Pillow-3.1.0.zip"
-             hash="md5:84014c2d3a304d86e2dc8f372cb5b47f"
+             hash="md5:d70bd4cf57409f785662e221a345ef4b"
 	     version="3.1.0"/>
   </distutils>
 
