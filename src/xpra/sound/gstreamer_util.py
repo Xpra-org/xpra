@@ -241,26 +241,19 @@ def import_gst():
     if has_gst is not None:
         return gst
 
-    GTK3 = GSTREAMER1
-    #the GTK gi bindings may not have been included if we're using a minimal build:
-    try:
-        from xpra.gtk_common.gobject_util import gobject
-        GTK3 = gobject.pygobject_version[0]>=3
-    except ValueError as e:
-        log("cannot probe GTK3 support: %s", e)
-        pass
-    except ImportError as e:
-        log("cannot probe GTK3 support: %s", e)
-        pass
-    if GTK3:
+    PYTHON3 = sys.version_info[0]>=3
+    if PYTHON3:
         imports = [ (import_gst1,       1) ]
+    elif GSTREAMER1:
+        imports = [
+                    (import_gst1,       1),
+                    (import_gst0_10,    0),
+                  ]
     else:
         imports = [
                     (import_gst0_10,    0),
                     (import_gst1,       1),
                   ]
-        if GSTREAMER1:
-            imports.reverse()  #try gst1 first:
     errs = {}
     saved_sys_path = sys.path[:]
     saved_os_environ = os.environ.copy()
