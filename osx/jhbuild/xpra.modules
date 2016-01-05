@@ -123,6 +123,13 @@
             repo="downloads.xiph.org"/>
   </autotools>
 
+  <autotools id="opus" autogenargs="" autogen-sh="configure">
+    <branch module="/releases/opus/opus-1.1.1.tar.gz"
+			version="1.1.1"
+                        hash="md5:cfb354d4c65217ca32a762f8ab15f2ac"
+            repo="downloads.xiph.org"/>
+  </autotools>
+
   <autotools id="wavpack" autogenargs="" autogen-sh="configure">
     <branch module="/wavpack-4.70.0.tar.bz2"
 			version="4.70.0"
