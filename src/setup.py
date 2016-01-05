@@ -1277,9 +1277,10 @@ if WIN32:
                 add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
                 #END OF SOUND
 
-            if client_ENABLED or sound_ENABLED:
+            if client_ENABLED:
                 #pillow needs urllib:
                 external_excludes.remove("urllib")
+            if client_ENABLED:
                 #pillow links against zlib, but expects the DLL to be named z.dll:
                 data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
 
@@ -1290,8 +1291,7 @@ if WIN32:
             external_includes += ["encodings"]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
             os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
-            bin_excludes = ["MSVCR90.DLL"]
-            bin_excludes += ["MFC100U.DLL"]
+            bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL", "libsqlite3-0.dll"]
             cx_freeze_options = {
                                 "compressed"        : True,
                                 "includes"          : external_includes,
@@ -1480,9 +1480,10 @@ if WIN32:
             add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
 
 
-    #always include those files:
-    add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
-    add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
+    if client_ENABLED or server_ENABLED:
+        add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
+        add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
+
     if "install" in sys.argv or "install_exe" in sys.argv or "py2exe" in sys.argv:
         #a bit naughty here: we copy directly to the output dir:
         try:
