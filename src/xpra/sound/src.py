@@ -32,9 +32,14 @@ class SoundSource(SoundPipeline):
 
     def __init__(self, src_type=None, src_options={}, codecs=get_codecs(), codec_options={}, volume=1.0):
         if not src_type:
-            from xpra.sound.pulseaudio_util import get_pa_device_options
-            monitor_devices = get_pa_device_options(True, False)
-            log.info("found pulseaudio monitor devices: %s", monitor_devices)
+            try:
+                from xpra.sound.pulseaudio.pulseaudio_util import get_pa_device_options
+                monitor_devices = get_pa_device_options(True, False)
+                log.info("found pulseaudio monitor devices: %s", monitor_devices)
+            except ImportError as e:
+                log.warn("Warning: pulseaudio is not available!")
+                log.warn(" %s", e)
+                monitor_devices = []
             if len(monitor_devices)==0:
                 log.warn("could not detect any pulseaudio monitor devices")
                 log.warn(" a test source will be used instead")
@@ -273,7 +278,7 @@ def main():
         try:
             from xpra.platform.paths import get_icon_filename
             f = get_icon_filename("xpra.png")
-            from xpra.sound.pulseaudio_util import add_audio_tagging_env
+            from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
             add_audio_tagging_env(icon_path=f)
         except Exception as e:
             log.warn("failed to setup pulseaudio tagging: %s", e)

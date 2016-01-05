@@ -344,6 +344,13 @@ def add_packages(*pkgs):
     add_modules(*pkgs)
 
 def add_modules(*mods):
+    def add(v):
+        global modules
+        if v not in modules:
+            modules.append(v)
+    do_add_modules(add, *mods)
+
+def do_add_modules(op, *mods):
     """ adds the packages and any .py module found in the packages to the "modules" list
     """
     global modules
@@ -358,8 +365,7 @@ def add_modules(*mods):
         #is this a file module?
         f = "%s.py" % pathname
         if os.path.exists(f) and os.path.isfile(f):
-            if x not in modules:
-                modules.append(x)
+            op(x)
         if os.path.exists(pathname) and os.path.isdir(pathname):
             #add all file modules found in this directory
             for f in os.listdir(pathname):
@@ -369,13 +375,24 @@ def add_modules(*mods):
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = "%s.%s" % (x, f.replace(".py", ""))
-                        modules.append(modname)
+                        op(modname)
 
 def toggle_packages(enabled, *module_names):
     if enabled:
         add_packages(*module_names)
     else:
         remove_packages(*module_names)
+
+def toggle_modules(enabled, *module_names):
+    if enabled:
+        def op(v):
+            global modules
+            if v not in modules:
+                modules.append(v)
+        do_add_modules(op, *module_names)
+    else:
+        remove_packages(*module_names)
+
 
 #always included:
 add_modules("xpra", "xpra.platform", "xpra.net")
@@ -1425,8 +1442,8 @@ if WIN32:
             #END OF py2exe SECTION
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
-        add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
         if client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
+            add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
@@ -1452,8 +1469,8 @@ if WIN32:
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
-            add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
-            add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
+            #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
+            #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if printing_ENABLED:
@@ -1982,7 +1999,8 @@ toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 for x in ("gl_check", "gl_colorspace_conversions", "gl_window_backing_base", "gtk_compat"):
     toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl.%s" % x)
 
-toggle_packages(sound_ENABLED, "xpra.sound")
+toggle_modules(sound_ENABLED, "xpra.sound")
+toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:

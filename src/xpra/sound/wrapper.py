@@ -208,12 +208,13 @@ class sound_subprocess_wrapper(subprocess_caller):
 
     def get_env(self):
         env = subprocess_caller.get_env(self)
-        try:
-            from xpra.sound.pulseaudio_util import add_audio_tagging_env
-            add_audio_tagging_env(env)
-        except Exception as e:
-            log.warn("Warning: failed to set pulseaudio tagging:")
-            log.warn(" %s", e)
+        if os.name=="posix" and not sys.platform.startswith("darwin"):
+            try:
+                from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
+                add_audio_tagging_env(env)
+            except ImportError as e:
+                log.warn("Warning: failed to set pulseaudio tagging:")
+                log.warn(" %s", e)
         return env
 
     def start(self):

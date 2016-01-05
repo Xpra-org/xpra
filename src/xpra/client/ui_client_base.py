@@ -386,11 +386,12 @@ class UIXpraClient(XpraClientBase):
         #audio tagging:
         if tray_icon_filename and os.path.exists(tray_icon_filename):
             try:
-                from xpra.sound.pulseaudio_util import set_icon_path
+                from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path
                 set_icon_path(tray_icon_filename)
             except ImportError as e:
-                log.warn("Warning: failed to set pulseaudio tagging icon:")
-                log.warn(" %s", e)
+                if os.name=="posix" and not sys.platform.startswith("darwin"):
+                    log.warn("Warning: failed to set pulseaudio tagging icon:")
+                    log.warn(" %s", e)
 
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)
@@ -1405,7 +1406,7 @@ class UIXpraClient(XpraClientBase):
             sound_caps["send"] = self.microphone_allowed
             sound_caps["receive"] = self.speaker_allowed
             try:
-                from xpra.sound.pulseaudio_util import get_info as get_pa_info
+                from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
                 sound_caps.update(get_pa_info())
             except Exception:
                 pass

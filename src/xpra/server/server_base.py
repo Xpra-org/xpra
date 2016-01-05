@@ -458,12 +458,13 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.supports_microphone = False
         if bool(self.sound_properties):
             try:
-                from xpra.sound.pulseaudio_util import set_icon_path, get_info as get_pa_info
+                from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path, get_info as get_pa_info
                 self.sound_properties.update(get_pa_info())
                 set_icon_path(get_icon_filename("xpra.png"))
-            except Exception as e:
-                log.warn("Warning: failed to set pulseaudio tagging icon:")
-                log.warn(" %s", e)
+            except ImportError as e:
+                if os.name=="posix" and not sys.platform.startswith("darwin"):
+                    log.warn("Warning: failed to set pulseaudio tagging icon:")
+                    log.warn(" %s", e)
         soundlog("init_sound_options speaker: supported=%s, encoders=%s", self.supports_speaker, csv(self.speaker_codecs))
         soundlog("init_sound_options microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
         soundlog("init_sound_options sound properties=%s", self.sound_properties)

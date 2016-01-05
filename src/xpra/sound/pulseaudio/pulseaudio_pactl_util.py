@@ -7,7 +7,7 @@
 import sys
 import os.path
 
-from xpra.sound.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
+from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.scripts.exec_util import safe_exec
 from xpra.util import nonl
 

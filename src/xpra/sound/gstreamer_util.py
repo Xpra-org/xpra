@@ -463,12 +463,15 @@ def plugin_str(plugin, options):
 
 def get_source_plugins():
     sources = []
-    from xpra.sound.pulseaudio_util import has_pa
-    #we have to put pulsesrc first if pulseaudio is installed
-    #because using autoaudiosource does not work properly for us:
-    #it may still choose pulse, but without choosing the right device.
-    if has_pa():
-        sources.append("pulsesrc")
+    try:
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+        #we have to put pulsesrc first if pulseaudio is installed
+        #because using autoaudiosource does not work properly for us:
+        #it may still choose pulse, but without choosing the right device.
+        if has_pa():
+            sources.append("pulsesrc")
+    except ImportError as e:
+        log("get_source_plugins() no pulsesrc: %s", e)
     sources.append("autoaudiosrc")
     if OSX:
         sources.append("osxaudiosrc")
@@ -487,10 +490,13 @@ def get_sink_plugins():
         SINKS.append("osxaudiosink")
     elif sys.platform.startswith("win"):
         SINKS.append("directsoundsink")
-    from xpra.sound.pulseaudio_util import has_pa
     SINKS.append("autoaudiosink")
-    if has_pa():
-        SINKS.append("pulsesink")
+    try:
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+        if has_pa():
+            SINKS.append("pulsesink")
+    except ImportError as e:
+        log("get_sink_plugins() no pulsesink: %s", e)
     if os.name=="posix":
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS
@@ -503,9 +509,12 @@ def get_default_sink():
             log.error("invalid default sound sink: '%s' is not in %s", DEFAULT_SINK, csv(SINKS))
         else:
             return DEFAULT_SINK
-    from xpra.sound.pulseaudio_util import has_pa
-    if has_pa():
-        return "pulsesink"
+    try:
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+        if has_pa():
+            return "pulsesink"
+    except ImportError as e:
+        log("get_default_sink() no pulsesink: %s", e)
     SINKS = get_sink_plugins()
     return SINKS[0]
 
@@ -518,11 +527,16 @@ def get_pulse_defaults(remote):
     """
         choose the device to use
     """
-    from xpra.sound.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
-    from xpra.sound.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute
-    if not has_pa():
-        log.warn("pulseaudio is not available!")
-        return    None
+    try:
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
+        from xpra.sound.pulseaudio.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute
+        if not has_pa():
+            log.warn("Warning: pulseaudio is not available!")
+            return None
+    except ImportError as e:
+        log.warn("Warning: pulseaudio is not available!")
+        log.warn(" %s", e)
+        return None
     pa_server = get_pulse_server()
     log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
     #only worth comparing if we have a real server string
