@@ -79,25 +79,30 @@ OPUS = "opus"
 SPEEX = "speex"
 WAVPACK = "wavpack"
 
+GDP = "gdp"
+OGG = "ogg"
+
+FLAC_GDP = FLAC+"+"+GDP
+OPUS_GDP = OPUS+"+"+GDP
+SPEEX_GDP = SPEEX+"+"+GDP
+
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-            (VORBIS      , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
-            (FLAC        , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
-#            (FLAC        , "flacenc",       "gdppay",   "flacdec",      "gdpdepay"),
-            (MP3         , "lamemp3enc",    None,       "mad",          "mp3parse"),
-            (MP3         , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
-            (WAV         , "wavenc",        None,       None,           "wavparse"),
-            (OPUS        , "opusenc",       "oggmux",   "opusdec",      "oggdemux"),
-#            (OPUS        , "opusenc",       "gdppay",   "opusdec",      "gdpdepay"),
-            (SPEEX       , "speexenc",      "oggmux",   "speexdec",     "oggdemux"),
-#            (SPEEX       , "speexenc",      "gdppay",   "speexdec",     "gdpdepay"),
-            (WAVPACK     , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
+            (VORBIS     , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
+            (FLAC       , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
+            (FLAC_GDP   , "flacenc",       "gdppay",   "flacdec",      "gdpdepay"),
+            (MP3        , "lamemp3enc",    None,       "mad",          "mp3parse"),
+            (MP3        , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
+            (WAV        , "wavenc",        None,       None,           "wavparse"),
+            (OPUS       , "opusenc",       "oggmux",   "opusdec",      "oggdemux"),
+            (OPUS_GDP   , "opusenc",       "gdppay",   "opusdec",      "gdpdepay"),
+            (SPEEX      , "speexenc",      "oggmux",   "speexdec",     "oggdemux"),
+            (SPEEX_GDP  , "speexenc",      "gdppay",   "speexdec",     "gdpdepay"),
+            (WAVPACK   , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
             ]
 
-GDP = "gdp"
-OGG = "ogg"
 MUX_OPTIONS = [
                (GDP,    "gdppay",   "gdpdepay"),
                (OGG,    "oggmux",   "oggdemux"),
@@ -140,13 +145,16 @@ MUXER_DEFAULT_OPTIONS = {
 ENCODER_LATENCY = {
         MP3         : 250,
         FLAC        : 50,
+        FLAC_GDP    : 50,
         WAV         : 0,
         WAVPACK     : 600,
         OPUS        : 0,
+        OPUS_GDP    : 0,
         SPEEX       : 0,
+        SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [VORBIS, OPUS, FLAC, MP3, WAV, WAVPACK, SPEEX]    #AAC is untested
+CODEC_ORDER = [VORBIS, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None
