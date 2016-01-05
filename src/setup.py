@@ -123,7 +123,7 @@ x11_ENABLED = DEFAULT and not WIN32 and not OSX
 dbus_ENABLED = DEFAULT and x11_ENABLED
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
-gtk3_ENABLED = DEFAULT and PYTHON3
+gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT and not WIN32 and not OSX
 
@@ -378,11 +378,8 @@ def toggle_packages(enabled, *module_names):
         remove_packages(*module_names)
 
 #always included:
-add_modules("xpra",
-            "xpra.platform",
-            "xpra.codecs",
-            "xpra.codecs.xor")
-add_packages("xpra.scripts", "xpra.keyboard", "xpra.net")
+add_modules("xpra", "xpra.platform", "xpra.net")
+add_packages("xpra.scripts")
 
 
 def add_data_files(target_dir, files):
@@ -1286,18 +1283,23 @@ if WIN32:
                 #pillow links against zlib, but expects the DLL to be named z.dll:
                 data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
 
+            if server_ENABLED:
+                #used by proxy server:
+                external_includes += ["multiprocessing"]
             #I am reluctant to add these to py2exe because it figures it out already:
-            external_includes += ["encodings", "multiprocessing", ]
+            external_includes += ["encodings"]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
             os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
+            bin_excludes = ["MSVCR90.DLL"]
+            bin_excludes += ["MFC100U.DLL"]
             cx_freeze_options = {
-                                "compressed"        : False,
+                                "compressed"        : True,
                                 "includes"          : external_includes,
                                 "packages"          : packages,
                                 "include_files"     : data_files,
                                 "excludes"          : excludes,
                                 "include_msvcr"     : True,
-                                "bin_excludes"      : ["MSVCR90.DLL"],
+                                "bin_excludes"      : bin_excludes,
                                 "create_shared_zip" : zip_ENABLED,
                                 }
             setup_options["options"] = {"build_exe" : cx_freeze_options}
@@ -1426,35 +1428,34 @@ if WIN32:
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
-        if DEFAULT:
+        if client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-        add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
+            add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
         if gtk2_ENABLED:
             #these need porting..
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
-        add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
-        add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         if gtk2_ENABLED or gtk3_ENABLED:
             add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
             add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
+        if client_ENABLED or server_ENABLED:
+            add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
+            add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
-        add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
-        add_console_exe("xpra/platform/features.py",        "features.ico",     "Feature_info")
+            add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
+            add_console_exe("xpra/platform/features.py",        "features.ico",     "Feature_info")
         if client_ENABLED:
             add_console_exe("xpra/platform/gui.py",             "browse.ico",       "NativeGUI_info")
+            add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
             add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
-        if not PYTHON3:
-            #these need porting..
-            add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if printing_ENABLED:
@@ -1870,15 +1871,10 @@ buffers_c = "xpra/buffers/%s_buffers.c" % bmod
 membuffers_c = ["xpra/buffers/memalign.c", "xpra/inline.c", buffers_c]
 
 
-if server_ENABLED:
-    add_modules("xpra.server")
-toggle_packages(server_ENABLED, "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
-toggle_packages(shadow_ENABLED, "xpra.server.shadow")
-toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
-
-
 toggle_packages(dbus_ENABLED, "xpra.dbus")
-toggle_packages(dbus_ENABLED and server_ENABLED, "xpra.server.dbus")
+toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
+toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")
+toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
@@ -1942,17 +1938,18 @@ if gtk_x11_ENABLED:
                     **pkgconfig(*GDK_BINDINGS_PACKAGES)
                     ))
 
-if client_ENABLED and PYTHON3:
+if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
     cython_add(Extension("xpra.client.gtk3.cairo_workaround",
                 ["xpra/client/gtk3/cairo_workaround.pyx", buffers_c],
                 **pkgconfig("pycairo")
                 ))
 
-add_packages("xpra.codecs.argb")
-argb_pkgconfig = pkgconfig(optimize=3)
-cython_add(Extension("xpra.codecs.argb.argb",
-            ["xpra/codecs/argb/argb.pyx", buffers_c], **argb_pkgconfig))
+if client_ENABLED or server_ENABLED:
+    add_packages("xpra.codecs.argb")
+    argb_pkgconfig = pkgconfig(optimize=3)
+    cython_add(Extension("xpra.codecs.argb.argb",
+                ["xpra/codecs/argb/argb.pyx", buffers_c], **argb_pkgconfig))
 
 
 #build tests, but don't install them:
@@ -1969,12 +1966,18 @@ if bundle_tests_ENABLED:
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
     add_modules("xpra.client", "xpra.client.notifications")
-toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or server_ENABLED, "xpra.gtk_common")
+toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "gi")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or (PYTHON3 and sound_ENABLED), "gi")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
+if client_ENABLED or server_ENABLED:
+    add_modules("xpra.codecs")
+toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor", "xpra.keyboard")
+
+toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 #we can't just include "xpra.client.gl" because cx_freeze and py2exe then do the wrong thing
 #and try to include both gtk3 and gtk2, and fail hard..
 for x in ("gl_check", "gl_colorspace_conversions", "gl_window_backing_base", "gtk_compat"):

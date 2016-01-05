@@ -38,7 +38,7 @@ if "%BUNDLE_GSTREAMER1%"=="1" (
 	SET CL_VERSION=2010
 	SET PYTHON=C:\Python34
 	SET DIST=dist\Sound
-	SET BUILD_ARGS=--minimal --with-bencode --with-cython_bencode --with-sound --with-gtk3 --with-client
+	SET BUILD_ARGS=--minimal --with-sound
 	CALL win32\BUILD.BAT
 	if %ERRORLEVEL% NEQ 0 (
 		ECHO "build error, see output above"
