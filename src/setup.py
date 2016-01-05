@@ -1220,7 +1220,7 @@ if WIN32:
                 #these are missing in newer aio installers (sigh):
                 do_add_DLLs('javascriptcoregtk',
                          'gdkglext', 'gtkglext')
-            if os.environ.get("VCINSTALLDIR"):
+            if client_ENABLED and os.environ.get("VCINSTALLDIR"):
                 #Visual Studio may link our avcodec2 module against libiconv...
                 do_add_DLLs("iconv")
             #this one may be missing in pygi-aio 3.14?
@@ -1240,26 +1240,25 @@ if WIN32:
                 add_dir('lib', ["gio"])
                 packages.append("gi")
                 add_gi("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
-                       "GObject-2.0", "win32-1.0")
+                       "GObject-2.0")
             if gtk3_ENABLED:
                 add_gi("Atk-1.0",
                        "fontconfig-2.0", "freetype2-2.0",
-                       "GDesktopEnums-3.0",
+                       "GDesktopEnums-3.0", "Soup-2.4",
                        "GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0",
                        "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0"
                        "HarfBuzz-0.0",
                        "Libproxy-1.0", "libxml2-2.0",
                        "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
-                       "Rsvg-2.0")
+                       "Rsvg-2.0",
+                       "win32-1.0")
+                add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
 
             if sound_ENABLED:
                 add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
                 add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
-                       "GstTag-1.0", "Soup-2.4")
-                add_DLLs('curl', 'soup', 'visual',
-                         'gstreamer', 'orc-test',
-                         'openjpeg',
-                         'sqlite3')
+                       "GstTag-1.0")
+                add_DLLs('gstreamer', 'orc-test')
                 for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
                           "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
                           #I think 'coreelements' needs those (otherwise we would exclude them):
@@ -1280,7 +1279,6 @@ if WIN32:
             if client_ENABLED:
                 #pillow needs urllib:
                 external_excludes.remove("urllib")
-            if client_ENABLED:
                 #pillow links against zlib, but expects the DLL to be named z.dll:
                 data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
 
