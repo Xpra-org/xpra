@@ -396,7 +396,7 @@ def toggle_modules(enabled, *module_names):
 
 #always included:
 add_modules("xpra", "xpra.platform", "xpra.net")
-add_packages("xpra.scripts")
+add_modules("xpra.scripts.main")
 
 
 def add_data_files(target_dir, files):
@@ -1991,7 +1991,13 @@ toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
-toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor", "xpra.keyboard")
+toggle_packages(client_ENABLED or server_ENABLED, "xpra.keyboard")
+if client_ENABLED or server_ENABLED:
+    add_modules("xpra.scripts.config", "xpra.scripts.exec_util", "xpra.scripts.fdproxy", "xpra.scripts.version")
+if server_ENABLED:
+    add_modules("xpra.scripts.server")
+if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
+    add_modules("xpra.scripts.gtk_info")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 #we can't just include "xpra.client.gl" because cx_freeze and py2exe then do the wrong thing
@@ -2009,9 +2015,11 @@ if clipboard_ENABLED:
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
 
-cython_add(Extension("xpra.codecs.xor.cyxor",
-            ["xpra/codecs/xor/cyxor.pyx"]+membuffers_c,
-            **pkgconfig(optimize=3)))
+toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
+if client_ENABLED or server_ENABLED:
+    cython_add(Extension("xpra.codecs.xor.cyxor",
+                ["xpra/codecs/xor/cyxor.pyx"]+membuffers_c,
+                **pkgconfig(optimize=3)))
 
 if server_ENABLED:
     add_modules("xpra.server.stats")
