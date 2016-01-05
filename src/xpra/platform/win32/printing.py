@@ -6,24 +6,12 @@
 from xpra.log import Logger
 log = Logger("printing")
 
+import os.path
 import subprocess
 import win32print       #@UnresolvedImport
 import win32con         #@UnresolvedImport
 
 from xpra.util import csv
-#ensure we can find gsprint.exe in a subdirectory:
-try:
-    from xpra.platform.paths import get_app_dir
-    import os.path
-    gsview_dir = os.path.join(get_app_dir(), "gsview")
-    gsprint_exe = os.path.join(gsview_dir, "gsprint.exe")
-    gswin32c_exe = os.path.join(gsview_dir, "gswin32c.exe")
-    assert os.path.exists(gsview_dir), "cannot find gsview directory in '%s'" % gsview_dir
-    assert os.path.exists(gsprint_exe), "cannot find gsprint_exe in '%s'" % gsview_dir
-    assert os.path.exists(gswin32c_exe), "cannot find gswin32c_exe in '%s'" % gsview_dir
-except Exception as e:
-    log.warn("failed to setup gsprint path: %s", e)
-    gsview_dir, gsprint_exe, gswin32c_exe = None, None, None
 
 
 #allows us to skip some printers we don't want to export
@@ -59,15 +47,26 @@ log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 JOB_ID = 0
 PROCESSES = {}
 
+GSVIEW_DIR = None
+GSPRINT_EXE = None
+GSWIN32C_EXE = None
 printers_modified_callback = None
 def init_printing(callback):
-    global printers_modified_callback
+    global printers_modified_callback, GSVIEW_DIR, GSPRINT_EXE, GSWIN32C_EXE
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
+    #ensure we can find gsprint.exe in a subdirectory:
+    from xpra.platform.paths import get_app_dir
+    GSVIEW_DIR = os.path.join(get_app_dir(), "gsview")
+    assert os.path.exists(GSVIEW_DIR) and os.path.isdir(GSVIEW_DIR), "cannot find gsview directory in '%s'" % GSVIEW_DIR
+    GSPRINT_EXE = os.path.join(GSVIEW_DIR, "gsprint.exe")
+    assert os.path.exists(GSPRINT_EXE), "cannot find gsprint.exe in '%s'" % GSVIEW_DIR
+    GSWIN32C_EXE = os.path.join(GSVIEW_DIR, "gswin32c.exe")
+    assert os.path.exists(GSWIN32C_EXE), "cannot find gswin32c.exe in '%s'" % GSVIEW_DIR
     try:
         init_winspool_listener()
     except Exception:
-        log.error("failed to register for print spooler changes", exc_info=True)
+        log.error("Error: failed to register for print spooler changes", exc_info=True)
 
 def init_winspool_listener():
     from xpra.platform.win32.win32_events import get_win32_event_listener
@@ -86,7 +85,7 @@ def on_devmodechange(wParam, lParam):
 def get_printers():
     global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL
     printers = {}
-    if not gsview_dir:
+    if not GSVIEW_DIR:
         #without gsprint, we can't handle printing!
         log("get_printers() gsview is missing, not querying any printers")
         return printers
@@ -123,21 +122,21 @@ def get_printers():
 
 def print_files(printer, filenames, title, options):
     log("win32.print_files%s", (printer, filenames, title, options))
-    global JOB_ID, PROCESSES, gsview_dir
-    assert gsview_dir, "cannot print files without gsprint!"
+    global JOB_ID, PROCESSES, GSVIEW_DIR, GSPRINT_EXE, GSWIN32C_EXE
+    assert GSVIEW_DIR, "cannot print files without gsprint!"
     processes = []
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
-        command = [gsprint_exe, "-ghostscript", gswin32c_exe, "-colour"]
+        command = [GSPRINT_EXE, "-ghostscript", GSWIN32C_EXE, "-colour"]
         if printer:
             command += ["-printer", printer]
         command += [filename]
         log("print command: %s", command)
         #add gsview directory
         PATH = os.environ.get("PATH")
-        os.environ["PATH"] = str(PATH+";"+gsview_dir)
+        os.environ["PATH"] = str(PATH+";"+GSVIEW_DIR)
         log("environment: %s", os.environ)
-        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=gsview_dir)
+        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=GSVIEW_DIR)
         process.print_filename = filename
         #we just let it run, no need for reaping the process on win32
         processes.append(process)

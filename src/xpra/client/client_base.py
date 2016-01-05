@@ -652,9 +652,15 @@ class XpraClientBase(FileTransferHandler):
             from xpra.platform.printing import init_printing
             printlog("init_printing=%s", init_printing)
             init_printing(self.send_printers)
+        except Exception as e:
+            log.error("Error initializing printing support:")
+            log.error(" %s", e)
+            self.printing = False
+        try:
             self.do_send_printers()
         except Exception:
-            log.warn("failed to send printers", exc_info=True)
+            log.error("Error sending the list of printers:", exc_info=True)
+            self.printing = False
 
     def cleanup_printing(self):
         if not HAS_PRINTING:
