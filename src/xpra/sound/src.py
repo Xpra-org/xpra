@@ -12,8 +12,8 @@ from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, normv, get_codecs, get_gst_version, get_queue_time, \
-                                MP3, CODEC_ORDER, ENCODER_DEFAULT_OPTIONS, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
+                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -65,7 +65,7 @@ class SoundSource(SoundPipeline):
         self.src_type = src_type
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
-        encoder_str = plugin_str(encoder, codec_options or ENCODER_DEFAULT_OPTIONS.get(encoder, {}))
+        encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
         fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
         pipeline_els = [source_str]
         if SOURCE_QUEUE_TIME>0:

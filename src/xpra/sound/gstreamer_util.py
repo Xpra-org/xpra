@@ -127,9 +127,17 @@ ENCODER_DEFAULT_OPTIONS = {
             "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
             "wavpackenc"    : {"mode" : 1},     #"fast" (0 aka "very fast" is not supported)
             "flacenc"       : {"quality" : 0},  #"fast"
-            "opusenc"       : {"cbr" : 0,
-                               "complexity" : 0},
                            }
+ENCODER_DEFAULT_OPTIONS_GSTREAMER0 = ENCODER_DEFAULT_OPTIONS.copy()
+ENCODER_DEFAULT_OPTIONS_GSTREAMER0.update({
+            "opusenc"       : {"cbr"            : 0,
+                               "complexity"     : 0},
+                           })
+ENCODER_DEFAULT_OPTIONS_GSTREAMER1 = ENCODER_DEFAULT_OPTIONS.copy()
+ENCODER_DEFAULT_OPTIONS_GSTREAMER1.update({
+            "opusenc"       : {"bitrate-type"   : 2,      #constrained vbr
+                               "complexity"     : 0},
+                           })
 #we may want to review this if/when we implement UDP transport:
 GDPPAY_CRC = False
 MUXER_DEFAULT_OPTIONS = {
@@ -356,6 +364,15 @@ def has_plugins(*names):
         log("missing %s from %s", missing, names)
     return len(missing)==0
 
+def get_encoder_default_options(encoder):
+    global gst_major_version, ENCODER_DEFAULT_OPTIONS_GSTREAMER0, ENCODER_DEFAULT_OPTIONS_GSTREAMER1
+    #strip the muxer:
+    enc = encoder.split("+")[0]
+    if gst_major_version==0:
+        return ENCODER_DEFAULT_OPTIONS_GSTREAMER0.get(enc)
+    else:
+        return ENCODER_DEFAULT_OPTIONS_GSTREAMER1.get(enc)
+    
 
 CODECS = None
 def get_codecs():
