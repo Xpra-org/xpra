@@ -25,7 +25,7 @@ try:
             log.warn("rencode at '%s' lacks versioning information", rencode.__file__)
             rencode_version = "unknown"
     except ImportError as e:
-        log.warn("rencode import error: %s", e)
+        log.warn("Warning: rencode import failed: %s", e)
 except Exception as e:
     log.error("error loading rencode", exc_info=True)
 has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
@@ -38,7 +38,7 @@ try:
     try:
         from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
     except ImportError as e:
-        log.warn("bencode import error: %s", e, exc_info=True)
+        log.warn("Warning: bencode import failed: %s", e)
 except Exception as e:
     log.error("error loading bencoder", exc_info=True)
 has_bencode = bencode is not None and bdecode is not None
