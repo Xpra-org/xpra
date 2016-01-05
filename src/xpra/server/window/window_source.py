@@ -1293,8 +1293,11 @@ class WindowSource(object):
             self.call_in_encode_thread(self.make_data_packet_cb, *item)
         else:
             #schedule encode via queue, after freezing the pixels:
-            frozen = image.freeze()
-            assert frozen, "failed to freeze %s" % image
+            if not image.freeze():
+                avsynclog("Warning: failed to freeze image pixels for:")
+                avsynclog(" %s", image)
+                self.call_in_encode_thread(self.make_data_packet_cb, *item)
+                return
             self.encode_queue.append(item)
             l = len(self.encode_queue)
             if l>=self.encode_queue_max_size:
