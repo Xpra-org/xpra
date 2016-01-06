@@ -936,6 +936,8 @@ class WindowSource(object):
                 override = options.get("override_options", False)
                 existing_options = delayed[4]
                 for k in options.keys():
+                    if k=="override_options":
+                        continue
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
             log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
