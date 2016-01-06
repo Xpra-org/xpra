@@ -85,12 +85,14 @@ OGG = "ogg"
 FLAC_GDP = FLAC+"+"+GDP
 OPUS_GDP = OPUS+"+"+GDP
 SPEEX_GDP = SPEEX+"+"+GDP
+VORBIS_OGG = VORBIS+"+"+OGG
 
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
             (VORBIS     , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
+            (VORBIS_OGG , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
             (FLAC       , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
             (FLAC_GDP   , "flacenc",       "gdppay",   "flacdec",      "gdpdepay"),
             (MP3        , "lamemp3enc",    None,       "mad",          "mp3parse"),
@@ -151,6 +153,8 @@ MUXER_DEFAULT_OPTIONS = {
 
 #based on the encoder options above:
 ENCODER_LATENCY = {
+        VORBIS      : 0,
+        VORBIS_OGG  : 0,
         MP3         : 250,
         FLAC        : 50,
         FLAC_GDP    : 50,
@@ -162,7 +166,7 @@ ENCODER_LATENCY = {
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [VORBIS, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [VORBIS, VORBIS_OGG, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None
