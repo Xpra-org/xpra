@@ -74,11 +74,11 @@ class VideoSubregion(object):
 
     def cancel_refresh_timer(self):
         rt = self.refresh_timer
-        refreshlog("cancel_refresh_timer() timer=%s", rt)
         if rt:
             self.source_remove(rt)
             self.refresh_timer = None
             self.refresh_regions = []
+        refreshlog("cancel_refresh_timer() timer=%s", rt)
 
     def get_info(self):
         r = self.rectangle
