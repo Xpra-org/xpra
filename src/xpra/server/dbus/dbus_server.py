@@ -169,6 +169,15 @@ class DBUS_Server(dbus.service.Object):
         self.server.control_command_video_region_detection(detection)
 
 
+    @dbus.service.method(INTERFACE, in_signature='ii')
+    def LockBatchDelay(self, wid, delay):
+        self.server.control_command_lock_batck_delay(wid, delay)
+
+    @dbus.service.method(INTERFACE, in_signature='i')
+    def UnlockBatchDelay(self, wid):
+        self.server.control_command_unlock_batch_delay(wid)
+
+
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
     def ListWindows(self):
         d = {}

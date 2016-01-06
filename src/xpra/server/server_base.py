@@ -656,6 +656,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             ArgsControlCommand("video-region-enabled",  "enable video region",              min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-detection","enable video detection",           min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region",          "set the video region",             min_args=5, max_args=5, validation=[int, int, int, int, int]),
+            ArgsControlCommand("lock-batck-delay",      "set a specific batch delay for a window",       min_args=2, max_args=2, validation=[int, int]),
+            ArgsControlCommand("unlock-batck-delay",    "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",  min_args=1, max_args=1, validation=[int]),
             ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
             self.control_commands[cmd.name] = cmd
@@ -1482,6 +1484,14 @@ class ServerBase(ServerCore, FileTransferHandler):
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_region(x, y, w, h)
         return "video region set to %s for window %i" % ((x, y, w, h), wid)
+
+    def control_command_lock_batck_delay(self, wid, delay):
+        for ws in self._control_windowsources_from_args(wid).keys():
+            ws.lock_batck_delay(delay)
+
+    def control_command_unlock_batch_delay(self, wid):
+        for ws in self._control_windowsources_from_args(wid).keys():
+            ws.unlock_batck_delay()
 
 
     def control_command_key(self, keycode_str, press = True):
