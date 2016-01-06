@@ -29,7 +29,7 @@ from xpra.net.compression import get_compression_caps, decompress, sanity_checks
         InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
 from xpra.net.packet_encoding import get_packet_encoding_caps, decode, sanity_checks as packet_encoding_sanity_checks, InvalidPacketEncodingException
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER
-from xpra.net.crypto import get_crypto_caps, get_cipher, pad, INITIAL_PADDING
+from xpra.net.crypto import get_crypto_caps, get_encryptor, get_decryptor, pad, INITIAL_PADDING
 
 
 #stupid python version breakage:
@@ -189,7 +189,7 @@ class Protocol(object):
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
         cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
-        self.cipher_in, self.cipher_in_block_size = get_cipher(ciphername, iv, password, key_salt, iterations)
+        self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername, iv, password, key_salt, iterations)
         self.cipher_in_padding = padding
 
     def set_cipher_out(self, ciphername, iv, password, key_salt, iterations, padding):
@@ -197,7 +197,7 @@ class Protocol(object):
             cryptolog.info("sending data using %s encryption", ciphername)
             self.cipher_out_name = ciphername
         cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations, padding))
-        self.cipher_out, self.cipher_out_block_size = get_cipher(ciphername, iv, password, key_salt, iterations)
+        self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername, iv, password, key_salt, iterations)
         self.cipher_out_padding = padding
 
 

@@ -14,6 +14,7 @@ ENCRYPT_FIRST_PACKET = os.environ.get("XPRA_ENCRYPT_FIRST_PACKET", "0")=="1"
 DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
 DEFAULT_ITERATIONS = int(os.environ.get("XPRA_CRYPTO_DEFAULT_ITERATIONS", "1000"))
+DEFAULT_BLOCKSIZE = int(os.environ.get("XPRA_CRYPTO_BLOCKSIZE", "32"))      #fixme: can we derive this?
 
 #other option "PKCS#7", "legacy"
 PADDING_LEGACY = "legacy"
@@ -30,6 +31,20 @@ for x in ALL_PADDING_OPTIONS:
     if x not in PADDING_OPTIONS:
         PADDING_OPTIONS.append(x)
 
+CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "pycrypto")    #pycrypto
+try:
+    if CRYPTO_LIBRARY=="pycryptography":
+        from xpra.net import pycryptography_backend as backend
+    elif CRYPTO_LIBRARY=="pycrypto":
+        from xpra.net import pycrypto_backend as backend
+    else:
+        raise ImportError("invalid crypto library specified: '%s'" % CRYPTO_LIBRARY)
+    ENCRYPTION_CIPHERS = ["AES"]
+except ImportError as e:
+    log.error("Error: encryption library is not available!")
+    log.error(" %s", e)
+    ENCRYPTION_CIPHERS = []
+
 
 def pad(padding, size):
     if padding==PADDING_LEGACY:
@@ -44,18 +59,6 @@ def choose_padding(options):
         if x in PADDING_OPTIONS:
             return x
     raise Exception("cannot find a valid padding in %s" % str(options))
-
-
-AES, PBKDF2 = None, None
-ENCRYPTION_CIPHERS = []
-if ENABLE_CRYPTO:
-    try:
-        from Crypto.Protocol.KDF import PBKDF2
-        from Crypto.Cipher import AES
-        ENCRYPTION_CIPHERS.append("AES")
-    except Exception as e:
-        AES, PBKDF2 = None, None
-        log("pycrypto is missing: %s", e)
 
 
 def get_hex_uuid():
@@ -77,6 +80,7 @@ def get_iterations():
 
 
 def new_cipher_caps(proto, cipher, encryption_key, padding_options):
+    assert backend
     iv = get_iv()
     key_salt = get_salt()
     iterations = get_iterations()
@@ -92,33 +96,99 @@ def new_cipher_caps(proto, cipher, encryption_key, padding_options):
          }
 
 def get_crypto_caps():
+    assert backend
     caps = {
             "padding.options"       : PADDING_OPTIONS,
             }
-    try:
-        import Crypto
-        caps["pycrypto"] = True
-        caps["pycrypto.version"] = Crypto.__version__
-        try:
-            from Crypto.PublicKey import _fastmath
-        except:
-            _fastmath = None
-        caps["pycrypto.fastmath"] = _fastmath is not None
-    except:
-        caps["pycrypto"] = False
+    caps.update(backend.get_info())
     return caps
 
 
-def get_cipher(ciphername, iv, password, key_salt, iterations):
-    log("get_cipher(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+def get_encryptor(ciphername, iv, password, key_salt, iterations):
+    log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
     if not ciphername:
         return None, 0
     assert iterations>=100
     assert ciphername=="AES"
     assert password and iv
-    assert (AES and PBKDF2), "pycrypto is missing!"
-    #stretch the password:
-    block_size = 32         #fixme: can we derive this?
-    secret = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
-    log("get_cipher(..) secret=%s, block_size=%s", secret.encode('hex'), block_size)
-    return AES.new(secret, AES.MODE_CBC, iv), block_size
+    block_size = DEFAULT_BLOCKSIZE
+    key = backend.get_key(password, key_salt, block_size, iterations)
+    return backend.get_encryptor(key, iv)
+
+def get_decryptor(ciphername, iv, password, key_salt, iterations):
+    log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+    if not ciphername:
+        return None, 0
+    assert iterations>=100
+    assert ciphername=="AES"
+    assert password and iv
+    block_size = DEFAULT_BLOCKSIZE
+    key = backend.get_key(password, key_salt, block_size, iterations)
+    return backend.get_decryptor(key, iv)
+
+
+def main():
+    from xpra.platform import program_context
+    import sys
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        log.enable_debug()
+    with program_context("Encryption Properties"):
+        for k,v in sorted(get_crypto_caps().items()):
+            print(k.ljust(32)+": "+str(v))
+    #simple tests:
+    try:
+        password = "this is our secret"
+        key_salt = DEFAULT_SALT
+        iterations = DEFAULT_ITERATIONS
+        block_size = DEFAULT_BLOCKSIZE
+        #test key stretching:
+        secrets = []
+        from xpra.net import pycrypto_backend
+        from xpra.net import pycryptography_backend
+        backends = [pycrypto_backend, pycryptography_backend]
+        for b in backends:
+            print("%s:%s" % (type(b), dir(b)))
+            args = password, key_salt, block_size, iterations
+            v = b.get_key(*args)
+            print("%s%s=%s" % (b.get_key, args, v.encode('hex')))
+            assert v is not None
+            secrets.append(v)
+        assert secrets[0]==secrets[1]
+        #test creation of encryptors and decryptors:
+        iv = DEFAULT_IV
+        encryptors = []
+        decryptors = []
+        for i, b in enumerate(backends):
+            args = secrets[i], iv
+            enc = b.get_encryptor(*args)
+            print("%s%s=%s" % (b.get_encryptor, args, enc))
+            assert enc is not None
+            encryptors.append(enc)
+            dec = b.get_decryptor(*args)
+            print("%s%s=%s" % (b.get_decryptor, args, dec))
+            assert dec is not None
+            decryptors.append(dec)
+        #test encoding of a message:
+        message = "some message1234"
+        encrypted = []
+        for enc in encryptors:
+            v = enc.encrypt(message)
+            print("%s%s=%s" % (enc.encrypt, (message,), v.encode('hex')))
+            assert v is not None
+            encrypted.append(v)
+        assert encrypted[0]==encrypted[1]
+        #test decoding of the message:
+        decrypted = []
+        for dec in decryptors:
+            v = dec.decrypt(encrypted[0])
+            print("%s%s=%s" % (dec.decrypt, (encrypted[0],), v.encode('hex')))
+            assert v is not None
+            decrypted.append(v)
+        assert decrypted[0]==decrypted[1]
+        assert decrypted[0]==message
+    except Exception as e:
+        print("Error running tests: %s" % e)
+        raise
+
+if __name__ == "__main__":
+    main()
