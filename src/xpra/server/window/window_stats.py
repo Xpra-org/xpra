@@ -70,10 +70,10 @@ class WindowPerformanceStatistics(object):
         self.avg_damage_out_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
         self.recent_damage_out_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
         self.max_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
-        self.avg_decode_speed = None
-        self.recent_decode_speed = None
-        self.avg_send_speed = None
-        self.recent_send_speed = None
+        self.avg_decode_speed = -1
+        self.recent_decode_speed = -1
+        self.avg_send_speed = -1
+        self.recent_send_speed = -1
 
     def update_averages(self):
         #damage "in" latency: (the time it takes for damage requests to be processed only)
@@ -108,33 +108,38 @@ class WindowPerformanceStatistics(object):
             #info: avg delay=%.3f recent delay=%.3f" % (ad, rd)
             factors.append(calculate_for_average(metric, ad, rd, weight_div=div))
         #send speed:
-        if self.avg_send_speed is not None and self.recent_send_speed is not None:
+        ass = self.avg_send_speed
+        rss = self.recent_send_speed
+        if ass>0 and rss>0:
             #our calculate methods aims for lower values, so invert speed
             #this is how long it takes to send 1MB:
-            avg1MB = 1.0*1024*1024/self.avg_send_speed
-            recent1MB = 1.0*1024*1024/self.recent_send_speed
+            avg1MB = 1.0*1024*1024/ass
+            recent1MB = 1.0*1024*1024/rss
             #we only really care about this when the speed is quite low,
             #so adjust the weight accordingly:
             minspeed = float(128*1024)
-            div = logp(max(self.recent_send_speed, minspeed)/minspeed)
+            div = logp(max(rss, minspeed)/minspeed)
             metric = "network-send-speed"
             #info: avg=%s, recent=%s (KBytes/s), div=%s" % (int(self.avg_send_speed/1024), int(self.recent_send_speed/1024), div)
             factors.append(calculate_for_average(metric, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
         #client decode time:
-        if self.avg_decode_speed is not None and self.recent_decode_speed is not None:
+        ads = self.avg_decode_speed
+        rds = self.recent_decode_speed
+        if ads>0 and rds>0:
             metric = "client-decode-speed"
-            #info: avg=%.1f, recent=%.1f (MPixels/s)" % (self.avg_decode_speed/1000/1000, self.recent_decode_speed/1000/1000)
+            #info: avg=%.1f, recent=%.1f (MPixels/s)" % (ads/1000/1000, self.recent_decode_speed/1000/1000)
             #our calculate methods aims for lower values, so invert speed
             #this is how long it takes to send 1MB:
-            avg1MB = 1.0*1024*1024/self.avg_decode_speed
-            recent1MB = 1.0*1024*1024/self.recent_decode_speed
-            weight_div = max(0.25, self.recent_decode_speed/(4*1000*1000))
+            avg1MB = 1.0*1024*1024/ads
+            recent1MB = 1.0*1024*1024/rds
+            weight_div = max(0.25, rds/(4*1000*1000))
             factors.append(calculate_for_average(metric, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
-        if self.last_damage_event_time:
+        ldet = self.last_damage_event_time
+        if ldet:
             #If nothing happens for a while then we can reduce the batch delay,
             #however we must ensure this is not caused by a high system latency
             #so we ignore short elapsed times.
-            elapsed = time.time()-self.last_damage_event_time
+            elapsed = time.time()-ldet
             mtime = max(0, elapsed-self.max_latency*2)
             #the longer the time, the more we slash:
             weight = sqrt(mtime)
