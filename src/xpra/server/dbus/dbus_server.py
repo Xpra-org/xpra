@@ -162,7 +162,7 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionEnabled(self, wid, enabled):
-        self.server.control_command_video_region(wid, enabled)
+        self.server.control_command_video_region_enabled(wid, enabled)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionDetection(self, wid, detection):
