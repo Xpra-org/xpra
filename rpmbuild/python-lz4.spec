@@ -18,7 +18,7 @@
 
 Name:           python-lz4
 Version:        0.8.0
-Release:        0.rc1%{?dist}
+Release:        0.rc2%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -93,6 +93,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jan 07 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.0.rc2-1
+- Merge "release the GIL" patch
+
 * Mon Jul 13 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.8.0.rc1-1
 - Pre-release testing
 
