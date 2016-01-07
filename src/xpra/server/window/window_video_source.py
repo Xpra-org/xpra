@@ -758,13 +758,17 @@ class WindowVideoSource(WindowSource):
             scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encoding, width, height, src_format, force_refresh), 1000.0*(time.time()-self.last_pipeline_time))
             return self.last_pipeline_scores
 
+        vh = self.video_helper
+        if vh is None:
+            return []       #closing down
+
         #these are the CSC modes the client can handle for this encoding:
         #we must check that the output csc mode for each encoder is one of those
         supported_csc_modes = self.full_csc_modes.get(encoding)
         if not supported_csc_modes:
             scorelog("get_video_pipeline_options: no supported csc modes for %s", encoding)
             return []
-        encoder_specs = self.video_helper.get_encoder_specs(encoding)
+        encoder_specs = vh.get_encoder_specs(encoding)
         if not encoder_specs:
             scorelog("get_video_pipeline_options: no encoder specs for %s", encoding)
             return []
@@ -792,7 +796,7 @@ class WindowVideoSource(WindowSource):
             add_scores("direct (no csc)", None, src_format)
 
         #now add those that require a csc step:
-        csc_specs = self.video_helper.get_csc_specs(src_format)
+        csc_specs = vh.get_csc_specs(src_format)
         if csc_specs:
             #log("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
@@ -1270,10 +1274,13 @@ class WindowVideoSource(WindowSource):
             videolog.warn("using '%s' as non-video fallback using %s", fallback_encoding, encode_fn)
             return encode_fn(fallback_encoding, image, options)
 
+        vh = self.video_helper
+        if vh is None:
+            return None         #shortcut when closing down
         if not self.check_pipeline(encoding, w, h, src_format):
             #just for diagnostics:
             supported_csc_modes = self.full_csc_modes.get(encoding, [])
-            encoder_specs = self.video_helper.get_encoder_specs(encoding)
+            encoder_specs = vh.get_encoder_specs(encoding)
             encoder_types = []
             ecsc = []
             for csc in supported_csc_modes:
