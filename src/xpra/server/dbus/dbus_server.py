@@ -171,7 +171,7 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):
-        self.server.control_command_lock_batck_delay(wid, delay)
+        self.server.control_command_lock_batch_delay(wid, delay)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def UnlockBatchDelay(self, wid):

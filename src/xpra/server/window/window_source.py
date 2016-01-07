@@ -405,12 +405,12 @@ class WindowSource(object):
 
 
     def go_idle(self):
-        self.lock_batck_delay(500)
+        self.lock_batch_delay(500)
 
     def no_idle(self):
         self.unlock_batch_delay()
 
-    def lock_batck_delay(self, delay):
+    def lock_batch_delay(self, delay):
         """ use a fixed delay until unlock_batch_delay is called """
         if not self.batch_config.locked:
             self.batch_config.locked = True
