@@ -135,60 +135,6 @@ def main():
     with program_context("Encryption Properties"):
         for k,v in sorted(get_crypto_caps().items()):
             print(k.ljust(32)+": "+str(v))
-    #simple tests:
-    try:
-        password = "this is our secret"
-        key_salt = DEFAULT_SALT
-        iterations = DEFAULT_ITERATIONS
-        block_size = DEFAULT_BLOCKSIZE
-        #test key stretching:
-        secrets = []
-        from xpra.net import pycrypto_backend
-        from xpra.net import pycryptography_backend
-        backends = [pycrypto_backend, pycryptography_backend]
-        for b in backends:
-            print("%s:%s" % (type(b), dir(b)))
-            args = password, key_salt, block_size, iterations
-            v = b.get_key(*args)
-            print("%s%s=%s" % (b.get_key, args, v.encode('hex')))
-            assert v is not None
-            secrets.append(v)
-        assert secrets[0]==secrets[1]
-        #test creation of encryptors and decryptors:
-        iv = DEFAULT_IV
-        encryptors = []
-        decryptors = []
-        for i, b in enumerate(backends):
-            args = secrets[i], iv
-            enc = b.get_encryptor(*args)
-            print("%s%s=%s" % (b.get_encryptor, args, enc))
-            assert enc is not None
-            encryptors.append(enc)
-            dec = b.get_decryptor(*args)
-            print("%s%s=%s" % (b.get_decryptor, args, dec))
-            assert dec is not None
-            decryptors.append(dec)
-        #test encoding of a message:
-        message = "some message1234"
-        encrypted = []
-        for enc in encryptors:
-            v = enc.encrypt(message)
-            print("%s%s=%s" % (enc.encrypt, (message,), v.encode('hex')))
-            assert v is not None
-            encrypted.append(v)
-        assert encrypted[0]==encrypted[1]
-        #test decoding of the message:
-        decrypted = []
-        for dec in decryptors:
-            v = dec.decrypt(encrypted[0])
-            print("%s%s=%s" % (dec.decrypt, (encrypted[0],), v.encode('hex')))
-            assert v is not None
-            decrypted.append(v)
-        assert decrypted[0]==decrypted[1]
-        assert decrypted[0]==message
-    except Exception as e:
-        print("Error running tests: %s" % e)
-        raise
 
 if __name__ == "__main__":
     main()
