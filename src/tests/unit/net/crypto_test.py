@@ -103,14 +103,15 @@ class TestCrypto(unittest.TestCase):
         if len(self.backends)<2:
             return
         times = []
+        data = "0123456789ABCDEF"*asize
         for b in self.backends:
             start = time.time()
-            self.do_test_backend([b], "0123456789ABCDEF"*asize, enc_iterations, dec_iterations)
+            self.do_test_backend([b], data, enc_iterations, dec_iterations)
             end = time.time()
             i = b.get_info()
             elapsed = end-start
-            speed = (asize*16) / elapsed
-            print("%-32s took %5ims: %16iKB/s" % (i.get("backend"), elapsed*1000, speed/1024))
+            speed = (asize*16) * (enc_iterations + dec_iterations) / elapsed
+            print("%-32s took %5.1fms: %16iKB/s" % (i.get("backend"), elapsed*1000/(enc_iterations + dec_iterations), speed/1024))
             times.append(end-start)
         return times
 
