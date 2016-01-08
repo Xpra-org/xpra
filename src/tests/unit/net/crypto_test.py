@@ -12,7 +12,7 @@ from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE,
 
 
 def log(message):
-    #print(message)
+    #print(message[:256])
     pass
 
 class TestCrypto(unittest.TestCase):
@@ -35,10 +35,13 @@ class TestCrypto(unittest.TestCase):
 
     def do_test_backend(self, backends, message="some message1234", encrypt_count=1, decrypt_count=1):
         def mustequ(l):
+            if len(l)==0:
+                return
             v = l[0]
             for i in range(len(l)):
                 assert l[i]==v
 
+        start = time.time()
         password = "this is our secret"
         key_salt = DEFAULT_SALT
         iterations = DEFAULT_ITERATIONS
@@ -67,6 +70,7 @@ class TestCrypto(unittest.TestCase):
             log("%s%s=%s" % (b.get_decryptor, args, dec))
             assert dec is not None
             decryptors.append(dec)
+        #print("init took %ims", (time.time()-start)//1000)
         #test encoding of a message:
         encrypted = []
         for i in range(encrypt_count):
@@ -87,20 +91,42 @@ class TestCrypto(unittest.TestCase):
                 if i==0:
                     decrypted.append(v)
         mustequ(decrypted)
-        mustequ([decrypted[0], message])
+        if decrypted:
+            mustequ([decrypted[0], message])
 
     def test_backends(self):
         self.do_test_backend(self.backends)
 
-    def test_perf(self):
+    def do_test_perf(self, size=1024*4, enc_iterations=20, dec_iterations=20):
+	asize = (size+15)//16
+        print("test_perf: size: %i Bytes" % asize)
         if len(self.backends)<2:
             return
+        times = []
         for b in self.backends:
             start = time.time()
-            self.do_test_backend([b], "0123456789ABCDEF"*1024*4, 20, 20)
+            self.do_test_backend([b], "0123456789ABCDEF"*asize, enc_iterations, dec_iterations)
             end = time.time()
             i = b.get_info()
-            print("%s took %ims" % (i.get("backend"), (end-start)*1000))
+            elapsed = end-start
+            speed = (asize*16) / elapsed
+            print("%-32s took %5ims: %16iKB/s" % (i.get("backend"), elapsed*1000, speed/1024))
+            times.append(end-start)
+        return times
+
+    def test_perf(self):
+	#RANGE = (1, 1024, 1024*1024, 1024*1024*16)
+	RANGE = (1, 1024, 1024*1024)
+        print("Encryption Performance:")
+        for i in RANGE:
+            self.do_test_perf(i, 10, 0)
+        print("Decryption Performance:")
+        for i in RANGE:
+            self.do_test_perf(i, 1, 10)
+        print("Global Performance:")
+        for i in RANGE:
+            self.do_test_perf(i, 10, 10)
+
 
 def main():
     unittest.main()
