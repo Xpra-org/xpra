@@ -652,6 +652,9 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
                         #"-Wno-error=strict-prototypes",
                         ]
+                if sys.platform.startswith("netbsd"):
+                    #see: http://trac.cython.org/ticket/395
+                    eifd += ["-fno-strict-aliasing"]
             else:
                 #older versions of OSX ship an old gcc,
                 #not much we can do with this:
