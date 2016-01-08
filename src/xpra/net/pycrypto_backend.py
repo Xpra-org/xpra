@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
@@ -30,8 +31,7 @@ def get_info():
 def get_key(password, key_salt, block_size, iterations):
     assert (AES and PBKDF2), "pycrypto is missing!"
     #stretch the password:
-    key = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
-    log("pycrypto.get_key(..) secret=%s, block_size=%s", key.encode('hex'), block_size)
+    key = PBKDF2(strtobytes(password), strtobytes(key_salt), dkLen=block_size, count=iterations)
     return key
 
 def get_encryptor(secret, iv):

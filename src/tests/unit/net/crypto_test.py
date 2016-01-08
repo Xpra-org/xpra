@@ -7,6 +7,8 @@
 
 import time
 import unittest
+import binascii
+from xpra.os_util import strtobytes
 
 from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV
 
@@ -14,6 +16,10 @@ from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE,
 def log(message):
     #print(message[:256])
     pass
+
+def hexstr(v):
+    return binascii.hexlify(strtobytes(v))
+
 
 class TestCrypto(unittest.TestCase):
 
@@ -33,7 +39,7 @@ class TestCrypto(unittest.TestCase):
         if len(self.backends)<2:
             print("Only one backend we can test, cannot compare results..")
 
-    def do_test_backend(self, backends, message="some message1234", encrypt_count=1, decrypt_count=1):
+    def do_test_backend(self, backends, message=b"some message1234", encrypt_count=1, decrypt_count=1):
         def mustequ(l):
             if len(l)==0:
                 return
@@ -41,7 +47,6 @@ class TestCrypto(unittest.TestCase):
             for i in range(len(l)):
                 assert l[i]==v
 
-        start = time.time()
         password = "this is our secret"
         key_salt = DEFAULT_SALT
         iterations = DEFAULT_ITERATIONS
@@ -52,7 +57,7 @@ class TestCrypto(unittest.TestCase):
             log("%s:%s" % (type(b), dir(b)))
             args = password, key_salt, block_size, iterations
             v = b.get_key(*args)
-            log("%s%s=%s" % (b.get_key, args, v.encode('hex')))
+            log("%s%s=%s" % (b.get_key, args, hexstr(v)))
             assert v is not None
             secrets.append(v)
         mustequ(secrets)
@@ -76,7 +81,7 @@ class TestCrypto(unittest.TestCase):
         for i in range(encrypt_count):
             for enc in encryptors:
                 v = enc.encrypt(message)
-                #print("%s%s=%s" % (enc.encrypt, (message,), v.encode('hex')))
+                #print("%s%s=%s" % (enc.encrypt, (message,), hexstr(v)))
                 assert v is not None
                 if i==0:
                     encrypted.append(v)
@@ -86,7 +91,7 @@ class TestCrypto(unittest.TestCase):
         for i in range(decrypt_count):
             for dec in decryptors:
                 v = dec.decrypt(encrypted[0])
-                log("%s%s=%s" % (dec.decrypt, (encrypted[0],), v.encode('hex')))
+                log("%s%s=%s" % (dec.decrypt, (encrypted[0],), hexstr(v)))
                 assert v is not None
                 if i==0:
                     decrypted.append(v)
@@ -98,12 +103,12 @@ class TestCrypto(unittest.TestCase):
         self.do_test_backend(self.backends)
 
     def do_test_perf(self, size=1024*4, enc_iterations=20, dec_iterations=20):
-	asize = (size+15)//16
+        asize = (size+15)//16
         print("test_perf: size: %i Bytes" % asize)
         if len(self.backends)<2:
             return
         times = []
-        data = "0123456789ABCDEF"*asize
+        data = b"0123456789ABCDEF"*asize
         for b in self.backends:
             start = time.time()
             self.do_test_backend([b], data, enc_iterations, dec_iterations)
@@ -116,8 +121,8 @@ class TestCrypto(unittest.TestCase):
         return times
 
     def test_perf(self):
-	#RANGE = (1, 1024, 1024*1024, 1024*1024*16)
-	RANGE = (1, 1024, 1024*1024)
+        #RANGE = (1, 1024, 1024*1024, 1024*1024*16)
+        RANGE = (1, 1024, 1024*1024)
         print("Encryption Performance:")
         for i in RANGE:
             self.do_test_perf(i, 10, 0)

@@ -113,7 +113,7 @@ def get_encryptor(ciphername, iv, password, key_salt, iterations):
     assert password and iv
     block_size = DEFAULT_BLOCKSIZE
     key = backend.get_key(password, key_salt, block_size, iterations)
-    return backend.get_encryptor(key, iv)
+    return backend.get_encryptor(key, iv), block_size
 
 def get_decryptor(ciphername, iv, password, key_salt, iterations):
     log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
@@ -124,7 +124,7 @@ def get_decryptor(ciphername, iv, password, key_salt, iterations):
     assert password and iv
     block_size = DEFAULT_BLOCKSIZE
     key = backend.get_key(password, key_salt, block_size, iterations)
-    return backend.get_decryptor(key, iv)
+    return backend.get_decryptor(key, iv), block_size
 
 
 def main():

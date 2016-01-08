@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
@@ -23,19 +24,18 @@ def get_info():
             "python-cryptography.version"   : cryptography.__version__}
 
 def get_key(password, key_salt, block_size, iterations):
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size, salt=key_salt, iterations=iterations, backend=default_backend())
-    key = kdf.derive(password)
-    log("python_cryptography.get_key(..) secret=%s, block_size=%s", key.encode('hex'), block_size)
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size, salt=strtobytes(key_salt), iterations=iterations, backend=default_backend())
+    key = kdf.derive(strtobytes(password))
     return key
 
 def get_encryptor(key, iv):
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    cipher = Cipher(algorithms.AES(key), modes.CBC(strtobytes(iv)), backend=default_backend())
     encryptor = cipher.encryptor()
     encryptor.encrypt = encryptor.update
     return encryptor
 
 def get_decryptor(key, iv):
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    cipher = Cipher(algorithms.AES(key), modes.CBC(strtobytes(iv)), backend=default_backend())
     decryptor = cipher.decryptor()
     decryptor.decrypt = decryptor.update
     return decryptor
