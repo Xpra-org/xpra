@@ -694,13 +694,13 @@ class ServerBase(ServerCore, FileTransferHandler):
             return cmd
         return self.exec_wrapper + cmd
 
-    def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, **kwargs):
-        log("start_child%s", (name, child_cmd, ignore, callback, use_wrapper))
+    def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
+        log("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
         import subprocess
         env = self.get_child_env()
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
-            proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=False, close_fds=True, **kwargs)
+            proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, close_fds=True, **kwargs)
             self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             info = " ".join(real_cmd)
             if ignore:
@@ -1260,7 +1260,7 @@ class ServerBase(ServerCore, FileTransferHandler):
     def do_control_command_start(self, ignore, *args):
         if not self.start_new_commands:
             raise ControlError("this feature is currently disabled")
-        proc = self.start_child(" ".join(args), args, ignore)
+        proc = self.start_child(" ".join(args), args, ignore, shell=True)
         if not proc:
             raise ControlError("failed to start new child command %s" % str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)

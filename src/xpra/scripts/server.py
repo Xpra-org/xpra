@@ -1024,11 +1024,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if opts.start:
             for x in opts.start:
                 if x:
-                    app.start_child(x, x, True)
+                    app.start_child(x, x, ignore=True, shell=True)
         if opts.start_child:
             for x in opts.start_child:
                 if x:
-                    app.start_child(x, x, False)
+                    app.start_child(x, x, ignore=False, shell=True)
 
     log("%s(%s)", app.init_sockets, sockets)
     app.init_sockets(sockets)
