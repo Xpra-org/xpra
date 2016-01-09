@@ -447,8 +447,8 @@ pulseaudio-command = %(pulseaudio_command)s
 # Paint the windows on the xvfb so that
 # screen grabs and screen recorders will work
 # (repaint delay in milliseconds, 0 to disable)
-# sync-xvfb = 200 
-# sync-xvfb = 50 
+# sync-xvfb = 200
+# sync-xvfb = 50
 sync-xvfb = 0
 
 # Virtual display command:
@@ -460,7 +460,7 @@ sync-xvfb = 0
 # xvfb=/usr/bin/Xorg -noreset -nolisten tcp \
 #        +extension GLX +extension RANDR +extension RENDER \
 #        -auth $XAUTHORITY \
-#        -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log \
+#        -logfile %(log_dir)s/Xorg.${DISPLAY}.log \
 #        -configdir ${HOME}/.xpra
 #        -config %(conf_dir)s/xorg.conf
 #
