@@ -104,7 +104,7 @@ class TestCrypto(unittest.TestCase):
 
     def do_test_perf(self, size=1024*4, enc_iterations=20, dec_iterations=20):
         asize = (size+15)//16
-        print("test_perf: size: %i Bytes" % asize)
+        print("test_perf: size: %i Bytes" % (asize*16))
         if len(self.backends)<2:
             return
         times = []
@@ -121,7 +121,7 @@ class TestCrypto(unittest.TestCase):
         return times
 
     def test_perf(self):
-        #RANGE = (1, 1024, 1024*1024, 1024*1024*16)
+        #RANGE = (1, 256, 1024, 1024*1024, 1024*1024*16)
         RANGE = (1, 1024, 1024*1024)
         print("Encryption Performance:")
         for i in RANGE:
