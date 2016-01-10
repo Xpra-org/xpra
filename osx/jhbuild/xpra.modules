@@ -330,6 +330,20 @@
 	</dependencies>
   </distutils>
 
+  <distutils id="six">
+	<branch repo="pypi.python.org"
+		module="/packages/source/s/six/six-1.10.0.tar.gz"
+		hash="md5:34eed507548117b2ab523ab14b2f8b55"
+		version="1.10.0"/>
+  </distutils>
+
+  <distutils id="enum">
+	<branch repo="pypi.python.org"
+		module="/packages/source/e/enum/enum-0.4.6.tar.gz"
+		hash="md5:173d468112cfa13a149b2c8af3e8fd52"
+		version="0.4.6"/>
+  </distutils>
+
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
 		module="/packages/source/c/cryptography/cryptography-1.2.1.tar.gz"
@@ -337,6 +351,8 @@
 		version="1.2.1"/>
 	<dependencies>
 		<dep package="cffi"/>
+		<dep package="six"/>
+		<dep package="enum"/>
 	</dependencies>
   </distutils>
 

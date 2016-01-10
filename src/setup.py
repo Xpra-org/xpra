@@ -300,8 +300,8 @@ external_excludes = [
                     #formats we don't use:
                     "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
                     #not used:
-                    "curses", "email", "mimetypes", "mimetools", "pdb",
-                    "urllib", "urllib2", "tty",
+                    "curses", "mimetypes", "mimetools", "pdb",
+                    "urllib2", "tty",
                     "ssl", "_ssl",
                     "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
                     "distutils", "setuptools", "doctest"
@@ -1297,8 +1297,6 @@ if WIN32:
                 #END OF SOUND
 
             if client_ENABLED:
-                #pillow needs urllib:
-                external_excludes.remove("urllib")
                 #pillow links against zlib, but expects the DLL to be named z.dll:
                 data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
 
@@ -1703,6 +1701,9 @@ if WIN32:
                         "unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
 
+    #python-cryptography:
+    external_includes.append("_cffi_backend")
+
     if sound_ENABLED:
         if not PYTHON3:
             external_includes += ["pygst", "gst", "gst.extend"]
@@ -1779,9 +1780,7 @@ else:
 
     if OSX:
         #pyobjc needs email.parser
-        external_excludes.remove("email")
-        external_excludes.remove("urllib")
-        external_includes += ["email", "uu", "urllib", "objc", "cups"]
+        external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
