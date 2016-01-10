@@ -374,7 +374,7 @@
   <distutils id="python-lz4">
 	<branch repo="xpra.org"
 	     module="/src/python-lz4-0.8.0-rc2.tar.xz"
-	     hash="md5:c9511a74488382d77366b003a4df0af1"
+	     hash="md5:f856e1f307a6d3d3a7c126b573e64d51"
 	     version="0.8.0-rc2"/>
   </distutils>
 
