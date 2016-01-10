@@ -313,11 +313,21 @@
 		version="2.6.1"/>
   </distutils>
 
+  <distutils id="pycparser">
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pycparser/pycparser-2.14.tar.gz"
+		hash="md5:a2bc8d28c923b4fe2b2c3b4b51a4f935"
+		version="2.14"/>
+  </distutils>
+
   <distutils id="cffi">
 	<branch repo="pypi.python.org"
 		module="/packages/source/c/cffi/cffi-1.4.2.tar.gz"
 		hash="md5:81357fe5042d00650b85b728cc181df2"
 		version="1.4.2"/>
+	<dependencies>
+		<dep package="pycparser"/>
+	</dependencies>
   </distutils>
 
   <distutils id="python-cryptography">
