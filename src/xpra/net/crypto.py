@@ -31,9 +31,9 @@ for x in ALL_PADDING_OPTIONS:
     if x not in PADDING_OPTIONS:
         PADDING_OPTIONS.append(x)
 
-CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "pycrypto")    #pycrypto
+CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "python-cryptography")    #pycrypto
 try:
-    if CRYPTO_LIBRARY=="pycryptography":
+    if CRYPTO_LIBRARY=="python-cryptography":
         from xpra.net import pycryptography_backend as backend
     elif CRYPTO_LIBRARY=="pycrypto":
         from xpra.net import pycrypto_backend as backend
@@ -96,7 +96,8 @@ def new_cipher_caps(proto, cipher, encryption_key, padding_options):
          }
 
 def get_crypto_caps():
-    assert backend
+    if not backend:
+        return {}
     caps = {
             "padding.options"       : PADDING_OPTIONS,
             }
