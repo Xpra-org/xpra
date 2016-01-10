@@ -41,8 +41,10 @@ try:
         raise ImportError("invalid crypto library specified: '%s'" % CRYPTO_LIBRARY)
     ENCRYPTION_CIPHERS = ["AES"]
 except ImportError as e:
-    log.error("Error: encryption library is not available!")
+    log.error("Error: encryption library %s is not available!", CRYPTO_LIBRARY)
     log.error(" %s", e)
+    log("no crypto backend", exc_info=True)
+    backend = None
     ENCRYPTION_CIPHERS = []
 
 
