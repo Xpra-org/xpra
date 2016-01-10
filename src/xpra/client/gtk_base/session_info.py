@@ -776,8 +776,12 @@ class SessionInfo(gtk.Window):
                 info = str(cipher)
             if c.info.lower()=="ssh":
                 info += " (%s)" % c.info
-            if get_network_caps().get("pycrypto.fastmath", False):
-                info += " (fastmath available)"
+            ncaps = get_network_caps()
+            backend = ncaps.get("backend")
+            if backend=="pycrypto":
+                info += " / pycrypto %s fastmath" % ["with", "without"][int(ncaps.get("pycrypto.fastmath", False))]
+            elif backend=="python-cryptography":
+                info += " / python-cryptography"
             label.set_text(info)
         enclabel(self.input_encryption_label, p.cipher_in_name)
         enclabel(self.output_encryption_label, p.cipher_out_name)
