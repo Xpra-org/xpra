@@ -31,246 +31,247 @@
   <repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
 
   <autotools id="yasm" autogen-sh="configure">
-    <branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
-			version="1.3.0"
-                        hash="md5:fc9e586751ff789b34b1f21d572d96af"
-            repo="www.tortall.net"/>
+	<branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
+		version="1.3.0"
+		hash="md5:fc9e586751ff789b34b1f21d572d96af"
+		repo="www.tortall.net"/>
   </autotools>
 
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
-    <branch module="/pub/nasm/releasebuilds/2.11.08/nasm-2.11.08.tar.bz2"
-			version="2.11.08"
-                        hash="md5:7aae5cb8e03fac48029c82a7470ab066"
-            repo="www.nasm.us">
-    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
+	<branch module="/pub/nasm/releasebuilds/2.11.08/nasm-2.11.08.tar.bz2"
+		version="2.11.08"
+		hash="md5:7aae5cb8e03fac48029c82a7470ab066"
+		repo="www.nasm.us">
+    	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
     </branch>
   </autotools>
 
   <autotools id="liborc" autogenargs="" autogen-sh="configure">
     <branch module="/data/src/orc/orc-0.4.24.tar.xz"
-			version="0.4.24"
-                        hash="md5:9e793ec34c0e20339659dd4bbbf62135"
-            repo="gstreamer.freedesktop.org"/>
+		version="0.4.24"
+		hash="md5:9e793ec34c0e20339659dd4bbbf62135"
+		repo="gstreamer.freedesktop.org"/>
   </autotools>
 
   <autotools id="libogg" autogenargs="" autogen-sh="configure">
     <branch module="/releases/ogg/libogg-1.3.2.tar.xz"
-			version="1.3.2"
-                        hash="md5:5c3a34309d8b98640827e5d0991a4015"
-            repo="downloads.xiph.org"/>
+		version="1.3.2"
+		hash="md5:5c3a34309d8b98640827e5d0991a4015"
+		repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="libtheora" autogenargs="--disable-examples" autogen-sh="configure">
     <branch module="/releases/theora/libtheora-1.1.1.tar.bz2"
-			version="1.1.1"
-                        hash="md5:292ab65cedd5021d6b7ddd117e07cd8e"
-            repo="downloads.xiph.org"/>
+		version="1.1.1"
+		hash="md5:292ab65cedd5021d6b7ddd117e07cd8e"
+		repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="libvorbis" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/vorbis/libvorbis-1.3.5.tar.xz"
-			version="1.3.5"
-                        hash="md5:28cb28097c07a735d6af56e598e1c90f"
-            repo="downloads.xiph.org"/>
+	<branch module="/releases/vorbis/libvorbis-1.3.5.tar.xz"
+		version="1.3.5"
+		hash="md5:28cb28097c07a735d6af56e598e1c90f"
+		repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="lame" autogenargs="" autogen-sh="configure">
     <branch module="/src/lame-3.99.5.tar.gz"
-			version="3.99.5"
-                        hash="md5:84835b313d4a8b68f5349816d33e07ce"
-            repo="winswitch.org"/>
+		version="3.99.5"
+		hash="md5:84835b313d4a8b68f5349816d33e07ce"
+		repo="winswitch.org"/>
   </autotools>
 
   <autotools id="twolame" autogenargs="" autogen-sh="configure">
     <branch module="/src/twolame-0.3.13.tar.gz"
-			version="0.3.13"
-                        hash="md5:4113d8aa80194459b45b83d4dbde8ddb"
-            repo="winswitch.org"/>
+		version="0.3.13"
+		hash="md5:4113d8aa80194459b45b83d4dbde8ddb"
+		repo="winswitch.org"/>
   </autotools>
 
   <autotools id="libmad" autogen-sh="configure">
     <branch module="/src/libmad-0.15.1b.tar.gz"
-			version="0.15.1b"
-                        hash="md5:1be543bc30c56fb6bea1d7bf6a64e66c"
-            repo="winswitch.org"/>
+		version="0.15.1b"
+		hash="md5:1be543bc30c56fb6bea1d7bf6a64e66c"
+		repo="winswitch.org"/>
   </autotools>
 
   <autotools id="faac" autogenargs="" autogen-sh="configure">
     <branch module="/src/faac-1.28.tar.bz2"
-			version="1.28"
-                        hash="md5:c5dde68840cefe46532089c9392d1df0"
-            repo="winswitch.org"/>
+		version="1.28"
+		hash="md5:c5dde68840cefe46532089c9392d1df0"
+		repo="winswitch.org"/>
   </autotools>
 
   <autotools id="faad2" autogenargs="" autogen-sh="configure">
-    <branch module="/src/faad2-2.7.tar.bz2"
-			version="2.7"
-                        hash="md5:4c332fa23febc0e4648064685a3d4332"
-            repo="winswitch.org"/>
+	<branch module="/src/faad2-2.7.tar.bz2"
+		version="2.7"
+		hash="md5:4c332fa23febc0e4648064685a3d4332"
+		repo="winswitch.org"/>
   </autotools>
 
   <autotools id="flac" autogenargs="--disable-asm-optimizations" autogen-sh="configure">
-    <branch module="/releases/flac/flac-1.3.1.tar.xz"
-			version="1.3.1"
-                        hash="md5:b9922c9a0378c88d3e901b234f852698"
-            repo="downloads.xiph.org"/>
+	<branch module="/releases/flac/flac-1.3.1.tar.xz"
+		version="1.3.1"
+		hash="md5:b9922c9a0378c88d3e901b234f852698"
+		repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="speex" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/speex/speex-1.2rc1.tar.gz"
-			version="1.2rc1"
-                        hash="md5:c4438b22c08e5811ff10e2b06ee9b9ae"
-            repo="downloads.xiph.org"/>
+	<branch module="/releases/speex/speex-1.2rc1.tar.gz"
+		version="1.2rc1"
+		hash="md5:c4438b22c08e5811ff10e2b06ee9b9ae"
+		repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="opus" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/opus/opus-1.1.1.tar.gz"
-			version="1.1.1"
-                        hash="md5:cfb354d4c65217ca32a762f8ab15f2ac"
-            repo="downloads.xiph.org"/>
+	<branch module="/releases/opus/opus-1.1.1.tar.gz"
+		version="1.1.1"
+		hash="md5:cfb354d4c65217ca32a762f8ab15f2ac"
+		repo="downloads.xiph.org"/>
   </autotools>
 
   <autotools id="wavpack" autogenargs="" autogen-sh="configure">
-    <branch module="/wavpack-4.70.0.tar.bz2"
-			version="4.70.0"
-                        hash="md5:4c0186ef0dc8367ce5cd7cc0f398b714"
-            repo="wavpack.com"/>
+	<branch module="/wavpack-4.70.0.tar.bz2"
+		version="4.70.0"
+		hash="md5:4c0186ef0dc8367ce5cd7cc0f398b714"
+		repo="wavpack.com"/>
   </autotools>
 
   <autotools id="libvpx"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --target=x86-darwin8-gcc --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
              autogen-sh="configure">
-    <branch module="/files/libvpx-v1.3.0.tar.bz2"
-			version="1.3.0"
-                        hash="md5:14783a148872f2d08629ff7c694eb31f"
-            repo="webm.googlecode.com"/>
+	<branch module="/files/libvpx-v1.3.0.tar.bz2"
+		version="1.3.0"
+		hash="md5:14783a148872f2d08629ff7c694eb31f"
+		repo="webm.googlecode.com"/>
   </autotools>
 
   <autotools id="x264"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
-    <branch module="/pub/x264/snapshots/x264-snapshot-20150909-2245-stable.tar.bz2"
-			version="20150909-2245-stable"
-                        hash="md5:173cdffc41b428d38b1039d80f02a820"
-            repo="download.videolan.org"/>
-  <dependencies>
-      <dep package="yasm"/>
-  </dependencies>
-  <after>
-      <dep package="yasm"/>
-  </after>
+	<branch module="/pub/x264/snapshots/x264-snapshot-20150909-2245-stable.tar.bz2"
+		version="20150909-2245-stable"
+		hash="md5:173cdffc41b428d38b1039d80f02a820"
+		repo="download.videolan.org"/>
+	<dependencies>
+		<dep package="yasm"/>
+	</dependencies>
+	<after>
+		<dep package="yasm"/>
+	</after>
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-    <branch module="/releases/webp/libwebp-0.5.0.tar.gz"
-			version="0.5.0"
-                        hash="md5:ba81eb9bf23e3c69a2f5cc8dcdb5938f"
-            repo="downloads.webmproject.org"/>
+	<branch module="/releases/webp/libwebp-0.5.0.tar.gz"
+		version="0.5.0"
+		hash="md5:ba81eb9bf23e3c69a2f5cc8dcdb5938f"
+		repo="downloads.webmproject.org"/>
   </autotools>
 
   <autotools id="ffmpeg"
-             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
-             autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
---enable-static --enable-shared --enable-gpl
---disable-everything
---enable-swscale --enable-libx264 --enable-decoder=h264
---enable-libvpx --enable-decoder=vp8 --enable-decoder=vp9 --enable-decoder=hevc
---disable-protocol=tcp --disable-protocol=rtp
---disable-filter=aformat --disable-filter=crop --disable-filter=setpts
---disable-filter=anull --disable-filter=format --disable-filter=trim
---disable-filter=atrim --disable-filter=null
---disable-programs --disable-avfilter --disable-doc"
-             autogen-sh="configure">
-    <branch module="/releases/ffmpeg-2.8.4.tar.bz2"
-            version="2.8.4"
-            hash="md5:5a312bebaf71688703644c18ef3f26e8"
-            repo="ffmpeg.org"/>
-  <dependencies>
-      <dep package="x264"/>
-  </dependencies>
-  <after>
-      <dep package="x264"/>
-  </after>
+		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
+		autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
+					--enable-static --enable-shared --enable-gpl
+					--disable-everything
+					--enable-swscale --enable-libx264 --enable-decoder=h264
+					--enable-libvpx --enable-decoder=vp8 --enable-decoder=vp9 --enable-decoder=hevc
+					--disable-protocol=tcp --disable-protocol=rtp
+					--disable-filter=aformat --disable-filter=crop --disable-filter=setpts
+					--disable-filter=anull --disable-filter=format --disable-filter=trim
+					--disable-filter=atrim --disable-filter=null
+					--disable-programs --disable-avfilter --disable-doc"
+		autogen-sh="configure">
+	<branch module="/releases/ffmpeg-2.8.4.tar.bz2"
+		version="2.8.4"
+		hash="md5:5a312bebaf71688703644c18ef3f26e8"
+		repo="ffmpeg.org"/>
+	<dependencies>
+		<dep package="x264"/>
+	</dependencies>
+	<after>
+		<dep package="x264"/>
+	</after>
   </autotools>
 
   <autotools id="sdl" autogenargs="" autogen-sh="configure">
-    <branch module="/release/SDL-1.2.15.tar.gz"
-			version="1.2.15"
-                        hash="md5:9d96df8417572a2afb781a7c4c811a85"
-            repo="www.libsdl.org"/>
+	<branch module="/release/SDL-1.2.15.tar.gz"
+		version="1.2.15"
+		hash="md5:9d96df8417572a2afb781a7c4c811a85"
+		repo="www.libsdl.org"/>
   </autotools>
 
   <autotools id="gst-plugins-bad-xpra" autogenargs="--enable-introspection=no --disable-sdl" autogen-sh="configure">
-    <branch module="/src/gst-plugins-bad/gst-plugins-bad-0.10.22.tar.bz2"
-			version="0.10.22"
-                        hash="md5:9a2acee1f386f71247003d0d7090fb1c"
-            repo="gstreamer.freedesktop.org"/>
+	<branch module="/src/gst-plugins-bad/gst-plugins-bad-0.10.22.tar.bz2"
+		version="0.10.22"
+		hash="md5:9a2acee1f386f71247003d0d7090fb1c"
+		repo="gstreamer.freedesktop.org"/>
   </autotools>
 
   <autotools id="gst-plugins-ugly-xpra" autogenargs="--enable-introspection=no" autogen-sh="configure">
-    <branch module="/src/gst-plugins-ugly/gst-plugins-ugly-0.10.18.tar.bz2"
-			version="0.10.18"
-                        hash="md5:04a7009a4efea2844075949c111f5e4d"
-            repo="gstreamer.freedesktop.org"/>
-    <dependencies>
-      <dep package="x264"/>
-    </dependencies>
-    <after>
-      <dep package="x264"/>
-    </after>
+	<branch module="/src/gst-plugins-ugly/gst-plugins-ugly-0.10.18.tar.bz2"
+		version="0.10.18"
+		hash="md5:04a7009a4efea2844075949c111f5e4d"
+		repo="gstreamer.freedesktop.org"/>
+	<dependencies>
+		<dep package="x264"/>
+	</dependencies>
+	<after>
+		<dep package="x264"/>
+	</after>
   </autotools>
 
   <autotools id="gst-python" autogenargs="" autogen-sh="configure --with-libpython-dir=../Resources/lib">
-    <branch module="/src/gst-python/gst-python-0.10.22.tar.bz2"
-			version="0.10.22"
-                        hash="md5:937152fe896241f827689f4b53e79b22"
-            repo="gstreamer.freedesktop.org"/>
+	<branch module="/src/gst-python/gst-python-0.10.22.tar.bz2"
+		version="0.10.22"
+		hash="md5:937152fe896241f827689f4b53e79b22"
+		repo="gstreamer.freedesktop.org"/>
   </autotools>
 
   <!-- HACK: patch after autoreconf is run -->
   <autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s">
-    <branch module="/src/gtkglext-1.2.0.tar.bz2"
-			version="1.2.0"
-                        checkoutdir="gtkglext-1.2.0"
-            repo="xpra.org">
+	<branch module="/src/gtkglext-1.2.0.tar.bz2"
+		version="1.2.0"
+		checkoutdir="gtkglext-1.2.0"
+		repo="xpra.org">
     <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/xpra-gtkglext.patch" strip="1"/>
     </branch>
   </autotools>
 
   <autotools id="pygtkglext" autogenargs="" autogen-sh="autogen.sh">
-    <branch module="/src/pygtkglext-896582f-20100112.tar.bz2"
-			version="896582f-20100112"
-                        hash="md5:e831e0b84ece7180985b11032bc3706d"
-                        checkoutdir="pygtkglext"
-            repo="xpra.org">
-    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
-    </branch>
-    <dependencies>
-      <dep package="gtkglext"/>
-    </dependencies>
+	<branch module="/src/pygtkglext-896582f-20100112.tar.bz2"
+		version="896582f-20100112"
+		hash="md5:e831e0b84ece7180985b11032bc3706d"
+		checkoutdir="pygtkglext"
+		repo="xpra.org">
+	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
+	</branch>
+	<dependencies>
+		<dep package="gtkglext"/>
+	</dependencies>
   </autotools>
 
   <autotools id="gmplib" autogen-sh="configure">
-    <branch module="/pub/gmp-6.1.0/gmp-6.1.0.tar.xz"
-			version="6.1.0"
-                        hash="md5:a9868ef2556ad6a2909babcd1428f3c7"
-                        checkoutdir="gmp-6.1.0"
-            repo="ftp.gmplib.org"/>
+	<branch module="/pub/gmp-6.1.0/gmp-6.1.0.tar.xz"
+		version="6.1.0"
+		hash="md5:a9868ef2556ad6a2909babcd1428f3c7"
+		checkoutdir="gmp-6.1.0"
+		repo="ftp.gmplib.org"/>
   </autotools>
 
   <autotools id="mpfr" autogen-sh="configure">
-    <branch module="/mpfr-current/mpfr-3.1.3.tar.bz2"
-                        hash="md5:5fdfa3cfa5c86514ee4a241a1affa138"
-			version="3.1.3" repo="www.mpfr.org">
-    </branch>
-    <dependencies>
-      <dep package="gmplib"/>
-    </dependencies>
-    <after>
-      <dep package="gmplib"/>
-    </after>
+	<branch module="/mpfr-current/mpfr-3.1.3.tar.bz2"
+		hash="md5:5fdfa3cfa5c86514ee4a241a1affa138"
+		version="3.1.3"
+		repo="www.mpfr.org">
+	</branch>
+	<dependencies>
+		<dep package="gmplib"/>
+	</dependencies>
+	<after>
+		<dep package="gmplib"/>
+	</after>
   </autotools>
 
   <!--HACK: skip-install but do make install during autogen phase instead this allows us to bypass the error with DESTDIR since it doesn't actually install anywhere -->
@@ -285,27 +286,31 @@
   </autotools>
 
   <distutils id="setuptools">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/s/setuptools/setuptools-5.4.1.tar.gz"
-	     version="5.4.1"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/s/setuptools/setuptools-19.2.tar.gz"
+		hash="md5:78353b1f80375ca5e088f4b4627ffe03"
+		version="19.2"/>
   </distutils>
 
   <distutils id="python-netifaces">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/n/netifaces/netifaces-0.10.4.tar.gz"
-	     version="0.10.4"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/n/netifaces/netifaces-0.10.4.tar.gz"
+		hash="md5:36da76e2cfadd24cc7510c2c0012eb1e"
+		version="0.10.4"/>
   </distutils>
 
   <distutils id="python-pam">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pam/pam-0.1.4.tar.gz"
-	     version="0.1.4"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pam/pam-0.1.4.tar.gz"
+		hash="md5:4c5247af579352bb6882dac64be10a33"
+		version="0.1.4"/>
   </distutils>
 
   <distutils id="python-pycrypto">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pycrypto/pycrypto-2.6.1.tar.gz"
-	     version="2.6.1"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pycrypto/pycrypto-2.6.1.tar.gz"
+		hash="md5:55a61a054aa66812daf5161a0d5d7eda"
+		version="2.6.1"/>
   </distutils>
 
   <distutils id="python-cryptography">
@@ -316,9 +321,10 @@
   </distutils>
 
   <distutils id="python-pyasn1">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyasn1/pyasn1-0.1.7.tar.gz"
-	     version="0.1.7"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pyasn1/pyasn1-0.1.9.tar.gz"
+		hash="md5:f00a02a631d4016818659d1cc38d229a"
+		version="0.1.9"/>
   </distutils>
 
   <distutils id="python-pillow">
@@ -329,164 +335,165 @@
   </distutils>
 
   <distutils id="python-py2app">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/py2app/py2app-0.9.tar.gz"
-             hash="md5:eb31f5fefcf80aeaf4d02ec68d5978b4"
-	     version="0.9"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/py2app/py2app-0.9.tar.gz"
+		hash="md5:eb31f5fefcf80aeaf4d02ec68d5978b4"
+		version="0.9"/>
   </distutils>
 
   <distutils id="python-cython">
-     <branch repo="cython.org"
-	     module="/release/Cython-0.23.4.tar.gz"
-             hash="md5:157df1f69bcec6b56fd97e0f2e057f6e"
-	     version="0.23.4"/>
+	<branch repo="cython.org"
+		module="/release/Cython-0.23.4.tar.gz"
+		hash="md5:157df1f69bcec6b56fd97e0f2e057f6e"
+		version="0.23.4"/>
   </distutils>
 
   <distutils id="python-numpy">
      <branch repo="pypi.python.org"
-	     module="/packages/source/n/numpy/numpy-1.10.2.tar.gz"
-	     version="1.10.2"
-	     hash="md5:816518282f1617636aaf26e7cd9b127b"
+	     module="/packages/source/n/numpy/numpy-1.10.4.tar.gz"
+	     version="1.10.4"
+	     hash="md5:aed294de0aa1ac7bd3f9745f4f1968ad"
 	     />
   </distutils>
 
   <distutils id="python-twisted">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/T/Twisted/Twisted-12.3.0.tar.bz2"
-	     version="12.3.0"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/T/Twisted/Twisted-15.5.0.tar.bz2"
+		hash="md5:0831d7c90d0020062de0f7287530a285"
+		version="12.3.0"/>
   </distutils>
 
 
   <distutils id="python-nose">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/n/nose/nose-1.3.4.tar.gz"
-	     version="1.3.4"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/n/nose/nose-1.3.7.tar.gz"
+		hash="md5:4d3ad0ff07b61373d2cefc89c5d0b20b"
+		version="1.3.7"/>
   </distutils>
 
   <distutils id="python-lz4">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/l/lz4/lz4-0.7.0.tar.gz"
-	     version="0.7.0">
-     <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lz4_add_version.patch" strip="1" />
-     </branch>
+	<branch repo="xpra.org"
+	     module="/src/python-lz4-0.8.0-rc2.tar.xz"
+	     hash="md5:c9511a74488382d77366b003a4df0af1"
+	     version="0.8.0-rc2"/>
   </distutils>
 
   <distutils id="python-macholib">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/m/macholib/macholib-1.7.tar.gz"
-             hash="md5:cf03a55323d5b7ca59be530ba0b01032"
-	     version="1.7"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/m/macholib/macholib-1.7.tar.gz"
+		hash="md5:cf03a55323d5b7ca59be530ba0b01032"
+		version="1.7"/>
   </distutils>
 
   <distutils id="python-modulegraph">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/m/modulegraph/modulegraph-0.12.tar.gz"
-             hash="md5:188bfb66058f7f446f04145d0ac63359"
-	     version="0.12"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/m/modulegraph/modulegraph-0.12.1.tar.gz"
+		hash="md5:27abd74de3ec0e22ef129c1faa628bd5"
+		version="0.12.1"/>
   </distutils>
 
   <distutils id="python-altgraph">
-     <branch repo="pypi.python.org"
-             module="/packages/source/a/altgraph/altgraph-0.12.tar.gz"
-             hash="md5:916dca277fb2b747d5b1ec05b54a0825"
-	     version="0.12"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/a/altgraph/altgraph-0.12.tar.gz"
+		hash="md5:916dca277fb2b747d5b1ec05b54a0825"
+		version="0.12"/>
   </distutils>
 
   <distutils id="python-pyopengl">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.1a1.tar.gz"
-             hash="md5:77ee6044ceb2cf952aca89a9b2d3d585"
-	     version="3.1.1a1"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.1a1.tar.gz"
+		hash="md5:77ee6044ceb2cf952aca89a9b2d3d585"
+		version="3.1.1a1"/>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.1a1.tar.gz"
-             hash="md5:04e52af352dd078275a2d5720c4afea2"
-	     version="3.1.1a1"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.1a1.tar.gz"
+		hash="md5:04e52af352dd078275a2d5720c4afea2"
+		version="3.1.1a1"/>
   </distutils>
 
   <distutils id="python-pyobjc-core">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyobjc-core/pyobjc-core-3.0.4.tar.gz"
-             hash="md5:6baaa0d2533cc9c26ad9f889ca9ecb01"
-	     version="3.0.4"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pyobjc-core/pyobjc-core-3.0.4.tar.gz"
+		hash="md5:6baaa0d2533cc9c26ad9f889ca9ecb01"
+		version="3.0.4"/>
   </distutils>
 
   <distutils id="python-pyobjc-framework-cocoa">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.0.4.tar.gz"
-             hash="md5:5df56f66608812d6db42aa6e554f1529"
-	     version="3.0.4"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.0.4.tar.gz"
+		hash="md5:5df56f66608812d6db42aa6e554f1529"
+		version="3.0.4"/>
   </distutils>
 
   <distutils id="python-pyobjc-framework-quartz">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.0.4.tar.gz"
-             hash="md5:85d82afedef8ecf7e20344890a543312"
-	     version="3.0.4"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.0.4.tar.gz"
+		hash="md5:85d82afedef8ecf7e20344890a543312"
+		version="3.0.4"/>
   </distutils>
 
   <distutils id="python-rencode">
-     <branch repo="xpra.org"
-	     module="/src/rencode-1.0.3.tar.xz"
-             hash="md5:b4c37bdd81e814587196afac06c71142"
-	     version="1.0.3"/>
+	<branch repo="xpra.org"
+		module="/src/rencode-1.0.3.tar.xz"
+		hash="md5:b4c37bdd81e814587196afac06c71142"
+		version="1.0.3"/>
   </distutils>
 
   <distutils id="python-pycups">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/p/pycups/pycups-1.9.72.tar.bz2"
-             hash="md5:c790bfbf4a3e9da2412c12c860fe191f"
-	     version="1.9.72"/>
+	<branch repo="pypi.python.org"
+		module="/packages/source/p/pycups/pycups-1.9.73.tar.bz2"
+		hash="md5:ee0e7204d7a2ae942e2f4c4508afdbfb"
+		version="1.9.73"/>
   </distutils>
 
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
-    <branch module="/berkeley-db/db-6.0.30.tar.gz"
-                        hash="md5:ad28eb86ad3203b5422844db179c585b"
-			version="6.0.30"
-            repo="download.oracle.com"/>
+	<branch module="/berkeley-db/db-6.0.30.tar.gz"
+		hash="md5:ad28eb86ad3203b5422844db179c585b"
+		version="6.0.30"
+		repo="download.oracle.com"/>
   </autotools>
 
   <autotools id="apr" autogenargs="" autogen-sh="configure">
-    <branch module="/dist/apr/apr-1.5.2.tar.bz2"
-                        hash="md5:4e9769f3349fe11fc0a5e1b224c236aa"
-			version="1.5.2"
-            repo="www.eu.apache.org"/>
+	<branch module="/dist/apr/apr-1.5.2.tar.bz2"
+		hash="md5:4e9769f3349fe11fc0a5e1b224c236aa"
+		version="1.5.2"
+		repo="www.eu.apache.org"/>
   </autotools>
 
   <autotools id="apr-util" autogenargs="--with-berkeley-db --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config" autogen-sh="configure">
-    <branch module="/dist/apr/apr-util-1.5.4.tar.bz2"
-                        hash="md5:2202b18f269ad606d70e1864857ed93c"
-			version="1.5.4"
-            repo="www.eu.apache.org"/>
+	<branch module="/dist/apr/apr-util-1.5.4.tar.bz2"
+		hash="md5:2202b18f269ad606d70e1864857ed93c"
+		version="1.5.4"
+		repo="www.eu.apache.org"/>
   </autotools>
 
   <distutils id="scons">
-     <branch repo="sourceforge.net" module="/project/scons/scons/2.3.4/scons-2.3.4.tar.gz"
-             hash="md5:91fbbb67c2c65b03c746601baac4a6a5"
-             version="2.3.4"/>
+	<branch repo="sourceforge.net" module="/project/scons/scons/2.3.4/scons-2.3.4.tar.gz"
+		hash="md5:91fbbb67c2c65b03c746601baac4a6a5"
+		version="2.3.4"/>
   </distutils>
 
   <autotools id="serf" autogenargs="" autogen-sh="configure">
-    <branch module="/files/serf-1.2.1.tar.bz2"
-                        hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
-			version="1.2.1"
-            repo="serf.googlecode.com"/>
+	<branch module="/files/serf-1.2.1.tar.bz2"
+		hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
+		version="1.2.1"
+		repo="serf.googlecode.com"/>
   </autotools>
 
   <autotools id="sqlite" autogenargs="" autogen-sh="configure">
-    <branch module="/2015/sqlite-autoconf-3080803.tar.gz"
-                        hash="md5:51272e875879ee893e51070b07c33888"
-			version="3080803"
-            repo="sqlite.org"/>
+	<branch module="/2015/sqlite-autoconf-3080803.tar.gz"
+		hash="md5:51272e875879ee893e51070b07c33888"
+		version="3080803"
+		repo="sqlite.org"/>
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.8.14.tar.bz2"
-                        hash="md5:fe476ba26d6835eba4393780ea907361"
-			version="1.8.14"
-            repo="www.eu.apache.org"/>
+    <branch module="/dist/subversion/subversion-1.8.15.tar.bz2"
+		hash="md5:42f2ff8194b52e6287faec29f5775edf"
+		version="1.8.15"
+		repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="db"/>
       <dep package="apr"/>
