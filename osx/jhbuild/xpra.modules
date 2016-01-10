@@ -553,7 +553,10 @@
       <dep package="python-netifaces"/>
       <dep package="python-pam"/>
       <dep package="python-pycrypto"/>
+      <!--
+      This requires openssl, which does not build on 10.5..
       <dep package="python-cryptography"/>
+      -->
       <dep package="python-pyasn1"/>
       <dep package="python-pillow"/>
       <dep package="python-py2app"/>
