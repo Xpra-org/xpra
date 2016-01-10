@@ -65,14 +65,12 @@ Recommends:
 #jessie:        ,libwebp5
 #stretch:        ,libwebp5
 #trusty:        ,libwebp5
-#utopic:        ,libwebp5
 #vivid:        ,libwebp5
 #wily:        ,libwebp5
 #AES encryption:
 #jessie:        ,python-cryptography
 #stretch:        ,python-cryptography
 #trusty:        ,python-crypto
-#utopic:        ,python-crypto
 #vivid:        ,python-cryptography
 #wily:        ,python-cryptography
 # audio-related:
