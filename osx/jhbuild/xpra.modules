@@ -308,6 +308,13 @@
 	     version="2.6.1"/>
   </distutils>
 
+  <distutils id="python-cryptography">
+	<branch repo="pypi.python.org"
+		module="/packages/source/c/cryptography/cryptography-1.2.1.tar.gz"
+		hash="md5:02798acc5e2d5dbcf6e792a24fc05b95"
+		version="1.2.1"/>
+  </distutils>
+
   <distutils id="python-pyasn1">
      <branch repo="pypi.python.org"
 	     module="/packages/source/p/pyasn1/pyasn1-0.1.7.tar.gz"
@@ -519,6 +526,7 @@
       <dep package="python-netifaces"/>
       <dep package="python-pam"/>
       <dep package="python-pycrypto"/>
+      <dep package="python-cryptography"/>
       <dep package="python-pyasn1"/>
       <dep package="python-pillow"/>
       <dep package="python-py2app"/>

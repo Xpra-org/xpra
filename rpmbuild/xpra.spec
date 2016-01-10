@@ -30,6 +30,7 @@
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
 %define requires_dbus_python dbus-python
+%define requires_crypto python-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext
@@ -66,6 +67,8 @@
 Patch0: centos-ignore-invalid-gcc-warning.patch
 #can't run the tests with python 2.6 which is too old:
 %define run_tests 0
+#no python cryptography:
+%define requires_crypto python-crypto
 #distro version is too old replace with our private libraries
 %define libwebp libwebp-xpra
 #no pycups available in repos:
@@ -137,7 +140,7 @@ Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires
 Requires: python-lz4
 Requires: %{requires_pygtk2}
 Requires: %{requires_dbus_python}
-Requires: python-crypto
+Requires: %{requires_crypto}
 #used for locating the Xorg binary:
 Requires: which
 #we cannot depend on 'avahi-ui-tools' which we need for mdns support
