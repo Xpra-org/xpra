@@ -157,6 +157,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
         add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
 
+        codec_import_check("csc_libyuv", "libyuv colorspace conversion", "xpra.codecs.csc_libyuv", "xpra.codecs.csc_libyuv.colorspace_converter", "ColorspaceConverter")
+        add_codec_version("libyuv", "xpra.codecs.csc_libyuv.colorspace_converter")
+
     if decoders:
         show += list(DECODER_CODECS)
         codec_import_check("dec_pillow", "Pillow decoder", "xpra.codecs.pillow", "xpra.codecs.pillow.decode", "decode")
@@ -206,7 +209,7 @@ def has_codec(name):
     return name in codecs
 
 
-CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl"
+CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl", "csc_libyuv"
 ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5", "nvenc6"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
 

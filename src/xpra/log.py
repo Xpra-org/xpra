@@ -187,6 +187,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("cython"       , "Cython CSC module"),
                 ("opencl"       , "OpenCL CSC module"),
                 ("swscale"      , "swscale CSC module"),
+                ("libyuv"       , "libyuv CSC module"),
                 ("decoder"      , "All decoders"),
                 ("encoder"      , "All encoders"),
                 ("avcodec"      , "avcodec decoder"),

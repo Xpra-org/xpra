@@ -174,8 +174,9 @@ else:
     nvenc5_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc5")
     nvenc6_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc6")
 
-csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 memoryview_ENABLED      = sys.version>='2.7'
+csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
+csc_libyuv_ENABLED      = DEFAULT and memoryview_ENABLED and pkg_config_ok("--exists", "libyuv")
 
 #Cython / gcc / packagingt build options:
 annotate_ENABLED        = True
@@ -2033,7 +2034,6 @@ if server_ENABLED:
                 **pkgconfig()))
 
 
-toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
@@ -2222,6 +2222,15 @@ if dec_avcodec2_ENABLED:
                 ["xpra/codecs/dec_avcodec2/decoder.pyx"]+membuffers_c,
                 **avcodec2_pkgconfig))
 
+
+toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
+toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
+if csc_libyuv_ENABLED:
+    libyuv_pkgconfig = pkgconfig("libyuv")
+    cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
+                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
+                language="c++",
+                **libyuv_pkgconfig))
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
