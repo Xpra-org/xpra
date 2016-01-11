@@ -11,6 +11,7 @@ def test_decoder(decoder_module, w, h, dst_format, hex_data_list):
     print("colorspaces=%s" % decoder_module.get_colorspaces())
     print("version=%s" % str(decoder_module.get_version()))
     print("type=%s" % decoder_module.get_type())
+    decoder_module.init_module()
     dc = getattr(decoder_module, "Decoder")
     print("decoder class=%s" % dc)
     d = dc()
@@ -25,3 +26,4 @@ def test_decoder(decoder_module, w, h, dst_format, hex_data_list):
             i += 1
     finally:
         d.clean()
+    decoder_module.cleanup_module()
