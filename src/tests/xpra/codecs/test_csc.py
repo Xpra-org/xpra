@@ -8,6 +8,7 @@ import time
 from xpra.codecs.image_wrapper import ImageWrapper
 #from tests.xpra.test_util import dump_resource_usage, dump_threads
 from tests.xpra.codecs.test_codec import dump_pixels, make_rgb_input, make_planar_input
+from xpra.codecs.codec_constants import PIXEL_SUBSAMPLING, RGB_FORMATS
 from xpra.os_util import _memoryview, _buffer
 
 
@@ -65,6 +66,10 @@ def check_plane(info, data, expected, tolerance=3, pixel_stride=4, ignore_byte=-
 
 #RGB:
 def test_csc_rgb(csc_module):
+    in_csc = csc_module.get_input_colorspaces()
+    if len([x for x in in_csc if x in RGB_FORMATS])==0:
+        #nothing to test
+        return
     print("")
     for w,h in TEST_SIZES:
         test_csc_rgb_all(csc_module, w, h)
@@ -72,26 +77,36 @@ def test_csc_rgb(csc_module):
         perf_measure_rgb(csc_module, w, h)
 
 
-def perf_measure_rgb(csc_module, w=1920, h=1080):
+def perf_measure_rgb(csc_module, w=1920, h=1080, test_scaling=[(1,1), (1,2), (1,3)]):
     count = min(MAX_ITER, int(PERF_LOOP*1024*1024/(w*h)))
     rgb_src_formats = sorted([x for x in csc_module.get_input_colorspaces() if (x.find("RGB")>=0 or x.find("BGR")>=0)])
     if DEBUG:
         print("%s: rgb src_formats=%s" % (csc_module, rgb_src_formats))
-    for src_format in rgb_src_formats:
-        pixels = make_rgb_input(src_format, w, h, populate=True)
-        yuv_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")<0 and x.find("BGR")<0)])
-        if DEBUG:
-            print("%s: yuv_formats(%s)=%s" % (csc_module, src_format, yuv_dst_formats))
-        for dst_format in yuv_dst_formats:
-            start = time.time()
-            do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, count=count)
-            end = time.time()
+    for csc_speed in (0, 50, 100):
+        print("**** %4ix%-4i - speed=%i%%" % (w, h, csc_speed))
+        for src_format in rgb_src_formats:
+            pixels = make_rgb_input(src_format, w, h, populate=True)
+            yuv_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")<0 and x.find("BGR")<0)])
             if DEBUG:
-                print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, count, end-start))
-            mpps = float(w*h*count)/(end-start)
-            dim = ("%sx%s" % (w,h)).rjust(10)
-            info = ("%s to %s at %s" % (src_format.ljust(7), dst_format.ljust(7), dim)).ljust(40)
-            print("%s: %s MPixels/s" % (info, int(mpps/1024/1024)))
+                print("%s: yuv_formats(%s)=%s" % (csc_module, src_format, yuv_dst_formats))
+            for dst_format in yuv_dst_formats:
+                if not csc_module.get_spec(src_format, dst_format).can_scale:
+                    test_scaling=[(1,1)]
+                #print("make_planar_input(%s, %s, %s) strides=%s, len(pixels=%s", src_format, w, h, strides, len(pixels))
+                for m,d in test_scaling:
+                    dst_w, dst_h = w*m//d, h*m//d
+                    start = time.time()
+                    do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, dst_w, dst_h, count=count, csc_speed=csc_speed)
+                    end = time.time()
+                    if DEBUG:
+                        print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, count, end-start))
+                    mpps = float(w*h*count)/(end-start)
+                    info = ("%s to %s" % (src_format.ljust(7), dst_format.ljust(7))).ljust(24)
+                    if m!=1 or d!=1:
+                        scaling_info = ", downscaled by %i/%i" % (m, d)
+                    else:
+                        scaling_info = ""
+                    print("%s: %4i MPixels/s%s" % (info, int(mpps/1024/1024), scaling_info))
 
 def test_csc_rgb_all(csc_module, w, h):
     #some output planes we can verify:
@@ -118,15 +133,18 @@ def test_csc_rgb_all(csc_module, w, h):
                     print("skipping test %s to %s at %sx%s because dimensions are too small" % (src_format, dst_format, w, h))
                     continue
                 checks = CHECKS.get((src_format, dst_format, w, h))
-                ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks)
-                print("test_csc_rgb_all(%s, %s, %s) %s to %s, use_strings=%s, ok=%s" % (csc_module.get_type(), w, h, src_format, dst_format, use_strings, ok))
+                ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, w, h, checks)
+                if ok:
+                    pass
+                else:
+                    print("FAILURE: test_csc_rgb_all(%s, %s, %s) %s to %s, use_strings=%s" % (csc_module.get_type(), w, h, src_format, dst_format, use_strings))
 
 
-def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(), count=1):
+def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, dst_w, dst_h, checks=(), count=1, csc_speed=100):
     ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
     cc = ColorspaceConverterClass()
     #print("%s()=%s" % (ColorspaceConverterClass, cc))
-    cc.init_context(w, h, src_format, w, h, dst_format)
+    cc.init_context(w, h, src_format, dst_w, dst_h, dst_format, csc_speed)
     if DEBUG:
         print("ColorspaceConverter=%s" % cc)
         print("    %s" % cc.get_info())
@@ -154,6 +172,10 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
 
 #PLANAR:
 def test_csc_planar(csc_module):
+    in_csc = csc_module.get_input_colorspaces()
+    if len([x for x in in_csc if x in PIXEL_SUBSAMPLING])==0:
+        #nothing to test
+        return
     print("")
     for w, h in TEST_SIZES:
         test_csc_planar_all(csc_module, w, h)
@@ -183,39 +205,51 @@ def test_csc_planar_all(csc_module, w, h):
                 if w<spec.min_w or h<spec.min_h:
                     print("skipping test %s to %s at %sx%s because dimensions are too small" % (src_format, dst_format, w, h))
                     continue
-                out_pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels)
+                out_pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, w, h)
                 if DEBUG:
                     print("test_csc_planar_all() %s to %s head of output pixels=%s" % (src_format, dst_format, dump_pixels(out_pixels[:128])))
                 expected = CHECKS.get((src_format, dst_format))
                 ok = check_plane(dst_format, out_pixels, expected)
-                print("test_csc_planar_all(%s, %s, %s) %s to %s, use_strings=%s, ok=%s" % (csc_module.get_type(), w, h, src_format, dst_format, use_strings, ok))
+                if ok:
+                    pass
+                else:
+                    print("test_csc_planar_all(%s, %s, %s) %s to %s, use_strings=%s" % (csc_module.get_type(), w, h, src_format, dst_format, use_strings))
 
-def perf_measure_planar(csc_module, w=1920, h=1080):
+def perf_measure_planar(csc_module, w=1920, h=1080, test_scaling=[(1,1), (1,2), (1,3)]):
     count = min(MAX_ITER, int(PERF_LOOP*1024*1024/(w*h)))
-    for src_format in sorted(csc_module.get_input_colorspaces()):
-        if src_format not in ("YUV420P", "YUV422P", "YUV444P"):
-            continue
-        strides, pixels = make_planar_input(src_format, w, h, populate=True)
-        rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("YUV")<0 and not x.endswith("P"))])
-        for dst_format in rgb_dst_formats:
-            #print("make_planar_input(%s, %s, %s) strides=%s, len(pixels=%s", src_format, w, h, strides, len(pixels))
-            start = time.time()
-            do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, count=count)
-            end = time.time()
-            if DEBUG:
-                print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, count, end-start))
-            mpps = float(w*h*count)/(end-start)
-            dim = ("%sx%s" % (w,h)).rjust(10)
-            info = ("%s to %s at %s" % (src_format.ljust(7), dst_format.ljust(7), dim)).ljust(40)
-            print("%s: %s MPixels/s" % (info, int(mpps/1024/1024)))
+    for csc_speed in (0, 50, 100):
+        print("**** %4ix%-4i - speed=%i%%" % (w, h, csc_speed))
+        for src_format in sorted(csc_module.get_input_colorspaces()):
+            if src_format not in ("YUV420P", "YUV422P", "YUV444P"):
+                continue
+            strides, pixels = make_planar_input(src_format, w, h, populate=True)
+            rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("YUV")<0 and not x.endswith("P"))])
+            for dst_format in rgb_dst_formats:
+                if not csc_module.get_spec(src_format, dst_format).can_scale:
+                    test_scaling=[(1,1)]
+                #print("make_planar_input(%s, %s, %s) strides=%s, len(pixels=%s", src_format, w, h, strides, len(pixels))
+                for m,d in test_scaling:
+                    dst_w, dst_h = w*m//d, h*m//d
+                    start = time.time()
+                    do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, dst_w, dst_h, count=count, csc_speed=csc_speed)
+                    end = time.time()
+                    if DEBUG:
+                        print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, count, end-start))
+                    mpps = float(w*h*count)/(end-start)
+                    info = ("%s to %s" % (src_format.ljust(7), dst_format.ljust(7))).ljust(24)
+                    if m!=1 or d!=1:
+                        scaling_info = ", dowscaled by %i/%i" % (m, d)
+                    else:
+                        scaling_info = ""
+                    print("%s: %4i MPixels/s%s" % (info, int(mpps/1024/1024), scaling_info))
 
 
-def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, checks=(), count=1):
+def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, dst_w, dst_h, checks=(), count=1, csc_speed=100):
     assert len(pixels)==3, "this test only handles 3-plane pixels but we have %s" % len(pixels)
     ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
     cc = ColorspaceConverterClass()
     #print("%s()=%s" % (ColorspaceConverterClass, cc))
-    cc.init_context(w, h, src_format, w, h, dst_format)
+    cc.init_context(w, h, src_format, dst_w, dst_h, dst_format, csc_speed)
     if DEBUG:
         print("ColorspaceConverter=%s" % cc)
         for i in range(3):
