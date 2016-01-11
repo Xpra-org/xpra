@@ -234,12 +234,11 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
             if tw>limit_w or th>limit_h:
                 break
             try:
-                do_testcsc(colorspace_converter, tw, th, test_cs_in, test_cs_out, limit_w, limit_h)
+                do_testcsc(colorspace_converter, tw, th, False, test_cs_in, test_cs_out, limit_w, limit_h)
                 log("%s can handle %ix%i", colorspace_converter, tw, th)
                 MAX_WIDTH, MAX_HEIGHT = tw, th
-            except Exception as e:
-                log("%s is limited to %ix%i for %s", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
-                log(" %s", e)
+            except:
+                log("%s is limited to %ix%i for %s", colorspace_converter, MAX_WIDTH, MAX_HEIGHT, (test_cs_in, test_cs_out), exc_info=True)
                 break
         v *= 2
     log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
@@ -247,7 +246,7 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
 
 
 def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
-    log("do_test_csc%s", (csc_module, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
+    log("do_testcsc%s", (csc_module, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
     cs_in_list = test_cs_in
     if cs_in_list==None:
         cs_in_list = csc_module.get_input_colorspaces()
