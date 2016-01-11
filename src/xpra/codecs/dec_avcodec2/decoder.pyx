@@ -374,7 +374,6 @@ cdef class Decoder:
         return True
 
     def clean(self):
-        cdef int i                                  #
         self.clean_decoder()
         self.codec = NULL
         self.pix_fmt = 0
