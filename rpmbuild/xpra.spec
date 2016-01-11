@@ -154,6 +154,9 @@ Requires: gtk2-immodule-xim
 Requires: %{requires_xorg}
 Requires: %{libvpx}
 Requires: %{libwebp}
+%if 0%{?fedora}
+Requires: libyuv
+%endif
 Requires: x264-xpra
 Requires: ffmpeg-xpra
 Requires: %{numpy}
@@ -179,6 +182,9 @@ BuildRequires: libXrandr-devel
 BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
 BuildRequires: %{libwebp}-devel
+%if 0%{?fedora}
+BuildRequires: libyuv-devel
+%endif
 BuildRequires: x264-xpra-devel
 BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
