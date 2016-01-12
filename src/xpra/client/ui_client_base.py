@@ -430,12 +430,19 @@ class UIXpraClient(XpraClientBase):
                 return 3,3              #300% upscaling up to FUHD
             return 4,4                  #400% if higher (who has this anyway?)
         def parse_item(v):
+            div = 1
             try:
-                return int(v)           #ie: desktop-scaling=2
+                if v.endswith("%"):
+                    div = 100
+                    v = v[:-1]
             except:
                 pass
             try:
-                return float(v)         #ie: desktop-scaling=1.5
+                return int(v)/div       #ie: desktop-scaling=2
+            except:
+                pass
+            try:
+                return float(v)/div     #ie: desktop-scaling=1.5
             except:
                 pass
             #ie: desktop-scaling=3/2, or desktop-scaling=3:2
