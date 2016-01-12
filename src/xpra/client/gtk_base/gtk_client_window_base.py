@@ -987,6 +987,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._set_backing_size(w, h)
 
 
+    def noop_destroy(self):
+        log.warn("Warning: window destroy called twice!")
+
     def destroy(self):
         if self._client._set_window_menu:
             self._client.set_window_menu(False, self._id, {})
@@ -994,6 +997,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.destroy(self)
         gtk.Window.destroy(self)
         self._unfocus()
+        self.destroy = self.noop_destroy
 
 
     def do_unmap_event(self, event):
