@@ -107,6 +107,8 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM Delete all GStreamer DLLs and only add those we actually want
 DEL %DIST%\gst*dll
+SET GSTREAMER0_LOG=gstreamer0.log
+DEL /Q %GSTREAMER0_LOG% 2> NUL
 ECHO ****** Adding GStreamer Main DLLs
 SET GST_PLUGIN_DIR=%DIST%\gstreamer-0.10
 MKDIR %GST_PLUGIN_DIR%
@@ -115,27 +117,27 @@ REM To install the gstreamer libraries into a subdirectory instead:
 REM MKDIR %DIST%\gstreamer-0.10\bin
 REM SET GST_BIN_DIR=%DIST%\gstreamer-0.10\bin
 FOR %%a in (audio base controller dataprotocol fft interfaces net reamer app riff tag) DO (
-	COPY /B /Y /V "%GSTREAMER%\bin\libgst%%a*.dll" %GST_BIN_DIR%
+	COPY /B /Y /V "%GSTREAMER%\bin\libgst%%a*.dll" %GST_BIN_DIR% > %GSTREAMER0_LOG%
 )
 FOR %%a in (FLAC id3tag mad mp3lame ogg orc speex vorbis wav) DO (
-	COPY /B /Y /V "%GSTREAMER%\bin\lib%%a*.dll" %GST_BIN_DIR%
+	COPY /B /Y /V "%GSTREAMER%\bin\lib%%a*.dll" %GST_BIN_DIR% > %GSTREAMER0_LOG%
 )
-COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" %GST_BIN_DIR%
+COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" %GST_BIN_DIR% > %GSTREAMER0_LOG%
 ECHO ****** Adding GStreamer Plugin DLLs
 FOR %%a in (audiofx audioparsersbad audiorate audioresample audiotestsrc app coreelements flac lame mad ogg gdp mpegaudioparse speex volume vorbis wavpack waveenc wavparse) DO (
-	COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgst%%a.dll" %DIST%\gstreamer-0.10\
+	COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgst%%a.dll" %DIST%\gstreamer-0.10\ > %GSTREAMER0_LOG%
 )
-COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstaudio*.dll" %GST_PLUGIN_DIR%
-COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstdirectsound*.dll" %GST_PLUGIN_DIR%
-COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" %GST_BIN_DIR%
-COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" %GST_BIN_DIR%
-COPY /B /Y /V "%GSTREAMER%\bin\gst-inspect.exe" %GST_BIN_DIR%
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstaudio*.dll" %GST_PLUGIN_DIR% > %GSTREAMER0_LOG%
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstdirectsound*.dll" %GST_PLUGIN_DIR% > %GSTREAMER0_LOG%
+COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" %GST_BIN_DIR% > %GSTREAMER0_LOG%
+COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" %GST_BIN_DIR% > %GSTREAMER0_LOG%
+COPY /B /Y /V "%GSTREAMER%\bin\gst-inspect.exe" %GST_BIN_DIR% > %GSTREAMER0_LOG%
 REM DEL %GST_BIN_DIR%\av*dll
 REM DEL %GST_BIN_DIR%\libdvd*dll
 
 REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
 ECHO ****** Fix GTK DLLs
-XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" %DIST%\
+XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" %DIST%\ > %GSTREAMER0_LOG%
 
 GOTO END
 
