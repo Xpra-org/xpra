@@ -92,7 +92,8 @@ VORBIS_OGG = VORBIS+"+"+OGG
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
             (VORBIS     , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
-            (VORBIS_OGG , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
+            #this causes "no header sent yet"
+            #(VORBIS_OGG , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
             (FLAC       , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
             (FLAC_GDP   , "flacenc",       "gdppay",   "flacdec",      "gdpdepay"),
             (MP3        , "lamemp3enc",    None,       "mad",          "mp3parse"),
