@@ -35,6 +35,8 @@ DEBUG_WRAPPER = os.environ.get("XPRA_WRAPPER_DEBUG", "0")=="1"
 HEXLIFY_PACKETS = os.environ.get("XPRA_HEXLIFY_PACKETS", "0")=="1"
 #avoids showing a new console window on win32:
 WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
+#this used to cause problems with py3k / gi bindings?
+HANDLE_SIGINT = os.environ.get("XPRA_WRAPPER_SIGING", "1")=="1"
 
 FAULT_RATE = int(os.environ.get("XPRA_WRAPPER_FAULT_INJECTION_RATE", "0"))
 if FAULT_RATE>0:
@@ -84,7 +86,7 @@ class subprocess_callee(object):
         self.wrapped_object = wrapped_object
         self.send_queue = Queue()
         self.protocol = None
-        if sys.version_info[0]<3:
+        if HANDLE_SIGINT:
             #this breaks gobject3!
             signal.signal(signal.SIGINT, self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
