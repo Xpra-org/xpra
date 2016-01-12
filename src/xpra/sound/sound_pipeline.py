@@ -204,7 +204,8 @@ class SoundPipeline(gobject.GObject):
                 if p>0:
                     details = details[p+len("\\Source\\"):]
                 for d in details.split(": "):
-                    log.error(" %s", d.strip())
+                    for dl in d.splitlines():
+                        log.error(" %s", dl.strip())
             except:
                 log.error(" %s", details)
             self.state = "error"
