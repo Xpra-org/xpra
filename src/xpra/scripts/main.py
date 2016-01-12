@@ -787,24 +787,30 @@ def do_parse_cmdline(cmdline, defaults):
         options.encryption = "AES"
     if options.tcp_encryption_keyfile and not options.tcp_encryption:
         options.tcp_encryption = "AES"
-    if options.encryption or options.tcp_encryption:
-        if not ENCRYPTION_CIPHERS:
-            raise InitException("cannot use encryption: no ciphers available (pycrypto must be installed)")
-        if options.encryption and options.encryption not in ENCRYPTION_CIPHERS:
-            raise InitException("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
-        if options.tcp_encryption and options.tcp_encryption not in ENCRYPTION_CIPHERS:
-            raise InitException("encryption %s is not supported, try: %s" % (options.tcp_encryption, ", ".join(ENCRYPTION_CIPHERS)))
-        if options.encryption and not options.encryption_keyfile:
-            raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % options.encryption)
-        if options.tcp_encryption and not options.tcp_encryption_keyfile:
-            raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % options.tcp_encryption)
-        if options.encryption and options.password_file==options.encryption_keyfile:
-            raise InitException("encryption %s should not use the same file as the password authentication file" % options.encryption)
-        if options.tcp_encryption and options.password_file==options.tcp_encryption_keyfile:
-            raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % options.tcp_encryption)
     #ensure opengl is either True, False or None
     options.opengl = parse_bool("opengl", options.opengl)
     return options, args
+
+def validate_encryption(opts):
+    do_validate_encryption(opts.encryption, opts.tcp_encryption, opts.password_file, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
+
+def do_validate_encryption(encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile):
+    if not encryption and not tcp_encryption:
+        return
+    if not ENCRYPTION_CIPHERS:
+        raise InitException("cannot use encryption: no ciphers available (a crypto library must be installed)")
+    if encryption and encryption not in ENCRYPTION_CIPHERS:
+        raise InitException("encryption %s is not supported, try: %s" % (encryption, ", ".join(ENCRYPTION_CIPHERS)))
+    if tcp_encryption and tcp_encryption not in ENCRYPTION_CIPHERS:
+        raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, ", ".join(ENCRYPTION_CIPHERS)))
+    if encryption and not encryption_keyfile:
+        raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % encryption)
+    if tcp_encryption and not tcp_encryption_keyfile:
+        raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
+    if encryption and password_file==encryption_keyfile:
+        raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
+    if tcp_encryption and password_file==tcp_encryption_keyfile:
+        raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
 
 def dump_frames(*arsg):
     frames = sys._current_frames()

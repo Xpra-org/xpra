@@ -26,15 +26,15 @@ timeoutlog = Logger("timeout")
 
 import xpra
 from xpra.server import ClientException
-from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
+from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect, validate_encryption
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES, Queue
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import new_cipher_caps, ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING,\
-    ALL_PADDING_OPTIONS
+from xpra.net.crypto import crypto_backend_init, new_cipher_caps, \
+        ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
@@ -124,6 +124,7 @@ class ServerCore(object):
     EXITING_CODE = 2
 
     def __init__(self):
+        crypto_backend_init()
         log("ServerCore.__init__()")
         self.start_time = time.time()
         self.auth_class = None
@@ -174,6 +175,7 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def init(self, opts):
+        validate_encryption(opts)
         log("ServerCore.init(%s)", opts)
         self.session_name = opts.session_name
         set_name("Xpra", self.session_name or "Xpra")

@@ -20,7 +20,6 @@ from xpra.scripts.server import deadly_signal
 from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
-from xpra.net.crypto import new_cipher_caps, DEFAULT_PADDING
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
@@ -556,6 +555,8 @@ class ProxyInstanceProcess(Process):
             caps = self.filter_server_caps(c)
             #add new encryption caps:
             if self.cipher:
+                from xpra.net.crypto import crypto_backend_init, new_cipher_caps, DEFAULT_PADDING
+                crypto_backend_init()
                 padding_options = self.caps.strlistget("cipher.padding.options", [DEFAULT_PADDING])
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key, padding_options)
                 caps.update(auth_caps)

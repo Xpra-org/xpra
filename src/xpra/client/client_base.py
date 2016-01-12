@@ -22,9 +22,10 @@ netlog = Logger("network")
 authlog = Logger("auth")
 
 from xpra.scripts.config import InitExit
+from xpra.scripts.main import validate_encryption
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import get_iterations, get_iv, get_salt, choose_padding, \
+from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
@@ -76,6 +77,7 @@ class XpraClientBase(FileTransferHandler):
 
     def defaults_init(self):
         getChildReaper()
+        crypto_backend_init()
         log("XpraClientBase.defaults_init() os.environ:")
         for k,v in os.environ.items():
             log(" %s=%s", k, nonl(v))
@@ -120,6 +122,7 @@ class XpraClientBase(FileTransferHandler):
         sanity_checks()
 
     def init(self, opts):
+        validate_encryption(opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
         self.username = opts.username

@@ -30,11 +30,15 @@ PADDING_OPTIONS = [PREFERRED_PADDING]
 for x in ALL_PADDING_OPTIONS:
     if x not in PADDING_OPTIONS:
         PADDING_OPTIONS.append(x)
+CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "python-cryptography")    #pycrypto
 
-backend = None
-def init():
+
+ENCRYPTION_CIPHERS = []
+backend = False
+def crypto_backend_init():
+    if backend is not False:
+        return
     global backend, ENCRYPTION_CIPHERS
-    CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "python-cryptography")    #pycrypto
     try:
         if CRYPTO_LIBRARY=="python-cryptography":
             from xpra.net import pycryptography_backend
@@ -51,7 +55,6 @@ def init():
         log("no crypto backend", exc_info=True)
         backend = None
         ENCRYPTION_CIPHERS = []
-init()
 
 
 def pad(padding, size):

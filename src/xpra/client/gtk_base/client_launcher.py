@@ -42,7 +42,7 @@ from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.gtk_common.about import about
-from xpra.net.crypto import ENCRYPTION_CIPHERS
+from xpra.net.crypto import ENCRYPTION_CIPHERS, crypto_backend_init
 from xpra.scripts.main import connect_to, make_client, configure_network
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
@@ -71,18 +71,6 @@ LAUNCHER_DEFAULTS = {
                         "autoconnect"       : False,
                         "ssh_port"          : 22,
                     }
-#TODO: since "mode" is not part of global options
-#this validation should be injected from the launcher instead
-MODES = ["tcp", "ssh"]
-if "AES" in ENCRYPTION_CIPHERS:
-    MODES = ["tcp", "tcp + aes", "ssh"]
-def validate_in_list(x, options):
-    if x in options:
-        return None
-    return "must be in %s" % (", ".join(options))
-LAUNCHER_VALIDATION = {
-                        "mode"              : lambda x : validate_in_list(x, MODES),
-                      }
 
 PYTHON3 = sys.version_info[0]==3
 
@@ -111,7 +99,7 @@ class ApplicationWindow:
 
     def    __init__(self):
         # Default connection options
-        self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=LAUNCHER_VALIDATION)
+        self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
         #TODO: the fixup does not belong here?
         from xpra.scripts.main import fixup_options
         fixup_options(self.config)
@@ -122,6 +110,20 @@ class ApplicationWindow:
         self.client = make_client(raise_exception, self.config)
         self.client.init(self.config)
         self.exit_code = None
+
+    def get_launcher_validation(self):
+        crypto_backend_init()
+        #TODO: since "mode" is not part of global options
+        #this validation should be injected from the launcher instead
+        MODES = ["tcp", "ssh"]
+        if "AES" in ENCRYPTION_CIPHERS:
+            MODES = ["tcp", "tcp + aes", "ssh"]
+        def validate_in_list(x, options):
+            if x in options:
+                return None
+            return "must be in %s" % (", ".join(options))
+        return {"mode"              : lambda x : validate_in_list(x, MODES)}
+
 
     def create_window(self):
         self.window = gtk.Window()
@@ -695,7 +697,7 @@ class ApplicationWindow:
         props = read_config(filename)
         #we rely on "ssh_port" being defined on the config object
         #so try to load it from file, and define it if not present:
-        options = validate_config(props, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=LAUNCHER_VALIDATION)
+        options = validate_config(props, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
         for k,v in options.items():
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
