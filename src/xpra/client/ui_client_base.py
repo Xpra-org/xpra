@@ -80,7 +80,7 @@ LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
 MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "8"))
-SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.5,0.666,1,1.25,1.5,2.0,3.0,4.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
+SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 
 PYTHON3 = sys.version_info[0] == 3
@@ -928,25 +928,10 @@ class UIXpraClient(XpraClientBase):
         scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
         if not self.server_is_shadow and (sw>(maxw+1) or sh>(maxh+1)):
             #would overflow..
-            v = clamp(max(float(root_w)/maxw, float(root_h)/maxh))
-            #prefer int over float:
-            try:
-                v = int(str(v).rstrip("0").rstrip("."))
-            except:
-                pass
-            if self.xscale==v and self.yscale==v:
-                #no change needed
-                return
-            scalinglog.warn("Warning: cannot scale by %s x %s or lower", xscale, yscale)
+            scalinglog.warn("Warning: cannot scale by %i%% x %i%% or lower", (100*xscale), (100*yscale))
             scalinglog.warn(" the scaled client screen %i x %i -> %i x %i", root_w, root_h, sw, sh)
             scalinglog.warn(" would overflow the server's screen: %i x %i", maxw, maxh)
-            scalinglog.warn(" using %s x %s -> %i x %i", v, v, int(root_w / v), int(root_h / v))
-            xscale = v
-            yscale = v
-            xchange = xscale / self.xscale
-            ychange = yscale / self.yscale
-            scalinglog("xscale was %s, now %s", self.xscale, xscale)
-            scalinglog("yscale was %s, now %s", self.yscale, yscale)
+            return
         self.xscale = xscale
         self.yscale = yscale
         scalinglog("scale_change new scaling: %sx%s, change: %sx%s", self.xscale, self.yscale, xchange, ychange)
