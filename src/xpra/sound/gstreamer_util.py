@@ -393,7 +393,7 @@ def get_codecs():
             continue
         if force_enabled(encoding):
             log.info("sound codec %s force enabled", encoding)
-        elif encoding==FLAC:
+        elif encoding.startswith(FLAC):
             #flac problems:
             if WIN32 and gst_major_version==0 and encoding==FLAC:
                 #the gstreamer 0.10 builds on win32 use the outdated oss build,
