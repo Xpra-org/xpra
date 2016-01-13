@@ -36,8 +36,8 @@ CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "python-cryptography")   
 ENCRYPTION_CIPHERS = []
 backend = False
 def crypto_backend_init():
-    log("crypto_backend_init() backend=%s", backend)
     global backend, ENCRYPTION_CIPHERS
+    log("crypto_backend_init() backend=%s", backend)
     if backend is not False:
         return
     try:
