@@ -36,6 +36,7 @@ CRYPTO_LIBRARY = os.environ.get("XPRA_CRYPTO_BACKEND", "python-cryptography")   
 ENCRYPTION_CIPHERS = []
 backend = False
 def crypto_backend_init():
+    log("crypto_backend_init() backend=%s", backend)
     global backend, ENCRYPTION_CIPHERS
     if backend is not False:
         return
@@ -48,13 +49,14 @@ def crypto_backend_init():
             backend = pycrypto_backend
         else:
             raise ImportError("invalid crypto library specified: '%s'" % CRYPTO_LIBRARY)
-        ENCRYPTION_CIPHERS = ["AES"]
+        ENCRYPTION_CIPHERS[:] = backend.ENCRYPTION_CIPHERS[:]
     except ImportError as e:
         log.error("Error: encryption library %s is not available!", CRYPTO_LIBRARY)
         log.error(" %s", e)
         log("no crypto backend", exc_info=True)
         backend = None
         ENCRYPTION_CIPHERS = []
+    log("crypto_backend_init() ENCRYPTION_CIPHERS=%s", ENCRYPTION_CIPHERS)
 
 
 def pad(padding, size):

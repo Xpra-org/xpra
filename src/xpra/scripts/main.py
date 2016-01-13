@@ -22,7 +22,6 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.net.crypto import ENCRYPTION_CIPHERS
 from xpra.util import csv
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
@@ -680,7 +679,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--encryption", action="store",
                       dest="encryption", default=defaults.encryption,
                       metavar="ALGO",
-                      help="Specifies the encryption cipher to use, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS) or 'none available'))
+                      help="Specifies the encryption cipher to use, specify 'help' to get a list of options. (default: None)")
     group.add_option("--encryption-keyfile", action="store",
                       dest="encryption_keyfile", default=defaults.encryption_keyfile,
                       metavar="FILE",
@@ -688,7 +687,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tcp-encryption", action="store",
                       dest="tcp_encryption", default=defaults.tcp_encryption,
                       metavar="ALGO",
-                      help="Specifies the encryption cipher to use for TCP sockets, supported algorithms are: %s (default: None)" % (", ".join(ENCRYPTION_CIPHERS) or 'none available'))
+                      help="Specifies the encryption cipher to use for TCP sockets, specify 'help' to get a list of options. (default: None)")
     group.add_option("--tcp-encryption-keyfile", action="store",
                       dest="tcp_encryption_keyfile", default=defaults.tcp_encryption_keyfile,
                       metavar="FILE",
@@ -795,14 +794,20 @@ def validate_encryption(opts):
     do_validate_encryption(opts.encryption, opts.tcp_encryption, opts.password_file, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
 
 def do_validate_encryption(encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile):
+    #print("do_validate_encryption%s", (encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile))
+    from xpra.net.crypto import crypto_backend_init
+    crypto_backend_init()
     if not encryption and not tcp_encryption:
         return
+    from xpra.net.crypto import ENCRYPTION_CIPHERS
     if not ENCRYPTION_CIPHERS:
         raise InitException("cannot use encryption: no ciphers available (a crypto library must be installed)")
+    if encryption=="help" or tcp_encryption=="help":
+        raise InitInfo("the following encryption ciphers are available: %s" % csv(ENCRYPTION_CIPHERS))
     if encryption and encryption not in ENCRYPTION_CIPHERS:
-        raise InitException("encryption %s is not supported, try: %s" % (encryption, ", ".join(ENCRYPTION_CIPHERS)))
+        raise InitException("encryption %s is not supported, try: %s" % (encryption, csv(ENCRYPTION_CIPHERS)))
     if tcp_encryption and tcp_encryption not in ENCRYPTION_CIPHERS:
-        raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, ", ".join(ENCRYPTION_CIPHERS)))
+        raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, csv(ENCRYPTION_CIPHERS)))
     if encryption and not encryption_keyfile:
         raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % encryption)
     if tcp_encryption and not tcp_encryption_keyfile:
@@ -1326,6 +1331,7 @@ def get_sockpath(display_desc, error_cb):
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
+    validate_encryption(opts)
     if mode=="screenshot":
         if len(extra_args)==0:
             error_cb("invalid number of arguments for screenshot mode")

@@ -18,7 +18,7 @@ import select
 import time
 import traceback
 
-from xpra.scripts.main import TCP_NODELAY, warn, no_gtk
+from xpra.scripts.main import TCP_NODELAY, warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException
 from xpra.os_util import SIGNAMES
 from xpra.dotxpra import DotXpra, norm_makepath, osexpand
@@ -756,6 +756,7 @@ def guess_xpra_display(socket_dir, socket_dirs):
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args):
+    validate_encryption(opts)
     if opts.encoding and opts.encoding=="help":
         #avoid errors and warnings:
         opts.encoding = ""

@@ -26,7 +26,7 @@ timeoutlog = Logger("timeout")
 
 import xpra
 from xpra.server import ClientException
-from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect, validate_encryption
+from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
 from xpra.platform import set_name
@@ -175,7 +175,6 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def init(self, opts):
-        validate_encryption(opts)
         log("ServerCore.init(%s)", opts)
         self.session_name = opts.session_name
         set_name("Xpra", self.session_name or "Xpra")
