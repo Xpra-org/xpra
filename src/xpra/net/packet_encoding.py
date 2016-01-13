@@ -22,18 +22,20 @@ rencode_dumps, rencode_loads, rencode_version = None, None, None
 def init_rencode():
     global use_rencode, has_rencode, rencode_dumps, rencode_loads, rencode_version
     try:
+        import rencode
+        rencode_dumps = rencode.dumps
+        rencode_loads = rencode.loads
         try:
-            import rencode
-            rencode_dumps = rencode.dumps
-            rencode_loads = rencode.loads
-            try:
-                rencode_version = rencode.__version__
-                log("loaded rencode version %s from %s", rencode_version, rencode.__file__)
-            except:
-                log.warn("rencode at '%s' lacks versioning information", rencode.__file__)
-                rencode_version = "unknown"
-        except ImportError as e:
-            log.warn("Warning: rencode import failed: %s", e)
+            rencode_version = rencode.__version__
+            log("loaded rencode version %s from %s", rencode_version, rencode.__file__)
+        except:
+            log.warn("rencode at '%s' lacks versioning information", rencode.__file__)
+            rencode_version = "unknown"
+    except ImportError as e:
+        log("init_rencode()", exc_info=True)
+        if use_rencode:
+            log.warn("Warning: rencode import failed:")
+            log.warn(" %s", e)
     except Exception as e:
         log.error("error loading rencode", exc_info=True)
     has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
@@ -46,10 +48,12 @@ bencode, bdecode, bencode_version = None, None, None
 def init_bencode():
     global use_bencode, has_bencode, bencode, bdecode, bencode_version
     try:
-        try:
-            from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
-        except ImportError as e:
-            log.warn("Warning: bencode import failed: %s", e)
+        from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
+    except ImportError as e:
+        log("init_bencode()", exc_info=True)
+        if use_bencode:
+            log.warn("Warning: bencode import failed:")
+            log.warn(" %s", e)
     except Exception as e:
         log.error("error loading bencoder", exc_info=True)
     has_bencode = bencode is not None and bdecode is not None
