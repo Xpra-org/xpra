@@ -52,7 +52,7 @@ cdef object memory_as_readonly_pybuffer(void *ptr, Py_ssize_t buf_len):
     cdef Py_buffer pybuf
     cdef Py_ssize_t shape[1]
     shape[0] = buf_len
-    cdef int ret = PyBuffer_FillInfo(&pybuf, None, ptr, buf_len, 0, PyBUF_SIMPLE);
+    cdef int ret = PyBuffer_FillInfo(&pybuf, None, ptr, buf_len, 0, PyBUF_SIMPLE)
     if ret!=0:
         return None
     pybuf.format = "B"
