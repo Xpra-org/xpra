@@ -143,7 +143,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.pulseaudio = False
         self.pulseaudio_command = None
         self.pulseaudio_proc = None
-        self.sound_properties = {}
+        self.sound_properties = typedict()
 
         #encodings:
         self.allowed_encodings = None
