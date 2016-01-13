@@ -88,7 +88,7 @@ FLAC_GDP    = FLAC+"+"+GDP
 OPUS_GDP    = OPUS+"+"+GDP
 SPEEX_GDP   = SPEEX+"+"+GDP
 VORBIS_OGG  = VORBIS+"+"+OGG
-OPUS_WEBM   = OPUS+"+"+WEBM
+#OPUS_WEBM   = OPUS+"+"+WEBM
 #OPUS_RTP    = OPUS+"+"+RTP
 VORBIS_WEBM = VORBIS+"+"+WEBM
 
@@ -98,12 +98,13 @@ VORBIS_WEBM = VORBIS+"+"+WEBM
 CODEC_OPTIONS = [
         (VORBIS     , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay"),
         (VORBIS_WEBM, "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux"),
-        #this causes "no header sent yet"
-        #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisdec",    "oggdemux"),
-        #both can cause: "Internal data flow error." / "streaming task paused, reason not-negotiated"
-        #with GStreamer 1.x (disabled at init time)
+        #fails silently - no idea why:
+        #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",    "oggdemux"),
+        #does not work - no idea why:
+        #(FLAC       , "flacenc",        "oggmux",       "flacparse ! flacdec",      "oggdemux"),
+        #this only works in gstreamer 0.10 and is filtered out during initialization:
         (FLAC       , "flacenc",        "oggmux",       "flacdec",      "oggdemux"),
-        (FLAC_GDP   , "flacenc",        "gdppay",       "flacdec",      "gdpdepay"),
+        (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay"),
         (MP3        , "lamemp3enc",     None,           "mad",          "mp3parse"),
         (MP3        , "lamemp3enc",     None,           "mad",          "mpegaudioparse"),
         (WAV        , "wavenc",         None,           None,           "wavparse"),
@@ -111,8 +112,10 @@ CODEC_OPTIONS = [
         (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay"),
         #for rtp, we would need to send the caps:
         #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusdec",      "rtpopusdepay"),
+        #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusparse ! opusdec",      "rtpopusdepay"),
         #this causes "could not link opusenc0 to webmmux0"
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusdec",      "matroskademux"),
+        #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusparse ! opusdec",      "matroskademux"),
         (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux"),
         (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay"),
         (WAVPACK    , "wavpackenc",      None,          "wavpackdec",   "wavpackparse"),
@@ -178,7 +181,6 @@ ENCODER_LATENCY = {
         WAVPACK     : 600,
         OPUS        : 0,
         OPUS_GDP    : 0,
-        OPUS_WEBM   : 0,
         SPEEX       : 0,
         SPEEX_GDP   : 0,
        }
@@ -380,7 +382,13 @@ def get_all_plugin_names():
 
 def has_plugins(*names):
     allp = get_all_plugin_names()
-    missing = [name for name in names if (name is not None and name not in allp)]
+    #support names that contain a gstreamer chain, ie: "flacparse ! flacdec"
+    snames = []
+    for x in names:
+        if not x:
+            continue
+        snames += [v.strip() for v in x.split("!")]
+    missing = [name for name in snames if (name is not None and name not in allp)]
     if len(missing)>0:
         log("missing %s from %s", missing, names)
     return len(missing)==0
@@ -409,16 +417,16 @@ def get_codecs():
             continue
         if force_enabled(encoding):
             log.info("sound codec %s force enabled", encoding)
-        elif encoding.startswith(FLAC):
+        elif encoding==FLAC:
             #flac problems:
-            if WIN32 and gst_major_version==0 and encoding==FLAC:
+            if WIN32 and gst_major_version==0:
                 #the gstreamer 0.10 builds on win32 use the outdated oss build,
                 #which includes outdated flac libraries with known CVEs,
                 #so avoid using those:
                 log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
                 continue
             elif gst_major_version==1:
-                log("skipping flac with GStreamer 1.x to avoid obscure 'not-neogtiated' errors I do not have time for")
+                log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors I do not have time for")
                 continue
         elif encoding==OPUS:
             if gst_major_version<1:
