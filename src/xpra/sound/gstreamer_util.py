@@ -81,34 +81,47 @@ WAVPACK = "wavpack"
 
 GDP = "gdp"
 OGG = "ogg"
+WEBM = "webm"
+#RTP = "rtp"
 
-FLAC_GDP = FLAC+"+"+GDP
-OPUS_GDP = OPUS+"+"+GDP
-SPEEX_GDP = SPEEX+"+"+GDP
-VORBIS_OGG = VORBIS+"+"+OGG
+FLAC_GDP    = FLAC+"+"+GDP
+OPUS_GDP    = OPUS+"+"+GDP
+SPEEX_GDP   = SPEEX+"+"+GDP
+VORBIS_OGG  = VORBIS+"+"+OGG
+OPUS_WEBM   = OPUS+"+"+WEBM
+#OPUS_RTP    = OPUS+"+"+RTP
+VORBIS_WEBM = VORBIS+"+"+WEBM
 
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-            (VORBIS     , "vorbisenc",     "gdppay",   "vorbisdec",    "gdpdepay"),
-            #this causes "no header sent yet"
-            #(VORBIS_OGG , "vorbisenc",     "oggmux",   "vorbisdec",    "oggdemux"),
-            (FLAC       , "flacenc",       "oggmux",   "flacdec",      "oggdemux"),
-            (FLAC_GDP   , "flacenc",       "gdppay",   "flacdec",      "gdpdepay"),
-            (MP3        , "lamemp3enc",    None,       "mad",          "mp3parse"),
-            (MP3        , "lamemp3enc",    None,       "mad",          "mpegaudioparse"),
-            (WAV        , "wavenc",        None,       None,           "wavparse"),
-            (OPUS       , "opusenc",       "oggmux",   "opusdec",      "oggdemux"),
-            (OPUS_GDP   , "opusenc",       "gdppay",   "opusdec",      "gdpdepay"),
-            (SPEEX      , "speexenc",      "oggmux",   "speexdec",     "oggdemux"),
-            (SPEEX_GDP  , "speexenc",      "gdppay",   "speexdec",     "gdpdepay"),
-            (WAVPACK   , "wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
+        (VORBIS     , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay"),
+        (VORBIS_WEBM, "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux"),
+        #this causes "no header sent yet"
+        #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisdec",    "oggdemux"),
+        #both can cause: "Internal data flow error." / "streaming task paused, reason not-negotiated"
+        #with GStreamer 1.x (disabled at init time)
+        (FLAC       , "flacenc",        "oggmux",       "flacdec",      "oggdemux"),
+        (FLAC_GDP   , "flacenc",        "gdppay",       "flacdec",      "gdpdepay"),
+        (MP3        , "lamemp3enc",     None,           "mad",          "mp3parse"),
+        (MP3        , "lamemp3enc",     None,           "mad",          "mpegaudioparse"),
+        (WAV        , "wavenc",         None,           None,           "wavparse"),
+        (OPUS       , "opusenc",        "oggmux",       "opusdec",      "oggdemux"),
+        (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay"),
+        #for rtp, we would need to send the caps:
+        #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusdec",      "rtpopusdepay"),
+        #this causes "could not link opusenc0 to webmmux0"
+        #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusdec",      "matroskademux"),
+        (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux"),
+        (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay"),
+        (WAVPACK    , "wavpackenc",      None,          "wavpackdec",   "wavpackparse"),
             ]
 
 MUX_OPTIONS = [
                (GDP,    "gdppay",   "gdpdepay"),
                (OGG,    "oggmux",   "oggdemux"),
+               (WEBM,   "webmmux",  "matroskademux"),
               ]
 emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
 if emux:
@@ -150,12 +163,14 @@ MUXER_DEFAULT_OPTIONS = {
             "gdppay"        : {"crc-header"    : int(GDPPAY_CRC),
                                "crc-payload"   : int(GDPPAY_CRC),
                                },
+            "webmmux"       : {"writing-app"    : "Xpra"},
            }
 
 #based on the encoder options above:
 ENCODER_LATENCY = {
         VORBIS      : 0,
         VORBIS_OGG  : 0,
+        VORBIS_WEBM : 0,
         MP3         : 250,
         FLAC        : 50,
         FLAC_GDP    : 50,
@@ -163,11 +178,12 @@ ENCODER_LATENCY = {
         WAVPACK     : 600,
         OPUS        : 0,
         OPUS_GDP    : 0,
+        OPUS_WEBM   : 0,
         SPEEX       : 0,
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [VORBIS, VORBIS_OGG, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [VORBIS, VORBIS_WEBM, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None
