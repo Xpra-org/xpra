@@ -351,13 +351,12 @@ class SoundPipeline(gobject.GObject):
             cf = taglist.get_string("container-format")
             if cf[0] is True:
                 log.info("container format: %s", cf[1])
-        if "encoder" in tags:
-            desc = taglist.get_string("encoder")
-            log("encoder: %s", desc[1])
-        if "description" in tags:
-            desc = taglist.get_string("description")
-            log("description: %s", desc[1])
-        if len([x for x in tags if x in ("bitrate", "codec", "audio-codec", "mode", "container-format", "encoder", "description")])==0:
+        for x in ("encoder", "description", "language-code"):
+            if x in tags:
+                desc = taglist.get_string(x)
+                log("%s: %s", x, desc[1])
+        if len([x for x in tags if x in ("bitrate", "codec", "audio-codec", "mode",
+                                         "container-format", "encoder", "description", "language-code")])==0:
             #no match yet
             if len([x for x in tags if x in ("minimum-bitrate", "maximum-bitrate", "channel-mode")])==0:
                 structure = message.get_structure()
