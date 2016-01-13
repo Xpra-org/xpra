@@ -203,6 +203,10 @@ class SoundPipeline(gobject.GObject):
 
     def on_message(self, bus, message):
         #log("on_message(%s, %s)", bus, message)
+        l = log
+        if LOG_MESSAGES:
+            l = log.info
+        l("on_message: %s", message)
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
@@ -239,23 +243,23 @@ class SoundPipeline(gobject.GObject):
                 log.warn("Warning: failed to parse gstreamer message:")
                 log.warn(" %s: %s", type(e), e)
         elif t == gst.MESSAGE_STREAM_STATUS:
-            log("stream status: %s", message)
+            l("stream status: %s", message)
             try:
-                log("stream status: %s", message.get_stream_status_object().get_state())
+                l("stream status: %s", message.get_stream_status_object().get_state())
             except:
                 pass
         elif t == gst.MESSAGE_STREAM_START:
-            log("stream start: %r", message)
-            if gst_version[0]>0:
+            log.info("stream start: %r", message)
+            if gst_major_version>0:
                 #with gstreamer 1.x, we don't always get the "audio-codec" message..
                 #so print the codec from here instead (and assume gstreamer is using what we told it to)
                 #after a delay, just in case we do get the real "audio-codec" message!
                 self.timeout_add(500, self.new_codec_description, self.codec)
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
-            log("%s", message)
+            l("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
             _, new_state, _ = message.parse_state_changed()
-            log("state-changed on %s: %s", message.src, gst.element_state_get_name(new_state))
+            l("state-changed on %s: %s", message.src, gst.element_state_get_name(new_state))
             state = self.do_get_state(new_state)
             if isinstance(message.src, gst.Pipeline):
                 self.state = state
@@ -265,11 +269,11 @@ class SoundPipeline(gobject.GObject):
                 try:
                     v = d[1]
                     if v>0:
-                        log("duration changed: %s", v)
+                        l("duration changed: %s", v)
                 except:
-                    log("duration changed: %s", d)
+                    l("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
-            log("latency message from %s: %s", message.src, message)
+            l("latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:
             log.info("pipeline message: %s", message)
         elif t == gst.MESSAGE_WARNING:
