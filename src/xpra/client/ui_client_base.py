@@ -437,10 +437,11 @@ class UIXpraClient(XpraClientBase):
                     v = v[:-1]
             except:
                 pass
-            try:
-                return int(v)/div       #ie: desktop-scaling=2
-            except:
-                pass
+            if div==1:
+                try:
+                    return int(v)/div       #ie: desktop-scaling=2
+                except:
+                    pass
             try:
                 return float(v)/div     #ie: desktop-scaling=1.5
             except:
