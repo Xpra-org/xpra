@@ -14,6 +14,7 @@ from xpra.util import csv
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 
+LOG_MESSAGES = os.environ.get("XPRA_SOUND_LOG_MESSAGES", "0")=="1"
 FAULT_RATE = int(os.environ.get("XPRA_SOUND_FAULT_INJECTION_RATE", "0"))
 _counter = 0
 def inject_fault():
@@ -325,7 +326,10 @@ class SoundPipeline(gobject.GObject):
         #message parsing code for GStreamer 1.x
         taglist = message.parse_tag()
         tags = [taglist.nth_tag_name(x) for x in range(taglist.n_tags())]
-        log("bus message with tags=%s", tags)
+        l = log
+        if LOG_MESSAGES:
+            l = log.info
+        l("bus message with tags=%s", tags)
         if not tags:
             #ignore it
             return
@@ -333,6 +337,7 @@ class SoundPipeline(gobject.GObject):
             new_bitrate = taglist.get_uint("bitrate")
             if new_bitrate[0] is True:
                 self.update_bitrate(new_bitrate[1])
+                l("bitrate: %s", new_bitrate[1])
         if "codec" in tags:
             desc = taglist.get_string("codec")
             if desc[0] is True and self.codec_description!=desc[1]:
@@ -342,10 +347,11 @@ class SoundPipeline(gobject.GObject):
             desc = taglist.get_string("audio-codec")
             if desc[0] is True:
                 self.new_codec_description(desc[1])
+                l("audio-codec: %s", desc[1])
         if "mode" in tags:
             mode = taglist.get_string("mode")
             if mode[0] is True and self.codec_mode!=mode[1]:
-                log("mode: %s", mode[1])
+                l("mode: %s", mode[1])
                 self.codec_mode = mode[1]
         if "container-format" in tags:
             cf = taglist.get_string("container-format")
@@ -354,7 +360,7 @@ class SoundPipeline(gobject.GObject):
         for x in ("encoder", "description", "language-code"):
             if x in tags:
                 desc = taglist.get_string(x)
-                log("%s: %s", x, desc[1])
+                l("%s: %s", x, desc[1])
         if len([x for x in tags if x in ("bitrate", "codec", "audio-codec", "mode",
                                          "container-format", "encoder", "description", "language-code")])==0:
             #no match yet
