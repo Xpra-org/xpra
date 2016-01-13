@@ -84,7 +84,8 @@ class SoundSource(SoundPipeline):
         pipeline_els += [encoder_str,
                         fmt_str,
                         APPSINK]
-        self.setup_pipeline_and_bus(pipeline_els)
+        if not self.setup_pipeline_and_bus(pipeline_els):
+            return
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
         if SOURCE_QUEUE_TIME>0:

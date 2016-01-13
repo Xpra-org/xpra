@@ -99,7 +99,8 @@ class SoundSink(SoundPipeline):
         sink_attributes.update(sink_options)
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)
-        self.setup_pipeline_and_bus(pipeline_els)
+        if not self.setup_pipeline_and_bus(pipeline_els):
+            return
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")

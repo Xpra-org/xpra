@@ -103,10 +103,11 @@ class SoundPipeline(gobject.GObject):
             for i,x in enumerate(elements):
                 log.error("  %s%s", x, ["", " ! \\"][int(i<(len(elements)-1))])
             self.cleanup()
-            return
+            return False
         self.bus = self.pipeline.get_bus()
         self.bus_message_handler_id = self.bus.connect("message", self.on_message)
         self.bus.add_signal_watch()
+        return True
 
     def do_get_state(self, state):
         if not self.pipeline:
