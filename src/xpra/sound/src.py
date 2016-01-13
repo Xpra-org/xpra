@@ -17,6 +17,7 @@ from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encode
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
+gstlog = Logger("gstreamer")
 
 APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
 JITTER = int(os.environ.get("XPRA_SOUND_SOURCE_JITTER", "0"))
@@ -132,7 +133,7 @@ class SoundSource(SoundPipeline):
 
     def on_new_preroll1(self, appsink):
         sample = appsink.emit('pull-preroll')
-        log('new preroll1: %s', sample)
+        gstlog('new preroll1: %s', sample)
         return self.emit_buffer1(sample)
 
     def on_new_sample(self, bus):
@@ -159,7 +160,7 @@ class SoundSource(SoundPipeline):
 
     def on_new_preroll0(self, appsink):
         buf = appsink.emit('pull-preroll')
-        log('new preroll0: %s bytes', len(buf))
+        gstlog('new preroll0: %s bytes', len(buf))
         return self.emit_buffer0(buf)
 
     def on_new_buffer(self, bus):

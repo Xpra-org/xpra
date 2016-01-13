@@ -18,6 +18,7 @@ from xpra.util import updict, csv
 from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger("sound")
+gstlog = Logger("gstreamer")
 
 
 SINKS = get_sink_plugins()
@@ -143,7 +144,7 @@ class SoundSink(SoundPipeline):
     def queue_underrun(self, *args):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
-            log("ignoring underrun during startup")
+            gstlog("ignoring underrun during startup")
             return
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
@@ -213,7 +214,7 @@ class SoundSink(SoundPipeline):
     def queue_overrun(self, *args):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
-            log("ignoring overrun during startup")
+            gstlog("ignoring overrun during startup")
             return
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
         log("overrun level=%ims", clt)
@@ -229,7 +230,7 @@ class SoundSink(SoundPipeline):
         return 1
 
     def eos(self):
-        log("eos()")
+        gstlog("eos()")
         if self.src:
             self.src.emit('end-of-stream')
         self.cleanup()

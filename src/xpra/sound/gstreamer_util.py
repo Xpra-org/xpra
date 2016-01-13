@@ -9,7 +9,7 @@ import os
 
 from xpra.util import csv
 from xpra.log import Logger
-log = Logger("sound")
+log = Logger("sound", "gstreamer")
 
 GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1

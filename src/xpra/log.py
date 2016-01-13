@@ -237,6 +237,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ])),
     ("Sound", OrderedDict([
                 ("sound"        , "All sound"),
+                ("gstreamer"    , "GStreamer internal messages"),
                 ("av-sync"      , "Audio-video sync"),
                 ])),
     ("X11", OrderedDict([
