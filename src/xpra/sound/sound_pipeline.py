@@ -6,7 +6,7 @@
 import os
 import time
 
-from xpra.sound.gstreamer_util import import_gst
+from xpra.sound.gstreamer_util import import_gst, gst_major_version
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -246,13 +246,13 @@ class SoundPipeline(gobject.GObject):
                 self.state = state
                 self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_DURATION:
-            d = message.parse_duration()
-            try:
-                v = d[1]
-                if v>0:
-                    log("duration changed: %s", v)
-            except:
-                log("duration changed: %s", d)
+            if gst_major_version==0:
+                try:
+                    v = d[1]
+                    if v>0:
+                        log("duration changed: %s", v)
+                except:
+                    log("duration changed: %s", d)
         elif t == gst.MESSAGE_LATENCY:
             log("latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:
