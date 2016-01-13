@@ -93,7 +93,17 @@ class SoundPipeline(gobject.GObject):
         self.pipeline_str = " ! ".join([x for x in elements if x is not None])
         log("pipeline=%s", self.pipeline_str)
         self.start_time = time.time()
-        self.pipeline = gst.parse_launch(self.pipeline_str)
+        try:
+            self.pipeline = gst.parse_launch(self.pipeline_str)
+        except Exception as e:
+            self.pipeline = None
+            log.error("Error setting up the sound pipeline:")
+            log.error(" %s", e)
+            log.error(" GStreamer pipeline for %s:", self.codec)
+            for i,x in enumerate(elements):
+                log.error("  %s%s", x, ["", " ! \\"][int(i<(len(elements)-1))])
+            self.cleanup()
+            return
         self.bus = self.pipeline.get_bus()
         self.bus_message_handler_id = self.bus.connect("message", self.on_message)
         self.bus.add_signal_watch()
@@ -128,6 +138,9 @@ class SoundPipeline(gobject.GObject):
 
 
     def start(self):
+        if not self.pipeline:
+            log.error("cannot start")
+            return
         log("SoundPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
         self.state = "active"
