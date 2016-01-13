@@ -291,8 +291,10 @@ class SoundSink(SoundPipeline):
         #buf.set_caps(gst.caps_from_string(caps))
         r = self.src.emit("push-buffer", buf)
         if r!=gst.FLOW_OK:
-            log.error("push-buffer error: %s", r)
-            self.emit('error', "push-buffer error: %s" % r)
+            if self.queue_state != "error":
+                log.error("Error pushing buffer: %s", r)
+                self.queue_state = "error"
+                self.emit('error', "push-buffer error: %s" % r)
             return 0
         return 1
 
