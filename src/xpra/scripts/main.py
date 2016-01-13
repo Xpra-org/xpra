@@ -795,6 +795,9 @@ def validate_encryption(opts):
 
 def do_validate_encryption(encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile):
     #print("do_validate_encryption%s", (encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile))
+    if not encryption and not tcp_encryption:
+        #don't bother initializing anything
+        return
     from xpra.net.crypto import crypto_backend_init
     crypto_backend_init()
     if not encryption and not tcp_encryption:
