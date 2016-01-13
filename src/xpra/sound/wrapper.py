@@ -208,6 +208,9 @@ class sound_subprocess_wrapper(subprocess_caller):
 
     def get_env(self):
         env = subprocess_caller.get_env(self)
+        if sys.platform.startswith("win"):
+            #disable bencoder to skip warnings with the py3k Sound subapp
+            env["XPRA_USE_BENCODER"] = "0"
         if os.name=="posix" and not sys.platform.startswith("darwin"):
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
