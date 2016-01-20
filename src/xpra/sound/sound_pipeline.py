@@ -58,6 +58,12 @@ class SoundPipeline(gobject.GObject):
         self.idle_add = glib.idle_add
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
+        if gst_version[0]<1:
+            #Gst 0.10: can handle both TAG and ELEMENT:
+            self.parse_message = self.parse_message0
+        else:
+            #Gst 1.0: (does not have MESSAGE_ELEMENT):
+            self.parse_message = self.parse_message1
 
     def idle_emit(self, sig, *args):
         self.idle_add(self.emit, sig, *args)
@@ -228,14 +234,7 @@ class SoundPipeline(gobject.GObject):
             self.idle_emit("error", str(err))
         elif t == gst.MESSAGE_TAG or t == MESSAGE_ELEMENT:
             try:
-                assert gst_version[0]<1
-                #Gst 0.10: can handle both TAG and ELEMENT:
-                parse = self.parse_message0
-            except:
-                #Gst 1.0: (does not have MESSAGE_ELEMENT):
-                parse = self.parse_message1
-            try:
-                parse(message)
+                self.parse_message(message)
             except Exception as e:
                 gstlog.warn("Warning: failed to parse gstreamer message:")
                 gstlog.warn(" %s: %s", type(e), e)
