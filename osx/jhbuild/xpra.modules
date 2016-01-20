@@ -414,6 +414,13 @@
 	     version="0.8.0-rc2"/>
   </distutils>
 
+  <distutils id="python-lzo">
+	<branch repo="pypi.python.org"
+	     module="/source/p/python-lzo/python-lzo-1.10.tar.gz"
+	     hash="md5:bc46b7269ac30e603b8032e483c0d43a"
+	     version="1.10"/>
+  </distutils>
+
   <distutils id="python-macholib">
 	<branch repo="pypi.python.org"
 		module="/packages/source/m/macholib/macholib-1.7.tar.gz"
@@ -581,6 +588,7 @@
       <dep package="python-twisted"/>
       <dep package="python-nose"/>
       <dep package="python-lz4"/>
+      <dep package="python-lzo"/>
       <dep package="python-rencode"/>
       <dep package="python-macholib"/>
       <dep package="python-modulegraph"/>
