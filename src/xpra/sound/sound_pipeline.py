@@ -246,7 +246,7 @@ class SoundPipeline(gobject.GObject):
             except:
                 pass
         elif t == gst.MESSAGE_STREAM_START:
-            log.info("stream start: %r", message)
+            log("stream start: %s", message)
             if gst_major_version>0:
                 #with gstreamer 1.x, we don't always get the "audio-codec" message..
                 #so print the codec from here instead (and assume gstreamer is using what we told it to)
