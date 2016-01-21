@@ -81,7 +81,7 @@ WAVPACK = "wavpack"
 
 GDP = "gdp"
 OGG = "ogg"
-WEBM = "webm"
+MKA = "mka"
 #RTP = "rtp"
 
 FLAC_GDP    = FLAC+"+"+GDP
@@ -90,14 +90,14 @@ SPEEX_GDP   = SPEEX+"+"+GDP
 VORBIS_OGG  = VORBIS+"+"+OGG
 #OPUS_WEBM   = OPUS+"+"+WEBM
 #OPUS_RTP    = OPUS+"+"+RTP
-VORBIS_WEBM = VORBIS+"+"+WEBM
+VORBIS_MKA = VORBIS+"+"+MKA
 
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
         (VORBIS     , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay"),
-        (VORBIS_WEBM, "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux"),
+        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux"),
         #fails silently - no idea why:
         #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",    "oggdemux"),
         #does not work - no idea why:
@@ -124,7 +124,7 @@ CODEC_OPTIONS = [
 MUX_OPTIONS = [
                (GDP,    "gdppay",   "gdpdepay"),
                (OGG,    "oggmux",   "oggdemux"),
-               (WEBM,   "webmmux",  "matroskademux"),
+               (MKA,    "webmmux",  "matroskademux"),
               ]
 emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
 if emux:
@@ -173,7 +173,7 @@ MUXER_DEFAULT_OPTIONS = {
 ENCODER_LATENCY = {
         VORBIS      : 0,
         VORBIS_OGG  : 0,
-        VORBIS_WEBM : 0,
+        VORBIS_MKA  : 0,
         MP3         : 250,
         FLAC        : 50,
         FLAC_GDP    : 50,
@@ -185,7 +185,7 @@ ENCODER_LATENCY = {
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [VORBIS, VORBIS_WEBM, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [VORBIS, VORBIS_MKA, OPUS_GDP, OPUS, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None
