@@ -17,9 +17,19 @@ ENCRYPTION_CIPHERS = ["AES"]
 
 __all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", ENCRYPTION_CIPHERS)
 
+backend = default_backend()
+log("default_backend()=%s", backend)
+log("backends=%s", backend._backends)
+
+def ci(v):
+    try:
+        return v.name
+    except:
+        return str(v)
 
 def get_info():
     return {"backend"                       : "python-cryptography",
+            "backends"                      : [ci(x) for x in backend._backends],
             "python-cryptography"           : True,
             "python-cryptography.version"   : cryptography.__version__}
 
