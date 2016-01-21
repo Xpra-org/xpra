@@ -3,10 +3,43 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 #default:
 Keyboard = None
 
+def get_posix_sys_info():
+    info = {}
+    try:
+        import resource
+        for k, constant in {"server"   : "RUSAGE_SELF",
+                         "children" : "RUSAGE_CHILDREN",
+                         "total"    : "RUSAGE_BOTH"}.items():
+            try:
+                v = getattr(resource, constant)
+            except (NameError, AttributeError):
+                continue
+            stats = resource.getrusage(v)
+            prefix = "memory.%s." % k
+            for var in ("utime", "stime", "maxrss",
+                        "ixrss", "idrss", "isrss",
+                        "minflt", "majflt", "nswap",
+                        "inblock", "oublock",
+                        "msgsnd", "msgrcv",
+                        "nsignals", "nvcsw", "nivcsw"):
+                value = getattr(stats, "ru_%s" % var)
+                if type(value)==float:
+                    value = int(value)
+                info[prefix+var] = value
+    except:
+        from xpra.log import Logger
+        log = Logger("posix")
+        log.error("error getting memory usage info", exc_info=True)
+    return info
+
 def get_sys_info():
+    if os.name=="posix":
+        return get_posix_sys_info()
     return {}
 
 def get_version_info():
@@ -15,7 +48,6 @@ def get_version_info():
 def _get_pwd():
     try:
         import pwd
-        import os
         USER_ID = os.getuid()
         return pwd.getpwuid(USER_ID)
     except:
