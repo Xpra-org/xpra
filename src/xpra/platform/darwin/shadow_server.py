@@ -45,7 +45,9 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
                     CG.kCGNullWindowID,
                     CG.kCGWindowImageDefault)
         if image is None:
-            raise Exception("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
+            from xpra.scripts.config import InitExit
+            log("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
+            raise InitExit("cannot grab pixels from the screen, make sure this command is launched from a GUI session")
         ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
         GTKServerBase.__init__(self)
 
