@@ -416,7 +416,7 @@
 
   <distutils id="python-lzo">
 	<branch repo="pypi.python.org"
-	     module="/source/p/python-lzo/python-lzo-1.10.tar.gz"
+	     module="/packages/source/p/python-lzo/python-lzo-1.10.tar.gz"
 	     hash="md5:bc46b7269ac30e603b8032e483c0d43a"
 	     version="1.10"/>
   </distutils>
