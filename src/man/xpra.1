@@ -751,9 +751,8 @@ via the \fBXPRA_PASSWORD\fP environment variable.
 .TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
-prying eyes.  This is only really useful with the \fB\-\-bind\-tcp\fP option.
-This option requires the use of the \fB\-\-encryption\-keyfile\fP option
-or the \fBXPRA_ENCRYPTION_KEY\fP environment variable.
+prying eyes.
+This option requires the use of the \fB\-\-encryption\-keyfile\fP option.
 The only cipher supported at present is \fIAES\fP, if the client
 requests encryption it will be used by both the client and server
 for all communication after the initial password verification,
