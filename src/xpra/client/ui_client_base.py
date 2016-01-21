@@ -135,8 +135,8 @@ class UIXpraClient(XpraClientBase):
         self.auto_refresh_delay = -1
         self.max_window_size = 0, 0
         self.dpi = 0
-        self.xscale = 1
-        self.yscale = 1
+        self.initial_scaling = 1, 1
+        self.xscale, self.yscale = self.initial_scaling
         self.scale_change_embargo = 0
         self.shadow_fullscreen = False
 
@@ -288,7 +288,8 @@ class UIXpraClient(XpraClientBase):
         self.desktop_scaling = opts.desktop_scaling
         self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
         if self.can_scale:
-            self.xscale, self.yscale = self.parse_scaling(opts.desktop_scaling)
+            self.initial_scaling = self.parse_scaling(opts.desktop_scaling)
+            self.xscale, self.yscale = self.initial_scaling
 
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
@@ -897,7 +898,7 @@ class UIXpraClient(XpraClientBase):
             self.scale_change(new_scaling/scaling, new_scaling/scaling)
 
     def scalereset(self):
-        self.scaleset(1.0, 1.0)
+        self.scaleset(*self.initial_scaling)
 
     def scaleset(self, xscale=1, yscale=1):
         self.scale_change(xscale/self.xscale, yscale/self.yscale)
