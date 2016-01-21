@@ -359,7 +359,9 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 defs.append((("unix-domain", sock, sockpath), cleanup_socket))
                 sockpaths.add(sockpath)
             except Exception as e:
-                log.error("failed to create socket %s" % sockpath, exc_info=True)
+                log("socket creation error", exc_info=True)
+                log.error("failed to create socket %s:" % sockpath)
+                log.error(" %s", e)
                 raise InitException("failed to create socket %s" % sockpath)
     except:
         for sock, cleanup_socket in defs:
