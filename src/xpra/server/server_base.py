@@ -769,11 +769,11 @@ class ServerBase(ServerCore, FileTransferHandler):
             pass
         source = self._server_sources.get(protocol)
         if source:
+            self.cleanup_source(source)
             try:
                 del self._server_sources[protocol]
             except:
                 pass
-            self.cleanup_source(source)
         return source
 
     def cleanup_source(self, source):
@@ -2487,9 +2487,10 @@ class ServerBase(ServerCore, FileTransferHandler):
                 self.idle_add(handler, proto, packet)
                 return
             def invalid_packet():
-                if not self._closing and not proto._closed:
+                ss = self._server_sources.get(proto)
+                if not self._closing and not proto._closed and (ss is None or not ss.is_closed()):
                     netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
-                if proto not in self._server_sources:
+                if not ss:
                     proto.close()
             self.idle_add(invalid_packet)
         except KeyboardInterrupt:
