@@ -3,7 +3,7 @@
 set -e
 
 SERVER_GROUP="xpra"
-if ! getent group | grep -q "^$SERVER_GROUP:" ; then
+if ! getent group $SERVER_GROUP >/dev/null; then
 	echo -n "Adding group $SERVER_GROUP.."
 	addgroup --quiet --system $SERVER_GROUP 2>/dev/null ||true
 	echo "..done"
