@@ -298,6 +298,8 @@ key-shortcut = Meta+Shift+emdash:scaledown
 key-shortcut = Meta+Shift+KP_Add:scaleup
 key-shortcut = Meta+Shift+KP_Subtract:scaledown
 key-shortcut = Meta+Shift+KP_Multiply:scalereset
+key-shortcut = Meta+Shift+bar:scalereset
+key-shortcut = Meta+Shift+question:scalingoff
 key-shortcut = Meta+Shift+degree:scalereset
 
 # Border:

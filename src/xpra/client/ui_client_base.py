@@ -897,6 +897,9 @@ class UIXpraClient(XpraClientBase):
         if new_scaling>0:
             self.scale_change(new_scaling/scaling, new_scaling/scaling)
 
+    def scalingoff(self):
+        self.scaleset(1, 1)
+
     def scalereset(self):
         self.scaleset(*self.initial_scaling)
 

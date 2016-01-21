@@ -533,6 +533,8 @@ def get_defaults():
                                            "Meta+Shift+KP_Add:scaleup",
                                            "Meta+Shift+KP_Subtract:scaledown",
                                            "Meta+Shift+KP_Multiply:scalereset",
+                                           "Meta+Shift+bar:scalereset",
+                                           "Meta+Shift+question:scalingoff",
                                            "Meta+Shift+degree:scalereset",          #OSX
                                            ],
                     "bind"              : bind_dirs,
