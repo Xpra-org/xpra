@@ -13,7 +13,7 @@ from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
-                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -79,7 +79,7 @@ class SoundSource(SoundPipeline):
                         "leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM,
                         "silent=1"]
             pipeline_els += [" ".join(queue_el)]
-        if encoder in ENCODER_NEEDS_AUDIOCONVERT:
+        if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
         pipeline_els.append("volume name=volume volume=%s" % volume)
         pipeline_els += [encoder_str,
