@@ -857,6 +857,12 @@ def build_xpra_conf(install_dir):
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
+    if os.getuid()>0:
+        #remove any paths containing the uid,
+        #osx uses /var/tmp/$UID-Xpra,
+        #but this should not be included in the default config for all users!
+        #(the buildbot's uid!)
+        socket_dirs = [x for x in socket_dirs if x.find(str(os.getuid()))<0]
     if WIN32:
         bind = ""
     else:
