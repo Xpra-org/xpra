@@ -29,8 +29,9 @@ from xpra.util import csv
 MIN_CLIPBOARD_COMPRESSION_SIZE = 512
 MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
 
-ALL_CLIPBOARDS = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
-CLIPBOARDS = ALL_CLIPBOARDS
+from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
+ALL_CLIPBOARDS = PLATFORM_CLIPBOARDS
+CLIPBOARDS = PLATFORM_CLIPBOARDS
 CLIPBOARDS_ENV = os.environ.get("XPRA_CLIPBOARDS")
 if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = CLIPBOARDS_ENV.split(",")
@@ -158,7 +159,12 @@ class ClipboardProtocolHelperBase(object):
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
-            log.warn("ignoring token for clipboard proxy name '%s' (no proxy)", name)
+            #this can happen if the server has fewer clipboards than the client,
+            #ie: with win32 shadow servers
+            l = log
+            if name in ALL_CLIPBOARDS:
+                l = log.warn
+            l("ignoring token for clipboard proxy name '%s' (no proxy)", name)
             return
         if not proxy.is_enabled():
             log.warn("ignoring token for clipboard proxy name '%s' (disabled)", name)
