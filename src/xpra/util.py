@@ -27,6 +27,7 @@ SESSION_NOT_FOUND       = "session not found error"
 #informational (not a problem):
 DONE                    = "done"
 SERVER_EXIT             = "server exit"
+SERVER_UPGRADE          = "server upgrade"
 SERVER_SHUTDOWN         = "server shutdown"
 CLIENT_REQUEST          = "client request"
 DETACH_REQUEST          = "detach request"
