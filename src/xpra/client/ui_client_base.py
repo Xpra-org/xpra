@@ -1686,17 +1686,17 @@ class UIXpraClient(XpraClientBase):
                 if self.desktop_scaling=="auto":
                     log.info(" not scaling a shadow server")
                     skip_vfb_size_check = self.xscale>1 or self.yscale>1
-                    self.scalereset()
+                    self.scalingoff()
             elif self.mmap_enabled:
                 if self.desktop_scaling=="auto":
                     log.info(" no need for scaling with mmap")
                     skip_vfb_size_check = self.xscale>1 or self.yscale>1
-                    self.scalereset()
+                    self.scalingoff()
                     self.can_scale = False
             elif not c.boolget("window.constrain.rounding"):
                 log.info("Server does not support rounding, disabling scaling")
                 skip_vfb_size_check = self.xscale>1 or self.yscale>1
-                self.scalereset()
+                self.scalingoff()
                 self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
