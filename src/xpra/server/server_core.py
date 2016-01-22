@@ -40,7 +40,7 @@ from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
 from xpra.util import typedict, updict, repr_ellipsized, \
-        SERVER_SHUTDOWN, SERVER_EXIT, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
+        SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
 
@@ -404,7 +404,7 @@ class ServerCore(object):
             p.quit()
         netlog("cleanup will disconnect: %s", self._potential_protocols)
         if self._upgrading:
-            reason = SERVER_EXIT
+            reason = SERVER_UPGRADE
         else:
             reason = SERVER_SHUTDOWN
         protocols = self.get_all_protocols()
