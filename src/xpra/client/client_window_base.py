@@ -497,6 +497,9 @@ class ClientWindowBase(ClientWidgetBase):
     def scaledown(self, *args):
         self._client.scaledown()
 
+    def scalingoff(self):
+        self._client.scalingoff()
+
     def scalereset(self, *args):
         self._client.scalereset()
 
