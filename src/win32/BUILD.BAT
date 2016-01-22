@@ -34,10 +34,8 @@ SET SHOW_DEPENDENCIES=0
 REM "IE:"
 REM SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
-if "%DO_BUILD%"=="1" (
-	%PYTHON_EXE% ./setup.py clean
-	%PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
-)
+%PYTHON_EXE% ./setup.py clean
+%PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
 
 SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(__version__)"') DO set VERSION=%%i
