@@ -304,6 +304,7 @@ class ServerCore(object):
 
     def clean_quit(self, upgrading=False):
         log("clean_quit(%s)", upgrading)
+        self._upgrading = upgrading
         self._closing = True
         #ensure the reaper doesn't call us again:
         if self.child_reaper:
