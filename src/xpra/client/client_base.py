@@ -9,7 +9,6 @@ import os
 import sys
 import socket
 import binascii
-import traceback
 import string
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
@@ -29,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error
+from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import HAS_PRINTING, FileTransferHandler
 
 EXIT_OK = 0
@@ -427,13 +426,8 @@ class XpraClientBase(FileTransferHandler):
             p.close()
             self._protocol = None
         self.cleanup_printing()
-        frames = sys._current_frames()
-        log("after cleanup, found %s frames:", len(frames))
-        for i,(fid,frame) in enumerate(frames.items()):
-            log("%i: %s - %s:", i, fid, frame)
-            for x in traceback.format_stack(frame):
-                for l in x.splitlines():
-                    log("%s", l)
+        log("cleanup done")
+        dump_all_frames()
 
 
     def glib_init(self):
