@@ -65,7 +65,10 @@ class VideoSubregion(object):
         sslog("set_region%s", (x, y, w, h))
         if self.detection:
             sslog("video region detection is on - the given region may or may not stick")
-        self.rectangle = rectangle(x, y, w, h)
+        if x==0 and y==0 and w==0 and h==0:
+            self.novideoregion()
+        else:
+            self.rectangle = rectangle(x, y, w, h)
 
 
     def set_auto_refresh_delay(self, d):
