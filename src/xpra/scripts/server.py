@@ -1068,10 +1068,15 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         from xpra.server.server_core import ServerCore
         if e==ServerCore.EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")
-        elif cleanup_socket in _cleanups:
+        elif local_sockets:
+            # don't delete the new sockets (probably not ours!)
+            # FIXME: keep track of which server (new or old) owns which socket,
+            # so we can delete the ones that have not been replaced
+            for socket, cleanup_socket in local_sockets:
+                if cleanup_socket in _cleanups:
+                    log("removing cleanup: %s for %s", cleanup_socket, socket)
+                    _cleanups.remove(cleanup_socket)
             log.info("upgrading: not cleaning up Xvfb or socket")
-            # don't delete the new socket (not ours)
-            _cleanups.remove(cleanup_socket)
         log("cleanups=%s", _cleanups)
         e = 0
     return e
