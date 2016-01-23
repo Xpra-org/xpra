@@ -33,6 +33,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #trusty:        ,xvfb
 #vivid:        ,xvfb
 #wily:        ,xvfb
+#xenial:        ,xvfb
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -48,19 +49,27 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #trusty:        ,python-lzo
 #vivid:        ,python-lz4
 #wily:        ,python-lz4
+#xenial:        ,python-lz4
 #if you use Ubuntu, you will "want" this mess:
 #trusty:        ,python-appindicator
 #vivid:        ,python-appindicator
 #wily:        ,python-appindicator
+#xenial:        ,python-appindicator
 Recommends:
-        libswscale2
 #version specific values (sigh), uncomment the one you need:
+#jessie:        ,libswscale3
+#stretch:        ,libswscale-ffmpeg3
+#trusty:        ,libswscale2
+#vivid:        ,libswscale3
+#wily:        ,libswscale-ffmpeg3
+#xenial:        ,libswscale-ffmpeg3
 #x264
 #jessie:        ,libx264-142
 #stretch:        ,libx264-146
 #trusty:        ,libx264-142
 #vivid:        ,libx264-142
 #wily:        ,libx264-146
+#wily:        ,libx264-148
 #webp
 #jessie:        ,libwebp5
 #stretch:        ,libwebp5
@@ -73,6 +82,7 @@ Recommends:
 #trusty:        ,python-crypto
 #vivid:        ,python-cryptography
 #wily:        ,python-cryptography
+#xenial:        ,python-cryptography
 # audio-related:
         ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
@@ -89,12 +99,14 @@ Recommends:
 #trusty:        ,python-lz4
 #vivid:        ,python-lzo
 #wily:        ,python-lzo
+#xenial:        ,python-lzo
 #for html5 support:
 #jessie:        ,websockify
 #stretch:        ,websockify
 #trusty:        ,websockify
 #vivid:        ,websockify
 #wily:        ,websockify
+#xenial:        ,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
@@ -119,6 +131,7 @@ Suggests: openssh-server
 #and the nvencode library:
 #vivid:        ,python-pycuda, libnvidia-encode1
 #wily:        ,python-pycuda, libnvidia-encode1
+#xenial:        ,python-pycuda, libnvidia-encode1
 #jessie:        ,python-pycuda, libnvidia-encode1
 #stretch:        ,python-pycuda, libnvidia-encode1
 Description: tool to detach/reattach running X programs
