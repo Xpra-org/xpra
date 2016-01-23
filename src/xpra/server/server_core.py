@@ -583,7 +583,7 @@ class ServerCore(object):
         if extra:
             i += " (%s)" % extra
         try:
-            proto_info = " '%s'" % protocol._conn.get_info().get("endpoint")
+            proto_info = " %s" % protocol._conn.get_info().get("endpoint")
         except:
             proto_info = " %s" % protocol
         netlog.info("Disconnecting client%s:", proto_info)
