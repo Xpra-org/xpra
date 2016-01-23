@@ -440,7 +440,7 @@ class UIXpraClient(XpraClientBase):
                 pass
             if div==1:
                 try:
-                    return int(v)/div       #ie: desktop-scaling=2
+                    return int(v)       #ie: desktop-scaling=2
                 except:
                     pass
             try:
