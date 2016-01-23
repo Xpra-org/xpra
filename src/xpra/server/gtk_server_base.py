@@ -7,6 +7,9 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
+import gobject
+#most important with win32 servers:
+gobject.threads_init()
 import glib
 try:
     glib.threads_init()
