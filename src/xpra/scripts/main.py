@@ -1244,7 +1244,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                         ssh_cmd = cmd[0]
                         import re
                         from xpra.os_util import strtobytes
-                        for x in ("plink.exe", "plink"):
+                        for x in ("^plink.exe", "^plink"):
                             ssh_cmd = strtobytes(re.sub(x, win7_plink_path, ssh_cmd, flags=re.IGNORECASE))
                             if ssh_cmd!=cmd[0]:
                                 #kwargs["cwd"] = win7_plink_dir
