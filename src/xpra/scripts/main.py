@@ -1013,6 +1013,7 @@ def parse_display_name(error_cb, opts, display_name):
         #sys.platform.startswith("win")
         ssh_cmd = ssh[0].lower()
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+        desc["is_putty"] = is_putty
 
         upos = host.find("@")
         if upos>=0:
@@ -1216,16 +1217,10 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     conn = None
     if dtype == "ssh":
         from xpra.net import ConnectionClosedException
-        cmd = display_desc["full_ssh"]
-        proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
-        if INITENV_COMMAND:
-            cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
-        else:
-            cmd += proxy_cmd
         try:
+            cmd = display_desc["full_ssh"]
             kwargs = {}
-            if "env" in display_desc:
-                kwargs["env"] = display_desc["env"]
+            env = display_desc.get("env")
             kwargs["stderr"] = sys.stderr
             if not display_desc.get("exit_ssh", False) and os.name=="posix" and not sys.platform.startswith("darwin"):
                 def setsid():
@@ -1237,6 +1232,35 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
                 kwargs["creationflags"] = flags
                 kwargs["stderr"] = PIPE
+                from xpra.scripts.config import python_platform
+                USE_NEW_PLINK = os.environ.get("XPRA_USE_NEW_PLINK")
+                if USE_NEW_PLINK=="1" or (display_desc.get("is_putty") and python_platform.version()>="6" and USE_NEW_PLINK!="0"):
+                    #win7 onwards: use newer TortoisePlink if we find it
+                    from xpra.platform.paths import get_app_dir
+                    win7_plink_dir = os.path.join(get_app_dir(), "TortoisePlink")
+                    win7_plink_path = os.path.join(win7_plink_dir, "Plink.exe")
+                    if os.path.exists(win7_plink_path):
+                        #replace Plink.exe with the one in the TortoisePlink directory:
+                        ssh_cmd = cmd[0]
+                        import re
+                        from xpra.os_util import strtobytes
+                        for x in ("plink.exe", "plink"):
+                            ssh_cmd = strtobytes(re.sub(x, win7_plink_path, ssh_cmd, flags=re.IGNORECASE))
+                            if ssh_cmd!=cmd[0]:
+                                #kwargs["cwd"] = win7_plink_dir
+                                if env is None:
+                                    env = {}
+                                PATH = [win7_plink_dir] + os.environ.get("PATH").split(os.path.pathsep)
+                                env["PATH"] = os.path.pathsep.join([strtobytes(x) for x in PATH])
+                                cmd[0] = ssh_cmd
+                                break
+            proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
+            if INITENV_COMMAND:
+                cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
+            else:
+                cmd += proxy_cmd
+            if env:
+                kwargs["env"] = env
             if debug_cb:
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
@@ -1244,10 +1268,10 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             #instead of lazily converting everything to a string, we validate the command:
             for x in cmd:
                 if type(x)!=str:
-                    raise Exception("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
+                    raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError as e:
-            raise Exception("Error running ssh program '%s': %s" % (cmd, e))
+            raise InitException("Error running ssh program '%s': %s" % (cmd, e))
         def abort_test(action):
             """ if ssh dies, we don't need to try to read/write from its sockets """
             e = child.poll()

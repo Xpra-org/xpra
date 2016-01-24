@@ -23,13 +23,15 @@ SET INNOSETUP="%ProgramFiles%\Inno Setup 5\ISCC.exe"
 IF EXIST "%ProgramFiles(x86)%\Inno Setup 5\ISCC.exe" (
 	SET INNOSETUP="%ProgramFiles(x86)%\Inno Setup 5\ISCC.exe"
 )
-SET TORTOISESVN="%ProgramFiles%\TortoiseSVN"
-IF EXIST "%ProgramFiles(x86)%\TortoiseSVN" (
-	SET TORTOISESVN="%ProgramFiles(x86)%\TortoiseSVN"
-)
 SET ZIP7="%ProgramFiles%\7-Zip\7z.exe"
 IF EXIST "%ProgramFiles(x86)%\7-Zip\7z.exe" (
 	SET ZIP7="%ProgramFiles(x86)%\7-Zip\7z.exe"
+)
+IF EXIST "E:\Xpra-Build-Libs\" (
+	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs\
+)
+IF EXIST "E:\Xpra-Build-Libs-v0.17.x\" (
+	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs-v0.17.x\
 )
 
 SET PYTHON_EXE=%PYTHON%\python.exe
@@ -69,11 +71,31 @@ groff.exe -mandoc -Thtml < man\xpra.1 > %DIST%\manual.html
 
 ECHO ****** Adding TortoisePlink
 REM "These are the versions currently used by TortoisePlink.exe: VC 2012 redist.."
-COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" %DIST%\ > NUL
-COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" %DIST%\ > NUL
-COPY /B /Y /V %TORTOISESVN%\bin\TortoisePlink.exe %DIST%\Plink.exe > NUL
-COPY /B /Y /V %TORTOISESVN%\Putty-LICENSE.txt %DIST%\ > NUL
-
+SET TORTOISESVN_XP="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN-XP"
+IF NOT EXIST "%TORTOISESVN_XP%" (
+	SET TORTOISESVN="%ProgramFiles(x86)%\TortoiseSVN"
+	ECHO Warning: '%TORTOISESVN_XP%' does not exist,
+	ECHO Warning: using legacy fallback location: '%TORTOISESVN%'
+	COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" %DIST%\
+	COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" %DIST%\
+	COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" %DIST%\Plink.exe
+	COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" %DIST%\
+) ELSE (
+	ECHO XP version of TortoisePlink found in %TORTOISESVN_XP%
+	COPY /B /Y /V "%TORTOISESVN_XP%\msvcr110.dll" %DIST%\
+	COPY /B /Y /V "%TORTOISESVN_XP%\msvcp110.dll" %DIST%\
+	COPY /B /Y /V "%TORTOISESVN_XP%\TortoisePlink.exe" %DIST%\Plink.exe
+	COPY /B /Y /V "%TORTOISESVN_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
+)
+REM "Win7 onwards copy:"
+MKDIR %DIST%\TortoisePlink
+SET TORTOISESVN_NEW="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN"
+IF NOT EXIST "%TORTOISESVN_NEW%" (
+	ECHO Error: '%TORTOISESVN_NEW%' does not exist!
+) ELSE (
+	COPY /Y %XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN\TortoisePlink.exe %DIST%\TortoisePlink\Plink.exe > NUL
+	COPY /Y %XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN\*.dll %DIST%\TortoisePlink\ > NUL
+)
 
 if "%DO_ZIP%"=="1" (
 	ECHO ***************************************************************
