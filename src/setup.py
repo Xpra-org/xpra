@@ -982,7 +982,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                 CLEAN_FILES.append(x[:-2]+".pyd")
         if x.endswith(".pxi"):
             #clean the Cython annotated html files:
-            CLEAN_FILES.append(x[:-2]+".html")
+            CLEAN_FILES.append(x[:-4]+".html")
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
