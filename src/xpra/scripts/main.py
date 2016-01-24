@@ -864,13 +864,16 @@ def configure_logging(options, mode):
     to = sys.stderr
     if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl"):
         to = sys.stdout
-    if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "version", "print", "showconfig"):
+    if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
         if (hasattr(to, "fileno") and os.isatty(to.fileno())) or os.environ.get("XPRA_FORCE_COLOR_LOG", "0")=="1":
-            from xpra.log import LOG_FORMAT, enable_color
-            enable_color(to, LOG_FORMAT)
+            from xpra.log import LOG_FORMAT, NOPREFIX_FORMAT, enable_color
+            fmt = LOG_FORMAT
+            if mode in ("stop", "showconfig"):
+                fmt = NOPREFIX_FORMAT
+            enable_color(to, fmt)
     else:
         #a bit naughty here, but it's easier to let xpra.log initialize
         #the logging system every time, and just undo things here..
