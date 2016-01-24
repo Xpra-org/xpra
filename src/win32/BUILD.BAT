@@ -104,7 +104,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Delete all GStreamer DLLs and only add those we actually want
-DEL %DIST%\gst*dll
+DEL %DIST%\gst*dll 2> NUL
 SET GSTREAMER0_LOG=gstreamer0.log
 DEL /Q %GSTREAMER0_LOG% 2> NUL
 ECHO ****** Adding GStreamer Main DLLs
