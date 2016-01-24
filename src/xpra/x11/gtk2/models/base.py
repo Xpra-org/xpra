@@ -345,9 +345,9 @@ class BaseWindowModel(CoreX11WindowModel):
         metalog("wm_hints.input = %s", _input)
         #we only set this value once:
         #(input_field always starts as True, and we then set it to an int)
-        if self._input_field is True or _input is not None:
+        if self._input_field is True and _input is not None:
             #keep the value as an int to differentiate from the start value:
-            self._input_field = int(_input or 0)
+            self._input_field = int(_input)
             self._update_can_focus()
 
     def _update_can_focus(self, *args):
