@@ -1221,7 +1221,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         if INITENV_COMMAND:
             cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
         else:
-            cmd = proxy_cmd
+            cmd += proxy_cmd
         try:
             kwargs = {}
             if "env" in display_desc:
