@@ -93,7 +93,9 @@ class SoundSink(SoundPipeline):
                     "leaky=%s" % QUEUE_LEAK]
         if QUEUE_SILENT:
             queue_el.append("silent=%s" % QUEUE_SILENT)
-        pipeline_els.append(" ".join(queue_el))
+        if QUEUE_TIME>0:
+            #pipeline_els.append("audiorate")
+            pipeline_els.append(" ".join(queue_el))
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
         from xpra.sound.gstreamer_util import gst_major_version
         sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(gst_major_version, {}).get(sink_type, {}))
@@ -102,6 +104,7 @@ class SoundSink(SoundPipeline):
         pipeline_els.append(sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
+        log.info("pipeline: %s", pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
@@ -114,7 +117,7 @@ class SoundSink(SoundPipeline):
         self.last_overrun = 0
         self.last_max_update = time.time()
         self.level_lock = Lock()
-        if QUEUE_SILENT==0:
+        if QUEUE_SILENT==0 and self.queue:
             self.queue.connect("overrun", self.queue_overrun)
             self.queue.connect("underrun", self.queue_underrun)
             self.queue.connect("running", self.queue_running)
@@ -169,7 +172,7 @@ class SoundSink(SoundPipeline):
             return
         try:
             lrange = self.get_level_range()
-            if lrange>0:
+            if lrange>0 and self.queue:
                 cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
                 #from 100% down to 0% in 2 seconds after underrun:
                 now = time.time()
@@ -190,7 +193,7 @@ class SoundSink(SoundPipeline):
             now = time.time()
             log("set_max_level lrange=%3i, last_max_update=%is", lrange, int(now-self.last_max_update))
             #more than one second since last update and we have a range:
-            if now-self.last_max_update>1 and lrange>0:
+            if now-self.last_max_update>1 and lrange>0 and self.queue:
                 cmst = self.queue.get_property("max-size-time")//MS_TO_NS
                 #overruns in the last minute:
                 olm = len([x for x in list(self.overrun_events) if now-x<60])
@@ -238,7 +241,7 @@ class SoundSink(SoundPipeline):
 
     def get_info(self):
         info = SoundPipeline.get_info(self)
-        if QUEUE_TIME>0:
+        if QUEUE_TIME>0 and self.queue:
             clt = self.queue.get_property("current-level-time")
             qmax = self.queue.get_property("max-size-time")
             qmin = self.queue.get_property("min-threshold-time")
@@ -275,9 +278,10 @@ class SoundSink(SoundPipeline):
         if self.push_buffer(buf):
             self.buffer_count += 1
             self.byte_count += len(data)
-            clt = self.queue.get_property("current-level-time")//MS_TO_NS
-            log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
-            self.levels.append((time.time(), clt))
+            if self.queue:
+                clt = self.queue.get_property("current-level-time")//MS_TO_NS
+                log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
+                self.levels.append((time.time(), clt))
             if self.queue_state=="pushing":
                 self.set_min_level()
                 self.set_max_level()
