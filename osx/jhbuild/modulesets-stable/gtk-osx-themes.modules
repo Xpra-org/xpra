@@ -90,6 +90,7 @@
 	    hash="sha256:d14d7b3e25023ce34302022fd7c9b3a468629c94dff6c177874629686bfc71a7"/>
     <dependencies>
       <dep package="libcroco"/>
+      <dep package="meta-gtk-osx-freetype"/>
     </dependencies>
   </autotools>
 

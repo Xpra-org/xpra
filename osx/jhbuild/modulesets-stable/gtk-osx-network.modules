@@ -1,0 +1,260 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+  <repository name="ftp.gnome.org" type="tarball" default="yes"
+              href="http://ftp.gnome.org/pub/GNOME/sources/"/>
+  <repository name="openssl" type="tarball"
+              href="https://www.openssl.org/source/"/>
+  <repository name="ftp.gnu.org" type="tarball" href="ftp://ftp.gnu.org/gnu/"/>
+  <repository name="sourceforge" type="tarball"
+              href="http://downloads.sourceforge.net/sourceforge/"/>
+  <repository name="gnutls" type="tarball" href="ftp://ftp.gnutls.org/"/>
+  <repository name="webm" type="tarball"
+              href="http://downloads.webmproject.org/releases/"/>
+  <repository name="webkit.org" type="tarball"
+              href="http://www.webkitgtk.org/releases/"/>
+
+  <!-- Builds last version of WebKitGTK that supported GTK 2.x -->
+  <metamodule id="meta-gtk-osx-webkit">
+    <dependencies>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="WebKit"/>
+    </dependencies>
+  </metamodule>
+
+  <!-- Same as meta-gtk-osx-webkit above, but builds the last version that
+  worked on SDK <= 10.5 -->
+  <metamodule id="meta-gtk-osx-webkit1.6">
+    <dependencies>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="WebKit1.6"/>
+    </dependencies>
+  </metamodule>
+
+  <!-- Builds latest stable version of WebKitGTK for GTK 3.x -->
+  <metamodule id="meta-gtk-osx-webkit-gtk3">
+    <dependencies>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="webkit2gtk3"/>
+    </dependencies>
+  </metamodule>
+
+  <!-- of the many arguments such as prefix and libdir that jhbuild might pass
+  to configure, openssl only understands prefix, and only with =. -->
+  <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
+             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s"
+             makeinstallargs="install_sw" supports-non-srcdir-builds="no">
+    <branch module="openssl-0.9.8zg.tar.gz" version="0.9.8zg" repo="openssl"/>
+  </autotools>
+
+  <!-- Rudely demands TeX to build documentation -->
+  <!-- Assembler files are missing md5-compress.asm for x86_64 -->
+  <autotools id="libnettle" autogen-sh="configure"
+             autogenargs="--disable-documentation --disable-assembler">
+    <!-- gnutls 3.3.x does not support nettle 3.0 -->
+    <branch repo="ftp.gnu.org" version="2.7.1"
+            module="nettle/nettle-2.7.1.tar.gz">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libnettle-cc-for-build-needs-cflags.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="gmp"/>
+      <dep package="openssl"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libtasn1" supports-non-srcdir-builds="no"
+             autogen-sh="configure">
+    <branch repo="ftp.gnu.org" version="4.4"
+            module="libtasn1/libtasn1-4.4.tar.gz"/>
+  </autotools>
+
+  <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
+             supports-non-srcdir-builds="no">
+    <branch repo="sourceforge" version="1.2.8"
+            module="libpng/zlib-1.2.8.tar.xz"/>
+  </autotools>
+
+  <!-- Building with p11-kit support breaks g-ir-scanner, for some weird reason. -->
+  <autotools id="gnutls" autogen-sh="configure"
+             autogenargs="--disable-gtk-doc-html --without-p11-kit">
+    <branch repo="gnutls" version="3.3.12"
+            module="gcrypt/gnutls/v3.3/gnutls-3.3.12.tar.xz"/>
+    <dependencies>
+      <dep package="libnettle"/>
+      <dep package="libtasn1"/>
+      <dep package="zlib"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="glib-networking" autogen-sh="configure"
+             autogenargs="--without-ca-certificates set_more_warnings=no">
+    <branch module="glib-networking/2.44/glib-networking-2.44.0.tar.xz"
+            hash="sha256:8f8a340d3ba99bfdef38b653da929652ea6640e27969d29f7ac51fbbe11a4346"
+            version="2.44.0"/>
+    <dependencies>
+      <dep package="gnutls"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libsoup" autogen-sh="configure"
+             autogenargs="set_more_warnings=no">
+    <branch module="libsoup/2.48/libsoup-2.48.1.tar.xz" version="2.48.1"
+            hash="sha256:9b0d14b36e36a3131a06c6e3aa7245716e6904e3e636df81c0b6c8bd3f646f9a"/>
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="glib-networking"/>
+      <dep package="sqlite"/>
+    </dependencies>
+  </autotools>
+
+  <autotools id="libwebp" autogen-sh="configure">
+    <branch repo="webm" module="webp/libwebp-0.4.3.tar.gz" version="0.4.3"/>
+  </autotools>
+
+  <!-- This is WebKitGTK 1.x, for GTK 2.x.
+    disable-geolocation: Requires geoclue. No module for this yet.
+    disable-video: Requires gstreamer. If you want video, add to .jhbuildrc:
+      append_autogenargs('WebKit', '&#45;-enable-video')
+    Wno-c++11-extensions: Suppresses clang warning that makes output
+      inconvenient to read.
+    std=c99: Required for inline keyword in C.
+  -->
+  <autotools id="WebKit" autogen-sh="autoreconf"
+             autogenargs='--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0 --disable-geolocation --disable-webkit2 CXXFLAGS="$CXXFLAGS -Wno-c++11-extensions" CFLAGS="$CFLAGS -std=c99"'>
+    <branch repo="webkit.org" module="webkitgtk-1.10.2.tar.xz" version="1.10.2">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-no-x11.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-88407-portable-echo-n.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-platform-fixes.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-pango-includes.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-remove-pangoft2-dependency.patch"
+             strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="enchant"/>
+      <dep package="icu"/>
+      <dep package="libsoup"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="meta-gstreamer-1.0"/>
+      <dep package="meta-gtk-osx-gtk3"/>
+    </after>
+  </autotools>
+
+  <!--WebKit 1.10 doesn't build with the 10.5 SDK, so use this older version for
+  old builds.-->
+  <autotools id="WebKit1.6" autogen-sh="configure"
+             autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0">
+    <branch repo="webkit.org" module="webkit-1.6.1.tar.gz" version="1.6.1">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-no-x11.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-pango-includes.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-utf8-include.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-enable-blob.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-gnome-3.6-fixup.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-clang-fixup.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-out-of-source-fixup.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-remove-pangoft2-dependency.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/bug-92264-webkit-bison-2.6.patch"
+             strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="enchant"/>
+      <dep package="icu"/>
+      <dep package="libsoup"/>
+      <dep package="meta-gtk-osx-freetype"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-core"/>
+      <dep package="meta-gstreamer-1.0"/>
+      <dep package="meta-gtk-osx-gtk3"/>
+    </after>
+  </autotools>
+
+  <!-- This is WebKitGTK 2.4.x, the last version that had the WebKit1 API.
+    disable-webkit2: Requires both GTK2 and 3. Currently not supported.
+    disable-credential-storage: Requires libsecret. No module for this yet.
+    disable-geolocation: Requires geoclue 1 or 2. No module for this yet.
+    disable-video, disable-web-audio: Requires gstreamer. If you want video and
+      audio, add this to your .jhbuildrc:
+      append_autogenargs('WebKit', '&#45;-enable-video')
+      append_autogenargs('WebKit', '&#45;-enable-web-audio')
+    -j1: Workaround for https://bugs.webkit.org/show_bug.cgi?id=140171
+  -->
+  <autotools id="webkit1gtk3" autogen-sh="autoreconf" makeargs="-j1"
+             autogenargs="--enable-quartz-target --with-gtk=3.0 --disable-webkit2 --disable-credential-storage --disable-geolocation --disable-video --disable-web-audio CXXFLAGS='-std=gnu++11'">
+    <branch repo="webkit.org" module="webkitgtk-2.4.9.tar.xz" version="2.4.9">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch"
+             strip="1"/>
+      <!-- This patch can be commented out for XCode >= 6.3, but does no harm if
+      it's left in -->
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch"
+             strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="libwebp"/>
+      <dep package="enchant"/>
+      <dep package="icu"/>
+      <dep package="libsoup"/>
+      <dep package="meta-gtk-osx-freetype"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gstreamer-1.0"/>
+    </after>
+  </autotools>
+
+  <!-- This is the stable release of WebKitGTK, for GTK 3.x. Use it if you need
+      the WebKit2 API (most applications do.)
+    ENABLE_MINIBROWSER: This is enabled because it's an easy test of whether the
+      library is working correctly: run "jhbuild run MiniBrowser".
+    ENABLE_PLUGIN_PROCESS_GTK2: Requires both GTK 2.x and 3.x. Currently not
+      supported.
+    ENABLE_VIDEO, ENABLE_WEB_AUDIO: Requires gstreamer. If you want video and
+      audio, fix this in your .jhbuildrc-custom. You may need some extra
+      patches, this is untested.
+    ENABLE_CREDENTIAL_STORAGE: Requires libsecret. No module for this yet.
+    ENABLE_GEOLOCATION: Requires geoclue. No module for this yet.
+    ENABLE_OPENGL: Untested.
+    USE_LIBNOTIFY: Requires libnotify. No module for this yet.
+    USE_LIBHYPHEN: Requires libhyphen. No module for this yet.
+  -->
+  <cmake id="webkit2gtk3"
+         cmakeargs="-DPORT=GTK -DENABLE_X11_TARGET=OFF -DENABLE_QUARTZ_TARGET=ON -DENABLE_TOOLS=ON -DENABLE_MINIBROWSER=ON -DENABLE_PLUGIN_PROCESS_GTK2=OFF -DENABLE_VIDEO=OFF -DENABLE_WEB_AUDIO=OFF -DENABLE_CREDENTIAL_STORAGE=OFF -DENABLE_GEOLOCATION=OFF -DENABLE_OPENGL=OFF -DUSE_LIBNOTIFY=OFF -DUSE_LIBHYPHEN=OFF -DCMAKE_CXX_FLAGS='-stdlib=libc++'">
+    <branch repo="webkit.org" module="webkitgtk-2.10.2.tar.xz" version="2.10.2">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144561-quartz-backend.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144560-platform-fixes.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144785-link-injected-bundle.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-148606-build-texture-mapper-gl-separately.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-148607-include-stub-for-plugin-permission-request.patch"
+             strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="libwebp"/>
+      <dep package="enchant"/>
+      <dep package="icu"/>
+      <dep package="libsoup"/>
+      <dep package="meta-gtk-osx-freetype"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gstreamer-1.0"/>
+    </after>
+  </cmake>
+</moduleset>

@@ -32,8 +32,12 @@
 
        - gtk-osx-python.modules: self explaining.
        - gtk-osx-gtkmm.modules: self explaining.
+       - gtk-osx-javascript.modules: GJS, associated tools, and the Mozilla JS
+         library it depends on.
        - gtk-osx-gstreamer.modules: self explaining.
        - gtk-osx-themes.modules: self explaining.
+       - gtk-osx-network.modules: The network/crypto stack and various
+         configurations of WebKit.
 
        - gtk-osx-random.modules: "random stuff", has apps for testing GTK+.
        - gtk-osx-unsupported.modules: more testing stuff, competely unsupported.
@@ -43,6 +47,7 @@
   <include href="gtk-osx-gstreamer.modules"/>
   <include href="gtk-osx-gtkmm.modules"/>
   <include href="gtk-osx-javascript.modules"/>
+  <include href="gtk-osx-network.modules"/>
   <include href="gtk-osx-python.modules"/>
   <include href="gtk-osx-random.modules"/>
   <include href="gtk-osx-themes.modules"/>
@@ -78,7 +83,7 @@
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gio-in-reserved-in-gcc-48.patch" strip="1"/>
     </branch>
     <dependencies>
-      <dep package="libffi"/>
+        <dep package="libffi"/>
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
@@ -123,6 +128,8 @@
             version="1.44.0"
             hash="sha256:6f0c2c28aeaa37b5037acbf21558098c4f95029b666db755d3a12c2f1e1627ad">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
+      <patch file="gobject-introspection-625195-Fix-non-libtool-linker-flags-on-Darwin.patch"
+             strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -174,12 +181,13 @@
 
   <autotools id="gtk+" autogen-sh="autoreconf"
              autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection">
-    <branch module="gtk+/2.24/gtk+-2.24.27.tar.xz" version="2.24.27"
-            hash="sha256:20cb10cae43999732a9af2e9aac4d1adebf2a9c2e1ba147050976abca5cd24f4">
+    <branch module="gtk+/2.24/gtk+-2.24.28.tar.xz" version="2.24.28"
+            hash="sha256:b2c6441e98bc5232e5f9bba6965075dcf580a8726398f7374d39f90b88ed4656">
       <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0004-Bug-571582-GtkSelection-implementation-for-quartz.patch" strip="1"/-->
-      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/-->
-      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/-->
-      <!--patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-2-m4-creation.patch" strip="1"/-->
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-2-m4-creation.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
       <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-fullscreenfix-quartz.patch" strip="1"/>
    </branch>
     <dependencies>
@@ -225,20 +233,22 @@
     </after>
   </autotools>
 
-  <!-- enable-fc and enable-ft required for librsvg's pixbuf loader -->
+  <!-- Cairo will automatically enable freetype and fontconfig if
+       meta-gtk-osx-freetype is built, so packages which require
+       cairoft or cairofc should have meta-gtk-osx-freetype as a
+       dependency. -->
   <autotools id="cairo"  autogen-sh="configure"
-             autogenargs="--enable-pdf --enable-quartz --enable-ft --enable-fc --disable-xlib --without-x">
+             autogenargs="--enable-pdf --enable-quartz --disable-xlib --without-x">
     <branch module="cairo-1.14.0.tar.xz"  version="1.14.0"
             repo="cairographics"
             hash="sha1:53cf589b983412ea7f78feee2e1ba9cea6e3ebae">
     </branch>
     <dependencies>
       <dep package="pixman"/>
-      <dep package="fontconfig"/>
-      <dep package="freetype"/>
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
+      <dep package="meta-gtk-osx-freetype"/>
     </after>
   </autotools>
 

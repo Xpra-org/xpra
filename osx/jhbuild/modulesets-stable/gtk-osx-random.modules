@@ -28,6 +28,8 @@
               href="git://git.gnome.org/"/>
   <repository type="tarball" name="itstool"
 	      href="http://files.itstool.org/"/>
+  <repository type="tarball" name="abisource/enchant"
+              href="http://www.abisource.com/downloads/enchant/"/>
 
   <metamodule id="meta-gtk-osx-random">
     <dependencies>
@@ -118,17 +120,16 @@ Libglade itself is deprecated. This is the last release. -->
     </dependencies>
   </autotools>
 
-  <!-- 3.8 is the last version to support WebKit1 -->
   <autotools id="devhelp-gtk3" autogen-sh="configure">
-    <branch module="devhelp/3.8/devhelp-3.8.2.tar.xz" version="3.8.2"
-            hash="sha256:a245b53824c6f2ff89245ff807bb2140bde74951ea6f1d759a0fd0c6959ca9f7"/>
+    <branch module="devhelp/3.16/devhelp-3.16.1.tar.xz" version="3.16.1"
+            hash="sha256:673c34e6851c2848e6257da8de5edc222d41e1dbf110501bd29d7f6810f41345"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="meta-gtk-osx-themes"/>
       <dep package="meta-gtk-osx-gtk3"/>
     </after>
     <dependencies>
-      <dep package="webkit1gtk3"/>
+      <dep package="webkit2gtk3"/>
       <dep package="gsettings-desktop-schemas"/>
       <!-- Without shared-mime-info, HTML documents display as plain text -->
       <dep package="shared-mime-info"/>
@@ -380,6 +381,20 @@ Libglade itself is deprecated. This is the last release. -->
 	    repo="sourceforge"/>
   </autotools>
 
+  <autotools id="enchant" autogen-sh="configure"
+             autogenargs="--with-myspell-dir=/Library/Dictionaries">
+    <branch module="1.6.0/enchant-1.6.0.tar.gz" version="1.6.0"
+            repo="abisource/enchant">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-gsize.patch"
+             strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/enchant-env.patch"
+             strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="glib"/>
+    </dependencies>
+  </autotools>
+
   <autotools id="gtkspell" autogen-sh="configure">
     <branch module="gtkspell/gtkspell-2.0.16.tar.gz" repo="sourceforge"
 	    version="2.0.16"/>
@@ -423,7 +438,7 @@ Libglade itself is deprecated. This is the last release. -->
 	    revision="libatomic_ops-7_2f"/>
   </autotools>
 
-  <autotools id="bdw-gc" autogen-template="./autogen.sh &amp;&amp; automake-1.10 -ac &amp;&amp; ./configure --prefix %(prefix)s  %(autogenargs)s">
+  <autotools id="bdw-gc" autogen-template="pushd %(srcdir)s &amp;&amp; ./autogen.sh &amp;&amp; automake-1.10 -ac &amp;&amp; popd &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
     <branch repo="github.com" module="ivmai/bdwgc"  revision="gc7_2f" />
     <dependencies>
       <dep package="libatomic-ops"/>
@@ -443,6 +458,7 @@ Libglade itself is deprecated. This is the last release. -->
     <branch repo="ftp.gnu.org" module="guile/guile-2.0.11.tar.gz"
 	    version="2.0.11">
       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/guile20-align-fix.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/guild-shell.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="libunistring"/>
