@@ -40,23 +40,63 @@ def crypto_backend_init():
     log("crypto_backend_init() backend=%s", backend)
     if backend is not False:
         return
-    try:
-        if CRYPTO_LIBRARY=="python-cryptography":
-            from xpra.net import pycryptography_backend
-            backend = pycryptography_backend
-        elif CRYPTO_LIBRARY=="pycrypto":
-            from xpra.net import pycrypto_backend
-            backend = pycrypto_backend
+    try_backends = []
+    if CRYPTO_LIBRARY=="python-cryptography":
+        try_backends = ["python-cryptography", "pycrypto"]
+    elif CRYPTO_LIBRARY=="pycrypto":
+        try_backends = ["pycrypto", "python-cryptography"]
+    else:
+        raise ImportError("invalid crypto library specified: '%s'" % CRYPTO_LIBRARY)
+    for tb in try_backends:
+        try:
+            if tb=="python-cryptography":
+                from xpra.net import pycryptography_backend
+                try_backend = pycryptography_backend
+            else:
+                assert tb=="pycrypto"
+                from xpra.net import pycrypto_backend
+                try_backend = pycrypto_backend
+        except ImportError as e:
+            log.error("Error: encryption library %s is not available!", tb)
+            log.error(" %s", e)
+            log("%s import failure", tb, exc_info=True)
         else:
-            raise ImportError("invalid crypto library specified: '%s'" % CRYPTO_LIBRARY)
-        ENCRYPTION_CIPHERS[:] = backend.ENCRYPTION_CIPHERS[:]
-    except ImportError as e:
-        log.error("Error: encryption library %s is not available!", CRYPTO_LIBRARY)
-        log.error(" %s", e)
-        log("no crypto backend", exc_info=True)
-        backend = None
-        ENCRYPTION_CIPHERS = []
-    log("crypto_backend_init() ENCRYPTION_CIPHERS=%s", ENCRYPTION_CIPHERS)
+            try:
+                #validate it:
+                validate_backend(try_backend)
+                ENCRYPTION_CIPHERS[:] = try_backend.ENCRYPTION_CIPHERS[:]
+                backend = try_backend
+                break
+            except Exception as e:
+                log.error("Error: encryption library %s failed validation!", tb)
+                log.error(" %s", e)
+                log("%s validation failure", tb, exc_info=True)
+    log("crypto_backend_init() backend=%s, ENCRYPTION_CIPHERS=%s", backend, ENCRYPTION_CIPHERS)
+
+def validate_backend(try_backend):
+    message = b"some message1234"
+    password = "this is our secret"
+    key_salt = DEFAULT_SALT
+    iterations = DEFAULT_ITERATIONS
+    block_size = DEFAULT_BLOCKSIZE
+    key = try_backend.get_key(password, key_salt, block_size, iterations)
+    log("validate_backend(%s) key=%s", try_backend, key)
+    assert key is not None, "backend %s failed to generate a key" % try_backend
+    enc = try_backend.get_encryptor(key, DEFAULT_IV)
+    log("validate_backend(%s) encryptor=%s", try_backend, enc)
+    assert enc is not None, "backend %s failed to generate an encryptor" % enc
+    dec = try_backend.get_decryptor(key, DEFAULT_IV)
+    log("validate_backend(%s) decryptor=%s", try_backend, dec)
+    assert dec is not None, "backend %s failed to generate a decryptor" % enc
+    ev = enc.encrypt(message)
+    import binascii
+    from xpra.util import strtobytes
+    evs = binascii.hexlify(strtobytes(ev))
+    log("validate_backend(%s) encrypted(%s)=%s", try_backend, message, evs)
+    dv = dec.decrypt(ev)
+    log("validate_backend(%s) decrypted(%s)=%s", try_backend, evs, dv)
+    assert dv==message
+    log("validate_backend(%s) passed", try_backend)
 
 
 def pad(padding, size):
@@ -142,6 +182,7 @@ def get_decryptor(ciphername, iv, password, key_salt, iterations):
 
 
 def main():
+    crypto_backend_init()
     from xpra.platform import program_context
     import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
