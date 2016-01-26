@@ -249,6 +249,12 @@ class DBUS_Server(dbus.service.Object):
                 d[str(source)] = str(p)
         return d
 
-    @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}')
-    def GetAllInfo(self):
-        return dict((str(k), native_to_dbus(v)) for k,v in self.server.get_info().items())
+    @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
+    def GetAllInfo(self, callback, errback):
+        def gotinfo(proto=None, info={}):
+            try:
+                v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in info.items())
+                callback(v)
+            except Exception as e:
+                errback(str(e))
+        self.server.get_all_info(gotinfo)

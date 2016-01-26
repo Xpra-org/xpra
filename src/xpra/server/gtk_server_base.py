@@ -80,8 +80,8 @@ class GTKServerBase(ServerBase):
             capabilities.update(get_gtk_version_info())
         return capabilities
 
-    def get_ui_info(self, *args):
-        info = ServerBase.get_ui_info(self, *args)
+    def get_ui_info(self, proto, *args):
+        info = ServerBase.get_ui_info(self, proto, *args)
         info["server.display"] = gtk.gdk.display_get_default().get_name()
         info["server.root_window_size"] = self.get_root_window_size()
         return info

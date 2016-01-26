@@ -893,7 +893,7 @@ class ServerCore(object):
     def do_send_info(self, proto, info):
         proto.send_now(("hello", info))
 
-    def get_all_info(self, callback, proto, *args):
+    def get_all_info(self, callback, proto=None, *args):
         ui_info = self.get_ui_info(proto, *args)
         def in_thread(*args):
             #this runs in a non-UI thread

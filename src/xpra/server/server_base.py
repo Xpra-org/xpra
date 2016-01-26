@@ -1638,7 +1638,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         log.info("processing info request from %s", proto._conn)
         self.get_all_info(self.do_send_info, proto, self._id_to_window.keys())
 
-    def get_ui_info(self, proto, wids, *args):
+    def get_ui_info(self, proto, wids=None, *args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -1771,7 +1771,7 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def add_windows_info(self, info, window_ids):
         for wid, window in self._id_to_window.items():
-            if wid not in window_ids:
+            if window_ids is not None and wid not in window_ids:
                 continue
             for k,v in self.get_window_info(window).items():
                 wp = "window[%s]." % wid

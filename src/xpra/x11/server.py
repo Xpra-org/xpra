@@ -302,7 +302,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     info["cursor." + x] = v
         return info
 
-    def get_ui_info(self, proto, wids, *args):
+    def get_ui_info(self, proto, wids=None, *args):
         info = X11ServerBase.get_ui_info(self, proto, wids, *args)
         #_NET_WM_NAME:
         wm = self._wm
