@@ -1653,7 +1653,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         return get_thread_info(proto, list(self._server_sources.keys()))
 
 
-    def get_info(self, proto, client_uuids=None, wids=None, *args):
+    def get_info(self, proto=None, client_uuids=None, wids=None, *args):
         start = time.time()
         info = ServerCore.get_info(self, proto)
         if client_uuids:

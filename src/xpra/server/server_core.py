@@ -60,7 +60,10 @@ def get_server_info():
 
 def get_thread_info(proto=None, protocols=[]):
     #threads:
-    info_threads = proto.get_threads()
+    if proto:
+        info_threads = proto.get_threads()
+    else:
+        info_threads = []
     info = {
             "count"        : threading.active_count() - len(info_threads),
             "info.count"   : len(info_threads)

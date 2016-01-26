@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.dbus.helper import dbus_to_native
+from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
 from xpra.util import parse_scaling_value, from0to100, AdHocStruct
 import dbus.service
@@ -248,3 +248,7 @@ class DBUS_Server(dbus.service.Object):
             except:
                 d[str(source)] = str(p)
         return d
+
+    @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}')
+    def GetAllInfo(self):
+        return dict((str(k), native_to_dbus(v)) for k,v in self.server.get_info().items())

@@ -34,6 +34,31 @@ def dbus_to_native(value):
         return [dbus_to_native(value[i]) for i in range(len(value))]
     return value
 
+def native_to_dbus(value):
+    if value is None:
+        return None
+    elif isinstance(value, int):
+        return dbus.types.Int64(value)
+    elif isinstance(value, long):
+        return dbus.types.Int64(value)
+    elif isinstance(value, unicode):
+        return dbus.types.String(value)
+    elif isinstance(value, basestring):
+        return dbus.types.String(value)
+    elif isinstance(value, float):
+        return dbus.types.Double(value)
+    elif isinstance(value, list):
+        if not value:
+            return dbus.Array(signature="s")
+        return dbus.types.Array([dbus_to_native(x) for x in value])
+    elif isinstance(value, dict):
+        if not value:
+            return dbus.types.Dictionary(signature="sv")
+        return dbus.types.Dictionary(value)
+    return dbus.types.String(value)
+
+
+
 class DBusHelper(object):
 
     def __init__(self):
