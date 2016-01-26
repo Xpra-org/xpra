@@ -120,7 +120,7 @@ server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3 and
 client_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
-dbus_ENABLED = DEFAULT and x11_ENABLED
+dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
@@ -1900,7 +1900,9 @@ toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
 toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipboard")
-toggle_packages(dbus_ENABLED and server_ENABLED, "xpra.server.dbus")
+#cannot use toggle here as py2exe will complain if we try to exclude this module:
+if dbus_ENABLED and server_ENABLED:
+    add_packages("xpra.server.dbus")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
