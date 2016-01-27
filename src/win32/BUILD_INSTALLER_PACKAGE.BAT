@@ -71,31 +71,26 @@ groff.exe -mandoc -Thtml < man\xpra.1 > %DIST%\manual.html
 
 ECHO ****** Adding TortoisePlink
 REM "These are the versions currently used by TortoisePlink.exe: VC 2012 redist.."
-SET TORTOISESVN_XP="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN-XP"
-IF NOT EXIST "%TORTOISESVN_XP%" (
-	SET TORTOISESVN="%ProgramFiles(x86)%\TortoiseSVN"
-	ECHO Warning: '%TORTOISESVN_XP%' does not exist,
-	ECHO Warning: using legacy fallback location: '%TORTOISESVN%'
-	COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" %DIST%\
-	COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" %DIST%\
-	COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" %DIST%\Plink.exe
-	COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" %DIST%\
-) ELSE (
-	ECHO XP version of TortoisePlink found in %TORTOISESVN_XP%
-	COPY /B /Y /V "%TORTOISESVN_XP%\msvcr110.dll" %DIST%\
-	COPY /B /Y /V "%TORTOISESVN_XP%\msvcp110.dll" %DIST%\
-	COPY /B /Y /V "%TORTOISESVN_XP%\TortoisePlink.exe" %DIST%\Plink.exe
-	COPY /B /Y /V "%TORTOISESVN_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
+REM "Use the Win7-onwards-only copy by default:"
+SET TORTOISEPLINK="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoisePlink"
+IF NOT EXIST "%TORTOISEPLINK%" (
+	ECHO Error: '%TORTOISEPLINK%' does not exist!
+	GOTO ERROR
 )
-REM "Win7 onwards copy:"
-MKDIR %DIST%\TortoisePlink
-SET TORTOISESVN_NEW="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN"
-IF NOT EXIST "%TORTOISESVN_NEW%" (
-	ECHO Error: '%TORTOISESVN_NEW%' does not exist!
-) ELSE (
-	COPY /Y %XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN\TortoisePlink.exe %DIST%\TortoisePlink\Plink.exe > NUL
-	COPY /Y %XPRA_WIN32_BUILD_LIB_PREFIX%\TortoiseSVN\*.dll %DIST%\TortoisePlink\ > NUL
+ECHO Win7 onwards copy of TortoisePlink found in %TORTOISEPLINK%
+COPY /Y %TORTOISEPLINK%\TortoisePlink.exe %DIST%\Plink.exe > NUL
+COPY /Y %TORTOISEPLINK%\*.dll %DIST%\ > NUL
+SET TORTOISEPLINK_XP="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoisePlink-XP"
+IF NOT EXIST "%TORTOISEPLINK_XP%" (
+	ECHO Error: '%TORTOISEPLINK_XP%' does not exist!
+	GOTO ERROR
 )
+ECHO XP version of TortoisePlink found in %TORTOISESVN_XP%
+MKDIR %DIST%\TortoisePlink-XP
+COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcr110.dll" %DIST%\TortoisePlink-XP\
+COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcp110.dll" %DIST%\TortoisePlink-XP\
+COPY /B /Y /V "%TORTOISEPLINK_XP%\TortoisePlink.exe" %DIST%\TortoisePlink-XP\Plink.exe
+COPY /B /Y /V "%TORTOISEPLINK_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
 
 if "%DO_ZIP%"=="1" (
 	ECHO ***************************************************************
