@@ -23,6 +23,9 @@ APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=
 JITTER = int(os.environ.get("XPRA_SOUND_SOURCE_JITTER", "0"))
 SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
+BUFFER_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_BUFFER_TIME", "64"))
+LATENCY_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_LATENCY_TIME", "32"))
+
 
 class SoundSource(SoundPipeline):
 
@@ -63,6 +66,7 @@ class SoundSource(SoundPipeline):
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
         self.src_type = src_type
+        src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
         encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
@@ -111,6 +115,25 @@ class SoundSource(SoundPipeline):
             #Gst 0.10:
             self.sink.connect("new-buffer", self.on_new_buffer)
             self.sink.connect("new-preroll", self.on_new_preroll0)
+        self.src = self.pipeline.get_by_name("src")
+        try:
+            global BUFFER_TIME, LATENCY_TIME
+            assert BUFFER_TIME>=LATENCY_TIME, "invalid settings: latency must be lower than the buffer time"
+            def settime(attr, v):
+                cval = self.src.get_property(attr)
+                gstlog("default: %s=%i", attr, cval//1000)
+                if v>=0:
+                    self.src.set_property(attr, v*1000)
+                    gstlog("overriding with: %s=%i", attr, v)
+            settime("buffer-time", BUFFER_TIME)
+            settime("latency-time", LATENCY_TIME)
+            for x in ("actual-buffer-time", "actual-latency-time"):
+                #don't comment this out, it is used to verify the attributes are present:
+                gstlog("initial %s: %s", x, self.src.get_property(x))
+            self.buffer_latency = True
+        except Exception as e:
+            log.info("source %s does not support 'buffer-time' or 'latency-time': %s", self.src_type, e)
+            self.buffer_latency = False
 
     def __repr__(self):
         return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
@@ -127,6 +150,11 @@ class SoundSource(SoundPipeline):
             info["caps"] = self.caps
         if self.queue:
             info["queue.cur"] = self.queue.get_property("current-level-time")//MS_TO_NS
+        if self.buffer_latency:
+            for x in ("actual-buffer-time", "actual-latency-time"):
+                v = self.src.get_property(x)
+                if v>=0:
+                    info[x] = v
         return info
 
 
