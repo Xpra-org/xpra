@@ -758,6 +758,8 @@ def guess_xpra_display(socket_dir, socket_dirs):
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args):
+    if opts.password_file and not (opts.auth or opts.tcp_auth):
+        raise InitException("when specifying a password-file, you must use auth or tcp-auth")
     validate_encryption(opts)
     if opts.encoding and opts.encoding=="help":
         #avoid errors and warnings:
