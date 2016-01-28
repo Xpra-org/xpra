@@ -53,7 +53,6 @@ class SoundSource(SoundPipeline):
                 src_type = "pulsesrc"
                 default_src_options = {"device" : monitor_device}
             src_options = default_src_options
-            src_options.update(src_options)
         if src_type not in get_source_plugins():
             raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins())))
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_codecs())]
