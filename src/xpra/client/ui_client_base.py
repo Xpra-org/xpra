@@ -419,17 +419,48 @@ class UIXpraClient(XpraClientBase):
         if desktop_scaling in TRUE_OPTIONS:
             return 1, 1
         root_w, root_h = self.get_root_size()
-        if desktop_scaling=="auto":
-            #with auto mode, enable scaling if the desktop is very big:
-            if root_w<=1920 or root_h<=1080:
-                return 1,1              #100% no auto scaling up to 1080p
-            if root_w<=2560 or root_h<=1600:
-                return 1.5,1.5          #150% upscaling up to WQXGA
-            if root_w<=3960 or root_h<=2160:
-                return 2,2              #200% upscaling up to UHD
-            if root_w<=7680 or root_h<=4320:
-                return 3,3              #300% upscaling up to FUHD
-            return 4,4                  #400% if higher (who has this anyway?)
+        if desktop_scaling.startswith("auto"):
+            #figure out if the command line includes settings to use for auto mode:
+            #here are our defaults:
+            limits = ((1920, 1080, 1, 1),       #100% no auto scaling up to 1080p
+                      (2560, 1600, 1.5, 1.5),   #150% upscaling up to WQXGA
+                      (3960, 2160, 2, 2),       #200% upscaling up to UHD
+                      (7680, 4320, 3, 3),       #300% upscaling up to FUHD
+                      (32768, 32768, 4, 4))     #400% if higher (who has this anyway?)
+            if desktop_scaling=="auto":
+                pass
+            elif desktop_scaling.startswith("auto:"):
+                limstr = desktop_scaling[5:]    #ie: '1920x1080:1,2560x1600:1.5,...
+                limp = limstr.split(",")
+                limits = []
+                for l in limp:
+                    try:
+                        ldef = l.split(":")
+                        assert len(ldef)==2, "could not find 2 parts separated by ':'"
+                        dims = ldef[0].split("x")
+                        assert len(dims)==2, "could not find 2 dimensions separated by 'x'"
+                        x, y = int(dims[0]), int(dims[1])
+                        scaleparts = ldef[1].split("x")
+                        assert len(scaleparts)<=2, "found more than 2 scaling dimensions!"
+                        if len(scaleparts)==1:
+                            sx = sy = int(scaleparts[0])
+                        else:
+                            sx = int(scaleparts[0])
+                            sy = int(scaleparts[1])
+                        limits.append((x, y, sx, sy))
+                        scalinglog("parsed desktop-scaling auto limits: %s", limits)
+                    except Exception as e:
+                        log.warn("Warning: failed to parse limit string '%s':", l)
+                        log.warn(" %s", e)
+                        log.warn(" should use the format WIDTHxHEIGTH:SCALINGVALUE")
+            else:
+                scalinglog.warn("Warning: invalid auto attributes '%s'", desktop_scaling[5:])
+            sx, sy = 1, 1
+            for mx, my, sx, sy in limits:
+                if root_w<mx and root_h<my:
+                    break
+            scalinglog("matched %sx%s with limits %s: %sx%s", root_w, root_h, limits, sx, sy)
+            return sx,sy
         def parse_item(v):
             div = 1
             try:
