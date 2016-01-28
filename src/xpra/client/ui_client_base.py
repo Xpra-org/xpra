@@ -443,10 +443,10 @@ class UIXpraClient(XpraClientBase):
                         scaleparts = ldef[1].split("x")
                         assert len(scaleparts)<=2, "found more than 2 scaling dimensions!"
                         if len(scaleparts)==1:
-                            sx = sy = int(scaleparts[0])
+                            sx = sy = float(scaleparts[0])
                         else:
-                            sx = int(scaleparts[0])
-                            sy = int(scaleparts[1])
+                            sx = float(scaleparts[0])
+                            sy = float(scaleparts[1])
                         limits.append((x, y, sx, sy))
                         scalinglog("parsed desktop-scaling auto limits: %s", limits)
                     except Exception as e:
