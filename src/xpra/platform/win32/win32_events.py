@@ -108,7 +108,7 @@ class Win32EventListener(object):
             self.hwnd = None
             try:
                 win32gui.UnregisterClass(self.wc.lpszClassName, None)
-            except:
+            except Exception as e:
                 log.warn("error during win32 events cleanup of event window class: %s", e)
 
     def stop_win32_session_events(self):
