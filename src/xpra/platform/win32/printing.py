@@ -51,7 +51,7 @@ GSVIEW_DIR = None
 GSPRINT_EXE = None
 GSWIN32C_EXE = None
 printers_modified_callback = None
-def init_printing(callback):
+def init_printing(callback=None):
     global printers_modified_callback, GSVIEW_DIR, GSPRINT_EXE, GSWIN32C_EXE
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
@@ -83,7 +83,7 @@ def on_devmodechange(wParam, lParam):
 
 
 def get_printers():
-    global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL
+    global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL, GSVIEW_DIR
     printers = {}
     if not GSVIEW_DIR:
         #without gsprint, we can't handle printing!

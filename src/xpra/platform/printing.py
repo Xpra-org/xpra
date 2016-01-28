@@ -144,6 +144,7 @@ def main():
     from xpra.util import csv
     with program_context("Printing", "Printing"):
         enable_color()
+        init_printing()
         if len(sys.argv)<=1:
             dump_printers(get_printers())
             dump_info(get_info())
