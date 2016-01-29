@@ -29,24 +29,21 @@ for k in ("LOCAL", "NAME", "SHARED", "CONNECTIONS",
 log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
 PRINTER_LEVEL = int(os.environ.get("XPRA_WIN32_PRINTER_LEVEL", "1"))
-PRINTER_FLAGS = [x.strip() for x in os.environ.get("XPRA_WIN32_PRINTER_FLAGS", "LOCAL").split(",")]
+#DEFAULT_PRINTER_FLAGS = "LOCAL,SHARED+NETWORK+CONNECTIONS"
+DEFAULT_PRINTER_FLAGS = "LOCAL"
+PRINTER_FLAGS = [x.strip() for x in os.environ.get("XPRA_WIN32_PRINTER_FLAGS", DEFAULT_PRINTER_FLAGS).split(",")]
 log("PRINTER_FLAGS=%s", csv(PRINTER_FLAGS))
 VALID_PRINTER_FLAGS = ("LOCAL", "SHARED", "CONNECTIONS", "NETWORK", "REMOTE")
-if PRINTER_FLAGS:       #ie: "LOCAL" or "LOCAL,SHARED+NETWORK+CONNECTIONS"
-    PRINTER_ENUMS = []
-    for v in PRINTER_FLAGS:                     #ie: "SHARED+NETWORK+CONNECTIONS"
-        flags = v.replace('|','+').split("+")   #ie: ["SHARED", "NETWORK", "CONNECTIONS"]
-        values = []
-        for flag in flags:                      #ie: "SHARED"
-            if flag not in VALID_PRINTER_FLAGS:
-                log.warn("Warning: the following printer flag is invalid and will be ignored: %s", flag)
-            else:
-                values.append(flag)             #ie: "SHARED"
-        PRINTER_ENUMS.append(values)
-else:
-    assert "LOCAL" in PRINTER_ENUM_VALUES
-    #PRINTER_ENUMS = (("LOCAL", ), ("NETWORK", "SHARED", "CONNECTIONS" ), )
-    PRINTER_ENUMS = (("LOCAL", ), )
+PRINTER_ENUMS = []
+for v in PRINTER_FLAGS:                     #ie: "SHARED+NETWORK+CONNECTIONS"
+    flags = v.replace('|','+').split("+")   #ie: ["SHARED", "NETWORK", "CONNECTIONS"]
+    values = []
+    for flag in flags:                      #ie: "SHARED"
+        if flag not in VALID_PRINTER_FLAGS:
+            log.warn("Warning: the following printer flag is invalid and will be ignored: %s", flag)
+        else:
+            values.append(flag)             #ie: "SHARED"
+    PRINTER_ENUMS.append(values)
 log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 
 
