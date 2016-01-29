@@ -74,6 +74,8 @@ def crypto_backend_init():
     log("crypto_backend_init() backend=%s, ENCRYPTION_CIPHERS=%s", backend, ENCRYPTION_CIPHERS)
 
 def validate_backend(try_backend):
+    import binascii
+    from xpra.util import strtobytes
     try_backend.init()
     message = b"some message1234"
     password = "this is our secret"
@@ -81,7 +83,7 @@ def validate_backend(try_backend):
     iterations = DEFAULT_ITERATIONS
     block_size = DEFAULT_BLOCKSIZE
     key = try_backend.get_key(password, key_salt, block_size, iterations)
-    log("validate_backend(%s) key=%s", try_backend, key)
+    log("validate_backend(%s) key=%s", try_backend, binascii.hexlify(key))
     assert key is not None, "backend %s failed to generate a key" % try_backend
     enc = try_backend.get_encryptor(key, DEFAULT_IV)
     log("validate_backend(%s) encryptor=%s", try_backend, enc)
@@ -90,8 +92,6 @@ def validate_backend(try_backend):
     log("validate_backend(%s) decryptor=%s", try_backend, dec)
     assert dec is not None, "backend %s failed to generate a decryptor" % enc
     ev = enc.encrypt(message)
-    import binascii
-    from xpra.util import strtobytes
     evs = binascii.hexlify(strtobytes(ev))
     log("validate_backend(%s) encrypted(%s)=%s", try_backend, message, evs)
     dv = dec.decrypt(ev)
