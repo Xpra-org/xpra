@@ -364,8 +364,8 @@ class ServerBase(ServerCore, FileTransferHandler):
                 from xpra.dbus.notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
                 if self.notifications_forwarder:
-                    log.info("using notification forwarder:")
-                    log.info(" %s", self.notifications_forwarder)
+                    log.info("D-Bus notification forwarding is available")
+                    log("%s", self.notifications_forwarder)
             except Exception as e:
                 if str(e).endswith("is already claimed on the session bus"):
                     log.warn("Warning: cannot forward notifications, the interface is already claimed")
