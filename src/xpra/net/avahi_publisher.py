@@ -114,8 +114,11 @@ class AvahiPublisher:
 		self.interface = interface
 		self.group = None
 
+	def info(self):
+		return	"%s %s:%s interface=%s" % (self.name, self.host, self.port, self.interface)
+
 	def __repr__(self):
-		return	"AvahiPublisher(%s %s:%s interface=%s)" % (self.name, self.host, self.port, self.interface)
+		return	"AvahiPublisher(%s)" % self.info()
 
 	def start(self):
 		try:
@@ -141,7 +144,11 @@ class AvahiPublisher:
 			if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
 				log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
 				return
-			log.warn("failed to start %s: %s", self, e)
+			log.warn("Warning: failed to start Avahi publisher for %s", self.info())
+			for l in str(e).splitlines():
+				for x in l.split(":", 1):
+					if x:
+						log.warn(" %s", x)
 			return False
 		return True
 
