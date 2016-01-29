@@ -584,7 +584,7 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     os.environ.update(v)
     return v
 
-def start_Xvfb(xvfb_str, display_name):
+def start_Xvfb(xvfb_str, display_name, cwd):
     # We need to set up a new server environment
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
     if not os.path.exists(xauthority):
@@ -609,7 +609,7 @@ def start_Xvfb(xvfb_str, display_name):
             "USER"          : os.environ.get("USER", "unknown-user"),
             "UID"           : os.getuid(),
             "GID"           : os.getgid(),
-            "HOME"          : os.environ.get("HOME", os.getcwd()),
+            "HOME"          : os.environ.get("HOME", cwd),
             "DISPLAY"       : display_name}
     xvfb_str = shellsub(xvfb_str, subs)
 
@@ -758,6 +758,11 @@ def guess_xpra_display(socket_dir, socket_dirs):
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args):
+    try:
+        cwd = os.getcwd()
+    except:
+        cwd = os.path.expanduser("~")
+        sys.stderr.write("current working directory does not exist, using '%s'\n" % cwd)
     if opts.password_file and not (opts.auth or opts.tcp_auth):
         raise InitException("when specifying a password-file, you must use auth or tcp-auth")
     validate_encryption(opts)
@@ -841,7 +846,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    script = xpra_runner_shell_script(xpra_file, os.getcwd(), opts.socket_dir)
+    script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     if start_vfb or opts.daemon:
         #we will probably need a log dir
@@ -910,9 +915,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     xvfb_pid = None
     if start_vfb:
         try:
-            xvfb, display_name = start_Xvfb(opts.xvfb, display_name)
+            xvfb, display_name = start_Xvfb(opts.xvfb, display_name, cwd)
         except OSError as e:
-            log.error("Error starting Xvfb: %s\n", e)
+            log.error("Error starting Xvfb:")
+            log.error(" %s", e)
+            log("start_Xvfb error", exc_info=True)
             return  1
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
