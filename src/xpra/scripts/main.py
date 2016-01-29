@@ -254,7 +254,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
     group.add_option("--env", action="append",
                       dest="env", default=list(defaults.env or []),
-                      help="Define environment variables used with 'start-child' and 'start'. Default: %default.")
+                      help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
 
     legacy_bool_parse("html")
     if supports_server:
