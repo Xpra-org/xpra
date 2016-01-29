@@ -115,7 +115,11 @@ class AvahiPublisher:
 		self.group = None
 
 	def info(self):
-		return	"%s %s:%s interface=%s" % (self.name, self.host, self.port, self.interface)
+		def iface():
+			if self.interface>0:
+				return "interface %i" % self.interface
+			return "all interfaces"
+		return	"%s %s:%s %s" % (self.name, self.host, self.port, iface())
 
 	def __repr__(self):
 		return	"AvahiPublisher(%s)" % self.info()
