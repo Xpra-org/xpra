@@ -550,13 +550,20 @@ def sanitize_env():
     #TODO: simply whitelisting the env would be safer/better
     unsetenv("DESKTOP_SESSION",
              "GDMSESSION",
+             "GNOME_DESKTOP_SESSION_ID",
              "SESSION_MANAGER",
              "XDG_VTNR",
              "XDG_MENU_PREFIX",
+             "XDG_CURRENT_DESKTOP",
+             "XDG_SESSION_DESKTOP",
+             "XDG_SESSION_TYPE",
+             "XDG_SESSION_ID",
              "XDG_SEAT",
+             "XDG_VTNR",
              #"XDG_RUNTIME_DIR",
              "QT_GRAPHICSSYSTEM_CHECKED",
              )
+    os.environ["XDG_SESSION_TYPE"] = "x11"
 
 def configure_imsettings_env(input_method):
     im = (input_method or "").lower()
