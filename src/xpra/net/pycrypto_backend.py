@@ -13,8 +13,11 @@ from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Cipher import AES
 ENCRYPTION_CIPHERS = ["AES"]
 
-__all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", ENCRYPTION_CIPHERS)
+__all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", "ENCRYPTION_CIPHERS")
 
+
+def init():
+    pass
 
 def get_info():
     caps = {"backend"           : "pycrypto",

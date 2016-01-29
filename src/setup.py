@@ -136,6 +136,7 @@ if WIN32 or OSX:
     Xdummy_ENABLED = False
 sound_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
+crypto_ENABLED          = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
@@ -1709,7 +1710,16 @@ if WIN32:
                         "pydoc")
 
     #python-cryptography:
-    external_includes.append("_cffi_backend")
+    if crypto_ENABLED:
+        external_includes.append("_ssl")
+        external_includes.append("cffi")
+        external_includes.append("_cffi_backend")
+        external_includes.append("cryptography")
+        add_modules("cryptography.hazmat.bindings._openssl")
+        add_modules("cryptography.hazmat.bindings._constant_time")
+        add_modules("cryptography.hazmat.bindings._padding")
+        add_modules("cryptography.hazmat.backends.openssl")
+        add_modules("cryptography.fernet")
 
     if sound_ENABLED:
         if not PYTHON3:

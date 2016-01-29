@@ -8,18 +8,49 @@ from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
-import cryptography
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-ENCRYPTION_CIPHERS = ["AES"]
+__all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", "ENCRYPTION_CIPHERS")
 
-__all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", ENCRYPTION_CIPHERS)
+ENCRYPTION_CIPHERS = []
+backend = None
 
-backend = default_backend()
-log("default_backend()=%s", backend)
-log("backends=%s", backend._backends)
+
+def patch_crypto_be_discovery():
+    """
+    Monkey patches cryptography's backend detection.
+    Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
+    """
+    from cryptography.hazmat import backends
+    try:
+        from cryptography.hazmat.backends.commoncrypto.backend import backend as be_cc
+    except ImportError:
+        log("failed to import commoncrypto", exc_info=True)
+        be_cc = None
+    try:
+        import _ssl
+        log("loaded _ssl=%s", _ssl)
+    except ImportError:
+        log("failed to import _ssl", exc_info=True)
+        be_ossl = None
+    try:
+        from cryptography.hazmat.backends.openssl.backend import backend as be_ossl
+    except ImportError:
+        log("failed to import openssl backend", exc_info=True)
+        be_ossl = None
+    backends._available_backends_list = [
+        be for be in (be_cc, be_ossl) if be is not None
+    ]
+
+def init():
+    patch_crypto_be_discovery()
+    global backend, ENCRYPTION_CIPHERS
+    from cryptography.hazmat.backends import default_backend
+    backend = default_backend()
+    log("default_backend()=%s", backend)
+    log("backends=%s", backend._backends)
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives import hashes
+    assert Cipher and algorithms and modes and hashes
+    ENCRYPTION_CIPHERS[:] = ["AES"]
 
 def ci(v):
     try:
@@ -28,25 +59,32 @@ def ci(v):
         return str(v)
 
 def get_info():
+    import cryptography
     return {"backend"                       : "python-cryptography",
             "backends"                      : [ci(x) for x in backend._backends],
             "python-cryptography"           : True,
             "python-cryptography.version"   : cryptography.__version__}
 
 def get_key(password, key_salt, block_size, iterations):
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size, salt=strtobytes(key_salt), iterations=iterations, backend=default_backend())
+    global backend
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    from cryptography.hazmat.primitives import hashes
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size, salt=strtobytes(key_salt), iterations=iterations, backend=backend)
     key = kdf.derive(strtobytes(password))
     return key
 
+def _get_cipher(key, iv):
+    global backend
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    return Cipher(algorithms.AES(key), modes.CBC(strtobytes(iv)), backend=backend)
+
 def get_encryptor(key, iv):
-    cipher = Cipher(algorithms.AES(key), modes.CBC(strtobytes(iv)), backend=default_backend())
-    encryptor = cipher.encryptor()
+    encryptor = _get_cipher(key, iv).encryptor()
     encryptor.encrypt = encryptor.update
     return encryptor
 
 def get_decryptor(key, iv):
-    cipher = Cipher(algorithms.AES(key), modes.CBC(strtobytes(iv)), backend=default_backend())
-    decryptor = cipher.decryptor()
+    decryptor = _get_cipher(key, iv).decryptor()
     decryptor.decrypt = decryptor.update
     return decryptor
 

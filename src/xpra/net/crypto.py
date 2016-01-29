@@ -74,6 +74,7 @@ def crypto_backend_init():
     log("crypto_backend_init() backend=%s, ENCRYPTION_CIPHERS=%s", backend, ENCRYPTION_CIPHERS)
 
 def validate_backend(try_backend):
+    try_backend.init()
     message = b"some message1234"
     password = "this is our secret"
     key_salt = DEFAULT_SALT
