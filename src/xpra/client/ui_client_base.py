@@ -423,10 +423,10 @@ class UIXpraClient(XpraClientBase):
             #figure out if the command line includes settings to use for auto mode:
             #here are our defaults:
             limits = ((1920, 1080, 1, 1),       #100% no auto scaling up to 1080p
-                      (2560, 1600, 1.5, 1.5),   #150% upscaling up to WQXGA
-                      (3960, 2160, 2, 2),       #200% upscaling up to UHD
-                      (7680, 4320, 3, 3),       #300% upscaling up to FUHD
-                      (32768, 32768, 4, 4))     #400% if higher (who has this anyway?)
+                      (2560, 1600, 1.25, 1.25), #125% upscaling up to WQXGA
+                      (3960, 2160, 1.5, 1.5),   #150% upscaling up to UHD
+                      (7680, 4320, 2, 2),       #200% upscaling up to FUHD
+                      (32768, 32768, 3, 3))     #300% if higher (who has this anyway?)
             if desktop_scaling=="auto":
                 pass
             elif desktop_scaling.startswith("auto:"):
@@ -457,7 +457,7 @@ class UIXpraClient(XpraClientBase):
                 scalinglog.warn("Warning: invalid auto attributes '%s'", desktop_scaling[5:])
             sx, sy = 1, 1
             for mx, my, sx, sy in limits:
-                if root_w<mx and root_h<my:
+                if root_w<=mx and root_h<=my:
                     break
             scalinglog("matched %sx%s with limits %s: %sx%s", root_w, root_h, limits, sx, sy)
             return sx,sy
