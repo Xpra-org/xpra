@@ -62,12 +62,14 @@ def warn(msg):
     sys.stderr.write(msg+"\n")
 
 def nox():
-    if "DISPLAY" in os.environ:
+    DISPLAY = os.environ.get("DISPLAY")
+    if DISPLAY is not None:
         del os.environ["DISPLAY"]
     # This is an error on Fedora/RH, so make it an error everywhere so it will
     # be noticed:
     import warnings
     warnings.filterwarnings("error", "could not open display")
+    return DISPLAY
 
 
 supports_shadow = SHADOW_SUPPORTED
@@ -252,6 +254,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                       dest="start_new_commands", default=defaults.start_new_commands,
                       help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
+    group.add_option("--dbus-launch", action="store",
+                      dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
+                      help="Start the session within a dbus-launch context, leave empty to turn off. Default: %default.")
     group.add_option("--env", action="append",
                       dest="env", default=list(defaults.env or []),
                       help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
@@ -946,9 +951,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
         elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
-            nox()
+            current_display = nox()
             from xpra.scripts.server import run_server
-            return run_server(error_cb, options, mode, script_file, args)
+            return run_server(error_cb, options, mode, script_file, args, current_display)
         elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):

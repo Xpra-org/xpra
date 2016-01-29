@@ -63,17 +63,29 @@ def deadly_signal(signum, frame):
     os._exit(128 + signum)
 
 
-def save_xvfb_pid(pid):
+def _save_pid(prop_name, pid):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_set
-    prop_set(gtk.gdk.get_default_root_window(),
-                           "_XPRA_SERVER_PID", "u32", pid)
+    prop_set(gtk.gdk.get_default_root_window(), prop_name, "u32", pid)
 
-def get_xvfb_pid():
+def _get_pid(prop_name):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_get
-    return prop_get(gtk.gdk.get_default_root_window(),
-                                  "_XPRA_SERVER_PID", "u32")
+    return prop_get(gtk.gdk.get_default_root_window(), prop_name, "u32")
+
+
+def save_xvfb_pid(pid):
+    _save_pid("_XPRA_SERVER_PID", pid)
+
+def get_xvfb_pid():
+    return _get_pid("_XPRA_SERVER_PID")
+
+def save_dbus_pid(pid):
+    _save_pid("_XPRA_DBUS_PID", pid)
+
+def get_dbus_pid():
+    return _get_pid("_XPRA_DBUS_PID")
+
 
 def sh_quotemeta(s):
     safe = ("abcdefghijklmnopqrstuvwxyz"
@@ -757,7 +769,7 @@ def guess_xpra_display(socket_dir, socket_dirs):
     return live[0]
 
 
-def run_server(error_cb, opts, mode, xpra_file, extra_args):
+def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
         cwd = os.getcwd()
     except:
@@ -885,12 +897,28 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     log = Logger("server")
 
     #warn early about this:
-    if starting:
+    if starting and desktop_display:
         de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
-        if de and (opts.pulseaudio or opts.notifications):
-            log.warn("Warning: xpra start from an existing '%s' desktop session", de)
-            log.warn(" pulseaudio and notifications forwarding may not work")
-            log.warn(" try using a clean environment, a dedicated user, or turn off those options")
+        if de:
+            warn = []
+            if opts.pulseaudio:
+                try:
+                    xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
+                    out,_ = xprop.communicate()
+                    for x in out.splitlines():
+                        if x.startswith("PULSE_SERVER"):
+                            #found an existing pulseaudio server
+                            warn.append("pulseaudio")
+                            break
+                except:
+                    pass    #don't care, this is just to decide if we show an informative warning or not
+            if opts.notifications and not opts.dbus_launch:
+                warn.append("notifications")
+            if warn:
+                log.warn("Warning: xpra start from an existing '%s' desktop session", de)
+                log.warn(" %s forwarding may not work", " ".join(warn))
+                log.warn(" try using a clean environment, a dedicated user,")
+                log.warn(" or turn off %s", " and ".join(warn))
 
     mdns_recs = []
     sockets = []
@@ -937,6 +965,39 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
         return  1
+
+    #start the dbus server:
+    dbus_pid = 0
+    def kill_dbus():
+        log("kill_dbus: dbus_pid=%s" % dbus_pid)
+        if dbus_pid<=0:
+            return
+        try:
+            os.kill(dbus_pid, signal.SIGINT)
+        except Exception as e:
+            log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
+            log.warn(" %s", e)
+    _cleanups.append(kill_dbus)
+    if os.name=="posix" and opts.dbus_launch and (proxying or starting):
+        try:
+            dbus_launch = subprocess.Popen(opts.dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+            out,_ = dbus_launch.communicate()
+            assert dbus_launch.poll()==0, "exit code is %s" % dbus_launch.poll()
+            #parse and add to global env:
+            dbus_env = {}
+            for l in out.splitlines():
+                parts = l.split("=", 1)
+                if len(parts)!=2:
+                    continue
+                k,v = parts
+                if v.startswith("'") and v.endswith("';"):
+                    v = v[1:-2]
+                dbus_env[k] = v
+            dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
+            os.environ.update(dbus_env)
+        except Exception as e:
+            sys.stderr.write("dbus-launch failed to start using command '%s':\n" % opts.dbus_launch)
+            sys.stderr.write(" %s\n" % e)
 
     #setup unix domain socket:
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
@@ -991,9 +1052,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         if clobber:
             #get the saved pid (there should be one):
             xvfb_pid = get_xvfb_pid()
-        elif xvfb_pid is not None:
-            #save the new pid (we should have one):
-            save_xvfb_pid(xvfb_pid)
+            dbus_pid = get_dbus_pid()
+        else:
+            if xvfb_pid is not None:
+                #save the new pid (we should have one):
+                save_xvfb_pid(xvfb_pid)
+            if dbus_pid>0:
+                save_dbus_pid(dbus_pid)
 
         #check for an existing window manager:
         from xpra.x11.gtk2.wm import wm_check
@@ -1071,9 +1136,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args):
         log.error("server error", exc_info=True)
         e = -128
     if e>0:
-        # Upgrading/exiting, so leave X server running
+        # Upgrading/exiting, so leave X and dbus servers running
         if kill_xvfb in _cleanups:
             _cleanups.remove(kill_xvfb)
+            _cleanups.remove(kill_dbus)
         from xpra.server.server_core import ServerCore
         if e==ServerCore.EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")

@@ -314,6 +314,7 @@ OPTION_TYPES = {
                     "sound-source"      : str,
                     "socket-permissions": str,
                     "exec-wrapper"      : str,
+                    "dbus-launch"       : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -456,6 +457,7 @@ def get_defaults():
                     "html"              : "",
                     "socket-permissions": "600",
                     "exec-wrapper"      : "",
+                    "dbus-launch"       : "dbus-launch --close-stderr",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,
