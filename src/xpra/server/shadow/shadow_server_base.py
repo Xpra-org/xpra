@@ -72,6 +72,13 @@ class ShadowServerBase(object):
             self.start_refresh()
 
 
+    def stop_refresh(self):
+        log("stop_refresh() mapped_at=%s, timer=%s", self.mapped_at, self.timer)
+        self.mapped_at = None
+        if self.timer:
+            self.source_remove(self.timer)
+            self.timer = None
+
     def refresh(self):
         if not self.mapped_at:
             self.timer = None

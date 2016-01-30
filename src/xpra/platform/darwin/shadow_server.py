@@ -58,6 +58,10 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
     def makeRootWindowModel(self):
         return  OSXRootWindowModel(self.root)
 
+    def last_client_exited(self):
+        self.stop_refresh()
+        GTKServerBase.last_client_exited(self)
+
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         CG.CGWarpMouseCursorPosition(pointer)
 

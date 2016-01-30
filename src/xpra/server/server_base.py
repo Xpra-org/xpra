@@ -780,13 +780,17 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.server_event("connection-lost", source.uuid)
         source.close()
         remaining_sources = [x for x in self._server_sources.values() if x!=source]
+        netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         if len(remaining_sources)==0:
-            if self.exit_with_client:
-                netlog.info("Last client has disconnected, terminating")
-                self.quit(False)
-            else:
-                netlog.info("xpra client disconnected.")
-                self.reset_server_timeout(True)
+            self.last_client_exited()
+
+    def last_client_exited(self):
+        if self.exit_with_client:
+            netlog.info("Last client has disconnected, terminating")
+            self.quit(False)
+        else:
+            netlog.info("xpra client disconnected.")
+            self.reset_server_timeout(True)
 
     def get_all_protocols(self):
         return list(self._potential_protocols) + list(self._server_sources.keys())

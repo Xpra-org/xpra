@@ -347,6 +347,10 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
     def makeRootWindowModel(self):
         return Win32RootWindowModel(self.root)
 
+    def last_client_exited(self):
+        self.stop_refresh()
+        GTKServerBase.last_client_exited(self)
+
     def refresh(self):
         v = ShadowServerBase.refresh(self)
         if v and SEAMLESS:

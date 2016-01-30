@@ -76,6 +76,10 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
     def makeRootWindowModel(self):
         return GTKX11RootWindowModel(self.root)
 
+    def last_client_exited(self):
+        self.stop_refresh()
+        X11ServerBase.last_client_exited(self)
+
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         #adjust pointer position for offset in client:
         x, y = pointer
