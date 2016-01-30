@@ -23,6 +23,21 @@ FAKE_EXIT = int(os.environ.get("XPRA_SOUND_FAKE_EXIT", "0"))
 FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
 
 
+def get_sound_wrapper_env():
+    env = {}
+    if sys.platform.startswith("win"):
+        #disable bencoder to skip warnings with the py3k Sound subapp
+        env["XPRA_USE_BENCODER"] = "0"
+    elif os.name=="posix" and not sys.platform.startswith("darwin"):
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
+            add_audio_tagging_env(env)
+        except ImportError as e:
+            log.warn("Warning: failed to set pulseaudio tagging:")
+            log.warn(" %s", e)
+    return env
+
+
 #this wrapper takes care of launching src.py or sink.py
 #
 #the command line should look something like:
@@ -209,16 +224,7 @@ class sound_subprocess_wrapper(subprocess_caller):
 
     def get_env(self):
         env = subprocess_caller.get_env(self)
-        if sys.platform.startswith("win"):
-            #disable bencoder to skip warnings with the py3k Sound subapp
-            env["XPRA_USE_BENCODER"] = "0"
-        if os.name=="posix" and not sys.platform.startswith("darwin"):
-            try:
-                from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
-                add_audio_tagging_env(env)
-            except ImportError as e:
-                log.warn("Warning: failed to set pulseaudio tagging:")
-                log.warn(" %s", e)
+        env.update(get_sound_wrapper_env())
         return env
 
     def start(self):
@@ -352,6 +358,7 @@ def query_sound():
     _add_debug_args(command)
     kwargs = exec_kwargs()
     env = exec_env()
+    env.update(get_sound_wrapper_env())
     log("query_sound() command=%s, env=%s, kwargs=%s", command, env, kwargs)
     proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=env, **kwargs)
     out, err = proc.communicate(None)
