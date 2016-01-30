@@ -353,9 +353,14 @@ log-file = $DISPLAY.log
 # This causes the server to terminate when the last child has exited:
 exit-with-children = no
 
+# Start a dbus-daemon:
+# dbus-launch =
+# dbus-launch = /usr/bin/dbus-launch --close-stderr
+dbus-launch = dbus-launch --close-stderr
+
 # A wrapper for executing commands
-# exec-wrapper=vglrun
-# exec-wrapper=vglrun -d :1
+# exec-wrapper = vglrun
+# exec-wrapper = vglrun -d :1
 
 # Allows clients to start new commands in the server context:
 #start-new-commands = yes
