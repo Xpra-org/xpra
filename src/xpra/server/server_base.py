@@ -779,7 +779,8 @@ class ServerBase(ServerCore, FileTransferHandler):
     def cleanup_source(self, source):
         self.server_event("connection-lost", source.uuid)
         source.close()
-        if len(self._server_sources)==0:
+        remaining_sources = [x for x in self._server_sources.values() if x!=source]
+        if len(remaining_sources)==0:
             if self.exit_with_client:
                 netlog.info("Last client has disconnected, terminating")
                 self.quit(False)
