@@ -244,6 +244,7 @@ class UIXpraClient(XpraClientBase):
         self.cursors_enabled = False
         self.bell_enabled = False
         self.border = None
+        self.window_close_action = "forward"
 
         self.supports_mmap = MMAP_SUPPORTED
 
@@ -399,6 +400,12 @@ class UIXpraClient(XpraClientBase):
 
         if opts.border:
             self.parse_border(opts.border, extra_args)
+        if opts.window_close not in ("forward", "ignore", "disconnect", "shutdown"):
+            self.window_close_action = "forward"
+            log.warn("Warning: invalid 'window-close' option: '%s'", opts.window_close)
+            log.warn(" using '%s'", self.window_close_action)
+        else:
+            self.window_close_action = opts.window_close
 
         #draw thread:
         self._draw_queue = Queue()
@@ -1188,6 +1195,21 @@ class UIXpraClient(XpraClientBase):
     def window_ungrab(self):
         #subclasses should implement this method
         pass
+
+    def window_close_event(self, wid):
+        windowlog("window_close_event(%s) close window action=%s", wid, self.window_close_action)
+        if self.window_close_action=="forward":
+            self.send("close-window", wid)
+        elif self.window_close_action=="ignore":
+            windowlog("close event for window %i ignored", wid)
+        elif self.window_close_action=="disconnect":
+            log.info("window-close set to disconnect, exiting (window %i)", wid)
+            self.quit(0)
+        elif self.window_close_action=="shutdown":
+            self.send("shutdown-server", "shutdown on window close")
+        else:
+            log.warn("unknown close-window action: %s", self.window_close_action)            
+        return True
 
 
     def get_version_info(self):

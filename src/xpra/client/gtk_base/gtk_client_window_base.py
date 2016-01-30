@@ -1008,7 +1008,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_delete_event(self, event):
         eventslog("do_delete_event(%s)", event)
-        self.send("close-window", self._id)
+        self._client.window_close_event(self._id)
         return True
 
 

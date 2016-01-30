@@ -97,6 +97,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
 [\fB\-\-border\fP=\fIBORDER\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
+[\fB\-\-window\-close\fP=\fIACTION\fP]
 [\fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP]
 [\fB\-\-shadow\-fullscreen\fP=\fIno\fP|\fIyes\fP]
 [\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
@@ -1032,6 +1033,21 @@ Path to the default image which will be used for all windows.
 This icon may be shown in the window's bar, its iconified
 state or task switchers.  This depends on the operating system,
 the window manage and the application may override this too.
+.TP
+\fB\-\-window\-close\fP=\fIACTION\fP
+Choose what action to take when the window is closed by the client.
+The following actions can be used:
+.RS
+.IP \fBforward\fP
+The event will be forwarded to the server.
+.IP \fBignore\fP
+Do nothing.
+.IP \fBdisconnect\fP
+Disconnect from the server.
+.IP \fBshutdown\fP
+Shutdown the server.
+.RE
+.PP
 .TP
 \fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP
 Desktop scaling allows the windows to be scaled

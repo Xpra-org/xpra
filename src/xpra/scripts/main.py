@@ -592,6 +592,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--window-icon", action="store",
                           dest="window_icon", default=defaults.window_icon,
                           help="Path to the default image which will be used for all windows (the application may override this)")
+    group.add_option("--window-close", action="store",
+                          dest="window_close", default=defaults.window_close,
+                          help="The action to take when a window is closed by the client. Valid options are: 'forward', 'ignore', 'disconnect'. Default: '%default'.")
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
     add_client_options(cmdline, group, defaults)

@@ -307,6 +307,14 @@ key-shortcut = Meta+Shift+degree:scalereset
 #border=1,red
 #border=no
 
+# What to do when the user closes the window:
+# - forward the action to the server:
+# window-close = forward
+# window-close = ignore
+# window-close = disconnect
+# window-close = ask
+window-close = forward
+
 # Desktop Scaling:
 # - double the size of all windows:
 #desktop-scaling = 2
