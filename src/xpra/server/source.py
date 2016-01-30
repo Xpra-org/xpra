@@ -53,6 +53,8 @@ except:
     GRACE_PERCENT = 90
 AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 
+PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
+
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
     def raw():
@@ -1642,9 +1644,12 @@ class ServerSource(object):
         attrs = attributes.copy()
         attrs["remote-printer"] = name
         attrs["remote-device-uri"] = props.get("device-uri")
-        location = "via xpra"
+        location = PRINTER_LOCATION_STRING
         if self.hostname:
-            location = "on %s (via xpra)" % self.hostname
+            location = "on %s"
+            if PRINTER_LOCATION_STRING:
+                #ie: on FOO (via xpra)
+                location = "on %s (%s)" % (self.hostname, PRINTER_LOCATION_STRING)
         try:
             def printer_added():
                 #once the printer has been added, register it in the list
