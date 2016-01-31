@@ -214,7 +214,7 @@
 		repo="www.libsdl.org"/>
   </autotools>
 
-  <autotools id="gst-plugins-bad-xpra" autogenargs="--enable-introspection=no --disable-sdl" autogen-sh="configure">
+  <autotools id="gst-plugins-bad-xpra" autogenargs="--enable-introspection=no --disable-vp8 --disable-sdl" autogen-sh="configure">
 	<branch module="/src/gst-plugins-bad/gst-plugins-bad-0.10.22.tar.bz2"
 		version="0.10.22"
 		hash="md5:9a2acee1f386f71247003d0d7090fb1c"
