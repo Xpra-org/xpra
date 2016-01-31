@@ -235,6 +235,9 @@ class SoundSource(SoundPipeline):
         return self.emit_buffer(buf.data, metadata)
 
     def emit_buffer(self, data, metadata={}):
+        if self.state=="stopped":
+            #don't bother
+            return 0
         if JITTER>0:
             #will actually emit the buffer after a random delay
             if self.jitter_queue.empty():
