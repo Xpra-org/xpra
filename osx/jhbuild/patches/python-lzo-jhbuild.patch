@@ -1,11 +1,11 @@
---- a/setup.py	2016-01-25 20:30:52.000000000 +0000+++ b/setup.py	2016-01-25 20:30:52.000000000 +0000@@ -27,7 +27,7 @@     extra_objects.append(os.path.join(LZO_DIR, "lzo.lib")) else:     libraries = ["lzo2"]-    include_dirs.append(os.environ.get("PREFIX", "/usr")+"/include/lzo")+    include_dirs.append("/usr/include/lzo")     ##library_dirs.append("/usr/local/lib")     ##runtime_library_dirs.append("/usr/local/lib") --- a/setup.py	2016-01-25 20:30:52.000000000 +0000
-+++ b/setup.py	2016-01-25 20:30:52.000000000 +0000
+--- setup.py.orig	2016-01-30 17:15:33.000000000 -0800
++++ setup.py	2016-01-30 17:16:14.000000000 -0800
 @@ -27,7 +27,7 @@
      extra_objects.append(os.path.join(LZO_DIR, "lzo.lib"))
  else:
      libraries = ["lzo2"]
--    include_dirs.append(os.environ.get("PREFIX", "/usr")+"/include/lzo")
-+    include_dirs.append("/usr/include/lzo")
+-    include_dirs.append("/usr/include/lzo")
++    include_dirs.append(os.environ.get("PREFIX", "/usr")+"/include/lzo")
      ##library_dirs.append("/usr/local/lib")
      ##runtime_library_dirs.append("/usr/local/lib")
  
