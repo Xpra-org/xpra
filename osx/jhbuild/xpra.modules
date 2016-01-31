@@ -439,7 +439,7 @@
 	     module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
 	     hash="md5:b5cd60498474dab58c1ea2385adfa7bd"
 	     version="1.11">
-    	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="1" />
+    	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
 	</branch>
 	<dependencies>
 		<dep package="lzo"/>
