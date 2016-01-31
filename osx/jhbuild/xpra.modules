@@ -444,6 +444,9 @@
 	<dependencies>
 		<dep package="lzo"/>
 	</dependencies>
+	<after>
+		<dep package="lzo"/>
+	</after>
   </distutils>
 
   <distutils id="python-macholib">
@@ -587,6 +590,7 @@
       <dep package="flac"/>
       <dep package="speex"/>
       <dep package="wavpack"/>
+      <dep package="lzo"/>
       <!--
       libvpx 1.3.0 does not compile on new systems we wil have to add these through jhbuildrc-custom
       on newer systems jhbuild libvpx-15 on older systems jhbuild libvpx-13
