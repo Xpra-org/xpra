@@ -78,6 +78,9 @@ def get_CS(in_cs, valid_options):
     log("environment override for %s: %s", in_cs, env_override)
     return env_override
 COLORSPACES = {"BGRX"       : get_CS("BGRX",    ["YUV420P"]),
+               "RGBX"       : get_CS("RGBX",    ["YUV420P"]),
+               "BGR"        : get_CS("BGR",     ["YUV420P"]),
+               "RGB"        : get_CS("RGB",     ["YUV420P"]),
                "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
                "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"])}
 
@@ -244,7 +247,7 @@ cdef class ColorspaceConverter:
             self.dst_sizes[i]   = 0
             self.offsets[i]     = 0
 
-        if src_format=="BGRX" and dst_format=="YUV420P":
+        if src_format in ("BGRX", "RGBX", "RGB", "BGR") and dst_format=="YUV420P":
             self.dst_strides[0] = roundup(self.dst_width,   STRIDE_ROUNDUP)
             self.dst_strides[1] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
             self.dst_strides[2] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
@@ -257,8 +260,15 @@ cdef class ColorspaceConverter:
             self.offsets[2] = self.offsets[1] + (self.dst_strides[1] * (self.dst_height/2+1))
             #output buffer ends after V + 1 line of padding:
             self.buffer_size = self.offsets[2] + (self.dst_strides[2] * (self.dst_height/2+1))
-
-            self.convert_image_function = self.BGRX_to_YUV420P
+            if src_format=="BGRX":
+                self.convert_image_function = self.BGRX_to_YUV420P
+            elif src_format=="RGBX":
+                self.convert_image_function = self.RGBX_to_YUV420P
+            elif src_format=="BGR":
+                self.convert_image_function = self.BGR_to_YUV420P
+            else:
+                assert src_format=="RGB"
+                self.convert_image_function = self.RGB_to_YUV420P
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
             #3 or 4 bytes per pixel:
             self.dst_strides[0] = roundup(self.dst_width*len(dst_format), STRIDE_ROUNDUP)
@@ -363,7 +373,19 @@ cdef class ColorspaceConverter:
         return self.convert_image_function(image)
 
 
+    def BGR_to_YUV420P(self, image):
+        return self.do_RGB_to_YUV420P(image, 3, BGR_R, BGR_G, BGR_B)
+
+    def RGB_to_YUV420P(self, image):
+        return self.do_RGB_to_YUV420P(image, 3, RGB_R, RGB_G, RGB_B)
+
     def BGRX_to_YUV420P(self, image):
+        return self.do_RGB_to_YUV420P(image, 4, BGRX_R, BGRX_G, BGRX_B)
+
+    def RGBX_to_YUV420P(self, image):
+        return self.do_RGB_to_YUV420P(image, 4, RGBX_R, RGBX_G, RGBX_B)
+
+    cdef do_RGB_to_YUV420P(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex):
         cdef Py_ssize_t pic_buf_len = 0
         cdef const unsigned char *input_image
         cdef unsigned char *output_image
@@ -425,10 +447,10 @@ cdef class ColorspaceConverter:
                             if ox>=dst_width:
                                 break
                             sx = ox*src_width//dst_width
-                            o = sy*input_stride + sx*4
-                            R = input_image[o + BGRX_R]
-                            G = input_image[o + BGRX_G]
-                            B = input_image[o + BGRX_B]
+                            o = sy*input_stride + sx*Bpp
+                            R = input_image[o + Rindex]
+                            G = input_image[o + Gindex]
+                            B = input_image[o + Bindex]
                             o = oy*Ystride + ox
                             Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                             sum += 1
@@ -445,7 +467,7 @@ cdef class ColorspaceConverter:
 
         if DEBUG_POINTS:
             for x,y in DEBUG_POINTS:
-                o = min(y, src_height)*input_stride + min(x, src_width) * 4
+                o = min(y, src_height)*input_stride + min(x, src_width) * Bpp
                 log.info("RGB(%ix%i)=%3i, %3i, %3i  ->  YUV=%3i, %3i, %3i", x, y,
                          #RGB:
                          input_image[o + BGRX_R],
