@@ -34,6 +34,7 @@ mouselog = Logger("mouse")
 avsynclog = Logger("av-sync")
 clipboardlog = Logger("clipboard")
 scalinglog = Logger("scaling")
+webcamlog = Logger("webcam")
 
 
 from xpra import __version__ as XPRA_VERSION
@@ -53,7 +54,7 @@ from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
 from xpra.util import nonl, std, iround, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -165,6 +166,14 @@ class UIXpraClient(XpraClientBase):
         self.allowed_encodings = []
         self.core_encodings = None
         self.encoding = None
+
+        #webcam:
+        self.webcam_option = False
+        self.webcam_forwarding = False
+        self.webcam_device = None
+        self.webcam_device_no = -1
+        self.server_supports_webcam = False
+        self.server_virtual_video_devices = 0
 
         #sound:
         self.sound_source_plugin = None
@@ -297,6 +306,22 @@ class UIXpraClient(XpraClientBase):
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap
         self.mmap_group = opts.mmap_group
         self.shadow_fullscreen = opts.shadow_fullscreen
+
+        self.webcam_option = opts.webcam.lower()
+        self.webcam_forwarding = self.webcam_option not in FALSE_OPTIONS
+        self.server_supports_webcam = False
+        self.server_virtual_video_devices = 0
+        if self.webcam_forwarding:
+            try:
+                import cv2
+                from PIL import Image
+                assert cv2 and Image
+            except ImportError as e:
+                webcamlog.warn("Warning: failed to import opencv:")
+                webcamlog.warn(" %s", e)
+                webcamlog.warn(" webcam forwarding is disabled")
+                self.webcam_forwarding = False
+        webcamlog("webcam forwarding: %s", self.webcam_option)
 
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
@@ -545,6 +570,7 @@ class UIXpraClient(XpraClientBase):
                 log.error("error on %s cleanup", type(x), exc_info=True)
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
+        self.stop_sending_webcam()
         self.destroy_all_windows()
         self.clean_mmap()
         reaper_cleanup()
@@ -1766,6 +1792,13 @@ class UIXpraClient(XpraClientBase):
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
 
+        #webcam
+        self.server_supports_webcam = c.boolget("webcam")
+        self.server_virtual_video_devices = c.intget("virtual-video-devices")
+        webcamlog("webcam server support: %s (%i devices)", self.server_supports_webcam, self.server_virtual_video_devices)
+        if self.webcam_forwarding and self.webcam_option=="on" and self.server_supports_webcam and self.server_virtual_video_devices>0:
+            self.start_sending_webcam()
+
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
@@ -1938,6 +1971,109 @@ class UIXpraClient(XpraClientBase):
             return
         else:
             log.warn("received invalid control command from server: %s", command)
+
+
+    def start_sending_webcam(self):
+        self.do_start_sending_webcam(self.webcam_option)
+
+    def do_start_sending_webcam(self, device_str):
+        webcamlog("start_sending_webcam(%s)", device_str)
+        assert self.server_supports_webcam
+        device = 0
+        if device_str=="auto":
+            if os.name=="posix":
+                try:
+                    from xpra.platform.xposix.webcam_util import get_virtual_video_devices, get_all_video_devices
+                    virt_devices = get_virtual_video_devices()
+                    non_virtual = [x.replace("/dev/video", "") for x in get_all_video_devices() if x not in virt_devices]
+                    webcamlog("found %s non-virtual video devices: %s", len(non_virtual), non_virtual)
+                    for x in non_virtual:
+                        try:
+                            device = int(x)
+                            break
+                        except:
+                            pass
+                except ImportError as e:
+                    webcamlog("no webcam_util: %s", e)
+        else:
+            try:
+                device = int(device_str)
+            except:
+                p = device_str.find("video")
+                if p>=0:
+                    try:
+                        device = int(device_str[p:])
+                    except:
+                        device = 0
+        import cv2
+        webcamlog("start_sending_webcam(%s) device=%i", device_str, device)
+        self.webcam_frame_no = 0
+        try:
+            #test capture:
+            webcam_device = cv2.VideoCapture(device)        #0 -> /dev/video0
+            ret, frame = webcam_device.read()
+            webcamlog("test capture using %s: %s, %s", webcam_device, ret, frame is not None)
+            assert ret, "no device or permission"
+            assert frame is not None, "no data"
+            assert frame.ndim==3, "unexpected  number of dimensions: %s" % frame.ndim
+            w, h, Bpp = frame.shape
+            assert Bpp==3, "unexpected number of bytes per pixel: %s" % Bpp
+            assert frame.size==w*h*Bpp
+            self.webcam_device_no = device
+            self.webcam_device = webcam_device
+            self.send("webcam-start", device, w, h)
+            #FIXME: add timer to stop if we don't get an ack
+        except Exception as e:
+            webcamlog.warn("webcam test capture failed: %s", e)
+
+    def stop_sending_webcam(self):
+        wd = self.webcam_device
+        webcamlog("stop_sending_webcam() device=%s", wd)
+        if not wd:
+            return
+        self.send("webcam-stop", self.webcam_device_no)
+        assert self.server_supports_webcam
+        self.webcam_device = None
+        self.webcam_device_no = -1
+        self.webcam_frame_no = 0
+        try:
+            wd.release()
+        except Exception as e:
+            webcamlog.error("Error closing webcam device %s: %s", wd, e)
+
+    def _process_webcam_stop(self, packet):
+        device_no = packet[1]
+        if device_no!=self.webcam_device_no:
+            return
+        self.stop_sending_webcam()
+
+    def _process_webcam_ack(self, packet):
+        webcamlog("process_webcam_ack: %s", packet)
+        self.send_webcam_frame()
+
+    def send_webcam_frame(self):
+        assert self.webcam_device_no>=0 and self.webcam_device
+        try:
+            import cv2
+            ret, frame = self.webcam_device.read()
+            assert ret and frame.ndim==3
+            w, h, Bpp = frame.shape
+            assert Bpp==3 and frame.size==w*h*Bpp
+            webcamlog("send_webcam_frame strides=%s", frame.strides)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            from PIL import Image
+            image = Image.fromarray(rgb)
+            FORMAT = "jpeg"     #png
+            buf = BytesIOClass()
+            image.save(buf, format=FORMAT)
+            data = buf.getvalue()
+            buf.close()
+            frame_no = self.webcam_frame_no
+            self.webcam_frame_no += 1
+            self.send("webcam-frame", self.webcam_device_no, frame_no, FORMAT, w, h, compression.Compressed(FORMAT, data))
+        except Exception as e:
+            webcamlog.error("Error sending webcam frame: %s", e)
+            self.stop_sending_webcam()
 
 
     def start_sending_sound(self):
@@ -2779,6 +2915,8 @@ class UIXpraClient(XpraClientBase):
             "rpc-reply":            self._process_rpc_reply,
             "control" :             self._process_control,
             "draw":                 self._process_draw,
+            "webcam-stop":          self._process_webcam_stop,
+            "webcam-ack":           self._process_webcam_ack,
             # "clipboard-*" packets are handled by a special case below.
             })
         #these handlers can run directly from the network thread:

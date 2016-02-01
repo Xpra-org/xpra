@@ -198,6 +198,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("x264"         , "libx264 encoder"),
                 ("x265"         , "libx265 encoder"),
                 ("webp"         , "libwebp encoder and decoder"),
+                ("webcam"       , "webcam access"),
                 ])),
     ("Pointer", OrderedDict([
                 ("mouse"        , "Mouse motion"),

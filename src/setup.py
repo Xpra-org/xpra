@@ -144,6 +144,8 @@ enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = DEFAULT and pkg_config_ok("--atleast-version=0.4", "libwebp", fallback=WIN32)
 vpx_ENABLED             = DEFAULT and pkg_config_ok("--atleast-version=1.3", "vpx", fallback=WIN32)
+webcam_ENABLED          = DEFAULT and not OSX
+v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX)
 #ffmpeg 2 onwards:
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_ok("--atleast-version=56", "libavcodec", fallback=WIN32)
 # some version strings I found:
@@ -960,6 +962,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/libav_common/av_log.c",
+                   "xpra/codecs/v4l/pusher.c",
                    "xpra/codecs/webp/encode.c",
                    "xpra/codecs/webp/decode.c",
                    "xpra/codecs/dec_avcodec2/decoder.c",
@@ -1701,6 +1704,9 @@ if WIN32:
                     #this is a mac osx thing:
                     "ctypes.macholib")
 
+    if webcam_ENABLED:
+        external_includes.append("cv2")
+
     if opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
         external_includes.append("numpy")
@@ -2280,6 +2286,11 @@ if vpx_ENABLED:
     cython_add(Extension("xpra.codecs.vpx.decoder",
                 ["xpra/codecs/vpx/decoder.pyx"]+membuffers_c,
                 **vpx_pkgconfig))
+
+toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
+if v4l2_ENABLED:
+    cython_add(Extension("xpra.codecs.v4l2.pusher",
+                ["xpra/codecs/v4l2/pusher.pyx"]+membuffers_c))
 
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")

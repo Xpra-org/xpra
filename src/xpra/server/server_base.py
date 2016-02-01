@@ -26,13 +26,14 @@ windowlog = Logger("window")
 clipboardlog = Logger("clipboard")
 rpclog = Logger("rpc")
 dbuslog = Logger("dbus")
+webcamlog = Logger("webcam")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import thread, get_hex_uuid, livefds, load_binary_file
+from xpra.os_util import BytesIOClass, thread, get_hex_uuid, livefds, load_binary_file
 from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
@@ -138,6 +139,9 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.send_pings = False
         self.scaling_control = False
         self.rpc_handlers = {}
+        self.webcam_forwarding = False
+        self.webcam_forwarding_device = None
+        self.virtual_video_devices = 0
 
         #sound:
         self.pulseaudio = False
@@ -231,6 +235,11 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.notifications_forwarder = None
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
+        self.webcam_forwarding = opts.webcam.lower() not in FALSE_OPTIONS
+        if self.webcam_forwarding:
+            self.virtual_video_devices = self.init_virtual_video_devices()
+            if self.virtual_video_devices==0:
+                self.webcam_forwarding = False
 
         #sound:
         self.pulseaudio = opts.pulseaudio
@@ -342,6 +351,28 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.printing = False
         printlog("init_printing() printing=%s", self.printing)
 
+
+    def init_virtual_video_devices(self):
+        webcamlog("init_virtual_video_devices")
+        if os.name!="posix":
+            return 0
+        try:
+            from xpra.codecs.v4l2.pusher import Pusher
+            assert Pusher
+        except ImportError as e:
+            webcamlog.error("Error: failed to import the virtual video module:")
+            webcamlog.error(" %s", e)
+            return 0
+        try:
+            from xpra.platform.xposix.webcam_util import get_virtual_video_devices
+        except ImportError as e:
+            webcamlog.warn("Warning: cannot load webcam components")
+            webcamlog.warn(" %s", e)
+            webcamlog.warn(" webcam forwarding disabled")
+            return 0
+        devices = get_virtual_video_devices()
+        webcamlog.info("found %i virtual video device%s", len(devices), engs(devices))
+        return len(devices)
 
     def init_uuid(self):
         # Define a server UUID if needed:
@@ -564,6 +595,9 @@ class ServerBase(ServerCore, FileTransferHandler):
             "command_request":                      self._process_command_request,
             "printers":                             self._process_printers,
             "send-file":                            self._process_send_file,
+            "webcam-start":                         self._process_webcam_start,
+            "webcam-stop":                          self._process_webcam_stop,
+            "webcam-frame":                         self._process_webcam_frame,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -731,6 +765,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         getVideoHelper().cleanup()
         reaper_cleanup()
         self.cleanup_pulseaudio()
+        self.stop_virtual_webcam()
         ds = self.dbus_server
         if ds:
             ds.cleanup()
@@ -1155,6 +1190,8 @@ class ServerBase(ServerCore, FileTransferHandler):
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
+                 "webcam"                       : self.webcam_forwarding,
+                 "virtual-video-devices"        : self.virtual_video_devices,
                  })
             capabilities.update(self.get_file_transfer_features())
             for x in self.get_server_features():
@@ -1738,12 +1775,17 @@ class ServerBase(ServerCore, FileTransferHandler):
             return {}
         return self._clipboard_helper.get_info()
 
+    def get_webcam_info(self):
+        return {""                          : self.webcam_forwarding,
+                "virtual-video-devices"     : self.virtual_video_devices}
+
     def do_get_info(self, proto, server_sources=None, window_ids=None):
         info = {"server.python.version" : python_platform.python_version()}
 
         def up(prefix, d, suffix=""):
             updict(info, prefix, d, suffix)
 
+        up("webcam",    self.get_webcam_info())
         up("file",      self.get_file_transfer_info())
         up("printing",  self.get_printing_info())
         up("features",  self.get_features_info())
@@ -2448,6 +2490,90 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def _process_configure_window(self, proto, packet):
         log.info("_process_configure_window(%s, %s)", proto, packet)
+
+
+    def _process_webcam_start(self, proto, packet):
+        assert self.webcam_forwarding
+        ss = self._server_sources.get(proto)
+        if not ss:
+            webcamlog.warn("Warning: invalid client source for webcam start")
+            return
+        device, w, h = packet[1:4]
+        self.start_virtual_webcam(ss, device, w, h)
+    
+    def start_virtual_webcam(self, ss, device, w, h):
+        assert w>0 and h>0
+        from xpra.platform.xposix.webcam_util import get_virtual_video_devices
+        devices = get_virtual_video_devices()
+        if len(devices)==0:
+            webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
+            ss.send_webcam_stop(device)
+            return
+        if self.webcam_forwarding_device:
+            self.stop_virtual_webcam()
+        device_str = devices[0]
+        try:
+            from xpra.codecs.v4l2.pusher import Pusher    #@UnresolvedImport
+            p = Pusher()
+            p.init_context(w, h, w, "YUV420P", device_str)
+            self.webcam_forwarding_device = p
+            webcamlog.info("webcam forwarding using %s", device_str)
+            #this tell the client to start sending:
+            ss.send_webcam_ack(device, 0)
+        except Exception as e:
+            webcamlog.error("Error setting up webcam forwarding:")
+            webcamlog.error(" %s", e)
+            ss.send_webcam_stop(device, str(e))
+
+    def _process_webcam_stop(self, proto, packet):
+        device, message = (packet+[""])[1:3]
+        webcamlog("stopping webcam device %s", ": ".join([str(x) for x in (device, message)]))
+        if not self.webcam_forwarding_device:
+            webcamlog.warn("Warning: cannot stop webcam device %s: no such context!", device)
+            return
+        self.stop_virtual_webcam()
+
+    def stop_virtual_webcam(self):
+        webcamlog("stop_virtual_webcam() webcam_forwarding_device=%s", self.webcam_forwarding_device)
+        vfd = self.webcam_forwarding_device
+        if vfd:
+            self.webcam_forwarding_device = None
+            vfd.clean()
+
+    def _process_webcam_frame(self, proto, packet):
+        device, frame_no, encoding, w, h, data = packet[1:7]
+        assert encoding and w and h and data
+        ss = self._server_sources.get(proto)
+        if not ss:
+            webcamlog.warn("Warning: invalid client source for webcam frame")
+            return
+        vfd = self.webcam_forwarding_device
+        if not self.webcam_forwarding_device:
+            webcamlog.warn("Warning: webcam forwarding is not active, dropping frame")
+            ss.send_webcam_stop(device, "not started")
+            return            
+        try:
+            #only png supported for now!
+            assert encoding in ("png", "jpeg")
+            from PIL import Image
+            buf = BytesIOClass(data)
+            img = Image.open(buf)
+            pixels = img.tobytes('raw', "BGRX")
+            from xpra.codecs.image_wrapper import ImageWrapper
+            #now convert it to YUV:
+            bgrx_image = ImageWrapper(0, 0, w, h, pixels, "BGRX", 24, w*4, planes=ImageWrapper.PACKED)
+            from xpra.codecs.csc_cython.colorspace_converter import ColorspaceConverter        #@UnresolvedImport
+            csc = ColorspaceConverter()
+            csc.init_context(w, h, "BGRX", w, h, "YUV420P")
+            image = csc.convert_image(bgrx_image)
+            vfd.push_image(image)
+            #tell the client all is good:
+            ss.send_webcam_ack(device, frame_no)
+        except Exception as e:
+            webcamlog.error("Error processing webcam frame:")
+            webcamlog.error(" %s", e)
+            ss.send_webcam_stop(device, str(e))
+            self.stop_virtual_webcam()
 
 
     def process_clipboard_packet(self, ss, packet):

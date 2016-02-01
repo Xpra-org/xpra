@@ -205,6 +205,14 @@ av-sync = on
 
 
 ################################################################################
+# Webcam forwarding
+# webcam = auto
+# webcam = no
+# webcam = /dev/video0
+webcam = auto
+
+
+################################################################################
 # Network Connection
 
 # Enable shared memory transfers:

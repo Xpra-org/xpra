@@ -1580,6 +1580,13 @@ class ServerSource(object):
         self.send("set_deflate", level)
 
 
+    def send_webcam_ack(self, device, frame=0):
+        self.send("webcam-ack", device, frame)
+
+    def send_webcam_stop(self, device, message):
+        self.send("webcam-stop", device, message)
+
+
     def set_printers(self, printers, password_file, encryption, encryption_keyfile):
         printlog("set_printers(%s, %s, %s, %s) for %s", printers, password_file, encryption, encryption_keyfile, self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:

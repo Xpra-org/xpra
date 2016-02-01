@@ -316,6 +316,7 @@ OPTION_TYPES = {
                     "socket-permissions": str,
                     "exec-wrapper"      : str,
                     "dbus-launch"       : str,
+                    "webcam"            : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -460,6 +461,7 @@ def get_defaults():
                     "socket-permissions": "600",
                     "exec-wrapper"      : "",
                     "dbus-launch"       : "dbus-launch --close-stderr",
+                    "webcam"            : "auto",
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,
