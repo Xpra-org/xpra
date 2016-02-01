@@ -159,6 +159,7 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_ok("--atleast-version=56", "lib
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 csc_cython_ENABLED      = DEFAULT
+csc_opencv_ENABLED      = DEFAULT and not OSX
 if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
@@ -2270,6 +2271,9 @@ if csc_cython_ENABLED:
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
                 ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
                 **csc_cython_pkgconfig))
+
+toggle_packages(csc_opencv_ENABLED, "xpra.codecs.csc_opencv")
+
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:

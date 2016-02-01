@@ -25,6 +25,7 @@ CODEC_TO_MODULE = {"vpx"        : ["vpx"],
                    "swscale"    : ["csc_swscale"],
                    "cython"     : ["csc_cython"],
                    "opencl"     : ["csc_opencl"],
+                   "opencv"     : ["csc_opencv"],
                    "libyuv"     : ["csc_libyuv"],
                    "avcodec2"   : ["dec_avcodec2"]}
 
@@ -51,7 +52,7 @@ def try_import_modules(codec_names):
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
 ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "x265", "nvenc"])
-ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "cython", "opencl", "libyuv"])
+ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "cython", "opencl", "libyuv", "opencv"])
 NO_GFX_CSC_OPTIONS = [x for x in ALL_CSC_MODULE_OPTIONS if x not in ("opencl", )]
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec2", "vpx"])
 

@@ -186,6 +186,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("cuda"         , "CUDA device access (nvenc)"),
                 ("cython"       , "Cython CSC module"),
                 ("opencl"       , "OpenCL CSC module"),
+                ("opencv"       , "OpenCV CSC module"),
                 ("swscale"      , "swscale CSC module"),
                 ("libyuv"       , "libyuv CSC module"),
                 ("decoder"      , "All decoders"),

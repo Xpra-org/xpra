@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -131,9 +131,6 @@ def test_csc_rgb_all(csc_module, w, h):
                 spec = csc_module.get_spec(src_format, dst_format)
                 if w<spec.min_w or h<spec.min_h:
                     print("skipping test %s to %s at %sx%s because dimensions are too small" % (src_format, dst_format, w, h))
-                    continue
-                if w&spec.width_mask!=0 or h&spec.height_mask!=0:
-                    print("skipping test %s to %s at %sx%s because dimensions do not match mask: %sx%s" % (src_format, dst_format, w, h, spec.width_mask, spec.height_mask))
                     continue
                 checks = CHECKS.get((src_format, dst_format, w, h))
                 ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, w, h, checks)
