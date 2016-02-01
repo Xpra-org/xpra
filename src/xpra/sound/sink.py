@@ -104,7 +104,6 @@ class SoundSink(SoundPipeline):
         pipeline_els.append(sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
-        log.info("pipeline: %s", pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
