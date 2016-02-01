@@ -132,6 +132,9 @@ def test_csc_rgb_all(csc_module, w, h):
                 if w<spec.min_w or h<spec.min_h:
                     print("skipping test %s to %s at %sx%s because dimensions are too small" % (src_format, dst_format, w, h))
                     continue
+                if w&spec.width_mask!=0 or h&spec.height_mask!=0:
+                    print("skipping test %s to %s at %sx%s because dimensions do not match mask: %sx%s" % (src_format, dst_format, w, h, spec.width_mask, spec.height_mask))
+                    continue
                 checks = CHECKS.get((src_format, dst_format, w, h))
                 ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, w, h, checks)
                 if ok:
