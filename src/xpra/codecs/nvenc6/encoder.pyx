@@ -2387,7 +2387,7 @@ cdef class Encoder:
             log(msg)
             raise TransientCodecException(msg)
         if self.context==NULL:
-            raise Exception("cannot open encoding session, context is NULL")
+            raise TransientCodecException("cannot open encoding session, context is NULL")
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
