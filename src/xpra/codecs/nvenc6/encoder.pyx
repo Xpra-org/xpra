@@ -2378,6 +2378,7 @@ cdef class Encoder:
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
         if DEBUG_API:
             log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
+        self.context = NULL
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
@@ -2385,6 +2386,8 @@ cdef class Encoder:
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
+        if self.context==NULL:
+            raise Exception("cannot open encoding session, context is NULL")
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()

@@ -2301,6 +2301,7 @@ cdef class Encoder:
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
         if DEBUG_API:
             log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
+        self.context = NULL
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
@@ -2309,6 +2310,8 @@ cdef class Encoder:
             log(msg)
             raise TransientCodecException(msg)
         raiseNVENC(r, "opening session")
+        if self.context==NULL:
+            raise Exception("cannot open encoding session, context is NULL")
         context_counter.increase()
         context_gen_counter.increase()
         log("success, encoder context=%#x (%s context%s in use)", <unsigned long> self.context, context_counter, engs(context_counter))
