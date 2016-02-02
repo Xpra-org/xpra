@@ -21,6 +21,7 @@ metalog = Logger("metadata")
 
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
+SIMULATE_MOUSE_DOWN = os.environ.get("XPRA_SIMULATE_MOUSE_DOWN", "1")=="1"
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -632,7 +633,7 @@ class ClientWindowBase(ClientWidgetBase):
         def send_button(pressed):
             self._client.send_button(wid, button, pressed, pointer, modifiers, buttons)
         pressed_state = self.button_state.get(button, False)
-        if pressed_state is False and depressed is False:
+        if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
             mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
             #(needed for some dialogs on win32):
             send_button(True)
