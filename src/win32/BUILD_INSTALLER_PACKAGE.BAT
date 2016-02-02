@@ -85,11 +85,11 @@ IF NOT EXIST "%TORTOISEPLINK_XP%" (
 	ECHO Error: '%TORTOISEPLINK_XP%' does not exist!
 	GOTO ERROR
 )
-ECHO XP version of TortoisePlink found in %TORTOISESVN_XP%
+ECHO XP version of TortoisePlink found in %TORTOISEPLINK_XP%
 MKDIR %DIST%\TortoisePlink-XP
-COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcr110.dll" %DIST%\TortoisePlink-XP\
-COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcp110.dll" %DIST%\TortoisePlink-XP\
-COPY /B /Y /V "%TORTOISEPLINK_XP%\TortoisePlink.exe" %DIST%\TortoisePlink-XP\Plink.exe
+COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcr110.dll" %DIST%\TortoisePlink-XP\ > NUL
+COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcp110.dll" %DIST%\TortoisePlink-XP\ > NUL
+COPY /B /Y /V "%TORTOISEPLINK_XP%\TortoisePlink.exe" %DIST%\TortoisePlink-XP\Plink.exe > NUL
 COPY /B /Y /V "%TORTOISEPLINK_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
 
 if "%DO_ZIP%"=="1" (
