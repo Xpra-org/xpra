@@ -1146,11 +1146,9 @@ def get_COLORSPACES():
     return COLORSPACES
 
 def get_input_colorspaces(encoding):
-    assert encoding in get_encodings()
     return get_COLORSPACES().keys()
 
 def get_output_colorspaces(encoding, input_colorspace):
-    assert encoding in get_encodings()
     out = get_COLORSPACES().get(input_colorspace)
     assert out, "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES())
     #the output will actually be in one of those two formats once decoded
@@ -1227,8 +1225,10 @@ def get_info():
     return info
 
 
+ENCODINGS = ["h264"]
 def get_encodings():
-    return ["h264"]
+    global ENCODINGS
+    return ENCODINGS
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -1322,7 +1322,7 @@ cdef class Encoder:
     cdef GUID init_codec(self) except *:
         codecs = self.query_codecs()
         #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}
-        internal_name = self.codec_name.upper()
+        internal_name = {"H265" : "HEVC"}.get(self.codec_name.upper(), self.codec_name.upper())
         guid_str = codecs.get(internal_name)
         assert guid_str, "%s not supported! (only available: %s)" % (self.codec_name, csv(codecs.keys()))
         self.codec = c_parseguid(guid_str)
@@ -1412,7 +1412,7 @@ cdef class Encoder:
     def get_target_pixel_format(self, quality):
         global YUV444_ENABLED, LOSSLESS_ENABLED
         x,y = self.scaling
-        if YUV444_ENABLED and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
+        if YUV444_ENABLED and self.codec_name=="H264" and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
             return "YUV444P"
         elif "YUV420P" in self.dst_formats:
             return "NV12"
@@ -1571,45 +1571,66 @@ cdef class Encoder:
             params.presetGUID = preset
             params.encodeWidth = self.encoder_width
             params.encodeHeight = self.encoder_height
+            params.maxEncodeWidth = self.encoder_width
+            params.maxEncodeHeight = self.encoder_height
             params.darWidth = self.encoder_width
             params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
-            params.enablePTD = 0                    #not supported in sync mode!?
+            params.enablePTD = 1                    #not supported in sync mode!?
+            params.reportSliceOffsets = 0
+            params.enableSubFrameWrite = 0
+
             params.frameRateNum = 1
             params.frameRateDen = 30
             params.encodeConfig = config
 
-            #3 for YUV444, 1 for NV12:
-            config.encodeCodecConfig.h264Config.chromaFormatIDC = 1+int(self.pixel_format=="YUV444P") * 2
             #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             #config.rcParams.enableMinQP = 1
             #config.rcParams.enableMaxQP = 1
-            config.frameIntervalP = 1
             config.gopLength = NVENC_INFINITE_GOPLENGTH
+            config.frameIntervalP = 1
             #0=max quality, 63 lowest quality
-            #qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)//100))
-            #qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
-            #if self.lossless:
-            #    config.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1
-            #    config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
-            #    qmin = 0
-            #    qmax = 0
-            #config.rcParams.minQP.qpInterB = qmin
-            #config.rcParams.minQP.qpInterP = qmin
-            #config.rcParams.minQP.qpIntra = qmin
-            #config.rcParams.maxQP.qpInterB = qmax
-            #config.rcParams.maxQP.qpInterP = qmax
-            #config.rcParams.maxQP.qpIntra = qmax
-            #config.rcParams.averageBitRate = self.target_bitrate
-            #config.rcParams.maxBitRate = self.max_bitrate
+            qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality)//100))
+            qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
             config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
+            config.mvPrecision = NV_ENC_MV_PRECISION_QUARTER_PEL
+            if True:
+                #const QP:
+                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
+                qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
+                config.rcParams.constQP.qpInterP = qp
+                config.rcParams.constQP.qpInterB = qp
+                config.rcParams.constQP.qpIntra = qp
+            else:
+                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR
+                config.rcParams.averageBitRate = 5000000
+                config.rcParams.maxBitRate = 10000000
+                config.rcParams.vbvBufferSize = 0
+                config.rcParams.vbvInitialDelay = 0
+                config.rcParams.enableInitialRCQP = 1
+                config.rcParams.initialRCQP.qpInterP  = qpmin
+                config.rcParams.initialRCQP.qpIntra = qpmin
+                config.rcParams.initialRCQP.qpInterB = qpmin
 
-            config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
-            config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
-            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
-            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
-            #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
-            #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
+            if self.codec_name=="H264":
+                #3 for YUV444, 1 for NV12:
+                config.encodeCodecConfig.h264Config.chromaFormatIDC = 1+int(self.pixel_format=="YUV444P") * 2
+                config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
+                config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
+                config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
+                config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
+                #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
+                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
+                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
+                #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
+                #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
+            else:
+                assert self.codec_name=="H265"
+                #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
+                config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
+                config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
+                #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
+                #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
             return params
         finally:
             if presetConfig!=NULL:
@@ -2436,8 +2457,16 @@ def init_module():
     #load the library / DLL:
     init_nvencode_library()
 
-    test_encoder = Encoder()
-    for encoding in get_encodings():
+    log("**************************************************************************")
+    #test_encodings = ("h264", "h265")
+    test_encodings = ("h264", )
+    log("will probe: %s", csv(test_encodings))
+    global ENCODINGS
+    validated_encodings = []
+    for encoding in test_encodings:
+        test_encoder = Encoder()
+        log("**************************************************************************")
+        log("testing encoder=%s with %s", test_encoder, encoding)
         colorspaces = get_input_colorspaces(encoding)
         assert colorspaces, "cannot use NVENC: no colorspaces available for %s" % encoding
         src_format = colorspaces[0]
@@ -2445,17 +2474,19 @@ def init_module():
         try:
             try:
                 test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
-                #check for YUV444 support
-                if YUV444_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
-                    log.warn("Warning: hardware or nvenc library version does not support YUV444")
-                    YUV444_ENABLED = False
-                    LOSSLESS_ENABLED = False
-                log("%s YUV444 support: %s", encoding, YUV444_ENABLED)
-                #check for lossless:
-                if LOSSLESS_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
-                    log.warn("Warning: hardware or nvenc library version does not support lossless mode")
-                    LOSSLESS_ENABLED = False
-                log("%s lossless support: %s", encoding, LOSSLESS_ENABLED)
+                if encoding=="h264":
+                    #check for YUV444 support
+                    if YUV444_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
+                        log.warn("Warning: hardware or nvenc library version does not support YUV444")
+                        YUV444_ENABLED = False
+                        LOSSLESS_ENABLED = False
+                    log("%s YUV444 support: %s", encoding, YUV444_ENABLED)
+                    #check for lossless:
+                    if LOSSLESS_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE):
+                        log.warn("Warning: hardware or nvenc library version does not support lossless mode")
+                        LOSSLESS_ENABLED = False
+                    log("%s lossless support: %s", encoding, LOSSLESS_ENABLED)
+                validated_encodings.append(encoding)
             except NVENCException as e:
                 log("encoder %s failed: %s", test_encoder, e)
                 #special handling for license key issues:
@@ -2467,7 +2498,11 @@ def init_module():
                 raise Exception("error initializing a test context: %s" % e)
         finally:
             test_encoder.clean()
+    ENCODINGS[:] = validated_encodings
+    if not ENCODINGS:
+        raise Exception("no encodings supported!")
     log.info("NVENC v6 successfully initialized")
+    log("**************************************************************************")
 
 def cleanup_module():
     log("nvenc.cleanup_module()")
