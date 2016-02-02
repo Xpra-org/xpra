@@ -1319,17 +1319,19 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    cdef GUID init_codec(self):
+    cdef GUID init_codec(self) except *:
         codecs = self.query_codecs()
         #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}
-        assert self.codec_name in codecs, "%s not supported!?" % self.codec_name
-        self.codec = c_parseguid(codecs.get(self.codec_name))
+        internal_name = self.codec_name.upper()
+        guid_str = codecs.get(internal_name)
+        assert guid_str, "%s not supported! (only available: %s)" % (self.codec_name, csv(codecs.keys()))
+        self.codec = c_parseguid(guid_str)
         return self.codec
 
     cdef GUID get_codec(self):
         return self.codec
 
-    cdef GUID get_preset(self, GUID codec):
+    cdef GUID get_preset(self, GUID codec) except *:
         presets = self.query_presets(codec)
         #import traceback
         #traceback.print_stack()
@@ -1363,9 +1365,8 @@ cdef class Encoder:
         raise Exception("no matching presets available for '%s'!?" % self.codec_name)
 
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
-        assert encoding in get_encodings(), "invalid encoding %s" % encoding
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
-        log("init_context%s", (width, height, src_format, encoding, quality, speed, scaling, options))
+        log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         self.width = width
         self.height = height
         self.speed = speed
@@ -1378,7 +1379,7 @@ cdef class Encoder:
         self.encoder_height = roundup(height*v//u, 32)
         self.src_format = src_format
         self.dst_formats = dst_formats
-        self.codec_name = "H264"
+        self.codec_name = encoding.upper()      #ie: "H264"
         self.preset_name = None
         self.frames = 0
         self.cuda_device = None
@@ -1509,13 +1510,15 @@ cdef class Encoder:
         cdef NVENCSTATUS r
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
-        memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
+        assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
+        log("init_nvenc() functionList=%#x", <unsigned long> self.functionList)
 
         self.open_encode_session()
 
         cdef GUID codec = self.init_codec()
         params = <NV_ENC_INITIALIZE_PARAMS*> malloc(sizeof(NV_ENC_INITIALIZE_PARAMS))
         assert params!=NULL
+        assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         try:
             self.init_params(codec, params)
             if DEBUG_API:
@@ -1541,7 +1544,7 @@ cdef class Encoder:
                 caps[descr] = v
         log("caps(%s)=%s", codec_name, caps)
 
-    cdef NV_ENC_INITIALIZE_PARAMS *init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
+    cdef NV_ENC_INITIALIZE_PARAMS *init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params) except *:
         #caller must free the config!
         cdef GUID preset
         cdef NV_ENC_CONFIG *config = NULL
@@ -1845,39 +1848,47 @@ cdef class Encoder:
 
     def set_encoding_quality(self, quality):
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
-        if self.quality!=quality:
-            log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
-            if quality<LOSSLESS_THRESHOLD:
-                #edge resistance:
-                raw_delta = quality-self.quality
-                max_delta = max(-1, min(1, raw_delta))*10
-                if abs(raw_delta)<abs(max_delta):
-                    delta = raw_delta
-                else:
-                    delta = max_delta
-                target_quality = quality-delta
+        cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
+        if self.quality==quality:
+            return
+        log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
+        if quality<LOSSLESS_THRESHOLD:
+            #edge resistance:
+            raw_delta = quality-self.quality
+            max_delta = max(-1, min(1, raw_delta))*10
+            if abs(raw_delta)<abs(max_delta):
+                delta = raw_delta
             else:
-                target_quality = 100
-            self.quality = quality
-            log("set_encoding_quality(%s) target quality=%s", quality, target_quality)
-            new_pixel_format = self.get_target_pixel_format(target_quality)
-            new_lossless = self.get_target_lossless(new_pixel_format, target_quality)
-            if new_pixel_format==self.pixel_format and new_lossless==self.lossless:
-                log("set_encoding_quality(%s) keeping current: %s / %s", quality, self.pixel_format, self.lossless)
-                return
-            start = time.time()
-            reconfigure_params.version = NV_ENC_RECONFIGURE_PARAMS_VER
-            try:
-                params = self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
-                reconfigure_params.resetEncoder = 1
-                reconfigure_params.forceIDR = 1
-            finally:
-                if params.encodeConfig!=NULL:
-                    free(params.encodeConfig)
-            end = time.time()
-            log("set_encoding_quality(%s) reconfigured from %s / %s to: %s / %s (took %ims)", quality, self.pixel_format, bool(self.lossless), new_pixel_format, new_lossless, int(1000*(end-start)))
-            self.pixel_format = new_pixel_format
-            self.lossless = new_lossless
+                delta = max_delta
+            target_quality = quality-delta
+        else:
+            target_quality = 100
+        self.quality = quality
+        log("set_encoding_quality(%s) target quality=%s", quality, target_quality)
+        new_pixel_format = self.get_target_pixel_format(target_quality)
+        new_lossless = self.get_target_lossless(new_pixel_format, target_quality)
+        if new_pixel_format==self.pixel_format and new_lossless==self.lossless:
+            log("set_encoding_quality(%s) keeping current: %s / %s", quality, self.pixel_format, self.lossless)
+            return
+        start = time.time()
+        memset(&reconfigure_params, 0, sizeof(NV_ENC_RECONFIGURE_PARAMS))
+        reconfigure_params.version = NV_ENC_RECONFIGURE_PARAMS_VER
+        #FIXME: actually call nvEncReconfigureEncoder
+        #cdef int r
+        try:
+            params = self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
+            reconfigure_params.resetEncoder = 1
+            reconfigure_params.forceIDR = 1
+            #with nogil:
+            #    r = self.functionList.nvEncReconfigureEncoder(self.context, &reconfigure_params.reInitEncodeParams)
+            #raiseNVENC(r, "flushing encoder buffer")
+        finally:
+            if params.encodeConfig!=NULL:
+                free(params.encodeConfig)
+        end = time.time()
+        log("set_encoding_quality(%s) reconfigured from %s / %s to: %s / %s (took %ims)", quality, self.pixel_format, bool(self.lossless), new_pixel_format, new_lossless, int(1000*(end-start)))
+        self.pixel_format = new_pixel_format
+        self.lossless = new_lossless
 
 
     def update_bitrate(self):
@@ -2138,7 +2149,7 @@ cdef class Encoder:
         return data, client_options
 
 
-    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID):
+    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID) except *:
         """ you must free it after use! """
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
         cdef NVENCSTATUS r                          #@DuplicatedSignature
@@ -2280,7 +2291,7 @@ cdef class Encoder:
             free(inputFmts)
         return input_formats
 
-    cdef int query_encoder_caps(self, GUID encode_GUID, NV_ENC_CAPS caps_type):
+    cdef int query_encoder_caps(self, GUID encode_GUID, NV_ENC_CAPS caps_type) except *:
         cdef int val
         cdef NV_ENC_CAPS_PARAM encCaps
         cdef NVENCSTATUS r                          #@DuplicatedSignature
@@ -2303,7 +2314,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
 
         if DEBUG_API:
-            log("nvEncGetEncodeGUIDCount(%#x)", <unsigned long> &GUIDCount)
+            log("nvEncGetEncodeGUIDCount(%#x, %#x)", <unsigned long> self.context, <unsigned long> &GUIDCount)
         with nogil:
             r = self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount)
         raiseNVENC(r, "getting encoder count")
@@ -2386,6 +2397,7 @@ cdef class Encoder:
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
+        log("encoding context=%s", <unsigned long> self.context)
         if self.context==NULL:
             raise TransientCodecException("cannot open encoding session, context is NULL")
         raiseNVENC(r, "opening session")
