@@ -845,7 +845,7 @@ class UIXpraClient(XpraClientBase):
             if tray:
                 modifiers = self.get_current_modifiers()
                 buttons = []
-                pointer_packet = ["pointer-position", wid, self.sp(x, y), modifiers, buttons]
+                pointer_packet = ["pointer-position", wid, self.cp(x, y), modifiers, buttons]
                 traylog("pointer_packet=%s", pointer_packet)
                 self.send_mouse_position(pointer_packet)
         def do_tray_geometry(*args):
