@@ -151,8 +151,8 @@ class ColorspaceConverter(object):
         iplanes = image.get_planes()
         w = image.get_width()
         h = image.get_height()
-        #assert w>=self.width, "invalid image width: %s (minimum is %s)" % (w, self.width)
-        #assert h>=self.height, "invalid image height: %s (minimum is %s)" % (h, self.height)
+        assert w>=self.width, "invalid image width: %s (minimum is %s)" % (w, self.width)
+        assert h>=self.height, "invalid image height: %s (minimum is %s)" % (h, self.height)
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
