@@ -27,11 +27,13 @@ class TestCrypto(unittest.TestCase):
         self.backends = []
         try:
             from xpra.net import pycrypto_backend
+            pycrypto_backend.init()
             self.backends.append(pycrypto_backend)
         except:
             print("Warning: python-crypto backend not tested!")
         try:
             from xpra.net import pycryptography_backend
+            pycryptography_backend.init()
             self.backends.append(pycryptography_backend)
         except:
             print("Warning: python-cryptography backend not tested!")
@@ -46,9 +48,6 @@ class TestCrypto(unittest.TestCase):
             v = l[0]
             for i in range(len(l)):
                 assert l[i]==v
-
-        for b in backends:
-            b.init()
 
         password = "this is our secret"
         key_salt = DEFAULT_SALT
