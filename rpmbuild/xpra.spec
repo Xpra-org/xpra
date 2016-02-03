@@ -31,7 +31,7 @@
 %define requires_pygtk2 pygtk2
 %define requires_dbus_python dbus-python
 %define requires_crypto python-cryptography
-%define py3_requires_crypto python3-cryptography
+%define py3requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext
@@ -120,7 +120,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define requires_crypto python-pycrypto
-%define py3_requires_crypto python3-pycrypto
+%define py3requires_crypto python3-pycrypto
 #different naming prefix ("python-") for pygtkglext:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext
 %endif
@@ -195,6 +195,7 @@ BuildRequires: desktop-file-utils
 BuildRequires: %{numpy}
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
+Requires: %{requires_crypto}
 
 %if %{with_python3}
 BuildRequires: python3-devel
@@ -233,7 +234,7 @@ Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %
 Requires: python3-lz4
 Requires: python3-gobject
 Requires: python3-pillow
-Requires: %{py3_requires_crypto}
+Requires: %{py3requires_crypto}
 #TODO:
 #Requires: dbus-python
 Requires: python3-netifaces
@@ -250,6 +251,8 @@ Requires: %{libwebp}
 Requires: x264-xpra
 Requires: ffmpeg-xpra
 Requires: xpra-common = %{build_no}%{dist}
+#for running the tests:
+BuildRequires: %{py3requires_crypto}
 
 %description -n python3-xpra
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
