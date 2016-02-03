@@ -72,7 +72,7 @@ cdef extern from "libyuv/convert.h" namespace "libyuv":
                int width, int height) nogil
 
 cdef extern from "libyuv/scale.h" namespace "libyuv":
-    ctypedef int FilterMode
+    ctypedef unsigned int FilterMode
     FilterMode  kFilterNone
     FilterMode  kFilterBilinear
     FilterMode  kFilterBox
@@ -82,10 +82,14 @@ cdef extern from "libyuv/scale.h" namespace "libyuv":
                 int dst_width, int dst_height,
                 FilterMode filtering) nogil
 
-FILTERMODE_STR = {
-        kFilterNone     : "None",
-        kFilterBilinear : "Bilinear",
-        kFilterBox      : "Box"}
+cdef get_fiter_mode_str(FilterMode fm):
+    if fm==kFilterNone:
+        return "None"
+    elif fm==kFilterBilinear:
+        return "Bilinear"
+    elif fm==kFilterBox:
+        return  "Box"
+    return "invalid"
 
 cdef FilterMode get_filtermode(int speed):
     if speed>66:
@@ -218,7 +222,7 @@ cdef class ColorspaceConverter:
             self.output_buffer = <uint8_t *> xmemalign(self.out_buffer_size)
         else:
             self.output_buffer = NULL
-        log("buffer size=%i, scaling=%s, filtermode=%s", self.out_buffer_size, self.scaling, FILTERMODE_STR.get(self.filtermode))
+        log("buffer size=%i, scaling=%s, filtermode=%s", self.out_buffer_size, self.scaling, get_fiter_mode_str(self.filtermode))
         self.time = 0
         self.frames = 0
 
