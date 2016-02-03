@@ -31,6 +31,7 @@
 %define requires_pygtk2 pygtk2
 %define requires_dbus_python dbus-python
 %define requires_crypto python-cryptography
+%define py3_requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext
@@ -118,6 +119,8 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 #(see recommends below)
 %define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
+%define requires_crypto python-pycrypto
+%define py3_requires_crypto python3-pycrypto
 #different naming prefix ("python-") for pygtkglext:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext
 %endif
@@ -230,7 +233,7 @@ Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %
 Requires: python3-lz4
 Requires: python3-gobject
 Requires: python3-pillow
-Requires: python3-crypto
+Requires: %{py3_requires_crypto}
 #TODO:
 #Requires: dbus-python
 Requires: python3-netifaces
