@@ -51,6 +51,7 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
     with program_context("Encryption Properties"):
+        init()
         for k,v in sorted(get_info().items()):
             print(k.ljust(32)+": "+str(v))
 

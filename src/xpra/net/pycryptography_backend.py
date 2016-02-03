@@ -41,12 +41,14 @@ def patch_crypto_be_discovery():
     ]
 
 def init():
-    patch_crypto_be_discovery()
+    import sys
+    if getattr(sys, 'frozen', False):
+        patch_crypto_be_discovery()
     global backend, ENCRYPTION_CIPHERS
     from cryptography.hazmat.backends import default_backend
     backend = default_backend()
     log("default_backend()=%s", backend)
-    log("backends=%s", backend._backends)
+    log("backends=%s", getattr(backend, "_backends", []))
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.primitives import hashes
     assert Cipher and algorithms and modes and hashes
@@ -59,9 +61,10 @@ def ci(v):
         return str(v)
 
 def get_info():
+    global backend
     import cryptography
     return {"backend"                       : "python-cryptography",
-            "backends"                      : [ci(x) for x in backend._backends],
+            "backends"                      : [ci(x) for x in getattr(backend, "_backends", [])],
             "python-cryptography"           : True,
             "python-cryptography.version"   : cryptography.__version__}
 
@@ -95,6 +98,7 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
     with program_context("Encryption Properties"):
+        init()
         for k,v in sorted(get_info().items()):
             print(k.ljust(32)+": "+str(v))
 

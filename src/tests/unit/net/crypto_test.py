@@ -47,6 +47,9 @@ class TestCrypto(unittest.TestCase):
             for i in range(len(l)):
                 assert l[i]==v
 
+        for b in backends:
+            b.init()
+
         password = "this is our secret"
         key_salt = DEFAULT_SALT
         iterations = DEFAULT_ITERATIONS
