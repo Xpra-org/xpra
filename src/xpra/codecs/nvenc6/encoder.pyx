@@ -1510,6 +1510,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
+        assert self.functionList!=NULL
         assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
         log("init_nvenc() functionList=%#x", <unsigned long> self.functionList)
 
@@ -1544,7 +1545,7 @@ cdef class Encoder:
                 caps[descr] = v
         log("caps(%s)=%s", codec_name, caps)
 
-    cdef NV_ENC_INITIALIZE_PARAMS *init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params) except *:
+    cdef init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
         #caller must free the config!
         cdef GUID preset
         cdef NV_ENC_CONFIG *config = NULL
@@ -1631,7 +1632,6 @@ cdef class Encoder:
                 config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
                 #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
                 #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
-            return params
         finally:
             if presetConfig!=NULL:
                 free(presetConfig)
@@ -1869,7 +1869,6 @@ cdef class Encoder:
 
     def set_encoding_quality(self, quality):
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
-        cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         if self.quality==quality:
             return
         log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
@@ -1897,15 +1896,15 @@ cdef class Encoder:
         #FIXME: actually call nvEncReconfigureEncoder
         #cdef int r
         try:
-            params = self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
+            self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
             reconfigure_params.resetEncoder = 1
             reconfigure_params.forceIDR = 1
             #with nogil:
             #    r = self.functionList.nvEncReconfigureEncoder(self.context, &reconfigure_params.reInitEncodeParams)
             #raiseNVENC(r, "flushing encoder buffer")
         finally:
-            if params.encodeConfig!=NULL:
-                free(params.encodeConfig)
+            if reconfigure_params.reInitEncodeParams.encodeConfig!=NULL:
+                free(reconfigure_params.reInitEncodeParams.encodeConfig)
         end = time.time()
         log("set_encoding_quality(%s) reconfigured from %s / %s to: %s / %s (took %ims)", quality, self.pixel_format, bool(self.lossless), new_pixel_format, new_lossless, int(1000*(end-start)))
         self.pixel_format = new_pixel_format
