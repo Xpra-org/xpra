@@ -96,7 +96,7 @@
   <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
 	     supports-non-srcdir-builds="no">
-    <branch module="openssl-0.9.8ze.tar.gz" version="0.9.8ze" repo="openssl"/>
+    <branch module="openssl-1.0.2f.tar.gz" version="1.0.2f" repo="openssl"/>
   </autotools>
 
 
