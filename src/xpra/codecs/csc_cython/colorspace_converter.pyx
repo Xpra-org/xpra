@@ -136,9 +136,10 @@ class CythonImageWrapper(ImageWrapper):
     def free(self):                             #@DuplicatedSignature
         log("CythonImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
         ImageWrapper.free(self)
-        if self.cython_buffer>0:
-            free(<void *> (<unsigned long> self.cython_buffer))
+        cb = self.cython_buffer
+        if cb>0:
             self.cython_buffer = 0
+            free(<void *> (<unsigned long> cb))
 
 
 DEF STRIDE_ROUNDUP = 16
