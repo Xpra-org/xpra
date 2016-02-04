@@ -21,6 +21,7 @@ from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 log = Logger("menu")
 clipboardlog = Logger("menu", "clipboard")
+webcamlog = Logger("menu", "webcam")
 
 
 HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
@@ -28,6 +29,7 @@ HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
 #compression is fine with default value (3), no need to clutter the UI
 SHOW_COMPRESSION_MENU = False
 STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
+WEBCAM_MENU = os.environ.get("XPRA_SHOW_WEBCAM_MENU", "1")=="1"
 
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {
@@ -251,6 +253,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_speakermenuitem())
         if STARTSTOP_SOUND_MENU:
             menu.append(self.make_microphonemenuitem())
+        if WEBCAM_MENU:
+            menu.append(self.make_webcammenuitem())
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
         if self.client.windows_enabled:
@@ -821,6 +825,37 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menu.show_all()
         return menu
+
+    def make_webcammenuitem(self):
+        def webcam_toggled(webcam, *args):
+            webcamlog("webcam_toggled(%s, %s)", webcam, args)
+            active = self.client.webcam_device is not None
+            v = webcam.get_active()
+            changed = active != v
+            if not changed:
+                return
+            if v:
+                self.client.start_sending_webcam()
+            else:
+                self.client.stop_sending_webcam()
+        webcam = self.checkitem("Webcam", webcam_toggled)
+        #webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam", None)
+        set_sensitive(webcam, False)
+        def webcam_state(*args):
+            webcamlog("webcam_state%s webcam forwarding=%s, server virtual video devices=%i", args, self.client.webcam_forwarding, self.client.server_virtual_video_devices)
+            if not self.client.webcam_forwarding:
+                set_sensitive(webcam, False)
+                webcam.set_tooltip_text("Webcam forwarding is disabled")
+                return
+            if self.client.server_virtual_video_devices<=0:
+                set_sensitive(webcam, False)
+                webcam.set_tooltip_text("Server does not support webcam forwarding")
+                return
+            set_sensitive(webcam, True)
+            webcam.set_active(self.client.webcam_device is not None)
+        self.client.connect("webcam-changed", webcam_state)
+        self.client.after_handshake(webcam_state)
+        return webcam
 
     def make_layoutsmenuitem(self):
         keyboard = self.menuitem("Keyboard", "keyboard.png", "Select your keyboard layout", None)

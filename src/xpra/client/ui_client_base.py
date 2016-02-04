@@ -14,6 +14,7 @@ import traceback
 import logging
 import hashlib
 from collections import deque
+from threading import RLock
 
 from xpra.log import Logger, set_global_logging_handler
 log = Logger("client")
@@ -111,6 +112,7 @@ class UIXpraClient(XpraClientBase):
         "keyboard-sync-toggled"     : no_arg_signal,
         "speaker-changed"           : no_arg_signal,        #bitrate or pipeline state has changed
         "microphone-changed"        : no_arg_signal,        #bitrate or pipeline state has changed
+        "webcam-changed"            : no_arg_signal,
         }
 
     def __init__(self):
@@ -172,6 +174,7 @@ class UIXpraClient(XpraClientBase):
         self.webcam_forwarding = False
         self.webcam_device = None
         self.webcam_device_no = -1
+        self.webcam_lock = RLock()
         self.server_supports_webcam = False
         self.server_virtual_video_devices = 0
 
@@ -1975,10 +1978,11 @@ class UIXpraClient(XpraClientBase):
 
 
     def start_sending_webcam(self):
-        self.do_start_sending_webcam(self.webcam_option)
+        with self.webcam_lock:
+            self.do_start_sending_webcam(self.webcam_option)
 
     def do_start_sending_webcam(self, device_str):
-        webcamlog("start_sending_webcam(%s)", device_str)
+        webcamlog("do_start_sending_webcam(%s)", device_str)
         assert self.server_supports_webcam
         device = 0
         if device_str=="auto":
@@ -2009,7 +2013,7 @@ class UIXpraClient(XpraClientBase):
                     except:
                         device = 0
         import cv2
-        webcamlog("start_sending_webcam(%s) device=%i", device_str, device)
+        webcamlog("do_start_sending_webcam(%s) device=%i", device_str, device)
         self.webcam_frame_no = 0
         try:
             #test capture:
@@ -2025,13 +2029,18 @@ class UIXpraClient(XpraClientBase):
             self.webcam_device_no = device
             self.webcam_device = webcam_device
             self.send("webcam-start", device, w, h)
+            self.emit("webcam-changed")
             #FIXME: add timer to stop if we don't get an ack
         except Exception as e:
             webcamlog.warn("webcam test capture failed: %s", e)
 
     def stop_sending_webcam(self):
+        with self.webcam_lock:
+            self.do_stop_sending_webcam()
+ 
+    def do_stop_sending_webcam(self):
         wd = self.webcam_device
-        webcamlog("stop_sending_webcam() device=%s", wd)
+        webcamlog("do_stop_sending_webcam() device=%s", wd)
         if not wd:
             return
         self.send("webcam-stop", self.webcam_device_no)
@@ -2043,6 +2052,7 @@ class UIXpraClient(XpraClientBase):
             wd.release()
         except Exception as e:
             webcamlog.error("Error closing webcam device %s: %s", wd, e)
+        self.emit("webcam-changed")
 
     def _process_webcam_stop(self, packet):
         device_no = packet[1]
@@ -2052,7 +2062,9 @@ class UIXpraClient(XpraClientBase):
 
     def _process_webcam_ack(self, packet):
         webcamlog("process_webcam_ack: %s", packet)
-        self.send_webcam_frame()
+        with self.webcam_lock:
+            if self.webcam_device:
+                self.send_webcam_frame()
 
     def send_webcam_frame(self):
         assert self.webcam_device_no>=0 and self.webcam_device
