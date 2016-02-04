@@ -475,7 +475,7 @@ class UIXpraClient(XpraClientBase):
                         dims = ldef[0].split("x")
                         assert len(dims)==2, "could not find 2 dimensions separated by 'x' in '%s'" % ldef[0]
                         x, y = int(dims[0]), int(dims[1])
-                        scaleparts = ldef[1].replace("/", "x").split("x")
+                        scaleparts = ldef[1].replace("*", "x").replace("/", "x").split("x")
                         assert len(scaleparts)<=2, "found more than 2 scaling dimensions!"
                         if len(scaleparts)==1:
                             sx = sy = float(scaleparts[0])
@@ -491,10 +491,13 @@ class UIXpraClient(XpraClientBase):
             else:
                 scalinglog.warn("Warning: invalid auto attributes '%s'", desktop_scaling[5:])
             sx, sy = 1, 1
-            for mx, my, sx, sy in limits:
-                if root_w<=mx and root_h<=my:
+            matched = False
+            for mx, my, tsx, tsy in limits:
+                if root_w*root_h<=mx*my:
+                    sx, sy = tsx, tsy
+                    matched = True
                     break
-            scalinglog("matched %sx%s with limits %s: %sx%s", root_w, root_h, limits, sx, sy)
+            scalinglog("matched=%s : %sx%s with limits %s: %sx%s", matched, root_w, root_h, limits, sx, sy)                
             return sx,sy
         def parse_item(v):
             div = 1
