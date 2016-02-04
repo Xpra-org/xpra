@@ -471,11 +471,11 @@ class UIXpraClient(XpraClientBase):
                 for l in limp:
                     try:
                         ldef = l.split(":")
-                        assert len(ldef)==2, "could not find 2 parts separated by ':'"
+                        assert len(ldef)==2, "could not find 2 parts separated by ':' in '%s'" % ldef
                         dims = ldef[0].split("x")
-                        assert len(dims)==2, "could not find 2 dimensions separated by 'x'"
+                        assert len(dims)==2, "could not find 2 dimensions separated by 'x' in '%s'" % ldef[0]
                         x, y = int(dims[0]), int(dims[1])
-                        scaleparts = ldef[1].split("x")
+                        scaleparts = ldef[1].replace("/", "x").split("x")
                         assert len(scaleparts)<=2, "found more than 2 scaling dimensions!"
                         if len(scaleparts)==1:
                             sx = sy = float(scaleparts[0])
@@ -521,6 +521,10 @@ class UIXpraClient(XpraClientBase):
                 pass
             scalinglog.warn("Warning: failed to parse scaling value '%s'", v)
             return None
+        if desktop_scaling.find("x")>0 and desktop_scaling.find(":")>0:
+            scalinglog.warn("Warning: found both 'x' and ':' in desktop-scaling fixed value")
+            scalinglog.warn(" maybe the 'auto:' prefix is missing?")
+            return 1, 1
         #split if we have two dimensions: "1600x1200" -> ["1600", "1200"], if not: "2" -> ["2"]
         values = desktop_scaling.replace(",", "x").split("x", 1)
         x = parse_item(values[0])
