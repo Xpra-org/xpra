@@ -1580,8 +1580,8 @@ class ServerSource(object):
         self.send("set_deflate", level)
 
 
-    def send_webcam_ack(self, device, frame=0):
-        self.send("webcam-ack", device, frame)
+    def send_webcam_ack(self, device, frame, *args):
+        self.send("webcam-ack", device, frame, *args)
 
     def send_webcam_stop(self, device, message):
         self.send("webcam-stop", device, message)

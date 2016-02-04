@@ -43,9 +43,12 @@ cdef extern from "linux/videodev2.h":
     int VIDIOC_S_FMT
     int V4L2_COLORSPACE_SRGB
     int V4L2_FIELD_NONE
+    int V4L2_BUF_TYPE_VIDEO_OUTPUT
+    #formats:
+    int V4L2_PIX_FMT_GREY
+    int V4L2_PIX_FMT_YUV422P
     int V4L2_PIX_FMT_YUV420
     int V4L2_PIX_FMT_YVU420
-    int V4L2_BUF_TYPE_VIDEO_OUTPUT
 
     cdef struct v4l2_capability:
         uint8_t driver[16]
@@ -129,13 +132,12 @@ cdef class Pusher:
     cdef object __weakref__
 
     def init_context(self, int width, int height, int rowstride, src_format, device):    #@DuplicatedSignature
-        assert src_format=="YUV420P"
+        assert src_format in get_input_colorspaces(), "invalid source format '%s', must be one of %s" % (src_format, get_input_colorspaces())
         self.width = width
         self.height = height
         self.rowstride = rowstride
         self.src_format = src_format
         self.frames = 0
-        self.framesize = self.height*self.rowstride*3//2
         self.init_device(device)
     
     cdef init_device(self, device):
@@ -150,26 +152,52 @@ cdef class Pusher:
         memset(&vid_format, 0, sizeof(vid_format))
         r = ioctl(self.device.fileno(), VIDIOC_G_FMT, &vid_format)
         log("ioctl(%s, VIDIOC_G_FMT, %#x)=%s", self.device_name, <unsigned long> &vid_format, r)
+        self.show_vid_format(&vid_format)
         #assert r!=-1, "VIDIOC_G_FMT ioctl failed on %s" % self.device_name
         vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT
         vid_format.fmt.pix.width = self.width
         vid_format.fmt.pix.height = self.height
-        vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420        #V4L2_PIX_FMT_YVU420
+        #self.framesize = self.height*self.rowstride*3//2
+        #vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420        #V4L2_PIX_FMT_YVU420
+        self.framesize = self.height*self.rowstride
+        vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY
         vid_format.fmt.pix.sizeimage = self.framesize
         vid_format.fmt.pix.field = V4L2_FIELD_NONE
-        vid_format.fmt.pix.bytesperline = self.rowstride
+        vid_format.fmt.pix.bytesperline = 0
         vid_format.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB
         r = ioctl(self.device.fileno(), VIDIOC_S_FMT, &vid_format)
+        log("ioctl(%s, VIDIOC_S_FMT, %#x)=%s", self.device_name, <unsigned long> &vid_format, r)
+        assert r!=-1, "VIDIOC_S_FMT ioctl failed on %s" % self.device_name
+        self.show_vid_format(&vid_format)
+        self.width = vid_format.fmt.pix.width
+        self.height = vid_format.fmt.pix.height
+        self.rowstride = vid_format.fmt.pix.bytesperline
+        self.framesize = self.height*self.rowstride
+        parsed_pixel_format = self.parse_pixel_format(&vid_format)
+        self.src_format = self.get_equiv_format(parsed_pixel_format)
+        assert self.src_format in get_input_colorspaces(), "invalid pixel format used: %s" % self.src_format
+
+
+    def get_equiv_format(self, fmt):
+        return {"YU12" : "YUV420P", "YV12" : "YVU420P", "GREY" : "YUV420P"}.get(fmt, fmt)
+
+    cdef parse_pixel_format(self, v4l2_format *vid_format):
+        if vid_format.fmt.pix.pixelformat==0:
+            return ""
+        return "".join([chr((vid_format.fmt.pix.pixelformat//(2**(8*x))) % 256) for x in range(4)])
+
+    cdef show_vid_format(self, v4l2_format *vid_format):
         log("vid_format.type                 = %i", vid_format.type)
         log("vid_format.fmt.pix.width        = %i", vid_format.fmt.pix.width)
         log("vid_format.fmt.pix.height       = %i", vid_format.fmt.pix.height)
-        log("vid_format.fmt.pix.pixelformat  = %i", vid_format.fmt.pix.pixelformat)
+        parsed_pixel_format = self.parse_pixel_format(vid_format)
+        equiv = self.get_equiv_format(parsed_pixel_format)
+        log("vid_format.fmt.pix.pixelformat  = %s = %s (for %#x)", parsed_pixel_format or "unset", equiv or "unset", vid_format.fmt.pix.pixelformat)
         log("vid_format.fmt.pix.sizeimage    = %i", vid_format.fmt.pix.sizeimage)
         log("vid_format.fmt.pix.field        = %i", vid_format.fmt.pix.field)
         log("vid_format.fmt.pix.bytesperline = %i", vid_format.fmt.pix.bytesperline)
         log("vid_format.fmt.pix.colorspace   = %i", vid_format.fmt.pix.colorspace)
-        log("ioctl(%s, VIDIOC_S_FMT, %#x)=%s", self.device_name, <unsigned long> &vid_format, r)
-        assert r!=-1, "VIDIOC_S_FMT ioctl failed on %s" % self.device_name
+
 
     def clean(self):                        #@DuplicatedSignature
         self.width = 0
@@ -217,7 +245,12 @@ cdef class Pusher:
         cdef unsigned char *Vbuf
         cdef unsigned int Ystride, Ustride, Vstride
         cdef Py_ssize_t buf_len = 0
+        cdef unsigned int chroma_h
+        cdef unsigned int chroma_div
         cdef uint8_t* buf
+
+        chroma_div = 2
+        chroma_h = self.height//chroma_div
 
         iplanes = image.get_planes()
         assert iplanes==ImageWrapper._3_PLANES, "invalid input format: %s planes" % iplanes
@@ -226,26 +259,28 @@ cdef class Pusher:
         planes = image.get_pixels()
         assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
-        log("push_image(%s) strides=%s", (image), input_strides)
-        Ystride = input_strides[0]
-        Ustride = input_strides[1]
-        Vstride = input_strides[2]
-        assert Ystride==self.rowstride
-        assert Ustride==self.rowstride//2
-        assert Vstride==self.rowstride//2
+        log("push_image(%s) strides=%s, video stride=%s, chroma_h=%s", (image), input_strides, self.rowstride, chroma_h)
+        Ystride, Ustride, Vstride = input_strides
+        assert Ystride==self.rowstride, "invalid stride: %s but expected %s" % (Ystride, self.rowstride)
+        assert Ustride==self.rowstride//chroma_div
+        assert Vstride==self.rowstride//chroma_div
         assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
         assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
         assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
+        assert buf_len>=Ustride*image.get_height()//chroma_div, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()//chroma_div)
         assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
+        assert buf_len>=Vstride*image.get_height()//chroma_div, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//chroma_div)
+        #assert Ystride*self.height+Ustride*chroma_h+Vstride*chroma_h <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*self.height, Ustride*chroma_h, Vstride*chroma_h)
 
-        buf = <uint8_t*> xmemalign(self.framesize)
-        assert buf!=NULL
-        memcpy(buf, Ybuf, Ystride*self.height)
-        memcpy(buf+Ystride*self.height, Ubuf, Ustride*self.height//2)
-        memcpy(buf+Ystride*self.height+Ustride*self.height//2, Vbuf, Vstride*self.height//2)
-        #memset(buf, 128, self.framesize)
+        buf = <uint8_t*> xmemalign(self.framesize*2)
+        assert buf!=NULL, "failed to allocate temporary output buffer"
+        memset(buf, 0, self.framesize*2)
+        cdef int i
+        for i in range(self.height//4):
+            memcpy(buf+16+self.rowstride//2+i*self.rowstride, Ybuf+i*4*Ystride, self.width)
+        #memcpy(buf, Ybuf, Ystride*self.height)
+        #memcpy(buf+Ystride*self.height, Ubuf, Ustride*chroma_h)
+        #memcpy(buf+Ystride*self.height+Ustride*chroma_h, Vbuf, Vstride*chroma_h)
         self.device.write(buf[:self.framesize])
         self.device.flush()
         free(buf)

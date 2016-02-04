@@ -2515,11 +2515,12 @@ class ServerBase(ServerCore, FileTransferHandler):
         try:
             from xpra.codecs.v4l2.pusher import Pusher    #@UnresolvedImport
             p = Pusher()
-            p.init_context(w, h, w, "YUV420P", device_str)
+            src_format = "YUV420P"
+            p.init_context(w, h, w, src_format, device_str)
             self.webcam_forwarding_device = p
             webcamlog.info("webcam forwarding using %s", device_str)
-            #this tell the client to start sending:
-            ss.send_webcam_ack(device, 0)
+            #this tell the client to start sending, and the size to use - which may have changed:
+            ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
         except Exception as e:
             webcamlog.error("Error setting up webcam forwarding:")
             webcamlog.error(" %s", e)
@@ -2558,20 +2559,35 @@ class ServerBase(ServerCore, FileTransferHandler):
             from PIL import Image
             buf = BytesIOClass(data)
             img = Image.open(buf)
+            #img.save("./latest.png", "png")
             pixels = img.tobytes('raw', "BGRX")
             from xpra.codecs.image_wrapper import ImageWrapper
-            #now convert it to YUV:
-            bgrx_image = ImageWrapper(0, 0, w, h, pixels, "BGRX", 24, w*4, planes=ImageWrapper.PACKED)
-            from xpra.codecs.csc_cython.colorspace_converter import ColorspaceConverter        #@UnresolvedImport
+            bgrx_image = ImageWrapper(0, 0, w, h, pixels, "BGRX", 32, w*4, planes=ImageWrapper.PACKED)
+            src_format = vfd.get_src_format()
+            if not src_format:
+                #closed / closing
+                return
+            #one of those two should be present
+            try:
+                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+            except ImportError:
+                from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+            assert "BGRX" in get_input_colorspaces()
+            assert src_format in get_output_colorspaces("BGRX")
+            tw = vfd.get_width()
+            th = vfd.get_height()
             csc = ColorspaceConverter()
-            csc.init_context(w, h, "BGRX", w, h, "YUV420P")
+            csc.init_context(w, h, "BGRX", tw, th, src_format)
             image = csc.convert_image(bgrx_image)
             vfd.push_image(image)
             #tell the client all is good:
             ss.send_webcam_ack(device, frame_no)
         except Exception as e:
             webcamlog.error("Error processing webcam frame:")
-            webcamlog.error(" %s", e)
+            if str(e):
+                webcamlog.error(" %s", e)
+            else:
+                webcamlog.error("unknown error", exc_info=True)
             ss.send_webcam_stop(device, str(e))
             self.stop_virtual_webcam()
 

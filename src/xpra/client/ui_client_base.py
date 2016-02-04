@@ -1796,8 +1796,9 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_webcam = c.boolget("webcam")
         self.server_virtual_video_devices = c.intget("virtual-video-devices")
         webcamlog("webcam server support: %s (%i devices)", self.server_supports_webcam, self.server_virtual_video_devices)
-        if self.webcam_forwarding and self.webcam_option=="on" and self.server_supports_webcam and self.server_virtual_video_devices>0:
-            self.start_sending_webcam()
+        if self.webcam_forwarding and self.server_supports_webcam and self.server_virtual_video_devices>0:
+            if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
+                self.start_sending_webcam()
 
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
@@ -1996,13 +1997,15 @@ class UIXpraClient(XpraClientBase):
                 except ImportError as e:
                     webcamlog("no webcam_util: %s", e)
         else:
+            webcamlog("device_str: %s", device_str)
             try:
                 device = int(device_str)
             except:
                 p = device_str.find("video")
                 if p>=0:
                     try:
-                        device = int(device_str[p:])
+                        webcamlog("device_str: %s", device_str[p:])
+                        device = int(device_str[p+len("video"):])
                     except:
                         device = 0
         import cv2
