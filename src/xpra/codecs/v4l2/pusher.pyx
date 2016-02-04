@@ -98,6 +98,10 @@ cdef extern from "linux/videodev2.h":
         uint32_t type
         v4l2_format_fmt fmt
 
+cdef inline int roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
+
+
 def init_module():
     log("v4l2.pusher.init_module()")
 
@@ -272,15 +276,15 @@ cdef class Pusher:
         assert buf_len>=Vstride*image.get_height()//chroma_div, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//chroma_div)
         #assert Ystride*self.height+Ustride*chroma_h+Vstride*chroma_h <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*self.height, Ustride*chroma_h, Vstride*chroma_h)
 
-        buf = <uint8_t*> xmemalign(self.framesize*2)
+        cdef int offset = roundup(self.rowstride//2, 32)
+        buf = <uint8_t*> xmemalign(self.framesize + offset + self.rowstride)
         assert buf!=NULL, "failed to allocate temporary output buffer"
-        memset(buf, 0, self.framesize*2)
         cdef int i
         for i in range(self.height//4):
-            memcpy(buf+16+self.rowstride//2+i*self.rowstride, Ybuf+i*4*Ystride, self.width)
-        #memcpy(buf, Ybuf, Ystride*self.height)
-        #memcpy(buf+Ystride*self.height, Ubuf, Ustride*chroma_h)
-        #memcpy(buf+Ystride*self.height+Ustride*chroma_h, Vbuf, Vstride*chroma_h)
+            memcpy(buf+offset+(0+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
+            memcpy(buf+offset+(1+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
+            memcpy(buf+offset+(2+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
+            memcpy(buf+offset+(3+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
         self.device.write(buf[:self.framesize])
         self.device.flush()
         free(buf)
