@@ -91,6 +91,9 @@ Recommends:
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
         ,python-gst-1.0
+#for webcam support:
+        ,python-opencv
+        ,v4l2loopback-dkms
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):
