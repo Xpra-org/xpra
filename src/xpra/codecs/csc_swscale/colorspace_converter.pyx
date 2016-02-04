@@ -307,6 +307,9 @@ class CSCImageWrapper(ImageWrapper):
             self.csc_image.free()
             self.csc_image = None
 
+    def __repr__(self):
+        return "csc_swscale.CSCImageWrapper(%s:%s:%s)" % (self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
+
 
 cdef class ColorspaceConverter:
     cdef int src_width
