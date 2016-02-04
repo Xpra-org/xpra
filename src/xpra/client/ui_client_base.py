@@ -460,8 +460,8 @@ class UIXpraClient(XpraClientBase):
             limits = ((1920, 1080, 1, 1),       #100% no auto scaling up to 1080p
                       (2560, 1600, 1.25, 1.25), #125% upscaling up to WQXGA
                       (3960, 2160, 1.5, 1.5),   #150% upscaling up to UHD
-                      (7680, 4320, 2, 2),       #200% upscaling up to FUHD
-                      (32768, 32768, 3, 3))     #300% if higher (who has this anyway?)
+                      (7680, 4320, 5/3, 5/3),   #166% upscaling up to FUHD
+                      (32768, 32768, 2, 2))     #200% if higher (who has this anyway?)
             if desktop_scaling=="auto":
                 pass
             elif desktop_scaling.startswith("auto:"):
