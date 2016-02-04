@@ -2536,6 +2536,7 @@ class UIXpraClient(XpraClientBase):
             metadata = window._metadata
             override_redirect = window._override_redirect
             backing = window._backing
+            current_icon = window._current_icon
             delta_pixel_data, video_decoder, csc_decoder, decoder_lock = None, None, None, None
             try:
                 if backing:
@@ -2575,6 +2576,8 @@ class UIXpraClient(XpraClientBase):
                     backing._video_decoder = video_decoder
                     backing._csc_decoder = csc_decoder
                     backing._decoder_lock = decoder_lock
+                if current_icon:
+                    window.update_icon(*current_icon)
             finally:
                 if decoder_lock:
                     decoder_lock.release()
@@ -2790,6 +2793,7 @@ class UIXpraClient(XpraClientBase):
         iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) window=%s", wid, w, h, pixel_format, len(data), window)
         if window:
             window.update_icon(w, h, pixel_format, data)
+            window._current_icon = (w, h, pixel_format, data)
 
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
