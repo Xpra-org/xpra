@@ -639,6 +639,8 @@
       <dep package="python-nose"/>
       <dep package="python-lz4"/>
       <dep package="python-lzo"/>
+      <dep package="python-ipaddress"/>
+      <dep package="python-idna"/>
       <dep package="python-rencode"/>
       <dep package="python-macholib"/>
       <dep package="python-modulegraph"/>
