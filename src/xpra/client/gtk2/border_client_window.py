@@ -20,15 +20,18 @@ class BorderClientWindow(ClientWindow):
         ClientWindow.setup_window(self, *args)
 
     def magic_key(self, *args):
-        self.border_shown = (not self.border_shown)
-        self.queue_draw(0, 0, *self._size)
+        b = self.border
+        if b:
+            b.shown = (not b.shown)
+            self.queue_draw(0, 0, *self._size)
 
     def do_expose_event(self, event):
         ClientWindow.do_expose_event(self, event)
-        if self.border is None or not self.border.shown:
+        b = self.border
+        if b is None or not b.shown:
             return
         #now paint our border import gtk.gdk
-        s = self.border.size
+        s = b.size
         ww, wh = self.window.get_size()
         borders = []
         #window is wide enough, add borders on the side:
