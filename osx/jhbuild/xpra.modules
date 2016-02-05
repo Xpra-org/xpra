@@ -519,6 +519,13 @@
 		version="1.9.73"/>
   </distutils>
 
+  <distutils id="python-ipaddress">
+	<branch repo="pypi.python.org"
+		module="/packages/source/i/ipaddress/ipaddress-1.0.16.tar.gz"
+		hash="md5:1e27b62aa20f5b6fc200b2bdbf0d0847"
+		version="1.0.16"/>
+  </distutils>
+
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
 	<branch module="/berkeley-db/db-6.0.30.tar.gz"
 		hash="md5:ad28eb86ad3203b5422844db179c585b"
