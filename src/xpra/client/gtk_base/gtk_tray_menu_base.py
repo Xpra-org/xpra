@@ -838,6 +838,7 @@ class GTKTrayMenuBase(object):
                 self.client.start_sending_webcam()
             else:
                 self.client.stop_sending_webcam()
+            webcam.set_active(self.client.webcam_device is not None)            
         webcam = self.checkitem("Webcam", webcam_toggled)
         #webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam", None)
         set_sensitive(webcam, False)
