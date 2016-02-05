@@ -66,6 +66,8 @@ class XpraClient(GTKXpraClient):
         if color_str.lower()=="help":
             border_help()
             return
+        enabled = color_str.find(":off")<0
+        color_str = color_str.replace(":off", "")
         if color_str=="auto" or color_str=="":
             try:
                 try:
@@ -101,7 +103,7 @@ class XpraClient(GTKXpraClient):
             if size>=45:
                 log.warn("border size is too high: %s, clipping it", size)
                 size = 45
-        self.border = WindowBorder(True, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
+        self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
         log("parse_border(%s)=%s", border_str, self.border)
 
 

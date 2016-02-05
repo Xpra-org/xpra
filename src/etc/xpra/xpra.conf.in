@@ -311,8 +311,9 @@ key-shortcut = Meta+Shift+question:scalingoff
 key-shortcut = Meta+Shift+degree:scalereset
 
 # Border:
-#border=5,auto
-#border=1,red
+#border=auto:off,5
+#border=auto,5
+#border=red,1
 #border=no
 
 # What to do when the user closes the window:
