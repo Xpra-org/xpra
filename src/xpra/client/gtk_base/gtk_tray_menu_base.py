@@ -828,9 +828,9 @@ class GTKTrayMenuBase(object):
 
     def make_webcammenuitem(self):
         def webcam_toggled(webcam, *args):
-            webcamlog("webcam_toggled(%s, %s)", webcam, args)
             active = self.client.webcam_device is not None
             v = webcam.get_active()
+            webcamlog("webcam_toggled(%s, %s) active=%s, menu=%s", webcam, args, active, v)
             changed = active != v
             if not changed:
                 return
@@ -842,10 +842,13 @@ class GTKTrayMenuBase(object):
             if webcam.get_active()!=active:
                 webcam.set_active(active)
         webcam = self.checkitem("Webcam", webcam_toggled)
+        def webcam_changed(*args):
+            webcam_toggled(webcam)
+        self.client.connect("webcam-changed", webcam_changed)
         #webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam", None)
         set_sensitive(webcam, False)
-        def webcam_state(*args):
-            webcamlog("webcam_state%s webcam forwarding=%s, server virtual video devices=%i", args, self.client.webcam_forwarding, self.client.server_virtual_video_devices)
+        def set_webcam(*args):
+            webcamlog("set_webcam%s webcam forwarding=%s, server virtual video devices=%i", args, self.client.webcam_forwarding, self.client.server_virtual_video_devices)
             if not self.client.webcam_forwarding:
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text("Webcam forwarding is disabled")
@@ -856,8 +859,7 @@ class GTKTrayMenuBase(object):
                 return
             set_sensitive(webcam, True)
             webcam.set_active(self.client.webcam_device is not None)
-        self.client.connect("webcam-changed", webcam_state)
-        self.client.after_handshake(webcam_state)
+        self.client.after_handshake(set_webcam)
         return webcam
 
     def make_layoutsmenuitem(self):
