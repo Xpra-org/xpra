@@ -526,6 +526,13 @@
 		version="1.0.16"/>
   </distutils>
 
+  <distutils id="python-idna">
+	<branch repo="pypi.python.org"
+		module="/packages/source/i/idna/idna-2.0.tar.gz"
+		hash="md5:bd17a9d15e755375f48a62c13b25b801"
+		version="2.0"/>
+  </distutils>
+
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
 	<branch module="/berkeley-db/db-6.0.30.tar.gz"
 		hash="md5:ad28eb86ad3203b5422844db179c585b"
