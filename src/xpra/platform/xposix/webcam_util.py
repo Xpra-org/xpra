@@ -14,8 +14,9 @@ def get_virtual_video_devices():
     log("get_virtual_video_devices")
     v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
     if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
-        log.warn("Warning: virtual video directory %s not found", v4l2_virtual_dir)
-        log.warn(" webcam forwarding disabled")
+        log.warn("Warning: webcam forwarding disabled")
+        log.warn(" the virtual video directory %s was not found", v4l2_virtual_dir)
+        log.warn(" make sure that the v4l2loopback kernel module is installed and loaded")
         return []
     contents = os.listdir(v4l2_virtual_dir)
     devices = []
