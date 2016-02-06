@@ -314,7 +314,7 @@ class UIXpraClient(XpraClientBase):
         self.shadow_fullscreen = opts.shadow_fullscreen
 
         self.webcam_option = opts.webcam.lower()
-        self.webcam_forwarding = self.webcam_option not in FALSE_OPTIONS
+        self.webcam_forwarding = self.webcam_option not in ("no", "false")
         self.server_supports_webcam = False
         self.server_virtual_video_devices = 0
         if self.webcam_forwarding:
@@ -2007,7 +2007,7 @@ class UIXpraClient(XpraClientBase):
             except ImportError as e:
                 webcamlog("no webcam_util: %s", e)
         webcamlog("do_start_sending_webcam(%s)", device_str)
-        if device_str in ("auto", "on", "yes"):
+        if device_str in ("auto", "on", "yes", "off", "false", "true"):
             if len(non_virtual)>0:
                 device = non_virtual.keys()[0]
         else:

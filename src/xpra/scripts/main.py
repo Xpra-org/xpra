@@ -423,6 +423,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--bell", action="store",
                       dest="bell", default=defaults.bell, metavar="yes|no",
                       help="Forward the system bell. Default: %s." % enabled_str(defaults.bell))
+    legacy_bool_parse("webcam")
     group.add_option("--webcam", action="store",
                       dest="webcam", default=defaults.webcam,
                       help="Webcam forwarding, can be used to specify a device. Default: %s." % defaults.webcam)
