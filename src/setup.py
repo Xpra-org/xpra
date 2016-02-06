@@ -139,7 +139,7 @@ printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
-enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
+enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = DEFAULT and OSX
