@@ -377,7 +377,7 @@
 		<dep package="openssl"/>
 		<dep package="cffi"/>
 		<dep package="six"/>
-		<dep package="enum34"/>
+		<dep package="python-enum34"/>
 	</dependencies>
   </distutils>
 
