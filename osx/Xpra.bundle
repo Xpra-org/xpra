@@ -82,6 +82,15 @@
 		${prefix}/lib/libz*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libssl*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libcrypto*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/python2.7/lib-dynload/_ssl.so
+	</binary>
+	<binary>
 		${prefix}/lib/pango/${pkg:pango:pango_module_version}/modules/*.so
 	</binary>
 

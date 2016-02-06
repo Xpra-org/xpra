@@ -31,6 +31,7 @@
   <repository type="tarball" name="storage.googleapis.com" href="http://storage.googleapis.com/"/>
   <repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
   <repository type="tarball" name="oberhumer.com" default="yes" href="http://www.oberhumer.com/"/>
+  <repository type="tarball" name="openssl.org" default="yes" href="https://www.openssl.org/"/>
 
   <autotools id="yasm" autogen-sh="configure">
 	<branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
@@ -286,6 +287,16 @@
 	</after>
   </autotools>
 
+  <autotools id="openssl"
+             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
+             autogenargs="-shared"
+             autogen-sh="Configure">
+	<branch module="/source/openssl-1.0.2f.tar.gz"
+		version="1.0.2f"
+		hash="md5:b3bf73f507172be9292ea2a8c28b659d"
+		repo="openssl.org"/>
+  </autotools>
+
   <!--HACK: skip-install but do make install during autogen phase instead this allows us to bypass the error with DESTDIR since it doesn't actually install anywhere -->
   <autotools id="gtk-mac-bundler"
    skip-install="True"
@@ -357,22 +368,16 @@
 		version="1.10.0"/>
   </distutils>
 
-  <distutils id="enum">
-	<branch repo="pypi.python.org"
-		module="/packages/source/e/enum/enum-0.4.6.tar.gz"
-		hash="md5:173d468112cfa13a149b2c8af3e8fd52"
-		version="0.4.6"/>
-  </distutils>
-
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
 		module="/packages/source/c/cryptography/cryptography-1.2.1.tar.gz"
 		hash="md5:02798acc5e2d5dbcf6e792a24fc05b95"
 		version="1.2.1"/>
 	<dependencies>
+		<dep package="openssl"/>
 		<dep package="cffi"/>
 		<dep package="six"/>
-		<dep package="enum"/>
+		<dep package="enum34"/>
 	</dependencies>
   </distutils>
 
@@ -533,6 +538,13 @@
 		version="2.0"/>
   </distutils>
 
+  <distutils id="python-enum34">
+	<branch repo="pypi.python.org"
+		module="/packages/source/e/enum34/enum34-1.1.2.tar.gz"
+		hash="md5:025bb71b3f9d2fad15d0ee53e48dc873"
+		version="1.1.2"/>
+  </distutils>
+
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
 	<branch module="/berkeley-db/db-6.0.30.tar.gz"
 		hash="md5:ad28eb86ad3203b5422844db179c585b"
@@ -621,15 +633,12 @@
       <dep package="gst-plugins-ugly-xpra"/>
       <dep package="gst-python"/>
       <dep package="gmplib"/>
+      <dep package="openssl"/>
       <dep package="mpfr"/>
       <dep package="setuptools"/>
       <dep package="python-netifaces"/>
       <dep package="python-pam"/>
       <dep package="python-pycrypto"/>
-      <!--
-      This requires openssl, which does not build on 10.5..
-      <dep package="python-cryptography"/>
-      -->
       <dep package="python-pyasn1"/>
       <dep package="python-pillow"/>
       <dep package="python-py2app"/>
@@ -641,6 +650,8 @@
       <dep package="python-lzo"/>
       <dep package="python-ipaddress"/>
       <dep package="python-idna"/>
+      <dep package="python-enum34"/>
+      <dep package="python-cryptography"/>
       <dep package="python-rencode"/>
       <dep package="python-macholib"/>
       <dep package="python-modulegraph"/>

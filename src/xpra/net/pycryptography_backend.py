@@ -42,7 +42,7 @@ def patch_crypto_be_discovery():
 
 def init():
     import sys
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, 'frozen', False) or sys.platform.startswith("darwin"):
         patch_crypto_be_discovery()
     global backend, ENCRYPTION_CIPHERS
     from cryptography.hazmat.backends import default_backend

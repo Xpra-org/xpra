@@ -1716,18 +1716,6 @@ if WIN32:
                         "unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
 
-    #python-cryptography:
-    if crypto_ENABLED:
-        external_includes.append("_ssl")
-        external_includes.append("cffi")
-        external_includes.append("_cffi_backend")
-        external_includes.append("cryptography")
-        add_modules("cryptography.hazmat.bindings._openssl")
-        add_modules("cryptography.hazmat.bindings._constant_time")
-        add_modules("cryptography.hazmat.bindings._padding")
-        add_modules("cryptography.hazmat.backends.openssl")
-        add_modules("cryptography.fernet")
-
     if sound_ENABLED:
         if not PYTHON3:
             external_includes += ["pygst", "gst", "gst.extend"]
@@ -2007,6 +1995,18 @@ if bundle_tests_ENABLED:
         if (k!=""):
             k = os.sep+k
         add_data_files("tests"+k, v)
+
+#python-cryptography needs workarounds for bundling:
+if crypto_ENABLED and (OSX or WIN32):
+    external_includes.append("_ssl")
+    external_includes.append("cffi")
+    external_includes.append("_cffi_backend")
+    external_includes.append("cryptography")
+    add_modules("cryptography.hazmat.bindings._openssl")
+    add_modules("cryptography.hazmat.bindings._constant_time")
+    add_modules("cryptography.hazmat.bindings._padding")
+    add_modules("cryptography.hazmat.backends.openssl")
+    add_modules("cryptography.fernet")
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
