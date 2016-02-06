@@ -370,9 +370,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/source/c/cryptography/cryptography-1.2.1.tar.gz"
-		hash="md5:02798acc5e2d5dbcf6e792a24fc05b95"
-		version="1.2.1"/>
+		module="/packages/source/c/cryptography/cryptography-1.2.2.tar.gz"
+		hash="md5:2b25eebd1d3c6bae52b46f0dcec74dfb"
+		version="1.2.2"/>
 	<dependencies>
 		<dep package="openssl"/>
 		<dep package="cffi"/>
