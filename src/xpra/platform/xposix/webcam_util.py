@@ -19,7 +19,7 @@ def get_virtual_video_devices():
         log.warn(" make sure that the v4l2loopback kernel module is installed and loaded")
         return []
     contents = os.listdir(v4l2_virtual_dir)
-    devices = []
+    devices = {}
     for f in contents:
         if not f.startswith("video"):
             continue
@@ -38,26 +38,24 @@ def get_virtual_video_devices():
         except:
             continue
         dev_file = "/dev/%s" % f
-        devices.append(dev_file)
+        devices[no] = dev_file
     log("devices: %s", devices)
     log("found %i virtual video device%s", len(devices), engs(devices))
     return devices
 
 def get_all_video_devices():
     contents = os.listdir("/dev")
-    devices = []
+    devices = {}
     for f in contents:
         if not f.startswith("video"):
             continue
         dev_file = "/dev/%s" % f
-        if not os.path.isfile(dev_file):
-            continue
         try:
             no = int(f[len("video"):])
             assert no>=0
         except:
             continue
-        devices.append(f)
+        devices[no] = dev_file
     return devices
 
 
@@ -71,8 +69,8 @@ def main():
     with program_context("Webcam Info", "Webcam Info"):
         devices = get_virtual_video_devices()
         log.info("Found %i virtual video device%s:", len(devices), engs(devices))
-        for d in devices:
-            log.info("%s", d)
+        for no, d in devices.items():
+            log.info("%-2i: %s", no, d)
 
 if __name__ == "__main__":
     main()

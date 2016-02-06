@@ -827,10 +827,10 @@ class GTKTrayMenuBase(object):
         return menu
 
     def make_webcammenuitem(self):
-        def webcam_toggled(webcam, *args):
+        def webcam_toggled(*args):
             active = self.client.webcam_device is not None
             v = webcam.get_active()
-            webcamlog("webcam_toggled(%s, %s) active=%s, menu=%s", webcam, args, active, v)
+            webcamlog("webcam_toggled%s active=%s, menu=%s", args, active, v)
             changed = active != v
             if not changed:
                 return
@@ -843,7 +843,11 @@ class GTKTrayMenuBase(object):
                 webcam.set_active(active)
         webcam = self.checkitem("Webcam", webcam_toggled)
         def webcam_changed(*args):
-            webcam_toggled(webcam)
+            active = self.client.webcam_device is not None
+            v = webcam.get_active()
+            webcamlog("webcam_changed%s active=%s, menu=%s", args, active, v)
+            if webcam.get_active()!=active:
+                webcam.set_active(active)
         self.client.connect("webcam-changed", webcam_changed)
         #webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam", None)
         set_sensitive(webcam, False)

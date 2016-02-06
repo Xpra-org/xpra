@@ -2511,7 +2511,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             return
         if self.webcam_forwarding_device:
             self.stop_virtual_webcam()
-        device_str = devices[0]
+        device_str = devices.values()[0]
         try:
             from xpra.codecs.v4l2.pusher import Pusher    #@UnresolvedImport
             p = Pusher()

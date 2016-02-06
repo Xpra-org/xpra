@@ -90,6 +90,8 @@ WIN32 = sys.platform.startswith("win")
 
 RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
+WEBCAM_ALLOW_VIRTUAL = os.environ.get("XPRA_WEBCAM_ALLOW_VIRTUAL", "0")=="1"
+
 
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
     return iround(v*rounding)
@@ -174,6 +176,7 @@ class UIXpraClient(XpraClientBase):
         self.webcam_forwarding = False
         self.webcam_device = None
         self.webcam_device_no = -1
+        self.webcam_last_ack = -1
         self.webcam_lock = RLock()
         self.server_supports_webcam = False
         self.server_virtual_video_devices = 0
@@ -1989,24 +1992,24 @@ class UIXpraClient(XpraClientBase):
             self.do_start_sending_webcam(self.webcam_option)
 
     def do_start_sending_webcam(self, device_str):
-        webcamlog("do_start_sending_webcam(%s)", device_str)
         assert self.server_supports_webcam
         device = 0
-        if device_str=="auto":
-            if os.name=="posix":
-                try:
-                    from xpra.platform.xposix.webcam_util import get_virtual_video_devices, get_all_video_devices
-                    virt_devices = get_virtual_video_devices()
-                    non_virtual = [x.replace("/dev/video", "") for x in get_all_video_devices() if x not in virt_devices]
-                    webcamlog("found %s non-virtual video devices: %s", len(non_virtual), non_virtual)
-                    for x in non_virtual:
-                        try:
-                            device = int(x)
-                            break
-                        except:
-                            pass
-                except ImportError as e:
-                    webcamlog("no webcam_util: %s", e)
+        virt_devices, all_video_devices, non_virtual = {}, {}, {}
+        if os.name=="posix":
+            try:
+                from xpra.platform.xposix.webcam_util import get_virtual_video_devices, get_all_video_devices
+                virt_devices = get_virtual_video_devices()
+                all_video_devices = get_all_video_devices()
+                non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
+                webcamlog("virtual video devices=%s", virt_devices)
+                webcamlog("all_video_devices=%s", all_video_devices)
+                webcamlog("found %s known non-virtual video devices: %s", len(non_virtual), non_virtual)
+            except ImportError as e:
+                webcamlog("no webcam_util: %s", e)
+        webcamlog("do_start_sending_webcam(%s)", device_str)
+        if device_str in ("auto", "on", "yes"):
+            if len(non_virtual)>0:
+                device = non_virtual.keys()[0]
         else:
             webcamlog("device_str: %s", device_str)
             try:
@@ -2019,6 +2022,14 @@ class UIXpraClient(XpraClientBase):
                         device = int(device_str[p+len("video"):])
                     except:
                         device = 0
+        if device in virt_devices:
+            webcamlog.warn("Warning: video device %s is a virtual device", virt_devices.get(device, device))
+            if WEBCAM_ALLOW_VIRTUAL:
+                webcamlog.warn(" environment override - this may hang..")
+            else:
+                webcamlog.warn(" corwardly refusing to use it")
+                webcamlog.warn(" set WEBCAM_ALLOW_VIRTUAL=1 to force enable it")
+                return
         import cv2
         webcamlog("do_start_sending_webcam(%s) device=%i", device_str, device)
         self.webcam_frame_no = 0
@@ -2036,12 +2047,20 @@ class UIXpraClient(XpraClientBase):
             self.webcam_device_no = device
             self.webcam_device = webcam_device
             self.send("webcam-start", device, w, h)
-            self.emit("webcam-changed")
+            self.idle_add(self.emit, "webcam-changed")
+            webcamlog("webcam started")
+            def check_acks():
+                webcamlog("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
+                if self.webcam_last_ack<=0:
+                    webcamlog.warn("Warning: no acknowledgements received from the server, stopping webcam")
+                    self.stop_sending_webcam()
+            self.timeout_add(10*1000, check_acks)
             #FIXME: add timer to stop if we don't get an ack
         except Exception as e:
             webcamlog.warn("webcam test capture failed: %s", e)
 
     def stop_sending_webcam(self):
+        webcamlog("stop_sending_webcam()")
         with self.webcam_lock:
             self.do_stop_sending_webcam()
  
@@ -2055,11 +2074,12 @@ class UIXpraClient(XpraClientBase):
         self.webcam_device = None
         self.webcam_device_no = -1
         self.webcam_frame_no = 0
+        self.webcam_last_ack = -1
         try:
             wd.release()
         except Exception as e:
             webcamlog.error("Error closing webcam device %s: %s", wd, e)
-        self.emit("webcam-changed")
+        self.idle_add(self.emit, "webcam-changed")
 
     def _process_webcam_stop(self, packet):
         device_no = packet[1]
@@ -2071,9 +2091,12 @@ class UIXpraClient(XpraClientBase):
         webcamlog("process_webcam_ack: %s", packet)
         with self.webcam_lock:
             if self.webcam_device:
+                frame_no = packet[2]
+                self.webcam_last_ack = frame_no
                 self.send_webcam_frame()
 
     def send_webcam_frame(self):
+        webcamlog("send_webcam_frame() webcam_device=%s", self.webcam_device)
         assert self.webcam_device_no>=0 and self.webcam_device
         try:
             import cv2
@@ -2081,7 +2104,6 @@ class UIXpraClient(XpraClientBase):
             assert ret and frame.ndim==3
             w, h, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
-            webcamlog("send_webcam_frame strides=%s", frame.strides)
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             from PIL import Image
             image = Image.fromarray(rgb)
