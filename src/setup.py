@@ -1402,6 +1402,8 @@ if WIN32:
                                 #exclude the msys DLLs, as py2exe builds should be using MSVC
                                 "msys-2.0.dll", "msys-gcc_s-1.dll", "MSVCP90.dll"],
                              }
+            #workaround for setuptools >= 19.3
+            add_packages("pkg_resources._vendor.packaging")
             if not zip_ENABLED:
                 #the filename is actually ignored because we specify "skip_archive"
                 #this places the modules in library/
