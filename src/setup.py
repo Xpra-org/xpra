@@ -180,7 +180,7 @@ else:
 
 memoryview_ENABLED      = sys.version>='2.7'
 csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
-csc_libyuv_ENABLED      = DEFAULT and memoryview_ENABLED and pkg_config_ok("--exists", "libyuv")
+csc_libyuv_ENABLED      = DEFAULT and memoryview_ENABLED and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
 #Cython / gcc / packagingt build options:
 annotate_ENABLED        = True
@@ -1087,6 +1087,12 @@ if WIN32:
     else:
         vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
 
+    libyuv_path = WIN32_BUILD_LIB_PREFIX + "libyuv"
+    libyuv_include_dir = os.path.join(libyuv_path, "include")
+    libyuv_lib_dir = os.path.join(libyuv_path, "lib")
+    libyuv_bin_dir = os.path.join(libyuv_path, "bin")
+    libyuv_lib_names = ["yuv"]
+
     # Same for PyGTK / GTK3:
     # http://www.pygtk.org/downloads.html
     if PYTHON3:
@@ -1620,6 +1626,10 @@ if WIN32:
             add_keywords([webp_bin_dir], [webp_include_dir],
                          [webp_lib_dir],
                          webp_lib_names, nocmt=True)
+        elif "libyuv" in pkgs_options[0]:
+            add_keywords([libyuv_bin_dir], [libyuv_include_dir],
+                         [libyuv_lib_dir],
+                         libyuv_lib_names)
         elif ("nvenc4" in pkgs_options[0]) or ("nvenc5" in pkgs_options[0]) or ("nvenc6" in pkgs_options[0]):
             for x in ("pycuda", "pytools"):
                 if x not in external_includes:
@@ -1897,8 +1907,10 @@ else:
     assert not PYTHON3
     bmod = "old"
 buffers_c = "xpra/buffers/%s_buffers.c" % bmod
+inline_c = "xpra/inline.c"
+memalign_c = "xpra/buffers/memalign.c"
 #convenience grouping for codecs:
-membuffers_c = ["xpra/buffers/memalign.c", "xpra/inline.c", buffers_c]
+membuffers_c = [memalign_c, inline_c, buffers_c]
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")

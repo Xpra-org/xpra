@@ -18,15 +18,11 @@ from xpra.codecs.image_wrapper import ImageWrapper
 
 
 cdef extern from "stdlib.h":
-    int posix_memalign(void **memptr, size_t alignment, size_t size)
     void free(void *ptr)
+    void* malloc(size_t size)
 
-DEF MEMALIGN_ALIGNMENT = 16
-cdef void *xmemalign(size_t size):
-    cdef void *memptr = NULL
-    if posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size):
-        return NULL
-    return memptr
+cdef extern from "../../buffers/memalign.h":
+    cdef unsigned int MEMALIGN_ALIGNMENT
 
 #inlined here because linking messes up with c++..
 cdef extern from "Python.h":
@@ -101,6 +97,12 @@ cdef FilterMode get_filtermode(int speed):
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
+
+cdef inline unsigned long roundupl(unsigned long n, unsigned long m):
+    return (n + m - 1) & ~(m - 1)
+
+cdef inline void *memalign_ptr(void *ptr):
+    return <void *> roundupl(<unsigned long> ptr, MEMALIGN_ALIGNMENT)
 
 
 def init_module():
@@ -210,7 +212,8 @@ cdef class ColorspaceConverter:
             self.out_offsets[i] = self.out_buffer_size
             #add one extra line to height so we can access a full rowstride at a time,
             #no matter where we start to read on the last line
-            self.out_buffer_size += self.out_size[i] + self.out_stride[i]
+            #and round up to memalign each plane:
+            self.out_buffer_size += roundupl(self.out_size[i] + self.out_stride[i], MEMALIGN_ALIGNMENT)
             if self.scaling:
                 self.scaled_width[i]    = dst_width // xdiv
                 self.scaled_height[i]   = dst_height // ydiv
@@ -219,7 +222,7 @@ cdef class ColorspaceConverter:
                 self.scaled_offsets[i]  = self.scaled_buffer_size
                 self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
         if self.scaling:
-            self.output_buffer = <uint8_t *> xmemalign(self.out_buffer_size)
+            self.output_buffer = <uint8_t *> malloc(self.out_buffer_size)
         else:
             self.output_buffer = NULL
         log("buffer size=%i, scaling=%s, filtermode=%s", self.out_buffer_size, self.scaling, get_fiter_mode_str(self.filtermode))
@@ -325,9 +328,10 @@ cdef class ColorspaceConverter:
             output_buffer = self.output_buffer
         else:
             #allocate output buffer:
-            output_buffer = <unsigned char*> xmemalign(self.out_buffer_size)
+            output_buffer = <unsigned char*> malloc(self.out_buffer_size)
         for i in range(3):
-            out_planes[i] = output_buffer + self.out_offsets[i]
+            #offsets are aligned, so this is safe and gives us aligned pointers:
+            out_planes[i] = <uint8_t*> (<unsigned long> memalign_ptr(output_buffer) + self.out_offsets[i])
         with nogil:
             result = ARGBToI420(input_image, stride,
                            out_planes[0], self.out_stride[0],
@@ -342,7 +346,7 @@ cdef class ColorspaceConverter:
         strides = []
         if self.scaling:
             start = time.time()
-            scaled_buffer = <unsigned char*> xmemalign(self.scaled_buffer_size)
+            scaled_buffer = <unsigned char*> malloc(self.scaled_buffer_size)
             with nogil:
                 for i in range(3):
                     scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
