@@ -106,7 +106,13 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname in ("window-type", "shape", "menu"):
         #always send unchanged:
         return {propname : raw()}
-    elif propname in ("iconic", "fullscreen", "maximized", "decorations", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
+    elif propname in ("decorations", ):
+        #-1 means unset, don't send it
+        v = raw()
+        if v<0:
+            return {}
+        return {propname : v}
+    elif propname in ("iconic", "fullscreen", "maximized", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
         #always send these when requested
         return {propname : bool(raw())}
     elif propname in ("has-alpha", "override-redirect", "tray", "shadow"):

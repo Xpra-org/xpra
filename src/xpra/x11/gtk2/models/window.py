@@ -110,9 +110,9 @@ class WindowModel(BaseWindowModel):
                         "Icon (server Pixmap)", "",
                         gobject.PARAM_READABLE),
         #from _MOTIF_WM_HINTS.decorations
-        "decorations": (gobject.TYPE_BOOLEAN,
+        "decorations": (gobject.TYPE_INT,
                        "Should the window decorations be shown", "",
-                       True,
+                       -1, 65535, -1,
                        gobject.PARAM_READABLE),
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
@@ -233,7 +233,7 @@ class WindowModel(BaseWindowModel):
         geometry = X11Window.getGeometry(self.xid)
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
         self._internal_set_property("requested-size", (geometry[2], geometry[3]))
-        self._internal_set_property("decorations", True)
+        self._internal_set_property("decorations", -1)
 
 
     def do_unmanaged(self, wm_exiting):
