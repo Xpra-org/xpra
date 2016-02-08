@@ -1087,6 +1087,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         info = "xpra"
 
     try:
+        app.exec_cwd = cwd
         app.init(opts)
     except Exception as e:
         log.error("Error: cannot start the %s server", info, exc_info=True)
