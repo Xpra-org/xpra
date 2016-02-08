@@ -225,6 +225,7 @@ class ServerCore(object):
             AUTH_MODULES["pam"] = pam_auth
         except Exception as e:
             authlog("cannot load pam auth: %s", e)
+        from xpra.scripts.config import InitException
         if sys.platform.startswith("win"):
             try:
                 from xpra.server.auth import win32_auth
@@ -234,13 +235,13 @@ class ServerCore(object):
                 authlog.error(" %s", e)
         auth_module = AUTH_MODULES.get(auth.lower())
         if not auth_module:
-            raise Exception("cannot find authentication module '%s' (supported: %s)", auth, AUTH_MODULES.keys())
+            raise InitException("cannot find authentication module '%s' (supported: %s)" % (auth, AUTH_MODULES.keys()))
         try:
             auth_module.init(opts)
             auth_class = getattr(auth_module, "Authenticator")
             return auth_class
         except Exception as e:
-            raise Exception("Authenticator class not found in %s" % auth_module)
+            raise InitException("Authenticator class not found in %s" % auth_module)
 
 
     def init_sockets(self, sockets):
