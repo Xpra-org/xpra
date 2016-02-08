@@ -1494,6 +1494,8 @@ if WIN32:
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
+        if webcam_ENABLED:
+            add_gui_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             if os.path.exists("C:\\Program Files (x86)\\Ghostgum\\gsview"):
