@@ -1086,6 +1086,19 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app = XpraServer(clobber)
         info = "xpra"
 
+    #we got this far so the sockets have initialized and
+    #the server should be able to manage the display
+    #from now on, if we exit without upgrading we will also kill the Xvfb
+    def kill_xvfb():
+        # Close our display(s) first, so the server dying won't kill us.
+        log.info("killing xvfb with pid %s" % xvfb_pid)
+        import gtk  #@Reimport
+        for display in gtk.gdk.display_manager_get().list_displays():
+            display.close()
+        os.kill(xvfb_pid, signal.SIGTERM)
+    if xvfb_pid is not None and not opts.use_display and not shadowing:
+        _cleanups.append(kill_xvfb)
+
     try:
         app.exec_cwd = cwd
         app.init(opts)
@@ -1123,19 +1136,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     app.init_sockets(sockets)
     log("%s(%s)", app.init_when_ready, _when_ready)
     app.init_when_ready(_when_ready)
-
-    #we got this far so the sockets have initialized and
-    #the server should be able to manage the display
-    #from now on, if we exit without upgrading we will also kill the Xvfb
-    def kill_xvfb():
-        # Close our display(s) first, so the server dying won't kill us.
-        log.info("killing xvfb with pid %s" % xvfb_pid)
-        import gtk  #@Reimport
-        for display in gtk.gdk.display_manager_get().list_displays():
-            display.close()
-        os.kill(xvfb_pid, signal.SIGTERM)
-    if xvfb_pid is not None and not opts.use_display and not shadowing:
-        _cleanups.append(kill_xvfb)
 
     try:
         log("running %s", app.run)
