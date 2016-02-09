@@ -1187,11 +1187,15 @@ def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
+    min_w, min_h = 32, 32
+    if encoding=="h265":
+        #undocumented and found the hard way!
+        min_w, min_h = 72, 72
     cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
-                      min_w=32, min_h=32,
+                      min_w=min_w, min_h=min_h,
                       max_w=4096, max_h=4096,
                       can_scale=True,
                       width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
@@ -1743,7 +1747,7 @@ cdef class Encoder:
         return info
 
     def __repr__(self):
-        return "nvenc(%s/%s - %s - %sx%s)" % (self.src_format, self.pixel_format, self.preset_name, self.width, self.height)
+        return "nvenc(%s/%s/%s - %s - %4ix%-4i)" % (self.src_format, self.pixel_format, self.codec_name, self.preset_name, self.width, self.height)
 
     def is_closed(self):
         return self.context==NULL
@@ -2457,8 +2461,8 @@ def init_module():
     init_nvencode_library()
 
     log("**************************************************************************")
-    #test_encodings = ("h264", "h265")
-    test_encodings = ("h264", )
+    test_encodings = ("h264", "h265")
+    #test_encodings = ("h264", )
     log("will probe: %s", csv(test_encodings))
     global ENCODINGS
     validated_encodings = []
