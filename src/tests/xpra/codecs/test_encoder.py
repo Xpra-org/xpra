@@ -12,7 +12,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "test")
 
-DEFAULT_TEST_DIMENSIONS = [(32, 32), (1920, 1080), (512, 512)]
+DEFAULT_TEST_DIMENSIONS = [(32, 32), (72, 72), (256, 256), (1920, 1080), (512, 512)]
 
 
 def test_encoder_dimensions(encoder_module):
@@ -51,10 +51,10 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
         ics = encoder_module.get_input_colorspaces(encoding)
         log("input colorspaces(%s)=%s", encoding, ics)
         for ic in ics:
-            for encoding in encoder_module.get_encodings():
-                ocs = encoder_module.get_output_colorspaces(encoding, ic)
+            for e in encoder_module.get_encodings():
+                ocs = encoder_module.get_output_colorspaces(e, ic)
                 for c in ocs:
-                    log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, ic)))
+                    log("spec(%s)=%s" % (c, encoder_module.get_spec(e, ic)))
         for src_format in ics:
             spec = encoder_module.get_spec(encoding, src_format)
             for w,h in dimensions:
