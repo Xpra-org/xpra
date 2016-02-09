@@ -1807,8 +1807,9 @@ class UIXpraClient(XpraClientBase):
 
         #webcam
         self.server_supports_webcam = c.boolget("webcam")
+        self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))
         self.server_virtual_video_devices = c.intget("virtual-video-devices")
-        webcamlog("webcam server support: %s (%i devices)", self.server_supports_webcam, self.server_virtual_video_devices)
+        webcamlog("webcam server support: %s (%i devices, encodings: %s)", self.server_supports_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
         if self.webcam_forwarding and self.server_supports_webcam and self.server_virtual_video_devices>0:
             if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
                 self.start_sending_webcam()
@@ -2097,8 +2098,18 @@ class UIXpraClient(XpraClientBase):
 
     def send_webcam_frame(self):
         webcamlog("send_webcam_frame() webcam_device=%s", self.webcam_device)
-        assert self.webcam_device_no>=0 and self.webcam_device
         try:
+            assert self.webcam_device_no>=0 and self.webcam_device
+            from xpra.codecs.pillow.encode import get_encodings
+            client_webcam_encodings = get_encodings()
+            formats = [x for x in self.server_webcam_encodings if x in client_webcam_encodings]
+            if not formats:
+                webcamlog.error("Error: cannot send webcam image, no common formats")
+                webcamlog.error(" the server supports: %s", csv(self.server_webcam_encodings))
+                webcamlog.error(" the client supports: %s", csv(client_webcam_encodings))
+                self.stop_sending_webcam()
+                return
+            encoding = formats[0]
             import cv2
             ret, frame = self.webcam_device.read()
             assert ret and frame.ndim==3
@@ -2107,14 +2118,13 @@ class UIXpraClient(XpraClientBase):
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             from PIL import Image
             image = Image.fromarray(rgb)
-            FORMAT = "jpeg"     #png
             buf = BytesIOClass()
-            image.save(buf, format=FORMAT)
+            image.save(buf, format=encoding)
             data = buf.getvalue()
             buf.close()
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
-            self.send("webcam-frame", self.webcam_device_no, frame_no, FORMAT, w, h, compression.Compressed(FORMAT, data))
+            self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, compression.Compressed(encoding, data))
         except Exception as e:
             webcamlog.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()

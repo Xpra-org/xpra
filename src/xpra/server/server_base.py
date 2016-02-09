@@ -141,6 +141,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.scaling_control = False
         self.rpc_handlers = {}
         self.webcam_forwarding = False
+        self.webcam_encodings = []
         self.webcam_forwarding_device = None
         self.virtual_video_devices = 0
 
@@ -237,10 +238,6 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.webcam_forwarding = opts.webcam.lower() not in FALSE_OPTIONS
-        if self.webcam_forwarding:
-            self.virtual_video_devices = self.init_virtual_video_devices()
-            if self.virtual_video_devices==0:
-                self.webcam_forwarding = False
 
         #sound:
         self.pulseaudio = opts.pulseaudio
@@ -248,6 +245,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.init_sound_options(opts)
 
         log("starting component init")
+        self.init_webcam()
         self.init_clipboard()
         self.init_keyboard()
         self.init_pulseaudio()
@@ -352,6 +350,19 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.printing = False
         printlog("init_printing() printing=%s", self.printing)
 
+    def init_webcam(self):
+        if not self.webcam_forwarding:
+            return
+        try:
+            from xpra.codecs.pillow.decode import get_encodings            
+            self.webcam_encodings = get_encodings()
+        except Exception as e:
+            webcamlog.error("Error: webcam forwarding disabled:")
+            webcamlog.error(" %s", e)
+            self.webcam_forwarding = False
+        self.virtual_video_devices = self.init_virtual_video_devices()
+        if self.virtual_video_devices==0:
+            self.webcam_forwarding = False
 
     def init_virtual_video_devices(self):
         webcamlog("init_virtual_video_devices")
@@ -1192,6 +1203,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                  "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
                  "webcam"                       : self.webcam_forwarding,
+                 "webcam.encodings"             : self.webcam_encodings,
                  "virtual-video-devices"        : self.virtual_video_devices,
                  })
             capabilities.update(self.get_file_transfer_features())
@@ -2555,8 +2567,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             ss.send_webcam_stop(device, "not started")
             return            
         try:
-            #only png supported for now!
-            assert encoding in ("png", "jpeg")
+            from xpra.codecs.pillow.decode import get_encodings
+            assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
             from PIL import Image
             buf = BytesIOClass(data)
             img = Image.open(buf)
