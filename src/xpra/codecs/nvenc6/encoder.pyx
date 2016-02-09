@@ -1333,16 +1333,16 @@ cdef class Encoder:
 
     cdef GUID get_preset(self, GUID codec) except *:
         presets = self.query_presets(codec)
-        #import traceback
-        #traceback.print_stack()
         options = {}
         #if a preset was specified, give it the best score possible (-1):
         if DESIRED_PRESET:
             options[-1] = DESIRED_PRESET
         #add all presets ranked by how far they are from the target speed and quality:
-        for x in CODEC_PRESETS_GUIDS.values():
+        log("presets for %s: %s", guidstr(codec), csv(presets.keys()))
+        for name, x in presets.items():
             preset_speed = PRESET_SPEED.get(x, 50)
             preset_quality = PRESET_QUALITY.get(x, 50)
+            log("preset %s: speed=%s, quality=%s", name, preset_speed, preset_quality)
             #log("%s speed=%s, quality=%s, lossless=%s", x, preset_speed, preset_quality, x in LOSSLESS_PRESETS)
             if x in LOSSLESS_PRESETS and self.pixel_format!="YUV444P":
                 continue
@@ -1355,13 +1355,13 @@ cdef class Encoder:
                 v = 2 * abs(preset_speed-self.speed) + 3 * abs(preset_quality-self.quality)
                 l = options.setdefault(v, [])
                 if x not in l:
-                    l.append(x)
+                    l.append((name, x))
         log("get_preset(%s) speed=%s, quality=%s, lossless=%s, pixel_format=%s, options=%s", codecstr(codec), self.speed, self.quality, bool(self.lossless), self.pixel_format, options)
-        for v in sorted(options.keys()):
-            for preset in options.get(v):
-                if preset and (preset in presets):
+        for score in sorted(options.keys()):
+            for preset, preset_guid in options.get(score):
+                if preset and (preset in presets.keys()):
                     log("using preset '%s' for quality=%s, speed=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
-                    return c_parseguid(presets.get(preset))
+                    return c_parseguid(preset_guid)
         raise Exception("no matching presets available for '%s'!?" % self.codec_name)
 
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
