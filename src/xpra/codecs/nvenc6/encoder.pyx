@@ -1188,6 +1188,8 @@ def get_spec(encoding, colorspace):
     assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     min_w, min_h = 32, 32
+    #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
+    max_w, max_h = 4096, 4096
     if encoding=="h265":
         #undocumented and found the hard way!
         min_w, min_h = 72, 72
@@ -1196,7 +1198,7 @@ def get_spec(encoding, colorspace):
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=min_w, min_h=min_h,
-                      max_w=4096, max_h=4096,
+                      max_w=max_w, max_h=max_h,
                       can_scale=True,
                       width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
     cs.get_runtime_factor = get_runtime_factor
