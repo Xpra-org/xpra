@@ -101,7 +101,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gst-plugins-ugly" autogenargs="--disable-tests"
+  <autotools id="gst-plugins-ugly" autogenargs="--disable-tests --enable-introspection=no"
              supports-non-srcdir-builds="no" makeargs="ERROR_CFLAGS="
              autogen-sh="configure">
     <branch repo="gstreamer" version="0.10.19"
@@ -126,7 +126,7 @@
   </autotools>
 
   <autotools id="gst-plugins-bad" supports-non-srcdir-builds="no"
-             autogenargs="--disable-tests --disable-x --disable-xvid"
+             autogenargs="--disable-tests --disable-x --disable-xvid --enable-introspection=no --disable-vp8 --disable-sdl --disable-apexsink"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch repo="gstreamer" version="0.10.23"
             module="gst-plugins-bad/gst-plugins-bad-0.10.23.tar.xz"
@@ -183,7 +183,7 @@
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
       <dep package="gst-plugins-good"/>
-      <!--dep package="gst-plugins-ugly"/-->
+      <dep package="gst-plugins-ugly"/>
       <dep package="gst-plugins-bad"/>
       <dep package="gst-ffmpeg"/>
     </dependencies>
@@ -194,7 +194,7 @@
       <dep package="gstreamer-1.0"/>
       <dep package="gst-plugins-base-1.0"/>
       <dep package="gst-plugins-good-1.0"/>
-      <!--dep package="gst-plugins-ugly-1.0"/-->
+      <dep package="gst-plugins-ugly-1.0"/>
       <dep package="gst-plugins-bad-1.0"/>
       <dep package="gst-libav"/>
     </dependencies>
