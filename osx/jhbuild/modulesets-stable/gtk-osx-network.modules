@@ -5,7 +5,7 @@
   <repository name="ftp.gnome.org" type="tarball" default="yes"
               href="http://ftp.gnome.org/pub/GNOME/sources/"/>
   <repository name="openssl" type="tarball"
-              href="https://www.openssl.org/source/"/>
+              href="http://www.openssl.org/source/"/>
   <repository name="ftp.gnu.org" type="tarball" href="ftp://ftp.gnu.org/gnu/"/>
   <repository name="sourceforge" type="tarball"
               href="http://downloads.sourceforge.net/sourceforge/"/>
@@ -45,7 +45,7 @@
   <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s"
              makeinstallargs="install_sw" supports-non-srcdir-builds="no">
-    <branch module="openssl-0.9.8zg.tar.gz" version="0.9.8zg" repo="openssl"/>
+    <branch module="openssl-1.0.2f.tar.gz" version="1.0.2f" hash="md5:b3bf73f507172be9292ea2a8c28b659d" repo="openssl"/>
   </autotools>
 
   <!-- Rudely demands TeX to build documentation -->
