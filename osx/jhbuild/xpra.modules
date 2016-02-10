@@ -297,7 +297,8 @@
 		hash="md5:b3bf73f507172be9292ea2a8c28b659d"
 		repo="openssl.org"/>
   </autotools>
-  -->  
+  -->
+  
   <!--HACK: skip-install but do make install during autogen phase instead this allows us to bypass the error with DESTDIR since it doesn't actually install anywhere -->
   <autotools id="gtk-mac-bundler"
    skip-install="True"
