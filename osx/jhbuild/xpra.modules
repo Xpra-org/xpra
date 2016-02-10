@@ -286,19 +286,7 @@
 		<dep package="gmplib"/>
 	</after>
   </autotools>
-
-  <!-- Remove this for now it is in modulesets-stable/gtk-osx-network.modules will update it there and remove this eventually
-  <autotools id="openssl"
-             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
-             autogenargs="-shared"
-             autogen-sh="Configure">
-	<branch module="/source/openssl-1.0.2f.tar.gz"
-		version="1.0.2f"
-		hash="md5:b3bf73f507172be9292ea2a8c28b659d"
-		repo="openssl.org"/>
-  </autotools>
-  -->
-  
+ 
   <!--HACK: skip-install but do make install during autogen phase instead this allows us to bypass the error with DESTDIR since it doesn't actually install anywhere -->
   <autotools id="gtk-mac-bundler"
    skip-install="True"
