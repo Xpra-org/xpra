@@ -39,7 +39,7 @@ def test_performance(encoder_module, options={}):
 def log_output(args):
     log(args)
 
-def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2, quality=20, speed=0):
+def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2, quality=20, speed=0, after_encode_cb=None):
     encoder_module.init_module()
     log("test_encoder(%s, %s)", encoder_module, dimensions)
     log("version=%s" % str(encoder_module.get_version()))
@@ -84,7 +84,7 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
                     log("initialiazed instance=%s" % e)
                     images = gen_src_images(src_format, actual_w, actual_h, n_images)
                     log("test images generated - starting compression")
-                    do_test_encoder(e, src_format, actual_w, actual_h, images, log=log)
+                    do_test_encoder(e, src_format, actual_w, actual_h, images, log=log, after_encode_cb=after_encode_cb)
                     e.clean()
 
 def gen_src_images(src_format, w, h, nframes):
@@ -104,7 +104,7 @@ def gen_src_images(src_format, w, h, nframes):
         seed += 10
     return images
 
-def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None, pause=0):
+def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None, pause=0, after_encode_cb=None):
     start = time.time()
     tsize = 0
     for image in images:
@@ -117,6 +117,8 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
         log("data head: %s" % binascii.hexlify(data[:2048]))
         if pause>0:
             time.sleep(pause)
+        if after_encode_cb:
+            after_encode_cb(encoder)
     end = time.time()
     #log.info("%s finished encoding %s frames at %sx%s, total encoding time: %.1fms" % (name, len(images), w, h, 1000.0*(end-start)))
     perf = int(len(images)*w*h/(end-start)/1024/1024)

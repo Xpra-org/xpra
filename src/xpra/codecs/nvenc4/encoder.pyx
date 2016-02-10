@@ -1254,8 +1254,6 @@ cdef class Encoder:
 
     cdef GUID get_preset(self, GUID codec):
         presets = self.query_presets(codec)
-        #import traceback
-        #traceback.print_stack()
         options = {}
         #if a preset was specified, give it the best score possible (-1):
         if DESIRED_PRESET:
@@ -1767,6 +1765,7 @@ cdef class Encoder:
             self.update_bitrate()
 
     def set_encoding_quality(self, quality):
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
         if self.quality!=quality:
             log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
@@ -1794,6 +1793,9 @@ cdef class Encoder:
                 params = self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
                 reconfigure_params.resetEncoder = 1
                 reconfigure_params.forceIDR = 1
+                with nogil:
+                    r =self.functionList.nvEncReconfigureEncoder(self.context, &reconfigure_params)
+                raiseNVENC(r, "reconfiguring encoder")
             finally:
                 if params.encodeConfig!=NULL:
                     free(params.encodeConfig)
@@ -1837,8 +1839,10 @@ cdef class Encoder:
         self.cuda_context.push()
         try:
             try:
-                self.set_encoding_quality(quality)
-                self.set_encoding_speed(speed)
+                if quality>=0:
+                    self.set_encoding_quality(quality)
+                if speed>=0:
+                    self.set_encoding_speed(speed)
                 return self.do_compress_image(image, options)
             finally:
                 self.cuda_context.pop()
