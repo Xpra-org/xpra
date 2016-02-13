@@ -146,7 +146,7 @@ class CythonImageWrapper(ImageWrapper):
 
 
 
-DEF STRIDE_ROUNDUP = 16
+DEF STRIDE_ROUNDUP = 2
 
 #Pre-calculate some coefficients and define them as constants
 #We use integer calculations so everything is multipled by 2**16

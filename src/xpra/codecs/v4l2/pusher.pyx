@@ -11,6 +11,7 @@ from _dbus_bindings import UInt32
 log = Logger("webcam")
 
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.codec_constants import get_subsampling_divs
 
 
 from libc.stdint cimport uint32_t, uint8_t
@@ -41,14 +42,61 @@ cdef extern from "linux/videodev2.h":
     int VIDIOC_QUERYCAP
     int VIDIOC_G_FMT
     int VIDIOC_S_FMT
-    int V4L2_COLORSPACE_SRGB
-    int V4L2_FIELD_NONE
     int V4L2_BUF_TYPE_VIDEO_OUTPUT
+    #field
+    int V4L2_FIELD_NONE
+    int V4L2_FIELD_TOP
+    int V4L2_FIELD_BOTTOM
+    int V4L2_FIELD_INTERLACED
+    int V4L2_FIELD_SEQ_TB
+    int V4L2_FIELD_SEQ_BT
+    int V4L2_FIELD_ALTERNATE
+    int V4L2_FIELD_INTERLACED_TB
+    int V4L2_FIELD_INTERLACED_BT 
     #formats:
     int V4L2_PIX_FMT_GREY
     int V4L2_PIX_FMT_YUV422P
     int V4L2_PIX_FMT_YUV420
     int V4L2_PIX_FMT_YVU420
+    int V4L2_PIX_FMT_YUYV
+    int V4L2_PIX_FMT_UYVY
+    int V4L2_PIX_FMT_YUV410
+    int V4L2_PIX_FMT_YUV411P
+    int V4L2_PIX_FMT_BGR24
+    int V4L2_PIX_FMT_RGB24
+    int V4L2_PIX_FMT_BGR32      #BGRX
+    int V4L2_PIX_FMT_RGB32      #XRGB
+    int V4L2_PIX_FMT_NV12
+    int V4L2_PIX_FMT_NV21
+    int V4L2_PIX_FMT_H264
+    int V4L2_PIX_FMT_MPEG4
+    #colorspace:
+    int V4L2_COLORSPACE_SRGB
+    int V4L2_COLORSPACE_470_SYSTEM_M
+    int V4L2_COLORSPACE_470_SYSTEM_BG
+    int V4L2_COLORSPACE_SMPTE170M
+    int V4L2_COLORSPACE_SMPTE240M
+    int V4L2_COLORSPACE_REC709
+    #color range:
+    int V4L2_QUANTIZATION_DEFAULT
+    int V4L2_QUANTIZATION_FULL_RANGE
+    int V4L2_QUANTIZATION_LIM_RANGE
+    #matrix:
+    int V4L2_YCBCR_ENC_DEFAULT
+    int V4L2_YCBCR_ENC_601
+    int V4L2_YCBCR_ENC_709
+    int V4L2_YCBCR_ENC_XV601
+    int V4L2_YCBCR_ENC_XV709
+    int V4L2_YCBCR_ENC_SYCC
+    int V4L2_YCBCR_ENC_BT2020
+    int V4L2_YCBCR_ENC_SMPTE240M
+    #transfer:
+    int V4L2_XFER_FUNC_DEFAULT
+    int V4L2_XFER_FUNC_709
+    int V4L2_XFER_FUNC_SRGB
+    int V4L2_XFER_FUNC_ADOBERGB
+    int V4L2_XFER_FUNC_SMPTE240M
+    int V4L2_XFER_FUNC_NONE
 
     cdef struct v4l2_capability:
         uint8_t driver[16]
@@ -102,11 +150,79 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
+FIELD_STR = {
+    V4L2_FIELD_NONE                 : "None",
+    V4L2_FIELD_TOP                  : "Top",
+    V4L2_FIELD_BOTTOM               : "Bottom",
+    V4L2_FIELD_INTERLACED           : "Interlaced",
+    V4L2_FIELD_SEQ_TB               : "SEQ TB",
+    V4L2_FIELD_SEQ_BT               : "SEQ BT",
+    V4L2_FIELD_ALTERNATE            : "ALTERNATE",
+    V4L2_FIELD_INTERLACED_TB        : "INTERLACED TB",
+    V4L2_FIELD_INTERLACED_BT        : "INTERLACED BT",
+}
+COLORSPACE_STR = {
+    V4L2_COLORSPACE_SRGB            : "SRGB",
+    V4L2_COLORSPACE_470_SYSTEM_M    : "470_SYSTEM_M",
+    V4L2_COLORSPACE_470_SYSTEM_BG   : "470_SYSTEM_BG",
+    V4L2_COLORSPACE_SMPTE170M       : "SMPTE170M",
+    V4L2_COLORSPACE_SMPTE240M       : "SMPTE240M",
+    V4L2_COLORSPACE_REC709          : "REC709",
+}
+QUANTIZATION_STR = {
+    V4L2_QUANTIZATION_DEFAULT       : "DEFAULT",
+    V4L2_QUANTIZATION_FULL_RANGE    : "FULL_RANGE",
+    V4L2_QUANTIZATION_LIM_RANGE     : "LIM_RANGE",
+}
+YCBCR_ENC_STR = {
+    V4L2_YCBCR_ENC_DEFAULT          : "DEFAULT",
+    V4L2_YCBCR_ENC_601              : "601",
+    V4L2_YCBCR_ENC_709              : "709",
+    V4L2_YCBCR_ENC_XV601            : "XV601",
+    V4L2_YCBCR_ENC_XV709            : "XV709",
+    V4L2_YCBCR_ENC_SYCC             : "SYCC",
+    V4L2_YCBCR_ENC_BT2020           : "BT2020",
+    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
+    V4L2_YCBCR_ENC_BT2020           : "BT2020",
+    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
+}
+XFER_FUNC_STR = {
+    V4L2_XFER_FUNC_DEFAULT          : "DEFAULT",
+    V4L2_XFER_FUNC_709              : "709",
+    V4L2_XFER_FUNC_SRGB             : "SRGB",
+    V4L2_XFER_FUNC_ADOBERGB         : "ADOBERGB",
+    V4L2_XFER_FUNC_SMPTE240M        : "SMPTE240M",
+    V4L2_XFER_FUNC_NONE             : "NONE",
+}
+
+FORMAT_STR = {
+    V4L2_PIX_FMT_GREY           : "GREY",
+    V4L2_PIX_FMT_YUV422P        : "YUV422P",
+    V4L2_PIX_FMT_YUV420         : "YUV420P",
+    V4L2_PIX_FMT_YVU420         : "YVU420P",
+    V4L2_PIX_FMT_YUYV           : "YUYV",
+    V4L2_PIX_FMT_UYVY           : "UYVY",
+    V4L2_PIX_FMT_YUV410         : "YUV410P",
+    V4L2_PIX_FMT_YUV411P        : "YUV411P",
+    V4L2_PIX_FMT_BGR24          : "BGR",
+    V4L2_PIX_FMT_RGB24          : "RGB",
+    V4L2_PIX_FMT_BGR32          : "BGRX",
+    V4L2_PIX_FMT_RGB32          : "RGBX",
+    V4L2_PIX_FMT_NV12           : "NV12",
+    V4L2_PIX_FMT_NV21           : "NV21",
+    V4L2_PIX_FMT_H264           : "H264",
+    V4L2_PIX_FMT_MPEG4          : "MPEG4",
+}
+PIX_FMT = {}
+for k,v in FORMAT_STR.items():
+    PIX_FMT[v] = k
+
+
 def init_module():
     log("v4l2.pusher.init_module()")
 
 def cleanup_module():
-    log("v4l2pusher.cleanup_module()")
+    log("v4l2.pusher.cleanup_module()")
 
 def get_version():
     return 0
@@ -120,7 +236,7 @@ def get_info():
             "buffer_api": get_buffer_api_version()}
 
 def get_input_colorspaces():
-    return  ["YUV420P"]
+    return  ["YUV420P"]     #,"YUV422P"
 
 
 cdef class Pusher:
@@ -152,34 +268,43 @@ cdef class Pusher:
         self.device = open(self.device_name, "wb")
         r = ioctl(self.device.fileno(), VIDIOC_QUERYCAP, &vid_caps)
         log("ioctl(%s, VIDIOC_QUERYCAP, %#x)=%s", self.device_name, <unsigned long> &vid_caps, r)
-        assert r!=-1, "VIDIOC_QUERYCAP ioctl failed on %s" % self.device_name
+        assert r>=0, "VIDIOC_QUERYCAP ioctl failed on %s" % self.device_name
         memset(&vid_format, 0, sizeof(vid_format))
         r = ioctl(self.device.fileno(), VIDIOC_G_FMT, &vid_format)
         log("ioctl(%s, VIDIOC_G_FMT, %#x)=%s", self.device_name, <unsigned long> &vid_format, r)
-        self.show_vid_format(&vid_format)
-        #assert r!=-1, "VIDIOC_G_FMT ioctl failed on %s" % self.device_name
+        if r>=0:
+            log("current device capture format:")
+            self.show_vid_format(&vid_format)
+        assert self.src_format in PIX_FMT, "unknown pixel format %s" % self.src_format
+        cdef int pixel_format = PIX_FMT[self.src_format]
+        divs = get_subsampling_divs(self.src_format)    #ie: YUV420P ->  (1, 1), (2, 2), (2, 2)
+        self.framesize = 0
+        for xdiv, ydiv in divs:
+            self.framesize += self.rowstride//xdiv*(self.height//ydiv)
         vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT
         vid_format.fmt.pix.width = self.width
         vid_format.fmt.pix.height = self.height
-        #self.framesize = self.height*self.rowstride*3//2
-        #vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420        #V4L2_PIX_FMT_YVU420
-        self.framesize = self.height*self.rowstride
-        vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY
+        vid_format.fmt.pix.bytesperline = self.rowstride
+        vid_format.fmt.pix.pixelformat = pixel_format
         vid_format.fmt.pix.sizeimage = self.framesize
         vid_format.fmt.pix.field = V4L2_FIELD_NONE
-        vid_format.fmt.pix.bytesperline = 0
+        #vid_format.fmt.pix.n_v4l_planes = 3
         vid_format.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB
+        vid_format.fmt.pix.ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT
+        vid_format.fmt.pix.quantization = V4L2_QUANTIZATION_DEFAULT
+        vid_format.fmt.pix.xfer_func = V4L2_XFER_FUNC_DEFAULT
         r = ioctl(self.device.fileno(), VIDIOC_S_FMT, &vid_format)
         log("ioctl(%s, VIDIOC_S_FMT, %#x)=%s", self.device_name, <unsigned long> &vid_format, r)
-        assert r!=-1, "VIDIOC_S_FMT ioctl failed on %s" % self.device_name
+        assert r>=0, "VIDIOC_S_FMT ioctl failed on %s" % self.device_name
         self.show_vid_format(&vid_format)
         self.width = vid_format.fmt.pix.width
         self.height = vid_format.fmt.pix.height
         self.rowstride = vid_format.fmt.pix.bytesperline
-        self.framesize = self.height*self.rowstride
         parsed_pixel_format = self.parse_pixel_format(&vid_format)
+        log("parsed pixel format(%s)=%s", vid_format.fmt.pix.pixelformat, parsed_pixel_format)
         self.src_format = self.get_equiv_format(parsed_pixel_format)
-        assert self.src_format in get_input_colorspaces(), "invalid pixel format used: %s" % self.src_format
+        log("internal format(%s)=%s", parsed_pixel_format, self.src_format)
+        #assert self.src_format in get_input_colorspaces(), "invalid pixel format used: %s" % self.src_format
 
 
     def get_equiv_format(self, fmt):
@@ -198,9 +323,12 @@ cdef class Pusher:
         equiv = self.get_equiv_format(parsed_pixel_format)
         log("vid_format.fmt.pix.pixelformat  = %s = %s (for %#x)", parsed_pixel_format or "unset", equiv or "unset", vid_format.fmt.pix.pixelformat)
         log("vid_format.fmt.pix.sizeimage    = %i", vid_format.fmt.pix.sizeimage)
-        log("vid_format.fmt.pix.field        = %i", vid_format.fmt.pix.field)
+        log("vid_format.fmt.pix.field        = %s (%i)", FIELD_STR.get(vid_format.fmt.pix.field, vid_format.fmt.pix.field), vid_format.fmt.pix.field)
         log("vid_format.fmt.pix.bytesperline = %i", vid_format.fmt.pix.bytesperline)
-        log("vid_format.fmt.pix.colorspace   = %i", vid_format.fmt.pix.colorspace)
+        log("vid_format.fmt.pix.colorspace   = %s (%i)", COLORSPACE_STR.get(vid_format.fmt.pix.colorspace, vid_format.fmt.pix.colorspace), vid_format.fmt.pix.colorspace)
+        log("vid_format.fmt.pix.ycbcr_enc    = %s (%i)", YCBCR_ENC_STR.get(vid_format.fmt.pix.ycbcr_enc, vid_format.fmt.pix.ycbcr_enc), vid_format.fmt.pix.ycbcr_enc)
+        log("vid_format.fmt.pix.quantization = %s (%i)", QUANTIZATION_STR.get(vid_format.fmt.pix.quantization, vid_format.fmt.pix.quantization), vid_format.fmt.pix.quantization)
+        log("vid_format.fmt.pix.xfer_func    = %s (%i)", XFER_FUNC_STR.get(vid_format.fmt.pix.xfer_func, vid_format.fmt.pix.xfer_func), vid_format.fmt.pix.xfer_func)
 
 
     def clean(self):                        #@DuplicatedSignature
@@ -249,12 +377,14 @@ cdef class Pusher:
         cdef unsigned char *Vbuf
         cdef unsigned int Ystride, Ustride, Vstride
         cdef Py_ssize_t buf_len = 0
-        cdef unsigned int chroma_h
-        cdef unsigned int chroma_div
-        cdef uint8_t* buf
 
-        chroma_div = 2
-        chroma_h = self.height//chroma_div
+        divs = get_subsampling_divs(self.src_format)    #ie: YUV420P ->  (1, 1), (2, 2), (2, 2)
+        cdef int Ywdiv = divs[0][0]
+        cdef int Yhdiv = divs[0][1]
+        cdef int Uwdiv = divs[1][0]
+        cdef int Uhdiv = divs[1][1]
+        cdef int Vwdiv = divs[2][0]
+        cdef int Vhdiv = divs[2][1]
 
         iplanes = image.get_planes()
         assert iplanes==ImageWrapper._3_PLANES, "invalid input format: %s planes" % iplanes
@@ -263,28 +393,33 @@ cdef class Pusher:
         planes = image.get_pixels()
         assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
-        log("push_image(%s) strides=%s, video stride=%s, chroma_h=%s", (image), input_strides, self.rowstride, chroma_h)
         Ystride, Ustride, Vstride = input_strides
-        assert Ystride==self.rowstride, "invalid stride: %s but expected %s" % (Ystride, self.rowstride)
-        assert Ustride==self.rowstride//chroma_div
-        assert Vstride==self.rowstride//chroma_div
+        assert Ystride==self.rowstride//Ywdiv, "invalid stride for Y plane: %s but expected %i" % (Ystride, self.rowstride//Ywdiv)
+        assert Ustride==self.rowstride//Uwdiv, "invalid stride for U plane: %s but expected %s" % (Ustride, self.rowstride//Uwdiv)
+        assert Vstride==self.rowstride//Vwdiv, "invalid stride for V plane: %s but expected %s" % (Vstride, self.rowstride//Vwdiv)
         assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
-        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
+        assert buf_len>=Ystride*(image.get_height()//Yhdiv), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*(image.get_height()//Yhdiv))
         assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*image.get_height()//chroma_div, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()//chroma_div)
+        assert buf_len>=Ustride*(image.get_height()//Uhdiv), "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*(image.get_height()//Uhdiv))
         assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*image.get_height()//chroma_div, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//chroma_div)
-        #assert Ystride*self.height+Ustride*chroma_h+Vstride*chroma_h <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*self.height, Ustride*chroma_h, Vstride*chroma_h)
+        assert buf_len>=Vstride*(image.get_height()//Vhdiv), "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*(image.get_height()//Vhdiv))
+        assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
         cdef int offset = roundup(self.rowstride//2, 32)
-        buf = <uint8_t*> xmemalign(self.framesize + offset + self.rowstride)
+        #log("offset(%s)=%s", self.rowstride, offset)
+        cdef size_t l = self.framesize + offset + self.rowstride*8
+        cdef uint8_t* buf = <uint8_t*> xmemalign(l)
+        memset(buf, 0, l)
         assert buf!=NULL, "failed to allocate temporary output buffer"
-        cdef int i
-        for i in range(self.height//4):
-            memcpy(buf+offset+(0+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
-            memcpy(buf+offset+(1+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
-            memcpy(buf+offset+(2+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
-            memcpy(buf+offset+(3+i*4)*self.rowstride, Ybuf+(i*4)*Ystride, self.width)
+        cdef int i = offset
+        cdef size_t s = Ystride*(self.height//Yhdiv)
+        memcpy(buf+i, Ybuf, s)
+        i += s + Ystride*6
+        s = Ustride*(self.height//Uhdiv)
+        memcpy(buf+i, Ubuf, s)
+        i += s
+        s = Vstride*(self.height//Vhdiv)
+        memcpy(buf+i, Vbuf, s)
         self.device.write(buf[:self.framesize])
         self.device.flush()
         free(buf)

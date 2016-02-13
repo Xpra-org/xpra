@@ -2512,8 +2512,9 @@ class ServerBase(ServerCore, FileTransferHandler):
             webcamlog.warn("Warning: invalid client source for webcam start")
             return
         device, w, h = packet[1:4]
+        log("starting webcam %sx%s", w, h)
         self.start_virtual_webcam(ss, device, w, h)
-    
+
     def start_virtual_webcam(self, ss, device, w, h):
         assert w>0 and h>0
         from xpra.platform.xposix.webcam_util import get_virtual_video_devices
@@ -2526,9 +2527,10 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.stop_virtual_webcam()
         device_str = devices.values()[0]
         try:
-            from xpra.codecs.v4l2.pusher import Pusher    #@UnresolvedImport
+            from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
+            in_cs = get_input_colorspaces()
             p = Pusher()
-            src_format = "YUV420P"
+            src_format = in_cs[0]
             p.init_context(w, h, w, src_format, device_str)
             self.webcam_forwarding_device = p
             webcamlog.info("webcam forwarding using %s", device_str)
@@ -2569,33 +2571,34 @@ class ServerBase(ServerCore, FileTransferHandler):
         try:
             from xpra.codecs.pillow.decode import get_encodings
             assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
+            rgb_pixel_format = "RGBX"       #BGRX
             from PIL import Image
             buf = BytesIOClass(data)
             img = Image.open(buf)
-            #img.save("./latest.png", "png")
-            pixels = img.tobytes('raw', "BGRX")
+            pixels = img.tobytes('raw', rgb_pixel_format)
             from xpra.codecs.image_wrapper import ImageWrapper
-            bgrx_image = ImageWrapper(0, 0, w, h, pixels, "BGRX", 32, w*4, planes=ImageWrapper.PACKED)
+            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
             src_format = vfd.get_src_format()
             if not src_format:
                 #closed / closing
                 return
             #one of those two should be present
             try:
-                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-            except ImportError:
                 from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-            assert "BGRX" in get_input_colorspaces()
-            assert src_format in get_output_colorspaces("BGRX")
+            except ImportError:
+                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+            assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
+            assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
             tw = vfd.get_width()
             th = vfd.get_height()
             csc = ColorspaceConverter()
-            csc.init_context(w, h, "BGRX", tw, th, src_format)
+            csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
             image = csc.convert_image(bgrx_image)
             vfd.push_image(image)
             #tell the client all is good:
             ss.send_webcam_ack(device, frame_no)
         except Exception as e:
+            webcamlog("error on %ix%i frame %i using encoding %s", w, h, frame_no, encoding, exc_info=True)
             webcamlog.error("Error processing webcam frame:")
             if str(e):
                 webcamlog.error(" %s", e)

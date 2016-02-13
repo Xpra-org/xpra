@@ -2113,7 +2113,7 @@ class UIXpraClient(XpraClientBase):
             import cv2
             ret, frame = self.webcam_device.read()
             assert ret and frame.ndim==3
-            w, h, Bpp = frame.shape
+            h, w, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             from PIL import Image
@@ -2126,6 +2126,7 @@ class UIXpraClient(XpraClientBase):
             self.webcam_frame_no += 1
             self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, compression.Compressed(encoding, data))
         except Exception as e:
+            webcamlog.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
             webcamlog.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()
 
