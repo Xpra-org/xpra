@@ -607,7 +607,7 @@ cdef class Encoder:
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
             for i in range(3):
-                assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i], i))
+                assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i]), i)
                 pic_in.img.plane[i] = pic_buf
                 pic_in.img.i_stride[i] = istrides[i]
 
