@@ -147,8 +147,9 @@ class Keyboard(KeyboardBase):
         #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         #if we have modifier_mappings
         if EMULATE_ALTGR and self.altgr_modifier and len(self.modifier_mappings)>0:
+            altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
             if key_event.keyname=="Control_L":
-                altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
+                log("process_key_event: Control_L pressed=%s, with altgr=%s", key_event.pressed, altgr)
                 #AltGr is often preceded by a spurious "Control_L" event
                 #delay this one a little bit so we can skip it if an "AltGr" does come through next:
                 if key_event.pressed:
@@ -160,19 +161,28 @@ class Keyboard(KeyboardBase):
                     #unpressed: could just skip it?
                     #(but maybe the real one got pressed.. and this would get it stuck)
                     pass
-            if key_event.keyname=="Alt_R" :
-                #cancel "Control_L" if one was due:
-                self.delayed_event = None
-                return
+            if key_event.keyname=="Alt_R":
+                log("process_key_event: Alt_R pressed=%s, with altgr=%s", key_event.pressed, altgr)
+                if altgr and key_event.pressed:
+                    #cancel "Control_L" if one was due:
+                    self.delayed_event = None
+                #modify the key event so that it will only trigger the modifier update,
+                #and not not the key event itself:
+                key_event.string = ""
+                key_event.keyname = ""
+                key_event.group = -1
+                key_event.keyval = -1
+                key_event.keycode = -1
+                self.AltGr_modifiers(key_event.modifiers)
         self.send_delayed_key()
         KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
 
     def send_delayed_key(self):
         #timeout: this must be a real one, send it now
         dk = self.delayed_event
+        log("send_delayed_key() delayed_event=%s", dk)
         if dk:
             self.delayed_event = None
             altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
             if altgr:
-                send_key_action_cb, wid, key_event = dk
-                KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
+                KeyboardBase.process_key_event(self, *dk)
