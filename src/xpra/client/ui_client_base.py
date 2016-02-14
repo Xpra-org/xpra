@@ -2102,13 +2102,16 @@ class UIXpraClient(XpraClientBase):
             assert self.webcam_device_no>=0 and self.webcam_device
             from xpra.codecs.pillow.encode import get_encodings
             client_webcam_encodings = get_encodings()
-            formats = [x for x in self.server_webcam_encodings if x in client_webcam_encodings]
-            if not formats:
+            common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
+            webcamlog("common encodings (server=%s, client=%s): %s", csv(self.server_encodings), csv(client_webcam_encodings), csv(common_encodings))
+            if not common_encodings:
                 webcamlog.error("Error: cannot send webcam image, no common formats")
                 webcamlog.error(" the server supports: %s", csv(self.server_webcam_encodings))
                 webcamlog.error(" the client supports: %s", csv(client_webcam_encodings))
                 self.stop_sending_webcam()
                 return
+            preferred_order = ["jpeg", "png", "png/L", "png/P", "webp"]
+            formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
             import cv2
             ret, frame = self.webcam_device.read()
