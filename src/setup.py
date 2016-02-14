@@ -141,7 +141,6 @@ crypto_ENABLED          = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
-xvid_ENABLED            = DEFAULT and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = DEFAULT and pkg_config_ok("--atleast-version=0.4", "libwebp")
 vpx_ENABLED             = DEFAULT and pkg_config_ok("--atleast-version=1.3", "vpx", fallback=WIN32)
@@ -195,7 +194,7 @@ tests_ENABLED           = False
 rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ["enc_x264", "enc_x265", "xvid",
+SWITCHES = ["enc_x264", "enc_x265",
             "nvenc4", "nvenc5", "nvenc6",
             "vpx", "webp", "pillow",
             "dec_avcodec2", "csc_swscale",
@@ -2222,13 +2221,6 @@ if enc_x265_ENABLED:
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
                 **x265_pkgconfig))
-
-toggle_packages(xvid_ENABLED, "xpra.codecs.xvid")
-if xvid_ENABLED:
-    xvid_pkgconfig = pkgconfig("xvid")
-    cython_add(Extension("xpra.codecs.xvid.encoder",
-                ["xpra/codecs/xvid/encoder.pyx", buffers_c],
-                **xvid_pkgconfig))
 
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 if pillow_ENABLED:
