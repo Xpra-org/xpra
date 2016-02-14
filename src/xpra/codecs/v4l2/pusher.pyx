@@ -78,25 +78,25 @@ cdef extern from "linux/videodev2.h":
     int V4L2_COLORSPACE_SMPTE240M
     int V4L2_COLORSPACE_REC709
     #color range:
-    int V4L2_QUANTIZATION_DEFAULT
-    int V4L2_QUANTIZATION_FULL_RANGE
-    int V4L2_QUANTIZATION_LIM_RANGE
+    #int V4L2_QUANTIZATION_DEFAULT
+    #int V4L2_QUANTIZATION_FULL_RANGE
+    #int V4L2_QUANTIZATION_LIM_RANGE
     #matrix:
-    int V4L2_YCBCR_ENC_DEFAULT
-    int V4L2_YCBCR_ENC_601
-    int V4L2_YCBCR_ENC_709
-    int V4L2_YCBCR_ENC_XV601
-    int V4L2_YCBCR_ENC_XV709
-    int V4L2_YCBCR_ENC_SYCC
-    int V4L2_YCBCR_ENC_BT2020
-    int V4L2_YCBCR_ENC_SMPTE240M
+    #int V4L2_YCBCR_ENC_DEFAULT
+    #int V4L2_YCBCR_ENC_601
+    #int V4L2_YCBCR_ENC_709
+    #int V4L2_YCBCR_ENC_XV601
+    #int V4L2_YCBCR_ENC_XV709
+    #int V4L2_YCBCR_ENC_SYCC
+    #int V4L2_YCBCR_ENC_BT2020
+    #int V4L2_YCBCR_ENC_SMPTE240M
     #transfer:
-    int V4L2_XFER_FUNC_DEFAULT
-    int V4L2_XFER_FUNC_709
-    int V4L2_XFER_FUNC_SRGB
-    int V4L2_XFER_FUNC_ADOBERGB
-    int V4L2_XFER_FUNC_SMPTE240M
-    int V4L2_XFER_FUNC_NONE
+    #int V4L2_XFER_FUNC_DEFAULT
+    #int V4L2_XFER_FUNC_709
+    #int V4L2_XFER_FUNC_SRGB
+    #int V4L2_XFER_FUNC_ADOBERGB
+    #int V4L2_XFER_FUNC_SMPTE240M
+    #int V4L2_XFER_FUNC_NONE
 
     cdef struct v4l2_capability:
         uint8_t driver[16]
@@ -117,9 +117,9 @@ cdef extern from "linux/videodev2.h":
         uint32_t colorspace     # enum v4l2_colorspace */
         uint32_t priv           # private data, depends on pixelformat */
         uint32_t flags          # format flags (V4L2_PIX_FMT_FLAG_*) */
-        uint32_t ycbcr_enc      # enum v4l2_ycbcr_encoding */
-        uint32_t quantization   # enum v4l2_quantization */
-        uint32_t xfer_func      # enum v4l2_xfer_func */
+        #uint32_t ycbcr_enc      # enum v4l2_ycbcr_encoding */
+        #uint32_t quantization   # enum v4l2_quantization */
+        #uint32_t xfer_func      # enum v4l2_xfer_func */
 
         pass
     cdef struct v4l2_pix_format_mplane:
@@ -169,32 +169,32 @@ COLORSPACE_STR = {
     V4L2_COLORSPACE_SMPTE240M       : "SMPTE240M",
     V4L2_COLORSPACE_REC709          : "REC709",
 }
-QUANTIZATION_STR = {
-    V4L2_QUANTIZATION_DEFAULT       : "DEFAULT",
-    V4L2_QUANTIZATION_FULL_RANGE    : "FULL_RANGE",
-    V4L2_QUANTIZATION_LIM_RANGE     : "LIM_RANGE",
-}
-YCBCR_ENC_STR = {
-    V4L2_YCBCR_ENC_DEFAULT          : "DEFAULT",
-    V4L2_YCBCR_ENC_601              : "601",
-    V4L2_YCBCR_ENC_709              : "709",
-    V4L2_YCBCR_ENC_XV601            : "XV601",
-    V4L2_YCBCR_ENC_XV709            : "XV709",
-    V4L2_YCBCR_ENC_SYCC             : "SYCC",
-    V4L2_YCBCR_ENC_BT2020           : "BT2020",
-    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
-    V4L2_YCBCR_ENC_BT2020           : "BT2020",
-    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
-}
-XFER_FUNC_STR = {
-    V4L2_XFER_FUNC_DEFAULT          : "DEFAULT",
-    V4L2_XFER_FUNC_709              : "709",
-    V4L2_XFER_FUNC_SRGB             : "SRGB",
-    V4L2_XFER_FUNC_ADOBERGB         : "ADOBERGB",
-    V4L2_XFER_FUNC_SMPTE240M        : "SMPTE240M",
-    V4L2_XFER_FUNC_NONE             : "NONE",
-}
-
+#QUANTIZATION_STR = {
+#    V4L2_QUANTIZATION_DEFAULT       : "DEFAULT",
+#    V4L2_QUANTIZATION_FULL_RANGE    : "FULL_RANGE",
+#    V4L2_QUANTIZATION_LIM_RANGE     : "LIM_RANGE",
+#}
+#YCBCR_ENC_STR = {
+#    V4L2_YCBCR_ENC_DEFAULT          : "DEFAULT",
+#    V4L2_YCBCR_ENC_601              : "601",
+#    V4L2_YCBCR_ENC_709              : "709",
+#    V4L2_YCBCR_ENC_XV601            : "XV601",
+#    V4L2_YCBCR_ENC_XV709            : "XV709",
+#    V4L2_YCBCR_ENC_SYCC             : "SYCC",
+#    V4L2_YCBCR_ENC_BT2020           : "BT2020",
+#    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
+#    V4L2_YCBCR_ENC_BT2020           : "BT2020",
+#    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
+#}
+#XFER_FUNC_STR = {
+#    V4L2_XFER_FUNC_DEFAULT          : "DEFAULT",
+#    V4L2_XFER_FUNC_709              : "709",
+#    V4L2_XFER_FUNC_SRGB             : "SRGB",
+#    V4L2_XFER_FUNC_ADOBERGB         : "ADOBERGB",
+#    V4L2_XFER_FUNC_SMPTE240M        : "SMPTE240M",
+#    V4L2_XFER_FUNC_NONE             : "NONE",
+#}
+#
 FORMAT_STR = {
     V4L2_PIX_FMT_GREY           : "GREY",
     V4L2_PIX_FMT_YUV422P        : "YUV422P",
@@ -290,9 +290,9 @@ cdef class Pusher:
         vid_format.fmt.pix.field = V4L2_FIELD_NONE
         #vid_format.fmt.pix.n_v4l_planes = 3
         vid_format.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB
-        vid_format.fmt.pix.ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT
-        vid_format.fmt.pix.quantization = V4L2_QUANTIZATION_DEFAULT
-        vid_format.fmt.pix.xfer_func = V4L2_XFER_FUNC_DEFAULT
+        #vid_format.fmt.pix.ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT
+        #vid_format.fmt.pix.quantization = V4L2_QUANTIZATION_DEFAULT
+        #vid_format.fmt.pix.xfer_func = V4L2_XFER_FUNC_DEFAULT
         r = ioctl(self.device.fileno(), VIDIOC_S_FMT, &vid_format)
         log("ioctl(%s, VIDIOC_S_FMT, %#x)=%s", self.device_name, <unsigned long> &vid_format, r)
         assert r>=0, "VIDIOC_S_FMT ioctl failed on %s" % self.device_name
@@ -326,9 +326,9 @@ cdef class Pusher:
         log("vid_format.fmt.pix.field        = %s (%i)", FIELD_STR.get(vid_format.fmt.pix.field, vid_format.fmt.pix.field), vid_format.fmt.pix.field)
         log("vid_format.fmt.pix.bytesperline = %i", vid_format.fmt.pix.bytesperline)
         log("vid_format.fmt.pix.colorspace   = %s (%i)", COLORSPACE_STR.get(vid_format.fmt.pix.colorspace, vid_format.fmt.pix.colorspace), vid_format.fmt.pix.colorspace)
-        log("vid_format.fmt.pix.ycbcr_enc    = %s (%i)", YCBCR_ENC_STR.get(vid_format.fmt.pix.ycbcr_enc, vid_format.fmt.pix.ycbcr_enc), vid_format.fmt.pix.ycbcr_enc)
-        log("vid_format.fmt.pix.quantization = %s (%i)", QUANTIZATION_STR.get(vid_format.fmt.pix.quantization, vid_format.fmt.pix.quantization), vid_format.fmt.pix.quantization)
-        log("vid_format.fmt.pix.xfer_func    = %s (%i)", XFER_FUNC_STR.get(vid_format.fmt.pix.xfer_func, vid_format.fmt.pix.xfer_func), vid_format.fmt.pix.xfer_func)
+        #log("vid_format.fmt.pix.ycbcr_enc    = %s (%i)", YCBCR_ENC_STR.get(vid_format.fmt.pix.ycbcr_enc, vid_format.fmt.pix.ycbcr_enc), vid_format.fmt.pix.ycbcr_enc)
+        #log("vid_format.fmt.pix.quantization = %s (%i)", QUANTIZATION_STR.get(vid_format.fmt.pix.quantization, vid_format.fmt.pix.quantization), vid_format.fmt.pix.quantization)
+        #log("vid_format.fmt.pix.xfer_func    = %s (%i)", XFER_FUNC_STR.get(vid_format.fmt.pix.xfer_func, vid_format.fmt.pix.xfer_func), vid_format.fmt.pix.xfer_func)
 
 
     def clean(self):                        #@DuplicatedSignature
