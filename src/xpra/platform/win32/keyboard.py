@@ -17,6 +17,11 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 EMULATE_ALTGR = os.environ.get("XPRA_EMULATE_ALTGR", "1")=="1"
+EMULATE_ALTGR_CONTROL_KEY_DELAY = int(os.environ.get("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", "50"))
+if EMULATE_ALTGR:
+    #needed for altgr emulation timeouts:
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
 
 
 class Keyboard(KeyboardBase):
@@ -28,10 +33,9 @@ class Keyboard(KeyboardBase):
 
     def __init__(self):
         KeyboardBase.__init__(self)
-        self.emulate_altgr = False
         self.num_lock_modifier = None
         self.altgr_modifier = None
-        self.last_key_event_sent = None
+        self.delayed_event = None
         #workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
         #translate "period" with keyval=46 and keycode=110 to KP_Decimal:
         KEY_TRANSLATIONS[("period",     46,     110)]   = "KP_Decimal"
@@ -53,7 +57,8 @@ class Keyboard(KeyboardBase):
     def mask_to_names(self, mask):
         """ Patch NUMLOCK and AltGr """
         names = KeyboardBase.mask_to_names(self, mask)
-        if self.emulate_altgr:
+        altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
+        if altgr:
             self.AltGr_modifiers(names)
         if self.num_lock_modifier:
             try:
@@ -141,16 +146,33 @@ class Keyboard(KeyboardBase):
         #self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
         #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         #if we have modifier_mappings
-        if EMULATE_ALTGR and self.altgr_modifier and key_event.keyname=="Alt_R" and len(self.modifier_mappings)>0:
-            self.emulate_altgr = key_event.pressed
-            if key_event.pressed and self.last_key_event_sent:
-                #check for spurious control and undo it
-                last_wid, last_key_event = self.last_key_event_sent
-                if last_wid==wid and last_key_event.keyname=="Control_L" and last_key_event.pressed==True:
-                    #undo it:
-                    last_key_event.pressed = False
-                    KeyboardBase.process_key_event(self, send_key_action_cb, last_wid, last_key_event)
-            self.AltGr_modifiers(key_event.modifiers, not key_event.pressed)
-        self.last_key_event_sent = (wid, key_event)
-        #now fallback to default behaviour:
+        if EMULATE_ALTGR and self.altgr_modifier and len(self.modifier_mappings)>0:
+            if key_event.keyname=="Control_L":
+                altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
+                #AltGr is often preceded by a spurious "Control_L" event
+                #delay this one a little bit so we can skip it if an "AltGr" does come through next:
+                if key_event.pressed:
+                    if not altgr:
+                        self.delayed_event = (send_key_action_cb, wid, key_event)
+                        glib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
+                    return
+                if not key_event.pressed and altgr:
+                    #unpressed: could just skip it?
+                    #(but maybe the real one got pressed.. and this would get it stuck)
+                    pass
+            if key_event.keyname=="Alt_R" :
+                #cancel "Control_L" if one was due:
+                self.delayed_event = None
+                return
+        self.send_delayed_key()
         KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
+
+    def send_delayed_key(self):
+        #timeout: this must be a real one, send it now
+        dk = self.delayed_event
+        if dk:
+            self.delayed_event = None
+            altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
+            if altgr:
+                send_key_action_cb, wid, key_event = dk
+                KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
