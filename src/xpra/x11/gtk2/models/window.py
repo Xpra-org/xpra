@@ -227,14 +227,20 @@ class WindowModel(BaseWindowModel):
         # initial states are read off from the client, and (2) is accomplished
         # by having WM_HINTS affect _NET_WM_STATE.  But this means that
         # WM_HINTS and _NET_WM_STATE handling become intertangled.
+        def set_if_unset(propname, value):
+            #the property may not be initialized yet,
+            #if that's the case then calling get_property throws an exception:
+            try:
+                assert self.get_property(propname) is not None
+            except:
+                self._internal_set_property(propname, value)
         net_wm_state = self.get_property("state")
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
         self._internal_set_property("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
         geometry = X11Window.getGeometry(self.xid)
-        self._internal_set_property("requested-position", (geometry[0], geometry[1]))
-        self._internal_set_property("requested-size", (geometry[2], geometry[3]))
-        self._internal_set_property("decorations", -1)
-
+        set_if_unset("requested-position", (geometry[0], geometry[1]))
+        set_if_unset("requested-size", (geometry[2], geometry[3]))
+        set_if_unset("decorations", -1)
 
     def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
@@ -530,7 +536,7 @@ class WindowModel(BaseWindowModel):
         #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
         motif_hints = prop_get(self.client_window, "_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
         metalog("_MOTIF_WM_HINTS=%s", motif_hints)
-        if motif_hints and motif_hints.flags&(2**MotifWMHints.DECORATIONS_BIT):
+        if motif_hints and (motif_hints.flags & (2**MotifWMHints.DECORATIONS_BIT)):
             self._updateprop("decorations", motif_hints.decorations)
 
     def _handle_wm_normal_hints_change(self):
