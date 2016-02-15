@@ -10,6 +10,7 @@ from xpra.log import Logger
 from _dbus_bindings import UInt32
 log = Logger("webcam")
 
+from xpra.util import nonl
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
 
@@ -39,6 +40,9 @@ cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
 cdef extern from "linux/videodev2.h":
+    #define v4l2_fourcc(a,b,c,d)\
+    #    (((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
+    int v4l2_fourcc(unsigned char a, unsigned char b, unsigned char c, unsigned char d)
     int VIDIOC_QUERYCAP
     int VIDIOC_G_FMT
     int VIDIOC_S_FMT
@@ -68,8 +72,6 @@ cdef extern from "linux/videodev2.h":
     int V4L2_PIX_FMT_RGB32      #XRGB
     int V4L2_PIX_FMT_NV12
     int V4L2_PIX_FMT_NV21
-    int V4L2_PIX_FMT_H264
-    int V4L2_PIX_FMT_MPEG4
     #colorspace:
     int V4L2_COLORSPACE_SRGB
     int V4L2_COLORSPACE_470_SYSTEM_M
@@ -121,7 +123,6 @@ cdef extern from "linux/videodev2.h":
         #uint32_t quantization   # enum v4l2_quantization */
         #uint32_t xfer_func      # enum v4l2_xfer_func */
 
-        pass
     cdef struct v4l2_pix_format_mplane:
         pass
     cdef struct v4l2_window:
@@ -195,6 +196,9 @@ COLORSPACE_STR = {
 #    V4L2_XFER_FUNC_NONE             : "NONE",
 #}
 #
+cdef int V4L2_PIX_FMT_H264 = v4l2_fourcc('H', '2', '6', '4')
+cdef int V4L2_PIX_FMT_MPEG4 = v4l2_fourcc('M', 'P', 'G', '4')
+
 FORMAT_STR = {
     V4L2_PIX_FMT_GREY           : "GREY",
     V4L2_PIX_FMT_YUV422P        : "YUV422P",
@@ -217,12 +221,18 @@ PIX_FMT = {}
 for k,v in FORMAT_STR.items():
     PIX_FMT[v] = k
 
+def print_dict(name, d, ljust=32):
+    log("%s:", name)
+    for k in sorted(d.keys()):
+        v = d[k]
+        log("* %s : %s" % (str(k).ljust(ljust), nonl(v)))
 
-def init_module():
-    log("v4l2.pusher.init_module()")
 
-def cleanup_module():
-    log("v4l2.pusher.cleanup_module()")
+log("v4l2.pusher init")
+print_dict("FIELD_STR", FIELD_STR)
+print_dict("COLORSPACE_STR", COLORSPACE_STR)
+print_dict("FORMAT_STR", dict((hex(k),v) for k,v in FORMAT_STR.items()))
+
 
 def get_version():
     return 0
@@ -423,7 +433,3 @@ cdef class Pusher:
         self.device.write(buf[:self.framesize])
         self.device.flush()
         free(buf)
-
-
-def selftest(full=False):
-    pass
