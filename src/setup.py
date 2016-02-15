@@ -2211,6 +2211,8 @@ if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     x264_pkgconfig = pkgconfig("x264")
+    if get_gcc_version()>=[6, 0]:
+        add_to_keywords(x264_pkgconfig, 'extra_compile_args', "-Wno-unused-variable")
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx", buffers_c],
                 **x264_pkgconfig))
