@@ -1375,6 +1375,7 @@ class UIXpraClient(XpraClientBase):
             "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
             #window meta data and handling:
+            "generic_window_types"      : True,
             "server-window-move-resize" : True,
             "server-window-resize"      : True,
             #encoding related:
