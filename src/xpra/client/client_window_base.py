@@ -205,7 +205,11 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"size-constraints" in metadata:
             self.size_constraints = typedict(metadata.dictget("size-constraints"))
+            self._set_initial_position = self.size_constraints.boolget("set-initial-position", self._set_initial_position)
             self.set_size_constraints(self.size_constraints, self.max_window_size)
+
+        if b"set-initial-position" in metadata:
+            self._set_initial_position = metadata.boolget("set-initial-position")
 
         if b"transient-for" in metadata:
             wid = metadata.intget("transient-for", -1)
@@ -360,7 +364,6 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_size_constraints(self, size_constraints, max_window_size):
         metalog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
-        self._set_initial_position = size_constraints.boolget("set-initial-position")
         hints = typedict()
         for (a, h1, h2) in [
             (b"maximum-size", b"max_width", b"max_height"),

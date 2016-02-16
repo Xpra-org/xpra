@@ -73,10 +73,8 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             return {}
         return {propname : v}
     elif propname == "size-hints":
-        hints = raw()
-        if not hints:
-            return {}
-        return {"size-constraints": hints}
+        #just to confuse things, this is renamed:
+        return {"size-constraints": raw()}
     elif propname == "strut":
         strut = raw()
         if not strut:
@@ -116,7 +114,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname in ("iconic", "fullscreen", "maximized", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
         #always send these when requested
         return {propname : bool(raw())}
-    elif propname in ("has-alpha", "override-redirect", "tray", "shadow"):
+    elif propname in ("has-alpha", "override-redirect", "tray", "shadow", "set-initial-position"):
         v = raw()
         if v is False:
             #save space: all these properties are assumed false if unspecified

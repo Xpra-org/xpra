@@ -13,7 +13,13 @@ def main():
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 	window.set_size_request(width, height)
 	window.connect("delete_event", gtk.mainquit)
+	window.realize()
 	window.move(x, y)
+	from xpra.x11.gtk2.gdk_display_source import display
+	assert display
+	from xpra.x11.bindings.window_bindings import X11WindowBindings
+	hints = {"position" : (x, y)}
+	X11WindowBindings().setSizeHints(window.get_window().xid, hints)
 	window.show_all()
 	gtk.main()
 		

@@ -85,6 +85,10 @@ class WindowModel(BaseWindowModel):
         "requested-size": (gobject.TYPE_PYOBJECT,
                            "Client-requested size on screen", "",
                            gobject.PARAM_READABLE),
+        "set-initial-position": (gobject.TYPE_BOOLEAN,
+                                 "Should the requested position be honoured?", "",
+                                 False,
+                                 gobject.PARAM_READWRITE),
         # Toggling this property does not actually make the window iconified,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
@@ -124,7 +128,7 @@ class WindowModel(BaseWindowModel):
         })
 
     _property_names         = BaseWindowModel._property_names + [
-                              "size-hints", "icon-title", "icon", "decorations", "modal"]
+                              "size-hints", "icon-title", "icon", "decorations", "modal", "set-initial-position"]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
                               "size-hints", "icon-title", "icon", "decorations", "modal"]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
@@ -189,16 +193,16 @@ class WindowModel(BaseWindowModel):
         X11Window.Reparent(self.xid, self.corral_window.xid, 0, 0)
         self.client_reparented = True
 
-        log("setup() geometry")
+        geomlog("setup() geometry")
         w, h = X11Window.geometry_with_border(self.xid)[2:4]
         hints = self.get_property("size-hints")
-        log("setup() hints=%s size=%ix%i", hints, w, h)
+        geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = calc_constrained_size(w, h, hints)
         if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
             #we can't handle windows that big!
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
         self._updateprop("geometry", (x, y, nw, nh))
-        log("setup() resizing windows to %sx%s", nw, nh)
+        geomlog("setup() resizing windows to %sx%s", nw, nh)
         self.corral_window.resize(nw, nh)
         self.client_window.resize(nw, nh)
         self.client_window.show_unraised()
@@ -242,11 +246,17 @@ class WindowModel(BaseWindowModel):
         size_hints = self.get_property("size-hints")
         ax, ay = size_hints.get("position", (x, y))
         aw, ah = size_hints.get("size", (w, h))
-        log("initial X11 position and size: requested(%s, %s)=%s", (x, y, w, h), size_hints, (ax, ay, aw, ah))
+        geomlog("initial X11 position and size: requested(%s, %s)=%s", (x, y, w, h), size_hints, (ax, ay, aw, ah))
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
         set_if_unset("requested-position", (ax, ay))
         set_if_unset("requested-size", (aw, ah))
         set_if_unset("decorations", -1)
+        #it may have been set already:
+        try:
+            v = self.get_property("set-initial-position")
+        except:
+            v = False
+        self._internal_set_property("set-initial-position", v or ("position" in size_hints))
 
     def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
@@ -451,6 +461,7 @@ class WindowModel(BaseWindowModel):
         if cow!=w or coh!=h:
             #at least resized, check for move:
             if (x, y) != (0, 0):
+                self._internal_set_property("set-initial-position", True)
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
                 self.client_window.move(0, 0)
@@ -460,6 +471,7 @@ class WindowModel(BaseWindowModel):
                 self.corral_window.resize(w, h)
         #just position change:
         elif (x, y) != (0, 0):
+            self._internal_set_property("set-initial-position", True)
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
@@ -478,6 +490,8 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWY:
             y = event.y
             ry = y
+        if event.value_mask & CWX or event.value_mask & CWY:
+            self._internal_set_property("set-initial-position", True)
         self._updateprop("requested-position", (rx, ry))
 
         rw, rh = self.get_property("requested-size")
@@ -516,6 +530,7 @@ class WindowModel(BaseWindowModel):
                 w = event.data[3]
             if event.data[0] & 0x800:
                 h = event.data[4]
+            self._internal_set_property("set-initial-position", (event.data[0] & 0x100) or (event.data[0] & 0x200))
             #honour hints:
             hints = self.get_property("size-hints")
             w, h = calc_constrained_size(w, h, hints)

@@ -363,7 +363,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             capabilities["window.states"] = ["fullscreen", "maximized", "sticky", "above", "below", "shaded", "iconified", "skip-taskbar", "skip-pager"]
             ms = list(DEFAULT_METADATA_SUPPORTED)
             #added in 0.15:
-            ms += ["command", "workspace", "above", "below", "sticky"]
+            ms += ["command", "workspace", "above", "below", "sticky",
+                   "set-initial-position"]  #0.17
         if os.name=="posix":
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess

@@ -244,6 +244,7 @@ cdef extern from "X11/Xlib.h":
 
     XSizeHints *XAllocSizeHints()
     #Status XGetWMSizeHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return, Atom property)
+    void XSetWMNormalHints(Display *display, Window w, XSizeHints *hints)
     Status XGetWMNormalHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return)
     XWMHints *XGetWMHints(Display *display, Window w)
 
@@ -1044,6 +1045,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
     def getSizeHints(self, Window xwindow):
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
+        assert size_hints!=NULL
         if not XGetWMNormalHints(self.display, xwindow, size_hints, &supplied_return):
             XFree(size_hints)
             return None
@@ -1072,6 +1074,44 @@ cdef class _X11WindowBindings(_X11CoreBindings):
             hints["win_gravity"] = size_hints.win_gravity
         XFree(size_hints)
         return hints
+
+    def setSizeHints(self, Window xwindow, hints={}):
+        cdef XSizeHints *size_hints = XAllocSizeHints()
+        assert size_hints!=NULL
+        position = hints.get("position")
+        if position is not None:
+            size_hints.flags |= USPosition | PPosition
+            size_hints.x, size_hints.y = position
+        size = hints.get("size")
+        if size is not None:
+            size_hints.flags |= USSize | PSize
+            size_hints.width, size_hints.height = size
+        min_size = hints.get("min_size")
+        if min_size is not None:
+            size_hints.flags |= PMinSize
+            size_hints.min_width, size_hints.min_height = min_size
+        max_size = hints.get("max_size")
+        if max_size is not None:
+            size_hints.flags |= PMaxSize
+            size_hints.max_width, size_hints.max_height = max_size
+        base_size = hints.get("base_size")
+        if base_size is not None:
+            size_hints.flags |= PBaseSize
+            size_hints.base_width, size_hints.base_height = base_size
+        resize_inc = hints.get("resize_inc")
+        if resize_inc is not None:
+            size_hints.flags |= PResizeInc
+            size_hints.width_inc, size_hints.height_inc = resize_inc
+        aspect_ratio = hints.get("aspect-ratio")
+        if aspect_ratio is not None:
+            size_hints.flags |= PAspect
+            size_hints.min_aspect.x, size_hints.min_aspect.y = aspect_ratio
+        win_gravity = hints.get("win_gravity")
+        if win_gravity is not None:
+            size_hints.flags |= PWinGravity
+            size_hints.win_gravity = win_gravity
+        XSetWMNormalHints(self.display, xwindow, size_hints)
+        XFree(size_hints)
 
     def getWMHints(self, Window xwindow):
         cdef XWMHints *wm_hints = XGetWMHints(self.display, xwindow)
