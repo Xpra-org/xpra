@@ -42,6 +42,8 @@ MAX_SYNC_BUFFER_SIZE = int(os.environ.get("XPRA_MAX_SYNC_BUFFER_SIZE", "256"))*1
 AV_SYNC_RATE_CHANGE = int(os.environ.get("XPRA_AV_SYNC_RATE_CHANGE", "20"))
 AV_SYNC_TIME_CHANGE = int(os.environ.get("XPRA_AV_SYNC_TIME_CHANGE", "500"))
 
+LOG_THEME_DEFAULT_ICONS = os.environ.get("XPRA_LOG_THEME_DEFAULT_ICONS", "0")=="1"
+
 
 from xpra.util import updict
 from xpra.os_util import StringIOClass, memoryview_to_bytes
@@ -179,7 +181,9 @@ class WindowSource(object):
         self.window_icon_max_size = max(self.window_icon_max_size[0], 16), max(self.window_icon_max_size[1], 16)
         self.window_icon_size = min(self.window_icon_size[0], self.window_icon_max_size[0]), min(self.window_icon_size[1], self.window_icon_max_size[1])
         self.window_icon_size = max(self.window_icon_size[0], 16), max(self.window_icon_size[1], 16)
-        iconlog("client icon settings: size=%s, max_size=%s, theme_default_icons=%s", self.window_icon_size, self.window_icon_max_size, self.theme_default_icons)
+        iconlog("client icon settings: size=%s, max_size=%s", self.window_icon_size, self.window_icon_max_size)
+        if LOG_THEME_DEFAULT_ICONS:
+            iconlog("theme_default_icons=%s", self.theme_default_icons)
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
