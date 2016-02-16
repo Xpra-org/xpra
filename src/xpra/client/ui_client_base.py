@@ -2505,6 +2505,7 @@ class UIXpraClient(XpraClientBase):
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
+        geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s", wid, override_redirect, packet[2:6], (x, y, ww, wh, bw, bh))
         self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
     def cook_metadata(self, new_window, metadata):
