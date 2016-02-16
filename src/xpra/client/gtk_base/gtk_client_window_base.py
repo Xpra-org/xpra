@@ -258,9 +258,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.setup_window(self, *args)
 
         #try to honour the initial position
+        geomlog("setup_window() position=%s, set_initial_position=%s", self._pos, self._set_initial_position)
         if self._pos!=(0, 0) or self._set_initial_position:
             x,y = self._pos
-            geomlog("setup_window() initial position=%s", self._pos)
             if not self.is_OR() and self.get_decorated():
                 #try to adjust for window frame size if we can figure it out:
                 #Note: we cannot just call self.get_window_frame_size() here because
