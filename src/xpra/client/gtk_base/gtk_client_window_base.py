@@ -257,8 +257,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #this will create the backing:
         ClientWindowBase.setup_window(self, *args)
 
-        #honour the initial position if the flag is set
-        #(or just if non zero, for older servers)
+        #try to honour the initial position
         if self._pos!=(0, 0) or self._set_initial_position:
             x,y = self._pos
             geomlog("setup_window() initial position=%s", self._pos)

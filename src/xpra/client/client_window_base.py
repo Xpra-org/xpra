@@ -78,7 +78,7 @@ class ClientWindowBase(ClientWidgetBase):
         workspacelog("init_window(..) workspace=%s, current workspace=%s", wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and b"size-constraints" not in metadata:
             #this ensures that we will set size-constraints and honour max_window_size:
-            metadata[b"size-constraints"] = {}
+            metadata[b"size-constraints"] = typedict()
 
 
     def get_desktop_workspace(self):
@@ -360,7 +360,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_size_constraints(self, size_constraints, max_window_size):
         metalog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
-        self._set_initial_position = size_constraints.get("set-initial-position")
+        self._set_initial_position = size_constraints.boolget("set-initial-position")
         hints = typedict()
         for (a, h1, h2) in [
             (b"maximum-size", b"max_width", b"max_height"),
