@@ -236,10 +236,16 @@ class WindowModel(BaseWindowModel):
                 self._internal_set_property(propname, value)
         net_wm_state = self.get_property("state")
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
-        geometry = X11Window.getGeometry(self.xid)
+        #initial position and size, from the Window object,
+        #but allow size hints to override it is specified
+        x, y, w, h = X11Window.getGeometry(self.xid)[:4]
+        size_hints = self.get_property("size-hints")
+        ax, ay = size_hints.get("position", (x, y))
+        aw, ah = size_hints.get("size", (w, h))
+        log("initial X11 position and size: requested(%s, %s)=%s", (x, y, w, h), size_hints, (ax, ay, aw, ah))
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
-        set_if_unset("requested-position", (geometry[0], geometry[1]))
-        set_if_unset("requested-size", (geometry[2], geometry[3]))
+        set_if_unset("requested-position", (ax, ay))
+        set_if_unset("requested-size", (aw, ah))
         set_if_unset("decorations", -1)
 
     def do_unmanaged(self, wm_exiting):
