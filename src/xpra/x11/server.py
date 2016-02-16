@@ -891,7 +891,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.last_client_configure_event = time.time()
             if len(packet)>=9:
                 changes = self._set_window_state(proto, wid, window, packet[8])
-                metadatalog("window state changes: %s", changes)
                 damage = len(changes)>0
             if not skip_geometry:
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
