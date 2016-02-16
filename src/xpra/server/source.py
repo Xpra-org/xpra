@@ -54,6 +54,7 @@ except:
 AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
+PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
@@ -1153,7 +1154,7 @@ class ServerSource(object):
     # xpra window metadata values that depend on that property
     def _make_metadata(self, wid, window, propname):
         if propname not in self.metadata_supported:
-            metalog("make_metadata: client does not support %s, skipped", propname)
+            metalog("make_metadata: client does not support '%s'", propname)
             return {}
         return make_window_metadata(window, propname,
                                         get_transient_for=self.get_transient_for,
@@ -1791,10 +1792,13 @@ class ServerSource(object):
         if prop=="icon":
             self.send_window_icon(wid, window)
         else:
-            metadata = self._make_metadata(wid, window, prop)
-            metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
-            if len(metadata)>0:
-                self.send("window-metadata", wid, metadata)
+            v = self._make_metadata(wid, window, prop)
+            if prop in PROPERTIES_DEBUG:
+                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+            else:
+                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+            if len(v)>0:
+                self.send("window-metadata", wid, v)
 
     def reset_window_filters(self):
         self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
@@ -1845,9 +1849,14 @@ class ServerSource(object):
         if send_raw_icon:
             send_props.remove("icon")
         metadata = {}
-        for propname in send_props:
-            metadata.update(self._make_metadata(wid, window, propname))
-        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata=%s", ptype, window, wid, x, y, w, h, client_properties, metadata)
+        for prop in send_props:
+            v = self._make_metadata(wid, window, prop)
+            if prop in PROPERTIES_DEBUG:
+                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+            else:
+                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+            metadata.update(v)
+        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
