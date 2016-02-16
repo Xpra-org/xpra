@@ -783,6 +783,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
+        if not new_window_state:
+            return []
         metadatalog("set_window_state%s", (wid, window, new_window_state))
         changes = []
         if "frame" in new_window_state:
