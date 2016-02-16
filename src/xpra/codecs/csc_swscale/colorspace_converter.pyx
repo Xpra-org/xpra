@@ -52,12 +52,6 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_RGB24
     AVPixelFormat AV_PIX_FMT_BGR24
     AVPixelFormat AV_PIX_FMT_NONE
-    unsigned int SWS_ACCURATE_RND
-    unsigned int SWS_BICUBIC
-    unsigned int SWS_BICUBLIN
-    unsigned int SWS_BILINEAR
-    unsigned int SWS_FAST_BILINEAR
-    unsigned int SWS_FULL_CHR_H_INT
 
 ctypedef void SwsContext
 cdef extern from "libswscale/swscale.h":
