@@ -262,6 +262,7 @@ class SoundPipeline(gobject.GObject):
                 self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_DURATION:
             if gst_major_version==0:
+                d = message.parse_duration()
                 try:
                     v = d[1]
                     if v>0:
