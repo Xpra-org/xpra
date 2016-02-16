@@ -79,7 +79,7 @@ class GTK2WindowBase(GTKClientWindowBase):
             screen_num = self._client_properties.get("screen", -1)
             n = display.get_n_screens()
             log("setup_window%s screen=%s, nscreens=%s", args, screen_num, n)
-            if screen_num>=0 and screen_num<n:
+            if screen_num>=0 and screen_num<n and n>0:
                 screen = display.get_screen(screen_num)
                 if screen:
                     self.set_screen(screen)
