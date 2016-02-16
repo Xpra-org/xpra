@@ -50,7 +50,9 @@ cdef extern from "libavcodec/version.h":
 ctypedef unsigned int AVCodecID
 ctypedef long AVPixelFormat
 
-cdef extern from "libavcodec/avcodec.h":
+
+cdef extern from "libavutil/pixfmt.h":
+    AVPixelFormat AV_PIX_FMT_NONE
     AVPixelFormat AV_PIX_FMT_YUV420P
     AVPixelFormat AV_PIX_FMT_YUV422P
     AVPixelFormat AV_PIX_FMT_YUV444P
@@ -61,6 +63,7 @@ cdef extern from "libavcodec/avcodec.h":
     AVPixelFormat AV_PIX_FMT_BGRA
     AVPixelFormat AV_PIX_FMT_GBRP
 
+cdef extern from "libavcodec/avcodec.h":
     int CODEC_FLAG2_FAST
 
     ctypedef struct AVFrame:
@@ -87,7 +90,6 @@ cdef extern from "libavcodec/avcodec.h":
         int flags2
         int refcounted_frames
 
-    AVPixelFormat AV_PIX_FMT_NONE
     AVCodecID AV_CODEC_ID_H264
     AVCodecID AV_CODEC_ID_H265
     AVCodecID AV_CODEC_ID_VP8
