@@ -35,7 +35,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._pos = (x, y)
         self._size = (ww, wh)
         self._client_properties = client_properties
-        self._set_initial_position = False
+        self._set_initial_position = metadata.boolget("set-initial-position", False)
         self.size_constraints = typedict()
         self.geometry_hints = {}
         self._fullscreen = None
@@ -213,6 +213,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_size_constraints(self.size_constraints, self.max_window_size)
 
         if b"set-initial-position" in metadata:
+            #this should be redundant - but we keep it here for consistency
             self._set_initial_position = metadata.boolget("set-initial-position")
 
         if b"transient-for" in metadata:
