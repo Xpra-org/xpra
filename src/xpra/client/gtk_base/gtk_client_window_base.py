@@ -139,6 +139,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         self._current_frame_extents = None
+        self._screen = -1
         #add platform hooks
         self.on_realize_cb = {}
         self.connect_after("realize", self.on_realize)
@@ -839,7 +840,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         workspace = self.get_window_workspace()
         workspacelog("process_map_event() workspace=%s, been_mapped=%s", workspace, self._been_mapped)
         if self._been_mapped:
-            props["screen"] = self.get_screen().get_number()
+            screen = self.get_screen().get_number()
+            if screen!=self._screen:
+                props["screen"] = screen
+                self._screen = screen
             if workspace is None:
                 #not set, so assume it is on the current workspace:
                 workspace = self.get_desktop_workspace()
@@ -918,7 +922,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         if self._been_mapped:
             #if the window has been mapped already, the workspace should be set:
-            props["screen"] = self.get_screen().get_number()
+            screen = self.get_screen().get_number()
+            if screen!=self._screen:
+                props["screen"] = screen
+                self._screen = screen
             workspace = self.get_window_workspace()
             if self._window_workspace!=workspace and workspace is not None:
                 workspacelog("configure event: changed workspace from %s to %s", wn(self._window_workspace), wn(workspace))
