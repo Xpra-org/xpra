@@ -261,7 +261,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #(or just if non zero, for older servers)
         if self._pos!=(0, 0) or self._set_initial_position:
             x,y = self._pos
-            if not self.is_OR():
+            geomlog("setup_window() initial position=%s", self._pos)
+            if not self.is_OR() and self.get_decorated():
                 #try to adjust for window frame size if we can figure it out:
                 #Note: we cannot just call self.get_window_frame_size() here because
                 #the window is not realized yet, and it may take a while for the window manager
@@ -269,12 +270,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 wfs = self._client.get_window_frame_sizes()
                 dx, dy = 0, 0
                 if wfs:
-                    log("setup_window() window frame sizes=%s", wfs)
+                    geomlog("setup_window() window frame sizes=%s", wfs)
                     v = wfs.get("offset")
                     if v:
                         dx, dy = v
                         x = max(0, x-dx)
                         y = max(0, y-dy)
+                        self._pos = x, y
+                        geomlog("setup_window() adjusted initial position=%s", self._pos)
             self.move(x, y)
         self.set_default_size(*self._size)
 
