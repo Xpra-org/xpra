@@ -22,6 +22,7 @@ metalog = Logger("metadata")
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 SIMULATE_MOUSE_DOWN = os.environ.get("XPRA_SIMULATE_MOUSE_DOWN", "1")=="1"
+PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -168,6 +169,9 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_metadata(self, metadata):
         metalog("set_metadata(%s)", metadata)
+        debug_props = [x for x in PROPERTIES_DEBUG if x in metadata.keys()]
+        for x in debug_props:
+            metalog.info("set_metadata: %s=%s", x, metadata.get(x))
         #WARNING: "class-instance" needs to go first because others may realize the window
         #(and GTK doesn't set the "class-instance" once the window is realized)
         if b"class-instance" in metadata:
