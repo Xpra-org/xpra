@@ -76,12 +76,12 @@ def get_info():
 
 #default implementation uses pycups:
 from xpra.platform import platform_import
-try:
-    from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info
-    assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
-except Exception as e:
-    #ignore the error on win32:
-    if not sys.platform.startswith("win"):
+if not sys.platform.startswith("win"):
+    #pycups is not available on win32
+    try:
+        from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info
+        assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
+    except Exception as e:
         err("Error: printing disabled:")
         err(" %s", e)
 
