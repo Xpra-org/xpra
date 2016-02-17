@@ -743,7 +743,8 @@ class ServerCore(object):
                         auth_failed("invalid state, unexpected challenge response")
                         return False
                     salt, digest = challenge
-                    authlog.info("Authentication required, %s sending challenge for '%s' using digest %s", proto.authenticator, username, digest)
+                    authlog.info("Authentication required by %s authenticator module", proto.authenticator)
+                    authlog.info(" sending challenge for '%s' using %s digest", username, digest)
                     if digest not in self.digest_modes:
                         auth_failed("cannot proceed without %s digest support" % digest)
                         return False

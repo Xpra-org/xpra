@@ -95,7 +95,7 @@ class Authenticator(SysAuthenticator):
         return check(self.username, password)
 
     def __repr__(self):
-        return "PAM Authenticator"
+        return "PAM"
 
 
 def main(args):

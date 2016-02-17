@@ -11,7 +11,7 @@ assert init
 class Authenticator(SysAuthenticator):
 
     def __repr__(self):
-        return "Allow Authenticator"
+        return "allow"
 
     def get_challenge(self):
         return get_hex_uuid(), "hmac"

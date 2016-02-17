@@ -12,4 +12,4 @@ class Authenticator(object):
         raise Exception("failing")
 
     def __repr__(self):
-        return "Fail Authenticator"
+        return "fail"

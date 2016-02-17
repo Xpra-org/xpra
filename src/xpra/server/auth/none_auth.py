@@ -28,4 +28,4 @@ class Authenticator(SysAuthenticator):
         return True
 
     def __repr__(self):
-        return "None Authenticator"
+        return "none"

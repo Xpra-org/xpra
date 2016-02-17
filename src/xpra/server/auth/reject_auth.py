@@ -36,4 +36,4 @@ class Authenticator(object):
         return None
 
     def __repr__(self):
-        return "Reject Authenticator"
+        return "reject"

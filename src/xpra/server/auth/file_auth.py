@@ -186,7 +186,7 @@ class Authenticator(object):
         return self.sessions
 
     def __repr__(self):
-        return "Password File Authenticator"
+        return "password file"
 
 
 

@@ -24,4 +24,4 @@ class Authenticator(SysAuthenticator):
         win32security.LogonUser(self.username, '', password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
 
     def __repr__(self):
-        return "Win32 Authenticator"
+        return "win32"
