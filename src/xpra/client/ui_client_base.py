@@ -431,7 +431,7 @@ class UIXpraClient(XpraClientBase):
 
         if opts.border:
             self.parse_border(opts.border, extra_args)
-        if opts.window_close not in ("forward", "ignore", "disconnect", "shutdown"):
+        if opts.window_close not in ("forward", "ignore", "disconnect", "shutdown", "auto"):
             self.window_close_action = "forward"
             log.warn("Warning: invalid 'window-close' option: '%s'", opts.window_close)
             log.warn(" using '%s'", self.window_close_action)
@@ -1246,6 +1246,27 @@ class UIXpraClient(XpraClientBase):
             self.quit(0)
         elif self.window_close_action=="shutdown":
             self.send("shutdown-server", "shutdown on window close")
+        elif self.window_close_action=="auto":
+            #forward unless this looks like a desktop
+            #this allows us behave more like VNC:
+            window = self._id_to_window.get(wid)
+            log("window_close_event(%i) window=%s", wid, window)
+            if window:
+                metadata = getattr(window, "_metadata", {})
+                log("window_close_event(%i) metadata=%s", wid, metadata)
+                class_instance = metadata.get("class-instance")
+                title = metadata.get("title")
+                log("window_close_event(%i) title=%s, class-instance(%s)=%s", wid, title, class_instance)
+                if title=="Xnest":
+                    log.info("window-close event on %s window, disconnecting", title)
+                    self.quit(0)
+                    return True
+                if class_instance and class_instance[0] in ("Xephyr", ):
+                    log.info("window-close event on %s window, disconnecting", class_instance[0])
+                    self.quit(0)
+                    return True
+            #default to forward:
+            self.send("close-window", wid)
         else:
             log.warn("unknown close-window action: %s", self.window_close_action)            
         return True

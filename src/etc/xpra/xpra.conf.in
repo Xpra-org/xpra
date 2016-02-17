@@ -322,7 +322,7 @@ key-shortcut = Meta+Shift+degree:scalereset
 # window-close = ignore
 # window-close = disconnect
 # window-close = ask
-window-close = forward
+window-close = auto
 
 # Desktop Scaling:
 # - double the size of all windows:
