@@ -39,7 +39,7 @@ class Worker_Thread(Thread):
         else:
             if self.items.qsize()>0:
                 log.info("waiting for %s items in work queue to complete", self.items.qsize())
-        debug("Worker_Thread.stop(%s) %s items in work queue: ", force, self.items)
+        debug("Worker_Thread.stop(%s) %s items in work queue", force, self.items)
         self.items.put(None)
 
     def add(self, item):
@@ -52,14 +52,15 @@ class Worker_Thread(Thread):
         while not self.exit:
             item = self.items.get()
             if item is None:
+                debug("Worker_Thread.run() found end of queue marker")
                 self.exit = True
                 break
             try:
                 debug("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
                 item()
             except:
-                log.error("Worker_Thread.run() error on %s", item, exc_info=True)
-        debug("Worker_Thread.run() ended")
+                log.error("Error in worker thread processing item %s", item, exc_info=True)
+        debug("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
 
 #only one worker thread for now:
 singleton = None
