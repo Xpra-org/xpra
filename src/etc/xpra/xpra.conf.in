@@ -362,6 +362,7 @@ log-file = $DISPLAY.log
 # examples:
 #start-child = /usr/bin/xterm
 #start-child = /usr/bin/xeyes
+#start=/bin/true
 #
 # Xsession can take care of initializing dbus, keyring-daemon,
 # gpg-agent or whatever else might be usually started together with X
@@ -374,6 +375,10 @@ log-file = $DISPLAY.log
 # when using exit-with-children.
 # This causes the server to terminate when the last child has exited:
 exit-with-children = no
+
+# Should the server wait for the first client to connect
+# before starting the commands specified?
+start-after-connect = no
 
 # Start a dbus-daemon:
 # dbus-launch =

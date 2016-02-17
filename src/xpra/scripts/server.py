@@ -1123,14 +1123,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             error_cb("failed to setup websockify html server: %s" % e)
         if opts.exit_with_children:
             assert opts.start_child, "exit-with-children was specified but start-child is missing!"
-        if opts.start:
-            for x in opts.start:
-                if x:
-                    app.start_child(x, x, ignore=True, shell=True)
-        if opts.start_child:
-            for x in opts.start_child:
-                if x:
-                    app.start_child(x, x, ignore=False, shell=True)
+        app.start_after_connect = opts.start_after_connect
+        app.start_commands = opts.start
+        app.start_child_commands = opts.start_child
+        if not app.start_after_connect:
+            app.exec_commands()
 
     log("%s(%s)", app.init_sockets, sockets)
     app.init_sockets(sockets)

@@ -15,7 +15,9 @@ xpra \- viewer for remote, persistent X applications
 .PD 0
 .HP \w'xpra\ 'u
 \fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP
-[\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
+[\fB\-\-start\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
+[\fB\-\-start\-child\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
+[\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
@@ -116,8 +118,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
 .HP
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
-[\fB\-\-start\fP=\fICMD\fP]\fB .\|.\|.\fP
-[\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
@@ -656,6 +656,10 @@ start multiple commands.
 \fB\-\-start\-child\fP=\fICMD\fP
 Identical to \fB\-\-start\fP, except that the commands are taken into
 account by \fB\-\-exit\-with\-children\fP.
+.TP
+\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP
+Wait for the first client to connect before starting the \fB\-\-start\fP
+and \fB\-\-start\-child\fP commands. 
 .TP
 \fB\-\-exit\-with\-children\fP
 This option may only be used if \fB\-\-start\-child\fP is also

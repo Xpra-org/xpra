@@ -244,6 +244,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                       help="program to spawn in new server, taken into account by the exit-with-children option (may be repeated). Default: %default.")
+    legacy_bool_parse("start-after-connect")
+    group.add_option("--start-after-connect", action="store",
+                      dest="start_after_connect", default=defaults.start_after_connect,
+                      help="Wait for the first client to connect to start the commands. Default: %default.")
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                       help="Wrapper for executing commands. Default: %default.")

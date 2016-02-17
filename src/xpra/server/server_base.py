@@ -130,6 +130,11 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.dbus_server = None
         self.lpadmin = ""
         self.lpinfo = ""
+        #starting child commands:
+        self.start_commands_started = False
+        self.start_after_connect= False
+        self.start_commands = []
+        self.start_child_commands = []
         self.exit_with_children = False
         self.start_new_commands = False
         self.remote_logging = False
@@ -742,6 +747,18 @@ class ServerBase(ServerCore, FileTransferHandler):
             return cmd
         return self.exec_wrapper + cmd
 
+    def exec_commands(self):
+        self.start_commands_started = True
+        log("exec_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
+        if self.start_commands:
+            for x in self.start_commands:
+                if x:
+                    self.start_child(x, x, ignore=True, shell=True)
+        if self.start_child_commands:
+            for x in self.start_child_commands:
+                if x:
+                    self.start_child(x, x, ignore=False, shell=True)
+
     def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
         log("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
         import subprocess
@@ -1043,9 +1060,13 @@ class ServerBase(ServerCore, FileTransferHandler):
         if send_ui:
             # now we can set the modifiers to match the client
             self.send_windows_and_cursors(ss, share_count>0)
+        self.client_startup_complete(ss)
 
+    def client_startup_complete(self, ss):
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
+        if self.start_after_connect and not self.start_commands_started:
+            self.exec_commands()
 
     def do_parse_screen_info(self, ss):
         dw, dh = None, None
