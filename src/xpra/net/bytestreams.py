@@ -266,7 +266,7 @@ class SocketConnection(Connection):
             log.warn("failed to get socket information", exc_info=True)
         return d
 
-def set_socket_timeout(self, conn, timeout=None):
+def set_socket_timeout(conn, timeout=None):
     #FIXME: this is ugly, but less intrusive than the alternative?
     log("set_socket_timeout(%s, %s)", conn, timeout)
     if isinstance(conn, SocketConnection):
