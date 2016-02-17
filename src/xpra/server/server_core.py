@@ -531,7 +531,8 @@ class ServerCore(object):
         client_connection.set_active(True)
         #and we can use blocking sockets:
         set_socket_timeout(client_connection, None)
-        sock.settimeout(None)
+        #prevent deadlocks on exit:
+        sock.settimeout(1)
 
         proxylog("pushing initial buffer to its new destination: %s", repr_ellipsized(data))
         web_server_connection.write(data)
