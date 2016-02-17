@@ -16,8 +16,8 @@ if py3:
     unicode = str       #@ReservedAssignment
 
 
-def err(*args):
-    log.error(*args)
+def err(*args, **kwargs):
+    log.error(*args, **kwargs)
 
 def get_printers():
     return {}

@@ -29,7 +29,7 @@ from xpra.version_util import version_compat_check, get_version_info, local_vers
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
 from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, dump_all_frames
-from xpra.net.file_transfer import HAS_PRINTING, FileTransferHandler
+from xpra.net.file_transfer import FileTransferHandler
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -642,8 +642,6 @@ class XpraClientBase(FileTransferHandler):
                 self.timeout_add(1000, self.init_printing)
 
     def init_printing(self):
-        if not HAS_PRINTING:
-            return
         try:
             from xpra.platform.printing import init_printing
             printlog("init_printing=%s", init_printing)
@@ -659,7 +657,7 @@ class XpraClientBase(FileTransferHandler):
             self.printing = False
 
     def cleanup_printing(self):
-        if not HAS_PRINTING:
+        if not self.printing:
             return
         try:
             from xpra.platform.printing import cleanup_printing

@@ -44,7 +44,7 @@ from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTION
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
-from xpra.net.file_transfer import HAS_PRINTING, FileTransferHandler
+from xpra.net.file_transfer import FileTransferHandler
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
@@ -231,7 +231,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.av_sync = opts.av_sync
         self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
-        self.printing = os.name=="posix" and HAS_PRINTING and opts.printing
+        self.printing = os.name=="posix" and opts.printing
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
         self.notifications_forwarder = None
@@ -329,6 +329,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.default_encoding = cmdline_encoding
 
     def init_printing(self):
+        if not self.printing:
+            return
         try:
             from xpra.platform import pycups_printing
             pycups_printing.set_lpadmin_command(self.lpadmin)

@@ -13,13 +13,6 @@ filelog = Logger("file")
 from xpra.child_reaper import getChildReaper
 from xpra.util import typedict, csv
 
-try:
-    import xpra.platform.printing
-    assert xpra.platform.printing
-    HAS_PRINTING = True
-except:
-    HAS_PRINTING = False
-
 DELETE_PRINTER_FILE = os.environ.get("XPRA_DELETE_PRINTER_FILE", "1")=="1"
 
 
