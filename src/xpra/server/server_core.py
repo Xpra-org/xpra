@@ -39,7 +39,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import typedict, updict, repr_ellipsized, \
+from xpra.util import typedict, updict, repr_ellipsized, dump_all_frames, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -327,16 +327,7 @@ class ServerCore(object):
             os_util.force_quit()
         self.timeout_add(5000, force_quit)
         log("clean_quit(..) quit timers scheduled")
-        self.log_exit_state()
-
-    def log_exit_state(self):
-        frames = sys._current_frames()
-        log("clean_quit() after cleanup, found %s frames:", len(frames))
-        for i,(fid,frame) in enumerate(frames.items()):
-            log("%i: %s - %s:", i, fid, frame)
-            for x in traceback.format_stack(frame):
-                for l in x.splitlines():
-                    log("%s", l)
+        dump_all_frames()
 
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
@@ -345,6 +336,7 @@ class ServerCore(object):
         sys.stdout.flush()
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
+        dump_all_frames()
 
     def do_quit(self):
         raise NotImplementedError()
