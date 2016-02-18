@@ -67,7 +67,7 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
         pass
 
 
-UNDECORATED_TRANSIENT_IS_OR = os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "1")=="0"
+UNDECORATED_TRANSIENT_IS_OR = os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "0")=="1"
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((
