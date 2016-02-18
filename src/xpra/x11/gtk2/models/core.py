@@ -604,8 +604,8 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         if name is None:
             name = self.prop_get("WM_NAME", "latin1", True)
             metalog("WM_NAME=%s", name)
-        self._updateprop("title", sanestr(name))
-        metalog("wm_name changed")
+        if self._updateprop("title", sanestr(name)):
+            metalog("wm_name changed")
 
     def _handle_role_change(self):
         role = self.prop_get("WM_WINDOW_ROLE", "latin1")
