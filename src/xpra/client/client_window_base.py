@@ -79,7 +79,7 @@ class ClientWindowBase(ClientWidgetBase):
         workspacelog("init_window(..) workspace=%s, current workspace=%s", wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and b"size-constraints" not in metadata:
             #this ensures that we will set size-constraints and honour max_window_size:
-            metadata[b"size-constraints"] = typedict()
+            metadata[b"size-constraints"] = {}
 
 
     def get_desktop_workspace(self):
