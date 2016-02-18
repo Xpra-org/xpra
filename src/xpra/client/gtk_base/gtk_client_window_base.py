@@ -67,7 +67,7 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
         pass
 
 
-UNDECORATED_TRANSIENT_IS_OR = os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "0")=="1"
+UNDECORATED_TRANSIENT_IS_OR = int(os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "1"))
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((
@@ -176,12 +176,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #decide if the window type is POPUP or NORMAL
         if self._override_redirect:
             return True
-        if UNDECORATED_TRANSIENT_IS_OR:
+        if UNDECORATED_TRANSIENT_IS_OR>0:
             transient_for = metadata.get("transient-for", -1)
             decorations = metadata.get("decorations", 0)
             if transient_for>0 and decorations<=0:
-                metalog("forcing POPUP window type for transient-for=%s, decorations=%s", transient_for, decorations)
-                return True
+                if UNDECORATED_TRANSIENT_IS_OR>1:
+                    metalog("forcing POPUP type for window transient-for=%s", transient_for)
+                    return True
+                if metadata.get("skip-taskbar"):
+                    #look for java AWT
+                    wm_class = metadata.get("class-instance")
+                    if wm_class and len(wm_class)==2 and wm_class[0].startswith("sun-awt-X11"):
+                        metalog("forcing POPUP type for Java AWT skip-taskbar window, transient-for=%s", transient_for)
+                        return True
         window_types = metadata.strlistget("window-type", [])
         popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
         metalog("popup_types(%s)=%s", window_types, popup_types)
