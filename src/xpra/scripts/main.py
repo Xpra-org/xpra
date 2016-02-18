@@ -454,7 +454,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
                       help="Allow more than one client to connect to the same session. Default: %s." % enabled_str(defaults.sharing))
-    group.add_option("--remote-logging", action="store", metavar="yes|no",
+    group.add_option("--remote-logging", action="store", metavar="yes|no|both",
                       dest="remote_logging", default=defaults.remote_logging,
                       help="Forward all the client's log output to the server. Default: %s." % enabled_str(defaults.remote_logging))
     legacy_bool_parse("speaker")

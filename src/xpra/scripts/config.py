@@ -304,6 +304,7 @@ OPTION_TYPES = {
                     "tcp-proxy"         : str,
                     "download-path"     : str,
                     "open-command"      : str,
+                    "remote-logging"    : str,
                     "lpadmin"           : str,
                     "lpinfo"            : str,
                     "pdf-printer"       : str,
@@ -366,7 +367,6 @@ OPTION_TYPES = {
                     "open-files"        : bool,
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
-                    "remote-logging"    : bool,
                     "shadow-fullscreen" : bool,
                     "global-menus"      : bool,
                     #arrays of strings:
@@ -451,6 +451,7 @@ def get_defaults():
                     "tcp-proxy"         : "",
                     "download-path"     : get_download_dir(),
                     "open-command"      : OPEN_COMMAND,
+                    "remote-logging"    : "both",
                     "lpadmin"           : "/usr/sbin/lpadmin",
                     "lpinfo"            : "/usr/sbin/lpinfo",
                     "pdf-printer"       : "",
@@ -502,7 +503,6 @@ def get_defaults():
                     "exit-with-client"  : False,
                     "start-after-connect": False,
                     "start-new-commands": False,
-                    "remote-logging"    : WIN32 or OSX,
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "dbus-control"      : not WIN32 and not OSX,
@@ -560,8 +560,8 @@ CLONES = {}
 NO_FILE_OPTIONS = ["daemon"]
 
 
-TRUE_OPTIONS = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS = ("no", "false", "0", "off", False)
+TRUE_OPTIONS = ["yes", "true", "1", "on", True]
+FALSE_OPTIONS = ["no", "false", "0", "off", False]
 def parse_bool(k, v):
     if type(v)==str:
         v = v.lower()
