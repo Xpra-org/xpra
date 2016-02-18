@@ -22,6 +22,7 @@ log = Logger("server", "util")
 BUGGY_PYTHON = sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
 USE_PROCESS_POLLING = os.name!="posix" or os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or BUGGY_PYTHON
 POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
+POLL_WARNING = os.environ.get("XPRA_POLL_WARNING", "1")=="1"
 
 
 singleton = None
@@ -61,7 +62,7 @@ class ChildReaper(object):
         self._quit = quit_cb
         self._proc_info = []
         if USE_PROCESS_POLLING:
-            if BUGGY_PYTHON:
+            if POLL_WARNING and BUGGY_PYTHON:
                 log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
                 log.warn(" switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
             else:

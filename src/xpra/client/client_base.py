@@ -74,6 +74,9 @@ class XpraClientBase(FileTransferHandler):
             self.defaults_init()
 
     def defaults_init(self):
+        #skip warning when running the client
+        from xpra import child_reaper
+        child_reaper.POLL_WARNING = False
         getChildReaper()
         crypto_backend_init()
         log("XpraClientBase.defaults_init() os.environ:")
