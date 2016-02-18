@@ -274,6 +274,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if source.wants_features:
             capabilities["pointer.grabs"] = True
             updict(capabilities, "window", {
+                "decorations"            : True,
                 "frame-extents"          : True,
                 "raise"                  : True,
                 "resize-counter"         : True,

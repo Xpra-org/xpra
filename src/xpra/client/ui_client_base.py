@@ -236,6 +236,7 @@ class UIXpraClient(XpraClientBase):
         self.server_dbus_proxy = False
         self.server_rpc_types = []
         self.start_new_commands = False
+        self.server_window_decorations = False
         self.server_window_frame_extents = False
         self.server_is_shadow = False
         self.server_supports_sharing = False
@@ -1687,6 +1688,7 @@ class UIXpraClient(XpraClientBase):
         set_name("Xpra", self.session_name or "Xpra")
         self.window_configure_skip_geometry = c.boolget("window.configure.skip-geometry")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
+        self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_supports_notifications = c.boolget("notifications")
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications

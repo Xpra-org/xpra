@@ -199,6 +199,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if decorations is not None:
             #honour the flag given by the server:
             return bool(decorations)
+        if self._client.server_window_decorations:
+            #rely on the server to tell us when to turn decorations off
+            return True
         #older servers don't tell us if we need decorations, so take a guess:
         #skip decorations for any non-normal non-dialog window that is transient for another window:
         window_types = metadata.strlistget("window-type", [])
