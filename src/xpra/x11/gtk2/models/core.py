@@ -34,6 +34,7 @@ geomlog = Logger("x11", "window", "geometry")
 X11Window = X11WindowBindings()
 ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK
 USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
+FORCE_QUIT = os.environ.get("XPRA_FORCE_QUIT", "1")=="1"
 
 # grab stuff:
 NotifyNormal        = constants["NotifyNormal"]
@@ -781,9 +782,13 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         else:
             title = self.get_property("title")
             xid = self.get_property("xid")
-            log.warn("window %#x ('%s') does not support WM_DELETE_WINDOW... using force_quit", xid, title)
-            # You don't wanna play ball?  Then no more Mr. Nice Guy!
-            self.force_quit()
+            if FORCE_QUIT:
+                log.warn("window %#x ('%s') does not support WM_DELETE_WINDOW... using force_quit", xid, title)
+                # You don't wanna play ball?  Then no more Mr. Nice Guy!
+                self.force_quit()
+            else:
+                log.warn("window %#x cannot be closed, it does not support WM_DELETE_WINDOW")
+                log.warn(" add FORCE_QUIT is disabled")
 
     def force_quit(self):
         pid = self.get_property("pid")
