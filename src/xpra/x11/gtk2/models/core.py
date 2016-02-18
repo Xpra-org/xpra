@@ -787,8 +787,9 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
                 # You don't wanna play ball?  Then no more Mr. Nice Guy!
                 self.force_quit()
             else:
-                log.warn("window %#x cannot be closed, it does not support WM_DELETE_WINDOW")
-                log.warn(" add FORCE_QUIT is disabled")
+                log.warn("window %#x ('%s') cannot be closed,", xid, title)
+                log.warn(" it does not support WM_DELETE_WINDOW")
+                log.warn(" and FORCE_QUIT is disabled")
 
     def force_quit(self):
         pid = self.get_property("pid")
