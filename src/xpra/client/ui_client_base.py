@@ -50,7 +50,7 @@ from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_i
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
-from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
@@ -254,6 +254,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_bell = False
         self.client_supports_sharing = False
         self.client_supports_remote_logging = False
+        self.log_both = False
         self.notifications_enabled = False
         self.clipboard_enabled = False
         self.cursors_enabled = False
@@ -377,7 +378,8 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
-        self.client_supports_remote_logging = opts.remote_logging
+        self.log_both = (opts.remote_logging or "").lower()=="both"
+        self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
 
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
@@ -1674,9 +1676,10 @@ class UIXpraClient(XpraClientBase):
         if not XpraClientBase.parse_server_capabilities(self):
             return  False
         c = self.server_capabilities
-        #enable remote logging asap:
         if self.client_supports_remote_logging and c.boolget("remote-logging"):
-            log.info("enabled remote logging, see server log file for output")
+            log.info("enabled remote logging")
+            if not self.log_both:
+                log.info(" see server log file for further output")
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
@@ -1903,6 +1906,8 @@ class UIXpraClient(XpraClientBase):
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
                     self.send("logging", level, str(x))
+            if self.log_both:
+                self.local_logging(log, level, msg, *args, **kwargs)
         except Exception as e:
             if self.exit_code is not None:
                 #errors can happen during exit, don't care

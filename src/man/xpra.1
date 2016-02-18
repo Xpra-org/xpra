@@ -77,7 +77,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP|\fI/dev/deviceXXX\fP|\fIDEVICEID\fP]
-[\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP]
 [\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
@@ -860,8 +860,10 @@ Enable or disable forwarding of the system bell.
 .TP
 \fB\-\-webcam\fP=\fIyes\fP|\fIno\fP
 Enable or disable webcam forwarding.
-\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP
+\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP
 Allow the client to forward its log output to the server.
+The client can specify the value \fIboth\fP to both send
+it to the server and keep it locally.
 
 .SS Options for attach
 .TP

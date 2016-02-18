@@ -897,7 +897,7 @@ def build_xpra_conf(install_dir):
             print("could not probe for pdf/postscript printers: %s" % e)
     SUBS = {'xvfb_command'          : " ".join(xvfb_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
-            'remote_logging'        : bstr(OSX or WIN32),
+            'remote_logging'        : "both",
             'env'                   : env,
             'has_displayfd'         : bstr(has_displayfd),
             'pulseaudio_command'    : DEFAULT_PULSEAUDIO_COMMAND,

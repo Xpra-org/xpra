@@ -226,7 +226,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         if opts.exec_wrapper:
             import shlex
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
-        self.remote_logging = opts.remote_logging
+        self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
         #printing and file transfer:
