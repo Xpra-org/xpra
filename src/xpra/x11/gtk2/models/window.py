@@ -458,6 +458,7 @@ class WindowModel(BaseWindowModel):
         hints = self.get_property("size-hints")
         w, h = calc_constrained_size(w, h, hints)
         geomlog("resize_corral_window() new constrained size=%ix%i", w, h)
+        cx, cy, cw, ch = self.get_property("geometry")
         if cow!=w or coh!=h:
             #at least resized, check for move:
             if (x, y) != (0, 0):
@@ -465,16 +466,19 @@ class WindowModel(BaseWindowModel):
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
                 self.client_window.move(0, 0)
+                self._updateprop("geometry", (x, y, w, h))
             else:
                 #just resize:
                 geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
                 self.corral_window.resize(w, h)
+                self._updateprop("geometry", (cx, cy, w, h))
         #just position change:
         elif (x, y) != (0, 0):
             self._internal_set_property("set-initial-position", True)
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
+            self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):
         geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask))
