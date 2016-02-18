@@ -15,13 +15,15 @@ from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized
 
 SHOW_DATA = os.environ.get("XPRA_PROXY_SHOW_DATA", "0")=="1"
+PROXY_BUFFER_SIZE = int(os.environ.get("XPRA_PROXY_BUFFER_SIZE", "65536"))
 
 
 class XpraProxy(object):
     """
         This is the proxy command that runs
         when one uses the hidden subcommand
-        "xpra _proxy"
+        "xpra _proxy" or when forwarding data
+        using the tcp-proxy option.
         It simply forwards stdin/stdout to
         the server socket.
     """
@@ -59,7 +61,7 @@ class XpraProxy(object):
         try:
             while not self._closed:
                 log("%s: waiting for data", log_name)
-                buf = untilConcludes(self.is_active, from_conn.read, 65536)
+                buf = untilConcludes(self.is_active, from_conn.read, PROXY_BUFFER_SIZE)
                 if not buf:
                     log("%s: connection lost", log_name)
                     return
