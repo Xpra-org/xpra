@@ -225,6 +225,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #this generates a configure event which ensures the server has the correct window position
             wfs = self._client.get_window_frame_sizes()
             if wfs and decorated and not was_decorated:
+                geomlog("set_decorated(%s) re-adjusting window location using %s", wfs)
                 normal = wfs.get("normal")
                 fixed = wfs.get("fixed")
                 if normal and fixed:
@@ -258,7 +259,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.setup_window(self, *args)
 
         #try to honour the initial position
-        geomlog("setup_window() position=%s, set_initial_position=%s", self._pos, self._set_initial_position)
+        geomlog("setup_window() position=%s, set_initial_position=%s, OR=%s, decorated=%s", self._pos, self._set_initial_position, self.is_OR(), self.get_decorated())
         if self._pos!=(0, 0) or self._set_initial_position:
             x,y = self._pos
             if not self.is_OR() and self.get_decorated():
