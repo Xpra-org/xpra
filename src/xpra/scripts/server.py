@@ -613,15 +613,20 @@ def start_Xvfb(xvfb_str, display_name, cwd):
             #trying to continue anyway!
             sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
 
-    #identify logfile argument if it exists and if we may have to rename it:
+    #identify logfile argument if it exists,
+    #as we may have to rename it, or create the directory for it:
     xvfb_cmd = xvfb_str.split()
-    if '-logfile' in xvfb_cmd and display_name[0]=='S':
-        xvfb_cmd = xvfb_str.split()
-        logfile_argindex = xvfb_cmd.index('-logfile') + 1
-        assert logfile_argindex<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last"
-        xorg_log_file = xvfb_cmd[logfile_argindex]
-    else:
-        xorg_log_file = None
+    logfile_argindex = xvfb_cmd.index('-logfile')
+    assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last"
+    tmp_xorg_log_file = None
+    if logfile_argindex>0:
+        if display_name[0]=='S':
+            #keep track of it so we can rename it later:
+            tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
+        #make sure the Xorg log directory exists:
+        xorg_log_dir = osexpand(os.path.dirname(xvfb_cmd[logfile_argindex+1]))
+        if not os.path.exists(xorg_log_dir):
+            os.mkdir(xorg_log_dir, 0o700)
 
     #apply string substitutions:
     subs = {"XAUTHORITY"    : xauthority,
@@ -686,12 +691,12 @@ def start_Xvfb(xvfb_str, display_name, cwd):
             raise OSError("%s provided an invalid display number: %s" % (xvfb_executable, n))
         new_display_name = ":%s" % n
         sys.stdout.write("Using display number provided by %s: %s\n" % (xvfb_executable, new_display_name))
-        if xorg_log_file != None:
+        if tmp_xorg_log_file != None:
             #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
-            f0 = shellsub(xorg_log_file, subs)
+            f0 = shellsub(tmp_xorg_log_file, subs)
             subs["DISPLAY"] = new_display_name
             #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
-            f1 = shellsub(xorg_log_file, subs)
+            f1 = shellsub(tmp_xorg_log_file, subs)
             if f0 != f1:
                 os.rename(f0, f1)
         display_name = new_display_name
