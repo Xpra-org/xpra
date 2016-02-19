@@ -159,8 +159,8 @@ def write_runner_shell_script(contents, overwrite=True):
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    from xpra.platform.paths import do_get_script_bin_dir
-    scriptdir = os.path.expanduser(do_get_script_bin_dir())
+    from xpra.platform.paths import get_script_bin_dir
+    scriptdir = os.path.expanduser(get_script_bin_dir())
     if not os.path.exists(scriptdir):
         os.mkdir(scriptdir, 0o700)
     scriptpath = os.path.join(scriptdir, "run-xpra")
