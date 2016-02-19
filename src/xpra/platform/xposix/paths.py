@@ -47,17 +47,30 @@ def do_get_icon_dir():
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
 
+def _get_xpra_runtime_dir():
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime_dir:
+        #replace uid with the string "$UID"
+        head, tail = list(os.path.split(runtime_dir))
+        try:
+            int(tail)
+            runtime_dir = os.path.join(head, "$UID")
+        except ValueError:
+            pass
+    elif os.path.exists("/var/run/user") and os.path.isdir("/var/run/user"):
+        runtime_dir = "/var/run/user/$UID"
+    return runtime_dir
+
 def do_get_socket_dirs():
     SOCKET_DIRS = ["~/.xpra"]   #the old default
     #added in 0.16, support for /run:
-    if os.path.exists("/var/run/user") and os.path.isdir("/var/run/user"):
+    runtime_dir = _get_xpra_runtime_dir()
+    if runtime_dir:
         #private, per user: /run/user/1000/xpra
-        SOCKET_DIRS.append("/var/run/user/$UID/xpra")
+        SOCKET_DIRS.append(os.path.join(runtime_dir, "xpra"))
         #for shared sockets:
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
 
 def do_get_default_log_dir():
-    if os.path.exists("/run/user") and os.path.isdir("/run/user"):
-        return "/run/user/$UID/xpra"
-    return "~/.xpra"
+    return _get_xpra_runtime_dir() or "~/.xpra"
