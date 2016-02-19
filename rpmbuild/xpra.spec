@@ -236,7 +236,7 @@ Requires: libfakeXinerama
 Requires: gtk3-immodule-xim
 Requires: xorg-x11-server-utils
 Requires: xorg-x11-drv-dummy
-Requires: xorg-x11-xauth
+Requires: %{requires_xorg}
 Requires: %{libvpx}
 %if 0%{?fedora}
 Requires: libwebp
