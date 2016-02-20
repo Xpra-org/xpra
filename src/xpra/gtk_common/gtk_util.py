@@ -583,6 +583,63 @@ def get_display_info():
         info["devices"] = len(devices)
         for i, d in enumerate(devices):
             info["device[%s]" % i] = d.get_name()
+            AXES_STR = {
+                        gdk.AXIS_IGNORE         : "IGNORE",
+                        gdk.AXIS_X              : "X",
+                        gdk.AXIS_Y              : "Y",
+                        gdk.AXIS_PRESSURE       : "PRESSURE",
+                        gdk.AXIS_XTILT          : "XTILT",
+                        gdk.AXIS_YTILT          : "YTILT",
+                        gdk.AXIS_WHEEL          : "WHEEL",
+                        gdk.AXIS_LAST           : "LAST",
+                        }
+            MODE_STR = {
+                        gdk.MODE_DISABLED       : "DISABLED",
+                        gdk.MODE_SCREEN         : "SCREEN",
+                        gdk.MODE_WINDOW         : "WINDOW",
+                        }
+            SOURCE_STR = {
+                        gdk.SOURCE_MOUSE        : "MOUSE",
+                        gdk.SOURCE_PEN          : "PEN",
+                        gdk.SOURCE_ERASER       : "ERASER",
+                        gdk.SOURCE_CURSOR       : "CURSOR",
+                        }
+            def notrans(v, d):
+                return v
+            MOD_STR = {
+                        gdk.SHIFT_MASK          : "SHIFT",
+                        gdk.LOCK_MASK           : "LOCK",
+                        gdk.CONTROL_MASK        : "CONTROL",
+                        gdk.MOD1_MASK           : "MOD1",
+                        gdk.MOD2_MASK           : "MOD2",
+                        gdk.MOD3_MASK           : "MOD3",
+                        gdk.MOD4_MASK           : "MOD4",
+                        gdk.MOD5_MASK           : "MOD5",
+                        gdk.BUTTON1_MASK        : "BUTTON1",
+                        gdk.BUTTON2_MASK        : "BUTTON2",
+                        gdk.BUTTON3_MASK        : "BUTTON3",
+                        gdk.BUTTON4_MASK        : "BUTTON4",
+                        gdk.BUTTON5_MASK        : "BUTTON5",
+                        gdk.RELEASE_MASK        : "RELEASE",
+                       }
+            def modtrans(mod):
+                return [v for k,v in MOD_STR.items() if k&mod]
+            def keys_trans(l, d):
+                #GdkModifierType can be converted to an int
+                return [(k,modtrans(v)) for (k,v) in l]
+            for name, trans in {"axes"          : AXES_STR.get,
+                                "has_cursor"    : notrans,
+                                "keys"          : keys_trans,
+                                "mode"          : MODE_STR.get,
+                                "num_axes"      : notrans,
+                                "num_keys"      : notrans,
+                                "source"        : SOURCE_STR.get}.items():
+                try:
+                    v = getattr(d, name)
+                    info["device[%i].%s" % (i, name)] = trans(v, v)
+                except:
+                    pass
+                
     return info
 
 
