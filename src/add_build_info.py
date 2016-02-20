@@ -55,7 +55,7 @@ def save_properties(props, filename):
             w("\n")
     print("updated %s with:" % filename)
     for k in sorted(props.keys()):
-        print("* %s = %s" % (str(k).ljust(20), u(props[k]).decode()))
+        print("* %s = %s" % (str(k).ljust(20), u(props[k])))
 
 def get_properties(filename):
     props = dict()
