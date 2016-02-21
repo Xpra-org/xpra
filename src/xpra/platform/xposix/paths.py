@@ -53,7 +53,8 @@ def do_get_script_bin_dirs():
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
         script_bin_dirs.append(runtime_dir)
-    return script_bin_dirs.append("~/.xpra")
+    script_bin_dirs.append("~/.xpra")
+    return script_bin_dirs
 
 
 def _get_xpra_runtime_dir():
