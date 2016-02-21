@@ -691,7 +691,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=defaults.remote_xpra,
                       metavar="CMD",
-                      help="How to run xpra on the remote host (default: '%default')")
+                      help="How to run xpra on the remote host (default: %s)" % (" or ".join(defaults.remote_xpra)))
     group.add_option("--encryption", action="store",
                       dest="encryption", default=defaults.encryption,
                       metavar="ALGO",
@@ -983,9 +983,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="opengl":
             return run_glcheck(options)
         elif mode == "initenv":
-            from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_script
+            from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_scripts
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
-            write_runner_shell_script(script, False)
+            write_runner_shell_scripts(script, False)
             return 0
         elif mode == "showconfig":
             return run_showconfig(options, args)
@@ -1088,11 +1088,9 @@ def parse_display_name(error_cb, opts, display_name):
                      "host"     : host,
                      "full_ssh" : full_ssh
                      })
-        remote_xpra = opts.remote_xpra.split()
+        desc["remote_xpra"] = opts.remote_xpra
         if opts.socket_dir:
-            #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
-            remote_xpra.append("--socket-dir=%s" % opts.socket_dir)
-        desc["remote_xpra"] = remote_xpra
+            desc["socket_dir"] = opts.socket_dir
         if desc.get("password") is None and opts.password_file and os.path.exists(opts.password_file):
             try:
                 with open(opts.password_file, "rb") as f:
@@ -1248,11 +1246,22 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
                 kwargs["creationflags"] = flags
                 kwargs["stderr"] = PIPE
-            proxy_cmd = display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
+            remote_xpra = display_desc["remote_xpra"]
+            assert len(remote_xpra)>0
+            remote_commands = []
+            socket_dir = display_desc.get("socket_dir")
+            for x in remote_xpra:
+                #ie: ["~/.xpra/run-xpra"] + ["_proxy"] + [":10"]
+                pc = [x] + display_desc["proxy_command"] + display_desc["display_as_args"]
+                if socket_dir:
+                    pc.append("--socket-dir=%s" % socket_dir)
+                remote_commands.append((" ".join(pc)))
+            #ie: ~/.xpra/run-xpra _proxy || $XDG_RUNTIME_DIR/run-xpra _proxy
+            remote_cmd = " || ".join(remote_commands)
             if INITENV_COMMAND:
-                cmd += [INITENV_COMMAND+";"+(" ".join(proxy_cmd))]
+                cmd += [INITENV_COMMAND+";"+remote_cmd]
             else:
-                cmd += proxy_cmd
+                cmd += [remote_cmd]
             if env:
                 kwargs["env"] = env
             if debug_cb:

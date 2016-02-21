@@ -275,7 +275,6 @@ OPTION_TYPES = {
                     "auth"              : str,
                     "tcp-auth"          : str,
                     "wm-name"           : str,
-                    "remote-xpra"       : str,
                     "session-name"      : str,
                     "dock-icon"         : str,
                     "tray-icon"         : str,
@@ -371,6 +370,7 @@ OPTION_TYPES = {
                     "global-menus"      : bool,
                     #arrays of strings:
                     "socket-dirs"       : list,
+                    "remote-xpra"       : list,
                     "encodings"         : list,
                     "video-encoders"    : list,
                     "csc-modules"       : list,
@@ -395,7 +395,7 @@ def get_defaults():
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV, CAN_DAEMONIZE
-    from xpra.platform.paths import get_download_dir, get_default_log_dir, get_socket_dirs
+    from xpra.platform.paths import get_download_dir, get_default_log_dir, get_socket_dirs, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -423,7 +423,6 @@ def get_defaults():
                     "auth"              : "",
                     "tcp-auth"          : "",
                     "wm-name"           : DEFAULT_NET_WM_NAME,
-                    "remote-xpra"       : "~/.xpra/run-xpra",
                     "session-name"      : "",
                     "dock-icon"         : "",
                     "tray-icon"         : "",
@@ -515,6 +514,7 @@ def get_defaults():
                     "shadow-fullscreen" : False,
                     "global-menus"      : True,
                     "socket-dirs"       : [],
+                    "remote-xpra"       : get_remote_run_xpra_scripts(),
                     "encodings"         : ["all"],
                     "video-encoders"    : ["all"],
                     "csc-modules"       : ["all"],

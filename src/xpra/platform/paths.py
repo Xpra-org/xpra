@@ -78,10 +78,15 @@ def do_get_download_dir():
         return "~"
     return d
 
-def get_script_bin_dir():
-    return env_or_delegate("XPRA_SCRIPT_BIN_DIR", do_get_script_bin_dir)
-def do_get_script_bin_dir():
-    return "~/.xpra"
+def get_script_bin_dirs():
+    return envaslist_or_delegate("XPRA_SCRIPT_BIN_DIRS", do_get_script_bin_dirs)
+def do_get_script_bin_dirs():
+    return ["~/.xpra"]
+
+def get_remote_run_xpra_scripts():
+    return envaslist_or_delegate("XPRA_REMOTE_RUN_XPRA_SCRIPTS", do_get_remote_run_xpra_scripts)
+def do_get_remote_run_xpra_scripts():
+    return ["$XDG_RUNTIME_DIR/xpra/run-xpra", "~/.xpra/run-xpra", "xpra"]
 
 
 #overriden in platform code:
@@ -197,7 +202,7 @@ platform_import(globals(), "paths", False,
                 "do_get_socket_dirs",
                 "do_get_default_log_dir",
                 "do_get_download_dir",
-                "do_get_script_bin_dir")
+                "do_get_script_bin_dirs")
 
 def get_info():
     return {

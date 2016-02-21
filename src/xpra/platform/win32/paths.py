@@ -80,6 +80,9 @@ def do_get_download_dir():
             DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "Downloads")
     return DOWNLOAD_PATH
 
+def do_get_script_bin_dirs():
+    #we don't save the "run-xpra" script anywhere on win32
+    return []
 
 def do_get_socket_dirs():
     #ie: C:\Documents and Settings\Username\Application Data\Xpra

@@ -150,7 +150,7 @@ fi
 """)
     return "".join(script)
 
-def write_runner_shell_script(contents, overwrite=True):
+def write_runner_shell_scripts(contents, overwrite=True):
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
     # will clobber the rest.  This isn't great, but the tradeoff is that it
@@ -159,21 +159,25 @@ def write_runner_shell_script(contents, overwrite=True):
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    from xpra.platform.paths import get_script_bin_dir
-    scriptdir = os.path.expanduser(get_script_bin_dir())
-    if not os.path.exists(scriptdir):
-        os.mkdir(scriptdir, 0o700)
-    scriptpath = os.path.join(scriptdir, "run-xpra")
-    if os.path.exists(scriptpath) and not overwrite:
-        return
-    # Write out a shell-script so that we can start our proxy in a clean
-    # environment:
-    with open(scriptpath, "w") as scriptfile:
-        # Unix is a little silly sometimes:
-        umask = os.umask(0)
-        os.umask(umask)
-        os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
-        scriptfile.write(contents)
+    from xpra.platform.paths import get_script_bin_dirs
+    for d in get_script_bin_dirs():
+        scriptdir = osexpand(d)
+        if not os.path.exists(scriptdir):
+            os.mkdir(scriptdir, 0o700)
+        scriptpath = os.path.join(scriptdir, "run-xpra")
+        if os.path.exists(scriptpath) and not overwrite:
+            continue
+        # Write out a shell-script so that we can start our proxy in a clean
+        # environment:
+        try:
+            with open(scriptpath, "w") as scriptfile:
+                # Unix is a little silly sometimes:
+                umask = os.umask(0)
+                os.umask(umask)
+                os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
+                scriptfile.write(contents)
+        except Exception as e:
+            sys.stderr.write("Error: failed to write script file '%s': %s\n" % (scriptfile, e))
 
 
 def display_name_check(display_name):
@@ -903,7 +907,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if os.name=="posix":
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
-        write_runner_shell_script(script)
+        write_runner_shell_scripts(script)
 
     from xpra.log import Logger
     log = Logger("server")
