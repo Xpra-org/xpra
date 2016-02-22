@@ -243,11 +243,19 @@ def do_parse_cmdline(cmdline, defaults):
                       help="program to spawn in new server (may be repeated). Default: %default.")
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
-                      help="program to spawn in new server, taken into account by the exit-with-children option (may be repeated). Default: %default.")
-    legacy_bool_parse("start-after-connect")
-    group.add_option("--start-after-connect", action="store",
+                      help="program to spawn in new server, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
+    group.add_option("--start-after-connect", action="append",
                       dest="start_after_connect", default=defaults.start_after_connect,
-                      help="Wait for the first client to connect to start the commands. Default: %default.")
+                      help="program to spawn in new server after the first client has connected (may be repeated). Default: %default.")
+    group.add_option("--start-child-after-connect", action="append",
+                      dest="start_child_after_connect", default=defaults.start_child_after_connect,
+                      help="program to spawn in new server after the first client has connected, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
+    group.add_option("--start-on-connect", action="append",
+                      dest="start_on_connect", default=defaults.start_on_connect,
+                      help="program to spawn in new server every time a client connects (may be repeated). Default: %default.")
+    group.add_option("--start-child-on-connect", action="append",
+                      dest="start_child_on_connect", default=defaults.start_child_on_connect,
+                      help="program to spawn in new server every time a client connects, taken into account by the exit-with-children option (may be repeated). Default: %default.")
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                       help="Wrapper for executing commands. Default: %default.")

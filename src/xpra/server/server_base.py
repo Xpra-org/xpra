@@ -131,11 +131,14 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.lpadmin = ""
         self.lpinfo = ""
         #starting child commands:
-        self.start_commands_started = False
-        self.start_after_connect= False
         self.start_commands = []
         self.start_child_commands = []
+        self.start_after_connect = []
+        self.start_child_after_connect = []
+        self.start_on_connect = []
+        self.start_child_on_connect = []
         self.exit_with_children = False
+        self.start_after_connect_done = False
         self.start_new_commands = False
         self.remote_logging = False
         self.env = []
@@ -747,15 +750,25 @@ class ServerBase(ServerCore, FileTransferHandler):
             return cmd
         return self.exec_wrapper + cmd
 
-    def exec_commands(self):
-        self.start_commands_started = True
-        log("exec_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
-        if self.start_commands:
-            for x in self.start_commands:
+    def exec_start_commands(self):
+        log("exec_start_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
+        self._exec_commands(self.start_commands, self.start_child_commands)
+
+    def exec_after_connect_commands(self):
+        log("exec_after_connect_commands() start=%s, start_child=%s", self.start_after_connect, self.start_child_after_connect)
+        self._exec_commands(self.start_after_connect, self.start_child_after_connect)
+
+    def exec_on_connect_commands(self):
+        log("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_commands)
+        self._exec_commands(self.start_on_connect, self.start_child_on_connect)
+
+    def _exec_commands(self, start_list, start_child_list):
+        if start_list:
+            for x in start_list:
                 if x:
                     self.start_child(x, x, ignore=True, shell=True)
-        if self.start_child_commands:
-            for x in self.start_child_commands:
+        if start_child_list:
+            for x in start_child_list:
                 if x:
                     self.start_child(x, x, ignore=False, shell=True)
 
@@ -1065,8 +1078,10 @@ class ServerBase(ServerCore, FileTransferHandler):
     def client_startup_complete(self, ss):
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
-        if self.start_after_connect and not self.start_commands_started:
-            self.exec_commands()
+        if not self.start_after_connect_done:
+            self.start_after_connect_done = True
+            self.exec_after_connect_commands()
+        self.exec_on_connect_commands()
 
     def do_parse_screen_info(self, ss):
         dw, dh = None, None
@@ -1763,6 +1778,19 @@ class ServerBase(ServerCore, FileTransferHandler):
             d.update(get_info())
         return d
 
+    def get_commands_info(self):
+        return {
+                "start"                     : self.start_commands,
+                "start-child"               : self.start_child_commands,
+                "start-after-connect"       : self.start_after_connect,
+                "start-child-after-connect" : self.start_child_after_connect,
+                "start-on-connect"          : self.start_on_connect,
+                "start-child-on-connect"    : self.start_child_on_connect,
+                "exit-with-children"        : self.exit_with_children,
+                "start-after-connect-done"  : self.start_after_connect_done,
+                "start-new"                 : self.start_new_commands,
+                }
+
     def get_features_info(self):
         i = {
              "randr"            : self.randr,
@@ -1824,6 +1852,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         up("webcam",    self.get_webcam_info())
         up("file",      self.get_file_transfer_info())
         up("printing",  self.get_printing_info())
+        up("commands",  self.get_commands_info())
         up("features",  self.get_features_info())
         up("clipboard", self.get_clipboard_info())
         up("keyboard",  self.get_keyboard_info())
