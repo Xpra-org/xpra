@@ -288,27 +288,7 @@ keyboard-sync = yes
 ssh = %(ssh_command)s
 
 # Key Shortcuts:
-key-shortcut = Meta+Shift+F1:show_menu
-key-shortcut = Meta+Shift+F2:show_start_new_command
-key-shortcut = Meta+Shift+F3:show_bug_report
-key-shortcut = Meta+Shift+F4:quit
-key-shortcut = Meta+Shift+F5:increase_quality
-key-shortcut = Meta+Shift+F6:decrease_quality
-key-shortcut = Meta+Shift+F7:increase_speed
-key-shortcut = Meta+Shift+F8:decrease_speed
-key-shortcut = Meta+Shift+F10:magic_key
-key-shortcut = Meta+Shift+F11:show_session_info
-key-shortcut = Meta+Shift+plus:scaleup
-key-shortcut = Meta+Shift+plusminus:scaleup
-key-shortcut = Meta+Shift+minus:scaledown
-key-shortcut = Meta+Shift+underscore:scaledown
-key-shortcut = Meta+Shift+emdash:scaledown
-key-shortcut = Meta+Shift+KP_Add:scaleup
-key-shortcut = Meta+Shift+KP_Subtract:scaledown
-key-shortcut = Meta+Shift+KP_Multiply:scalereset
-key-shortcut = Meta+Shift+bar:scalereset
-key-shortcut = Meta+Shift+question:scalingoff
-key-shortcut = Meta+Shift+degree:scalereset
+%(key_shortcuts)s
 
 # Border:
 #border=auto:off,5
@@ -376,9 +356,15 @@ log-file = $DISPLAY.log
 # This causes the server to terminate when the last child has exited:
 exit-with-children = no
 
-# Should the server wait for the first client to connect
-# before starting the commands specified?
-start-after-connect = no
+# Commands to start immediately after the first client has connected:
+# (see above for the start vs start-child distinction)
+#start-after-connect = touch ~/.xpra/connect
+#start-child-after-connect = xterm
+
+# Commands to every time a client connects:
+# (see above for the start vs start-child distinction)
+#start-on-connect = touch ~/.xpra/login
+#start-child-on-connect = xterm
 
 # Start a dbus-daemon:
 # dbus-launch =

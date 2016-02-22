@@ -859,6 +859,7 @@ def build_xpra_conf(install_dir):
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
+    from xpra.scripts.config import get_default_key_shortcuts
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
@@ -897,6 +898,7 @@ def build_xpra_conf(install_dir):
             print("could not probe for pdf/postscript printers: %s" % e)
     SUBS = {'xvfb_command'          : " ".join(xvfb_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
+            'key_shortcuts'         : "\nkey-shortcut = ".join(get_default_key_shortcuts()),
             'remote_logging'        : "both",
             'env'                   : env,
             'has_displayfd'         : bstr(has_displayfd),

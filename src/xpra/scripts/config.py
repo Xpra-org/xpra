@@ -390,6 +390,32 @@ OPTION_TYPES = {
                     "env"               : list,
                }
 
+def get_default_key_shortcuts():
+    return [shortcut for e,shortcut in [
+               (True,   "Meta+Shift+F1:show_menu"),
+               (True,   "Meta+Shift+F2:show_start_new_command"),
+               (True,   "Meta+Shift+F3:show_bug_report"),
+               (True,   "Meta+Shift+F4:quit"),
+               (True,   "Meta+Shift+F5:increase_quality"),
+               (True,   "Meta+Shift+F6:decrease_quality"),
+               (True,   "Meta+Shift+F7:increase_speed"),
+               (True,   "Meta+Shift+F8:decrease_speed"),
+               (True,   "Meta+Shift+F10:magic_key"),
+               (True,   "Meta+Shift+F11:show_session_info"),
+               (True,   "Meta+Shift+plus:scaleup"),
+               (OSX,    "Meta+Shift+plusminus:scaleup"),
+               (True,   "Meta+Shift+minus:scaledown"),
+               (True,   "Meta+Shift+underscore:scaledown"),
+               (OSX,    "Meta+Shift+emdash:scaledown"),
+               (True,   "Meta+Shift+KP_Add:scaleup"),
+               (True,   "Meta+Shift+KP_Subtract:scaledown"),
+               (True,   "Meta+Shift+KP_Multiply:scalereset"),
+               (True,   "Meta+Shift+bar:scalereset"),
+               (True,   "Meta+Shift+question:scalingoff"),
+               (OSX,    "Meta+Shift+degree:scalereset")]
+                 if e]
+
+
 GLOBAL_DEFAULTS = None
 #lowest common denominator here
 #(the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
@@ -526,29 +552,7 @@ def get_defaults():
                     "microphone-codec"  : [],
                     "compressors"       : ["all"],
                     "packet-encoders"   : ["all"],
-                    "key-shortcut"      : [
-                                           "Meta+Shift+F1:show_menu",
-                                           "Meta+Shift+F2:show_start_new_command",
-                                           "Meta+Shift+F3:show_bug_report",
-                                           "Meta+Shift+F4:quit",
-                                           "Meta+Shift+F5:increase_quality",
-                                           "Meta+Shift+F6:decrease_quality",
-                                           "Meta+Shift+F7:increase_speed",
-                                           "Meta+Shift+F8:decrease_speed",
-                                           "Meta+Shift+F10:magic_key",
-                                           "Meta+Shift+F11:show_session_info",
-                                           "Meta+Shift+plus:scaleup",
-                                           "Meta+Shift+plusminus:scaleup",          #the keyname on OSX...
-                                           "Meta+Shift+minus:scaledown",
-                                           "Meta+Shift+underscore:scaledown",
-                                           "Meta+Shift+emdash:scaledown",           #OSX
-                                           "Meta+Shift+KP_Add:scaleup",
-                                           "Meta+Shift+KP_Subtract:scaledown",
-                                           "Meta+Shift+KP_Multiply:scalereset",
-                                           "Meta+Shift+bar:scalereset",
-                                           "Meta+Shift+question:scalingoff",
-                                           "Meta+Shift+degree:scalereset",          #OSX
-                                           ],
+                    "key-shortcut"      : get_default_key_shortcuts(),
                     "bind"              : bind_dirs,
                     "bind-tcp"          : [],
                     "start"             : [],
