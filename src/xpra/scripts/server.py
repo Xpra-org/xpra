@@ -28,6 +28,8 @@ from xpra.dotxpra import DotXpra, norm_makepath, osexpand
 # or when the user requests it with the env var:
 USE_PROCESS_POLLING = os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
 
+DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "1920x1080").replace(",", "x").split("x", 1))
+
 
 _cleanups = []
 def run_cleanups():
@@ -1083,8 +1085,25 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         try:
             # This import is delayed because the module depends on gtk:
             from xpra.x11.server import XpraServer
-            from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
+            from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
+            if starting and not clobber and False:
+                try:
+                    from xpra.x11.bindings.randr_bindings import RandRBindings 
+                    #try to set a reasonable display size:
+                    randr = RandRBindings()
+                    if not randr.has_randr():
+                        log("no RandR, default virtual display size unchanged")
+                    else:
+                        sizes = randr.get_screen_sizes()
+                        size = randr.get_screen_size()
+                        log("RandR available, current size=%s, sizes available=%s", size, sizes)
+                        if DEFAULT_VFB_RESOLUTION in sizes:
+                            log("RandR setting new screen size to %s", DEFAULT_VFB_RESOLUTION)
+                            randr.set_screen_size(*DEFAULT_VFB_RESOLUTION)
+                except Exception as e:
+                    log.warn("Warning: failed to set the default screen size:")
+                    log.warn(" %s", e)
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
