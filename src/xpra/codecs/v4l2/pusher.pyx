@@ -14,6 +14,8 @@ from xpra.util import nonl
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
 
+cdef int DEFAULT_OFFSET = int(os.environ.get("XPRA_V4L2_OFFSET", "-1"))
+
 
 from libc.stdint cimport uint32_t, uint8_t
 
@@ -416,6 +418,9 @@ cdef class Pusher:
         assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
         cdef int offset = roundup(self.rowstride//2, 32)
+        global DEFAULT_OFFSET
+        if DEFAULT_OFFSET>=0:
+            offset = DEFAULT_OFFSET
         #log("offset(%s)=%s", self.rowstride, offset)
         cdef size_t l = self.framesize + offset + self.rowstride*8
         cdef uint8_t* buf = <uint8_t*> xmemalign(l)
