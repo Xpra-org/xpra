@@ -1058,24 +1058,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #xvfb problem: exit now
         return  1
 
-    #start the dbus server:
-    dbus_pid = 0
-    dbus_env = {}
-    def kill_dbus():
-        log("kill_dbus: dbus_pid=%s" % dbus_pid)
-        if dbus_pid<=0:
-            return
-        try:
-            os.kill(dbus_pid, signal.SIGINT)
-        except Exception as e:
-            log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
-            log.warn(" %s", e)
-    _cleanups.append(kill_dbus)
-    if os.name=="posix":
-        if opts.dbus_launch and starting:
-            #this also updates os.environ with the dbus attributes:
-            dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-
     #setup unix domain socket:
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
     for socket, cleanup_socket in local_sockets:
@@ -1087,20 +1069,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             rec = "ssh", [("", ssh_port)]
             if ssh_port and rec not in mdns_recs:
                 mdns_recs.append(rec)
-
-    #publish mdns records:
-    if opts.mdns:
-        from xpra.platform.info import get_username
-        mdns_info = {"display" : display_name,
-                     "username": get_username()}
-        if opts.session_name:
-            mdns_info["session"] = opts.session_name
-        for mode, listen_on in mdns_recs:
-            mdns_publish(display_name, mode, listen_on, mdns_info)
-
-    if not check_xvfb_process(xvfb):
-        #xvfb problem: exit now
-        return  1
 
     display = None
     if not sys.platform.startswith("win") and not sys.platform.startswith("darwin") and not proxying:
@@ -1127,18 +1095,37 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #(now we can access the X11 server)
 
         if clobber:
-            #get the saved pid (there should be one):
+            #get the saved pids and env
             xvfb_pid = get_xvfb_pid()
             dbus_pid = get_dbus_pid()
             dbus_env = get_dbus_env()
         else:
+            assert starting
             if xvfb_pid is not None:
                 #save the new pid (we should have one):
                 save_xvfb_pid(xvfb_pid)
-            if dbus_pid>0:
-                save_dbus_pid(dbus_pid)
-            if dbus_env:
-                save_dbus_env(dbus_env)
+            if os.name=="posix" and opts.dbus_launch:
+                #start a dbus server:
+                dbus_pid = 0
+                dbus_env = {}
+                def kill_dbus():
+                    log("kill_dbus: dbus_pid=%s" % dbus_pid)
+                    if dbus_pid<=0:
+                        return
+                    try:
+                        os.kill(dbus_pid, signal.SIGINT)
+                    except Exception as e:
+                        log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
+                        log.warn(" %s", e)
+                _cleanups.append(kill_dbus)
+                #this also updates os.environ with the dbus attributes:
+                dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
+                if dbus_pid>0:
+                    save_dbus_pid(dbus_pid)
+                if dbus_env:
+                    save_dbus_env(dbus_env)
+            else:
+                dbus_env = {}
         os.environ.update(dbus_env)
 
         #check for an existing window manager:
@@ -1176,6 +1163,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         log("XShape=%s", X11Window.displayHasXShape())
         app = XpraServer(clobber)
         info = "xpra"
+
+    #publish mdns records:
+    if opts.mdns:
+        from xpra.platform.info import get_username
+        mdns_info = {"display" : display_name,
+                     "username": get_username()}
+        if opts.session_name:
+            mdns_info["session"] = opts.session_name
+        for mode, listen_on in mdns_recs:
+            mdns_publish(display_name, mode, listen_on, mdns_info)
 
     #we got this far so the sockets have initialized and
     #the server should be able to manage the display
