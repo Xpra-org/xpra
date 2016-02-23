@@ -65,29 +65,75 @@ def deadly_signal(signum, frame):
     os._exit(128 + signum)
 
 
-def _save_pid(prop_name, pid):
+def _save_int(prop_name, pid):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_set
     prop_set(gtk.gdk.get_default_root_window(), prop_name, "u32", pid)
 
-def _get_pid(prop_name):
+def _get_int(prop_name):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_get
     return prop_get(gtk.gdk.get_default_root_window(), prop_name, "u32")
 
+def _save_str(prop_name, s):
+    import gtk
+    from xpra.x11.gtk_x11.prop import prop_set
+    prop_set(gtk.gdk.get_default_root_window(), prop_name, "latin1", s.decode("latin1"))
+
+def _get_str(prop_name):
+    import gtk
+    from xpra.x11.gtk_x11.prop import prop_get
+    v = prop_get(gtk.gdk.get_default_root_window(), prop_name, "latin1")
+    if v is not None:
+        return v.encode("latin1")
+    return v
 
 def save_xvfb_pid(pid):
-    _save_pid("_XPRA_SERVER_PID", pid)
+    _save_int("_XPRA_SERVER_PID", pid)
 
 def get_xvfb_pid():
-    return _get_pid("_XPRA_SERVER_PID")
+    return _get_int("_XPRA_SERVER_PID")
 
 def save_dbus_pid(pid):
-    _save_pid("_XPRA_DBUS_PID", pid)
+    _save_int("_XPRA_DBUS_PID", pid)
 
 def get_dbus_pid():
-    return _get_pid("_XPRA_DBUS_PID")
+    return _get_int("_XPRA_DBUS_PID")
 
+def get_dbus_env():
+    env = {}
+    for k,load in (
+            ("ADDRESS",     _get_str),
+            ("PID",         _get_int),
+            ("WINDOW_ID",   _get_int)):
+        k = "DBUS_SESSION_BUS_%s" % x
+        try:
+            v = load(k)
+            if v:
+                env[k] = str(v)
+        except Exception as e:
+            sys.stderr.write("failed to load dbus environment variable '%s':\n" % k)
+            sys.stderr.write(" %s\n" % e)
+    return env
+def save_dbus_env(env):
+    #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
+    #DBUS_SESSION_BUS_PID=11406
+    #DBUS_SESSION_BUS_WINDOWID=50331649
+    for k,conv,save in (
+            ("ADDRESS",     str,    _save_str),
+            ("PID",         int,    _save_int),
+            ("WINDOW_ID",   int,    _save_int)):
+        k = "DBUS_SESSION_BUS_%s" % k
+        v = env.get(k)
+        if v is None:
+            continue
+        try:
+            tv = conv(v)
+            save(k, tv)
+        except Exception as e:
+            sys.stderr.write("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
+            sys.stderr.write(" %s\n" % e)
+            
 
 def sh_quotemeta(s):
     safe = ("abcdefghijklmnopqrstuvwxyz"
@@ -808,12 +854,11 @@ def start_dbus(dbus_launch):
                 v = v[1:-2]
             dbus_env[k] = v
         dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
-        os.environ.update(dbus_env)
-        return dbus_pid
+        return dbus_pid, dbus_env
     except Exception as e:
         sys.stderr.write("dbus-launch failed to start using command '%s':\n" % dbus_launch)
         sys.stderr.write(" %s\n" % e)
-        return 0
+        return 0, {}
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
@@ -1015,6 +1060,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #start the dbus server:
     dbus_pid = 0
+    dbus_env = {}
     def kill_dbus():
         log("kill_dbus: dbus_pid=%s" % dbus_pid)
         if dbus_pid<=0:
@@ -1025,9 +1071,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
             log.warn(" %s", e)
     _cleanups.append(kill_dbus)
-    if os.name=="posix" and opts.dbus_launch and (proxying or starting):
-        #this also updates os.environ with the dbus attributes:
-        dbus_pid = start_dbus(opts.dbus_launch)
+    if os.name=="posix":
+        if opts.dbus_launch and starting:
+            #this also updates os.environ with the dbus attributes:
+            dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
 
     #setup unix domain socket:
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
@@ -1083,12 +1130,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #get the saved pid (there should be one):
             xvfb_pid = get_xvfb_pid()
             dbus_pid = get_dbus_pid()
+            dbus_env = get_dbus_env()
         else:
             if xvfb_pid is not None:
                 #save the new pid (we should have one):
                 save_xvfb_pid(xvfb_pid)
             if dbus_pid>0:
                 save_dbus_pid(dbus_pid)
+            if dbus_env:
+                save_dbus_env(dbus_env)
+        os.environ.update(dbus_env)
 
         #check for an existing window manager:
         from xpra.x11.gtk2.wm import wm_check
