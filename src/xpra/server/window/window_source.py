@@ -19,6 +19,7 @@ scalinglog = Logger("scaling")
 iconlog = Logger("icon")
 deltalog = Logger("delta")
 avsynclog = Logger("av-sync")
+statslog = Logger("stats")
 
 
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 100))
@@ -48,6 +49,7 @@ LOG_THEME_DEFAULT_ICONS = os.environ.get("XPRA_LOG_THEME_DEFAULT_ICONS", "0")=="
 from xpra.util import updict
 from xpra.os_util import StringIOClass, memoryview_to_bytes
 from xpra.server.window.window_stats import WindowPerformanceStatistics
+from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
@@ -820,8 +822,39 @@ class WindowSource(object):
 
 
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
-        if not self.batch_config.locked:
-            calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
+        if self.batch_config.locked:
+            return
+        #calculations take time (CPU), see if we can just skip it this time around:
+        now = time.time()
+        lr = self.statistics.last_recalculate
+        elapsed = now-lr
+        statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %i seconds ago", self.wid, self.batch_config.delay, elapsed)
+        if self.batch_config.delay<=2*DamageBatchConfig.START_DELAY and lr>0 and elapsed<60 and self.statistics.get_packets_backlog()==0:
+            #delay is low-ish, figure out if we should bother updating it
+            lde = list(self.statistics.last_damage_events)
+            if len(lde)==0:
+                return      #things must have got reset anyway
+            since_last = [(pixels, compressed_size) for t, _, pixels, _, compressed_size, _ in list(self.statistics.encoding_stats) if t>=lr]
+            if len(since_last)<=5:
+                statslog("calculate_batch_delay for wid=%i, skipping - only %i events since the last update", self.wid, len(since_last))
+                return
+            pixel_count = sum(v[0] for v in since_last)
+            ww, wh = self.window_dimensions
+            if pixel_count<=ww*wh:
+                statslog("calculate_batch_delay for wid=%i, skipping - only %i pixels updated since the last update", self.wid, pixel_count)
+                return
+            else:
+                statslog("calculate_batch_delay for wid=%i, %i pixels updated since the last update", self.wid, pixel_count)
+                #if pixel_count<8*ww*wh:
+                nbytes = sum(v[1] for v in since_last)
+                #less than 16KB/s since last time? (or <=64KB)
+                max_bytes = max(4, int(elapsed))*16*1024
+                if nbytes<=max_bytes:
+                    statslog("calculate_batch_delay for wid=%i, skipping - only %i bytes sent since the last update", self.wid, nbytes)
+                    return
+                statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
+        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
+        self.statistics.last_recalculate = now
 
     def update_speed(self):
         if self.suspended or self._mmap:
@@ -1790,7 +1823,7 @@ class WindowSource(object):
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
-        self.statistics.encoding_stats.append((coding, w*h, bpp, len(data), end-start))
+        self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
         #record number of frames and pixels:
         totals = self.statistics.encoding_totals.setdefault(coding, [0, 0])
         totals[0] = totals[0] + 1

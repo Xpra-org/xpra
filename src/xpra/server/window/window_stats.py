@@ -42,7 +42,7 @@ class WindowPerformanceStatistics(object):
     def reset(self):
         self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
                                                             #(ack_time, no of pixels, decoding_time*1000*1000)
-        self.encoding_stats = deque(maxlen=NRECS)           #encoding: (coding, pixels, bpp, compressed_size, encoding_time)
+        self.encoding_stats = deque(maxlen=NRECS)           #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
         # statistics:
         self.damage_in_latency = deque(maxlen=NRECS)        #records how long it took for a damage request to be sent
                                                             #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
@@ -58,6 +58,7 @@ class WindowPerformanceStatistics(object):
                                                             #for each sequence no: (damage_time, w, h)
         self.last_damage_events = deque(maxlen=4*NRECS)     #every time we get a damage event, we record: time,x,y,w,h
         self.last_damage_event_time = None
+        self.last_recalculate = 0
         self.damage_events_count = 0
         self.packet_count = 0
 
@@ -158,13 +159,13 @@ class WindowPerformanceStatistics(object):
         #encoding stats:
         if len(self.encoding_stats)>0:
             estats = list(self.encoding_stats)
-            encodings_used = [x[0] for x in estats]
+            encodings_used = [x[1] for x in estats]
             def add_compression_stats(enc_stats, suffix=""):
                 comp_ratios_pct = []
                 comp_times_ns = []
                 total_pixels = 0
                 total_time = 0.0
-                for _, pixels, bpp, compressed_size, compression_time in enc_stats:
+                for _, _, pixels, bpp, compressed_size, compression_time in enc_stats:
                     if compressed_size>0 and pixels>0:
                         osize = pixels*bpp/8
                         comp_ratios_pct.append((100.0*compressed_size/osize, pixels))
@@ -177,7 +178,7 @@ class WindowPerformanceStatistics(object):
                     info["encoding.pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
             add_compression_stats(estats)
             for encoding in encodings_used:
-                enc_stats = [x for x in estats if x[0]==encoding]
+                enc_stats = [x for x in estats if x[1]==encoding]
                 add_compression_stats(enc_stats, suffix="[%s]" % encoding)
 
         latencies = [x*1000 for _, _, _, x in list(self.damage_in_latency)]

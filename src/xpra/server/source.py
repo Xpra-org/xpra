@@ -451,6 +451,7 @@ class ServerSource(object):
     def recalculate_delays(self):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
+            this runs in the worker thread.
         """
         log("recalculate_delays()")
         if self.is_closed():
@@ -1455,7 +1456,7 @@ class ServerSource(object):
                 #per-window source stats:
                 updict(info, "window[%i]" % wid, ws.get_info())
                 #collect stats for global averages:
-                for _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
+                for _, _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
                     total_pixels += pixels
                     total_time += encoding_time
                 in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
