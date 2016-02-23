@@ -609,6 +609,18 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     os.environ.update(v)
     return v
 
+def close_fds(excluding=[0, 1, 2]):
+    try:
+        MAXFD = os.sysconf("SC_OPEN_MAX")
+    except:
+        MAXFD = 256
+    for i in range(0, MAXFD):
+        if i not in excluding:
+            try:
+                os.close(i)
+            except:
+                pass
+
 def start_Xvfb(xvfb_str, display_name, cwd):
     # We need to set up a new server environment
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
@@ -659,18 +671,7 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         def preexec():
             setsid()
-            #duplicate python's _close_fds() function
-            #(taking care to exclude the pipe)
-            try:
-                MAXFD = os.sysconf("SC_OPEN_MAX")
-            except:
-                MAXFD = 256
-            for i in range(3, MAXFD):
-                if i not in (r_pipe, w_pipe):
-                    try:
-                        os.close(i)
-                    except:
-                        pass
+            close_fds([0, 1, 2, r_pipe, w_pipe])
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
                                 stdin=subprocess.PIPE, preexec_fn=preexec)
         # Read the display number from the pipe we gave to Xvfb
@@ -785,6 +786,34 @@ def guess_xpra_display(socket_dir, socket_dirs):
     if len(live)>1:
         raise InitException("too many existing xpra servers found, cannot guess which one to use")
     return live[0]
+
+
+def start_dbus(dbus_launch):
+    try:
+        def preexec():
+            assert os.name=="posix"
+            os.setsid()
+            close_fds()
+        dbus_launch = subprocess.Popen(dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, preexec_fn=preexec)
+        out,_ = dbus_launch.communicate()
+        assert dbus_launch.poll()==0, "exit code is %s" % dbus_launch.poll()
+        #parse and add to global env:
+        dbus_env = {}
+        for l in out.splitlines():
+            parts = l.split("=", 1)
+            if len(parts)!=2:
+                continue
+            k,v = parts
+            if v.startswith("'") and v.endswith("';"):
+                v = v[1:-2]
+            dbus_env[k] = v
+        dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
+        os.environ.update(dbus_env)
+        return dbus_pid
+    except Exception as e:
+        sys.stderr.write("dbus-launch failed to start using command '%s':\n" % dbus_launch)
+        sys.stderr.write(" %s\n" % e)
+        return 0
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
@@ -997,25 +1026,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log.warn(" %s", e)
     _cleanups.append(kill_dbus)
     if os.name=="posix" and opts.dbus_launch and (proxying or starting):
-        try:
-            dbus_launch = subprocess.Popen(opts.dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
-            out,_ = dbus_launch.communicate()
-            assert dbus_launch.poll()==0, "exit code is %s" % dbus_launch.poll()
-            #parse and add to global env:
-            dbus_env = {}
-            for l in out.splitlines():
-                parts = l.split("=", 1)
-                if len(parts)!=2:
-                    continue
-                k,v = parts
-                if v.startswith("'") and v.endswith("';"):
-                    v = v[1:-2]
-                dbus_env[k] = v
-            dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
-            os.environ.update(dbus_env)
-        except Exception as e:
-            sys.stderr.write("dbus-launch failed to start using command '%s':\n" % opts.dbus_launch)
-            sys.stderr.write(" %s\n" % e)
+        #this also updates os.environ with the dbus attributes:
+        dbus_pid = start_dbus(opts.dbus_launch)
 
     #setup unix domain socket:
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
