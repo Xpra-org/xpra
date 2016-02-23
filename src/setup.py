@@ -809,7 +809,7 @@ def detect_xorg_setup(install_dir=None):
                 else:
                     use_wrapper = False
         from xpra.platform.paths import get_default_log_dir
-        log_dir = get_default_log_dir()
+        log_dir = get_default_log_dir().replace("~/", "${HOME}/")
         from xpra.scripts.config import get_Xdummy_command
         return (get_Xdummy_command(use_wrapper, log_dir=log_dir, xorg_conf=xorg_conf), has_displayfd, use_wrapper)
 
