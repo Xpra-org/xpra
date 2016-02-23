@@ -532,8 +532,8 @@ class XpraClientBase(FileTransferHandler):
                     return v.encode()
                 except:
                     return str(v)
-                password = s(password)
-                salt = s(salt)
+            password = s(password)
+            salt = s(salt)
             challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
         elif digest==b"xor":
             #don't send XORed password unencrypted:
