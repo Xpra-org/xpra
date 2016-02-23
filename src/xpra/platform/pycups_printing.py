@@ -107,7 +107,14 @@ def get_lpinfo_drv(make_and_model):
     def preexec():
         os.setsid()
     log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
-    proc = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True, preexec_fn=preexec)
+    try:
+        proc = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True, preexec_fn=preexec)
+    except Exception as e:
+        log("get_lp_info_drv(%s) lpinfo command %s failed", make_and_model, command, exc_info=True)
+        log.error("Error: lpinfo command failed to run")
+        log.error(" %s", e)
+        log.error(" command used: '%s'", " ".join(command))
+        return None
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     from xpra.util import nonl
@@ -116,7 +123,7 @@ def get_lpinfo_drv(make_and_model):
     out, err = proc.communicate()
     if proc.wait()!=0:
         log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
-        log.warn(" command used: '%s'", command)
+        log.warn(" command used: '%s'", " ".join(command))
         return None
     if sys.version_info[0]>=3:
         try:
