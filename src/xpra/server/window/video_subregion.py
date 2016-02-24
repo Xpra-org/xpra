@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import time
 import math
 
@@ -14,9 +15,10 @@ from xpra.log import Logger
 sslog = Logger("regiondetect")
 refreshlog = Logger("regionrefresh")
 
-MIN_EVENTS = 20
-MIN_W = 128
-MIN_H = 96
+MAX_TIME = int(os.environ.get("XPRA_VIDEO_DETECT_MAX_TIME", "5"))
+MIN_EVENTS = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_EVENTS", "20"))
+MIN_W = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_WIDTH", "128"))
+MIN_H = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_HEIGHT", "96"))
 
 
 class VideoSubregion(object):
@@ -218,8 +220,9 @@ class VideoSubregion(object):
             few_damage_events("total", event_count)
             return
 
+        from_time = max(starting_at, time.time()-MAX_TIME)
         #create a list (copy) to work on:
-        lde = [x for x in list(last_damage_events) if x[0]>=starting_at]
+        lde = [x for x in list(last_damage_events) if x[0]>=from_time]
         dc = len(lde)
         if dc<=MIN_EVENTS:
             return self.novideoregion("not enough damage events yet (%s)", dc)
