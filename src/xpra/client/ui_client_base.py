@@ -84,6 +84,7 @@ MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
 MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "8"))
 SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
+MAX_SOFT_EXPIRED = int(os.environ.get("XPRA_MAX_SOFT_EXPIRED", "5"))
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
@@ -1441,7 +1442,7 @@ class UIXpraClient(XpraClientBase):
             "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
-            #"max-soft-expired"          : 5,
+            "max-soft-expired"          : MAX_SOFT_EXPIRED,
             })
         capabilities["antialias"] = get_antialias_info()
         capabilities["cursor.size"] = int(2*get_cursor_size()/(self.xscale+self.yscale))
