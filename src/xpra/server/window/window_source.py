@@ -128,6 +128,7 @@ class WindowSource(object):
         ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
         ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", list(ropts))
+        self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired")))
         self.supports_delta = []
         if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -352,6 +353,10 @@ class WindowSource(object):
             pass
         up("property",  self.get_property_info())
         up("batch",     self.batch_config.get_info())
+        up("soft-timeout", {
+                            "expired"       : self.soft_expired,
+                            "max"           : self.max_soft_expired
+                            })
         up("encodings", {
                  ""                     : self.encodings,
                  "core"                 : self.core_encodings,
