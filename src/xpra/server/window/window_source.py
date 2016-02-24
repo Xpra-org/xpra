@@ -871,7 +871,7 @@ class WindowSource(object):
             info = {}
             speed = min(100, speed)
         self._current_speed = int(speed)
-        log("update_speed() info=%s, speed=%s", info, self._current_speed)
+        statslog("update_speed() info=%s, speed=%s", info, self._current_speed)
         self._encoding_speed.append((time.time(), info, self._current_speed))
 
     def set_min_speed(self, min_speed):
@@ -889,7 +889,7 @@ class WindowSource(object):
 
 
     def update_quality(self):
-        log("update_quality() suspended=%s, mmap=%s, encoding=%s", self.suspended, self._mmap, self.encoding)
+        statslog("update_quality() suspended=%s, mmap=%s, encoding=%s", self.suspended, self._mmap, self.encoding)
         if self.suspended or self._mmap:
             return
         if self.encoding in ("rgb", "png", "png/P", "png/L"):
@@ -909,7 +909,7 @@ class WindowSource(object):
             info = {}
             quality = min(100, quality)
         self._current_quality = int(quality)
-        log("update_quality() info=%s, quality=%s", info, self._current_quality)
+        statslog("update_quality() info=%s, quality=%s", info, self._current_quality)
         self._encoding_quality.append((time.time(), info, self._current_quality))
 
     def set_min_quality(self, min_quality):

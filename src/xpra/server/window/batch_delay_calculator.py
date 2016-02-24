@@ -10,7 +10,7 @@ from math import log as mathlog, sqrt
 from xpra.log import Logger
 log = Logger("server", "stats")
 
-from xpra.server.cystats import queue_inspect, logp, time_weighted_average  #@UnresolvedImport
+from xpra.server.cystats import queue_inspect, logp, time_weighted_average, calculate_timesize_weighted_average_score   #@UnresolvedImport
 
 
 def get_low_limit(mmap_enabled, window_dimensions):
@@ -193,7 +193,8 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     #    0    for lowest quality (low bandwidth usage)
     #    100  for best quality (high bandwidth usage)
     # here we try minimize client-latency, packet-backlog and batch.delay
-    _, pixels_backlog, _ = statistics.get_client_backlog()
+    # the compression ratio tells us if we can increase the quality
+    packets_backlog, pixels_backlog, _ = statistics.get_client_backlog()
     pixels_bl = 1.0 - logp(pixels_backlog/low_limit)
     target = pixels_bl
     batch_q = -1
@@ -207,6 +208,26 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
             #anything less than twice the minimum is good enough:
             batch_q = ref_delay / max(1, batch.min_delay, batch.delay/2.0)
             target = min(1.0, target, batch_q)
+    cratio_factor = None
+    #from here on, the compression ratio integer value is in per-1000:
+    es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in list(statistics.encoding_stats) if pixels>=4096]
+    if len(es)>=2:
+        #use the recent vs average compression ratio
+        #(add 10 to smooth things out a bit, so very low compression ratios don't skew things)
+        ascore, rscore = calculate_timesize_weighted_average_score(es)
+        bump = 0
+        if ascore>rscore:
+            #raise the quality
+            #only if there is no backlog:
+            if packets_backlog==0:
+                bump = logp((float(10+ascore)/(10+rscore))-1.0)
+        else:
+            #lower the quality
+            #more so if the compression is not doing very well:
+            mult = (1000 + rscore)/2000.0           #mult should be in the range 0.5 to ~1.0
+            bump = -logp((float(10+rscore)/(10+ascore))-1.0) * mult
+        target += bump
+        cratio_factor = ascore, rscore, int(100*bump)
     latency_q = -1
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
@@ -216,10 +237,12 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     target_quality = mq + (100.0-mq) * target
     info = {
             "min_quality"   : min_quality,
-            "backlog_factor": int(100.0*pixels_bl),
+            "backlog_factor": (packets_backlog, pixels_backlog, int(100.0*pixels_bl)),
             }
+    if cratio_factor:
+        info["compression-ratio"] = cratio_factor
     if batch_q>=0:
-        info["batch_factor"] = int(100.0*batch_q)
+        info["batch-delay-ratio"] = int(100.0*batch_q)
     if latency_q>=0:
-        info["latency_factor"] = int(100.0*latency_q)
+        info["latency"] = int(100.0*latency_q)
     return info, target_quality

@@ -16,7 +16,7 @@ from math import sqrt
 def logp(double x):
     return log(1.0+x)/2.0
 
-cdef double clogp(double x):
+cdef inline double clogp(double x):
     return log(1.0+x)/2.0
 
 SMOOTHING_NAMES = {sqrt: "sqrt", logp: "logp"}
@@ -73,6 +73,38 @@ def time_weighted_average(data, double min_offset=0.1, double rpow=2.0):
         tw += w
     return tv / tw
 
+def calculate_timesize_weighted_average_score(data):
+    """
+        This is a time weighted average where the size
+        of each record also gives it a weight boost.
+        This is to prevent small packets from skewing the average.
+        Data format: (event_time, size, value)
+    """
+    cdef double size_avg = sum(x for _, x, _ in data)/len(data)
+    cdef double now = time.time()                   #@DuplicatedSignature
+    cdef double tv = 0.0                            #@DuplicatedSignature
+    cdef double tw = 0.0                            #@DuplicatedSignature
+    cdef double rv = 0.0                            #@DuplicatedSignature
+    cdef double rw = 0.0                            #@DuplicatedSignature
+    cdef double event_time                          #@DuplicatedSignature
+    cdef int size
+    cdef int value
+    cdef double pw
+    cdef double w                                   #@DuplicatedSignature
+    cdef double delta                               #@DuplicatedSignature
+    for event_time, size, value in data:
+        if value<0:
+            continue        #invalid record
+        delta = now-event_time
+        pw = clogp(size/size_avg)
+        w = pw/(1.0+delta)*size
+        tv += w*value
+        tw += w
+        w = pw/(0.1+delta**2)*size
+        rv += w*value
+        rw += w
+    return int(tv / tw), int(rv / rw)
+
 def calculate_timesize_weighted_average(data, float sizeunit=1.0):
     """
         This is a time weighted average where the size
@@ -80,7 +112,7 @@ def calculate_timesize_weighted_average(data, float sizeunit=1.0):
         This is to prevent small packets from skewing the average.
         Data format: (event_time, size, elapsed_time)
     """
-    cdef double size_avg = sum([x for _, x, _ in data])/len(data)
+    cdef double size_avg = sum(x for _, x, _ in data)/len(data)
     cdef double now = time.time()                   #@DuplicatedSignature
     cdef double tv = 0.0                            #@DuplicatedSignature
     cdef double tw = 0.0                            #@DuplicatedSignature
