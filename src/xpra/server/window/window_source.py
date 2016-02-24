@@ -662,8 +662,8 @@ class WindowSource(object):
 
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
-        self._lossless_threshold_base = min(95, 75+self._current_speed/5)
-        self._lossless_threshold_pixel_boost = 20
+        self._lossless_threshold_base = min(90, 60+self._current_speed//5)
+        self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #calculate the threshold for using rgb
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)

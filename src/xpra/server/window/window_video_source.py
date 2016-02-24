@@ -646,8 +646,8 @@ class WindowVideoSource(WindowSource):
             if self.video_subregion.rectangle:
                 #when we have a video region, lower the lossless threshold
                 #especially for small regions
-                self._lossless_threshold_base = min(80, 10+self._current_speed/5)
-                self._lossless_threshold_pixel_boost = 90
+                self._lossless_threshold_base = min(80, 10+self._current_speed//5)
+                self._lossless_threshold_pixel_boost = 90-self._current_speed//5
 
         if force_reload:
             self.cleanup_codecs()
