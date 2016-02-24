@@ -8,7 +8,7 @@ def init(opts):
     pass
 
 class Authenticator(object):
-    def __init__(self, username):
+    def __init__(self, username=""):
         raise Exception("failing")
 
     def __repr__(self):

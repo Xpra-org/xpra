@@ -212,13 +212,14 @@ class ServerCore(object):
             else:
                 auth = "pam"
             authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
-        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth
+        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth
         AUTH_MODULES = {
                         "fail"      : fail_auth,
                         "reject"    : reject_auth,
                         "allow"     : allow_auth,
                         "none"      : none_auth,
-                        "file"      : file_auth
+                        "multifile" : multifile_auth,
+                        "file"      : file_auth,
                         }
         try:
             from xpra.server.auth import pam_auth

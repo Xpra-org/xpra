@@ -612,11 +612,12 @@ and should only be used for testing
 .IP \fBfail\fP
 always fails authentication, useful for testing
 .IP \fBfile\fP
-checks the password against the file specified using
-\fBpassword\-file\fP switch.
-It can either contain a single password,
-in which case it will be used for all usernames,
-or a list of user credentials of the form (one per line):
+checks the password against the password data found in the file
+specified using the \fBpassword\-file\fP switch
+.IP \fBmultifile\fP
+checks the username and password against the file specified using
+the \fBpassword\-file\fP switch.
+The file must contain each user credentials on a line of the form:
 \fIusername|password|uid|gid|displays|env_opts|session_opts\fP
 .IP \fBpam\fP
 validates the username and password using the PAM system
