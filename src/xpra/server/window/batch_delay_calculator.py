@@ -193,9 +193,9 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     #    0    for lowest quality (low bandwidth usage)
     #    100  for best quality (high bandwidth usage)
     # here we try minimize client-latency, packet-backlog and batch.delay
-    packets_backlog, _, _ = statistics.get_client_backlog()
-    packets_bl = 1.0 - logp(packets_backlog/low_limit)
-    target = packets_bl
+    _, pixels_backlog, _ = statistics.get_client_backlog()
+    pixels_bl = 1.0 - logp(pixels_backlog/low_limit)
+    target = pixels_bl
     batch_q = -1
     if batch is not None:
         recs = len(batch.last_actual_delays)
@@ -216,7 +216,7 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     target_quality = mq + (100.0-mq) * target
     info = {
             "min_quality"   : min_quality,
-            "backlog_factor": int(100.0*packets_bl),
+            "backlog_factor": int(100.0*pixels_bl),
             }
     if batch_q>=0:
         info["batch_factor"] = int(100.0*batch_q)
