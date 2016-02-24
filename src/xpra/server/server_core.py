@@ -730,12 +730,13 @@ class ServerCore(object):
             if not challenge_response:
                 if proto.challenge_sent:
                     auth_failed("invalid state, challenge already sent - no response!")
-                    return False                
+                    return False
                 if proto.authenticator:
                     challenge = proto.authenticator.get_challenge()
                     if challenge is None:
                         auth_failed("invalid state, unexpected challenge response")
                         return False
+                    authlog.info("challenge: %s", challenge)
                     salt, digest = challenge
                     authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                     authlog.info(" sending challenge for '%s' using %s digest", username, digest)
