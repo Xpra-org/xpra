@@ -144,7 +144,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.env = []
         self.exec_cwd = None
         self.exec_wrapper = None
-        self.child_reaper = getChildReaper(self.reaper_exit)
+        self.child_reaper = None
         self.send_pings = False
         self.scaling_control = False
         self.rpc_handlers = {}
@@ -229,6 +229,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         if opts.exec_wrapper:
             import shlex
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
+        self.child_reaper = getChildReaper(self.reaper_exit, exit_with_children=opts.exit_with_children)
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings

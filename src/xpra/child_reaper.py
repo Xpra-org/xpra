@@ -26,10 +26,10 @@ POLL_WARNING = os.environ.get("XPRA_POLL_WARNING", "1")=="1"
 
 
 singleton = None
-def getChildReaper(quit_cb=None):
+def getChildReaper(quit_cb=None, exit_with_children=False):
     global singleton
     if singleton is None:
-        singleton = ChildReaper(quit_cb)
+        singleton = ChildReaper(quit_cb, exit_with_children)
     return singleton
 
 
@@ -55,14 +55,14 @@ class ProcInfo(object):
 # and that should be fine too
 class ChildReaper(object):
     #note: the quit callback will fire only once!
-    def __init__(self, quit_cb=None):
+    def __init__(self, quit_cb=None, exit_with_children=False):
         log("ChildReaper(%s)", quit_cb)
         from xpra.gtk_common.gobject_compat import import_glib
         self.glib = import_glib()
         self._quit = quit_cb
         self._proc_info = []
         if USE_PROCESS_POLLING:
-            if POLL_WARNING and BUGGY_PYTHON:
+            if POLL_WARNING and BUGGY_PYTHON and exit_with_children:
                 log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
                 log.warn(" switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
             else:
