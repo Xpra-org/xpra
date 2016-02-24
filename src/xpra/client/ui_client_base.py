@@ -2228,8 +2228,7 @@ class UIXpraClient(XpraClientBase):
         #tell the server this is the start:
         self.send("sound-data", sound_source.codec, "",
                   {"start-of-stream"    : True,
-                   "codec"              : sound_source.codec,
-                   "sequence"           : sound_source.sequence})
+                   "codec"              : sound_source.codec})
 
     def stop_sending_sound(self):
         """ stop the sound source and emit client signal """
