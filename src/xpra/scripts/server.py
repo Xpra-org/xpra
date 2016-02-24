@@ -680,7 +680,10 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
     xvfb_cmd = xvfb_str.split()
-    logfile_argindex = xvfb_cmd.index('-logfile')
+    try:
+        logfile_argindex = xvfb_cmd.index('-logfile')
+    except:
+        logfile_argindex = -1
     assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last"
     tmp_xorg_log_file = None
     if logfile_argindex>0:
