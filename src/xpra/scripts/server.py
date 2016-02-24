@@ -102,11 +102,11 @@ def get_dbus_pid():
 
 def get_dbus_env():
     env = {}
-    for k,load in (
+    for n,load in (
             ("ADDRESS",     _get_str),
             ("PID",         _get_int),
             ("WINDOW_ID",   _get_int)):
-        k = "DBUS_SESSION_BUS_%s" % x
+        k = "DBUS_SESSION_BUS_%s" % n
         try:
             v = load(k)
             if v:
@@ -119,11 +119,11 @@ def save_dbus_env(env):
     #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
     #DBUS_SESSION_BUS_PID=11406
     #DBUS_SESSION_BUS_WINDOWID=50331649
-    for k,conv,save in (
+    for n,conv,save in (
             ("ADDRESS",     str,    _save_str),
             ("PID",         int,    _save_int),
             ("WINDOW_ID",   int,    _save_int)):
-        k = "DBUS_SESSION_BUS_%s" % k
+        k = "DBUS_SESSION_BUS_%s" % n
         v = env.get(k)
         if v is None:
             continue
