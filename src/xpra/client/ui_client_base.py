@@ -1441,6 +1441,7 @@ class UIXpraClient(XpraClientBase):
             "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
+            #"max-soft-expired"          : 5,
             })
         capabilities["antialias"] = get_antialias_info()
         capabilities["cursor.size"] = int(2*get_cursor_size()/(self.xscale+self.yscale))
