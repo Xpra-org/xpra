@@ -151,20 +151,26 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --target=x86-darwin13-gcc --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
              autogen-sh="configure">
-	<branch module="/files/libvpx-v1.3.0.tar.bz2"
+    <branch module="/files/libvpx-v1.3.0.tar.bz2"
 		version="1.3.0"
 		hash="md5:14783a148872f2d08629ff7c694eb31f"
 		repo="webm.googlecode.com"/>
+    <dependencies>
+                <dep package="yasm"/>
+    </dependencies>
   </autotools>
 
   <autotools id="libvpx-15"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
              autogen-sh="configure">
-	<branch module="/downloads.webmproject.org/releases/webm/libvpx-1.5.0.tar.bz2"
+    <branch module="/downloads.webmproject.org/releases/webm/libvpx-1.5.0.tar.bz2"
 		version="1.5.0"
 		hash="md5:49e59dd184caa255886683facea56fca"
 		repo="storage.googleapis.com"/>
+    <dependencies>
+                <dep package="yasm"/>
+    </dependencies>
   </autotools>
 
   <autotools id="x264"
