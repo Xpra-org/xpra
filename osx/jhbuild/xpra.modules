@@ -79,6 +79,9 @@
 		version="3.99.5"
 		hash="md5:84835b313d4a8b68f5349816d33e07ce"
 		repo="winswitch.org"/>
+    <dependencies>
+                <dep package="nasm"/>
+    </dependencies>
   </autotools>
 
   <autotools id="twolame" autogenargs="" autogen-sh="configure">
