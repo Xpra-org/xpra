@@ -441,6 +441,7 @@ class ServerSource(object):
             self.mmap = None
             self.mmap_size = 0
         self.stop_sending_sound()
+        self.stop_receiving_sound()
         self.remove_printers()
         ds = self.dbus_server
         if ds:
