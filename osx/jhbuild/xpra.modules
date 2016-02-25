@@ -194,6 +194,11 @@
 		version="0.5.0"
 		hash="md5:ba81eb9bf23e3c69a2f5cc8dcdb5938f"
 		repo="downloads.webmproject.org"/>
+	<dependencies>
+		<dep package="libjpeg"/>
+		<dep package="libpng"/>
+		<dep package="libtiff"/>
+	</dependencies>
   </autotools>
 
   <autotools id="ffmpeg"
