@@ -304,6 +304,12 @@
 		module="/packages/source/s/setuptools/setuptools-19.2.tar.gz"
 		hash="md5:78353b1f80375ca5e088f4b4627ffe03"
 		version="19.2"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-netifaces">
