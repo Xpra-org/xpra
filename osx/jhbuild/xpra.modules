@@ -752,6 +752,12 @@
 		hash="md5:2202b18f269ad606d70e1864857ed93c"
 		version="1.5.4"
 		repo="www.eu.apache.org"/>
+        <dependencies>
+        <dependencies>
+                <dep package="apr"/>
+                <dep package="openssl"/>
+                <dep package="db"/>
+        </dependencies>
   </autotools>
 
   <distutils id="scons">
