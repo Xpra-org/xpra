@@ -798,11 +798,8 @@
 		version="1.8.15"
 		repo="www.eu.apache.org"/>
      <dependencies>
-      <dep package="db"/>
-      <dep package="apr"/>
       <dep package="apr-util"/>
       <dep package="serf"/>
-      <dep package="sqlite"/>
     </dependencies>
   </autotools>
 
