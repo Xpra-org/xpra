@@ -753,7 +753,6 @@
 		version="1.5.4"
 		repo="www.eu.apache.org"/>
         <dependencies>
-        <dependencies>
                 <dep package="apr"/>
                 <dep package="openssl"/>
                 <dep package="db"/>
@@ -771,6 +770,11 @@
 		hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
 		version="1.2.1"
 		repo="serf.googlecode.com"/>
+        <dependencies>
+                <dep package="apr-util"/>
+                <dep package="openssl"/>
+                <dep package="scons"/>
+        </dependencies>
   </autotools>
 
   <autotools id="sqlite" autogenargs="" autogen-sh="configure">
