@@ -208,6 +208,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
         self.pending_fbo_paint = []
+        self.default_paint_box_line_width = OPENGL_PAINT_BOX or 1
+        self.paint_box_line_width = OPENGL_PAINT_BOX
 
         GTKWindowBacking.__init__(self, wid, window_alpha)
         self.init_gl_config(window_alpha)
@@ -586,11 +588,11 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def paint_box(self, encoding, is_delta, x, y, w, h):
         #show region being painted if debug paint box is enabled only:
-        if not OPENGL_PAINT_BOX>0:
+        if self.paint_box_line_width<=0:
             return
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
         glDisable(GL_FRAGMENT_PROGRAM_ARB)
-        glLineWidth(OPENGL_PAINT_BOX+0.5)
+        glLineWidth(self.paint_box_line_width+0.5)
         if is_delta:
             glLineStipple(1, 0xaaaa)
             glEnable(GL_LINE_STIPPLE)

@@ -19,6 +19,9 @@ class BorderClientWindow(ClientWindow):
         self.border = None
         ClientWindow.setup_window(self, *args)
 
+    def toggle_debug(self, *args):
+        pass
+
     def magic_key(self, *args):
         b = self.border
         if b:

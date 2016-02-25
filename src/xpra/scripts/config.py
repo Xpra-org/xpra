@@ -402,6 +402,7 @@ def get_default_key_shortcuts():
                (True,   "Meta+Shift+F8:decrease_speed"),
                (True,   "Meta+Shift+F10:magic_key"),
                (True,   "Meta+Shift+F11:show_session_info"),
+               (True,   "Meta+Shift+F12:toggle_debug"),
                (True,   "Meta+Shift+plus:scaleup"),
                (OSX,    "Meta+Shift+plusminus:scaleup"),
                (True,   "Meta+Shift+minus:scaledown"),
