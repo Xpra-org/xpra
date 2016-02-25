@@ -626,15 +626,16 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
             elif len(matches)>1:
                 log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
                 log.warn(" matched %i devices", len(matches))
-        if len(matches)==0:
-            log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
-            log.warn(" %s", csv("'%s'" % x for x in filters))
-            log.warn(" did not match the devices found:")
-            for k,v in devices.items():
-                log.warn(" * '%s'", k)
-                log.warn("   '%s'", v)
-            return None
-        devices = matches
+        if filters:
+            if len(matches)==0:
+                log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
+                log.warn(" %s", csv("'%s'" % x for x in filters))
+                log.warn(" did not match the devices found:")
+                for k,v in devices.items():
+                    log.warn(" * '%s'", k)
+                    log.warn("   '%s'", v)
+                return None
+            devices = matches
     #default to first one:
     device, device_name = devices.items()[0]
     if len(devices)>1 and want_monitor_device:
