@@ -258,6 +258,12 @@
 		version="0.10.22"
 		hash="md5:937152fe896241f827689f4b53e79b22"
 		repo="gstreamer.freedesktop.org"/>
+	<dependencies>
+		<dep package="python"/>
+	</dependencies>
+	<after>
+		<dep package="python"/>
+	</after>
   </autotools>
 
   <!-- HACK: patch after autoreconf is run -->
