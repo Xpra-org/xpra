@@ -231,6 +231,7 @@ class XpraClientBase(FileTransferHandler):
         self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
+        self._protocol.large_packets.append("logging")
         self._protocol.set_compression_level(self.compression_level)
         self._protocol.receive_aliases.update(self._aliases)
         self._protocol.enable_default_encoder()

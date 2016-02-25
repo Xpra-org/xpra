@@ -1911,7 +1911,8 @@ class UIXpraClient(XpraClientBase):
             return
         self.in_remote_logging = True
         try:
-            self.send("logging", level, str(msg % args))
+            data = self.compressed_wrapper("text", str(msg % args), level=1)
+            self.send("logging", level, data)
             exc_info = kwargs.get("exc_info")
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):

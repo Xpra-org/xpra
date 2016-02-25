@@ -301,14 +301,14 @@ class XpraClient(GTKXpraClient):
             self.tray.set_blinking(False)
 
 
-    def compressed_wrapper(self, datatype, data):
+    def compressed_wrapper(self, datatype, data, level=5):
         #FIXME: ugly assumptions here, should pass by name!
         from xpra.net import compression
         zlib = "zlib" in self.server_compressors and compression.use_zlib
         lz4 = "lz4" in self.server_compressors and compression.use_lz4
         lzo = "lzo" in self.server_compressors and compression.use_lzo
-        if zlib or lz4 or lzo:
-            cw = compression.compressed_wrapper(datatype, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
+        if level>0 and len(data)>=256 and (zlib or lz4 or lzo):
+            cw = compression.compressed_wrapper(datatype, data, level=level, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
             if len(cw)<len(data):
                 #the compressed version is smaller, use it:
                 return cw
