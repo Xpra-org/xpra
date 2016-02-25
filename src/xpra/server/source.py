@@ -1086,7 +1086,7 @@ class ServerSource(object):
             self.sound_sink = None
         if metadata.get("end-of-stream"):
             soundlog("client sent end-of-stream, closing sound pipeline")
-            self.stop_receiving_sound(False)
+            self.stop_receiving_sound()
             return
         if not self.sound_sink:
             try:
