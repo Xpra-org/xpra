@@ -763,6 +763,13 @@
 	<branch repo="sourceforge.net" module="/project/scons/scons/2.3.4/scons-2.3.4.tar.gz"
 		hash="md5:91fbbb67c2c65b03c746601baac4a6a5"
 		version="2.3.4"/>
+        <dependencies>
+                <dep package="python"/>
+                <dep package="libxml2"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <autotools id="serf" autogenargs="" autogen-sh="configure">
