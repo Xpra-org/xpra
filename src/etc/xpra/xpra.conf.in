@@ -47,6 +47,8 @@ speaker = on
 # Forward sound input to server:
 # microphone = disabled
 # microphone = on
+# microphone = on: Built-in Audio Analog Stereo
+# microphone = off: Built-in Audio Analog Stereo
 microphone = off
 
 # Debugging:

@@ -7,7 +7,7 @@
 import sys
 import os
 
-from xpra.util import csv
+from xpra.util import csv, engs
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
@@ -49,6 +49,7 @@ NAME_TO_SRC_PLUGIN = {
     "pulse"         : "pulsesrc",
     "direct"        : "directsoundsrc",
     }
+SRC_HAS_DEVICE_NAME = ["alsasrc", "osssrc", "oss4src", "jackaudiosrc", "pulsesrc", "directsoundsrc", "osxaudiosrc"]
 SRC_TO_NAME_PLUGIN = {}
 for k,v in NAME_TO_SRC_PLUGIN.items():
     SRC_TO_NAME_PLUGIN[v] = k
@@ -572,7 +573,7 @@ def get_test_defaults(*args):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
-def get_pulse_defaults(want_monitor_device, remote):
+def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=None):
     """
         choose the device to use
     """
@@ -587,20 +588,22 @@ def get_pulse_defaults(want_monitor_device, remote):
         log.warn(" %s", e)
         return None
     pa_server = get_pulse_server()
-    log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
-    #only worth comparing if we have a real server string
-    #one that starts with {UUID}unix:/..
-    if pa_server and pa_server.startswith("{") and \
-        remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
-        log.error("Error: sound is disabled to prevent a sound loop")
-        log.error(" identical Pulseaudio server '%s'", pa_server)
-        return None
-    pa_id = get_pulse_id()
-    log("start sound, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
-    if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
-        log.error("Error: sound is disabled to prevent a sound loop")
-        log.error(" identical Pulseaudio ID '%s'", pa_id)
-        return None
+    if remote:
+        log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
+        #only worth comparing if we have a real server string
+        #one that starts with {UUID}unix:/..
+        if pa_server and pa_server.startswith("{") and \
+            remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
+            log.error("Error: sound is disabled to prevent a sound loop")
+            log.error(" identical Pulseaudio server '%s'", pa_server)
+            return None
+        pa_id = get_pulse_id()
+        log("start sound, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
+        if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
+            log.error("Error: sound is disabled to prevent a sound loop")
+            log.error(" identical Pulseaudio ID '%s'", pa_id)
+            return None
+
     device_type_str = ["input", "monitor"][want_monitor_device]
     devices = get_pa_device_options(want_monitor_device, not want_monitor_device)
     log("found pulseaudio %s devices: %s", device_type_str, devices)
@@ -608,15 +611,30 @@ def get_pulse_defaults(want_monitor_device, remote):
         log.error("Error: sound forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return None
-    if len(devices)>1 and INPUT_DEVICE_NAME:
-        devices = dict((k,v) for k,v in devices.items() if k.find(INPUT_DEVICE_NAME)>=0 or v.find(INPUT_DEVICE_NAME)>0)
-        if len(devices)==0:
-            log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, INPUT_DEVICE_NAME)
-            log.warn(" did not match any devices")
+    if len(devices)>1:
+        filters = []
+        matches = []
+        for match in (device_name_match, INPUT_DEVICE_NAME):
+            if not match:
+                continue
+            filters.append(match)
+            match = match.lower()
+            matches = dict((k,v) for k,v in devices.items() if k.lower().find(match)>=0 or v.lower().find(match)>=0)
+            if len(matches)==1:
+                log("found name match for '%s': %s", match, devices.items()[0])
+                break
+            elif len(matches)>1:
+                log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
+                log.warn(" matched %i devices", len(matches))
+        if len(matches)==0:
+            log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
+            log.warn(" %s", csv("'%s'" % x for x in filters))
+            log.warn(" did not match the devices found:")
+            for k,v in devices.items():
+                log.warn(" * '%s'", k)
+                log.warn("   '%s'", v)
             return None
-        elif len(devices)>1:
-            log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, INPUT_DEVICE_NAME)
-            log.warn(" matched %i devices", len(devices))
+        devices = matches
     #default to first one:
     device, device_name = devices.items()[0]
     if len(devices)>1 and want_monitor_device:
@@ -673,7 +691,7 @@ def format_element_options(options):
     return csv("%s=%s" % (k,v) for k,v in options.items())
 
 
-def get_sound_source_options(plugin, options_str, want_monitor_device, remote):
+def get_sound_source_options(plugin, options_str, device, want_monitor_device, remote):
     """
         Given a plugin (short name), options string and remote info,
         return the options for the plugin given,
@@ -684,17 +702,23 @@ def get_sound_source_options(plugin, options_str, want_monitor_device, remote):
     #use the defaults as starting point:
     defaults_fn = DEFAULT_SRC_PLUGIN_OPTIONS.get(plugin)
     if defaults_fn:
-        options = defaults_fn(want_monitor_device, remote)
+        options = defaults_fn(device, want_monitor_device, remote)
         if options is None:
             #means failure
             return None
     else:
         options = {}
+        #if we add support for choosing devices in the GUI,
+        #this code will then get used:
+        if device and plugin in SRC_HAS_DEVICE_NAME:
+            #assume the user knows the "device-name"...
+            #(since I have no idea where to get the "device" string)
+            options["device-name"] = device
     options.update(parse_element_options(options_str))
     return options
 
 
-def parse_sound_source(all_plugins, sound_source_plugin, want_monitor_device, remote):
+def parse_sound_source(all_plugins, sound_source_plugin, device, want_monitor_device, remote):
     #format: PLUGINNAME:options
     #ie: test:wave=2,freq=110,volume=0.4
     #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
@@ -717,7 +741,7 @@ def parse_sound_source(all_plugins, sound_source_plugin, want_monitor_device, re
         log.error("unknown source plugin: '%s' / '%s'", simple_str, sound_source_plugin)
         return  None, {}
     log("parse_sound_source(%s, %s, %s) plugin=%s", all_plugins, sound_source_plugin, remote, gst_sound_source_plugin)
-    options = get_sound_source_options(simple_str, options_str, want_monitor_device, remote)
+    options = get_sound_source_options(simple_str, options_str, device, want_monitor_device, remote)
     log("get_sound_source_options%s=%s", (simple_str, options_str, remote), options)
     if options is None:
         #means error
@@ -726,7 +750,6 @@ def parse_sound_source(all_plugins, sound_source_plugin, want_monitor_device, re
 
 
 def sound_option_or_all(name, options, all_values):
-    from xpra.util import engs
     if not options:
         v = all_values        #not specified on command line: use default
     else:

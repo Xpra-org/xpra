@@ -190,6 +190,7 @@ class UIXpraClient(XpraClientBase):
         self.microphone_allowed = False
         self.microphone_enabled = False
         self.microphone_codecs = []
+        self.microphone_device = None
         self.av_sync = False
         #sound state:
         self.on_sink_ready = None
@@ -334,7 +335,12 @@ class UIXpraClient(XpraClientBase):
 
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
-        self.microphone_allowed = sound_option(opts.microphone) in ("on", "off")
+        #ie: "on", "off", "on:Some Device", "off:Some Device"
+        mic = [x.strip() for x in opts.microphone.split(":", 1)]
+        self.microphone_allowed = sound_option(mic[0]) in ("on", "off")
+        self.microphone_device = None
+        if self.microphone_allowed and len(mic)==2:
+            self.microphone_device = mic[1]
         self.sound_source_plugin = opts.sound_source
         def sound_option_or_all(*args):
             return []
@@ -363,10 +369,10 @@ class UIXpraClient(XpraClientBase):
         if not self.microphone_codecs:
             self.microphone_allowed = False
         self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
-        self.microphone_enabled = self.microphone_allowed and sound_option(opts.microphone)=="on"
+        self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
         self.av_sync = opts.av_sync
         soundlog("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
-        soundlog("microphone: codecs=%s, allowed=%s, enabled=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs))
+        soundlog("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
         soundlog("av-sync=%s", self.av_sync)
 
         self.readonly = opts.readonly
@@ -2165,9 +2171,9 @@ class UIXpraClient(XpraClientBase):
             self.stop_sending_webcam()
 
 
-    def start_sending_sound(self):
+    def start_sending_sound(self, device=None):
         """ (re)start a sound source and emit client signal """
-        soundlog("start_sending_sound()")
+        soundlog("start_sending_sound(%s)", device)
         assert self.microphone_allowed, "microphone forwarding is disabled"
         assert self.server_sound_receive, "client support for receiving sound is disabled"
         from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
@@ -2183,20 +2189,21 @@ class UIXpraClient(XpraClientBase):
                 soundlog.error("Error: microphone forwarding is already active")
                 return
             ss.start()
-        elif not self.start_sound_source():
-            return
-        self.microphone_enabled = True
+        elif not self.start_sound_source(device):
+            self.microphone_enabled = False
+        else:
+            self.microphone_enabled = True
         self.emit("microphone-changed")
-        soundlog("start_sending_sound() done")
+        soundlog("start_sending_sound(%s) done", device)
 
-    def start_sound_source(self):
-        soundlog("start_sound_source()")
+    def start_sound_source(self, device=None):
+        soundlog("start_sound_source(%s)", device)
         assert self.sound_source is None
         def sound_source_state_changed(*args):
             self.emit("microphone-changed")
         #find the matching codecs:
         matching_codecs = [x for x in self.microphone_codecs if x in self.server_sound_decoders]
-        soundlog("start_sound_source() matching codecs: %s", csv(matching_codecs))
+        soundlog("start_sound_source(%s) matching codecs: %s", device, csv(matching_codecs))
         if len(matching_codecs)==0:
             log.error("Error: no matching codecs between client and server")
             log.error(" server supports: %s", csv(self.server_sound_decoders))
@@ -2205,7 +2212,7 @@ class UIXpraClient(XpraClientBase):
         try:
             from xpra.sound.wrapper import start_sending_sound
             plugins = self.sound_properties.get("plugins")
-            ss = start_sending_sound(plugins, self.sound_source_plugin, None, 1.0, False, matching_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            ss = start_sending_sound(plugins, self.sound_source_plugin, device or self.microphone_device, None, 1.0, False, matching_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not ss:
                 return False
             self.sound_source = ss
@@ -2213,7 +2220,7 @@ class UIXpraClient(XpraClientBase):
             ss.connect("state-changed", sound_source_state_changed)
             ss.connect("new-stream", self.new_stream)
             ss.start()
-            soundlog("start_sound_source() sound source %s started", ss)
+            soundlog("start_sound_source(%s) sound source %s started", device, ss)
             return True
         except Exception as e:
             log.error("error setting up sound: %s", e)
