@@ -351,7 +351,7 @@ def import_gst():
     else:
         log.warn("Warning: failed to import GStreamer:")
         for vstr,e in errs.items():
-            log.warn(" %s failed with: %s", vstr, e)
+            log.warn(" GStreamer %s: %s", vstr, e)
     has_gst = gst is not None
     return gst
 
