@@ -124,10 +124,13 @@
   </autotools>
 
   <autotools id="speex" autogenargs="" autogen-sh="configure">
-	<branch module="/releases/speex/speex-1.2rc1.tar.gz"
-		version="1.2rc1"
-		hash="md5:c4438b22c08e5811ff10e2b06ee9b9ae"
+	<branch module="/releases/speex/speex-1.2rc2.tar.gz"
+		version="1.2rc2"
+		hash="md5:6ae7db3bab01e1d4b86bacfa8ca33e81"
 		repo="downloads.xiph.org"/>
+    <dependencies>
+                <dep package="libogg"/>
+    </dependencies>
   </autotools>
 
   <autotools id="opus" autogenargs="" autogen-sh="configure">
