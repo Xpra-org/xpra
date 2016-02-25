@@ -207,26 +207,16 @@ class XpraClient(GTKXpraClient):
             Try the various clipboard classes until we find one
             that loads ok. (some platforms have more options than others)
         """
-        from xpra.platform.features import CLIPBOARDS
         clipboard_options = self.get_clipboard_helper_classes()
-        clipboardlog("make_clipboard_helper() options=%s, server_clipboards=%s, local clipboards=%s", clipboard_options, self.server_clipboards, CLIPBOARDS)
-        #first add the platform specific one, (may be None):
-        kwargs= {"clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
-                 "clipboards.remote"    : self.server_clipboards}       #all the remote clipboards supported
-        #only allow translation overrides if we have a way of telling the server about them:
-        if self.server_supports_clipboard_enable_selections:
-            kwargs.update({
-                 "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)
-                 "clipboard.remote"     : self.remote_clipboard})       #the remote clipboard we want to we sync to (with the translated clipboard only)
-        clipboardlog("make_clipboard_helper() clipboard_options=%s, kwargs=%s", clipboard_options, kwargs)
+        clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
         for classname in clipboard_options:
             module_name, _class = classname.rsplit(".", 1)
-            c = self.try_load_clipboard_helper(module_name, _class, kwargs)
+            c = self.try_load_clipboard_helper(module_name, _class)
             if c:
                 return c
         return None
 
-    def try_load_clipboard_helper(self, module, classname, kwargs={}):
+    def try_load_clipboard_helper(self, module, classname):
         try:
             m = __import__(module, {}, {}, classname)
             if m:
@@ -235,7 +225,7 @@ class XpraClient(GTKXpraClient):
                     return None
                 c = getattr(m, classname)
                 if c:
-                    return self.setup_clipboard_helper(c, **kwargs)
+                    return self.setup_clipboard_helper(c)
         except ImportError as e:
             clipboardlog.error("Error: cannot load %s.%s:", module, classname)
             clipboardlog.error(" %s", e)
@@ -246,8 +236,18 @@ class XpraClient(GTKXpraClient):
         clipboardlog.error("cannot load %s.%s", module, classname)
         return None
 
-    def setup_clipboard_helper(self, helperClass, *args, **kwargs):
-        clipboardlog("setup_clipboard_helper(%s, %s, %s)", helperClass, args, kwargs)
+    def setup_clipboard_helper(self, helperClass):
+        clipboardlog("setup_clipboard_helper(%s)", helperClass)
+        #first add the platform specific one, (may be None):
+        from xpra.platform.features import CLIPBOARDS
+        kwargs= {"clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
+                 "clipboards.remote"    : self.server_clipboards}       #all the remote clipboards supported
+        #only allow translation overrides if we have a way of telling the server about them:
+        if self.server_supports_clipboard_enable_selections:
+            kwargs.update({
+                 "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)
+                 "clipboard.remote"     : self.remote_clipboard})       #the remote clipboard we want to we sync to (with the translated clipboard only)
+        clipboardlog("setup_clipboard_helper() kwargs=%s", kwargs)
         def clipboard_send(*parts):
             if not self.clipboard_enabled:
                 clipboardlog("clipboard is disabled, not sending clipboard packet")
@@ -259,7 +259,7 @@ class XpraClient(GTKXpraClient):
                 if type(v)==Uncompressed:
                     #register the compressor which will fire in protocol.encode:
                     def compress_clipboard():
-                        clipboardlog("compress_clipboard() compressing %s", args, v)
+                        clipboardlog("compress_clipboard() compressing %s", v)
                         return self.compressed_wrapper(v.datatype, v.data)
                     v.compress = compress_clipboard
             self.send(*packet)
@@ -285,7 +285,7 @@ class XpraClient(GTKXpraClient):
                 self.clipboard_notify(0)
             self.connect("clipboard-toggled", clipboard_toggled)
         self.after_handshake(register_clipboard_toggled)
-        return helperClass(clipboard_send, clipboard_progress, *args, **kwargs)
+        return helperClass(clipboard_send, clipboard_progress, **kwargs)
 
     def clipboard_notify(self, n):
         if not self.tray:

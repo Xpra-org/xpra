@@ -5,16 +5,20 @@
 
 import os
 
-from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
+glib = import_glib()
+
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
-from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu
+from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu, CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_LABELS
+from xpra.platform.darwin.osx_clipboard import OSXClipboardProtocolHelper
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
 
 from xpra.log import Logger
 log = Logger("osx", "tray", "menu")
+clipboardlog = Logger("osx", "menu", "clipboard")
 
 
 #control which menus are shown in the OSX global menu:
@@ -23,6 +27,7 @@ SHOW_SOUND_MENU = True
 SHOW_ENCODINGS_MENU = True
 SHOW_ACTIONS_MENU = True
 SHOW_INFO_MENU = True
+SHOW_CLIPBOARD_MENU = True
 
 SHOW_ABOUT_XPRA = True
 
@@ -60,6 +65,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.app_menus = {}         #the ones added to the app_menu via insert_app_menu_item (which cannot be removed!)
         self.full = False
         self.set_client(client)
+        self._clipboard_change_pending = False
 
     def set_client(self, client):
         self.client = client
@@ -138,6 +144,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
             item.set_submenu(submenu)
             item.show_all()
 
+    def get_menu(self, label):
+        if SINGLE_MENU:
+            return self.app_menus.get(label)
+        else:
+            return self.menus.get(label)
+
 
     def add_about(self):
         if "About" in self.app_menus:
@@ -177,6 +189,13 @@ class OSXMenuHelper(GTKTrayMenuBase):
             features_menu.add(self.make_numlockmenuitem())
             features_menu.add(self.make_openglmenuitem())
             features_menu.add(self.make_scalingmenuitem())
+        if SHOW_CLIPBOARD_MENU:
+            clipboard_menu = self.make_menu()
+            menus.append(("Clipboard", clipboard_menu))
+            for label in CLIPBOARD_LABELS:
+                remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
+                clipboard_menu.add(self.make_clipboard_submenuitem(label, remote_clipboard))
+            self.client.after_handshake(self.set_clipboard_menu, clipboard_menu)
         if SHOW_SOUND_MENU:
             sound_menu = self.make_menu()
             if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
@@ -207,6 +226,66 @@ class OSXMenuHelper(GTKTrayMenuBase):
             menus.append(("Actions", actions_menu))
         menus.append((SEPARATOR+"-EXTRAS", None))
         return menus
+
+    def get_clipboard_helper_class(self):
+        return OSXClipboardProtocolHelper
+
+    def make_clipboard_submenuitem(self, label, selection):
+        clipboard_item = self.checkitem(label)
+        clipboard_item.set_draw_as_radio(True)
+        def remote_clipboard_changed(item):
+            clipboardlog("remote_clipboard_changed(%s) label=%s - clipboard_change_pending=%s", item, label, self._clipboard_change_pending)
+            self.select_clipboard_menu_option(item, label)
+        clipboard_item.connect("toggled", remote_clipboard_changed)
+        return clipboard_item
+
+    def select_clipboard_menu_option(self, item=None, label="Disabled"):
+        clipboardlog("select_clipboard_menu_option(%s, %s) clipboard_change_pending=%s", item, label, self._clipboard_change_pending)
+        if self._clipboard_change_pending:
+            return
+        clipboard = self.get_menu("Clipboard")
+        if not clipboard:
+            log.error("Error: cannot locate Clipboad menu object!")
+            return
+        all_items = clipboard.get_submenu().get_children()
+        selected_items = [x for x in all_items if x==item] + [x for x in all_items if x.get_label()==label]
+        default_items = [x for x in all_items if x.get_label()=="Disabled"]
+        options = selected_items+default_items
+        if not options:
+            log.error("Error: cannot find any clipboard menu options to match!")
+            return 
+        self._clipboard_change_pending = True
+        sel = options[0]
+        remote_clipboard = CLIPBOARD_LABEL_TO_NAME.get(sel.get_label())
+        clipboardlog("will select clipboard menu item with label=%s, for remote_clipboard=%s", sel.get_label(), remote_clipboard)
+        for x in all_items:
+            x.set_active(x.get_label()==sel.get_label())
+        glib.timeout_add(0, self.do_clipboard_change, remote_clipboard)
+
+    def do_clipboard_change(self, remote_clipboard):
+        #why do we look it up again when we could just pass it in
+        #to make_clipboard_submenuitem as an extra argument?
+        #because gtk-osx would fall over itself, making a complete mess of the menus in the process
+        #and why do we use a timer here? again, more trouble with gtk-osx..
+        self._clipboard_change_pending = False
+        self.set_new_remote_clipboard(remote_clipboard)
+
+    def set_clipboard_menu(self, clipboard_menu):
+        #find the menu item matching the current settings,
+        #and select it
+        try:
+            assert self._can_handle_clipboard()
+            remote_clipboard = self.client.clipboard_helper.remote_clipboard
+            label = None
+        except:
+            remote_clipboard = None
+            label = "Disabled"
+        selected_menu_item = None
+        for item in clipboard_menu.get_children():
+            if remote_clipboard and remote_clipboard==CLIPBOARD_LABEL_TO_NAME.get(item.get_label()):
+                selected_menu_item = item
+                break
+        self.select_clipboard_menu_option(selected_menu_item, label)
 
     #these methods are called by the superclass
     #but we don't have a quality or speed menu, so override and ignore

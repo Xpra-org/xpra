@@ -9,7 +9,7 @@ import glib
 from xpra.log import Logger
 log = Logger("clipboard", "osx")
 
-from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProxy, TEXT_TARGETS
 
 update_clipboard_change_count = None
@@ -117,7 +117,7 @@ def setup_watcher(get_change_count):
     return True
 
 
-class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
+class OSXClipboardProtocolHelper(TranslatedClipboardProtocolHelper):
     """
         Full of OSX quirks!
         darwin/features.py should be set
@@ -127,8 +127,9 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
 
     def __init__(self, *args, **kwargs):
         init_pasteboard()
-        kwargs["clipboards.remote"] = ["CLIPBOARD"]
-        GDKClipboardProtocolHelper.__init__(self, *args, **kwargs)
+        kwargs["clipboard.local"] = "CLIPBOARD"
+        kwargs["clipboards.local"] = ["CLIPBOARD"]
+        TranslatedClipboardProtocolHelper.__init__(self, *args, **kwargs)
 
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)
@@ -138,7 +139,7 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
         if dformat == 0 and dtype=="NONE":
             log("got 'NONE' data from clipboard")
             return None, None
-        return GDKClipboardProtocolHelper._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
+        return TranslatedClipboardProtocolHelper._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
 
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
         #cannot work on osx, the nested mainloop doesn't run :(
