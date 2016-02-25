@@ -471,7 +471,7 @@ def get_defaults():
                     "socket-dir"        : "",
                     "log-dir"           : get_default_log_dir(),
                     "log-file"          : "$DISPLAY.log",
-                    "border"            : "auto,0",
+                    "border"            : "auto,5:off",
                     "window-close"      : "auto",
                     "max-size"          : "",
                     "desktop-scaling"   : "auto",

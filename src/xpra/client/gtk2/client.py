@@ -53,10 +53,11 @@ class XpraClient(GTKXpraClient):
 
 
     def parse_border(self, border_str, extra_args):
-        parts = [x.strip() for x in border_str.split(",")]
+        enabled = not border_str.endswith(":off")
+        parts = [x.strip() for x in border_str.replace(":off", "").split(",")]
         color_str = parts[0]
         def border_help():
-            log.info(" border format: color[,size]")
+            log.info(" border format: color[,size][:off]")
             log.info("  eg: red,10")
             log.info("  eg: ,5")
             log.info("  eg: auto,5")
@@ -66,7 +67,6 @@ class XpraClient(GTKXpraClient):
         if color_str.lower()=="help":
             border_help()
             return
-        enabled = color_str.find(":off")<0
         color_str = color_str.replace(":off", "")
         if color_str=="auto" or color_str=="":
             try:
