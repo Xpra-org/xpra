@@ -56,18 +56,22 @@
 		repo="downloads.xiph.org"/>
   </autotools>
 
-  <autotools id="libtheora" autogenargs="--disable-examples" autogen-sh="configure">
-    <branch module="/releases/theora/libtheora-1.1.1.tar.bz2"
-		version="1.1.1"
-		hash="md5:292ab65cedd5021d6b7ddd117e07cd8e"
-		repo="downloads.xiph.org"/>
-  </autotools>
-
   <autotools id="libvorbis" autogenargs="" autogen-sh="configure">
 	<branch module="/releases/vorbis/libvorbis-1.3.5.tar.xz"
 		version="1.3.5"
 		hash="md5:28cb28097c07a735d6af56e598e1c90f"
 		repo="downloads.xiph.org"/>
+  </autotools>
+
+  <autotools id="libtheora" autogenargs="--disable-examples" autogen-sh="configure">
+    <branch module="/releases/theora/libtheora-1.1.1.tar.bz2"
+		version="1.1.1"
+		hash="md5:292ab65cedd5021d6b7ddd117e07cd8e"
+		repo="downloads.xiph.org"/>
+    <dependencies>
+                <dep package="libogg"/>
+                <dep package="libvorbis"/>
+    </dependencies>
   </autotools>
 
   <autotools id="lame" autogenargs="" autogen-sh="configure">
