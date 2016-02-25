@@ -323,15 +323,15 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
             return "sink_subprocess_wrapper(%s)" % self.process
 
 
-def start_sending_sound(plugins, sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
-    log("start_sending_sound%s", (plugins, sound_source_plugin, codec, volume, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
+def start_sending_sound(plugins, sound_source_plugin, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+    log("start_sending_sound%s", (plugins, sound_source_plugin, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
     try:
         #info about the remote end:
         remote = AdHocStruct()
         remote.pulseaudio_server = remote_pulseaudio_server
         remote.pulseaudio_id = remote_pulseaudio_id
         remote.remote_decoders = remote_decoders
-        plugin, options = parse_sound_source(plugins, sound_source_plugin, remote)
+        plugin, options = parse_sound_source(plugins, sound_source_plugin, want_monitor_device, remote)
         if not plugin:
             log.error("failed to setup '%s' sound stream source", (sound_source_plugin or "auto"))
             return  None

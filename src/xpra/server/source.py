@@ -915,7 +915,7 @@ class ServerSource(object):
                     return None
             from xpra.sound.wrapper import start_sending_sound
             plugins = self.sound_properties.get("plugins")
-            ss = start_sending_sound(plugins, self.sound_source_plugin, codec, volume, [codec], self.pulseaudio_server, self.pulseaudio_id)
+            ss = start_sending_sound(plugins, self.sound_source_plugin, codec, volume, True, [codec], self.pulseaudio_server, self.pulseaudio_id)
             self.sound_source = ss
             soundlog("start_sending_sound() sound source=%s", ss)
             if not ss:

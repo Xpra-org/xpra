@@ -33,7 +33,7 @@ OSX = sys.platform.startswith("darwin")
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "1")=="1"
-MONITOR_DEVICE_NAME = os.environ.get("XPRA_MONITOR_DEVICE_NAME", "")
+INPUT_DEVICE_NAME = os.environ.get("XPRA_INPUT_DEVICE_NAME", "")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 
@@ -568,11 +568,11 @@ def get_default_sink():
     return SINKS[0]
 
 
-def get_test_defaults(remote):
+def get_test_defaults(*args):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
-def get_pulse_defaults(remote):
+def get_pulse_defaults(want_monitor_device, remote):
     """
         choose the device to use
     """
@@ -601,49 +601,50 @@ def get_pulse_defaults(remote):
         log.error("Error: sound is disabled to prevent a sound loop")
         log.error(" identical Pulseaudio ID '%s'", pa_id)
         return None
-    monitor_devices = get_pa_device_options(True, False)
-    log("found pulseaudio monitor devices: %s", monitor_devices)
-    if len(monitor_devices)==0:
+    device_type_str = ["input", "monitor"][want_monitor_device]
+    devices = get_pa_device_options(want_monitor_device, not want_monitor_device)
+    log("found pulseaudio %s devices: %s", device_type_str, devices)
+    if len(devices)==0:
         log.error("Error: sound forwarding is disabled")
-        log.error(" could not detect any Pulseaudio monitor devices")
+        log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return None
-    if len(monitor_devices)>1 and MONITOR_DEVICE_NAME:
-        monitor_devices = dict((k,v) for k,v in monitor_devices.items() if k.find(MONITOR_DEVICE_NAME)>=0 or v.find(MONITOR_DEVICE_NAME)>0)
-        if len(monitor_devices)==0:
-            log.warn("Warning: Pulseaudio monitor device name filter '%s'", MONITOR_DEVICE_NAME)
+    if len(devices)>1 and INPUT_DEVICE_NAME:
+        devices = dict((k,v) for k,v in devices.items() if k.find(INPUT_DEVICE_NAME)>=0 or v.find(INPUT_DEVICE_NAME)>0)
+        if len(devices)==0:
+            log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, INPUT_DEVICE_NAME)
             log.warn(" did not match any devices")
             return None
-        elif len(monitor_devices)>1:
-            log.warn("Warning: Pulseaudio monitor device name filter '%s'", MONITOR_DEVICE_NAME)
-            log.warn(" matched %i devices", len(monitor_devices))
+        elif len(devices)>1:
+            log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, INPUT_DEVICE_NAME)
+            log.warn(" matched %i devices", len(devices))
     #default to first one:
-    monitor_device, monitor_device_name = monitor_devices.items()[0]
-    if len(monitor_devices)>1:
+    device, device_name = devices.items()[0]
+    if len(devices)>1 and want_monitor_device:
         default_sink = get_default_sink()
         default_monitor = default_sink+".monitor"
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
-            if not MONITOR_DEVICE_NAME: #warned already
+            if not INPUT_DEVICE_NAME: #warned already
                 log.warn("Warning: found more than one audio monitor device:")
-            for k,v in monitor_devices.items():
+            for k,v in devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
-            if not MONITOR_DEVICE_NAME: #used already!
-                log.warn(" use the environment variable XPRA_MONITOR_DEVICE_NAME to select a specific one")
-        if default_monitor in monitor_devices:
-            monitor_device = default_monitor
-            monitor_device_name = monitor_devices.get(default_monitor)
+            if not INPUT_DEVICE_NAME: #used already!
+                log.warn(" use the environment variable XPRA_INPUT_DEVICE_NAME to select a specific one")
+        if default_monitor in devices:
+            device = default_monitor
+            device_name = devices.get(default_monitor)
             if not WARNED_MULTIPLE_DEVICES:
-                log.warn("using monitor of default sink: %s", monitor_device_name)
+                log.warn("using monitor of default sink: %s", device_name)
         else:
             if not WARNED_MULTIPLE_DEVICES:
                 log.warn("using the first device")
     log.info("using pulseaudio device:")
-    log.info(" '%s'", monitor_device_name)
+    log.info(" '%s'", device_name)
     #make sure it is not muted:
-    set_source_mute(monitor_device, mute=False)
-    return {"device" : monitor_device}
+    set_source_mute(device, mute=False)
+    return {"device" : device}
 
 #a list of functions to call to get the plugin options
 #at runtime (so we can perform runtime checks on remote data,
@@ -672,7 +673,7 @@ def format_element_options(options):
     return csv("%s=%s" % (k,v) for k,v in options.items())
 
 
-def get_sound_source_options(plugin, options_str, remote):
+def get_sound_source_options(plugin, options_str, want_monitor_device, remote):
     """
         Given a plugin (short name), options string and remote info,
         return the options for the plugin given,
@@ -683,7 +684,7 @@ def get_sound_source_options(plugin, options_str, remote):
     #use the defaults as starting point:
     defaults_fn = DEFAULT_SRC_PLUGIN_OPTIONS.get(plugin)
     if defaults_fn:
-        options = defaults_fn(remote)
+        options = defaults_fn(want_monitor_device, remote)
         if options is None:
             #means failure
             return None
@@ -693,7 +694,7 @@ def get_sound_source_options(plugin, options_str, remote):
     return options
 
 
-def parse_sound_source(all_plugins, sound_source_plugin, remote):
+def parse_sound_source(all_plugins, sound_source_plugin, want_monitor_device, remote):
     #format: PLUGINNAME:options
     #ie: test:wave=2,freq=110,volume=0.4
     #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
@@ -716,7 +717,7 @@ def parse_sound_source(all_plugins, sound_source_plugin, remote):
         log.error("unknown source plugin: '%s' / '%s'", simple_str, sound_source_plugin)
         return  None, {}
     log("parse_sound_source(%s, %s, %s) plugin=%s", all_plugins, sound_source_plugin, remote, gst_sound_source_plugin)
-    options = get_sound_source_options(simple_str, options_str, remote)
+    options = get_sound_source_options(simple_str, options_str, want_monitor_device, remote)
     log("get_sound_source_options%s=%s", (simple_str, options_str, remote), options)
     if options is None:
         #means error
