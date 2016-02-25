@@ -393,6 +393,7 @@ bind = %(bind)s
 #auth=reject
 #auth=allow
 #auth=file
+#auth=multifile
 #auth=sys
 #auth=none
 
