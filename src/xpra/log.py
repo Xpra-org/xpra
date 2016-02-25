@@ -94,11 +94,13 @@ def set_default_level(level):
     default_level = level
 
 
-#this allows us to capture all logging and redirect it:
 def standard_logging(log, level, msg, *args, **kwargs):
     #this is just the regular logging:
     log(level, msg, *args, **kwargs)
 
+#this allows us to capture all logging and redirect it:
+#the default 'standard_logging' uses the logger,
+#but the client may inject its own handler here
 global_logging_handler = standard_logging
 
 def set_global_logging_handler(h):
