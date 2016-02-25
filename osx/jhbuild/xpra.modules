@@ -317,6 +317,12 @@
 		module="/packages/source/n/netifaces/netifaces-0.10.4.tar.gz"
 		hash="md5:36da76e2cfadd24cc7510c2c0012eb1e"
 		version="0.10.4"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pam">
@@ -324,6 +330,12 @@
 		module="/packages/source/p/pam/pam-0.1.4.tar.gz"
 		hash="md5:4c5247af579352bb6882dac64be10a33"
 		version="0.1.4"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pycrypto">
@@ -331,6 +343,12 @@
 		module="/packages/source/p/pycrypto/pycrypto-2.6.1.tar.gz"
 		hash="md5:55a61a054aa66812daf5161a0d5d7eda"
 		version="2.6.1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="pycparser">
@@ -338,6 +356,12 @@
 		module="/packages/source/p/pycparser/pycparser-2.14.tar.gz"
 		hash="md5:a2bc8d28c923b4fe2b2c3b4b51a4f935"
 		version="2.14"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="cffi">
@@ -348,6 +372,12 @@
 	<dependencies>
 		<dep package="pycparser"/>
 	</dependencies>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="six">
@@ -355,6 +385,12 @@
 		module="/packages/source/s/six/six-1.10.0.tar.gz"
 		hash="md5:34eed507548117b2ab523ab14b2f8b55"
 		version="1.10.0"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-cryptography">
@@ -363,11 +399,15 @@
 		hash="md5:2b25eebd1d3c6bae52b46f0dcec74dfb"
 		version="1.2.2"/>
 	<dependencies>
+                <dep package="python"/>
 		<dep package="openssl"/>
 		<dep package="cffi"/>
 		<dep package="six"/>
 		<dep package="python-enum34"/>
 	</dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pyasn1">
@@ -375,13 +415,25 @@
 		module="/packages/source/p/pyasn1/pyasn1-0.1.9.tar.gz"
 		hash="md5:f00a02a631d4016818659d1cc38d229a"
 		version="0.1.9"/>
-  </distutils>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+ </distutils>
 
   <distutils id="python-pillow">
-     <branch repo="pypi.python.org"
+        <branch repo="pypi.python.org"
 	     module="/packages/source/P/Pillow/Pillow-3.1.1.zip"
              hash="md5:3868f54fd164e65f95fbcb32f62940ae"
 	     version="3.1.1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-py2app">
@@ -389,6 +441,12 @@
 		module="/packages/source/p/py2app/py2app-0.9.tar.gz"
 		hash="md5:eb31f5fefcf80aeaf4d02ec68d5978b4"
 		version="0.9"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-cython">
@@ -396,14 +454,26 @@
 		module="/release/Cython-0.23.4.tar.gz"
 		hash="md5:157df1f69bcec6b56fd97e0f2e057f6e"
 		version="0.23.4"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-numpy">
-     <branch repo="pypi.python.org"
-	     module="/packages/source/n/numpy/numpy-1.10.4.tar.gz"
-	     version="1.10.4"
-	     hash="md5:aed294de0aa1ac7bd3f9745f4f1968ad"
-	     />
+        <branch repo="pypi.python.org"
+	        module="/packages/source/n/numpy/numpy-1.10.4.tar.gz"
+	        version="1.10.4"
+	        hash="md5:aed294de0aa1ac7bd3f9745f4f1968ad"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+
   </distutils>
 
   <distutils id="python-twisted">
@@ -411,6 +481,12 @@
 		module="/packages/source/T/Twisted/Twisted-15.5.0.tar.bz2"
 		hash="md5:0831d7c90d0020062de0f7287530a285"
 		version="12.3.0"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
 
@@ -419,26 +495,40 @@
 		module="/packages/source/n/nose/nose-1.3.7.tar.gz"
 		hash="md5:4d3ad0ff07b61373d2cefc89c5d0b20b"
 		version="1.3.7"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-lz4">
 	<branch repo="xpra.org"
-	     module="/src/python-lz4-0.8.0-rc2.tar.xz"
-	     hash="md5:f856e1f307a6d3d3a7c126b573e64d51"
-	     version="0.8.0-rc2"/>
+	        module="/src/python-lz4-0.8.0-rc2.tar.xz"
+	        hash="md5:f856e1f307a6d3d3a7c126b573e64d51"
+	        version="0.8.0-rc2"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-lzo">
 	<branch repo="pypi.python.org"
-	     module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
-	     hash="md5:b5cd60498474dab58c1ea2385adfa7bd"
-	     version="1.11">
+	        module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
+	        hash="md5:b5cd60498474dab58c1ea2385adfa7bd"
+	        version="1.11">
     	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
 	</branch>
 	<dependencies>
+                <dep package="python"/>
 		<dep package="lzo"/>
 	</dependencies>
 	<after>
+                <dep package="python"/>
 		<dep package="lzo"/>
 	</after>
   </distutils>
@@ -448,6 +538,12 @@
 		module="/packages/source/m/macholib/macholib-1.7.tar.gz"
 		hash="md5:cf03a55323d5b7ca59be530ba0b01032"
 		version="1.7"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-modulegraph">
@@ -455,6 +551,12 @@
 		module="/packages/source/m/modulegraph/modulegraph-0.12.1.tar.gz"
 		hash="md5:27abd74de3ec0e22ef129c1faa628bd5"
 		version="0.12.1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-altgraph">
@@ -462,6 +564,12 @@
 		module="/packages/source/a/altgraph/altgraph-0.12.tar.gz"
 		hash="md5:916dca277fb2b747d5b1ec05b54a0825"
 		version="0.12"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pyopengl">
@@ -469,6 +577,12 @@
 		module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.1a1.tar.gz"
 		hash="md5:77ee6044ceb2cf952aca89a9b2d3d585"
 		version="3.1.1a1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pyopengl-accelerate">
@@ -476,6 +590,12 @@
 		module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.1a1.tar.gz"
 		hash="md5:04e52af352dd078275a2d5720c4afea2"
 		version="3.1.1a1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pyobjc-core">
@@ -483,6 +603,12 @@
 		module="/packages/source/p/pyobjc-core/pyobjc-core-3.0.4.tar.gz"
 		hash="md5:6baaa0d2533cc9c26ad9f889ca9ecb01"
 		version="3.0.4"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pyobjc-framework-cocoa">
@@ -490,6 +616,12 @@
 		module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.0.4.tar.gz"
 		hash="md5:5df56f66608812d6db42aa6e554f1529"
 		version="3.0.4"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pyobjc-framework-quartz">
@@ -497,6 +629,12 @@
 		module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.0.4.tar.gz"
 		hash="md5:85d82afedef8ecf7e20344890a543312"
 		version="3.0.4"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-rencode">
@@ -504,6 +642,12 @@
 		module="/src/rencode-1.0.3.tar.xz"
 		hash="md5:b4c37bdd81e814587196afac06c71142"
 		version="1.0.3"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-pycups">
@@ -511,6 +655,12 @@
 		module="/packages/source/p/pycups/pycups-1.9.73.tar.bz2"
 		hash="md5:ee0e7204d7a2ae942e2f4c4508afdbfb"
 		version="1.9.73"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-ipaddress">
@@ -518,6 +668,12 @@
 		module="/packages/source/i/ipaddress/ipaddress-1.0.16.tar.gz"
 		hash="md5:1e27b62aa20f5b6fc200b2bdbf0d0847"
 		version="1.0.16"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-idna">
@@ -525,6 +681,12 @@
 		module="/packages/source/i/idna/idna-2.0.tar.gz"
 		hash="md5:bd17a9d15e755375f48a62c13b25b801"
 		version="2.0"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <distutils id="python-enum34">
@@ -532,6 +694,12 @@
 		module="/packages/source/e/enum34/enum34-1.1.2.tar.gz"
 		hash="md5:025bb71b3f9d2fad15d0ee53e48dc873"
 		version="1.1.2"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
   </distutils>
 
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
