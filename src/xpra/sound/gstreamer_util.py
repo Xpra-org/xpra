@@ -698,7 +698,7 @@ def parse_sound_source(all_plugins, sound_source_plugin, remote):
     #ie: test:wave=2,freq=110,volume=0.4
     #ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
     plugin = sound_source_plugin.split(":")[0]
-    options_str = (sound_source_plugin+":").split(":",1)[1]
+    options_str = (sound_source_plugin+":").split(":",1)[1].rstrip(":")
     simple_str = (plugin).lower().strip()
     if not simple_str:
         #choose the first one from
