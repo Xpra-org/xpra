@@ -733,6 +733,13 @@
         </after>
   </distutils>
 
+  <autotools id="sqlite" autogenargs="" autogen-sh="configure">
+	<branch module="/2015/sqlite-autoconf-3080803.tar.gz"
+		hash="md5:51272e875879ee893e51070b07c33888"
+		version="3080803"
+		repo="sqlite.org"/>
+  </autotools>
+
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
 	<branch module="/berkeley-db/db-6.0.30.tar.gz"
 		hash="md5:ad28eb86ad3203b5422844db179c585b"
@@ -756,6 +763,7 @@
                 <dep package="apr"/>
                 <dep package="openssl"/>
                 <dep package="db"/>
+                <dep package="sqlite"/>
         </dependencies>
   </autotools>
 
@@ -782,13 +790,6 @@
                 <dep package="openssl"/>
                 <dep package="scons"/>
         </dependencies>
-  </autotools>
-
-  <autotools id="sqlite" autogenargs="" autogen-sh="configure">
-	<branch module="/2015/sqlite-autoconf-3080803.tar.gz"
-		hash="md5:51272e875879ee893e51070b07c33888"
-		version="3080803"
-		repo="sqlite.org"/>
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
