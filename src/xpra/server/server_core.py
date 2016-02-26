@@ -204,7 +204,7 @@ class ServerCore(object):
         self.tcp_auth_class = self.get_auth_module("tcp-socket", ta or a, opts)
         if (a=="multifile" and ta=="file") or (ta=="multifile" and a=="file"):
             raise InitException("multifile and file authentication cannot be used at the same time")
-        authlog.info("init_auth(..) auth class(%s)=%s, tcp auth class(%s)=%s", a, self.auth_class, ta, self.tcp_auth_class)
+        authlog("init_auth(..) auth class(%s)=%s, tcp auth class(%s)=%s", a, self.auth_class, ta, self.tcp_auth_class)
 
     def get_auth_module(self, socket_type, auth, opts):
         authlog("get_auth_module(%s, %s, %s)", socket_type, auth, opts)
