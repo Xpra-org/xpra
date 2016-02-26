@@ -22,6 +22,7 @@ authlog = Logger("auth")
 
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
+from xpra.net import compression
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
@@ -381,6 +382,20 @@ class XpraClientBase(FileTransferHandler):
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
         return capabilities
+
+    def compressed_wrapper(self, datatype, data, level=5):
+        #FIXME: ugly assumptions here, should pass by name!
+        zlib = "zlib" in self.server_compressors and compression.use_zlib
+        lz4 = "lz4" in self.server_compressors and compression.use_lz4
+        lzo = "lzo" in self.server_compressors and compression.use_lzo
+        if level>0 and len(data)>=256 and (zlib or lz4 or lzo):
+            cw = compression.compressed_wrapper(datatype, data, level=level, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
+            if len(cw)<len(data):
+                #the compressed version is smaller, use it:
+                return cw
+        #we can't compress, so at least avoid warnings in the protocol layer:
+        return compression.Compressed("raw %s" % datatype, data, can_inline=True)
+
 
     def send(self, *parts):
         self._ordinary_packets.append(parts)
