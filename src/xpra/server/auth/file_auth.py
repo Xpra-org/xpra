@@ -9,7 +9,7 @@ import binascii
 import os.path
 import hmac, hashlib
 
-from xpra.os_util import get_hex_uuid
+from xpra.os_util import get_hex_uuid, strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 from xpra.util import xor
 from xpra.log import Logger
@@ -72,7 +72,10 @@ class Authenticator(SysAuthenticator):
         return self.salt, "hmac"
 
     def get_password(self):
-        return load_password_file()
+        file_data = load_password_file()
+        if file_data is None:
+            return None
+        return strtobytes(file_data)
 
     def authenticate(self, challenge_response, client_salt):
         if not self.salt:
