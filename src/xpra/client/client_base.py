@@ -528,13 +528,8 @@ class XpraClientBase(FileTransferHandler):
             salt = xor(salt, client_salt)
         if digest==b"hmac":
             import hmac, hashlib
-            def s(v):
-                try:
-                    return v.encode()
-                except:
-                    return str(v)
-            password = s(password)
-            salt = s(salt)
+            password = strtobytes(password)
+            salt = strtobytes(salt)
             challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
         elif digest==b"xor":
             #don't send XORed password unencrypted:
@@ -593,12 +588,6 @@ class XpraClientBase(FileTransferHandler):
             return None
         filename = os.path.expanduser(self.password_file)
         password = load_binary_file(filename)
-        if password is None:
-            return None
-        try:
-            password = password.decode("utf8").strip("\n\r")
-        except:
-            password = str(password)
         netlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
         return password
 
