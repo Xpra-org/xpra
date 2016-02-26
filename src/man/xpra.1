@@ -600,10 +600,7 @@ of your actions.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
 Specifies the authentication module to use for unix domain sockets
-created using the \fBbind\fP switch.
-
-This can be used to secure sockets in a different way from
-the \fB\-\-encryption\fP switch: authentication modules can
+created using the \fBbind\fP switch. Authentication modules can
 validate a username and password against a variety of backend modules:
 .RS
 .IP \fBallow\fP
@@ -613,17 +610,30 @@ and should only be used for testing
 always fails authentication, useful for testing
 .IP \fBfile\fP
 checks the password against the password data found in the file
-specified using the \fBpassword\-file\fP switch
+specified using the \fBpassword\-file\fP switch.
+
+The contents of this file will be treated as binary data,
+there are no restrictions on character encodings or file size,
+but since older versions did have more restrictions it is best
+to avoid special characters, in particular: non-ASCII characters,
+control characters like newlines and carriage returns,
+and the pipe character \fI|\fP.
+
 .IP \fBmultifile\fP
 checks the username and password against the file specified using
 the \fBpassword\-file\fP switch.
-The file must contain each user credentials on a line of the form:
+The file must contain each user credentials on one line of the form:
+
 \fIusername|password|uid|gid|displays|env_opts|session_opts\fP
+
+It is not possible to have usernames or password that contain
+the pipe character \fI|\fP which is used as delimiter, or newlines
+and carriage returns.
 .IP \fBpam\fP
 validates the username and password using the PAM system
 .IP \fBwin32\fP
 validates the username and password using Microsoft Windows
-authentication
+authentication (only available on this platform)
 .IP \fBsys\fP
 chooses the appropriate system authentication module
 automatically (either \fBpam\fP or \fBwin32\fP)
@@ -755,8 +765,8 @@ This allows sessions to be secured with a password stored in a text
 file.  You should use this if you use the \fB\-\-bind\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
-Instead of using this option, password itself can be provided
-via the \fBXPRA_PASSWORD\fP environment variable.
+The format of this file depends on the authentication option used,
+see \fIauth\fP and \fItcp\-auth\fP for details.
 .TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
@@ -777,8 +787,6 @@ to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 Specifies the key to use with the encryption cipher specified
 with \fB\-\-encryption\fP.  The client and server must use the
 same keyfile contents.
-Instead of using this option, the key can be provided
-via the \fBXPRA_ENCRYPTION_KEY\fP environment variable.
 .TP
 \fB\-\-tcp\-encryption\-keyfile\fP=\fIFILENAME\fP
 Just like the \fBencryption\-keyfile\fP switch, except this one only applies
@@ -1185,18 +1193,6 @@ environment of the child to point to the xpra display.
 
 \fBxpra attach\fP, on the other hand, uses this variable to determine
 which display the remote applications should be shown on.
-
-\fBXPRA_PASSWORD\fP
-Can be used to specify the password (or user and password list) as
-an alternative to a password file.
-If \fB\-\-password\-file\fP is also specified, this environment variable
-is ignored.
-
-\fBXPRA_ENCRYPTION_KEY\fP
-Can be used to specify the encryption key to use if encryption is enabled.
-Specifying the key on its own does not enable encryption.
-If \fB\-\-encryption\-keyfile\fP is also specified, this environment
-variable is ignored.
 
 .\" --------------------------------------------------------------------
 .SH FILES
