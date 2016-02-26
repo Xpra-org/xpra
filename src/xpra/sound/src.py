@@ -79,8 +79,7 @@ class SoundSource(SoundPipeline):
                         "max-size-buffers=0",
                         "max-size-bytes=0",
                         "max-size-time=%s" % (50*MS_TO_NS),
-                        "leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM,
-                        "silent=1"]
+                        "leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM]
             pipeline_els += [" ".join(queue_el)]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
@@ -96,6 +95,11 @@ class SoundSource(SoundPipeline):
             self.queue  = self.pipeline.get_by_name("queue")
         else:
             self.queue = None
+        if self.queue:
+            try:
+                self.queue.set_property("silent", True)
+            except Exception as e:
+                log("cannot make queue silent: %s", e)
         try:
             if get_gst_version()<(1,0):
                 self.sink.set_property("enable-last-buffer", False)
