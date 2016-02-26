@@ -76,7 +76,7 @@ def get_status_output(*args, **kwargs):
         print("error running %s,%s: %s" % (args, kwargs, e))
         return -1, "", ""
     stdout, stderr = p.communicate()
-    return p.returncode, stdout, stderr
+    return p.returncode, stdout.decode(), stderr.decode()
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
 #we don't support building with "pkg-config" on win32 with python2:
@@ -84,7 +84,7 @@ if PKG_CONFIG and (PYTHON3 or not WIN32):
     pkg_config_version = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = pkg_config_version[0]==0 and pkg_config_version[1]
     if has_pkg_config:
-        print("found pkg-config version: %s" % pkg_config_version[1].decode().strip("\n\r"))
+        print("found pkg-config version: %s" % pkg_config_version[1].strip("\n\r"))
 
 def pkg_config_ok(*args, **kwargs):
     if not has_pkg_config:
@@ -489,7 +489,7 @@ def get_gcc_version():
         r, _, err = get_status_output(cmd)
         if r==0:
             V_LINE = "gcc version "
-            for line in err.decode("utf8").splitlines():
+            for line in err.splitlines():
                 if line.startswith(V_LINE):
                     v_str = line[len(V_LINE):].split(" ")[0]
                     for p in v_str.split("."):
@@ -616,7 +616,6 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         r, out, err = get_status_output(cmd)
         if r!=0:
             sys.exit("ERROR: call to pkg-config ('%s') failed (err=%s)" % (" ".join(cmd), err))
-        out = out.decode('utf-8')
         for token in out.split():
             if token[:2] in ignored_flags:
                 pass
@@ -714,7 +713,7 @@ def get_xorg_version(xorg_bin):
     r, _, err = get_status_output(cmd)
     if r==0:
         V_LINE = "X.Org X Server "
-        for line in err.decode("utf8").splitlines():
+        for line in err.splitlines():
             if line.startswith(V_LINE):
                 v_str = line[len(V_LINE):]
                 xorg_version = [int(x) for x in v_str.split(".")[:2]]
@@ -2124,7 +2123,6 @@ if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
             continue
         code, out, err = get_status_output([filename, "--version"])
         if code==0:
-            out = out.decode('utf-8')
             vpos = out.rfind(", V")
             if vpos>0:
                 version = out[vpos+3:].strip("\n")
