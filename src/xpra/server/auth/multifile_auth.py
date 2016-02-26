@@ -11,6 +11,7 @@ import binascii
 import hmac, hashlib
 
 from xpra.server.auth.file_auth import Authenticator as FileAuthenticator, init as file_init, load_password_file
+from xpra.os_util import strtobytes
 from xpra.util import xor
 from xpra.log import Logger
 log = Logger("auth")
@@ -51,7 +52,7 @@ def load_auth_file():
             i += 1
             line = line.strip()
             log("line %s: %s", i, line)
-            if len(line)==0 or line.startswith("#"):
+            if len(line)==0 or line.startswith(b"#"):
                 continue
             try:
                 v = parse_auth_line(line)
@@ -62,6 +63,7 @@ def load_auth_file():
                     else:
                         auth_data[username] = password, uid, gid, displays, env_options, session_options
             except Exception as e:
+                log("parsing error", exc_info=True)
                 log.error("Error parsing password file line %i:", i)
                 log.error(" '%s'", line)
                 log.error(" %s", e)
@@ -70,7 +72,7 @@ def load_auth_file():
     return auth_data
 
 def parse_auth_line(line):
-    ldata = line.split("|")
+    ldata = line.split(b"|")
     log("found %s fields", len(ldata))
     assert len(ldata)>=4, "not enough fields"
     #parse fields:
@@ -85,7 +87,7 @@ def parse_auth_line(line):
         return get_default_value()
     uid = getsysid(ldata[2], os.getuid)
     gid = getsysid(ldata[3], os.getgid)
-    displays = ldata[4].split(",")
+    displays = ldata[4].split(b",")
     env_options = {}
     session_options = {}
     if len(ldata)>=6:
@@ -101,7 +103,7 @@ class Authenticator(FileAuthenticator):
         self.sessions = None
 
     def get_auth_info(self):
-        return load_auth_file().get(self.username)
+        return load_auth_file().get(strtobytes(self.username))
 
     def get_password(self):
         entry = self.get_auth_info()
@@ -127,8 +129,8 @@ class Authenticator(FileAuthenticator):
             log.error(" no password for '%s' in %s", self.username, password_file)
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
-        verify = hmac.HMAC(fpassword, salt, digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(salt), verify)
+        verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
+        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
         if hasattr(hmac, "compare_digest"):
             eq = hmac.compare_digest(verify, challenge_response)
         else:

@@ -11,6 +11,7 @@ import uuid
 import hmac
 import hashlib
 from xpra.util import xor
+from xpra.os_util import strtobytes
 
 from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth
 
@@ -100,7 +101,8 @@ class TestAuth(unittest.TestCase):
 		#no file, no go:
 		a = self._init_auth(module)
 		assert a.requires_challenge()
-		assert not a.get_password()
+		p = a.get_password()
+		assert not p, "got a password from %s: %s" % (a, p) 
 		#challenge twice is a fail
 		assert a.get_challenge()
 		assert not a.get_challenge()
@@ -111,14 +113,15 @@ class TestAuth(unittest.TestCase):
 			with f:
 				a = self._init_auth(module, {"password_file" : filename})
 				password, filedata = genauthdata(a)
-				f.write(filedata)
+				f.write(strtobytes(filedata))
 				f.flush()
 				assert a.requires_challenge()
 				salt, mac = a.get_challenge()
 				assert salt
 				assert mac=="hmac"
-				client_salt = uuid.uuid4().hex+uuid.uuid4().hex
-				auth_salt = xor(salt, client_salt)
+				password = strtobytes(password)
+				client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
+				auth_salt = strtobytes(xor(salt, client_salt))
 				if muck==0:
 					verify = hmac.HMAC(password, auth_salt, digestmod=hashlib.md5).hexdigest()
 					assert a.authenticate(verify, client_salt)

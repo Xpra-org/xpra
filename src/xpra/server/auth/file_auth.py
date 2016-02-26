@@ -92,8 +92,8 @@ class Authenticator(SysAuthenticator):
             log.error("Error: authentication failed")
             log.error(" no password for '%s' in %s", self.username, password_file)
             return False
-        verify = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, password, binascii.hexlify(salt), verify)
+        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
+        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, password, binascii.hexlify(strtobytes(salt)), verify)
         if hasattr(hmac, "compare_digest"):
             eq = hmac.compare_digest(verify, challenge_response)
         else:
