@@ -668,6 +668,8 @@ def close_fds(excluding=[0, 1, 2]):
                 pass
 
 def start_Xvfb(xvfb_str, display_name, cwd):
+    if not xvfb_str:
+        raise InitException("the 'xvfb' command is not defined")
     # We need to set up a new server environment
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
     if not os.path.exists(xauthority):
@@ -682,9 +684,9 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     xvfb_cmd = xvfb_str.split()
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
-    except:
+    except ValueError:
         logfile_argindex = -1
-    assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last"
+    assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last (found at index %i)" % logfile_argindex
     tmp_xorg_log_file = None
     if logfile_argindex>0:
         if display_name[0]=='S':
