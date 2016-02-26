@@ -28,6 +28,7 @@ import xpra
 from xpra.server import ClientException
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.server import deadly_signal
+from xpra.scripts.config import InitException
 from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES, Queue
@@ -39,7 +40,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import typedict, updict, repr_ellipsized, dump_all_frames, \
+from xpra.util import csv, typedict, updict, repr_ellipsized, dump_all_frames, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -197,9 +198,13 @@ class ServerCore(object):
         self.init_auth(opts)
 
     def init_auth(self, opts):
-        self.auth_class = self.get_auth_module("unix-domain-socket", opts.auth, opts)
-        self.tcp_auth_class = self.get_auth_module("tcp-socket", opts.tcp_auth or opts.auth, opts)
-        authlog("init_auth(%s) auth class=%s, tcp auth class=%s", opts, self.auth_class, self.tcp_auth_class)
+        a = opts.auth.lower()
+        ta = opts.tcp_auth.lower()
+        self.auth_class = self.get_auth_module("unix-domain-socket", a, opts)
+        self.tcp_auth_class = self.get_auth_module("tcp-socket", ta or a, opts)
+        if (a=="multifile" and ta=="file") or (ta=="multifile" and a=="file"):
+            raise InitException("multifile and file authentication cannot be used at the same time")
+        authlog.info("init_auth(..) auth class(%s)=%s, tcp auth class(%s)=%s", a, self.auth_class, ta, self.tcp_auth_class)
 
     def get_auth_module(self, socket_type, auth, opts):
         authlog("get_auth_module(%s, %s, %s)", socket_type, auth, opts)
@@ -226,7 +231,6 @@ class ServerCore(object):
             AUTH_MODULES["pam"] = pam_auth
         except Exception as e:
             authlog("cannot load pam auth: %s", e)
-        from xpra.scripts.config import InitException
         if sys.platform.startswith("win"):
             try:
                 from xpra.server.auth import win32_auth
@@ -234,9 +238,9 @@ class ServerCore(object):
             except Exception as e:
                 authlog.error("Error: cannot load the MS Windows authentication module:")
                 authlog.error(" %s", e)
-        auth_module = AUTH_MODULES.get(auth.lower())
+        auth_module = AUTH_MODULES.get(auth)
         if not auth_module:
-            raise InitException("cannot find authentication module '%s' (supported: %s)" % (auth, AUTH_MODULES.keys()))
+            raise InitException("cannot find authentication module '%s' (supported: %s)" % (auth, csv(AUTH_MODULES.keys())))
         try:
             auth_module.init(opts)
             auth_class = getattr(auth_module, "Authenticator")
