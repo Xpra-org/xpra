@@ -750,7 +750,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("window workspace unchanged: %s", wn(workspace))
             return
         gdkwin = self.get_window()
-        workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", gdkwin.xid, self.is_mapped(), gdkwin.is_visible())
+        workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", get_xid(gdkwin), self.is_mapped(), gdkwin.is_visible())
         with xsync:
             send_wm_workspace(root, gdkwin, workspace)
 
