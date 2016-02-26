@@ -353,9 +353,10 @@ class UIXpraClient(XpraClientBase):
                 def vinfo(k):
                     val = self.sound_properties.get(k)
                     assert val, "%s not found in sound properties" % k
-                    return ".".join(val[:2])
+                    return ".".join(bytestostr(val[:2]))
                 log.info("GStreamer version %s for Python %s", vinfo(b"gst.version"), vinfo(b"python.version"))
             except Exception as e:
+                soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")
                 soundlog.error(" %s", e)
                 self.speaker_allowed = False
