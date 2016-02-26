@@ -357,7 +357,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.printing = False
         #verify that we can talk to the socket:
         if self.printing and self.auth_class and self.auth_class!="none":
-            log.warn("Warning: printing conflicts with socket authentication module '%s'", self.auth_class)
+            log.warn("Warning: printing conflicts with socket authentication module '%s'", getattr(self.auth_class, "auth_name", self.auth_class))
             self.printing = False
         printlog("init_printing() printing=%s", self.printing)
 

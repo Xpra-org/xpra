@@ -240,6 +240,7 @@ class ServerCore(object):
         try:
             auth_module.init(opts)
             auth_class = getattr(auth_module, "Authenticator")
+            auth_class.auth_name = auth.lower()
             return auth_class
         except Exception as e:
             raise InitException("Authenticator class not found in %s" % auth_module)
