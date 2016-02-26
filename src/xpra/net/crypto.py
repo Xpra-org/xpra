@@ -47,6 +47,7 @@ def crypto_backend_init():
         try_backends = ["pycrypto", "python-cryptography"]
     else:
         raise ImportError("invalid crypto library specified: '%s'" % CRYPTO_LIBRARY)
+    errors = {}
     for tb in try_backends:
         try:
             if tb=="python-cryptography":
@@ -56,21 +57,27 @@ def crypto_backend_init():
                 assert tb=="pycrypto"
                 from xpra.net import pycrypto_backend
                 try_backend = pycrypto_backend
+
+            #validate it:
+            validate_backend(try_backend)
+            ENCRYPTION_CIPHERS[:] = try_backend.ENCRYPTION_CIPHERS[:]
+            backend = try_backend
+            break
         except ImportError as e:
-            log.error("Error: encryption library %s is not available!", tb)
-            log.error(" %s", e)
+            errors[tb] = e
             log("%s import failure", tb, exc_info=True)
+        except Exception as e:
+            errors[tb] = e
+            log("%s validation failure", tb, exc_info=True)
+    if errors:
+        if backend:
+            log.warn("Warning: using fallback encryption library %s", tb)
+            for k,e in errors.items():
+                log.warn(" %s is not available: %s", k, e)
         else:
-            try:
-                #validate it:
-                validate_backend(try_backend)
-                ENCRYPTION_CIPHERS[:] = try_backend.ENCRYPTION_CIPHERS[:]
-                backend = try_backend
-                break
-            except Exception as e:
-                log.error("Error: encryption library %s failed validation!", tb)
-                log.error(" %s", e)
-                log("%s validation failure", tb, exc_info=True)
+            log.error("Error: no encryption libraries could be loaded")
+            for k,e in errors.items():
+                log.error(" %s is not available: %s", k, e)
     log("crypto_backend_init() backend=%s, ENCRYPTION_CIPHERS=%s", backend, ENCRYPTION_CIPHERS)
 
 def validate_backend(try_backend):
