@@ -761,7 +761,7 @@ def get_conf_dir(install_dir, stripbuildroot=True):
 
 def detect_xorg_setup(install_dir=None):
     #returns (xvfb_command, has_displayfd, use_dummmy_wrapper)
-    if not server_ENABLED or WIN32:
+    if WIN32:
         return ("", False, False)
 
     xorg_bin = get_xorg_bin()
