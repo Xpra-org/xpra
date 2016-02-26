@@ -8,7 +8,7 @@ import time
 import sys
 
 from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, parse_element_options, format_element_options, \
-                            can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names, GSTREAMER1
+                            can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
 from xpra.util import AdHocStruct, typedict
@@ -120,13 +120,13 @@ def run_sound(mode, error_cb, options, args):
     """ this function just parses command line arguments to feed into the sound subprocess class,
         which in turn just feeds them into the sound pipeline class (sink.py or src.py)
     """
-    from xpra.gtk_common.gobject_compat import want_gtk3
-    want_gtk3(GSTREAMER1)
     #we have to import gstreamer before init() on OSX,
     #because init will end up import gobject,
     #which means choosing between gi and gtk2 bindings
-    from xpra.sound.gstreamer_util import import_gst
+    from xpra.sound.gstreamer_util import import_gst, get_pygst_version
     gst = import_gst()
+    from xpra.gtk_common.gobject_compat import want_gtk3
+    want_gtk3(get_pygst_version()[0]>0)
     from xpra.platform import program_context
     with program_context("Xpra"):
         log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
