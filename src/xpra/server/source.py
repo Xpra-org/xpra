@@ -1598,7 +1598,12 @@ class ServerSource(object):
         printlog("set_printers(%s, %s, %s, %s) for %s", printers, password_file, encryption, encryption_keyfile, self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
-            printlog("not configuring local printers")
+            printlog("local client with identical machine id,")
+            printlog(" not configuring local printers")
+            return
+        if not self.uuid:
+            printlog.warn("Warning: client did not supply a UUID,")
+            printlog.warn(" printer forwarding cannot be enabled")
             return
         from xpra.platform.pycups_printing import remove_printer
         #remove the printers no longer defined
