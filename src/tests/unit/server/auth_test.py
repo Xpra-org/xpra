@@ -13,7 +13,10 @@ import hashlib
 from xpra.util import xor
 from xpra.os_util import strtobytes
 
-from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth
+try:
+	from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth
+except:
+	pass
 
 class FakeOpts(object):
 	def __init__(self, d={}):
