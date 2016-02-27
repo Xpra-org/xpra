@@ -145,6 +145,12 @@ class TestAuth(unittest.TestCase):
 			
 
 def main():
+	try:
+		from xpra import server
+		assert server
+	except ImportError as e:
+		print("non server build, skipping auth module test: %s" % e)
+		return
 	unittest.main()
 
 if __name__ == '__main__':
