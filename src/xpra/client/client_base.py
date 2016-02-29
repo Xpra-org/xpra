@@ -588,12 +588,6 @@ class XpraClientBase(FileTransferHandler):
 
     def get_encryption_key(self):
         key = load_binary_file(self.encryption_keyfile)
-        if not key:
-            key = os.environ.get('XPRA_ENCRYPTION_KEY')
-        if not key and self.password_file:
-            key = load_binary_file(self.password_file)
-            if key:
-                netlog("used password file as encryption key")
         if key is None:
             raise InitExit(1, "no encryption key")
         return key.strip("\n\r")

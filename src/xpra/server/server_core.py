@@ -781,18 +781,7 @@ class ServerCore(object):
         if keyfile:
             authlog("loading encryption key from keyfile: %s", keyfile)
             return self.filedata_nocrlf(keyfile)
-        env_key = os.environ.get('XPRA_ENCRYPTION_KEY')
-        if env_key:
-            authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
-            return env_key
-        v = None
-        if authenticator:
-            authlog("trying to get encryption key from: %s", authenticator)
-            v = authenticator.get_password()
-        if v is None and self.password_file:
-            authlog("trying to load encryption key from password file: %s", self.password_file)
-            v = self.filedata_nocrlf(self.password_file)
-        return v
+        return None
 
     def hello_oked(self, proto, packet, c, auth_caps):
         pass
