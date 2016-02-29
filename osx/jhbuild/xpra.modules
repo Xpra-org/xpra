@@ -32,6 +32,8 @@
   <repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
   <repository type="tarball" name="oberhumer.com" default="yes" href="http://www.oberhumer.com/"/>
   <repository type="tarball" name="openssl.org" default="yes" href="https://www.openssl.org/"/>
+  <repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
+
 
   <autotools id="yasm" autogen-sh="configure">
 	<branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
@@ -669,10 +671,10 @@
   </distutils>
 
   <distutils id="python-rencode">
-	<branch repo="xpra.org"
-		module="/src/rencode-1.0.3.tar.xz"
-		hash="md5:b4c37bdd81e814587196afac06c71142"
-		version="1.0.3"/>
+	<branch repo="github.com"
+		module="/aresch/rencode/archive/v1.0.4.tar.gz"
+		hash="md5:741ee1b994344358517987f1681baf12"
+		version="1.0.4"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
