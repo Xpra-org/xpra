@@ -1,6 +1,19 @@
 v0.17.0 (2015-12-16)
 ======================
-	-- TODO
+	-- GStreamer 1.6.3 on MS Windows
+	-- use newer Plink SSH with Windows Vista onwards
+	-- libyuv codec for faster colourspace conversion
+	-- support python-cryptography as encryption backend
+	-- support for starting the dbus server automatically
+	-- support for new container formats: matroska, gdp
+	-- move some files and scripts to /run on Linux
+	-- support NVENC v6
+	-- support HEVC with NVENC
+	-- geometry fixes
+	-- webcam forwarding (limited scope)
+	-- new event based start commands: after connection / on connection
+	-- split file authentication module
+	-- debug logging and message improvements
 
 
 v0.16.0 (2015-11-13)
