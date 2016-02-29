@@ -673,6 +673,7 @@
   <distutils id="python-rencode">
 	<branch repo="github.com"
 		module="/aresch/rencode/archive/v1.0.4.tar.gz"
+		checkoutdir="rencode-1.0.4"
 		hash="md5:741ee1b994344358517987f1681baf12"
 		version="1.0.4"/>
         <dependencies>
