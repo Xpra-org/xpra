@@ -198,9 +198,12 @@ class subprocess_callee(object):
         signal.signal(signal.SIGINT, self.signal_stop)
         signal.signal(signal.SIGTERM, self.signal_stop)
         signame = SIGNAMES.get(sig, sig)
-        log("handle_signal(%s, %s) calling stop from main thread", signame, frame)
+        try:
+            log("handle_signal(%s, %s) calling stop from main thread", signame, frame)
+        except:
+            pass        #may fail if we were doing IO logging when the signal was received
         self.send("signal", signame)
-        self.cleanup()
+        self.timeout_add(0, self.cleanup)
         #give time for the network layer to send the signal message
         self.timeout_add(150, self.stop)
 
