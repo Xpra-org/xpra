@@ -89,7 +89,7 @@ class GLClientWindow(GTK2WindowBase):
                 self.remove(glarea)
             b.close()
             self._backing = None
-        self.iconify()
+        GTK2WindowBase.freeze(self)
 
 
     def toggle_debug(self, *args):

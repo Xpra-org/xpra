@@ -140,6 +140,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         self._current_frame_extents = None
         self._screen = -1
+        self._frozen = False
         #add platform hooks
         self.on_realize_cb = {}
         self.connect_after("realize", self.on_realize)
@@ -341,7 +342,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def freeze(self):
         #the OpenGL subclasses override this method to also free their GL context
+        self._frozen = True
         self.iconify()
+
+    def unfreeze(self):
+        if self._frozen and self._iconified:
+            self._frozen = False
+            self.deiconify()
 
 
     def show(self):
@@ -405,6 +412,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     statelog("telling server about iconification with %sms delay", delay)
                     self.timeout_add(delay, tell_server)
             else:
+                self._frozen = False
                 self.process_map_event()
         self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:

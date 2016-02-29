@@ -2604,6 +2604,11 @@ class UIXpraClient(XpraClientBase):
         for window in self._id_to_window.values():
             window.freeze()
 
+    def unfreeze(self):
+        log("unfreeze()")
+        for window in self._id_to_window.values():
+            window.unfreeze()
+
 
     def reinit_windows(self, new_size_fn=None):
         def fake_send(*args):

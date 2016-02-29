@@ -690,6 +690,9 @@ class ClientExtras(object):
         if c and event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
             log("will freeze all the windows")
             c.freeze()
+        elif c and event in (WTS_SESSION_LOGON, WTS_SESSION_UNLOCK):
+            log("will unfreeze all the windows")
+            c.unfreeze()
 
 
     def inputlangchange(self, wParam, lParam):
