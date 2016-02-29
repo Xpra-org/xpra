@@ -13,7 +13,7 @@ from xpra.util import csv
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
-                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM, WIN32, OSX
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -120,24 +120,25 @@ class SoundSource(SoundPipeline):
             self.sink.connect("new-buffer", self.on_new_buffer)
             self.sink.connect("new-preroll", self.on_new_preroll0)
         self.src = self.pipeline.get_by_name("src")
-        try:
-            global BUFFER_TIME, LATENCY_TIME
-            assert BUFFER_TIME>=LATENCY_TIME, "invalid settings: latency must be lower than the buffer time"
-            def settime(attr, v):
-                cval = self.src.get_property(attr)
-                gstlog("default: %s=%i", attr, cval//1000)
-                if v>=0:
-                    self.src.set_property(attr, v*1000)
-                    gstlog("overriding with: %s=%i", attr, v)
-            settime("buffer-time", BUFFER_TIME)
-            settime("latency-time", LATENCY_TIME)
-            for x in ("actual-buffer-time", "actual-latency-time"):
-                #don't comment this out, it is used to verify the attributes are present:
-                gstlog("initial %s: %s", x, self.src.get_property(x))
-            self.buffer_latency = True
-        except Exception as e:
-            log.info("source %s does not support 'buffer-time' or 'latency-time': %s", self.src_type, e)
-            self.buffer_latency = False
+        self.buffer_latency = False
+        if not WIN32 and not OSX:
+            try:
+                global BUFFER_TIME, LATENCY_TIME
+                assert BUFFER_TIME>=LATENCY_TIME, "invalid settings: latency must be lower than the buffer time"
+                def settime(attr, v):
+                    cval = self.src.get_property(attr)
+                    gstlog("default: %s=%i", attr, cval//1000)
+                    if v>=0:
+                        self.src.set_property(attr, v*1000)
+                        gstlog("overriding with: %s=%i", attr, v)
+                settime("buffer-time", BUFFER_TIME)
+                settime("latency-time", LATENCY_TIME)
+                for x in ("actual-buffer-time", "actual-latency-time"):
+                    #don't comment this out, it is used to verify the attributes are present:
+                    gstlog("initial %s: %s", x, self.src.get_property(x))
+                self.buffer_latency = True
+            except Exception as e:
+                log.info("source %s does not support 'buffer-time' or 'latency-time': %s", self.src_type, e)
 
     def __repr__(self):
         return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
