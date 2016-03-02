@@ -18,11 +18,16 @@ def _get_data_dir():
     try:
         from win32com.shell import shell, shellcon      #@UnresolvedImport
         appdata = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, None, 0)
+        assert appdata
     except:
         #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
         #UAC in vista onwards will not allow us to write where the software is installed,
         #so we place the log file (etc) in "~/Application Data"
         appdata = os.environ.get("APPDATA")
+    if not appdata:
+        #we need some kind of path..
+        appdata = os.environ.get("TEMP", "C:\\TEMP\\")
+        assert appdata, "cannot find any usable directory for log files"
     if not os.path.exists(appdata):
         os.mkdir(appdata)
     data_dir = os.path.join(appdata, "Xpra")
