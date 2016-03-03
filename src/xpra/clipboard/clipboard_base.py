@@ -366,7 +366,7 @@ class ClipboardProtocolHelperBase(object):
                 no_contents()
                 return
             wire_data = self._may_compress(dtype, dformat, wire_data)
-            if wire_data:
+            if wire_data is not None:
                 self.send("clipboard-contents", request_id, selection,
                        dtype, dformat, wire_encoding, wire_data)
         proxy.get_contents(target, got_contents)
