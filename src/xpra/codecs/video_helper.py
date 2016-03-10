@@ -22,6 +22,7 @@ CODEC_TO_MODULE = {"vpx"        : ["vpx"],
                    "x264"       : ["enc_x264"],
                    "x265"       : ["enc_x265"],
                    "nvenc"      : NVENC_OPTIONS,
+                   "xvid"       : ["xvid"],
                    "swscale"    : ["csc_swscale"],
                    "cython"     : ["csc_cython"],
                    "opencl"     : ["csc_opencl"],
@@ -51,12 +52,12 @@ def try_import_modules(codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "x265", "nvenc"])
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "xvid", "x265", "nvenc"])
 ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "cython", "opencl", "libyuv", "opencv"])
 NO_GFX_CSC_OPTIONS = [x for x in ALL_CSC_MODULE_OPTIONS if x not in ("opencl", )]
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec2", "vpx"])
 
-PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "x265"]
+PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "xvid", "x265"]
 PREFERRED_DECODER_ORDER = ["avcodec2", "vpx"]
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
@@ -70,6 +71,8 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 def get_encoder_module_names(x):
     if x=="nvenc":
         return NVENC_OPTIONS
+    if x=="xvid":
+        return ["xvid"]
     elif x.find("enc")>=0:
         return [x]              #ie: "nvenc" or "enc_vpx"
     return ["enc_"+x]           #ie: "enc_x264"

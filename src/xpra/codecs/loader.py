@@ -146,6 +146,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
             codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
             add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
 
+        codec_import_check("xvid", "xvid encoder", "xpra.codecs.xvid", "xpra.codecs.xvid.encoder", "Encoder")
+        add_codec_version("xvid", "xpra.codecs.xvid.encoder")
+
     if csc:
         show += list(CSC_CODECS)
         codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
@@ -213,14 +216,14 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl", "csc_libyuv", "csc_opencv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5", "nvenc6"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5", "nvenc6", "xvid"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
 #encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
 
@@ -233,6 +236,7 @@ if compression.get_enabled_compressors():
 ENCODINGS_TO_NAME = {
       "h264"    : "H.264",
       "h265"    : "H.265",
+      "mpeg4"   : "MPEG4",
       "vp8"     : "VP8",
       "vp9"     : "VP9",
       "png"     : "PNG (24/32bpp)",
@@ -248,6 +252,7 @@ ENCODINGS_HELP = {
       "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
       "vp8"     : "VP8 video codec",
       "vp9"     : "VP9 video codec",
+      "mpeg4"   : "MPEG-4 video codec",
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
       "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
@@ -256,7 +261,7 @@ ENCODINGS_HELP = {
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
       }
 
-HELP_ORDER = ("h264", "h265", "vp8", "vp9", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
+HELP_ORDER = ("h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
 
 #those are currently so useless that we don't want the user to select them by mistake
 PROBLEMATIC_ENCODINGS = ("h265", )

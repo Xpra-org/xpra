@@ -28,6 +28,7 @@ _DEFAULT_BOX_COLORS = {
               "png/L"   : "teal",
               "h265"    : "khaki",
               "vp9"     : "lavender",
+              "mpeg4"   : "black",
               }
 
 def get_fcolor(encoding):

@@ -1,7 +1,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     3.0
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra	
 
 Group:       Applications/Multimedia
@@ -57,6 +57,7 @@ This package contains the development files for %{name}.
     --enable-decoder=hevc \
     --enable-decoder=vp8 \
     --enable-decoder=vp9 \
+    --enable-decoder=mpeg4 \
     --enable-shared \
 	--enable-debug \
 	--disable-stripping \
@@ -123,6 +124,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Mar 10 2016 Antoine Martin <antoine@devloop.org.uk> 3.0-2
+- rebuild with mpeg4 decoding support
+
 * Mon Feb 15 2016 Antoine Martin <antoine@devloop.org.uk> 3.0-1
 - new upstream release
 

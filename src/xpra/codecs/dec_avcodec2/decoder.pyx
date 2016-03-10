@@ -94,6 +94,7 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_H265
     AVCodecID AV_CODEC_ID_VP8
     AVCodecID AV_CODEC_ID_VP9
+    AVCodecID AV_CODEC_ID_MPEG4
 
     #init and free:
     void avcodec_register_all()
@@ -141,6 +142,8 @@ if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
     CODECS.append("vp8")
 if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
     CODECS.append("h265")
+if avcodec_find_decoder(AV_CODEC_ID_MPEG4)!=NULL:
+    CODECS.append("mpeg4")
 if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
     VP9_CS = []
     #there used to be problems with YUV444P with older versions of ffmpeg:
@@ -191,7 +194,7 @@ def get_input_colorspaces(encoding):
         return []
     if encoding in ("h264", "h265"):
         return COLORSPACES
-    elif encoding=="vp8":
+    elif encoding in ("vp8", "mpeg4"):
         return ["YUV420P"]
     assert encoding=="vp9"
     return VP9_CS
@@ -202,7 +205,7 @@ def get_output_colorspace(encoding, csc):
     if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
         #h264 from plain RGB data is returned as "GBRP"!
         return "GBRP"
-    elif encoding=="vp8":
+    elif encoding in ("vp8", "mpeg4"):
         return "YUV420P"
     #everything else as normal:
     return csc
@@ -332,6 +335,8 @@ cdef class Decoder:
             CodecID = AV_CODEC_ID_VP8
         elif self.encoding=="vp9":
             CodecID = AV_CODEC_ID_VP9
+        elif self.encoding=="mpeg4":
+            CodecID = AV_CODEC_ID_MPEG4
         else:
             raise Exception("invalid codec; %s" % self.encoding)
         self.codec = avcodec_find_decoder(CodecID)

@@ -200,6 +200,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("nvenc"        , "nvenc encoder (all versions)"),
                 ("x264"         , "libx264 encoder"),
                 ("x265"         , "libx265 encoder"),
+                ("xvid"         , "Xvid encoder"),
                 ("webp"         , "libwebp encoder and decoder"),
                 ("webcam"       , "webcam access"),
                 ])),
