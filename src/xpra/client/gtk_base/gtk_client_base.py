@@ -188,10 +188,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.session_info.show_all()
 
     def show_bug_report(self, *args):
+        self.send_info_request()
         if self.bug_report:
             self.bug_report.show()
             return
-        self.send_info_request()
         from xpra.client.gtk_base.bug_report import BugReport
         self.bug_report = BugReport()
         def init_bug_report():
