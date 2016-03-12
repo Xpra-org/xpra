@@ -15,6 +15,7 @@ from xpra.log import Logger
 log = Logger("encoder", "test", "nvenc")
 
 #TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
+#TEST_DIMENSIONS = ((4096, 2560), (3960, 2060), (1920, 1080), (512, 512), (32, 32))
 TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
 
 
@@ -124,6 +125,15 @@ def test_context_limits():
                     except Exception as e:
                         log("encoder cleanup error: %s" % e)
     log("")
+
+def test_reconfigure():
+    def reconfigure_cb(encoder):
+        frame_no = encoder.get_info().get("frames", 0)
+        newq = min(100, max(0, (frame_no * 30) % 110))
+        log.info("reconfigure frame %i: set new quality: %s", frame_no, newq)
+        encoder.set_encoding_quality(newq)
+    test_encoder(encoder_module, n_images=5, after_encode_cb=reconfigure_cb)
+
 
 def test_parallel_encode():
     cuda_devices = init_all_devices()
