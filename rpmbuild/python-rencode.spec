@@ -109,7 +109,7 @@ popd
 %endif
 
 %changelog
-* Sat Mar 12 2014 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
+* Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
 - new upstream release
 
 * Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
