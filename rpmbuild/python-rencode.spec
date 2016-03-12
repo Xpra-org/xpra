@@ -12,12 +12,12 @@
 %endif
 
 Name:           python-rencode
-Version:        1.0.3
+Version:        1.0.4
 Release:        1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
-URL:            http://code.google.com/p/rencode/
-Source0:        rencode-%{version}.tar.xz
+URL:            https://github.com/aresch/rencode
+Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
 
 %if 0%{?suse_version}
 %{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
@@ -99,16 +99,19 @@ popd
 %files
 %{python2_sitearch}/rencode
 %{python2_sitearch}/rencode*.egg-info
-%doc COPYING README
+%doc COPYING README.md
 
 %if 0%{?with_python3}
 %files -n python3-rencode
 %{python3_sitearch}/rencode
 %{python3_sitearch}/rencode*.egg-info
-%doc COPYING README
+%doc COPYING README.md
 %endif
 
 %changelog
+* Sat Mar 12 2014 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
+- new upstream release
+
 * Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
 - Preparing for xpra unbundling, support builds without python3 (ie: CentOS)
 
