@@ -1,8 +1,9 @@
+%global _hardened_build 1
 %global commit d86dc916771c126afb797637dda9f6421c0cb998
 
 Name:           lz4
 Version:        r131
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Extremely fast compression algorithm
 
 Group:          Applications/System
@@ -84,5 +85,8 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
+* Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> - r131-2
+- use hardened build option
+
 * Thu Dec 17 2015 Antoine Martin <antoine@devloop.org.uk> - r131-1
 - xpra packaging for CentOS
