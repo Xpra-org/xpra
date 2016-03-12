@@ -43,9 +43,9 @@
   </autotools>
 
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
-	<branch module="/pub/nasm/releasebuilds/2.11.08/nasm-2.11.08.tar.bz2"
-		version="2.11.08"
-		hash="md5:7aae5cb8e03fac48029c82a7470ab066"
+	<branch module="/pub/nasm/releasebuilds/2.12/nasm-2.12.tar.bz2"
+		version="2.12"
+		hash="md5:ff2a1d31444049ccdc1deeec1d868585"
 		repo="www.nasm.us">
     	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
     </branch>
@@ -126,9 +126,9 @@
   </autotools>
 
   <autotools id="speex" autogenargs="" autogen-sh="configure">
-	<branch module="/releases/speex/speex-1.2rc2.tar.gz"
-		version="1.2rc2"
-		hash="md5:6ae7db3bab01e1d4b86bacfa8ca33e81"
+	<branch module="/releases/speex/speex-1.1.12.tar.gz"
+		version="1.1.12"
+		hash="md5:1bd6cdf3a0ebabf818cd72a3401e2610"
 		repo="downloads.xiph.org"/>
     <dependencies>
                 <dep package="libogg"/>
@@ -143,9 +143,9 @@
   </autotools>
 
   <autotools id="wavpack" autogenargs="" autogen-sh="configure">
-	<branch module="/wavpack-4.70.0.tar.bz2"
-		version="4.70.0"
-		hash="md5:4c0186ef0dc8367ce5cd7cc0f398b714"
+	<branch module="/wavpack-4.75.2.tar.bz2"
+		version="4.75.2"
+		hash="md5:e8bbc4c3382f9148918ad7b896e10ac1"
 		repo="wavpack.com"/>
   </autotools>
 
@@ -428,9 +428,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/source/c/cryptography/cryptography-1.2.2.tar.gz"
-		hash="md5:2b25eebd1d3c6bae52b46f0dcec74dfb"
-		version="1.2.2"/>
+		module="/packages/source/c/cryptography/cryptography-1.2.3.tar.gz"
+		hash="md5:5474d2b3e8c7555a60852e48d2743f85"
+		version="1.2.3"/>
 	<dependencies>
                 <dep package="python"/>
 		<dep package="openssl"/>
