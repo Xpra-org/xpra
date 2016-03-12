@@ -152,6 +152,7 @@ Requires: libwebp
 Requires: libyuv
 %endif
 Requires: x264-xpra
+Requires: xvidcore
 Requires: ffmpeg-xpra
 Requires: %{numpy}
 Requires: xpra-common = %{version}-%{build_no}%{dist}
@@ -180,6 +181,7 @@ BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
 %endif
 BuildRequires: x264-xpra-devel
+BuildRequires: xvidcore-devel
 BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
 #needed for running tests

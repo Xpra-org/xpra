@@ -70,6 +70,7 @@ Recommends:
 #vivid:        ,libx264-142
 #wily:        ,libx264-146
 #wily:        ,libx264-148
+        ,libxvidcore4
 #webp
 #jessie:        ,libwebp5
 #stretch:        ,libwebp5
