@@ -708,7 +708,7 @@ def selftest(full=False):
         stdout = p.communicate()[0]
         out = stdout.decode('utf-8')
         freemem_MB = int(out.split(" ")[-1])//1024//1024
-        if freemem_MB<2048:
+        if freemem_MB<=4096:
             log.info("system has only %iMB of memory available, skipping vpx max-size tests", freemem_MB)
             full = False
         else:
