@@ -17,7 +17,7 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
      AVPixelFormat AV_PIX_FMT_ARGB
      AVPixelFormat AV_PIX_FMT_BGRA
      AVPixelFormat AV_PIX_FMT_GBRP
-@@ -107,8 +107,8 @@
+@@ -101,8 +101,8 @@
  FORMAT_OPTIONS = [
      ("RGB24",   AV_PIX_FMT_RGB24,      (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"  ),
      ("BGR24",   AV_PIX_FMT_BGR24,      (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"  ),
