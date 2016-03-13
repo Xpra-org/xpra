@@ -103,26 +103,28 @@ class ImageWrapper(object):
         self.pixel_format = pixel_format
 
     def set_pixels(self, pixels):
+        assert not self.freed
         self.pixels = pixels
 
     def allocate_buffer(self, buf_len, free_existing=1):
+        assert not self.freed
         #only defined for XImage wrappers:
         return 0
 
     def restride(self, *args):
+        assert not self.freed
         #not supported by the generic image wrapper:
         return False
 
     def freeze(self):
+        assert not self.freed
         #some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
 
     def clone_pixel_data(self):
+        assert not self.freed
         pixels = self.pixels
         planes = self.planes
-        if self.freed:
-            #image has already been freed!
-            return
         assert pixels, "no pixel data to clone"
         if planes == 0:
             #no planes, simple buffer:
