@@ -100,7 +100,7 @@ class TestAuth(unittest.TestCase):
 			assert a.authenticate("", x)
 
 
-	def _test_file_auth(self, module, genauthdata):
+	def _test_file_auth(self, name, module, genauthdata):
 		#no file, no go:
 		a = self._init_auth(module)
 		assert a.requires_challenge()
@@ -111,7 +111,7 @@ class TestAuth(unittest.TestCase):
 		assert not a.get_challenge()
 		assert not a.get_challenge()
 		for muck in (0, 1):
-			f = tempfile.NamedTemporaryFile()
+			f = tempfile.NamedTemporaryFile(prefix=name)
 			filename = f.name
 			with f:
 				a = self._init_auth(module, {"password_file" : filename})
@@ -138,13 +138,13 @@ class TestAuth(unittest.TestCase):
 		def genfiledata(a):
 			password = uuid.uuid4().hex
 			return password, password
-		self._test_file_auth(file_auth, genfiledata)
+		self._test_file_auth("file", file_auth, genfiledata)
 
 	def test_multifile(self):
 		def genfiledata(a):
 			password = uuid.uuid4().hex
 			return password, "%s|%s|||" % (a.username, password)
-		self._test_file_auth(multifile_auth, genfiledata)
+		self._test_file_auth("multifile", multifile_auth, genfiledata)
 			
 
 def main():
