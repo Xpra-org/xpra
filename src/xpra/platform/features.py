@@ -28,10 +28,12 @@ OPEN_COMMAND = "xdg-open"
 DEFAULT_ENV = []
 
 DEFAULT_SSH_COMMAND = "ssh -x"
-DEFAULT_PULSEAUDIO_COMMAND = "pulseaudio --start --daemonize=false --system=false " + \
-                                    "--exit-idle-time=-1 -n --load=module-suspend-on-idle " + \
-                                    "--load=module-null-sink --load=module-native-protocol-unix "+ \
-                                    "--log-level=2 --log-target=stderr"
+DEFAULT_PULSEAUDIO_COMMAND = ["pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
+                                    "--exit-idle-time=-1", "--load=module-suspend-on-idle",
+                                    "--load=module-null-sink",
+                                    "--load=module-native-protocol-unix",
+                                    "--load=module-dbus-protocol",
+                                    "--log-level=2", "--log-target=stderr"]
 
 if sys.version<'3':
     CLIENT_MODULES = ["xpra.client.gtk2.client"]

@@ -462,7 +462,7 @@ def get_defaults():
                     "clipboard-filter-file" : "",
                     "remote-clipboard"  : "CLIPBOARD",
                     "local-clipboard"   : "CLIPBOARD",
-                    "pulseaudio-command": DEFAULT_PULSEAUDIO_COMMAND,
+                    "pulseaudio-command": " ".join(DEFAULT_PULSEAUDIO_COMMAND),
                     "encryption"        : "",
                     "tcp-encryption"    : "",
                     "encryption-keyfile": "",

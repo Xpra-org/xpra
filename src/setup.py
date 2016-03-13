@@ -896,13 +896,25 @@ def build_xpra_conf(install_dir):
             postscript = get_printer_def("postscript")
         except Exception as e:
             print("could not probe for pdf/postscript printers: %s" % e)
-    SUBS = {'xvfb_command'          : " ".join(xvfb_command),
+    def pretty_cmd(cmd):
+        lines = []
+        line = ""
+        for c in cmd:
+            if len(line+c)>=72:
+                lines.append(line+" \\\n")
+                line = "        "+c
+            else:
+                line += " "+c
+        if line:
+            lines.append(line+" \\\n")
+        return  (" ".join(lines)).rstrip("\\\n")
+    SUBS = {'xvfb_command'          : pretty_cmd(xvfb_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
             'env'                   : env,
             'has_displayfd'         : bstr(has_displayfd),
-            'pulseaudio_command'    : DEFAULT_PULSEAUDIO_COMMAND,
+            'pulseaudio_command'    : pretty_cmd(DEFAULT_PULSEAUDIO_COMMAND),
             'conf_dir'              : conf_dir,
             'bind'                  : bind,
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
