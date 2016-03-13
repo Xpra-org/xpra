@@ -211,7 +211,12 @@ def write_runner_shell_scripts(contents, overwrite=True):
     for d in get_script_bin_dirs():
         scriptdir = osexpand(d)
         if not os.path.exists(scriptdir):
-            os.mkdir(scriptdir, 0o700)
+            try:
+                os.mkdir(scriptdir, 0o700)
+            except Exception as e:
+                sys.stderr.write("Error: failed to write script file in '%s':\n" % scriptdir)
+                sys.stderr.write(" %s\n" % e)
+                continue
         scriptpath = os.path.join(scriptdir, "run-xpra")
         if os.path.exists(scriptpath) and not overwrite:
             continue
@@ -225,7 +230,8 @@ def write_runner_shell_scripts(contents, overwrite=True):
                 os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
                 scriptfile.write(contents)
         except Exception as e:
-            sys.stderr.write("Error: failed to write script file '%s': %s\n" % (scriptfile, e))
+            sys.stderr.write("Error: failed to write script file '%s':\n" % scriptfile)
+            sys.stderr.write(" %s\n" % (scriptfile, e))
 
 
 def display_name_check(display_name):
@@ -962,7 +968,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #either for the vfb, or for our own log file
         log_dir = osexpand(opts.log_dir)
         if not os.path.exists(log_dir):
-            os.mkdir(log_dir, 0o700)
+            try:
+                os.mkdir(log_dir, 0o700)
+            except Exception as e:
+                sys.stderr.write("%s\n" % e)
 
     stdout = sys.stdout
     stderr = sys.stderr
