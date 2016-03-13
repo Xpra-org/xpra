@@ -13,8 +13,14 @@ import os.path
 import re
 import sys
 
+def bytestostr(x):
+    return str(x)
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
+    def bytestostr(x):
+        if type(x)==bytes:
+            return x.decode("latin1")
+        return str(x)
 
 
 def update_properties(props, filename):
@@ -43,7 +49,7 @@ def save_properties(props, filename):
             f.write(u(v))
         for name in sorted(props.keys()):
             value = props[name]
-            s = str(value).replace("'", "\\'")
+            s = bytestostr(value).replace("'", "\\'")
             w(name)
             w("=")
             quote_it = type(value) not in (bool, tuple, int)
@@ -55,7 +61,7 @@ def save_properties(props, filename):
             w("\n")
     print("updated %s with:" % filename)
     for k in sorted(props.keys()):
-        print("* %s = %s" % (str(k).ljust(20), u(props[k])))
+        print("* %s = %s" % (str(k).ljust(20), bytestostr(props[k])))
 
 def get_properties(filename):
     props = dict()
