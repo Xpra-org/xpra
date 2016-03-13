@@ -251,13 +251,13 @@ class ServerBase(ServerCore, FileTransferHandler):
         #sound:
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
-        self.init_sound_options(opts)
 
         log("starting component init")
         self.init_webcam()
         self.init_clipboard()
         self.init_keyboard()
         self.init_pulseaudio()
+        self.init_sound_options(opts)
         self.init_notification_forwarder()
         self.init_dbus_helper()
         self.init_dbus_server()
