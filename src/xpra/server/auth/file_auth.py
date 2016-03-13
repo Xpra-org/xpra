@@ -17,13 +17,15 @@ log = Logger("auth")
 
 
 password_file = None
-def init(opts):
-    global password_file
-    password_file = opts.password_file
-
-
 password_data = None
 password_file_time = None
+def init(opts):
+    global password_data, password_file_time, password_file
+    password_file = opts.password_file
+    password_data = None
+    password_file_time = None
+
+
 def get_password_file_time():
     try:
         return os.stat(password_file).st_mtime
