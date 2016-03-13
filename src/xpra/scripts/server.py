@@ -851,9 +851,9 @@ def start_dbus(dbus_launch):
             assert os.name=="posix"
             os.setsid()
             close_fds()
-        dbus_launch = subprocess.Popen(dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, preexec_fn=preexec)
-        out,_ = dbus_launch.communicate()
-        assert dbus_launch.poll()==0, "exit code is %s" % dbus_launch.poll()
+        proc = subprocess.Popen(dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, preexec_fn=preexec)
+        out,_ = proc.communicate()
+        assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
         dbus_env = {}
         for l in out.splitlines():
