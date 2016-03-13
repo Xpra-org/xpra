@@ -207,7 +207,7 @@ cdef class ColorspaceConverter:
             xdiv, ydiv = divs[i]
             self.out_width[i]   = src_width // xdiv
             self.out_height[i]  = src_height // ydiv
-            self.out_stride[i]  = roundup(self.out_width[i], 16)
+            self.out_stride[i]  = roundup(self.out_width[i], MEMALIGN_ALIGNMENT)
             self.out_size[i]    = self.out_stride[i] * self.out_height[i]
             self.out_offsets[i] = self.out_buffer_size
             #add one extra line to height so we can access a full rowstride at a time,
@@ -217,7 +217,7 @@ cdef class ColorspaceConverter:
             if self.scaling:
                 self.scaled_width[i]    = dst_width // xdiv
                 self.scaled_height[i]   = dst_height // ydiv
-                self.scaled_stride[i]   = roundup(self.scaled_width[i], 16)
+                self.scaled_stride[i]   = roundup(self.scaled_width[i], MEMALIGN_ALIGNMENT)
                 self.scaled_size[i]     = self.scaled_stride[i] * self.scaled_height[i]
                 self.scaled_offsets[i]  = self.scaled_buffer_size
                 self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
@@ -359,7 +359,7 @@ cdef class ColorspaceConverter:
             log("libyuv.ScalePlane took %.1fms", 1000.0*elapsed)
             for i in range(3):
                 strides.append(self.scaled_stride[i])
-                planes.append(memory_as_readonly_pybuffer(<void *> (<unsigned long> (scaled_planes[i])), self.scaled_size[i]))
+                planes.append(memory_as_readonly_pybuffer(<void *> scaled_planes[i], self.scaled_size[i]))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.src_width, self.src_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
             out_image.cython_buffer = <unsigned long> scaled_buffer
@@ -367,7 +367,7 @@ cdef class ColorspaceConverter:
             #use output buffer directly:
             for i in range(3):
                 strides.append(self.out_stride[i])
-                planes.append(memory_as_readonly_pybuffer(<void *> (<unsigned long> (out_planes[i])), self.out_size[i]))
+                planes.append(memory_as_readonly_pybuffer(<void *> out_planes[i], self.out_size[i]))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.src_width, self.src_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
             out_image.cython_buffer = <unsigned long> output_buffer
