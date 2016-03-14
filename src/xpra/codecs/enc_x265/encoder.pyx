@@ -312,6 +312,7 @@ def get_spec(encoding, colorspace):
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
+log_level = X265_LOG_INFO
 
 cdef class Encoder:
     cdef x265_param *param
@@ -345,6 +346,7 @@ cdef class Encoder:
         self.init_encoder()
 
     cdef init_encoder(self):
+        global log_level
         cdef const char *preset
 
         self.param = x265_param_alloc()
@@ -358,7 +360,7 @@ cdef class Encoder:
         self.param.sourceWidth = self.width
         self.param.sourceHeight = self.height
         self.param.frameNumThreads = 1
-        self.param.logLevel = X265_LOG_INFO
+        self.param.logLevel = log_level
         self.param.bOpenGOP = 1
         self.param.searchMethod = X265_HEX_SEARCH
         self.param.fpsNum = 1
@@ -367,7 +369,6 @@ cdef class Encoder:
         self.param.bframes = 0
         self.param.bFrameAdaptive = 0
         self.param.lookaheadDepth = 0
-        self.param.logLevel = X265_LOG_WARNING
         if False:
             #unused settings:
             self.param.internalBitDepth = 8
@@ -570,4 +571,10 @@ cdef class Encoder:
 def selftest(full=False):
     from xpra.codecs.codec_checks import testencoder
     from xpra.codecs.enc_x265 import encoder
-    assert testencoder(encoder, full)
+    global log_level
+    saved = log_level
+    try:
+        log_level = X265_LOG_ERROR
+        assert testencoder(encoder, full)
+    finally:
+        log_level = saved
