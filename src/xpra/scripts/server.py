@@ -897,7 +897,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             x.logger.setLevel(logging.WARN)
         from xpra.server.server_base import ServerBase
         sb = ServerBase()
-        sb.init(opts)
+        sb.init_options(opts)
         #ensures that the threaded video helper init has completed
         #(by running it again, which will block on the init lock)
         from xpra.codecs.video_helper import getVideoHelper

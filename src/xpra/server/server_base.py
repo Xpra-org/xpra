@@ -207,6 +207,10 @@ class ServerBase(ServerCore, FileTransferHandler):
     def init(self, opts):
         ServerCore.init(self, opts)
         log("ServerBase.init(%s)", opts)
+        self.init_options(opts)
+        self.init_components(opts)
+
+    def init_options(self, opts):
         self.supports_mmap = opts.mmap
         self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
@@ -252,6 +256,12 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
 
+        #video init: default to ALL if not specified
+        video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
+        csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
+        getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
+
+    def init_components(self, opts):
         log("starting component init")
         self.init_webcam()
         self.init_clipboard()
@@ -261,11 +271,6 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.init_notification_forwarder()
         self.init_dbus_helper()
         self.init_dbus_server()
-
-        #video init: default to ALL if not specified
-        video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
-        csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
-        getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
 
         self.load_existing_windows(opts.system_tray)
         thread.start_new_thread(self.threaded_init, ())
