@@ -8,9 +8,12 @@ import os
 from collections import deque
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr
+from xpra.util import AtomicInteger
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
+
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
 #sensible default:
@@ -269,12 +272,14 @@ def get_output_colorspaces(encoding, input_colorspace):
     return [input_colorspace]
 
 
+generation = AtomicInteger()
 def get_info():
     global CODECS, MAX_SIZE
     info = {"version"       : get_version(),
             "encodings"     : CODECS,
             "buffer_api"    : get_buffer_api_version(),
             "abi_version"   : get_abi_version(),
+            "generation"    : generation.get(),
             "build_config"  : vpx_codec_build_config()}
     for e, maxsize in MAX_SIZE.items():
         info["%s.max-size" % e] = maxsize
@@ -368,6 +373,7 @@ cdef class Encoder:
     cdef int quality
     cdef int lossless
     cdef object last_frame_times
+    cdef object file
 
     cdef object __weakref__
 
@@ -461,6 +467,11 @@ cdef class Encoder:
                 self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
         self.do_set_encoding_speed(speed)
         self.do_set_encoding_quality(quality)
+        gen = generation.increase()
+        if SAVE_TO_FILE is not None:
+            filename = SAVE_TO_FILE+str(gen)+".%s" % encoding
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", encoding, filename)
 
 
     def codec_control(self, info, int attr, int value):
@@ -563,6 +574,10 @@ cdef class Encoder:
         self.max_threads = 0
         self.encoding = ""
         self.src_format = ""
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
 
 
     def compress_image(self, image, quality=-1, speed=-1, options={}):
@@ -659,6 +674,9 @@ cdef class Encoder:
         log("vpx returning %s image: %s bytes", self.encoding, len(img))
         end = time.time()
         self.last_frame_times.append((start, end))
+        if self.file and pkt.data.frame.sz>0:
+            self.file.write(img)
+            self.file.flush()
         return img
 
     def set_encoding_speed(self, int pct):

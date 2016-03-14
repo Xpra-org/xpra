@@ -12,9 +12,9 @@ X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
 X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
 USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
-
-from xpra.util import nonl
+from xpra.util import nonl, AtomicInteger
 from xpra.os_util import bytestostr
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
@@ -322,11 +322,13 @@ def get_version():
 def get_type():
     return "x264"
 
+generation = AtomicInteger()
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {"version"   : get_version(),
             "buffer_api": get_buffer_api_version(),
             "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
+            "generation": generation.get(),
             "formats"   : COLORSPACES.keys()}
 
 def get_encodings():
@@ -410,12 +412,13 @@ cdef class Encoder:
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
     cdef object last_frame_times
+    cdef object file
     cdef uint64_t first_frame_timestamp
 
     cdef object __weakref__
 
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
-        global COLORSPACE_FORMATS
+        global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
         assert encoding=="h264", "invalid encoding: %s" % encoding
@@ -441,6 +444,11 @@ cdef class Encoder:
             self.profile = cs_info[1]
             log("using default profile=%s", self.profile)
         self.init_encoder()
+        gen = generation.increase()
+        if SAVE_TO_FILE is not None:
+            filename = SAVE_TO_FILE+str(gen)+".%s" % encoding
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", encoding, filename)
 
     cdef init_encoder(self):
         cdef x264_param_t param
@@ -487,6 +495,10 @@ cdef class Encoder:
         self.bytes_out = 0
         self.last_frame_times = []
         self.first_frame_timestamp = 0
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
 
 
     def get_info(self):             #@DuplicatedSignature
@@ -643,6 +655,9 @@ cdef class Encoder:
         self.frames += 1
         self.last_frame_times.append((start, end))
         assert self.context!=NULL
+        if self.file and frame_size>0:
+            self.file.write(cdata)
+            self.file.flush()
         return  cdata, client_options
 
 

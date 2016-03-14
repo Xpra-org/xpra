@@ -9,13 +9,13 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "xvid")
 
-from xpra.util import nonl
-from xpra.os_util import bytestostr
-from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
-from collections import deque
+from xpra.util import AtomicInteger
+from xpra.codecs.codec_constants import video_spec
 
-from libc.stdint cimport int64_t, uint64_t, uint8_t
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
+
+from libc.stdint cimport uint8_t
 
 cdef extern from "string.h":
     void * memset ( void * ptr, int value, size_t num )
@@ -269,11 +269,13 @@ def get_version():
 def get_type():
     return "xvid"
 
+generation = AtomicInteger()
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {"version"   : get_version(),
             "buffer_api": get_buffer_api_version(),
             "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
+            "generation": generation.get(),
             "formats"   : COLORSPACES}
 
 def get_encodings():
@@ -310,6 +312,7 @@ cdef class Encoder:
     cdef int speed
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
+    cdef object file
 
     cdef object __weakref__
 
@@ -326,6 +329,11 @@ cdef class Encoder:
         self.frames = 0
         self.time = 0
         self.init_encoder()
+        gen = generation.increase()
+        if SAVE_TO_FILE is not None:
+            filename = SAVE_TO_FILE+str(gen)+".%s" % encoding
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", encoding, filename)
 
     cdef init_encoder(self):
         cdef int r, i
@@ -367,6 +375,10 @@ cdef class Encoder:
         self.time = 0
         self.quality = 0
         self.speed = 0
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
 
 
     def get_info(self):             #@DuplicatedSignature
@@ -489,6 +501,9 @@ cdef class Encoder:
         self.time += end-start
         self.frames += 1
         assert self.context!=NULL
+        if self.file and r>0:
+            self.file.write(cdata)
+            self.file.flush()
         return  cdata, client_options
 
 
