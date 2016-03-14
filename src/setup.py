@@ -2174,6 +2174,9 @@ if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
                #"-gencode=arch=compute_52,code=compute_52",
                "-c", cuda_src,
                "-o", cuda_bin]
+        #GCC 6 uses C++11 by default:
+        if get_gcc_version()>=[6, 0]:
+            cmd.append("-std=c++11")
         CL_VERSION = os.environ.get("CL_VERSION")
         if CL_VERSION:
             cmd += ["--use-local-env", "--cl-version", CL_VERSION]
