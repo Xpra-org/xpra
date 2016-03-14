@@ -881,7 +881,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.password_file and not (opts.auth or opts.tcp_auth):
         raise InitException("when specifying a password-file, you must use auth or tcp-auth")
     validate_encryption(opts)
-    if opts.encoding and opts.encoding=="help":
+    if opts.encoding=="help" or "help" in opts.encodings:
         #avoid errors and warnings:
         opts.encoding = ""
         opts.clipboard = False
@@ -898,13 +898,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         from xpra.server.server_base import ServerBase
         sb = ServerBase()
         sb.init_options(opts)
-        #ensures that the threaded video helper init has completed
-        #(by running it again, which will block on the init lock)
+        from xpra.codecs.loader import PREFERED_ENCODING_ORDER, HELP_ORDER
+        if "help" in opts.encodings:
+            sb.allowed_encodings = PREFERED_ENCODING_ORDER
         from xpra.codecs.video_helper import getVideoHelper
         getVideoHelper().init()
         sb.init_encodings()
         from xpra.codecs.loader import encoding_help
-        for e in sb.encodings:
+        for e in (x for x in HELP_ORDER if x in sb.encodings):
             print(" * %s" % encoding_help(e))
         return 0
 

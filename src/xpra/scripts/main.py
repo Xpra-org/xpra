@@ -1426,14 +1426,17 @@ def run_client(error_cb, opts, extra_args, mode):
         except RuntimeError as e:
             #exceptions at this point are still initialization exceptions
             raise InitException(e.message)
+        ehelp = "help" in opts.encodings
+        if ehelp:
+            from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+            opts.encodings = PREFERED_ENCODING_ORDER
         app.init(opts)
-        if opts.encoding:
-            #fix old encoding names if needed:
-            err = opts.encoding not in app.get_encodings()
+        if opts.encoding or ehelp:
+            err = opts.encoding and (opts.encoding not in app.get_encodings())
             info = ""
             if err and opts.encoding!="help":
                 info = "invalid encoding: %s\n" % opts.encoding
-            if opts.encoding=="help" or err:
+            if opts.encoding=="help" or ehelp or err:
                 from xpra.codecs.loader import encodings_help
                 raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
         def handshake_complete(*args):
