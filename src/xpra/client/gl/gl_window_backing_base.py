@@ -432,9 +432,10 @@ class GLWindowBackingBase(GTKWindowBacking):
         #if self.textures is not None:
         #    glDeleteTextures(self.textures)
         #    self.textures = None
-        if self._backing:
-            self._backing.destroy()
+        b = self._backing
+        if b:
             self._backing = None
+            b.destroy()
         self.glconfig = None
 
     def set_rgb_paint_state(self):
