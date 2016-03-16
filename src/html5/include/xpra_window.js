@@ -279,8 +279,8 @@ XpraWindow.prototype.getMouse = function(e) {
 
 XpraWindow.prototype.on_mousemove = function(e) {
 	var mouse = this.getMouse(e),
-			mx = mouse.x,
-			my = mouse.y;
+			mx = Math.round(mouse.x),
+			my = Math.round(mouse.y);
 
 	var modifiers = [];
 	var buttons = [];
@@ -292,8 +292,8 @@ XpraWindow.prototype.on_mousedown = function(e) {
 	var mouse, mx, my, shapes, l, i, mySel;
 
 	mouse = this.getMouse(e);
-	mx = mouse.x;
-	my = mouse.y;
+	mx = Math.round(mouse.x);
+	my = Math.round(mouse.y);
 
 	// pass the click to the area:
 	var modifiers = [];
@@ -305,8 +305,8 @@ XpraWindow.prototype.on_mousedown = function(e) {
 XpraWindow.prototype.on_mouseup = function(e) {
 	// if not handling it ourselves, pass it down:
 	var mouse = this.getMouse(e),
-			mx = mouse.x,
-			my = mouse.y;
+			mx = Math.round(mouse.x),
+			my = Math.round(mouse.y);
 	if (!this.dragging) {
 		var modifiers = [];
 		var buttons = [];
@@ -318,8 +318,8 @@ XpraWindow.prototype.on_mouseup = function(e) {
 
 XpraWindow.prototype.on_mousescroll = function(e) {
 	var mouse = this.getMouse(e),
-			mx = mouse.x,
-			my = mouse.y;
+			mx = Math.round(mouse.x),
+			my = Math.round(mouse.y);
 
 	var modifiers = [];
 	var buttons = [];
