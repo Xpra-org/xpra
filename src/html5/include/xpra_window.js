@@ -289,11 +289,9 @@ XpraWindow.prototype.on_mousemove = function(e) {
 };
 
 XpraWindow.prototype.on_mousedown = function(e) {
-	var mouse, mx, my, shapes, l, i, mySel;
-
-	mouse = this.getMouse(e);
-	mx = Math.round(mouse.x);
-	my = Math.round(mouse.y);
+	var mouse = this.getMouse(e),
+			mx = Math.round(mouse.x),
+			my = Math.round(mouse.y);
 
 	// pass the click to the area:
 	var modifiers = [];
