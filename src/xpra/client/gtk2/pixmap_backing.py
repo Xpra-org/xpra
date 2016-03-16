@@ -37,6 +37,7 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
+    HAS_ALPHA = False
     RGB_MODES = PIXMAP_RGB_MODES
 
     def __init__(self, *args):
