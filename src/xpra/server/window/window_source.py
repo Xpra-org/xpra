@@ -33,6 +33,7 @@ MIN_DELTA_SIZE = int(os.environ.get("XPRA_MIN_DELTA_SIZE", "1024"))
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "32768"))
 MAX_DELTA_HITS = int(os.environ.get("XPRA_MAX_DELTA_HITS", "20"))
 MIN_WINDOW_REGION_SIZE = int(os.environ.get("XPRA_MIN_WINDOW_REGION_SIZE", "1024"))
+MAX_SOFT_EXPIRED = int(os.environ.get("XPRA_MAX_SOFT_EXPIRED", "5"))
 
 HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
 FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
@@ -128,7 +129,7 @@ class WindowSource(object):
         ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
         ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", list(ropts))
-        self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", 5)))
+        self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.supports_delta = []
         if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -259,7 +260,7 @@ class WindowSource(object):
         self.expire_timer = None
         self.soft_timer = None
         self.soft_expired = 0
-        self.max_soft_expired = 5
+        self.max_soft_expired = MAX_SOFT_EXPIRED
         self.min_delta_size = MIN_DELTA_SIZE
         self.max_delta_size = MAX_DELTA_SIZE
         self.is_OR = False
