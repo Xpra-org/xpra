@@ -9,7 +9,7 @@ import sys
 import time
 
 from xpra.os_util import SIGNAMES, Queue
-from xpra.util import csv
+from xpra.util import csv, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
@@ -25,6 +25,10 @@ SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
 BUFFER_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_BUFFER_TIME", "64"))
 LATENCY_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_LATENCY_TIME", "32"))
+
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+
+generation = AtomicInteger()
 
 
 class SoundSource(SoundPipeline):
@@ -139,6 +143,17 @@ class SoundSource(SoundPipeline):
                 self.buffer_latency = True
             except Exception as e:
                 log.info("source %s does not support 'buffer-time' or 'latency-time': %s", self.src_type, e)
+        self.file = None
+        gen = generation.increase()
+        if SAVE_TO_FILE is not None:
+            parts = codec.split("+")
+            if len(parts)>1:
+                filename = SAVE_TO_FILE+str(gen)+"-"+parts[0]+".%s" % parts[1]
+            else:
+                filename = SAVE_TO_FILE+str(gen)+".%s" % codec
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", codec, filename)
+
 
     def __repr__(self):
         return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
@@ -148,6 +163,10 @@ class SoundSource(SoundPipeline):
         self.src_type = ""
         self.sink = None
         self.caps = None
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
 
     def get_info(self):
         info = SoundPipeline.get_info(self)
@@ -240,6 +259,10 @@ class SoundSource(SoundPipeline):
         return self.emit_buffer(buf.data, metadata)
 
     def emit_buffer(self, data, metadata={}):
+        f = self.file
+        if f and data:
+            self.file.write(data)
+            self.file.flush()
         if self.state=="stopped":
             #don't bother
             return 0
