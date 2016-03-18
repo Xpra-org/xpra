@@ -1217,11 +1217,9 @@ class UIXpraClient(XpraClientBase):
                 self._focused = None
 
     def do_force_ungrab(self, wid):
-        grablog("do_force_ungrab(%s) server supports force ungrab: %s", wid, self.force_ungrab)
-        if self.force_ungrab:
-            #ungrab via dedicated server packet:
-            self.send_force_ungrab(wid)
-            return
+        grablog("do_force_ungrab(%s)", wid)
+        #ungrab via dedicated server packet:
+        self.send_force_ungrab(wid)
 
     def _process_pointer_grab(self, packet):
         wid = packet[1]
@@ -2608,6 +2606,11 @@ class UIXpraClient(XpraClientBase):
         log("unfreeze()")
         for window in self._id_to_window.values():
             window.unfreeze()
+
+    def deiconify_windows(self):
+        log("deiconify()")
+        for window in self._id_to_window.values():
+            window.deiconify()
 
 
     def reinit_windows(self, new_size_fn=None):
