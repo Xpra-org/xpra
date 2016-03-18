@@ -331,7 +331,7 @@ cdef class Encoder:
         self.init_encoder()
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
-            filename = SAVE_TO_FILE+str(gen)+".%s" % encoding
+            filename = SAVE_TO_FILE+"xvid-"+str(gen)+".%s" % encoding
             self.file = open(filename, 'wb')
             log.info("saving %s stream to %s", encoding, filename)
 
@@ -519,14 +519,20 @@ cdef class Encoder:
 
 
 def selftest(full=False):
+    global SAVE_TO_FILE
     from xpra.codecs.codec_checks import testencoder, get_encoder_max_sizes
     from xpra.codecs.xvid import encoder
-    init_module()
-    assert testencoder(encoder, full)
-    #this is expensive, so don't run it unless "full" is set:
-    if full:
-        global MAX_WIDTH, MAX_HEIGHT
-        maxw, maxh = get_encoder_max_sizes(encoder)
-        assert maxw>=MAX_WIDTH and maxh>=MAX_HEIGHT, "%s is limited to %ix%i and not %ix%i" % (encoder, maxw, maxh, MAX_WIDTH, MAX_HEIGHT)
-        MAX_WIDTH, MAX_HEIGHT = maxw, maxh
-        log.info("%s max dimensions: %ix%i", encoder, MAX_WIDTH, MAX_HEIGHT)
+    temp = SAVE_TO_FILE
+    try:
+        SAVE_TO_FILE = None
+        init_module()
+        assert testencoder(encoder, full)
+        #this is expensive, so don't run it unless "full" is set:
+        if full:
+            global MAX_WIDTH, MAX_HEIGHT
+            maxw, maxh = get_encoder_max_sizes(encoder)
+            assert maxw>=MAX_WIDTH and maxh>=MAX_HEIGHT, "%s is limited to %ix%i and not %ix%i" % (encoder, maxw, maxh, MAX_WIDTH, MAX_HEIGHT)
+            MAX_WIDTH, MAX_HEIGHT = maxw, maxh
+            log.info("%s max dimensions: %ix%i", encoder, MAX_WIDTH, MAX_HEIGHT)
+    finally:
+        SAVE_TO_FILE = temp

@@ -469,7 +469,7 @@ cdef class Encoder:
         self.do_set_encoding_quality(quality)
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
-            filename = SAVE_TO_FILE+str(gen)+".%s" % encoding
+            filename = SAVE_TO_FILE+"vpx-"+str(gen)+".%s" % encoding
             self.file = open(filename, 'wb')
             log.info("saving %s stream to %s", encoding, filename)
 
@@ -714,28 +714,33 @@ cdef class Encoder:
 
 
 def selftest(full=False):
+    global CODECS, SAVE_TO_FILE
     from xpra.codecs.codec_checks import testencoder, get_encoder_max_size
     from xpra.codecs.vpx import encoder
-    global CODECS
-    CODECS = testencoder(encoder, full)
-    #this is expensive, so don't run it unless "full" is set:
-    if full and os.name=="posix":
-        #but first, try to figure out if we have enough memory to do this
-        import subprocess
-        p = subprocess.Popen("free -b | grep ^Mem:", shell=True, stdout=subprocess.PIPE)
-        stdout = p.communicate()[0]
-        out = stdout.decode('utf-8')
-        freemem_MB = int(out.split(" ")[-1])//1024//1024
-        if freemem_MB<=4096:
-            log.info("system has only %iMB of memory available, skipping vpx max-size tests", freemem_MB)
-            full = False
-        else:
-            log.info("system has %.1fGB of memory available, running full tests", freemem_MB/1024.0)
-    if full:
-        global MAX_SIZE
-        for encoding in get_encodings():
-            maxw, maxh = get_encoder_max_size(encoder, encoding, limit_w=8192, limit_h=4096)
-            dmaxw, dmaxh = MAX_SIZE[encoding]
-            assert maxw>=dmaxw and maxh>=dmaxh, "%s is limited to %ix%i and not %ix%i" % (encoder, maxw, maxh, dmaxw, dmaxh)
-            MAX_SIZE[encoding] = maxw, maxh
-        log("%s max dimensions: %s", encoder, MAX_SIZE)
+    temp = SAVE_TO_FILE
+    try:
+        SAVE_TO_FILE = None
+        CODECS = testencoder(encoder, full)
+        #this is expensive, so don't run it unless "full" is set:
+        if full and os.name=="posix":
+            #but first, try to figure out if we have enough memory to do this
+            import subprocess
+            p = subprocess.Popen("free -b | grep ^Mem:", shell=True, stdout=subprocess.PIPE)
+            stdout = p.communicate()[0]
+            out = stdout.decode('utf-8')
+            freemem_MB = int(out.split(" ")[-1])//1024//1024
+            if freemem_MB<=4096:
+                log.info("system has only %iMB of memory available, skipping vpx max-size tests", freemem_MB)
+                full = False
+            else:
+                log.info("system has %.1fGB of memory available, running full tests", freemem_MB/1024.0)
+        if full:
+            global MAX_SIZE
+            for encoding in get_encodings():
+                maxw, maxh = get_encoder_max_size(encoder, encoding, limit_w=8192, limit_h=4096)
+                dmaxw, dmaxh = MAX_SIZE[encoding]
+                assert maxw>=dmaxw and maxh>=dmaxh, "%s is limited to %ix%i and not %ix%i" % (encoder, maxw, maxh, dmaxw, dmaxh)
+                MAX_SIZE[encoding] = maxw, maxh
+            log("%s max dimensions: %s", encoder, MAX_SIZE)
+    finally:
+        SAVE_TO_FILE = temp
