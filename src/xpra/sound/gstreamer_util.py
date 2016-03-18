@@ -11,6 +11,9 @@ from xpra.util import csv, engs
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
+
+XPRA_PULSE_DEVICE_NAME = "Xpra"
+
 GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
@@ -33,7 +36,7 @@ OSX = sys.platform.startswith("darwin")
 
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "1")=="1"
-INPUT_DEVICE_NAME = os.environ.get("XPRA_INPUT_DEVICE_NAME", "")
+PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 
@@ -614,10 +617,11 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
     if len(devices)>1:
         filters = []
         matches = []
-        for match in (device_name_match, INPUT_DEVICE_NAME):
+        for match in (device_name_match, PULSEAUDIO_DEVICE_NAME, XPRA_PULSE_DEVICE_NAME):
             if not match:
                 continue
-            filters.append(match)
+            if match!=XPRA_PULSE_DEVICE_NAME:
+                filters.append(match)
             match = match.lower()
             matches = dict((k,v) for k,v in devices.items() if k.lower().find(match)>=0 or v.lower().find(match)>=0)
             if len(matches)==1:
@@ -644,12 +648,12 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
-            if not INPUT_DEVICE_NAME: #warned already
+            if not PULSEAUDIO_DEVICE_NAME: #warned already
                 log.warn("Warning: found more than one audio monitor device:")
             for k,v in devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
-            if not INPUT_DEVICE_NAME: #used already!
+            if not PULSEAUDIO_DEVICE_NAME: #used already!
                 log.warn(" use the environment variable XPRA_INPUT_DEVICE_NAME to select a specific one")
         if default_monitor in devices:
             device = default_monitor

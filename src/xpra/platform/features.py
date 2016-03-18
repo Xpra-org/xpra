@@ -30,7 +30,10 @@ DEFAULT_ENV = []
 DEFAULT_SSH_COMMAND = "ssh -x"
 DEFAULT_PULSEAUDIO_COMMAND = ["pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
                                     "--exit-idle-time=-1", "--load=module-suspend-on-idle",
-                                    "--load=module-null-sink",
+                                    #"'--load=module-null-sink sink_name=\"Default-Output\" sink_properties=device.description=\"Default\\ Output\"'",
+                                    "'--load=module-null-sink sink_name=\"Xpra-Output\" sink_properties=device.description=\"Xpra\\ Output\"'",
+                                    #"'--load=module-null-source source_name=\"Default Input\"'",
+                                    #"'--load=module-null-source source_name=\"Xpra-Input\"'",
                                     "--load=module-native-protocol-unix",
                                     "--load=module-dbus-protocol",
                                     "--log-level=2", "--log-target=stderr"]
