@@ -215,6 +215,9 @@ def window_focused(window, event):
 
 def add_window_hooks(window):
     window.connect("focus-in-event", window_focused)
+    client = getattr(window, "_client", None)
+    if client:
+        init_dock_listener(client)
 
 def remove_window_hooks(window):
     try:
@@ -290,15 +293,18 @@ def take_screenshot():
 
 
 try:
-    import Foundation                           #@UnresolvedImport
     import AppKit                               #@UnresolvedImport
     import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
-    NSObject = Foundation.NSObject
-    NSWorkspace = AppKit.NSWorkspace
+    from AppKit import NSObject, NSApplication, NSWorkspace #@UnresolvedImport
 except Exception as e:
-    log.warn("failed to load critical modules for sleep notification support: %s", e)
+    log.warn("Warning: failed to load critical modules")
+    log.warn(" %s", e)
+    log.warn(" cannot enable sleep notification support")
+    log.warn(" and dock click notification")
     NSObject = object
+    NSApplication = None
     NSWorkspace = None
+
 
 class NotificationHandler(NSObject):
     """Class that handles the sleep notifications."""
@@ -318,6 +324,31 @@ class NotificationHandler(NSObject):
                 self.wake_callback()
             except:
                 log.error("Error in wake callback %s", self.wake_callback, exc_info=True)
+
+
+dock_listener = None
+def init_dock_listener(client):
+    global dock_listener
+    if dock_listener:
+        return
+    try:
+        import objc         #@UnresolvedImport
+        shared_app = NSApplication.sharedApplication()
+
+        class Delegate(NSObject):
+            @objc.signature('B@:#B')
+            def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
+                log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
+                client.deiconify_windows()
+                return True
+
+        delegate = Delegate.alloc().init()
+        delegate.retain()
+        shared_app.setDelegate_(delegate)
+        dock_listener = delegate
+    except:
+        log.error("Error setting up dock listener", exc_info=True)
+        dock_listener = False
 
 
 class ClientExtras(object):
