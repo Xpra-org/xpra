@@ -44,7 +44,14 @@ GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
 #percentage: from 0 for no margin, to 200% which triples the buffer target
 MARGIN = max(0, min(200, int(os.environ.get("XPRA_SOUND_MARGIN", "50"))))
 
+
+GST_FORMAT_BYTES = 2
+GST_FORMAT_TIME = 3
 GST_FORMAT_BUFFERS = 4
+BUFFER_FORMAT = GST_FORMAT_BUFFERS
+
+GST_APP_STREAM_TYPE_STREAM = 0
+STREAM_TYPE = GST_APP_STREAM_TYPE_STREAM
 
 
 class SoundSink(SoundPipeline):
@@ -76,8 +83,8 @@ class SoundSink(SoundPipeline):
                      "emit-signals=0",
                      "block=0",
                      "is-live=0",
-                     "stream-type=stream",
-                     "format=%s" % GST_FORMAT_BUFFERS]
+                     "stream-type=%s" % STREAM_TYPE,
+                     "format=%s" % BUFFER_FORMAT]
         pipeline_els.append(" ".join(appsrc_el))
         pipeline_els.append(parser)
         pipeline_els.append(decoder_str)
