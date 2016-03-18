@@ -147,7 +147,7 @@ class SoundSink(SoundPipeline):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
-            return
+            return 1
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
             self.last_underrun = now
@@ -217,7 +217,7 @@ class SoundSink(SoundPipeline):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
-            return
+            return 1
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
         log("overrun level=%ims", clt)
         now = time.time()
