@@ -787,11 +787,9 @@ class ServerBase(ServerCore, FileTransferHandler):
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
             self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
-            info = " ".join(real_cmd)
-            if ignore:
-                execlog("started command '%s' with pid %s (ignored)", info, proc.pid)
-            else:
-                execlog.info("started command '%s' with pid %s", info, proc.pid)
+            execlog("pid(%s)=%s", real_cmd, proc.pid)
+            if not ignore:
+                execlog.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
             return proc
         except OSError as e:
             execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
