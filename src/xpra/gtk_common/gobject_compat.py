@@ -30,6 +30,8 @@ def want_gtk3(v):
 
 def _try_import(import_method_gtk3, import_method_gtk2):
     global _is_gtk3
+    if "gi" in sys.modules:
+        _is_gtk3 = True
     if _is_gtk3 is False:
         return  import_method_gtk2()
     if _is_gtk3 is True:

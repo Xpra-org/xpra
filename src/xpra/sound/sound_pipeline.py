@@ -6,14 +6,20 @@
 import os
 import time
 
-from xpra.sound.gstreamer_util import import_gst, gst_major_version
 from xpra.log import Logger
 log = Logger("sound")
 gstlog = Logger("gstreamer")
 
+#must be done before importing gobject!
+from xpra.sound.gstreamer_util import import_gst, gst_major_version
+gst = import_gst()
+MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
+from xpra.sound.gstreamer_util import gst_version       #must be done after import_gst()
+
 from xpra.util import csv
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
+
 
 FAULT_RATE = int(os.environ.get("XPRA_SOUND_FAULT_INJECTION_RATE", "0"))
 _counter = 0
@@ -24,10 +30,6 @@ def inject_fault():
     global _counter
     _counter += 1
     return (_counter % FAULT_RATE)==0
-
-gst = import_gst()
-MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
-from xpra.sound.gstreamer_util import gst_version       #must be done after import_gst()
 
 
 class SoundPipeline(gobject.GObject):
