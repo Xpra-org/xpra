@@ -369,7 +369,13 @@ def main():
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
             glib.idle_add(ss.stop)
             glib.idle_add(glib_mainloop.quit)
-        signal.signal(signal.SIGINT, deadly_signal)
+            def force_quit(sig, frame):
+                sys.exit()
+            signal.signal(signal.SIGINT, force_quit)
+            signal.signal(signal.SIGTERM, force_quit)
+        from xpra.gtk_common.gobject_compat import is_gtk3
+        if not is_gtk3():
+            signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
         try:
