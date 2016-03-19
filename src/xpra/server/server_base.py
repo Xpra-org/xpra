@@ -773,17 +773,19 @@ class ServerBase(ServerCore, FileTransferHandler):
         if start_list:
             for x in start_list:
                 if x:
-                    self.start_child(x, x, ignore=True, shell=True)
+                    self.start_child(x, x, ignore=True)
         if start_child_list:
             for x in start_child_list:
                 if x:
-                    self.start_child(x, x, ignore=False, shell=True)
+                    self.start_child(x, x, ignore=False)
 
-    def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
+    def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=None, **kwargs):
         execlog("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
         import subprocess
         env = self.get_child_env()
         try:
+            if shell is None:
+                shell = not use_wrapper or not self.exec_wrapper
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
             self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
