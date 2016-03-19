@@ -668,23 +668,6 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_notifications_icon,  scaps.boolget("notifications", False))
         self.bool_icon(self.server_bell_icon,           scaps.boolget("bell", False))
         self.bool_icon(self.server_cursors_icon,        scaps.boolget("cursors", False))
-        def pipeline_info(can_use, sound_pipeline):
-            if not can_use:
-                return ""   #the icon shows this is not available, status is irrelevant so leave it empty
-            if sound_pipeline is None or sound_pipeline.codec is None:
-                return "inactive"
-            state = sound_pipeline.get_state()
-            if state!="active":
-                return state
-            s = "%s: %s" % (state, sound_pipeline.codec_description)
-            try:
-                info = sound_pipeline.get_info()
-                pid = info.get("pid")
-                if pid:
-                    s += " (pid=%s)" % pid
-            except:
-                log.warn("error getting sound info", exc_info=True)
-            return s
         def codec_info(enabled, codecs):
             if not enabled:
                 return "n/a"
@@ -749,7 +732,11 @@ class SessionInfo(gtk.Window):
             return prop.get_info()
         def set_sound_info(label, details, supported, prop):
             d = typedict(get_sound_info(supported, prop))
-            label.set_text(d.strget("state", ""))
+            state = d.strget("state", "")
+            codec_descr = d.strget("codec") or d.strget("codec_description")
+            if state=="active" and codec_descr:
+                state = "%s: %s" % (state, codec_descr)
+            label.set_text(state)
             if details:
                 s = ""
                 bitrate = d.intget("bitrate", 0)
