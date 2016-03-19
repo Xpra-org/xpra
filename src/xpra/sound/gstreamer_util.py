@@ -654,7 +654,8 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
             if not PULSEAUDIO_DEVICE_NAME: #used already!
-                log.warn(" use the environment variable XPRA_INPUT_DEVICE_NAME to select a specific one")
+                log.warn(" to select a specific one,")
+                log.warn(" use the environment variable XPRA_PULSEAUDIO_DEVICE_NAME")
         if default_monitor in devices:
             device = default_monitor
             device_name = devices.get(default_monitor)
