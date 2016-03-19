@@ -233,6 +233,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("shadow"       , "Shadow server"),
                 ("command"      , "Server control channel"),
                 ("timeout"      , "Server timeouts"),
+                ("exec"         , "Executing commands"),
                 #server features:
                 ("mdns"         , "mDNS session publishing"),
                 #server internals:

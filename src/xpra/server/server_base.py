@@ -15,6 +15,7 @@ from xpra.log import Logger
 log = Logger("server")
 keylog = Logger("keyboard")
 focuslog = Logger("focus")
+execlog = Logger("exec")
 commandlog = Logger("command")
 soundlog = Logger("sound")
 clientlog = Logger("client")
@@ -757,15 +758,15 @@ class ServerBase(ServerCore, FileTransferHandler):
         return self.exec_wrapper + cmd
 
     def exec_start_commands(self):
-        log("exec_start_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
+        execlog("exec_start_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
         self._exec_commands(self.start_commands, self.start_child_commands)
 
     def exec_after_connect_commands(self):
-        log("exec_after_connect_commands() start=%s, start_child=%s", self.start_after_connect, self.start_child_after_connect)
+        execlog("exec_after_connect_commands() start=%s, start_child=%s", self.start_after_connect, self.start_child_after_connect)
         self._exec_commands(self.start_after_connect, self.start_child_after_connect)
 
     def exec_on_connect_commands(self):
-        log("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_commands)
+        execlog("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_commands)
         self._exec_commands(self.start_on_connect, self.start_child_on_connect)
 
     def _exec_commands(self, start_list, start_child_list):
@@ -779,7 +780,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                     self.start_child(x, x, ignore=False, shell=True)
 
     def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
-        log("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
+        execlog("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
         import subprocess
         env = self.get_child_env()
         try:
@@ -788,12 +789,12 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             info = " ".join(real_cmd)
             if ignore:
-                log("started command '%s' with pid %s (ignored)", info, proc.pid)
+                execlog("started command '%s' with pid %s (ignored)", info, proc.pid)
             else:
-                log.info("started command '%s' with pid %s", info, proc.pid)
+                execlog.info("started command '%s' with pid %s", info, proc.pid)
             return proc
         except OSError as e:
-            log.error("Error spawning child '%s': %s\n" % (child_cmd, e))
+            execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
             return None
 
     def add_process(self, process, name, command, ignore=False, callback=None):
@@ -804,7 +805,7 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def reaper_exit(self):
         if self.exit_with_children:
-            log.info("all children have exited and --exit-with-children was specified, exiting")
+            execlog.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)
 
 
