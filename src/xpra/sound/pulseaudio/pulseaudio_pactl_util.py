@@ -9,7 +9,7 @@ import os.path
 
 from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.scripts.exec_util import safe_exec
-from xpra.util import nonl
+from xpra.util import nonl, print_nested_dict
 
 from xpra.log import Logger
 log = Logger("sound")
@@ -85,6 +85,11 @@ def set_source_mute(device, mute=False):
     log("set_source_mute: output=%s, err=%s", out, err)
     return code==0
 
+def set_sink_mute(device, mute=False):
+    code, out, err = pactl_output(True, "set-sink-mute", device, str(int(mute)))
+    log("set_sink_mute: output=%s, err=%s", out, err)
+    return code==0
+
 def get_pactl_stat_line(prefix):
     if not has_pa():
         return ""
@@ -153,10 +158,10 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
                         continue
                 #Verify against input flag (if set):
                 if input_or_output is not None:
-                    is_input = name.find("input")>=0
+                    is_input = name.lower().find("input")>=0
                     if is_input is True and input_or_output is False:
                         continue
-                    is_output = name.find("output")>=0
+                    is_output = name.lower().find("output")>=0
                     if is_output is True and input_or_output is True:
                         continue
                 if not device_description:
@@ -202,7 +207,7 @@ def main():
     if len(sys.argv)>1:
         for filename in sys.argv[1:]:
             if not os.path.exists(filename):
-                log.warn("file argument '%s' does not exist, igoring", filename)
+                log.warn("file argument '%s' does not exist, ignoring", filename)
                 continue
             data = load_binary_file(filename)
             devices = do_get_pa_device_options(data, True, False)
@@ -212,8 +217,7 @@ def main():
         return
 
     i = get_info()
-    for k in sorted(i):
-        log.info("%s : %s", k.ljust(64), i[k])
+    print_nested_dict(i)
 
 if __name__ == "__main__":
     main()

@@ -11,7 +11,7 @@ from threading import Lock
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
-                                        MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS
+                                        MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS
 
 from xpra.scripts.config import InitExit
 from xpra.util import csv
@@ -106,6 +106,11 @@ class SoundSink(SoundPipeline):
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
         from xpra.sound.gstreamer_util import gst_major_version
         sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(gst_major_version, {}).get(sink_type, {}))
+        get_options_cb = DEFAULT_SINK_PLUGIN_OPTIONS.get(sink_type.replace("sink", ""))
+        if get_options_cb:
+            v = get_options_cb()
+            log("%s()=%s", get_options_cb, v)
+            sink_attributes.update(v)
         sink_attributes.update(sink_options)
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)

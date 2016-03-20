@@ -12,7 +12,9 @@ from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
 
-XPRA_PULSE_DEVICE_NAME = "Xpra"
+#used on the server (reversed):
+XPRA_PULSE_SOURCE_DEVICE_NAME = "Xpra-Speaker"
+XPRA_PULSE_SINK_DEVICE_NAME = "Xpra-Microphone"
 
 GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
@@ -576,13 +578,13 @@ def get_test_defaults(*args):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
-def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=None):
+def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, xpra_device_name=None):
     """
         choose the device to use
     """
     try:
         from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
-        from xpra.sound.pulseaudio.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute
+        from xpra.sound.pulseaudio.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute, set_sink_mute
         if not has_pa():
             log.warn("Warning: pulseaudio is not available!")
             return None
@@ -607,9 +609,14 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
             log.error(" identical Pulseaudio ID '%s'", pa_id)
             return None
 
-    device_type_str = ["input", "monitor"][want_monitor_device]
-    devices = get_pa_device_options(want_monitor_device, not want_monitor_device)
-    log("found pulseaudio %s devices: %s", device_type_str, devices)
+    device_type_str = ""
+    if input_or_output is not None:
+        device_type_str = ["output", "input"][input_or_output]
+    if want_monitor_device:
+        device_type_str += " monitor"
+    #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True)
+    devices = get_pa_device_options(want_monitor_device, input_or_output)
+    log("found pulseaudio %i %s devices: %s", len(devices), device_type_str, devices)
     if len(devices)==0:
         log.error("Error: sound forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
@@ -617,20 +624,21 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
     if len(devices)>1:
         filters = []
         matches = []
-        for match in (device_name_match, PULSEAUDIO_DEVICE_NAME, XPRA_PULSE_DEVICE_NAME):
+        for match in (device_name_match, PULSEAUDIO_DEVICE_NAME, xpra_device_name):
             if not match:
                 continue
-            if match!=XPRA_PULSE_DEVICE_NAME:
+            if match!=xpra_device_name:
                 filters.append(match)
             match = match.lower()
             matches = dict((k,v) for k,v in devices.items() if k.lower().find(match)>=0 or v.lower().find(match)>=0)
+            #log("matches(%s, %s)=%s", devices, match, matches)
             if len(matches)==1:
-                log("found name match for '%s': %s", match, devices.items()[0])
+                log("found name match for '%s': %s", match, matches.items()[0])
                 break
             elif len(matches)>1:
                 log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
                 log.warn(" matched %i devices", len(matches))
-        if filters:
+        if filters or len(matches)>0:
             if len(matches)==0:
                 log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
                 log.warn(" %s", csv("'%s'" % x for x in filters))
@@ -642,14 +650,14 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
             devices = matches
     #default to first one:
     device, device_name = devices.items()[0]
-    if len(devices)>1 and want_monitor_device:
+    if len(devices)>1:
         default_sink = get_default_sink()
         default_monitor = default_sink+".monitor"
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
             if not PULSEAUDIO_DEVICE_NAME: #warned already
-                log.warn("Warning: found more than one audio monitor device:")
+                log.warn("Warning: found %i audio devices:", len(devices))
             for k,v in devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
@@ -667,15 +675,28 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, remote=
     log.info("using pulseaudio device:")
     log.info(" '%s'", device_name)
     #make sure it is not muted:
-    set_source_mute(device, mute=False)
+    if input_or_output is True or want_monitor_device:
+        set_source_mute(device, mute=False)
+    elif input_or_output is False:
+        set_sink_mute(device, mute=False)
     return {"device" : device}
+
+def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
+    return get_pulse_defaults(device_name_match, want_monitor_device, input_or_output=not want_monitor_device, remote=remote, xpra_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
+
+def get_pulse_sink_defaults():
+    return get_pulse_defaults(want_monitor_device=False, input_or_output=False, xpra_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
 #a list of functions to call to get the plugin options
 #at runtime (so we can perform runtime checks on remote data,
 # to avoid sound loops for example)
 DEFAULT_SRC_PLUGIN_OPTIONS = {
     "test"                  : get_test_defaults,
-    "pulse"                 : get_pulse_defaults,
+    "pulse"                 : get_pulse_source_defaults,
+    }
+
+DEFAULT_SINK_PLUGIN_OPTIONS = {
+    "pulse"                 : get_pulse_sink_defaults,
     }
 
 

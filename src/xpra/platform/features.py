@@ -30,13 +30,16 @@ DEFAULT_ENV = []
 DEFAULT_SSH_COMMAND = "ssh -x"
 DEFAULT_PULSEAUDIO_COMMAND = ["pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
                                     "--exit-idle-time=-1", "--load=module-suspend-on-idle",
-                                    #"'--load=module-null-sink sink_name=\"Default-Output\" sink_properties=device.description=\"Default\\ Output\"'",
-                                    "'--load=module-null-sink sink_name=\"Xpra-Output\" sink_properties=device.description=\"Xpra\\ Output\"'",
-                                    #"'--load=module-null-source source_name=\"Default Input\"'",
-                                    #"'--load=module-null-source source_name=\"Xpra-Input\"'",
+                                    "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
+                                    "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
                                     "--load=module-native-protocol-unix",
                                     "--load=module-dbus-protocol",
                                     "--log-level=2", "--log-target=stderr"]
+DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = [
+                                         ["pactl", "set-default-sink", "Xpra-Speaker"],
+                                         ["pactl", "set-default-source", "Xpra-Microphone.monitor"],
+                                         ]
+                              
 
 if sys.version<'3':
     CLIENT_MODULES = ["xpra.client.gtk2.client"]
@@ -56,6 +59,7 @@ _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
                 "DEFAULT_ENV",
                 "DEFAULT_SSH_COMMAND",
                 "DEFAULT_PULSEAUDIO_COMMAND",
+                "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
                 "CLIPBOARDS",
                 "CLIPBOARD_WANT_TARGETS",
                 "CLIPBOARD_GREEDY",

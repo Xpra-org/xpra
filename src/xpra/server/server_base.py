@@ -157,6 +157,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         #sound:
         self.pulseaudio = False
         self.pulseaudio_command = None
+        self.pulseaudio_configure_commands = []
         self.pulseaudio_proc = None
         self.sound_properties = typedict()
 
@@ -256,6 +257,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         #sound:
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
+        self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
 
         #video init: default to ALL if not specified
         video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
@@ -463,6 +465,14 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.add_process(self.pulseaudio_proc, "pulseaudio", self.pulseaudio_command, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
             soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
+            def configure_pulse():
+                p = self.pulseaudio_proc
+                if p is None or p.poll() is not None:
+                    return
+                for i, x in enumerate(self.pulseaudio_configure_commands):
+                    proc = subprocess.Popen(x, stdin=None, env=env, shell=True, close_fds=True)
+                    self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
+            self.timeout_add(2*1000, configure_pulse)
 
     def cleanup_pulseaudio(self):
         proc = self.pulseaudio_proc

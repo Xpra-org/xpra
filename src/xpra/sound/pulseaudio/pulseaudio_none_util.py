@@ -17,6 +17,9 @@ def has_pa():
 def set_source_mute(device, mute=False):
     pass
 
+def set_sink_mute(device, mute=False):
+    pass
+
 def get_default_sink():
     return ""
 

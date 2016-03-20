@@ -397,6 +397,9 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server. Default: '%default'.")
+        group.add_option("--pulseaudio-configure-commands", action="append",
+                      dest="pulseaudio_configure_commands", default=defaults.pulseaudio_configure_commands,
+                      help="The commands used to configure the pulseaudio server. Default: '%default'.")
         group.add_option("--dbus-proxy", action="store", metavar="yes|no",
                       dest="dbus_proxy", default=defaults.dbus_proxy,
                       help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
