@@ -34,6 +34,19 @@ TTY_READ = os.read
 TTY_WRITE = os.write
 
 
+FAMILY_STR = {}
+for x in ("UNIX", "INET", "INET6"):
+    try:
+        FAMILY_STR[getattr(socket, "AF_%s" % x)] = x
+    except:
+        pass
+for x in ("STREAM", "DGRAM", "RAW", "RDM", "SEQPACKET"):
+    try:
+        FAMILY_STR[getattr(socket, "SOCK_%s" % x)] = x
+    except:
+        pass
+
+
 if sys.platform.startswith("win"):
     #on win32, we have to deal with a few more odd error codes:
     #(it would be nicer if those were wrapped using errno instead..)
@@ -215,8 +228,8 @@ class TwoFileConnection(Connection):
         d = Connection.get_info(self)
         try:
             d["type"] = "pipe"
-            d["pipe.read.fd"] = self._read_fd
-            d["pipe.write.fd"] = self._write_fd
+            d["pipe"] = {"read"     : {"fd" : self._read_fd},
+                         "write"    : {"fd" : self._write_fd}}
         except:
             pass
         return d
@@ -259,7 +272,7 @@ class SocketConnection(Connection):
                 updict(d, "socket", {
                         "fileno"        : s.fileno(),
                         "timeout"       : int(1000*(s.gettimeout() or 0)),
-                        "family"        : s.family,
+                        "family"        : FAMILY_STR.get(s.family, s.family),
                         "proto"         : s.proto,
                         "type"          : s.type})
         except:
