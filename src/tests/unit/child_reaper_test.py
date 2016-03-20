@@ -40,7 +40,7 @@ class TestChildReaper(unittest.TestCase):
         count +=1
         assert cr.check() is True, "sleep process terminated too quickly"
         i = cr.get_info()
-        children = i.get("children")
+        children = i.get("children").get("total")
         assert children==count, "expected %s children recorded, but got %s" % (count, children)
         proc.terminate()
         #now wait for the sleep process to exit:

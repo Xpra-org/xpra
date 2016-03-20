@@ -185,7 +185,7 @@ class ChildReaper(object):
 
     def get_info(self):
         iv = list(self._proc_info)
-        info = {"children"  : {""           : len(iv),
+        info = {"children"  : {"total"      : len(iv),
                                "dead"       : len([x for x in iv if x.dead]),
                                "ignored"    : len([x for x in iv if x.ignore])}}
         pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
