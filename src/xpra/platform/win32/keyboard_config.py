@@ -36,10 +36,6 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "win32.KeyboardConfig"
 
-    def get_info(self):
-        info = KeyboardConfigBase.get_info(self)
-        return info
-
 
     def parse_options(self, props):
         return KeyboardConfigBase.parse_options(self, props)
