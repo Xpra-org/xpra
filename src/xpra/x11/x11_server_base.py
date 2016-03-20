@@ -77,6 +77,10 @@ class X11ServerBase(GTKServerBase):
         self.randr = opts.resize_display
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
+        if self.fake_xinerama:
+            self.libfakeXinerama_so = find_libfakeXinerama()
+        else:
+            self.libfakeXinerama_so = None
         self.x11_init()
         GTKServerBase.init(self, opts)
         self.query_opengl()
@@ -127,7 +131,7 @@ class X11ServerBase(GTKServerBase):
                     v = parts[1].strip()
                     self.opengl_props[k] = v
             else:
-                self.opengl_props["error"] = str(err)
+                self.opengl_props["error"] = str(err).strip("\n\r")
         except Exception as e:
             gllog.warn("Warning: failed to query OpenGL properties")
             gllog.warn(" %s", e)
@@ -175,10 +179,8 @@ class X11ServerBase(GTKServerBase):
     def get_child_env(self):
         #adds fakeXinerama:
         env = GTKServerBase.get_child_env(self)
-        if self.fake_xinerama:
-            libfakeXinerama_so = find_libfakeXinerama()
-            if libfakeXinerama_so:
-                env["LD_PRELOAD"] = libfakeXinerama_so
+        if self.fake_xinerama and self.libfakeXinerama_so:
+            env["LD_PRELOAD"] = self.libfakeXinerama_so
         return env
 
 
@@ -231,12 +233,8 @@ class X11ServerBase(GTKServerBase):
                 info["server.randr.options"] = list(reversed(sorted(sizes)))
         except:
             pass
-        try:
-            fx = find_libfakeXinerama()
-        except:
-            fx = None
-        info["server.fakeXinerama"] = self.fake_xinerama and bool(fx)
-        info["server.libfakeXinerama"] = fx or ""
+        info["server.fakeXinerama"] = self.fake_xinerama and bool(self.libfakeXinerama_so)
+        info["server.libfakeXinerama"] = self.libfakeXinerama_so or ""
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
         info["keyboard.state.keys_pressed"] = list(self.keys_pressed.keys())
         info["keyboard.fast-switching"] = True
