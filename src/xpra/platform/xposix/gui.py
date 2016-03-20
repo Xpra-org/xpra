@@ -132,7 +132,7 @@ def has_gtk_menu_support():
         return _has_gtk_menu_support
     try:
         from xpra.gtk_common.gtk_util import get_default_root_window
-        from xpra.x11.gtk_x11.menu import has_gtk_menu_support
+        from xpra.x11.dbus.menu import has_gtk_menu_support
         root = get_default_root_window()
         _has_gtk_menu_support = has_gtk_menu_support(root)
         menulog("has_gtk_menu_support(%s)=%s", root, _has_gtk_menu_support)
