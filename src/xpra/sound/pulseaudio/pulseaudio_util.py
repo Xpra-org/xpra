@@ -29,16 +29,12 @@ def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
         env_dict["PULSE_PROP_application.icon_name"] = str(icon_path)
 
 
-#prefer the palib option which does everything in process:
 try:
     #use "none" on win32 and osx:
     if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
         from xpra.sound.pulseaudio import pulseaudio_none_util as _pulseaudio_util
     else:
-        if os.environ.get("XPRA_USE_PALIB", "0")=="1":
-            from xpra.sound.pulseaudio import pulseaudio_palib_util as _pulseaudio_util
-        else:
-            from xpra.sound.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util
+        from xpra.sound.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util
 except ImportError as e:
     #fallback forks a process and parses the output:
     log("using pulseaudio none fallback")

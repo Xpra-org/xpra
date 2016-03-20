@@ -18,7 +18,7 @@ pango = import_pango()
 
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
-from xpra.util import nonl, updict, strtobytes
+from xpra.util import nonl, strtobytes
 from xpra.log import Logger
 log = Logger("util")
 
@@ -118,13 +118,11 @@ class BugReport(object):
         def get_sys_info():
             from xpra.platform.info import get_user_info
             from xpra.scripts.config import read_xpra_defaults
-            d = {
+            return {
                     "argv"          : sys.argv,
                     "path"          : sys.path,
                     "exec_prefix"   : sys.exec_prefix,
                     "executable"    : sys.executable,
-                 }
-            for k,v in {
                     "version"       : get_version_info(),
                     "platform"      : get_platform_info(),
                     "host"          : get_host_info(),
@@ -135,9 +133,7 @@ class BugReport(object):
                     "user"          : get_user_info(),
                     "env"           : os.environ,
                     "config"        : read_xpra_defaults(),
-                    }.items():
-                updict(d, k, v)
-            return d
+                    }
         get_screenshot, take_screenshot_fn = None, None
         #screenshot: may have OS-specific code
         try:

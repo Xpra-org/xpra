@@ -174,21 +174,24 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
 
 
 def get_info():
-    info = {
-            "pulseaudio.wrapper": "pactl",
-            "pulseaudio.found"  : has_pa(),
-            "pulseaudio.id"     : get_pulse_id(),
-            "pulseaudio.server" : get_pulse_server(False),
-           }
     i = 0
+    dinfo = {}
     for monitors in (True, False):
         for io in (True, False):
             devices = get_pa_device_options(monitors, io, log_errors=False)
             for d,name in devices.items():
-                info["device.%s" % d] = name
+                dinfo[d] = name
                 i += 1
-    info["devices"] = i
-    return info
+    return {
+            "device"        : dinfo,
+            "devices"       : i,
+            "pulseaudio"    : {
+                               "wrapper"   : "pactl",
+                               "found"     : has_pa(),
+                               "id"        : get_pulse_id(),
+                               "server"    : get_pulse_server(False),
+                               }
+            }
 
 
 def main():

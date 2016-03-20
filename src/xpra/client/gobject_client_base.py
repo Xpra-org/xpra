@@ -11,12 +11,15 @@ glib = import_glib()
 from xpra.log import Logger
 log = Logger("gobject", "client")
 
+import os
 import sys
 import re
 from xpra.util import nonl, DONE
 from xpra.os_util import bytestostr
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT, \
     EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG
+
+FLATTEN_INFO = os.environ.get("XPRA_FLATTEN_INFO", "1")=="1"
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -227,6 +230,8 @@ class InfoXpraClient(CommandConnectClient):
         capabilities = GObjectXpraClient.make_hello(self)
         log("make_hello() adding info_request to %s", capabilities)
         capabilities["info_request"] = True
+        if not FLATTEN_INFO:
+            capabilities["info-namespace"] = True
         return capabilities
 
 

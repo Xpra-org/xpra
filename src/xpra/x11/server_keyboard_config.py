@@ -65,7 +65,6 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def get_info(self):
         info = KeyboardConfigBase.get_info(self)
-        info["modifiers.filter"] = self.modifiers_filter
         #keycodes:
         if self.keycode_translation:
             for kc, keycode in self.keycode_translation.items():
@@ -82,33 +81,29 @@ class KeyboardConfig(KeyboardConfigBase):
                 info["keymap.%s" % i] = (keyval, name, keycode, group, level)
                 i += 1
         #modifiers:
+        modinfo = {}
+        modsinfo = {}
+        modinfo["filter"] = self.modifiers_filter
         if self.modifier_client_keycodes:
             for mod, keys in self.modifier_client_keycodes.items():
-                info["modifier." + mod + ".client_keys"] = keys
+                modinfo.setdefault(mod, {})["client_keys"] = keys
         if self.keynames_for_mod:
             for mod, keys in self.keynames_for_mod.items():
-                info["modifier." + mod + ".keys"] = tuple(keys)
+                modinfo.setdefault(mod, {})["keys"] = tuple(keys)
         if self.keycodes_for_modifier_keynames:
             for mod, keys in self.keycodes_for_modifier_keynames.items():
-                info["modifier." + mod + ".keycodes"] = tuple(keys)
+                modinfo.setdefault(mod, {})["keycodes"] = tuple(keys)
         if self.xkbmap_mod_meanings:
             for mod, mod_name in self.xkbmap_mod_meanings.items():
-                info["modifier." + mod ] = mod_name
-        if self.xkbmap_x11_keycodes:
-            for keycode, keysyms in self.xkbmap_x11_keycodes.items():
-                info["x11_keycode." + str(keycode) ] = keysyms
-        for x in ("print", "layout", "variant"):
+                modinfo[mod] = mod_name
+        info["x11_keycode"] = self.xkbmap_x11_keycodes
+        for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing"):
             v = getattr(self, "xkbmap_"+x)
             if v:
                 info[x] = v
-        for x in ("nuisance", ):
-            v = getattr(self, "xkbmap_mod_"+x)
-            if v:
-                info["modifiers."+x] = list(v)
-        for x in ("managed", "pointermissing"):
-            v = getattr(self, "xkbmap_mod_"+x)
-            if v:
-                info["modifiers."+x] = v
+        modsinfo["nuisance"] = list(self.xkbmap_mod_nuisance or [])
+        info["modifier"] = modinfo
+        info["modifiers"] = modsinfo
         log("keyboard info: %s", info)
         return info
 

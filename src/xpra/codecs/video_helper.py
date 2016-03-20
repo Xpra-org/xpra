@@ -192,10 +192,12 @@ class VideoHelper(object):
 
     def get_info(self):
         d = {}
+        einfo = d.setdefault("encoding", {})
+        dinfo = d.setdefault("decoding", {})
         for encoding, encoder_specs in self._video_encoder_specs.items():
             for in_csc, specs in encoder_specs.items():
                 for spec in specs:
-                    d.setdefault("encoding.%s_to_%s" % (in_csc, encoding), []).append(spec.codec_type)
+                    einfo.setdefault("%s_to_%s" % (in_csc, encoding), []).append(spec.codec_type)
         for in_csc, specs in self._csc_encoder_specs.items():
             for out_csc, specs in specs.items():
                 d["csc.%s_to_%s" % (in_csc, out_csc)] = [spec.codec_type for spec in specs]
@@ -203,7 +205,7 @@ class VideoHelper(object):
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
                     decoder_name, _ = decoder
-                    d.setdefault("decoding.%s_to_%s" % (encoding, out_csc), []).append(decoder_name)
+                    dinfo.setdefault("%s_to_%s" % (encoding, out_csc), []).append(decoder_name)
         def modstatus(x, def_list, active_list):
             #the module is present
             if x in active_list:
@@ -212,10 +214,12 @@ class VideoHelper(object):
                 return "disabled"
             else:
                 return "not found"
+        venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
-            d["encoding.video-encoder.%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
+            venc["%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
+        cscm = einfo.setdefault("csc-module", {})
         for x in ALL_CSC_MODULE_OPTIONS:
-            d["encoding.csc-module.%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), self.csc_modules)
+            cscm["%s" % x] = modstatus(x, get_DEFAULT_CSC_MODULES(), self.csc_modules)
         return d
 
     def init(self):

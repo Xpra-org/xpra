@@ -82,6 +82,21 @@ def remove_dupes(seq):
     seen_add = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
+def merge_dicts(a, b, path=None):
+    """ merges b into a """
+    if path is None: path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge_dicts(a[key], b[key], path + [str(key)])
+            elif a[key] == b[key]:
+                pass # same leaf value
+            else:
+                raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
+        else:
+            a[key] = b[key]
+    return a
+
 
 class AtomicInteger(object):
     def __init__(self, integer = 0):
@@ -500,6 +515,33 @@ def iround(v):
     return int(v+0.5)
 
 
+def notypedict(info):
+    def ntd(d):
+        for k in list(d.keys()):
+            v = d[k]
+            if isinstance(v, dict):
+                d[k] = ntd(v)
+        return dict(d)
+    return ntd(info)
+
+def flatten_dict(info):
+    to = {}
+    def add_dict(path, d):
+        for k,v in d.items():
+            if path:
+                if k:
+                    npath = path+"."+str(k)
+                else:
+                    npath = path
+            else:
+                npath = str(k)
+            if isinstance(v, dict):
+                add_dict(npath, v)
+            elif v is not None:
+                to[npath] = v
+    add_dict(None, info)
+    return to
+
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
 def updict(todict, prefix, d, suffix=""):
@@ -514,6 +556,16 @@ def updict(todict, prefix, d, suffix=""):
             if suffix:
                 k = k+"."+suffix
             todict[k] = v
+
+
+def print_nested_dict(d, prefix=""):
+    for k in sorted(d.keys()):
+        v = d[k]
+        if isinstance(v, dict):
+            print("%s* %s :" % (prefix, k.ljust(32)))
+            print_nested_dict(v, prefix+"  ")
+        else:
+            print("%s* %s : %s" % (prefix, k.ljust(32), nonl(pver(v))))
 
 
 def pver(v):

@@ -40,7 +40,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import csv, typedict, updict, repr_ellipsized, dump_all_frames, \
+from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, repr_ellipsized, dump_all_frames, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -51,12 +51,11 @@ SIMULATE_SERVER_HELLO_ERROR = os.environ.get("XPRA_SIMULATE_SERVER_HELLO_ERROR",
 
 def get_server_info():
     #this function is for non UI thread info
-    info = {}
+    info = {
+            "platform"  : get_platform_info(),
+            "build"     : get_version_info_full()
+            }
     info.update(get_host_info())
-    def up(prefix, d):
-        updict(info, prefix, d)
-    up("platform",  get_platform_info())
-    up("build",     get_version_info_full())
     return info
 
 def get_thread_info(proto=None, protocols=[]):
@@ -77,9 +76,10 @@ def get_thread_info(proto=None, protocols=[]):
     if w:
         thread_ident[w.ident] = "worker"
 
+    it = info.setdefault("info", {})
     #threads used by the "info" client:
     for i, t in enumerate(info_threads):
-        info["info[%s]" % i] = t.getName()
+        it[i] = t.getName()
         thread_ident[t.ident] = t.getName()
     for p in protocols:
         try:
@@ -89,8 +89,9 @@ def get_thread_info(proto=None, protocols=[]):
         except:
             pass
     #all non-info threads:
+    anit = info.setdefault("thread", {})
     for i, t in enumerate((x for x in threading.enumerate() if x not in info_threads)):
-        info[str(i)] = t.getName()
+        anit[i] = t.getName()
     #platform specific bits:
     try:
         from xpra.platform.info import get_sys_info
@@ -104,14 +105,16 @@ def get_thread_info(proto=None, protocols=[]):
                 return ""
             return x
         frames = sys._current_frames()
+        fi = info.setdefault("frame", {})
         for i,frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
-            info["frame[%s].thread" % i] = thread_ident.get(frame_pair[0], "unknown")
             #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
             sanestack = []
             for e in stack:
                 sanestack.append(tuple([nn(x) for x in e]))
             info["frame[%s].stack" % i] = sanestack
+            fi[i] = {"thread"   : thread_ident.get(frame_pair[0], "unknown"),
+                     "stack"    : sanestack}
     except Exception as e:
         log.error("failed to get frame info: %s", e)
     return info
@@ -647,7 +650,8 @@ class ServerCore(object):
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
             if c.boolget("info_request", False):
-                self.send_hello_info(proto)
+                flatten = not c.boolget("info-namespace", False)
+                self.send_hello_info(proto, flatten)
                 return
             command_req = c.strlistget("command_request")
             if len(command_req)>0:
@@ -849,7 +853,7 @@ class ServerCore(object):
         now = time.time()
         capabilities = get_network_caps()
         if source.wants_versions:
-            capabilities.update(get_server_info())
+            capabilities.update(flatten_dict(get_server_info()))
         capabilities.update({
                         "version"               : xpra.__version__,
                         "start_time"            : int(self.start_time),
@@ -870,24 +874,36 @@ class ServerCore(object):
         return capabilities
 
 
-    def send_hello_info(self, proto):
+    def send_hello_info(self, proto, flatten=True):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
         log.info("processing info request from %s", proto._conn)
-        self.get_all_info(self.do_send_info, proto)
+        def cb(proto, info):
+            self.do_send_info(proto, info, flatten)
+        self.get_all_info(cb, proto)
 
-    def do_send_info(self, proto, info):
+    def do_send_info(self, proto, info, flatten):
+        if flatten:
+            info = flatten_dict(info)
+        else:
+            info = notypedict(info)
         proto.send_now(("hello", info))
 
     def get_all_info(self, callback, proto=None, *args):
+        start = time.time()
         ui_info = self.get_ui_info(proto, *args)
+        end = time.time()
+        log("get_all_info: ui info collected in %ims", (end-start)*1000)
         def in_thread(*args):
+            start = time.time()
             #this runs in a non-UI thread
             try:
                 info = self.get_info(proto, *args)
-                ui_info.update(info)
+                merge_dicts(ui_info, info)
             except Exception as e:
                 log.error("error during info collection: %s", e, exc_info=True)
+            end = time.time()
+            log("get_all_info: non ui info collected in %ims", (end-start)*1000)
             callback(proto, ui_info)
         make_thread(in_thread, "Info", daemon=True).start()
 
@@ -899,10 +915,11 @@ class ServerCore(object):
         return get_thread_info(proto)
 
     def get_info(self, proto, *args):
+        start = time.time()
         #this function is for non UI thread info
         info = {}
         def up(prefix, d):
-            updict(info, prefix, d)
+            info[prefix] = d
         filtered_env = os.environ.copy()
         if filtered_env.get('XPRA_PASSWORD'):
             filtered_env['XPRA_PASSWORD'] = "*****"
@@ -928,9 +945,11 @@ class ServerCore(object):
                 "executable"        : sys.executable,
                 })
         if self.session_name:
-            info["session.name"] = self.session_name
+            info["session"] = {"name" : self.session_name}
         if self.child_reaper:
             info.update(self.child_reaper.get_info())
+        end = time.time()
+        log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
 
     def process_packet(self, proto, packet):

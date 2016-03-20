@@ -65,8 +65,9 @@ def get_info():
     import cryptography
     return {"backend"                       : "python-cryptography",
             "backends"                      : [ci(x) for x in getattr(backend, "_backends", [])],
-            "python-cryptography"           : True,
-            "python-cryptography.version"   : cryptography.__version__}
+            "python-cryptography"           : {""           : True,
+                                               "version"    : cryptography.__version__}
+            }
 
 def get_key(password, key_salt, block_size, iterations):
     global backend

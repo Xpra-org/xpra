@@ -68,12 +68,10 @@ def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values
 def values_to_diff_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values=20):
     return values_to_scaled_values(absolute_to_diff_values(data), scale_unit=scale_unit, min_scaled_value=min_scaled_value, num_values=num_values)
 
-def add_weighted_list_stats(info, basename, weighted_values, show_percentile=False):
+def get_weighted_list_stats(weighted_values, show_percentile=False):
     values = [x for x, _ in weighted_values]
     if len(values)==0:
-        return
-    info["%s.min" % basename] = int(min(values))
-    info["%s.max" % basename] = int(max(values))
+        return {}
     #weighted mean:
     tw = 0
     tv = 0
@@ -81,14 +79,20 @@ def add_weighted_list_stats(info, basename, weighted_values, show_percentile=Fal
         tw += w
         tv += v * w
     avg = tv/tw
-    info["%s.avg" % basename] = int(avg)
+    stats = {
+             "min"   : int(min(values)),
+             "max"   : int(max(values)),
+             "avg"   : int(avg),
+             }
     if show_percentile:
         #percentile
         svalues = sorted(values)
         for i in range(1,10):
             pct = i*10
             index = len(values)*i//10
-            info["%s.%sp" % (basename, pct)] = int(svalues[index])
+            stats["%ip" % pct] = int(svalues[index])
+    return stats
+
 
 def find_invpow(x, n):
     """Finds the integer component of the n'th root of x,
@@ -108,18 +112,20 @@ def find_invpow(x, n):
             return mid
     return mid + 1
 
-def add_list_stats(info, basename, in_values, show_percentile=[5, 8, 9], show_dev=False):
+def get_list_stats(in_values, show_percentile=[5, 8, 9], show_dev=False):
     #this may be backed by a deque/list whichi is used by other threads
     #so make a copy before use:
     values = list(in_values)
     if len(values)==0:
-        return
-    info["%s.cur" % basename] = int(values[-1])
-    info["%s.min" % basename] = int(min(values))
-    info["%s.max" % basename] = int(max(values))
+        return  {}
     #arithmetic mean
     avg = sum(values)/len(values)
-    info["%s.avg" % basename] = int(avg)
+    lstats = {
+              "cur"       : int(values[-1]),
+              "min"       : int(min(values)),
+              "max"       : int(max(values)),
+              "avg"       : int(avg),
+              }
     if show_dev:
         p = 1           #geometric mean
         h = 0           #harmonic mean
@@ -133,24 +139,25 @@ def add_list_stats(info, basename, in_values, show_percentile=[5, 8, 9], show_de
             var += (x-avg)**2
         #standard deviation:
         std = sqrt(var/len(values))
-        info["%s.std" % basename] = int(std)
+        lstats["std"] = int(std)
         if avg!=0:
             #coefficient of variation
-            info["%s.cv_pct" % basename] = int(100.0*std/avg)
+            lstats["cv_pct"] = int(100.0*std/avg)
         if counter>0 and p<float('inf'):
             #geometric mean
             try:
                 v = int(pow(p, 1.0/counter))
             except OverflowError:
                 v = find_invpow(p, counter)
-            info["%s.gm" % basename] = v
+            lstats["gm"] = v
         if h!=0:
             #harmonic mean
-            info["%s.h" % basename] = int(counter/h)
+            lstats["h"] = int(counter/h)
     if show_percentile:
         #percentile
         svalues = sorted(values)
         for i in show_percentile:
             pct = i*10
             index = len(values)*i//10
-            info["%s.%sp" % (basename, pct)] = int(svalues[index])
+            lstats["%ip" % pct] = int(svalues[index])
+    return lstats

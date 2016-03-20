@@ -13,7 +13,7 @@ import numpy
 import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 
-from xpra.util import updict, engs
+from xpra.util import engs
 from xpra.os_util import _memoryview
 
 PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
@@ -486,25 +486,26 @@ def get_info():
             "version.cl_header"     : pyopencl.get_cl_header_version(),
             "opengl"                : pyopencl.have_gl(),
             #"kernels"               : KERNELS_DEFS.keys()
+            "pyopencl"              : get_pyopencl_info(),
             }
-    updict(info, "pyopencl", get_pyopencl_info())
     if selected_platform:
-        updict(info, "platform", {
+        info["platform"] = {
             "name"          : selected_platform.name,
             "vendor"        : selected_platform.vendor,
             "devices"       : len(selected_platform.get_devices()),
-            })
+            }
     if selected_device:
-        if hasattr(selected_device, "opencl_c_version"):
-            info["device.opencl_c_version"] = getattr(selected_device, "opencl_c_version")
-        updict(info, "device", {
+        dinfo = {
             "type"                      : device_type(selected_device),
             "name"                      : selected_device.name.strip(),
             "version"                   : selected_device.version,
             "max_work_group_size"       : selected_device.max_work_group_size,
             "max_work_item_dimensions"  : selected_device.max_work_item_dimensions,
             "max_work_item_sizes"       : selected_device.max_work_item_sizes,
-            "max-size"                  : selected_device_max_size})
+            "max-size"                  : selected_device_max_size}
+        if hasattr(selected_device, "opencl_c_version"):
+            dinfo["opencl_c_version"] = getattr(selected_device, "opencl_c_version")
+        info["device"] = dinfo
     return info
 
 

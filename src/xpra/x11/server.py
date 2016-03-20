@@ -287,46 +287,59 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
-        info["focused"] = self._has_focus
-        info["grabbed"] = self._has_grab
         log("do_get_info: adding cursor=%s", self.last_cursor_data)
+        info.setdefault("state", {}).update({
+                                             "focused"  : self._has_focus,
+                                             "grabbed"  : self._has_grab,
+                                             })
+        info.setdefault("cursor", {}).update(self.get_cursor_info())
+        return info
+
+    def get_cursor_info(self):
+        #(NOT from UI thread)
         #copy to prevent race:
         cd = self.last_cursor_data
         if cd is None:
-            info["cursor"] = "None"
-        else:
-            info["cursor.is_default"] = bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])
-            #all but pixels:
-            for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
-                if x:
-                    v = cd[i] or ""
-                    info["cursor." + x] = v
-        return info
+            return {"" : "None"}
+        cinfo = {"is_default"   : bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])}
+        #all but pixels:
+        for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
+            if x:
+                v = cd[i] or ""
+                cinfo[x] = v
+        return cinfo
 
     def get_ui_info(self, proto, wids=None, *args):
         info = X11ServerBase.get_ui_info(self, proto, wids, *args)
         #_NET_WM_NAME:
         wm = self._wm
         if wm:
-            info["window-manager-name"] = wm.get_net_wm_name()
+            info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
+        info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
+        return info
+
+    def get_ui_cursor_info(self):
+        #(from UI thread)
         #now cursor size info:
         display = gtk.gdk.display_get_default()
         pos = display.get_default_screen().get_root_window().get_pointer()[:2]
-        info["cursor.position"] = pos
+        cinfo = {"position" : pos}
         for prop, size in {"default" : display.get_default_cursor_size(),
                            "max"     : display.get_maximal_cursor_size()}.items():
             if size is None:
                 continue
-            info["cursor.%s_size" % prop] = size
-        return info
+            cinfo["%s_size" % prop] = size
+        return cinfo
 
 
     def get_window_info(self, window):
         info = X11ServerBase.get_window_info(self, window)
-        info["focused"] = self._has_focus and self._window_to_id.get(window, -1)==self._has_focus
-        info["grabbed"] = self._has_grab and self._window_to_id.get(window, -1)==self._has_grab
-        info["geometry"] = window.get_property("geometry")
-        info["shown"] = self._desktop_manager.is_shown(window)
+        info.update({
+                     "focused"  : self._has_focus and self._window_to_id.get(window, -1)==self._has_focus,
+                     "grabbed"  : self._has_grab and self._window_to_id.get(window, -1)==self._has_grab,
+                     "geometry" : window.get_property("geometry"),
+                     "shown"    : self._desktop_manager.is_shown(window),
+                     })
         try:
             info["client-geometry"] = self._desktop_manager.window_geometry(window)
         except:

@@ -33,7 +33,7 @@ from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.window_source import WindowSource
 from xpra.server.window.batch_config import DamageBatchConfig
-from xpra.simple_stats import add_list_stats, std_unit
+from xpra.simple_stats import get_list_stats, std_unit
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
@@ -41,7 +41,7 @@ from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
-from xpra.util import csv, std, typedict, updict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
+from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -371,6 +371,7 @@ class ServerSource(object):
         self.client_release = None
         self.client_proxy = False
         self.auto_refresh_delay = 0
+        self.info_namespace = False
         self.send_cursors = False
         self.send_bell = False
         self.send_notifications = False
@@ -665,6 +666,7 @@ class ServerSource(object):
         self.lzo = c.boolget("lzo", False) and compression.use_lzo
         self.send_windows = self.ui_client and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
+        self.info_namespace = c.boolget("info-namespace")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
@@ -1125,7 +1127,7 @@ class ServerSource(object):
             cinfo = ""
             if ss:
                 try:
-                    encoder_latency = ss.last_info.get("queue.cur", 0)
+                    encoder_latency = ss.last_info.get("queue", {}).get("cur", 0)
                     avsynclog("server side queue level: %s", encoder_latency)
                     from xpra.sound.gstreamer_util import ENCODER_LATENCY
                     encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
@@ -1350,7 +1352,7 @@ class ServerSource(object):
                 "suspended"         : self.suspended,
                 }
         if self.desktop_size_unscaled:
-            info["desktop_size.unscaled"] = self.desktop_size_unscaled
+            info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
 
         def addattr(k, name):
             v = getattr(self, name)
@@ -1358,29 +1360,40 @@ class ServerSource(object):
                 info[k] = v
         for x in ("type", "platform", "release", "machine", "processor", "proxy"):
             addattr(x, "client_"+x)
+        #remove very large item:
+        ieo = dict(self.icons_encoding_options)
+        try:
+            del ieo["default.icons"]
+        except:
+            pass
         #encoding:
         info.update({
-             "encodings"         : self.encodings,
-             "encodings.core"    : self.core_encodings,
-             "encoding.default"  : self.default_encoding or ""
-             })
-        def up(prefix, d):
-            updict(info, prefix, d)
-        up("encoding",      self.default_encoding_options)
-        up("encoding",      self.encoding_options)
-        up("icons",         self.icons_encoding_options)
-        up("connection",    self.protocol.get_info())
-        up("av-sync",       {"client.delay"         : self.av_sync_delay,
-                             "total"                : self.av_sync_delay_total,
-                             "delta"                : self.av_sync_delta})
+                     "encodings"        : {
+                                           ""      : self.encodings,
+                                           "core"  : self.core_encodings
+                                           },
+                     "icons"            : ieo,
+                     "connection"       : self.protocol.get_info(),
+                     "av-sync"          : {
+                                           "client"     : {"delay"  : self.av_sync_delay},
+                                           "total"      : self.av_sync_delay_total,
+                                           "delta"      : self.av_sync_delta,
+                                           },
+                     })
+        einfo = {"default"      : self.default_encoding or ""}
+        einfo.update(self.default_encoding_options)
+        einfo.update(self.encoding_options)
+        info.setdefault("encoding", {}).update(einfo)
         if self.window_frame_sizes:
-            up("window.frame-sizes", self.window_frame_sizes)
+            info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})
         if self.window_filters:
             i = 0
+            finfo = {}
             for uuid, f in self.window_filters:
                 if uuid==self.uuid:
-                    info["window-filter[%i]" % i] = str(f)
+                    finfo[i] = str(f)
                     i += 1
+            info["window-filter"] = finfo
         info.update(self.get_sound_info())
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
@@ -1420,60 +1433,67 @@ class ServerSource(object):
             if prop is None:
                 return {"state" : "inactive"}
             return prop.get_info()
-        info = {}
+        info = {
+                "speaker"       : sound_info(self.supports_speaker, self.sound_source),
+                "microphone"    : sound_info(self.supports_microphone, self.sound_sink),
+                }
         for prop in ("pulseaudio_id", "pulseaudio_server"):
             v = getattr(self, prop)
             if v is not None:
                 info[prop] = v
-        for k,v in sound_info(self.supports_speaker, self.sound_source).items():
-            info["speaker.%s" % k] = v
-        for k,v in sound_info(self.supports_microphone, self.sound_sink).items():
-            info["microphone.%s" % k] = v
         return info
 
     def get_window_info(self, window_ids=[]):
         """
             Adds encoding and window specific information
         """
-        info = {
-            "damage.compression_queue.size.current" : self.encode_work_queue.qsize(),
-            "damage.packet_queue.size.current"      : len(self.packet_queue),
-            }
-        qpixels = [x[2] for x in list(self.packet_queue)]
-        add_list_stats(info, "packet_queue_pixels",  qpixels)
-        if len(qpixels)>0:
-            info["packet_queue_pixels.current"] = qpixels[-1]
-
+        pqpixels = [x[2] for x in list(self.packet_queue)]
+        pqpi = get_list_stats(pqpixels)
+        if len(pqpixels)>0:
+            pqpi["current"] = pqpixels[-1]
+        info = {"damage"    : {
+                               "compression_queue"      : {"size" : {"current" : self.encode_work_queue.qsize()}},
+                               "packet_queue"           : {"size" : {"current" : len(self.packet_queue)}},
+                               "packet_queue_pixels"    : pqpi,
+                               },
+                "batch"     : self.global_batch_config.get_info(),
+                }
         info.update(self.statistics.get_info())
 
         if len(window_ids)>0:
             total_pixels = 0
             total_time = 0.0
             in_latencies, out_latencies = [], []
+            winfo = {}
             for wid in window_ids:
                 ws = self.window_sources.get(wid)
                 if ws is None:
                     continue
                 #per-window source stats:
-                updict(info, "window[%i]" % wid, ws.get_info())
+                winfo[wid] = ws.get_info()
                 #collect stats for global averages:
                 for _, _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
                     total_pixels += pixels
                     total_time += encoding_time
                 in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
                 out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
+            info["window"] = winfo
             v = 0
             if total_time>0:
                 v = int(total_pixels / total_time)
-            info["encoding.pixels_encoded_per_second"] = v
-            add_list_stats(info, "damage.in_latency",  in_latencies, show_percentile=[9])
-            add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
-        updict(info, "batch", self.global_batch_config.get_info())
+            info.setdefault("encoding", {})["pixels_encoded_per_second"] = v
+            dinfo = info.setdefault("damage", {})
+            dinfo["in_latency"] = get_list_stats(in_latencies, show_percentile=[9])
+            dinfo["out_latency"] = get_list_stats(out_latencies, show_percentile=[9])
         return info
 
 
     def send_info_response(self, info):
-        self.send("info-response", info)
+        if self.info_namespace:
+            v = notypedict(info)
+        else:
+            v = flatten_dict(info)
+        self.send("info-response", v)
 
 
     def send_server_event(self, *args):

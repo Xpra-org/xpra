@@ -68,9 +68,8 @@ def get_mimetypes():
 
 
 def get_info():
-    return {
-            "mimetypes"         : get_mimetypes(),
-            "mimetypes.default" : DEFAULT_MIMETYPES,
+    return {"mimetypes" :   {""         : get_mimetypes(),
+                             "default"  : DEFAULT_MIMETYPES}
             }
 
 

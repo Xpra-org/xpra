@@ -16,7 +16,7 @@ from pycuda import driver
 from pycuda.driver import memcpy_htod
 from pycuda.compiler import compile
 
-from xpra.util import AtomicInteger, updict, engs, csv, pver
+from xpra.util import AtomicInteger, engs, csv, pver
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -1696,20 +1696,24 @@ cdef class Encoder:
                 "bitrate"           : self.target_bitrate,
                 "quality"           : self.quality,
                 "speed"             : self.speed,
-                "lossless"          : self.lossless,
-                "lossless.supported": LOSSLESS_ENABLED,
-                "lossless.threshold": LOSSLESS_THRESHOLD,
-                "yuv444.supported"  : YUV444_ENABLED,
-                "yuv444.threshold"  : YUV444_THRESHOLD,
+                "lossless"  : {
+                               ""          : self.lossless,
+                               "supported" : LOSSLESS_ENABLED,
+                               "threshold" : LOSSLESS_THRESHOLD
+                    },
+                "yuv444" : {
+                            "supported" : YUV444_ENABLED,
+                            "threshold" : YUV444_THRESHOLD,
+                            },
+                "cuda-device"   : self.cuda_device_info,
+                "cuda"          : self.cuda_info,
+                "pycuda"        : self.pycuda_info,
                 })
         if self.scaling!=(1,1):
             info.update({
                 "input_width"       : self.input_width,
                 "input_height"      : self.input_height,
                 "scaling"           : self.scaling})
-        updict(info, "cuda", self.cuda_device_info)
-        updict(info, "cuda", self.cuda_info)
-        updict(info, "pycuda", self.pycuda_info)
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:

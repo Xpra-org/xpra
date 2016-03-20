@@ -7,6 +7,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import time
 import gtk.gdk
 
 #ensure that we use gtk as display source:
@@ -216,30 +217,37 @@ class X11ServerBase(GTKServerBase):
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
-        from xpra.util import updict
+        start = time.time()
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
         if self.opengl_props:
-            updict(info, "opengl", self.opengl_props)
-        info["server.type"] = "Python/gtk/x11"
+            info["opengl"] = self.opengl_props
+        #this is added here because the server keyboard config doesn't know about "keys_pressed"..
+        info.setdefault("keyboard", {}).update({
+                                                "state"           : {
+                                                                     "keys_pressed"   : list(self.keys_pressed.keys())
+                                                                     },
+                                                "fast-switching"  : True,
+                                                })
+        sinfo = info.setdefault("server", {})
+        sinfo.update({"type"                : "Python/gtk/x11",
+                      "fakeXinerama"        : self.fake_xinerama and bool(self.libfakeXinerama_so),
+                      "libfakeXinerama"     : self.libfakeXinerama_so or "",
+                      "Xkb"                 : X11Keyboard.hasXkb(),
+                      "XTest"               : X11Keyboard.hasXTest(),
+                      })
         try:
             from xpra.x11.gtk2.composite import CompositeHelper
-            info["server.XShm"] = CompositeHelper.XShmEnabled
+            sinfo["XShm"] = CompositeHelper.XShmEnabled
         except:
             pass
         #randr:
         try:
             sizes = RandR.get_screen_sizes()
             if self.randr and len(sizes)>=0:
-                info["server.randr.options"] = list(reversed(sorted(sizes)))
+                sinfo["randr"] = {"options" : list(reversed(sorted(sizes)))}
         except:
             pass
-        info["server.fakeXinerama"] = self.fake_xinerama and bool(self.libfakeXinerama_so)
-        info["server.libfakeXinerama"] = self.libfakeXinerama_so or ""
-        #this is added here because the server keyboard config doesn't know about "keys_pressed"..
-        info["keyboard.state.keys_pressed"] = list(self.keys_pressed.keys())
-        info["keyboard.fast-switching"] = True
-        info["server.Xkb"] = X11Keyboard.hasXkb()
-        info["server.XTest"] = X11Keyboard.hasXTest()
+        log("X11ServerBase.do_get_info took %ims", (time.time()-start)*1000)
         return info
 
     def get_window_info(self, window):

@@ -932,7 +932,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.send_screenshot(proto)
             return
         if c.boolget("info_request", False):
-            self.send_hello_info(proto)
+            flatten = not c.boolget("info-namespace", False)
+            self.send_hello_info(proto, flatten)
             return
 
         detach_request  = c.boolget("detach_request", False)
@@ -1734,17 +1735,21 @@ class ServerBase(ServerCore, FileTransferHandler):
                 ss.send_info_response(info)
             self.get_all_info(info_callback, proto, *packet[2:])
 
-    def send_hello_info(self, proto):
-        log.info("processing info request from %s", proto._conn)
-        self.get_all_info(self.do_send_info, proto, self._id_to_window.keys())
+    def send_hello_info(self, proto, flatten=True):
+        start = time.time()
+        def cb(proto, info):
+            self.do_send_info(proto, info, flatten)
+            end = time.time()
+            log.info("processed info request from %s in %ims", proto._conn, (end-start)*1000)
+        self.get_all_info(cb, proto, self._id_to_window.keys())
 
     def get_ui_info(self, proto, wids=None, *args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
-        info = {"server.max_desktop_size" : self.get_max_screen_size()}
+        info = {"server"    : {"max_desktop_size"   : self.get_max_screen_size()}}
         if self.keyboard_config:
-            info["state.modifiers"] = self.keyboard_config.get_current_mask()
+            info["keyboard"] = {"state" : {"modifiers"          : self.keyboard_config.get_current_mask()}}
         #window info:
         self.add_windows_info(info, wids)
         return info
@@ -1763,17 +1768,16 @@ class ServerBase(ServerCore, FileTransferHandler):
         if not wids:
             wids = self._id_to_window.keys()
         log("info-request: sources=%s, wids=%s", sources, wids)
-        ei = self.do_get_info(proto, sources, wids)
-        info.update(ei)
-        updict(info, "dpi", {
+        info.update(self.do_get_info(proto, sources, wids))
+        info.setdefault("dpi", {}).update({
                              "default"      : self.default_dpi,
                              "value"        : self.dpi,
                              "x"            : self.xdpi,
                              "y"            : self.ydpi
                              })
-        updict(info, "antialias", self.antialias)
-        info["cursor.size"] = self.cursor_size
-        log("get_info took %.1fms", 1000.0*(time.time()-start))
+        info.setdefault("antialias", {}).update(self.antialias)
+        info.setdefault("cursor", {}).update({"size" : self.cursor_size})
+        log("ServerBase.get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
 
@@ -1805,8 +1809,10 @@ class ServerBase(ServerCore, FileTransferHandler):
              "bell"             : self.bell,
              "notifications"    : self.notifications_forwarder is not None,
              "sharing"          : self.sharing,
-             "pulseaudio"       : self.pulseaudio,
-             "pulseaudio.command" : self.pulseaudio_command,
+             "pulseaudio"       : {
+                                   ""           : self.pulseaudio,
+                                   "command"    : self.pulseaudio_command,
+                                   },
              "dbus_proxy"       : self.supports_dbus_proxy,
              "rpc-types"        : self.rpc_handlers.keys(),
              "clipboard"        : self.supports_clipboard,
@@ -1829,16 +1835,19 @@ class ServerBase(ServerCore, FileTransferHandler):
              "with_lossless_mode"   : self.lossless_mode_encodings}
 
     def get_keyboard_info(self):
+        start = time.time()
         info = {
              "sync"             : self.keyboard_sync,
-             "repeat.delay"     : self.key_repeat_delay,
-             "repeat.interval"  : self.key_repeat_interval,
+             "repeat"           : {
+                                   "delay"      : self.key_repeat_delay,
+                                   "interval"   : self.key_repeat_interval,
+                                   },
              "keys_pressed"     : self.keys_pressed.values(),
              "modifiers"        : self.xkbmap_mod_meanings}
-        if self.keyboard_config:
-            for k,v in self.keyboard_config.get_info().items():
-                if v is not None:
-                    info[k] = v
+        kc = self.keyboard_config
+        if kc:
+            info.update(kc.get_info())
+        log("ServerBase.get_keyboard_info took %ims", (time.time()-start)*1000)
         return info
 
     def get_clipboard_info(self):
@@ -1851,10 +1860,11 @@ class ServerBase(ServerCore, FileTransferHandler):
                 "virtual-video-devices"     : self.virtual_video_devices}
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
-        info = {"server.python.version" : python_platform.python_version()}
+        start = time.time()
+        info = {"server" : {"python" : {"version" : python_platform.python_version()}}}
 
-        def up(prefix, d, suffix=""):
-            updict(info, prefix, d, suffix)
+        def up(prefix, d):
+            info[prefix] = d
 
         up("webcam",    self.get_webcam_info())
         up("file",      self.get_file_transfer_info())
@@ -1864,14 +1874,15 @@ class ServerBase(ServerCore, FileTransferHandler):
         up("clipboard", self.get_clipboard_info())
         up("keyboard",  self.get_keyboard_info())
         up("encodings", self.get_encoding_info())
-        up("encoding",  codec_versions, "version")
+        for k,v in codec_versions.items():
+            info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
         # csc and video encoders:
-        info.update(getVideoHelper().get_info())
+        up("video",     getVideoHelper().get_info())
 
-        info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
+        info.setdefault("state", {})["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         # other clients:
-        info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
-        info["clients.unauthenticated"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
+        info["clients"] = {""                   : len([p for p in self._server_sources.keys() if p!=proto]),
+                           "unauthenticated"    : len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])}
         #find the server source to report on:
         n = len(server_sources or [])
         if n==1:
@@ -1879,22 +1890,21 @@ class ServerBase(ServerCore, FileTransferHandler):
             up("client", ss.get_info())
             info.update(ss.get_window_info(window_ids))
         elif n>1:
+            cinfo = {}
             for i, ss in enumerate(server_sources):
-                up("client[%i]" % i, ss.get_info())
-                wi = ss.get_window_info(window_ids)
-                up("client[%i]" % i, wi)
-                #this means that the last source overrides previous ones
-                #(bad decision was made on the namespace for this..)
-                info.update(wi)
+                sinfo = ss.get_info()
+                sinfo.update(ss.get_window_info(window_ids))
+                cinfo[i] = sinfo
+            up("client", cinfo)
+        log("ServerBase.do_get_info took %ims", (time.time()-start)*1000)
         return info
 
     def add_windows_info(self, info, window_ids):
+        winfo = info.setdefault("window", {})
         for wid, window in self._id_to_window.items():
             if window_ids is not None and wid not in window_ids:
                 continue
-            for k,v in self.get_window_info(window).items():
-                wp = "window[%s]." % wid
-                info[wp + k] = v
+            winfo.setdefault(wid, {}).update(self.get_window_info(window))
 
     def get_window_info(self, window):
         from xpra.server.source import make_window_metadata
@@ -1907,11 +1917,6 @@ class ServerBase(ServerCore, FileTransferHandler):
         for prop in window.get_internal_property_names():
             metadata = make_window_metadata(window, prop)
             info.update(metadata)
-        if "size-constraints" in info:
-            size_constraints = info["size-constraints"]
-            del info["size-constraints"]
-            for k,v in size_constraints.items():
-                info["size-constraints.%s" % k] = v
         info.update({
              "override-redirect"    : window.is_OR(),
              "tray"                 : window.is_tray(),

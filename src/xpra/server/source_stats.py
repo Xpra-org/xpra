@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("stats")
 
 from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect  #@UnresolvedImport
-from xpra.simple_stats import add_list_stats
+from xpra.simple_stats import get_list_stats
 
 NRECS = 500
 
@@ -132,28 +132,39 @@ class GlobalPerformanceStatistics(object):
         return factors
 
     def get_client_info(self):
-        info = {
-            "connection.mmap_bytecount"  : self.mmap_bytes_sent}
-        if self.min_client_latency is not None:
-            info["latency.absmin"] = int(self.min_client_latency*1000)
         latencies = [x*1000 for (_, _, _, x) in list(self.client_latency)]
-        add_list_stats(info, "latency",  latencies)
-        add_list_stats(info, "server.ping_latency", [1000.0*x for _, x in list(self.server_ping_latency)])
-        add_list_stats(info, "client.ping_latency", [1000.0*x for _, x in list(self.client_ping_latency)])
+        info = {
+                "connection"        : {
+                                       "mmap_bytecount"  : self.mmap_bytes_sent
+                                       },
+                "latency"           : get_list_stats(latencies),
+                "server"            : {
+                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in list(self.server_ping_latency)),
+                                       },
+                "client"            : {
+                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in list(self.client_ping_latency)),
+                                       },
+                }
+        if self.min_client_latency is not None:
+            info["latency"] = {"absmin" : int(self.min_client_latency*1000)}
         return info
 
 
     def get_info(self):
-        info = {
-            "damage.events"                     : self.damage_events_count,
-            "damage.packets_sent"               : self.packet_count,
-            "encoding.decode_errors"            : self.decode_errors,
+        cwqsizes = [x for _,x in list(self.compression_work_qsizes)]
+        pqsizes = [x for _,x in list(self.packet_qsizes)]
+        info = {"damage" : {
+                            "events"        : self.damage_events_count,
+                            "packets_sent"  : self.packet_count,
+                            "data_queue"    : {
+                                               "size"   : get_list_stats(cwqsizes),
+                                               },
+                            "packet_queue"  : {
+                                               "size"   : get_list_stats(pqsizes),
+                                               },
+                            },
+                "encoding" : {"decode_errors"   : self.decode_errors},
             }
-        qsizes = [x for _,x in list(self.compression_work_qsizes)]
-        add_list_stats(info, "damage.data_queue.size",  qsizes)
-        qsizes = [x for _,x in list(self.packet_qsizes)]
-        add_list_stats(info, "damage.packet_queue.size",  qsizes)
-
         #client pixels per second:
         now = time.time()
         time_limit = now-30             #ignore old records (30s)
@@ -174,12 +185,13 @@ class GlobalPerformanceStatistics(object):
         log("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
-            info["encoding.pixels_decoded_per_second"] = pixels_decoded_per_second
+            info["encoding"]["pixels_decoded_per_second"] = pixels_decoded_per_second
         if start_time:
             elapsed = now-start_time
             pixels_per_second = int(total_pixels/elapsed)
-            info.update({
-                     "encoding.pixels_per_second"       : pixels_per_second,
-                     "encoding.regions_per_second"      : int(len(region_sizes)/elapsed),
-                     "encoding.average_region_size"     : int(total_pixels/len(region_sizes))})
+            info.setdefault("encoding", {}).update({
+                                                    "pixels_per_second"     : pixels_per_second,
+                                                    "regions_per_second"    : int(len(region_sizes)/elapsed),
+                                                    "average_region_size"   : int(total_pixels/len(region_sizes)),
+                                                    })
         return info

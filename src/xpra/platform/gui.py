@@ -150,7 +150,7 @@ def get_info_base():
             return str(v)
     def fnames(l):
         return [fname(x) for x in l]
-    info = {
+    return {
             "native_tray_menu_helpers"      : fnames(get_native_tray_menu_helper_classes()),
             "native_trays"                  : fnames(get_native_tray_classes()),
             "native_system_trays"           : fnames(get_native_system_tray_classes()),
@@ -161,18 +161,20 @@ def get_info_base():
             "desktops"                      : get_number_of_desktops(),
             "desktop_names"                 : get_desktop_names(),
             "vertical-refresh"              : get_vrefresh(),
-            "double_click.time"             : get_double_click_time(),
-            "double_click.distance"         : get_double_click_distance(),
             "fixed_cursor_size"             : get_fixed_cursor_size(),
             "cursor_size"                   : get_cursor_size(),
-            "dpi.x"                         : get_xdpi(),
-            "dpi.y"                         : get_ydpi(),
             "icon_size"                     : get_icon_size(),
+            "double_click"                  : {
+                                               "time"       : get_double_click_time(),
+                                               "distance"   : get_double_click_distance(),
+                                               },
+            "dpi"                           : {
+                                               "x"          : get_xdpi(),
+                                               "y"          : get_ydpi(),
+                                               },
+            "antialias"                     : get_antialias_info(),
+            "window_frame"                  : get_window_frame_sizes(),
             }
-    from xpra.util import updict
-    updict(info, "antialias", get_antialias_info())
-    updict(info, "window_frame", get_window_frame_sizes())
-    return info
 
 get_info = get_info_base
 

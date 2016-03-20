@@ -27,39 +27,41 @@ GTK_VERSION_INFO = {}
 def get_gtk_version_info():
     #update props given:
     global GTK_VERSION_INFO
+    def av(k, v):
+        GTK_VERSION_INFO.setdefault(k, {})["version"] = v
     if not GTK_VERSION_INFO:
         if hasattr(gtk, "pygtk_version"):
-            GTK_VERSION_INFO["pygtk.version"] = gtk.pygtk_version
+            av("pygtk", gtk.pygtk_version)
         if hasattr(gtk, "gtk_version"):
             #GTK2:
-            GTK_VERSION_INFO["gtk.version"] = gtk.gtk_version
+            av("gtk", gtk.gtk_version)
         elif hasattr(gtk, "_version"):
             #GTK3:
-            GTK_VERSION_INFO["gtk.version"] = gtk._version
+            av("gtk", gtk._version)
         if hasattr(gdk, "__version__"):
             #GTK2:
-            GTK_VERSION_INFO["gdk.version"] = gdk.__version__
+            av("gdk", gdk.__version__)
         elif hasattr(gdk, "_version"):
             #GTK3:
-            GTK_VERSION_INFO["gdk.version"] = gdk._version
+            av("gdk", gdk._version)
         if is_gtk3():
             try:
                 import gi
-                GTK_VERSION_INFO["gi.version"] = gi.__version__
+                av("gi", gi.__version__)
             except:
                 pass
         if hasattr(gobject, "pygobject_version"):
-            GTK_VERSION_INFO["gobject.version"] = gobject.pygobject_version
+            av("gobject", gobject.pygobject_version)
         elif hasattr(gobject, "_version"):
-            GTK_VERSION_INFO["gobject.version"] = gobject._version
+            av("gobject", gobject._version)
         if hasattr(cairo, "version"):
-            GTK_VERSION_INFO["cairo.version"] = cairo.version
+            av("cairo", cairo.version)
         if hasattr(pango, "version_string"):
-            GTK_VERSION_INFO["pango.version"] = pango.version_string()
+            av("pango", pango.version_string())
         try:
             import glib
-            GTK_VERSION_INFO["glib.version"] = glib.glib_version
-            GTK_VERSION_INFO["pyglib.version"] = glib.pyglib_version
+            av("glib", glib.glib_version)
+            av("pyglib", glib.pyglib_version)
         except:
             pass
     return GTK_VERSION_INFO.copy()

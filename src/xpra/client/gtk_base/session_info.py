@@ -67,6 +67,24 @@ def average(seconds, pixel_counter):
     elapsed = now-startt
     return int(total/elapsed), total_n/elapsed, mins, avgs, maxs
 
+def dictlook(d, k, fallback=None):
+    #deal with old-style non-namespaced dicts first:
+    #"batch.delay.avg"
+    if d is None:
+        return fallback
+    v = d.get(k)
+    if v is not None:
+        return v
+    parts = k.split(".")
+    #["batch", "delay", "avg"]
+    v = d
+    for p in parts:
+        try:
+            v = v.get(p)
+        except:
+            return fallback
+    return v
+
 
 class SessionInfo(gtk.Window):
 
@@ -135,11 +153,10 @@ class SessionInfo(gtk.Window):
             return version or "unknown"
         def server_info(*prop_names):
             for x in prop_names:
-                v = scaps.capsget(x)
+                v = dictlook(scaps, x)
                 if v is not None:
                     return v
-                if self.client.server_last_info:
-                    v = self.client.server_last_info.get(x)
+                v = dictlook(self.client.server_last_info, x)
                 if v is not None:
                     return v
             return None
@@ -160,7 +177,7 @@ class SessionInfo(gtk.Window):
         gtk_version_info = get_gtk_version_info()
         def client_vinfo(prop, fallback="unknown"):
             k = "%s.version" % prop
-            return label(make_version_str(gtk_version_info.get(k, fallback)))
+            return label(make_version_str(dictlook(gtk_version_info, k, fallback)))
         def server_vinfo(prop):
             k = "%s.version" % prop
             fk = "%s_version" % prop
@@ -521,9 +538,11 @@ class SessionInfo(gtk.Window):
             info = ss.get_info()
             if info:
                 info = typedict(info)
-                self.sound_out_queue_cur.append(info.intget("queue.cur"))
-                self.sound_out_queue_min.append(info.intget("queue.min"))
-                self.sound_out_queue_max.append(info.intget("queue.max"))
+                def intlookup(k):
+                    return int(dictlook(info, k, 0))
+                self.sound_out_queue_cur.append(intlookup("queue.cur"))
+                self.sound_out_queue_min.append(intlookup("queue.min"))
+                self.sound_out_queue_max.append(intlookup("queue.max"))
         return not self.is_closed
 
     def populate(self, *args):
@@ -574,7 +593,7 @@ class SessionInfo(gtk.Window):
         if self.client.server_last_info:
             #populate running averages for graphs:
             def getavg(name):
-                return self.client.server_last_info.get("%s.avg" % name)
+                return dictlook(self.client.server_last_info, "%s.avg" % name)
             def addavg(l, name):
                 v = getavg(name)
                 if v:
@@ -780,8 +799,8 @@ class SessionInfo(gtk.Window):
             return ""
         altv = ""
         if alt:
-            altv = self.client.server_last_info.get((alt+"."+suffix).encode(), "")
-        return self.client.server_last_info.get((prefix+"."+suffix).encode(), altv)
+            altv = dictlook(self.client.server_last_info, (alt+"."+suffix).encode(), "")
+        return dictlook(self.client.server_last_info, (prefix+"."+suffix).encode(), altv)
 
     def values_from_info(self, prefix, alt=None):
         def getv(suffix):
@@ -799,7 +818,7 @@ class SessionInfo(gtk.Window):
             values = []
             for wid in self.client._window_to_id.values():
                 for window_prop in window_props:
-                    v = self.client.server_last_info.get("window[%s].%s.%s" % (wid, window_prop, suffix))
+                    v = dictlook(self.client.server_last_info, "window[%s].%s.%s" % (wid, window_prop, suffix))
                     if v is not None:
                         values.append(v)
                         break
@@ -903,34 +922,9 @@ class SessionInfo(gtk.Window):
             #remove all the current labels:
             for x in self.encoder_info_box.get_children():
                 self.encoder_info_box.remove(x)
-            window_encoder_stats = {}
             if self.client.server_last_info:
-                #We are interested in data like:
-                #window[1].encoder=x264
-                #window[1].encoder.frames=1
-                #window[1].encoder.fps=25
-                for k,v in self.client.server_last_info.items():
-                    k = bytestostr(k)
-                    if not k.startswith("window["):
-                        continue
-                    pos = k.find("].encoder")
-                    if pos<=0:
-                        continue
-                    try:
-                        wid_str = k[len("window["):pos]     #ie: "1"
-                        wid = int(wid_str)
-                    except:
-                        #wid_str may be invalid, ie:
-                        #window[1].pipeline_option[1].encoder=video_spec(xpra.codecs.enc_x264.encoder.Encoder)
-                        # -> wid_str= "1].pipeline_option[1"
-                        continue
-                    ekey = k[(pos+len("].encoder")):]   #ie: "" or ".frames"
-                    if ekey.startswith("."):
-                        ekey = ekey[1:]
-                    if ekey=="build_config":
-                        continue
-                    window_encoder_stats.setdefault(wid, {})[ekey] = v
-                #print("window_encoder_stats=%s" % window_encoder_stats)
+                window_encoder_stats = self.get_window_encoder_stats()
+                #log("window_encoder_stats=%s", window_encoder_stats)
                 for wid, props in window_encoder_stats.items():
                     l = label("%s (%s)" % (wid, bytestostr(props.get(""))))
                     l.show()
@@ -938,6 +932,48 @@ class SessionInfo(gtk.Window):
                     l.set_tooltip_text(" ".join(info))
                     self.encoder_info_box.add(l)
         return True
+
+    def get_window_encoder_stats(self):
+        window_encoder_stats = {}
+        #new-style server with namespace:
+        window_dict = self.client.server_last_info.get("window")
+        if window_dict and isinstance(window_dict, dict):
+            for k,v in window_dict.items():
+                try:
+                    wid = int(k)
+                    encoder_stats = v.get("encoder")
+                    if encoder_stats:
+                        window_encoder_stats[wid] = encoder_stats
+                except:
+                    pass
+            return window_encoder_stats
+        #fallback code, we are interested in string data like:
+        #window[1].encoder=x264
+        #window[1].encoder.frames=1
+        #window[1].encoder.fps=25
+        for k,v in self.client.server_last_info.items():
+            k = bytestostr(k)
+            if not k.startswith("window["):
+                continue
+            pos = k.find("].encoder")
+            if pos<=0:
+                continue
+            try:
+                wid_str = k[len("window["):pos]     #ie: "1"
+                wid = int(wid_str)
+            except:
+                #wid_str may be invalid, ie:
+                #window[1].pipeline_option[1].encoder=video_spec(xpra.codecs.enc_x264.encoder.Encoder)
+                # -> wid_str= "1].pipeline_option[1"
+                continue
+            ekey = k[(pos+len("].encoder")):]   #ie: "" or ".frames"
+            if ekey.startswith("."):
+                ekey = ekey[1:]
+            if ekey=="build_config":
+                continue
+            window_encoder_stats.setdefault(wid, {})[ekey] = v
+        return window_encoder_stats
+
 
     def populate_graphs(self, *args):
         if self.client.server_info_request:

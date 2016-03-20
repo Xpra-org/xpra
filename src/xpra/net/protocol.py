@@ -20,7 +20,7 @@ log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
 from xpra.os_util import Queue, strtobytes
-from xpra.util import repr_ellipsized, updict, csv
+from xpra.util import repr_ellipsized, csv
 from xpra.net import ConnectionClosedException
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -210,19 +210,26 @@ class Protocol(object):
 
     def get_info(self, alias_info=True):
         info = {
-            "input.packetcount"     : self.input_packetcount,
-            "input.raw_packetcount" : self.input_raw_packetcount,
-            "input.cipher"          : self.cipher_in_name or "",
-            "input.cipher.padding"  : self.cipher_in_padding,
-            "output.packetcount"    : self.output_packetcount,
-            "output.raw_packetcount": self.output_raw_packetcount,
-            "output.cipher"         : self.cipher_out_name or "",
-            "output.cipher.padding" : self.cipher_out_padding,
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
-            "max_packet_size"       : self.max_packet_size}
-        updict(info, "input.count", self.input_stats)
-        updict(info, "output.count", self.output_stats)
+            "max_packet_size"       : self.max_packet_size,
+            "input" : {
+                       "packetcount"            : self.input_packetcount,
+                       "raw_packetcount"        : self.input_raw_packetcount,
+                       "count"                  : self.input_stats,
+                       "cipher"                 : {"": self.cipher_in_name or "",
+                                                   "padding"        : self.cipher_in_padding,
+                                                   },
+                        },
+            "output" : {
+                        "packetcount"           : self.output_packetcount,
+                        "raw_packetcount"       : self.output_raw_packetcount,
+                        "count"                 : self.output_stats,
+                        "cipher"                : {"": self.cipher_out_name or "",
+                                                   "padding" : self.cipher_out_padding
+                                                   },
+                        },
+            }
         c = self._compress
         if c:
             info["compressor"] = compression.get_compressor_name(self._compress)
@@ -233,12 +240,8 @@ class Protocol(object):
             else:
                 info["encoder"] = packet_encoding.get_encoder_name(self._encoder)
         if alias_info:
-            for k,v in self.send_aliases.items():
-                info["send_alias." + str(k)] = v
-                info["send_alias." + str(v)] = k
-            for k,v in self.receive_aliases.items():
-                info["receive_alias." + str(k)] = v
-                info["receive_alias." + str(v)] = k
+            info["send_alias"] = self.send_aliases
+            info["receive_alias"] = self.receive_aliases
         c = self._conn
         if c:
             try:
@@ -248,7 +251,7 @@ class Protocol(object):
         info["has_more"] = self._source_has_more.is_set()
         for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
             if t:
-                info["thread.%s" % t.name] = t.is_alive()
+                info.setdefault("thread", {})[t.name] = t.is_alive()
         return info
 
 

@@ -19,7 +19,7 @@ from xpra.log import Logger
 log = Logger("stats")
 
 from collections import deque
-from xpra.simple_stats import add_list_stats, add_weighted_list_stats
+from xpra.simple_stats import get_list_stats, get_weighted_list_stats
 from xpra.util import engs, csv
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
@@ -153,14 +153,14 @@ class WindowPerformanceStatistics(object):
 
 
     def get_info(self):
-        info = {
-                "damage.events"         : self.damage_events_count,
-                "damage.packets_sent"   : self.packet_count}
+        info = {"damage"    : {"events"         : self.damage_events_count,
+                               "packets_sent"   : self.packet_count}
+                }
         #encoding stats:
         if len(self.encoding_stats)>0:
             estats = list(self.encoding_stats)
             encodings_used = [x[1] for x in estats]
-            def add_compression_stats(enc_stats, suffix=""):
+            def add_compression_stats(enc_stats, encoding=None):
                 comp_ratios_pct = []
                 comp_times_ns = []
                 total_pixels = 0
@@ -172,19 +172,23 @@ class WindowPerformanceStatistics(object):
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
                         total_time += compression_time
-                add_weighted_list_stats(info, "encoding.ratio_pct"+suffix, comp_ratios_pct)
-                add_weighted_list_stats(info, "encoding.pixels_per_ns"+suffix, comp_times_ns)
+                einfo = info.setdefault("encoding", {})
+                if encoding:
+                    einfo = einfo.setdefault(encoding, {})
+                einfo["ratio_pct"] = get_weighted_list_stats(comp_ratios_pct)
+                einfo["pixels_per_ns"] = get_weighted_list_stats(comp_times_ns)
                 if total_time>0:
-                    info["encoding.pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
+                    einfo["pixels_encoded_per_second"] = int(total_pixels / total_time)
             add_compression_stats(estats)
             for encoding in encodings_used:
                 enc_stats = [x for x in estats if x[1]==encoding]
-                add_compression_stats(enc_stats, suffix="[%s]" % encoding)
+                add_compression_stats(enc_stats, encoding)
 
+        dinfo = info.setdefault("damage", {})
         latencies = [x*1000 for _, _, _, x in list(self.damage_in_latency)]
-        add_list_stats(info, "damage.in_latency",  latencies, show_percentile=[9])
+        dinfo["in_latency"]  = get_list_stats(latencies, show_percentile=[9])
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
-        add_list_stats(info, "damage.out_latency",  latencies, show_percentile=[9])
+        dinfo["out_latency"] = get_list_stats(latencies, show_percentile=[9])
         #per encoding totals:
         for encoding, totals in self.encoding_totals.items():
             info["total_frames[%s]" % encoding] = totals[0]

@@ -456,11 +456,14 @@ def get_info():
     s = _get_xsettings()
     if s:
         serial, values = s
-        i["xsettings.serial"] = serial
+        xi = {"serial"  : serial}
         for _,name,value,_ in values:
-            i["xsettings.%s" % name] = value
-    i["dpi.xsettings"] = _get_xsettings_dpi()
-    i["dpi.randr"] = _get_randr_dpi()
+            xi[name] = value
+        i["xsettings"] = xi
+    i.setdefault("dpi", {
+                         "xsettings"    : _get_xsettings_dpi(),
+                         "randr"        : _get_randr_dpi()
+                         })
     return i
 
 

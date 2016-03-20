@@ -12,7 +12,7 @@
 NRECS = 100
 
 from collections import deque
-from xpra.simple_stats import add_list_stats
+from xpra.simple_stats import get_list_stats
 
 import os
 
@@ -74,10 +74,10 @@ class DamageBatchConfig(object):
             "locked"            : self.locked}
         if len(self.last_delays)>0:
             batch_delays = [x for _,x in list(self.last_delays)]
-            add_list_stats(info, "delay", batch_delays)
+            info["delay"] = get_list_stats(batch_delays)
         if len(self.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.last_actual_delays)]
-            add_list_stats(info, "actual_delay", batch_delays, show_percentile=[9])
+            info["actual_delays"] = get_list_stats(batch_delays, show_percentile=[9])
         for name, details, factor, weight in self.factors:
             info[name] = (int(100.0*factor), int(100.0*weight))
             for k,v in details.items():

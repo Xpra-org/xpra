@@ -1404,6 +1404,7 @@ class UIXpraClient(XpraClientBase):
             "windows"                   : self.windows_enabled,
             "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
+            "info-namespace"            : True,
             #window meta data and handling:
             "generic_window_types"      : True,
             "server-window-move-resize" : True,
@@ -2420,7 +2421,7 @@ class UIXpraClient(XpraClientBase):
             ss.add_data(data, metadata)
         if self.av_sync and self.server_av_sync:
             info = ss.get_info()
-            queue_used = info.get("queue.cur")
+            queue_used = info.get("queue.cur") or info.get("queue", {}).get("cur")
             if queue_used is None:
                 return
             delta = (self.queue_used_sent or 0)-queue_used

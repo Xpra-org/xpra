@@ -95,6 +95,6 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
     def get_info(self, proto):
         info = X11ServerBase.get_info(self, proto)
-        info["features.shadow"] = True
-        info["server.type"] = "Python/gtk2/x11-shadow"
+        info.setdefault("features", {})["shadow"] = True
+        info.setdefault("server", {})["type"] = "Python/gtk2/x11-shadow"
         return info

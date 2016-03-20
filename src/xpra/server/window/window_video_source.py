@@ -15,7 +15,7 @@ from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REF
 from xpra.server.window.region import merge_all            #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import updict, parse_scaling_value, engs
+from xpra.util import parse_scaling_value, engs
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -144,29 +144,30 @@ class WindowVideoSource(WindowSource):
 
     def get_info(self):
         info = WindowSource.get_info(self)
-        def up(prefix, d):
-            updict(info, prefix, d)
         sr = self.video_subregion
         if sr:
-            up("video_subregion", sr.get_info())
+            info["video_subregion"] = sr.get_info()
         info["scaling"] = self.actual_scaling
         csce = self._csc_encoder
         if csce:
-            info["csc"] = csce.get_type()
-            up("csc", csce.get_info())
+            info["csc"] = csce.get_info()
         ve = self._video_encoder
         if ve:
-            info["encoder"] = ve.get_type()
-            up("encoder", ve.get_info())
-        up("encoding.pipeline_param", self.get_pipeline_info())
-        info["encodings.non-video"] = self.non_video_encodings
-        info["encodings.edge"] = self.edge_encoding or ""
+            info["encoder"] = ve.get_info()
+        info.setdefault("encodings", {}).update({
+                                                 "non-video"    : self.non_video_encodings,
+                                                 "edge"         : self.edge_encoding or "",
+                                                 })
+        einfo = {"pipeline_param" : self.get_pipeline_info()}
         if self._last_pipeline_check>0:
-            info["encoding.pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
+            einfo["pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
         if lps:
+            popts = {}
             for i, lp in enumerate(lps):
-                up("encoding.pipeline_option[%s]" % i, self.get_pipeline_score_info(*lp))
+                popts[i] = self.get_pipeline_score_info(*lp)
+            einfo["pipeline_option"] = popts
+        info.setdefault("encoding", {}).update(einfo)
         return info
 
     def get_pipeline_info(self):

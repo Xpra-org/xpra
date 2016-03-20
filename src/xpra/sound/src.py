@@ -173,7 +173,7 @@ class SoundSource(SoundPipeline):
         if self.caps:
             info["caps"] = self.caps
         if self.queue:
-            info["queue.cur"] = self.queue.get_property("current-level-time")//MS_TO_NS
+            info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}
         if self.buffer_latency:
             for x in ("actual-buffer-time", "actual-latency-time"):
                 v = self.src.get_property(x)

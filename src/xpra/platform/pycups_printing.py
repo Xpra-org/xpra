@@ -416,29 +416,28 @@ PRINTER_STATE = {
 
 def get_info():
     from xpra.platform.printing import get_mimetypes, DEFAULT_MIMETYPES
-    return {
-            "mimetypes"         : get_mimetypes(),
-            "mimetypes.default" : DEFAULT_MIMETYPES,
+    return {"mimetypes"         : {""           : get_mimetypes(),
+                                   "default"    : DEFAULT_MIMETYPES,
+                                   "printers"   : MIMETYPE_TO_PRINTER,
+                                   "ppd"        : MIMETYPE_TO_PPD},
+            "mimetype"          : {"default"    : DEFAULT_MIMETYPE},
             "simulate-failure"  : SIMULATE_PRINT_FAILURE,
             "allow-user"        : ALLOW,
             "raw-mode"          : RAW_MODE,
             "generic"           : GENERIC,
             "tmpdir"            : FORWARDER_TMPDIR,
-            "mimetype.default"  : DEFAULT_MIMETYPE,
             "lpadmin"           : LPADMIN,
             "lpinfo"            : LPINFO,
             "forwarder"         : FORWARDER_BACKEND,
             "skipped-printers"  : SKIPPED_PRINTERS,
             "add-local-printers": ADD_LOCAL_PRINTERS,
             "printer-prefix"    : PRINTER_PREFIX,
-            "cups-dbus.default" : DEFAULT_CUPS_DBUS,
-            "cups-dbus"         : CUPS_DBUS,
-            "cups-dbus.poll-delay" : POLLING_DELAY,
-            "mimetypes.printers": MIMETYPE_TO_PRINTER,
-            "mimetypes.ppd"     : MIMETYPE_TO_PPD,
+            "cups-dbus"         : {""           : CUPS_DBUS,
+                                   "default"    : DEFAULT_CUPS_DBUS,
+                                   "poll-delay" : POLLING_DELAY},
             "cups.default-options"  : DEFAULT_CUPS_OPTIONS,
-            "printers.predefined" : UNPROBED_PRINTER_DEFS,
-            "printers"          : get_printer_definitions(),
+            "printers"          : {""           : get_printer_definitions(),
+                                   "predefined" : UNPROBED_PRINTER_DEFS},
             }
 
 

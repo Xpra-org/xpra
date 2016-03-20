@@ -6,7 +6,7 @@
 
 
 def main():
-    from xpra.util import nonl, pver
+    from xpra.util import nonl, pver, flatten_dict
     def print_dict(d, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
@@ -18,7 +18,7 @@ def main():
         ready()
         from xpra.gtk_common.gtk_util import get_gtk_version_info, get_display_info
         print("GTK Version:")
-        print_dict(get_gtk_version_info())
+        print_dict(flatten_dict(get_gtk_version_info()))
         print("Display:")
         print_dict(get_display_info(), vformat=str)
 

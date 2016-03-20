@@ -91,8 +91,7 @@ class ClipboardProtocolHelperBase(object):
                 "want_targets"  : self._want_targets,
                 }
         for clipboard, proxy in self._clipboard_proxies.items():
-            for k,v in proxy.get_info().items():
-                info["%s.%s" % (clipboard, k)] = v
+            info[clipboard] = proxy.get_info()
         return info
 
     def cleanup(self):
@@ -463,13 +462,14 @@ class ClipboardProxy(gtk.Invisible):
                 "enabled"       : self._enabled,
                 "greedy_client" : self._greedy_client,
                 "blocked_owner_change" : self._block_owner_change,
-                "event.selection_request"   : self._selection_request_events,
-                "event.selection_get"       : self._selection_get_events,
-                "event.selection_clear"     : self._selection_clear_events,
-                "event.got_token"           : self._got_token_events,
-                "event.sent_token"          : self._sent_token_events,
-                "event.get_contents"        : self._get_contents_events,
-                "event.request_contents"    : self._request_contents_events,
+                "event"         : {
+                                "selection_request"     : self._selection_request_events,
+                                "selection_get"         : self._selection_get_events,
+                                "selection_clear"       : self._selection_clear_events,
+                                "got_token"             : self._got_token_events,
+                                "sent_token"            : self._sent_token_events,
+                                "get_contents"          : self._get_contents_events,
+                                "request_contents"      : self._request_contents_events},
                 }
         return info
 

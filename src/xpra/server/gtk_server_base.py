@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import gtk.gdk
 import gobject
 #most important with win32 servers:
@@ -20,12 +21,12 @@ from xpra.log import Logger
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 
+from xpra.util import flatten_dict
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main
-from xpra.util import updict
 
 
 class GTKServerBase(ServerBase):
@@ -77,21 +78,25 @@ class GTKServerBase(ServerBase):
                 "cursor.default_size"   : display.get_default_cursor_size(),
                 "cursor.max_size"       : display.get_maximal_cursor_size()})
         if source.wants_versions:
-            capabilities.update(get_gtk_version_info())
+            capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 
     def get_ui_info(self, proto, *args):
         info = ServerBase.get_ui_info(self, proto, *args)
-        info["server.display"] = gtk.gdk.display_get_default().get_name()
-        info["server.root_window_size"] = self.get_root_window_size()
+        info.setdefault("server", {}).update({
+                                              "display"             : gtk.gdk.display_get_default().get_name(),
+                                              "root_window_size"    : self.get_root_window_size(),
+                                              })
         return info
 
     def do_get_info(self, proto, *args):
+        start = time.time()
         info = ServerBase.do_get_info(self, proto, *args)
-        updict(info, "server", get_gtk_version_info())
-        info.update({
-                     "server.type"      : "Python/gtk-x11",
-                     "features.randr"   : self.randr})
+        vi = get_gtk_version_info()
+        vi["type"] = "Python/gtk-x11"
+        info.setdefault("server", {}).update(vi)
+        info.setdefault("features", {})["randr"] = self.randr
+        log("GTKServerBase.do_get_info took %ims", (time.time()-start)*1000)
         return info
 
     def get_root_window_size(self):

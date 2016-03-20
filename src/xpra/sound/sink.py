@@ -14,7 +14,7 @@ from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_
                                         MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS
 
 from xpra.scripts.config import InitExit
-from xpra.util import updict, csv
+from xpra.util import csv
 from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger("sound")
@@ -251,14 +251,15 @@ class SoundSink(SoundPipeline):
             clt = self.queue.get_property("current-level-time")
             qmax = self.queue.get_property("max-size-time")
             qmin = self.queue.get_property("min-threshold-time")
-            updict(info, "queue", {
-                "min"           : qmin//MS_TO_NS,
-                "max"           : qmax//MS_TO_NS,
-                "cur"           : clt//MS_TO_NS,
-                "pct"           : min(QUEUE_TIME, clt)*100//qmax,
-                "overruns"      : self.overruns,
-                "underruns"     : self.underruns,
-                "state"         : self.queue_state})
+            info["queue"] = {
+                             "min"          : qmin//MS_TO_NS,
+                             "max"          : qmax//MS_TO_NS,
+                             "cur"          : clt//MS_TO_NS,
+                             "pct"          : min(QUEUE_TIME, clt)*100//qmax,
+                             "overruns"     : self.overruns,
+                             "underruns"    : self.underruns,
+                             "state"        : self.queue_state
+                             }
         return info
 
     def add_data(self, data, metadata=None):

@@ -257,9 +257,9 @@ class ProxyServer(ServerCore):
                 i = 0
                 for p,v in self.processes.items():
                     d,_ = v
-                    info["proxy[%s].display" % i] = d
-                    info["proxy[%s].live" % i] = p.is_alive()
-                    info["proxy[%s].pid" % i] = p.pid
+                    info[i] = {"display"    : d,
+                               "live"       : p.is_alive(),
+                               "pid"        : p.pid}
                     i += 1
                 info["proxies"] = len(self.processes)
         return info

@@ -352,13 +352,15 @@ class ProxyInstanceProcess(Process):
 
 
     def get_proxy_info(self, proto):
-        info = {"proxy.version" : local_version}
-        def upp(d):
-            updict(info, "proxy", d)
-        upp(get_server_info())
-        upp(get_thread_info(proto))
-        info.update(self.get_encoder_info())
-        return info
+        sinfo = {}
+        sinfo.update(get_server_info())
+        sinfo.update(get_thread_info(proto))
+        return {"proxy" : {
+                           "version"    : local_version,
+                           ""           : sinfo,
+                           },
+                "window" : self.get_window_info(),
+                }
 
 
     def sanitize_session_options(self, options):
@@ -790,16 +792,17 @@ class ProxyInstanceProcess(Process):
         enclog("_find_video_encoder(%s, %s) not found", encoding, rgb_format)
         return None
 
-    def get_encoder_info(self):
+    def get_window_info(self):
         info = {}
         now = time.time()
         for wid, encoder in self.video_encoders.items():
-            ipath = "window[%s].proxy.encoder" % wid
-            info[ipath] = encoder.get_type()
-            idle_time = now-self.video_encoders_last_used_time.get(wid, 0)
-            info[ipath+".idle_time"] = int(idle_time)
-            vi = encoder.get_info()
-            for k,v in vi.items():
-                info[ipath+"."+k] = v
-        enclog("get_encoder_info()=%s", info)
+            einfo = encoder.get_info()
+            einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))
+            info[wid] = {
+                         "proxy"    : {
+                                       ""           : encoder.get_type(),
+                                       "encoder"    : einfo
+                                       },
+                         }
+        enclog("get_window_info()=%s", info)
         return info

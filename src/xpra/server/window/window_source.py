@@ -47,11 +47,10 @@ AV_SYNC_TIME_CHANGE = int(os.environ.get("XPRA_AV_SYNC_TIME_CHANGE", "500"))
 LOG_THEME_DEFAULT_ICONS = os.environ.get("XPRA_LOG_THEME_DEFAULT_ICONS", "0")=="1"
 
 
-from xpra.util import updict
 from xpra.os_util import StringIOClass, memoryview_to_bytes
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
-from xpra.simple_stats import add_list_stats
+from xpra.simple_stats import get_list_stats
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
@@ -316,93 +315,100 @@ class WindowSource(object):
         """
             Add window specific stats
         """
+        #"encoding" info:
+        einfo = self.get_quality_speed_info()
+        einfo.update({
+                      ""                    : self.encoding,
+                      "lossless_threshold"  : {
+                                               "base"           : self._lossless_threshold_base,
+                                               "pixel_boost"    : self._lossless_threshold_pixel_boost
+                                               },
+                      })
+        try:
+            #ie: get_strict_encoding -> "strict_encoding"
+            einfo["selection"] = self.get_best_encoding.__name__.replace("get_", "")
+        except:
+            pass
+
+        #"encodings" info:
+        esinfo = {
+                  ""                : self.encodings,
+                  "core"            : self.core_encodings,
+                  "auto-refresh"    : self.client_refresh_encodings,
+                  }
+        larm = self.last_auto_refresh_message
+        if larm:
+            esinfo = {"auto-refresh"    : {
+                                           "last-event" : {
+                                                           "elapsed"    : int(1000*(time.time()-larm[0])),
+                                                           "message"    : larm[1],
+                                                           }
+                                           }
+                      }
+
+        now = time.time()
+        buckets_info = {}
+        for i,x in enumerate(self.delta_pixel_data):
+            if x:
+                w, h, pixel_format, coding, store, buflen, _, hits, last_used = x
+                buckets_info[i] = w, h, pixel_format, coding, store, buflen, hits, int((now-last_used)*1000)
+        #remove large default dict:
         info = {
                 "dimensions"            : self.window_dimensions,
-                "encoding"              : self.encoding,
-                "suspended"             : self.suspended or False
-                }
-        def up(prefix, d):
-            updict(info, prefix, d)
-
-        up("av-sync",       {"current"  : self.av_sync_delay,
-                             "target"   : self.av_sync_delay_target})
-        #heuristics
-        up("encoding.lossless_threshold", {
-                "base"                  : self._lossless_threshold_base,
-                "pixel_boost"           : self._lossless_threshold_pixel_boost})
-        up("encoding", {
+                "suspended"             : self.suspended or False,
+                "av-sync"               : {
+                                           "current"    : self.av_sync_delay,
+                                           "target"     : self.av_sync_delay_target
+                                           },
+                "encoding"              : einfo,
+                "encodings"             : esinfo,
                 "rgb_threshold"         : self._rgb_auto_threshold,
                 "mmap"                  : bool(self._mmap) and (self._mmap_size>0),
                 "last_used"             : self.encoding_last_used or "",
                 "full-frames-only"      : self.full_frames_only,
                 "supports-transparency" : self.supports_transparency,
-                "delta"                 : self.supports_delta,
-                "delta.buckets"         : self.delta_buckets,
-                })
+                "delta"                 : {""               : self.supports_delta,
+                                           "buckets"        : self.delta_buckets,
+                                           "bucket"         : buckets_info,
+                                           },
+                "property"              : self.get_property_info(),
+                "batch"                 : self.batch_config.get_info(),
+                "soft-timeout"          : {
+                                           "expired"        : self.soft_expired,
+                                           "max"            : self.max_soft_expired,
+                                           },
+                 "rgb_formats"          : self.rgb_formats,
+                 #"icons"                : self.icons_encoding_options,
+                 }
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
-        now = time.time()
-        for i,x in enumerate(self.delta_pixel_data):
-            if x:
-                w, h, pixel_format, coding, store, buflen, _, hits, last_used = x
-                info["encoding.delta.bucket[%s]" % i] = w, h, pixel_format, coding, store, buflen, hits, int((now-last_used)*1000)
-        up("encoding",  self.get_quality_speed_info())
-        try:
-            #ie: get_strict_encoding -> "strict_encoding"
-            info["encoding.selection"] = self.get_best_encoding.__name__.replace("get_", "")
-        except:
-            pass
-        up("property",  self.get_property_info())
-        up("batch",     self.batch_config.get_info())
-        up("soft-timeout", {
-                            "expired"       : self.soft_expired,
-                            "max"           : self.max_soft_expired
-                            })
-        up("encodings", {
-                 ""                     : self.encodings,
-                 "core"                 : self.core_encodings,
-                 "auto-refresh"         : self.client_refresh_encodings,
-                 "rgb_formats"          : self.rgb_formats,
-                 })
-        larm = self.last_auto_refresh_message
-        if larm:
-            up("encodings.auto-refresh.last-event", {
-                "elapsed"               : int(1000*(time.time()-larm[0])),
-                "message"               : larm[1],
-                                                     })
-        up("icons", self.icons_encoding_options)
         idata = self.window_icon_data
         if idata:
             pixel_data, stride, w, h = idata
-            up("icon", {
-                    "width"     : w,
-                    "height"    : h,
-                    "stride"    : stride,
-                    "bytes"     : len(pixel_data)
-                               })
-
+            info["icon"] = {
+                            "width"     : w,
+                            "height"    : h,
+                            "stride"    : stride,
+                            "bytes"     : len(pixel_data)
+                            }
         info.update(self.statistics.get_info())
         return info
 
     def get_quality_speed_info(self):
         info = {}
-        def add_last_rec_info(prefix, recs):
-            #must make a list to work on (again!)
-            l = list(recs)
-            if len(l)>0:
-                _, descr, _ = l[-1]
-                for k,v in descr.items():
-                    info[prefix+"."+k] = v
-        quality_list = self._encoding_quality
-        if quality_list:
-            qp = "quality"
-            add_list_stats(info, qp, [x for _, _, x in list(quality_list)])
-            add_last_rec_info(qp, quality_list)
-        speed_list = self._encoding_speed
-        if speed_list:
-            sp = "speed"
-            add_list_stats(info, sp, [x for _, _, x in list(speed_list)])
-            add_last_rec_info(sp, speed_list)
+        def add_list_info(prefix, v):
+            if not v:
+                return
+            l = list(v)
+            if len(l)==0:
+                return
+            li = get_list_stats(x for _, _, x in l)
+            #last record
+            _, descr, _ = l[-1]
+            li.update(descr)
+            info[prefix] = li
+        add_list_info("quality", self._encoding_quality)
+        add_list_info("speed", self._encoding_speed)
         return info
 
     def get_property_info(self):

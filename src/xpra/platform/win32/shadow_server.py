@@ -393,10 +393,11 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def get_info(self, proto):
         info = GTKServerBase.get_info(self, proto)
-        info["features.shadow"] = True
-        info["server.type"] = "Python/gtk2/win32-shadow"
-        info["server.tray"] = self.tray
-        info["server.tray-icon"] = self.tray_icon or ""
+        info.setdefault("features", {})["shadow"] = True
+        info.setdefault("server", {
+                                   "type"       : "Python/gtk2/win32-shadow",
+                                   "tray"       : self.tray,
+                                   "tray-icon"  :self.tray_icon or ""})
         return info
 
 

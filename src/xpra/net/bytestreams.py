@@ -268,13 +268,12 @@ class SocketConnection(Connection):
             d["type"] = "socket"
             s = self._socket
             if s:
-                from xpra.util import updict
-                updict(d, "socket", {
+                d["socket"] = {
                         "fileno"        : s.fileno(),
                         "timeout"       : int(1000*(s.gettimeout() or 0)),
                         "family"        : FAMILY_STR.get(s.family, s.family),
                         "proto"         : s.proto,
-                        "type"          : s.type})
+                        "type"          : s.type}
         except:
             log.warn("failed to get socket information", exc_info=True)
         return d

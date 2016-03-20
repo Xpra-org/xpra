@@ -25,7 +25,7 @@ filelog = Logger("gtk", "client", "file")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import bytestostr, updict, pver, iround, DEFAULT_METADATA_SUPPORTED
+from xpra.util import bytestostr, updict, pver, iround, flatten_dict, DEFAULT_METADATA_SUPPORTED
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -336,7 +336,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_hello(self):
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
-        capabilities.update(get_gtk_version_info())
+        capabilities.update(flatten_dict(get_gtk_version_info()))
         #tell the server which icons GTK can use
         #so it knows when it should supply one as fallback
         it = icon_theme_get_default()

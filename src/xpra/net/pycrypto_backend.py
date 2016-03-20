@@ -20,15 +20,14 @@ def init():
     pass
 
 def get_info():
-    caps = {"backend"           : "pycrypto",
-            "pycrypto"          : "True",
-            "pycrypto.version"  : Crypto.__version__}
     try:
         from Crypto.PublicKey import _fastmath
     except:
         _fastmath = None
-    caps["pycrypto.fastmath"] = _fastmath is not None
-    return caps
+    return {"backend"           : "pycrypto",
+            "pycrypto"          : {""           : True,
+                                   "version"    : Crypto.__version__},
+                                   "fastmath"   : _fastmath is not None}
 
 
 def get_key(password, key_salt, block_size, iterations):
