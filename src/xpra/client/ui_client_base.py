@@ -2451,7 +2451,6 @@ class UIXpraClient(XpraClientBase):
         self.send("set-cursors", self.cursors_enabled)
 
     def send_force_ungrab(self, wid):
-        assert self.force_ungrab
         self.send("force-ungrab", wid)
 
     def set_deflate_level(self, level):
