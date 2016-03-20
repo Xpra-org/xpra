@@ -31,7 +31,7 @@ class TestChildReaper(unittest.TestCase):
             #assert proc.poll() is not None, "%s process did not terminate?" % cmd_info
             assert cr.check() is False, "reaper did not notice that the '%s' process has terminated" % cmd_info
             i = cr.get_info()
-            children = i.get("children")
+            children = i.get("children").get("total")
             assert children==count, "expected %s children recorded, but got %s" % (count, children)
 
         #now check for the forget option:
@@ -52,7 +52,7 @@ class TestChildReaper(unittest.TestCase):
         assert cr.check() is False, "sleep process did not terminate?"
         count -= 1
         i = cr.get_info()
-        children = i.get("children")
+        children = i.get("children").get("total")
         assert children==count, "expected the sleep process to have been forgotten (%s children), but got %s children instead in the reaper records" % (count, children)
         reaper_cleanup()
 
