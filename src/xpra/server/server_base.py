@@ -480,6 +480,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             return
         soundlog("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
         if self.is_child_alive(proc):
+            self.pulseaudio_proc = None
             soundlog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
                 #first we try pactl (required on Ubuntu):
@@ -490,7 +491,6 @@ class ServerBase(ServerCore, FileTransferHandler):
                 if r!=0:
                     #fallback to using SIGINT:
                     proc.terminate()
-                    self.pulseaudio_proc = None
             except:
                 #only log the full stacktrace if the process failed to terminate:
                 full_trace = self.is_child_alive(proc)
