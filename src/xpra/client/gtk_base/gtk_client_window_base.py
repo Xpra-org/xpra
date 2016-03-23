@@ -107,8 +107,6 @@ PYTHON3 = sys.version_info[0] == 3
 if PYTHON3:
     unicode = str           #@ReservedAssignment
 
-DEICONIFY_DELAY = int(os.environ.get("XPRA_DEICONIFY_DELAY", "1000"))
-
 
 def wn(w):
     return WORKSPACE_NAMES.get(w, w)
@@ -351,14 +349,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def unfreeze(self):
         if not self._frozen or not self._iconified:
             return
-        def deiconify():
-            log("deiconify() wid=%i, frozen=%s, iconified=%s", self._id, self._frozen, self._iconified)
-            if not self._frozen or not self._iconified:
-                #has been deiconified already
-                return
-            self._frozen = False
-            self.deiconify()
-        self.timeout_add(DEICONIFY_DELAY, deiconify)
+        log("unfreeze() wid=%i, frozen=%s, iconified=%s", self._id, self._frozen, self._iconified)
+        if not self._frozen or not self._iconified:
+            #has been deiconified already
+            return
+        self._frozen = False
+        self.deiconify()
 
 
     def show(self):

@@ -687,12 +687,18 @@ class ClientExtras(object):
         event_name = WTS_SESSION_EVENTS.get(event, event)
         log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
         c = self.client
-        if c and event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
+        if not c:
+            return
+        if event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
             log("will freeze all the windows")
             c.freeze()
-        elif c and event in (WTS_SESSION_LOGON, WTS_SESSION_UNLOCK):
+        elif event in (WTS_SESSION_LOGON, WTS_SESSION_UNLOCK):
             log("will unfreeze all the windows")
-            c.unfreeze()
+            #don't unfreeze directly from here,
+            #as the system may not be fully usable yet (see #997)
+            from xpra.gtk_common.gobject_compat import import_glib
+            glib = import_glib()
+            glib.idle_add(c.unfreeze)
 
 
     def inputlangchange(self, wParam, lParam):
