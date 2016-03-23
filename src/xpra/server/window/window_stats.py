@@ -102,12 +102,12 @@ class WindowPerformanceStatistics(object):
         #ratio of "in" and "out" latency indicates network bottleneck:
         #(the difference between the two is the time it takes to send)
         if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
-            ad = max(0.001, self.avg_damage_out_latency-self.avg_damage_in_latency)
-            rd = max(0.001, self.recent_damage_out_latency-self.recent_damage_in_latency)
-            div = 0.040 / max(ad, rd)       #reduce weight for low latencies (matter less)
+            #prevent jitter from skewing the values too much
+            ad = max(0.010, 0.040+self.avg_damage_out_latency-self.avg_damage_in_latency)
+            rd = max(0.010, 0.040+self.recent_damage_out_latency-self.recent_damage_in_latency)
             metric = "damage-network-delay"
             #info: avg delay=%.3f recent delay=%.3f" % (ad, rd)
-            factors.append(calculate_for_average(metric, ad, rd, weight_div=div))
+            factors.append(calculate_for_average(metric, ad, rd))
         #send speed:
         ass = self.avg_send_speed
         rss = self.recent_send_speed
