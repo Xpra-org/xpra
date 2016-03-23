@@ -20,6 +20,7 @@ cdef extern from "string.h":
 cdef extern from "libavutil/log.h":
     ctypedef struct va_list:
         pass
+    cdef int AV_LOG_FATAL
     cdef int AV_LOG_ERROR
     cdef int AV_LOG_WARNING
     cdef int AV_LOG_INFO
@@ -31,14 +32,33 @@ cdef extern from "libavutil/log.h":
     void av_log_set_callback(void *callback)
 
 
+cdef int ERROR_LEVEL    = AV_LOG_ERROR
+cdef int WARNING_LEVEL  = AV_LOG_WARNING
+cdef int INFO_LEVEL     = AV_LOG_INFO
+cdef int DEBUG_LEVEL    = AV_LOG_DEBUG
+
+def suspend_nonfatal_logging():
+    global ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, DEBUG_LEVEL
+    ERROR_LEVEL    = AV_LOG_FATAL
+    WARNING_LEVEL  = AV_LOG_FATAL
+    INFO_LEVEL     = AV_LOG_FATAL
+    DEBUG_LEVEL    = AV_LOG_FATAL
+
+def resume_nonfatal_logging():
+    ERROR_LEVEL    = AV_LOG_ERROR
+    WARNING_LEVEL  = AV_LOG_WARNING
+    INFO_LEVEL     = AV_LOG_INFO
+    DEBUG_LEVEL    = AV_LOG_DEBUG
+
+
 cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
-    if level<=AV_LOG_ERROR:
+    if level<=ERROR_LEVEL:
         l = log.error
-    elif level<=AV_LOG_WARNING:
+    elif level<=WARNING_LEVEL:
         l = log.warn
-    elif level<=AV_LOG_INFO:
+    elif level<=INFO_LEVEL:
         l = log.info
-    elif level<=AV_LOG_DEBUG:
+    elif level<=DEBUG_LEVEL:
         l = log.debug
     else:
         #don't bother
@@ -49,7 +69,7 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
     try:
         r = vsnprintf(buffer, 256, fmt, vl)
         if r<0:
-            log.error("av_log: vsnprintf returned %s on format string '%s'", r, fmt)
+            log.error("av_log: vsnprintf returned %i on format string '%s'", r, fmt)
             return
         s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
         if s.startswith("Warning: data is not aligned!"):

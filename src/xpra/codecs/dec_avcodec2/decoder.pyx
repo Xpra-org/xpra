@@ -10,6 +10,7 @@ log = Logger("decoder", "avcodec")
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
+from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import bytestostr
 
 
@@ -599,4 +600,8 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
     global CODECS
-    CODECS = testdecoder(decoder, full)
+    try:
+        suspend_nonfatal_logging()
+        CODECS = testdecoder(decoder, full)
+    finally:
+        resume_nonfatal_logging()

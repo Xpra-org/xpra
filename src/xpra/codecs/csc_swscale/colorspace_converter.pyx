@@ -15,6 +15,7 @@ from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
+from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 
 
 cdef extern from "../../buffers/buffers.h":
@@ -540,35 +541,39 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
     from xpra.codecs.csc_swscale import colorspace_converter
     override_logger()
-    #test a limited set, not all combinations:
-    if full:
-        planar_tests = [x for x in get_input_colorspaces() if x.endswith("P")]
-        packed_tests = [x for x in get_input_colorspaces() if ((x.find("BGR")>=0 or x.find("RGB")>=0) and not x not in planar_tests)]
-    else:
-        planar_tests = [x for x in ("YUV420P", "YUV422P", "YUV444P", "GBRP") if x in get_input_colorspaces()]
-        packed_tests = ["BGRX"]   #only test BGRX
-    maxw, maxh = 2**24, 2**24
-    for planar in planar_tests:
-        for packed in packed_tests:
-            #test planar to packed:
-            if packed not in get_output_colorspaces(planar):
-                continue
-            testcsc(colorspace_converter, full, [planar], [packed])
-            if full:
-                mw, mh = get_csc_max_size(colorspace_converter, [planar], [packed])
-                maxw = min(maxw, mw)
-                maxh = min(maxh, mh)
-            #test BGRX to planar:
-            if packed not in get_input_colorspaces():
-                continue
-            if planar not in get_output_colorspaces(packed):
-                continue
-            testcsc(colorspace_converter, full, [packed], [planar])
-            if full:
-                mw, mh = get_csc_max_size(colorspace_converter, [packed], [planar])
-                maxw = min(maxw, mw)
-                maxh = min(maxh, mh)
-    if full and maxw<65536 and maxh<65536:
-        MAX_WIDTH = maxw
-        MAX_HEIGHT = maxh
-        log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
+    try:
+        suspend_nonfatal_logging()
+        #test a limited set, not all combinations:
+        if full:
+            planar_tests = [x for x in get_input_colorspaces() if x.endswith("P")]
+            packed_tests = [x for x in get_input_colorspaces() if ((x.find("BGR")>=0 or x.find("RGB")>=0) and not x not in planar_tests)]
+        else:
+            planar_tests = [x for x in ("YUV420P", "YUV422P", "YUV444P", "GBRP") if x in get_input_colorspaces()]
+            packed_tests = ["BGRX"]   #only test BGRX
+        maxw, maxh = 2**24, 2**24
+        for planar in planar_tests:
+            for packed in packed_tests:
+                #test planar to packed:
+                if packed not in get_output_colorspaces(planar):
+                    continue
+                testcsc(colorspace_converter, full, [planar], [packed])
+                if full:
+                    mw, mh = get_csc_max_size(colorspace_converter, [planar], [packed])
+                    maxw = min(maxw, mw)
+                    maxh = min(maxh, mh)
+                #test BGRX to planar:
+                if packed not in get_input_colorspaces():
+                    continue
+                if planar not in get_output_colorspaces(packed):
+                    continue
+                testcsc(colorspace_converter, full, [packed], [planar])
+                if full:
+                    mw, mh = get_csc_max_size(colorspace_converter, [packed], [planar])
+                    maxw = min(maxw, mw)
+                    maxh = min(maxh, mh)
+        if full and maxw<65536 and maxh<65536:
+            MAX_WIDTH = maxw
+            MAX_HEIGHT = maxh
+            log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
+    finally:
+        resume_nonfatal_logging()
