@@ -2456,8 +2456,9 @@ def init_module():
     if bl is True:
         raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
     elif bl is None:
-        log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
-        log.warn(" recommended driver versions: up to 350 only")
+        if v:
+            log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
+            log.warn(" recommended driver versions: up to 350 only")
         if os.environ.get("XPRA_NVENC_YUV444P", "0")!="1":
             log.warn(" disabling YUV444P and lossless mode")
             log.warn(" use XPRA_NVENC_YUV444P=1 to force enable it")
