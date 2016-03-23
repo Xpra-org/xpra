@@ -13,8 +13,8 @@ log = Logger("sound", "gstreamer")
 
 
 #used on the server (reversed):
-XPRA_PULSE_SOURCE_DEVICE_NAME = "Xpra-Speaker"
-XPRA_PULSE_SINK_DEVICE_NAME = "Xpra-Microphone"
+XPRA_PULSE_SOURCE_DEVICE_NAME = "Speaker"
+XPRA_PULSE_SINK_DEVICE_NAME = "Microphone"
 
 GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
