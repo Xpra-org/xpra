@@ -183,7 +183,7 @@ memoryview_ENABLED      = sys.version>='2.7'
 csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 csc_libyuv_ENABLED      = DEFAULT and memoryview_ENABLED and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
-#Cython / gcc / packagingt build options:
+#Cython / gcc / packaging build options:
 annotate_ENABLED        = True
 warn_ENABLED            = True
 strict_ENABLED          = True
@@ -2033,6 +2033,9 @@ if crypto_ENABLED and (OSX or WIN32):
     external_includes.append("cffi")
     external_includes.append("_cffi_backend")
     external_includes.append("cryptography")
+    external_includes.append("pkg_resources._vendor.packaging")
+    external_includes.append("pkg_resources._vendor.packaging.requirements")
+    external_includes.append("pkg_resources._vendor.pyparsing")
     add_modules("cryptography.hazmat.bindings._openssl")
     add_modules("cryptography.hazmat.bindings._constant_time")
     add_modules("cryptography.hazmat.bindings._padding")
