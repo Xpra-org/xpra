@@ -150,21 +150,24 @@ SOURCE_NEEDS_AUDIOCONVERT = ("directsoundsrc", "osxaudiosrc", "autoaudiosrc")
 
 #options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
-ENCODER_DEFAULT_OPTIONS = {
+ENCODER_DEFAULT_OPTIONS_COMMON = {
             "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
             "wavpackenc"    : {"mode" : 1},     #"fast" (0 aka "very fast" is not supported)
             "flacenc"       : {"quality" : 0},  #"fast"
                            }
-ENCODER_DEFAULT_OPTIONS_GSTREAMER0 = ENCODER_DEFAULT_OPTIONS.copy()
-ENCODER_DEFAULT_OPTIONS_GSTREAMER0.update({
-            "opusenc"       : {"cbr"            : 0,
-                               "complexity"     : 0},
-                           })
-ENCODER_DEFAULT_OPTIONS_GSTREAMER1 = ENCODER_DEFAULT_OPTIONS.copy()
-ENCODER_DEFAULT_OPTIONS_GSTREAMER1.update({
-            "opusenc"       : {"bitrate-type"   : 2,      #constrained vbr
-                               "complexity"     : 0},
-                           })
+ENCODER_DEFAULT_OPTIONS = {
+                            0       : {
+                                       "opusenc"       : {
+                                                          "cbr"            : 0,
+                                                          "complexity"     : 0
+                                                          },
+                                       },
+                            1      :   {
+                                        "opusenc"       : {"bitrate-type"   : 2,      #constrained vbr
+                                                           "complexity"     : 0
+                                                           },
+                                        },
+                           }
 #we may want to review this if/when we implement UDP transport:
 GDPPAY_CRC = False
 MUXER_DEFAULT_OPTIONS = {
@@ -402,13 +405,12 @@ def has_plugins(*names):
     return len(missing)==0
 
 def get_encoder_default_options(encoder):
-    global gst_major_version, ENCODER_DEFAULT_OPTIONS_GSTREAMER0, ENCODER_DEFAULT_OPTIONS_GSTREAMER1
+    global gst_major_version, ENCODER_DEFAULT_OPTIONS_COMMON, ENCODER_DEFAULT_OPTIONS
     #strip the muxer:
     enc = encoder.split("+")[0]
-    if gst_major_version==0:
-        return ENCODER_DEFAULT_OPTIONS_GSTREAMER0.get(enc)
-    else:
-        return ENCODER_DEFAULT_OPTIONS_GSTREAMER1.get(enc)
+    options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
+    options.update(ENCODER_DEFAULT_OPTIONS.get(gst_major_version).get(enc, {}))
+    return options
     
 
 CODECS = None
