@@ -160,7 +160,7 @@ def get_crypto_caps():
     if not backend:
         return {}
     caps = {
-            "padding.options"       : PADDING_OPTIONS,
+            "padding"       : {"options"    : PADDING_OPTIONS},
             }
     caps.update(backend.get_info())
     return caps
@@ -190,14 +190,14 @@ def get_decryptor(ciphername, iv, password, key_salt, iterations):
 
 
 def main():
+    from xpra.util import print_nested_dict
     crypto_backend_init()
     from xpra.platform import program_context
     import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
     with program_context("Encryption Properties"):
-        for k,v in sorted(get_crypto_caps().items()):
-            print(k.ljust(32)+": "+str(v))
+        print_nested_dict(get_crypto_caps())
 
 if __name__ == "__main__":
     main()

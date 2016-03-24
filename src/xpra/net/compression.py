@@ -116,20 +116,32 @@ _COMPRESSORS = {
                }
 
 def get_compression_caps():
-    caps = {
-            "lz4"                   : use_lz4,
-            "lzo"                   : use_lzo,
-            "zlib"                  : use_zlib,
-            "zlib.version"          : zlib.__version__,
-           }
+    caps = {}
+    _lzo = {"" : use_lzo}
     if lzo_version:
-        caps["lzo.version"] = lzo_version
+        _lzo["version"] = lzo_version
     if python_lzo_version:
-        caps["python-lzo.version"] = python_lzo_version
+        caps["python-lzo"] = {
+                              ""            : True,
+                              "version"     : python_lzo_version,
+                              }
+    _lz4 = {""  : use_lz4}
     if lz4_version:
-        caps["lz4.version"] = lz4_version
+        _lz4["version"] = lz4_version
     if python_lz4_version:
-        caps["python-lz4.version"] = python_lz4_version
+        caps["python-lz4"] = {
+                              ""            : True,
+                              "version"     : python_lz4_version,
+                              }
+    _zlib = {
+             ""             : use_zlib,
+             "version"      : zlib.__version__
+             }
+    caps.update({
+                 "lz4"                   : _lz4,
+                 "lzo"                   : _lzo,
+                 "zlib"                  : _zlib,
+                 })
     return caps
 
 def get_enabled_compressors(order=ALL_COMPRESSORS):

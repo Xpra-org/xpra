@@ -558,14 +558,24 @@ def updict(todict, prefix, d, suffix=""):
             todict[k] = v
 
 
-def print_nested_dict(d, prefix=""):
+def print_nested_dict(d, prefix="", lchar="*", pad=32):
+    l = pad-len(prefix)-len(lchar)
     for k in sorted(d.keys()):
         v = d[k]
         if isinstance(v, dict):
-            print("%s* %s :" % (prefix, k.ljust(32)))
-            print_nested_dict(v, prefix+"  ")
+            nokey = v.get("", (v.get(None)))
+            if nokey is not None:
+                print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(pver(nokey))))
+                for x in ("", None):
+                    try:
+                        del v[x]
+                    except:
+                        pass
+            else:
+                print("%s%s %s" % (prefix, lchar, k))
+            print_nested_dict(v, prefix+"  ", "-")
         else:
-            print("%s* %s : %s" % (prefix, k.ljust(32), nonl(pver(v))))
+            print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(pver(v))))
 
 
 def pver(v):

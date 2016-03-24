@@ -161,6 +161,7 @@ def get_info():
 
 
 def main():
+	from xpra.util import print_nested_dict
 	from xpra.platform import program_context
 	from xpra.log import enable_color
 	with program_context("Network-Info", "Network Info"):
@@ -199,11 +200,20 @@ def main():
 		print("Protocol Capabilities:")
 		from xpra.net.protocol import get_network_caps
 		netcaps = get_network_caps()
+		netif = {""	: has_netifaces}
 		if netifaces_version:
-			netcaps["netifaces.version"] = netifaces_version
-		for k in sorted(netcaps.keys()):
-			v = netcaps[k]
-			print("* %s : %s" % (str(k).ljust(20), pver(v)))
+			netif["version"] = netifaces_version
+		netcaps["netifaces"] = netif
+		print_nested_dict(netcaps)
+
+		from xpra.net.crypto import crypto_backend_init, get_crypto_caps
+		crypto_backend_init()
+		ccaps = get_crypto_caps()
+		if ccaps:
+			print("")
+			print("Crypto Capabilities:")
+			print_nested_dict(ccaps)
+			
 
 
 if __name__ == "__main__":

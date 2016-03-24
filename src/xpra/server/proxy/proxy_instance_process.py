@@ -24,7 +24,7 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES
-from xpra.util import typedict, updict, repr_ellipsized, \
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
 from xpra.make_thread import make_thread
@@ -411,7 +411,7 @@ class ProxyInstanceProcess(Process):
                 removed.append(k)
         log("filtered out %s matching %s", removed, prefixes)
         #replace the network caps with the proxy's own:
-        pcaps.update(get_network_caps())
+        pcaps.update(flatten_dict(get_network_caps()))
         #then add the proxy info:
         updict(pcaps, "proxy", get_server_info())
         pcaps["proxy"] = True

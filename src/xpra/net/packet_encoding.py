@@ -93,21 +93,23 @@ def do_yaml(data):
 
 
 def get_packet_encoding_caps():
-    caps = {
-            "rencode"               : use_rencode,
-            "bencode"               : use_bencode,
-            "yaml"                  : use_yaml,
-           }
+    r = {"" : use_rencode}
     if has_rencode:
         assert rencode_version is not None
-        caps["rencode.version"] = rencode_version
+        r["version"]    = rencode_version
+    b = {"" : use_bencode}
     if has_bencode:
         assert bencode_version is not None
-        caps["bencode.version"] = bencode_version
+        b["version"] = bencode_version
+    y = {"" : use_yaml}
     if has_yaml:
         assert yaml_version is not None
-        caps["yaml.version"] = yaml_version
-    return caps
+        y["version"] = yaml_version
+    return {
+            "rencode"               : r,
+            "bencode"               : b,
+            "yaml"                  : use_yaml,
+           }
 
 
 #all the encoders we know about, in best compatibility order:
@@ -117,10 +119,10 @@ ALL_ENCODERS = ["bencode", "rencode", "yaml"]
 PERFORMANCE_ORDER = ["rencode", "bencode", "yaml"]
 
 _ENCODERS = {
-        "rencode"   : do_rencode,
-        "bencode"   : do_bencode,
-        "yaml"      : do_yaml,
-           }
+             "rencode"   : do_rencode,
+             "bencode"   : do_bencode,
+             "yaml"      : do_yaml,
+             }
 
 def get_enabled_encoders(order=ALL_ENCODERS):
     enabled = [x for x,b in {
@@ -189,10 +191,10 @@ def decode(data, protocol_flags):
 
 
 def main():
+    from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Packet Encoding", "Packet Encoding Info"):
-        for k,v in sorted(get_packet_encoding_caps().items()):
-            print(k.ljust(20)+": "+str(v))
+        print_nested_dict(get_packet_encoding_caps())
 
 
 if __name__ == "__main__":

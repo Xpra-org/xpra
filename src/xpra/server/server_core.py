@@ -851,7 +851,7 @@ class ServerCore(object):
 
     def make_hello(self, source):
         now = time.time()
-        capabilities = get_network_caps()
+        capabilities = flatten_dict(get_network_caps())
         if source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))
         capabilities.update({

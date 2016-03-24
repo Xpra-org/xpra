@@ -29,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
 from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
-from xpra.util import typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, dump_all_frames
+from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
 EXIT_OK = 0
@@ -325,7 +325,7 @@ class XpraClientBase(FileTransferHandler):
 
 
     def make_hello_base(self):
-        capabilities = get_network_caps()
+        capabilities = flatten_dict(get_network_caps())
         capabilities.update({
                 "version"               : local_version,
                 "encoding.generic"      : True,
