@@ -200,6 +200,7 @@
 				var port = window.location.getParameter("port") || window.location.port;
 				var encryption = window.location.getParameter("encryption") || null;
 				var key = window.location.getParameter("key") || null;
+				var keyboard_layout = window.location.getParameter("keyboard_layout") || null;
 
 				// create the client
 			    var client = new XpraClient('screen');
@@ -219,6 +220,10 @@
 			    // experimental sound support
 			    if(sound) {
 			    	client.audio_enabled = true;
+			    }
+
+			    if(keyboard_layout) {
+			    	client.keyboard_layout = keyboard_layout;
 			    }
 
 			    // check for username and password

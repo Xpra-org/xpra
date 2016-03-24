@@ -45,6 +45,7 @@ function XpraClient(container) {
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
 	// modifier keys
+	this.keyboard_layout = null;
 	this.caps_lock = null;
 	this.alt_modifier = null;
 	this.meta_modifier = null;
@@ -424,6 +425,8 @@ XpraClient.prototype._get_hex_uuid = function() {
 }
 
 XpraClient.prototype._get_keyboard_layout = function() {
+	if (this.keyboard_layout)
+		return this.keyboard_layout;
 	//IE:
 	//navigator.systemLanguage
 	//navigator.browserLanguage
@@ -434,7 +437,8 @@ XpraClient.prototype._get_keyboard_layout = function() {
 	if (l.length==1)
 		l = v.split("_", 2);
 	if (l.length==1)
-		return "";
+		//ie: "en"
+		return l[0];
 	//ie: "gb"
 	return l[1].toLowerCase();
 }

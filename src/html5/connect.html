@@ -48,6 +48,102 @@
 			</select>
 		  </div>
 
+		  <div class="form-group form-inline">
+		    <label class="sr-only" for="keyboard_layout">Keyboard Layout</label>
+		    <select id="keyboard_layout">
+		      <option value="us">English USA</option>
+		      <option value="gb">United Kingdom</option>
+		      <option value="fr">France</option>
+			  <option value="de">Germany</option>
+			  <option value="ad">Andorra</option>
+			  <option value="af">Afghanistan</option>
+			  <option value="ara">Arabic</option>
+			  <option value="al">Albania</option>
+			  <option value="am">Armenia</option>
+			  <option value="az">Azerbaijan</option>
+			  <option value="by">Belarus</option>
+			  <option value="be">Belgium</option>
+			  <option value="bd">Bangladesh</option>
+			  <option value="in">India</option>
+			  <option value="ba">Bosnia</option>
+			  <option value="br">Brazil</option>
+			  <option value="bg">Bulgaria</option>
+			  <option value="ma">Morocco</option>
+			  <option value="mm">Myanmar</option>
+			  <option value="ca">Canada</option>
+			  <option value="cd">Congo,</option>
+			  <option value="cn">China</option>
+			  <option value="hr">Croatia</option>
+			  <option value="cz">Czechia</option>
+			  <option value="dk">Denmark</option>
+			  <option value="nl">Netherlands</option>
+			  <option value="bt">Bhutan</option>
+			  <option value="ee">Estonia</option>
+			  <option value="ir">Iran</option>
+			  <option value="iq">Iraq</option>
+			  <option value="fo">Faroe</option>
+			  <option value="fi">Finland</option>
+			  <option value="fr">France</option>
+			  <option value="gh">Ghana</option>
+			  <option value="gn">Guinea</option>
+			  <option value="ge">Georgia</option>
+			  <option value="gr">Greece</option>
+			  <option value="hu">Hungary</option>
+			  <option value="is">Iceland</option>
+			  <option value="il">Israel</option>
+			  <option value="it">Italy</option>
+			  <option value="jp">Japan</option>
+			  <option value="kg">Kyrgyzstan</option>
+			  <option value="kh">Cambodia</option>
+			  <option value="kz">Kazakhstan</option>
+			  <option value="la">Laos</option>
+			  <option value="latam">Latin</option>
+			  <option value="lt">Lithuania</option>
+			  <option value="lv">Latvia</option>
+			  <option value="mao">Maori</option>
+			  <option value="me">Montenegro</option>
+			  <option value="mk">Macedonia</option>
+			  <option value="mt">Malta</option>
+			  <option value="mn">Mongolia</option>
+			  <option value="no">Norway</option>
+			  <option value="pl">Poland</option>
+			  <option value="pt">Portugal</option>
+			  <option value="ro">Romania</option>
+			  <option value="ru">Russia</option>
+			  <option value="rs">Serbia</option>
+			  <option value="si">Slovenia</option>
+			  <option value="sk">Slovakia</option>
+			  <option value="es">Spain</option>
+			  <option value="se">Sweden</option>
+			  <option value="ch">Switzerland</option>
+			  <option value="sy">Syria</option>
+			  <option value="tj">Tajikistan</option>
+			  <option value="lk">Sri</option>
+			  <option value="th">Thailand</option>
+			  <option value="tr">Turkey</option>
+			  <option value="tw">Taiwan</option>
+			  <option value="ua">Ukraine</option>
+			  <option value="gb">United</option>
+			  <option value="uz">Uzbekistan</option>
+			  <option value="vn">Vietnam</option>
+			  <option value="kr">Korea,</option>
+			  <option value="jp">Japan</option>
+			  <option value="ie">Ireland</option>
+			  <option value="pk">Pakistan</option>
+			  <option value="mv">Maldives</option>
+			  <option value="za">South</option>
+			  <option value="epo">Esperanto</option>
+			  <option value="np">Nepal</option>
+			  <option value="ng">Nigeria</option>
+			  <option value="et">Ethiopia</option>
+			  <option value="sn">Senegal</option>
+			  <option value="brai">Braille</option>
+			  <option value="tm">Turkmenistan</option>
+			  <option value="ml">Mali</option>
+			  <option value="tz">Tanzania</option>
+			</select>
+		  </div>
+
 		  <div class="form-group">
 		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnect();">Connect</a>
 		  </div>
@@ -107,8 +203,9 @@ function doConnect() {
 	var server = document.getElementById("server").value;
 	var port = document.getElementById("port").value;
 	var encoding = document.getElementById("encoding").value;
+	var keyboard_layout = document.getElementById("keyboard_layout").value;
 	// url to client
-	var url = "/index.html?server="+server+"&port="+port+"&encoding="+encoding+"&submit=true";
+	var url = "/index.html?server="+server+"&port="+port+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&submit=true";
 	// check options
 	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
 	if(normal_fullscreen) {
@@ -130,6 +227,24 @@ $(document).ready(function() {
 		document.getElementById("alert-disconnect").style.display = "block";
 		document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
 	}
+
+	//IE:
+	//navigator.systemLanguage
+	//navigator.browserLanguage
+	var v = window.navigator.userLanguage || window.navigator.language;
+	var keyboard_layout = "";
+	//ie: v="en_GB";
+	v = v.split(",")[0];
+	var l = v.split("-", 2);
+	if (l.length==1)
+		l = v.split("_", 2);
+	if (l.length==1)
+		//ie: "en"
+		keyboard_layout = l[0];
+	else:
+		keyboard_layout = l[1].toLowerCase();
+
+	document.getElementById('keyboard_layout').value = keyboard_layout;
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
