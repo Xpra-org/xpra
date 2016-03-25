@@ -2608,7 +2608,7 @@ class UIXpraClient(XpraClientBase):
             window.unfreeze()
 
     def deiconify_windows(self):
-        log("deiconify()")
+        log("deiconify_windows()")
         for window in self._id_to_window.values():
             window.deiconify()
 
