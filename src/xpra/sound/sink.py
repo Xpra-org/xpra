@@ -104,8 +104,11 @@ class SoundSink(SoundPipeline):
             #pipeline_els.append("audiorate")
             pipeline_els.append(" ".join(queue_el))
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
-        from xpra.sound.gstreamer_util import gst_major_version
-        sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(gst_major_version, {}).get(sink_type, {}))
+        from xpra.sound.gstreamer_util import gst_major_version, get_gst_version
+        #anything older than this may cause problems (ie: centos 6.x)
+        #because the attributes may not exist
+        if get_gst_version()>=(0, 10, 36):
+            sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(gst_major_version, {}).get(sink_type, {}))
         get_options_cb = DEFAULT_SINK_PLUGIN_OPTIONS.get(sink_type.replace("sink", ""))
         if get_options_cb:
             v = get_options_cb()
