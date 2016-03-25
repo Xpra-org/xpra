@@ -1319,10 +1319,10 @@ if WIN32:
                           ):
                     add_DLLs('gst%s' % p)
                 #add the gstreamer plugins we need:
-                GST_PLUGINS = ("app", "gdp", "opus",
+                GST_PLUGINS = ("app", "gdp", "matroska"
                                "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
                                "coreelements", "directsoundsink", "directsoundsrc",
-                               "flac", "lame", "mad", "mpg123", "ogg", "speex",
+                               "opus", "flac", "lame", "mad", "mpg123", "ogg", "speex",
                                "volume", "vorbis", "wavenc", "wavpack", "wavparse",
                                #a52dec, faac, faad, voaacenc
                                )
