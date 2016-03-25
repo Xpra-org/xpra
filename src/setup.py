@@ -863,7 +863,7 @@ def build_xpra_conf(install_dir):
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
-        bind = ""
+        bind = "Main"
     else:
         if os.getuid()>0:
             #remove any paths containing the uid,

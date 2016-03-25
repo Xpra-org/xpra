@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -22,6 +22,7 @@ CONTINUE = {errno.EINTR         : "EINTR",
             errno.EWOULDBLOCK   : "EWOULDBLOCK"
             }
 ABORT = {
+    errno.ENXIO         : "ENXIO",
     errno.ECONNRESET    : "ECONNRESET",
     errno.EPIPE         : "EPIPE"}
 continue_wait = 0
@@ -48,6 +49,7 @@ for x in ("STREAM", "DGRAM", "RAW", "RDM", "SEQPACKET"):
 
 
 if sys.platform.startswith("win"):
+    import winerror     #@UnresolvedImport
     #on win32, we have to deal with a few more odd error codes:
     #(it would be nicer if those were wrapped using errno instead..)
     WSAEWOULDBLOCK = 10035
@@ -73,6 +75,7 @@ if sys.platform.startswith("win"):
         WSAETIMEDOUT        : "WSAETIMEDOUT",
         WSAEHOSTUNREACH     : "WSAEHOSTUNREACH",
         WSAEDISCON          : "WSAEDISCON",
+        winerror.ERROR_BROKEN_PIPE : "BROKENPIPE",
         })
     #on win32, we want to wait just a little while,
     #to prevent servers spinning wildly on non-blocking sockets:

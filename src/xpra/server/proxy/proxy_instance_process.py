@@ -31,7 +31,7 @@ from xpra.make_thread import make_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
 from xpra.scripts.main import SOCKET_TIMEOUT
-from xpra.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection
 from multiprocessing import Process
 

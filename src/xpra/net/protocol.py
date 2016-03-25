@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -554,10 +554,10 @@ class Protocol(object):
         except (OSError, IOError, socket_error) as e:
             if not self._closed:
                 self._internal_error("%s connection %s reset" % (name, self._conn), e, exc_info=e.args[0] not in ABORT)
-        except:
+        except Exception as e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
-                log.error("%s error on %s", name, self._conn, exc_info=True)
+                log.error("Error: %s on %s failed: %s", name, self._conn, type(e), exc_info=True)
                 self.close()
 
     def _write_thread_loop(self):
@@ -611,7 +611,7 @@ class Protocol(object):
         ei = exc_info
         if exc:
             ei = None   #log it separately below
-        log.error("internal error: %s", message, exc_info=ei)
+        log.error("Error: %s", message, exc_info=ei)
         if exc:
             log.error(" %s", exc, exc_info=exc_info)
         self.idle_add(self._connection_lost, message)

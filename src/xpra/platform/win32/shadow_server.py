@@ -24,6 +24,7 @@ from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.gui import get_virtualscreenmetrics
+from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
 from xpra.codecs.image_wrapper import ImageWrapper
 
 NOEVENT = object()
@@ -246,6 +247,27 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         self.tray_icon = opts.tray_icon or "xpra.ico"
         if self.tray:
             self.setup_tray()
+
+
+    def add_listen_socket(self, socktype, sock):
+        log.warn("add_listen_socket(%s, %s)", socktype, sock)
+        if socktype=="named-pipe":
+            #named pipe listener uses a thread:
+            sock.new_connection_cb = self._new_connection
+            self.socket_types[sock] = socktype
+            sock.start()
+        else:
+            GTKServerBase.add_listen_socket(self, socktype, sock)
+
+    def _new_connection(self, listener, *args):
+        socktype = self.socket_types.get(listener)
+        log.warn("_new_connection(%s) socktype=%s", listener, socktype)
+        if socktype!="named-pipe":
+            return GTKServerBase._new_connection(self, listener)
+        pipe_handle = args[0]
+        conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
+        return self.make_protocol(socktype, conn, frominfo=" on %s" % listener.pipe_name)
+
 
     ############################################################################
     # system tray methods, mostly copied from the gtk client...

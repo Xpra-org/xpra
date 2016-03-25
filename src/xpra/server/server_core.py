@@ -456,15 +456,18 @@ class ServerCore(object):
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
         netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s", args, sock, self._socket_timeout, sockname, address, peername)
-        sc = SocketConnection(sock, sockname, address, target, socktype)
-        netlog("socket connection: %s", sc)
+        conn = SocketConnection(sock, sockname, address, target, socktype)
+        netlog("socket connection: %s", conn)
         frominfo = ""
         if peername:
             frominfo = " from %s" % pretty_socket(peername)
         elif socktype=="unix-domain":
             frominfo = " on %s" % sockname
+        return self.make_protocol(socktype, conn, frominfo)
+
+    def make_protocol(self, socktype, conn, frominfo=""):
         netlog.info("New %s connection received%s", socktype, frominfo)
-        protocol = Protocol(self, sc, self.process_packet)
+        protocol = Protocol(self, conn, self.process_packet)
         self._potential_protocols.append(protocol)
         protocol.large_packets.append("info-response")
         protocol.challenge_sent = False

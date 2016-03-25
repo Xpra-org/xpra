@@ -19,7 +19,7 @@ import shlex
 import traceback
 
 from xpra import __version__ as XPRA_VERSION
-from xpra.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv
@@ -1172,6 +1172,18 @@ def parse_display_name(error_cb, opts, display_name):
             host = "127.0.0.1"
         desc["host"] = host
         return desc
+    elif sys.platform.startswith("win") or display_name.startswith("named-pipe:"):
+        pipe_name = display_name
+        if display_name.startswith("named-pipe:"):
+            pipe_name = display_name[len("named-pipe:"):]
+        desc.update({
+                     "type"             : "named-pipe",
+                     "local"            : True,
+                     "display"          : "DISPLAY",
+                     "named-pipe"       : pipe_name,
+                     })
+        opts.display = display_name
+        return desc
     else:
         error_cb("unknown format for display name: %s" % display_name)
 
@@ -1180,15 +1192,24 @@ def pick_display(error_cb, opts, extra_args):
         # Pick a default server
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
-        sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
-        desc = {
+        sockdir, display, path = single_display_match(dir_servers, error_cb)
+        if sys.platform.startswith("win"):
+            return {
+                    "type"              : "named-pipe",
+                    "local"             : True,
+                    "display"           : display,
+                    "display_name"      : display,
+                    "named-pipe"        : path,
+                    }
+            
+        return {
                 "type"          : "unix-domain",
                 "local"         : True,
                 "display"       : display,
                 "display_name"  : display,
                 "socket_dir"    : sockdir,
-                "socket_path"   : sockpath}
-        return desc
+                "socket_path"   : path
+                }
     elif len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0])
     else:
@@ -1350,6 +1371,24 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 display_desc["socket_dir"] = os.path.dirname(sockpath)
         except Exception as e:
             raise InitException("cannot connect to %s: %s" % (sockpath, e))
+        conn.timeout = SOCKET_TIMEOUT
+
+    elif dtype == "named-pipe":
+        pipe_name = display_desc["named-pipe"]
+        if not sys.platform.startswith("win"):
+            raise InitException("named pipes are only supported on MS Windows")
+        import errno
+        from xpra.platform.win32.dotxpra import PIPE_PATH
+        from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+        from win32file import CreateFile, GENERIC_READ, GENERIC_WRITE, OPEN_EXISTING    #@UnresolvedImport
+        path = PIPE_PATH+pipe_name
+        try:
+            pipe_handle = CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, None, OPEN_EXISTING, 0, None)
+        except Exception as e:
+            if e[0]==errno.ENOENT:
+                raise InitException("the named pipe '%s' does not exist" % pipe_name)
+            raise InitException("failed to connect to the named pipe '%s': %s" % (pipe_name, e))
+        conn = NamedPipeConnection(pipe_name, pipe_handle)
         conn.timeout = SOCKET_TIMEOUT
 
     elif dtype == "tcp":

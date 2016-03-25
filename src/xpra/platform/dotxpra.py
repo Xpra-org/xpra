@@ -10,9 +10,7 @@ import socket
 import errno
 import stat
 
-SOCKET_HOSTNAME = os.environ.get("XPRA_SOCKET_HOSTNAME", socket.gethostname())
-
-PREFIX = "%s-" % (SOCKET_HOSTNAME,)
+from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN
 
 
 def osexpand(s, actual_username=""):
@@ -48,12 +46,15 @@ class DotXpra(object):
         if self._sockdir and not os.path.exists(self._sockdir):
             os.mkdir(self._sockdir, 0o700)
 
+    def socket_expand(self, path):
+        return osexpand(path)
+
     def socket_path(self, local_display_name):
         return norm_makepath(self._sockdir, local_display_name)
 
-    LIVE = "LIVE"
-    DEAD = "DEAD"
-    UNKNOWN = "UNKNOWN"
+    LIVE = LIVE
+    DEAD = DEAD
+    UNKNOWN = UNKNOWN
 
     def get_server_state(self, sockpath, timeout=5):
         if not os.path.exists(sockpath):
@@ -81,7 +82,7 @@ class DotXpra(object):
         return [(v[0], v[1]) for details_values in self.socket_details(check_uid, matching_state).values() for v in details_values]
 
     #find the matching sockets, and return:
-    #(state, local_display, sockpath)
+    #(state, local_display, sockpath) for each socket directory we probe
     def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
         sd = {}
         dirs = [self._sockdir]+[x for x in self._sockdirs if x!=self._sockdir]
@@ -114,3 +115,8 @@ class DotXpra(object):
             if results:
                 sd[d] = results
         return sd
+
+
+#win32 re-defines DotXpra for namedpipes:
+from xpra.platform import platform_import
+platform_import(globals(), "dotxpra", False, "DotXpra")

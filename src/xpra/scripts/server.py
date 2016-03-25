@@ -21,7 +21,7 @@ import traceback
 from xpra.scripts.main import TCP_NODELAY, warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException
 from xpra.os_util import SIGNAMES
-from xpra.dotxpra import DotXpra, norm_makepath, osexpand
+from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
@@ -404,6 +404,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
     sockpaths = set()
     log = Logger("network")
     try:
+        log("setup_local_sockets: bind=%s", bind)
         for b in bind:
             sockpath = b
             try:
@@ -419,18 +420,24 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                             os.makedirs(sockpath)
                         sockpath = norm_makepath(sockpath, display_name)
                     else:
-                        sockpath = dotxpra.socket_path(display_name)
+                        sockpath = dotxpra.socket_path(b)
                 if sockpath in sockpaths:
-                    log.warn("Warning: skipping duplicate socket path %s", sockpath)
+                    log.warn("Warning: skipping duplicate bind path %s", sockpath)
                     continue
-                setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
-                sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
-                log.info("created unix domain socket: %s", sockpath)
-                defs.append((("unix-domain", sock, sockpath), cleanup_socket))
+                if sys.platform.startswith("win"):
+                    from xpra.platform.win32.namedpipes.listener import NamedPipeListener
+                    npl = NamedPipeListener(sockpath)
+                    log.info("created named pipe: %s", sockpath)
+                    defs.append((("named-pipe", npl, sockpath), npl.stop))
+                else:
+                    setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
+                    sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
+                    log.info("created unix domain socket: %s", sockpath)
+                    defs.append((("unix-domain", sock, sockpath), cleanup_socket))
                 sockpaths.add(sockpath)
             except Exception as e:
                 log("socket creation error", exc_info=True)
-                log.error("failed to create socket %s:" % sockpath)
+                log.error("Error: failed to create socket '%s':" % sockpath)
                 log.error(" %s", e)
                 raise InitException("failed to create socket %s" % sockpath)
     except:

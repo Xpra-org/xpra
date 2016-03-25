@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
 from xpra.os_util import get_hex_uuid
 from xpra.log import Logger
@@ -56,7 +56,6 @@ class SysAuthenticator(object):
         raise NotImplementedError()
 
     def authenticate(self, challenge_response, client_salt):
-        global socket_dir
         if self.salt is None:
             log.error("got a challenge response with no salt!")
             return False
