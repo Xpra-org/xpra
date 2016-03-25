@@ -411,6 +411,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "pulseaudio-command"    : defaults.pulseaudio_command,
                 "dbus-proxy"            : defaults.dbus_proxy,
                 "dbus-control"          : defaults.dbus_control,
+                "pulseaudio-configure-commands" : defaults.pulseaudio_configure_commands,
                 })
 
     group = optparse.OptionGroup(parser, "Server Controlled Features",
