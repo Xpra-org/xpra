@@ -538,7 +538,7 @@ class GTKTrayMenuBase(object):
                 remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
                 clipboard_item = CheckMenuItem(label)
                 ch = self.client.clipboard_helper
-                active = ch and isinstance(ch, TranslatedClipboardProtocolHelper) \
+                active = bool(ch) and isinstance(ch, TranslatedClipboardProtocolHelper) \
                             and ch.remote_clipboard==remote_clipboard
                 clipboard_item.set_active(active)
                 set_sensitive(clipboard_item, can_clipboard)
