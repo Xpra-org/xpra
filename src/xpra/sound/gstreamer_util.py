@@ -618,7 +618,7 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_o
         device_type_str += " monitor"
     #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True)
     devices = get_pa_device_options(want_monitor_device, input_or_output)
-    log("found pulseaudio %i %s devices: %s", len(devices), device_type_str, devices)
+    log("found %i pulseaudio %s device%s: %s", len(devices), device_type_str, engs(devices), devices)
     if len(devices)==0:
         log.error("Error: sound forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
