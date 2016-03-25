@@ -467,6 +467,10 @@ pulseaudio = %(pulseaudio)s
 # pulseaudio server start command:
 pulseaudio-command = %(pulseaudio_command)s
 
+# commands used to configure the pulseaudio server:
+# pactl set-source-volume SomeSource 20%%
+%(pulseaudio_configure_commands)s
+
 # Paint the windows on the xvfb so that
 # screen grabs and screen recorders will work
 # (repaint delay in milliseconds, 0 to disable)
