@@ -726,18 +726,73 @@ class ClientExtras(object):
     def init_keyboard_listener(self):
         from ctypes import CFUNCTYPE, c_int, POINTER, Structure
         from ctypes.wintypes import DWORD, WPARAM, LPARAM
+        class WindowsKeyEvent(AdHocStruct):
+            pass
         class KBDLLHOOKSTRUCT(Structure):
             _fields_ = [("vk_code", DWORD),
                         ("scan_code", DWORD),
                         ("flags", DWORD),
                         ("time", c_int),]
+        DOWN = [win32con.WM_KEYDOWN, win32con.WM_SYSKEYDOWN]
+        #UP = [win32con.WM_KEYUP, win32con.WM_SYSKEYUP]
+        ALL_KEY_EVENTS = {win32con.WM_KEYDOWN       : "KEYDOWN",
+                          win32con.WM_SYSKEYDOWN    : "SYSKEYDOWN",
+                          win32con.WM_KEYUP         : "KEYUP",
+                          win32con.WM_SYSKEYUP      : "SYSKEYUP",
+                          }
         def low_level_keyboard_handler(nCode, wParam, lParam):
             try:
                 scan_code = lParam.contents.scan_code
-                if self.client._focused and scan_code in (win32con.VK_LWIN, win32con.VK_RWIN):
-                    keylog.warn("detected windows key!")
-                    #to swallow this event:
-                    #return 1
+                focused = self.client._focused
+                keyname = {
+                           win32con.VK_LWIN   : "Super_L",
+                           win32con.VK_RWIN   : "Super_R",
+                           }.get(scan_code)
+                keycode = 0
+                modifiers = []
+                kh = self.client.keyboard_helper
+                if focused and keyname and kh and kh.keyboard and wParam in ALL_KEY_EVENTS:
+                    modifier_keycodes = kh.keyboard.modifier_keycodes
+                    modifier_keys = kh.keyboard.modifier_keys
+                    #find the keycode: (try the exact key we hit first)
+                    for x in (keyname, "Super_L", "Super_R"):
+                        keycodes = modifier_keycodes.get(x, [])
+                        for k in keycodes:
+                            #only interested in numeric keycodes:
+                            try:
+                                keycode = int(k)
+                                break
+                            except:
+                                pass
+                        if keycode>0:
+                            break
+                    for vk, modkeynames in {
+                                        win32con.VK_NUMLOCK     : ["Num_Lock"],
+                                        win32con.VK_CAPITAL     : ["Caps_Lock"],
+                                        win32con.VK_CONTROL     : ["Control_L", "Control_R"],
+                                        win32con.VK_SHIFT       : ["Shift_L", "Shift_R"],
+                                        }.items():
+                        if win32api.GetKeyState(vk):
+                            for modkeyname in modkeynames:
+                                mod = modifier_keys.get(modkeyname)
+                                if mod:
+                                    modifiers.append(mod)
+                                    break
+                    #keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
+                    keylog("scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
+                    if keycode>0:
+                        key_event = WindowsKeyEvent()
+                        key_event.keyname = keyname
+                        key_event.pressed = wParam in DOWN
+                        key_event.modifiers = modifiers
+                        key_event.keyval = scan_code
+                        key_event.keycode = keycode
+                        key_event.string = ""
+                        key_event.group = 0
+                        keylog("detected windows key, sending %s", key_event)
+                        self.client.keyboard_helper.send_key_action(focused, key_event)
+                        #swallow this event:
+                        return 1
             except Exception as e:
                 keylog.error("Error: low level keyboard hook failed")
                 keylog.error(" %s", e)
