@@ -16,11 +16,13 @@ def main():
         from xpra.platform.gui import init as gui_init, ready
         gui_init()
         ready()
-        from xpra.gtk_common.gtk_util import get_gtk_version_info, get_display_info
+        from xpra.gtk_common import gtk_util
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            gtk_util.SHOW_ALL_VISUALS = True
         print("GTK Version:")
-        print_dict(flatten_dict(get_gtk_version_info()))
+        print_dict(flatten_dict(gtk_util.get_gtk_version_info()))
         print("Display:")
-        print_nested_dict(get_display_info(), vformat=str)
+        print_nested_dict(gtk_util.get_display_info(), vformat=str)
 
 
 if __name__ == "__main__":

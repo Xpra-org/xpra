@@ -574,7 +574,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=pver):
         if isinstance(v, dict):
             nokey = v.get("", (v.get(None)))
             if nokey is not None:
-                print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(vformat(nokey))))
+                print("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), nonl(vformat(nokey))))
                 for x in ("", None):
                     try:
                         del v[x]
