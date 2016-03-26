@@ -6,7 +6,7 @@
 
 
 def main():
-    from xpra.util import nonl, pver, flatten_dict
+    from xpra.util import nonl, pver, flatten_dict, print_nested_dict
     def print_dict(d, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
@@ -20,7 +20,7 @@ def main():
         print("GTK Version:")
         print_dict(flatten_dict(get_gtk_version_info()))
         print("Display:")
-        print_dict(get_display_info(), vformat=str)
+        print_nested_dict(get_display_info(), vformat=str)
 
 
 if __name__ == "__main__":

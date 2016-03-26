@@ -557,27 +557,6 @@ def updict(todict, prefix, d, suffix=""):
                 k = k+"."+suffix
             todict[k] = v
 
-
-def print_nested_dict(d, prefix="", lchar="*", pad=32):
-    l = pad-len(prefix)-len(lchar)
-    for k in sorted(d.keys()):
-        v = d[k]
-        if isinstance(v, dict):
-            nokey = v.get("", (v.get(None)))
-            if nokey is not None:
-                print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(pver(nokey))))
-                for x in ("", None):
-                    try:
-                        del v[x]
-                    except:
-                        pass
-            else:
-                print("%s%s %s" % (prefix, lchar, k))
-            print_nested_dict(v, prefix+"  ", "-")
-        else:
-            print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(pver(v))))
-
-
 def pver(v):
     #print for lists with version numbers, or CSV strings
     if type(v) in (list, tuple):
@@ -587,6 +566,26 @@ def pver(v):
         if len(types)==1 and types[0]==str:
             return ", ".join(v)
     return v
+
+def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=pver):
+    l = pad-len(prefix)-len(lchar)
+    for k in sorted(d.keys()):
+        v = d[k]
+        if isinstance(v, dict):
+            nokey = v.get("", (v.get(None)))
+            if nokey is not None:
+                print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(vformat(nokey))))
+                for x in ("", None):
+                    try:
+                        del v[x]
+                    except:
+                        pass
+            else:
+                print("%s%s %s" % (prefix, lchar, k))
+            print_nested_dict(v, prefix+"  ", "-")
+        else:
+            print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(vformat(v))))
+
 
 def std(s, extras="-,./: "):
     try:

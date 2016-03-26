@@ -95,6 +95,9 @@ def get_desktop_names():
 def get_vrefresh():
     return -1
 
+def get_mouse_config():
+    return {}
+
 def get_double_click_time():
     return -1
 
@@ -164,6 +167,7 @@ def get_info_base():
             "fixed_cursor_size"             : get_fixed_cursor_size(),
             "cursor_size"                   : get_cursor_size(),
             "icon_size"                     : get_icon_size(),
+            "mouse"                         : get_mouse_config(),
             "double_click"                  : {
                                                "time"       : get_double_click_time(),
                                                "distance"   : get_double_click_distance(),
@@ -195,6 +199,7 @@ platform_import(globals(), "gui", False,
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
                 "get_antialias_info", "get_icon_size", "get_xdpi", "get_ydpi",
+                "get_mouse_config",
                 "get_double_click_time", "get_double_click_distance",
                 "get_fixed_cursor_size", "get_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
@@ -204,7 +209,7 @@ platform_import(globals(), "gui", False,
 
 def main():
     from xpra.platform import program_context
-    from xpra.util import nonl
+    from xpra.util import print_nested_dict
     from xpra.log import enable_color
     with program_context("GUI-Properties"):
         enable_color()
@@ -223,9 +228,7 @@ def main():
             except:
                 pass    #maybe running on OSX? hope for the best..
         i = get_info()
-        for k in sorted(i.keys()):
-            v = i[k]
-            print("* %s : %s" % (k.ljust(32), nonl(v)))
+        print_nested_dict(i, vformat=str)
 
 
 if __name__ == "__main__":

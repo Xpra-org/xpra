@@ -419,26 +419,62 @@ FE_FONTSMOOTHING_STR = {
     FE_FONTSMOOTHINGCLEARTYPE   : "ClearType",
     }
 
+
+def _add_SPI(info, constant, name, convert, default=None):
+    SystemParametersInfo = windll.user32.SystemParametersInfoA
+    i = ctypes.c_uint32()
+    if SystemParametersInfo(constant, 0, byref(i), 0):
+        info[name] = convert(i.value)
+    elif default is not None:
+        info[name] = default
+
 def get_antialias_info():
     info = {}
     try:
-        SystemParametersInfo = windll.user32.SystemParametersInfoA
-        def add_param(constant, name, convert):
-            i = ctypes.c_uint32()
-            if SystemParametersInfo(constant, 0, byref(i), 0):
-                info[name] = convert(i.value)
-        add_param(SPI_GETFONTSMOOTHING, "enabled", bool)
+        _add_SPI(info, SPI_GETFONTSMOOTHING, "enabled", bool)
         #"Valid contrast values are from 1000 to 2200. The default value is 1400."
-        add_param(SPI_GETFONTSMOOTHINGCONTRAST, "contrast", int)
+        _add_SPI(info, SPI_GETFONTSMOOTHINGCONTRAST, "contrast", int)
         def orientation(v):
             return FE_ORIENTATION_STR.get(v, "unknown")
-        add_param(SPI_GETFONTSMOOTHINGORIENTATION, "orientation", orientation)
+        _add_SPI(info, SPI_GETFONTSMOOTHINGORIENTATION, "orientation", orientation)
         def smoothing_type(v):
             return FE_FONTSMOOTHING_STR.get(v & FE_FONTSMOOTHINGCLEARTYPE, "unknown")
-        add_param(SPI_GETFONTSMOOTHINGTYPE, "type", smoothing_type)
-        add_param(SPI_GETFONTSMOOTHINGTYPE, "hinting", lambda v : bool(v & 0x2))
+        _add_SPI(info, SPI_GETFONTSMOOTHINGTYPE, "type", smoothing_type)
+        _add_SPI(info, SPI_GETFONTSMOOTHINGTYPE, "hinting", lambda v : bool(v & 0x2))
     except Exception as e:
         log.warn("failed to query antialias info: %s", e)
+    return info
+
+def get_mouse_config():
+    #not all are present in win32con?
+    SM_CMOUSEBUTTONS = 43
+    SM_CXDRAG = 68
+    SM_CYDRAG = 69
+    SM_MOUSEPRESENT = 19
+    SM_MOUSEHORIZONTALWHEELPRESENT = 91
+    SM_SWAPBUTTON = 23
+    SM_MOUSEWHEELPRESENT = 75
+    wheel_info = {
+                  "vertical"   : win32api.GetSystemMetrics(SM_MOUSEWHEELPRESENT),
+                  "horizontal" : win32api.GetSystemMetrics(SM_MOUSEHORIZONTALWHEELPRESENT),
+                  }
+    SPI_GETWHEELSCROLLLINES = 104
+    SPI_GETWHEELSCROLLCHARS = 0x006C
+    SPI_GETMOUSEVANISH = 4128
+    #rate for each direction:
+    _add_SPI(wheel_info, SPI_GETWHEELSCROLLLINES, "lines", int, 3)
+    _add_SPI(wheel_info, SPI_GETWHEELSCROLLCHARS, "chars", int, 3)
+    info = {
+            "present"       : win32api.GetSystemMetrics(SM_MOUSEPRESENT),
+            "wheel"         : wheel_info,
+            "buttons"       : win32api.GetSystemMetrics(SM_CMOUSEBUTTONS),
+            "swap"          : win32api.GetSystemMetrics(SM_SWAPBUTTON),
+            "drag"          : {
+                               "x"  : win32api.GetSystemMetrics(SM_CXDRAG),
+                               "y"  : win32api.GetSystemMetrics(SM_CYDRAG),
+                               }
+            }
+    _add_SPI(info, SPI_GETMOUSEVANISH, "vanish", bool, False)
     return info
 
 def get_workarea():
