@@ -36,6 +36,7 @@ LANGCHANGE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_LANGCHANGE", "1")=="1"
 
 DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
 DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
+FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "0")=="1"
 
 
 KNOWN_EVENTS = {}
@@ -705,8 +706,9 @@ class ClientExtras(object):
         except Exception as e:
             log.error("cannot register focus and power callbacks: %s", e)
         self.keyboard_hook_id = None
-        from xpra.make_thread import make_thread
-        make_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True).start()
+        if FORWARD_WINDOWS_KEY:
+            from xpra.make_thread import make_thread
+            make_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True).start()
 
     def cleanup(self):
         log("ClientExtras.cleanup()")
