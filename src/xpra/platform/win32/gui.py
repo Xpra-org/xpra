@@ -13,6 +13,7 @@ from xpra.log import Logger
 log = Logger("win32")
 grablog = Logger("win32", "grab")
 screenlog = Logger("win32", "screen")
+keylog = Logger("win32", "keyboard")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
@@ -52,6 +53,10 @@ except Exception as e:
 
 
 def do_init():
+    init_dpi()
+
+
+def init_dpi():
     #tell win32 we handle dpi
     if not DPI_AWARE:
         screenlog.warn("SetProcessDPIAware not set due to environment override")
@@ -699,6 +704,9 @@ class ClientExtras(object):
                 el.add_event_callback(win32con.WM_WININICHANGE,     self.inichange)
         except Exception as e:
             log.error("cannot register focus and power callbacks: %s", e)
+        self.keyboard_hook_id = None
+        from xpra.make_thread import make_thread
+        make_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True).start()
 
     def cleanup(self):
         log("ClientExtras.cleanup()")
@@ -708,8 +716,46 @@ class ClientExtras(object):
         el = get_win32_event_listener(False)
         if el:
             el.cleanup()
+        khid = self.keyboard_hook_id
+        if khid:
+            self.keyboard_hook_id = None
+            windll.user32.UnhookWindowsHookEx(khid)
         log("ClientExtras.cleanup() ended")
         #self.client = None
+
+    def init_keyboard_listener(self):
+        from ctypes import CFUNCTYPE, c_int, POINTER, Structure
+        from ctypes.wintypes import DWORD, WPARAM, LPARAM
+        class KBDLLHOOKSTRUCT(Structure):
+            _fields_ = [("vk_code", DWORD),
+                        ("scan_code", DWORD),
+                        ("flags", DWORD),
+                        ("time", c_int),]
+        def low_level_keyboard_handler(nCode, wParam, lParam):
+            try:
+                scan_code = lParam.contents.scan_code
+                if self.client._focused and scan_code in (win32con.VK_LWIN, win32con.VK_RWIN):
+                    keylog.warn("detected windows key!")
+                    #to swallow this event:
+                    #return 1
+            except Exception as e:
+                keylog.error("Error: low level keyboard hook failed")
+                keylog.error(" %s", e)
+            return windll.user32.CallNextHookEx(keyboard_hook_id, nCode, wParam, lParam)
+        # Our low level handler signature.
+        CMPFUNC = CFUNCTYPE(c_int, WPARAM, LPARAM, POINTER(KBDLLHOOKSTRUCT))
+        # Convert the Python handler into C pointer.
+        pointer = CMPFUNC(low_level_keyboard_handler)
+        # Hook both key up and key down events for common keys (non-system).
+        keyboard_hook_id = windll.user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer, win32api.GetModuleHandle(None), 0)
+        # Register to remove the hook when the interpreter exits:
+        keylog("init_keyboard_listener() hook_id=%#x", keyboard_hook_id)
+        while True:
+            msg = win32gui.GetMessage(None, 0, 0)
+            keylog("init_keyboard_listener: GetMessage()=%s", msg)
+            win32gui.TranslateMessage(byref(msg))
+            win32gui.DispatchMessage(byref(msg))
+
 
     def wm_move(self, wParam, lParam):
         c = self.client
