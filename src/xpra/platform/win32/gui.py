@@ -465,10 +465,10 @@ def get_mouse_config():
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLLINES, "lines", int, 3)
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLCHARS, "chars", int, 3)
     info = {
-            "present"       : win32api.GetSystemMetrics(SM_MOUSEPRESENT),
+            "present"       : bool(win32api.GetSystemMetrics(SM_MOUSEPRESENT)),
             "wheel"         : wheel_info,
             "buttons"       : win32api.GetSystemMetrics(SM_CMOUSEBUTTONS),
-            "swap"          : win32api.GetSystemMetrics(SM_SWAPBUTTON),
+            "swap"          : bool(win32api.GetSystemMetrics(SM_SWAPBUTTON)),
             "drag"          : {
                                "x"  : win32api.GetSystemMetrics(SM_CXDRAG),
                                "y"  : win32api.GetSystemMetrics(SM_CYDRAG),
