@@ -37,6 +37,7 @@ LANGCHANGE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_LANGCHANGE", "1")=="1"
 DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
 DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
 FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "0")=="1"
+WHEEL_DEBUG = os.environ.get("XPRA_WHEEL_DEBUG", "0")=="1"
 
 
 KNOWN_EVENTS = {}
@@ -376,6 +377,21 @@ def add_window_hooks(window):
                 log("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
+        if WHEEL_DEBUG:
+            #WHEEL_DELTA = 120
+            def wheel_log(event, wParam, lParam):
+                distance = wParam>>16
+                keys = wParam & 0xFFFF
+                y = lParam>>16
+                x = lParam & 0xFFFF
+                log.info("%s distance=%.1f, keys=%#x, x=%i, y=%i", event, distance, keys, x, y)
+            def mousewheel(hwnd, event, wParam, lParam):
+                wheel_log("MOUSEWHEEL", wParam, lParam)
+            def mousehwheel(hwnd, event, wParam, lParam):
+                wheel_log("MOUSEHWHEEL", wParam, lParam)
+            WM_MOUSEHWHEEL = 0x020E
+            win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
+            win32hooks.add_window_event_handler(WM_MOUSEHWHEEL, mousehwheel)
 
 
 def remove_window_hooks(window):
