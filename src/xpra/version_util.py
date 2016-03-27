@@ -128,13 +128,16 @@ def do_get_platform_info():
         info["linux_distribution"] = pp.linux_distribution()
     info.update({
             ""          : sys.platform,
-            "name"      : platform_name(sys.platform, info.get("linux_distribution") or pp.release()),
             "release"   : pp.release(),
             "platform"  : pp.platform(),
             "machine"   : pp.machine(),
             "processor" : pp.processor(),
             "architecture" : pp.architecture(),
             })
+    try:
+        info["name"] = platform_name(sys.platform, info.get("linux_distribution") or pp.release())
+    except:
+        pass
     try:
         info["processor"] = get_processor_name()
     except:
