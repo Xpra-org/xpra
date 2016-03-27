@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
-from xpra.scripts.config import python_platform as pp
+from xpra.scripts.config import python_platform
 import sys
 import os
 from xpra.util import updict
@@ -107,7 +107,7 @@ def get_version_info_full():
 
 def do_get_platform_info():
     from xpra.os_util import platform_name
-    pp = sys.modules.get("platform", pp)
+    pp = sys.modules.get("platform", python_platform)
     def get_processor_name():
         if pp.system() == "Windows":
             return pp.processor()
