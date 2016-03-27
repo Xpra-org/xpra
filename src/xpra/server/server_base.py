@@ -210,7 +210,6 @@ class ServerBase(ServerCore, FileTransferHandler):
         ServerCore.init(self, opts)
         log("ServerBase.init(%s)", opts)
         self.init_options(opts)
-        self.init_components(opts)
 
     def init_options(self, opts):
         self.supports_mmap = opts.mmap
@@ -566,8 +565,9 @@ class ServerBase(ServerCore, FileTransferHandler):
             kwargs = {"filters" : clipboard_filter_res}
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
             self._clipboards = CLIPBOARDS
-        except Exception as e:
-            clipboardlog.error("failed to setup clipboard helper: %s" % e)
+        except Exception:
+            #clipboardlog("gdk clipboard helper failure", exc_info=True)
+            clipboardlog.error("Error: failed to setup clipboard helper", exc_info=True)
 
     def init_keyboard(self):
         keylog("init_keyboard()")

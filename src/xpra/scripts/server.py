@@ -1218,6 +1218,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     try:
         app.exec_cwd = cwd
         app.init(opts)
+        app.init_components(opts)
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)

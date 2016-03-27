@@ -30,7 +30,8 @@ try:
 except ImportError as e:
     #we should only ever be missing the gdk_bindings with GTK3 builds:
     log("cannot import gdk bindings", exc_info=True)
-    assert is_gtk3()
+    if not is_gtk3():
+        raise
     def missing_fn(*args):
         raise NotImplementedError()
     get_pywindow, get_xvisual = missing_fn, missing_fn

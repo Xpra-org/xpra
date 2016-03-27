@@ -38,8 +38,8 @@ def can_use_appindicator():
 
 class AppindicatorTray(TrayBase):
 
-    def __init__(self, *args):
-        TrayBase.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        TrayBase.__init__(self, *args, **kwargs)
         filename = self.get_tray_icon_filename(self.default_icon_filename)
         self.appindicator = get_appindicator()
         self._has_icon = False

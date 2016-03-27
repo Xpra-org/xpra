@@ -6,9 +6,9 @@
 
 import os, time
 
-from xpra.gtk_common.gtk_util import get_xwindow, get_default_root_window
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.x11_server_base import X11ServerBase
-from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
@@ -16,6 +16,7 @@ XImage = XImageBindings()
 
 from xpra.log import Logger
 log = Logger("x11", "shadow")
+traylog = Logger("tray")
 
 USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 
@@ -66,18 +67,48 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
 
 
-class ShadowX11Server(ShadowServerBase, X11ServerBase):
+#FIXME: warning: this class inherits from ServerBase twice..
+#so many calls will happen twice there (__init__ and init)
+class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def __init__(self):
-        ShadowServerBase.__init__(self, get_default_root_window())
+        GTKShadowServerBase.__init__(self)
         X11ServerBase.__init__(self, False)
+
+    def init(self, opts):
+        GTKShadowServerBase.init(self, opts)
+        X11ServerBase.init(self, opts)
+
+    def make_tray_widget(self):
+        from xpra.platform.xposix.gui import get_native_system_tray_classes
+        classes = get_native_system_tray_classes()
+        try:
+            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+            classes.append(GTKStatusIconTray)
+        except:
+            pass
+        traylog("tray classes: %s", classes)
+        if not classes:
+            traylog.error("Error: no system tray implementation available")
+            return None
+        errs = []
+        for c in classes:
+            try:
+                w = c(self, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
+                return w
+            except Exception as e:
+                errs.append((c, e))
+        traylog.error("Error: all system tray implementations have failed")
+        for c, e in errs:
+            traylog.error(" %s: %s", c, e)
+        return None
 
 
     def makeRootWindowModel(self):
         return GTKX11RootWindowModel(self.root)
 
     def last_client_exited(self):
-        self.stop_refresh()
+        GTKShadowServerBase.last_client_exited(self)
         X11ServerBase.last_client_exited(self)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
@@ -89,7 +120,7 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
-        capabilities.update(ShadowServerBase.make_hello(self, source))
+        capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "Python/gtk2/x11-shadow"
         return capabilities
 

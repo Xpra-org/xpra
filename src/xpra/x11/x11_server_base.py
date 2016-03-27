@@ -78,15 +78,14 @@ class X11ServerBase(GTKServerBase):
         self.randr = opts.resize_display
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
+        self.x11_init()
+        GTKServerBase.init(self, opts)
+
+    def x11_init(self):
         if self.fake_xinerama:
             self.libfakeXinerama_so = find_libfakeXinerama()
         else:
             self.libfakeXinerama_so = None
-        self.x11_init()
-        GTKServerBase.init(self, opts)
-        self.query_opengl()
-
-    def x11_init(self):
         if not X11Keyboard.hasXFixes() and self.cursors:
             log.error("Error: cursor forwarding support disabled")
         if not X11Keyboard.hasXTest():
@@ -111,6 +110,7 @@ class X11ServerBase(GTKServerBase):
             else:
                 log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
         log("randr enabled: %s", self.randr)
+        self.query_opengl()
 
     def query_opengl(self):
         self.opengl_props = {}

@@ -38,7 +38,7 @@ class GTKServerBase(ServerBase):
     """
 
     def __init__(self):
-        log("ServerBase.__init__()")
+        log("GTKServerBase.__init__()")
         self.idle_add = glib.idle_add
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove

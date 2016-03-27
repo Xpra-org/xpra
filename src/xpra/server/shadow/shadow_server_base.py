@@ -50,9 +50,6 @@ class ShadowServerBase(object):
     def watch_keymap_changes(self):
         pass
 
-    def start_refresh(self):
-        self.timer = self.timeout_add(self.refresh_delay, self.refresh)
-
     def timeout_add(self, *args):
         #usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
@@ -61,6 +58,11 @@ class ShadowServerBase(object):
         #usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
 
+    ############################################################################
+    # refresh
+
+    def start_refresh(self):
+        self.timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v):
         assert v>0 and v<10000
@@ -86,6 +88,8 @@ class ShadowServerBase(object):
         w, h = self.root.get_size()
         self._damage(self.root_window_model, 0, 0, w, h)
         return True
+
+    ############################################################################
 
     def sanity_checks(self, proto, c):
         server_uuid = c.strget("server_uuid")
