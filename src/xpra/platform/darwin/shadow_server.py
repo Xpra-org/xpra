@@ -9,10 +9,9 @@ log = Logger("shadow", "osx")
 
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 
-import gtk.gdk
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
 ALPHA = {
@@ -36,7 +35,7 @@ class OSXRootWindowModel(RootWindowModel):
         return take_screenshot()
 
 
-class ShadowServer(ShadowServerBase, GTKServerBase):
+class ShadowServer(GTKShadowServerBase):
 
     def __init__(self):
         #sanity check:
@@ -48,12 +47,15 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
             from xpra.scripts.config import InitExit
             log("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
             raise InitExit(1, "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
-        ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
-        GTKServerBase.__init__(self)
+        GTKShadowServerBase.__init__(self)
 
     def init(self, opts):
-        GTKServerBase.init(self, opts)
+        GTKShadowServerBase.init(self, opts)
         self.keycodes = {}
+
+    def make_tray_widget(self):
+        from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+        return GTKStatusIconTray(self, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
     def makeRootWindowModel(self):
         return  OSXRootWindowModel(self.root)
