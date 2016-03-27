@@ -6,6 +6,7 @@
 
 # A tray implemented using gtk.StatusIcon
 
+import os
 import sys
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
@@ -20,13 +21,15 @@ if not is_gtk3():
     ORIENTATION[gtk.ORIENTATION_HORIZONTAL] = "HORIZONTAL"
     ORIENTATION[gtk.ORIENTATION_VERTICAL]   = "VERTICAL"
 
-GUESS_GEOMETRY = sys.platform.startswith("win") or sys.platform.startswith("darwin")
+GUESS_GEOMETRY = str(int(sys.platform.startswith("win") or sys.platform.startswith("darwin")))
+GUESS_GEOMETRY = os.environ.get("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)=="1"
+log("tray GUESS_GEOMETRY=%s", GUESS_GEOMETRY)
 
 
 class GTKStatusIconTray(TrayBase):
 
-    def __init__(self, *args):
-        TrayBase.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        TrayBase.__init__(self, *args, **kwargs)
         self.tray_widget = gtk.StatusIcon()
         self.tray_widget.set_tooltip_text(self.tooltip or "Xpra")
         self.tray_widget.connect('activate', self.activate_menu)
@@ -100,7 +103,12 @@ class GTKStatusIconTray(TrayBase):
             return self.geometry_guess
         #gtk3 adds an extra argument.. at the beginning!
         _, geom, _ = ag[-3:]
-        return geom.x, geom.y, geom.width, geom.height
+        x, y, w, h = geom.x, geom.y, geom.width, geom.height
+        if x==0 and y==0 and w==200 and h==200:
+            #this isn't right, take a better guess, at least for the size:
+            w = 24
+            h = 64
+        return x, y, w, h
 
     def get_size(self):
         s = max(8, min(256, self.tray_widget.get_size()))
@@ -132,7 +140,15 @@ class GTKStatusIconTray(TrayBase):
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
         if tw!=w or th!=h:
-            tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
+            #workaround for gnome-shell guess above
+            if tw==24 and th==64:
+                new_icon = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, tw, th)
+                new_icon.fill(0)
+                tray_icon = tray_icon.scale_simple(24, 48, INTERP_HYPER)
+                tray_icon.copy_area(0, 0, 24, 48, new_icon, 0, 8)
+                tray_icon = new_icon
+            else:
+                tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
         self.tray_widget.set_from_pixbuf(tray_icon)
 
 
