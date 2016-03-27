@@ -140,12 +140,17 @@ class GTKStatusIconTray(TrayBase):
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
         if tw!=w or th!=h:
-            #workaround for gnome-shell guess above
-            if tw==24 and th==64:
+            if tw!=th:
+                #paste the scaled icon in the middle of the rectangle:
+                minsize = min(tw, th)
                 new_icon = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, tw, th)
                 new_icon.fill(0)
-                tray_icon = tray_icon.scale_simple(24, 48, INTERP_HYPER)
-                tray_icon.copy_area(0, 0, 24, 48, new_icon, 0, 8)
+                scaled_w, scaled_h = minsize, minsize
+                if tw==24 and th==64:
+                    #special case for the gnome-shell dimensions - stretch height..
+                    scaled_w, scaled_h = 24, 48
+                tray_icon = tray_icon.scale_simple(scaled_w, scaled_h, INTERP_HYPER)
+                tray_icon.copy_area(0, 0, scaled_w, scaled_h, new_icon, (tw-scaled_w)//2, (th-scaled_h)//2)
                 tray_icon = new_icon
             else:
                 tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
