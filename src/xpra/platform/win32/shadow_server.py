@@ -244,13 +244,13 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         GTKServerBase.init(self, opts)
         self.tray = opts.tray
         self.delay_tray = opts.delay_tray
-        self.tray_icon = opts.tray_icon or "xpra.ico"
+        self.tray_icon = opts.tray_icon
         if self.tray:
             self.setup_tray()
 
 
     def add_listen_socket(self, socktype, sock):
-        log.warn("add_listen_socket(%s, %s)", socktype, sock)
+        log("add_listen_socket(%s, %s)", socktype, sock)
         if socktype=="named-pipe":
             #named pipe listener uses a thread:
             sock.new_connection_cb = self._new_connection
@@ -261,13 +261,19 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def _new_connection(self, listener, *args):
         socktype = self.socket_types.get(listener)
-        log.warn("_new_connection(%s) socktype=%s", listener, socktype)
+        log("_new_connection(%s) socktype=%s", listener, socktype)
         if socktype!="named-pipe":
             return GTKServerBase._new_connection(self, listener)
         pipe_handle = args[0]
         conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
         return self.make_protocol(socktype, conn, frominfo=" on %s" % listener.pipe_name)
 
+
+    def client_startup_complete(self, ss):
+        GTKServerBase.client_startup_complete(self, ss)
+        if not self.tray_icon:
+            self.set_tray_icon("server-connected.ico")
+            
 
     ############################################################################
     # system tray methods, mostly copied from the gtk client...
@@ -290,16 +296,28 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
             self.menu.connect("deactivate", self.menu_deactivated)
             popup_menu_workaround(self.menu, self.close_menu)
             #tray:
-            from xpra.platform.paths import get_icon_dir
-            icon_filename = os.path.join(get_icon_dir(), self.tray_icon)
             from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
             self.tray_widget = win32NotifyIcon("Xpra Server", None, self.click_callback, self.exit_callback)
-            self.tray_widget.set_icon(icon_filename)
+            self.set_tray_icon(self.tray_icon  or "server-notconnected.ico")
         except ImportError as e:
             traylog.warn("Warning: failed to load systemtray:")
             traylog.warn(" %s", e)
         except Exception as e:
             traylog.error("Error setting up system tray", exc_info=True)
+
+    def set_tray_icon(self, filename):
+        try:
+            from xpra.platform.paths import get_icon_dir
+            icon_filename = os.path.join(get_icon_dir(), filename)
+            if not os.path.exists(icon_filename):
+                traylog.warn("Warning: cannot set tray icon to %s", filename)
+                traylog.warn(" this file does not exist!")
+            else:
+                self.tray_widget.set_icon(icon_filename)
+        except Exception as e:
+            traylog.warn("Warning: failed to set tray icon to %s: %s", filename)
+            traylog.warn(" %s", e)
+
 
     def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
         """ Utility method for easily creating an ImageMenuItem """
@@ -371,6 +389,9 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def last_client_exited(self):
         self.stop_refresh()
+        #revert to default icon:
+        if not self.tray_icon:
+            self.set_tray_icon("server-notconnected.ico")
         GTKServerBase.last_client_exited(self)
 
     def refresh(self):
