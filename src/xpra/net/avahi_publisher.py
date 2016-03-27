@@ -135,7 +135,7 @@ class AvahiPublisher:
         log("avahi dbus server=%s", self.server)
         log("avahi dbus group=%s", self.group)
         self.server.connect_to_signal("StateChanged", self.server_state_changed)
-        self.server_state_changed(self.server.GetState())
+        return self.server_state_changed(self.server.GetState())
 
     def server_state_changed(self, state):
         log("server_state_changed(%s) on %s", state, self.server)
@@ -144,6 +144,8 @@ class AvahiPublisher:
             self.stop()
         elif state == avahi.SERVER_RUNNING:
             self.add_service()
+            return True
+        return False
 
     def add_service(self):
         try:
