@@ -289,7 +289,7 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
             self.menu.set_title("Xpra Server")
             from xpra.gtk_common.about import about
             self.menu.append(self.menuitem("About Xpra", "information.png", None, about))
-            self.menu.append(self.menuitem("Exit", "quit.png", None, self.quit))
+            self.menu.append(self.menuitem("Exit", "quit.png", None, self.exit_callback))
             self.menu.append(self.menuitem("Close Menu", "close.png", None, self.close_menu))
             #maybe add: session info, clipboard, sharing, etc
             #control: disconnect clients
