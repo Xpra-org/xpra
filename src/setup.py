@@ -920,7 +920,7 @@ def build_xpra_conf(install_dir):
             'bind'                  : bind,
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : get_default_log_dir(),
-            'mdns'                  : bstr(not WIN32),
+            'mdns'                  : True,
             'dbus_proxy'            : bstr(not OSX and not WIN32),
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,

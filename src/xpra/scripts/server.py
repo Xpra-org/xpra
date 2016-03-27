@@ -258,20 +258,26 @@ def get_ssh_port():
 #warn just once:
 MDNS_WARNING = False
 def mdns_publish(display_name, mode, listen_on, text_dict={}):
+    global MDNS_WARNING
+    if MDNS_WARNING is True:
+        return
+    PREFER_PYBONJOUR = os.environ.get("XPRA_PREFER_PYBONJOUR", "0")=="1" or sys.platform.startswith("win") or sys.platform.startswith("darwin")
     try:
-        from xpra.net.avahi_publisher import AvahiPublishers
-    except Exception as e:
-        global MDNS_WARNING
-        if not MDNS_WARNING:
-            MDNS_WARNING = True
-            from xpra.log import Logger
-            log = Logger("mdns")
-            log.warn("Warning: failed to load the mdns avahi publisher: %s", e)
-            log.warn(" either fix your installation or use the 'mdns=no' option")
+        if PREFER_PYBONJOUR:
+            from xpra.net.pybonjour_publisher import BonjourPublishers as MDNSPublishers
+        else:
+            from xpra.net.avahi_publisher import AvahiPublishers as MDNSPublishers
+    except ImportError as e:
+        MDNS_WARNING = True
+        from xpra.log import Logger
+        log = Logger("mdns")
+        log.warn("Warning: failed to load the mdns %s publisher:", ["avahi", "pybonjour"][PREFER_PYBONJOUR])
+        log.warn(" %s", e)
+        log.warn(" either fix your installation or use the 'mdns=no' option")
         return
     d = text_dict.copy()
     d["mode"] = mode
-    ap = AvahiPublishers(listen_on, "Xpra %s %s" % (mode, display_name), text_dict=d)
+    ap = MDNSPublishers(listen_on, "Xpra %s %s" % (mode, display_name), text_dict=d)
     _when_ready.append(ap.start)
     _cleanups.append(ap.stop)
 

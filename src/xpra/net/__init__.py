@@ -5,3 +5,5 @@
 
 class ConnectionClosedException(Exception):
     pass
+
+XPRA_MDNS_TYPE = '_xpra._tcp.'
