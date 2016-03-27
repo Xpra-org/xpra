@@ -368,7 +368,7 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         self.menu_shown = True
 
     def exit_callback(self, *args):
-        self.quit(False)
+        self.clean_quit(False)
 
     def close_menu(self, *args):
         if self.menu_shown:
@@ -376,10 +376,12 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
             self.menu_shown = False
 
     def cleanup(self):
-        GTKServerBase.cleanup(self)
-        if self.tray_widget:
-            self.tray_widget.close()
+        tw = self.tray_widget
+        log("cleanup() tray_widget=%s", tw)
+        if tw:
             self.tray_widget = None
+            tw.close()
+        GTKServerBase.cleanup(self)
 
     ############################################################################
 
