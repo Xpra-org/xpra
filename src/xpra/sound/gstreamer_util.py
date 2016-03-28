@@ -163,7 +163,10 @@ ENCODER_DEFAULT_OPTIONS = {
                                                           },
                                        },
                             1      :   {
-                                        "opusenc"       : {"bitrate-type"   : 2,      #constrained vbr
+                                        #FIXME: figure out when it is safe to apply the "bitrate-type" setting:
+                                        "opusenc"       : {
+                                                           #only available with 1.6 onwards?
+                                                           #"bitrate-type"   : 2,      #constrained vbr
                                                            "complexity"     : 0
                                                            },
                                         },
