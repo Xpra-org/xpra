@@ -1417,11 +1417,17 @@ class ServerSource(object):
                            "send_notifications" : "notifications",
                            "send_bell"          : "bell"}.items():
             battr(name, prop)
-        for prop, name in {"vrefresh"               : "vertical-refresh",
+        for prop, name in {
+                           "vrefresh"               : "vertical-refresh",
                            "file_size_limit"        : "file-size-limit",
-                           "double_click_time"      : "double_click.time",
-                           "double_click_distance"  : "double_click.distance"}.items():
+                           }.items():
             info[name] = getattr(self, prop)
+        dcinfo = info.setdefault("double_click", {})
+        for prop, name in {
+                           "double_click_time"      : "time",
+                           "double_click_distance"  : "distance",
+                           }.items():
+            dcinfo[name] = getattr(self, prop)
         if self.printers:
             info["printers"] = self.printers
         return info

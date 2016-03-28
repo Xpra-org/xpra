@@ -369,26 +369,26 @@ def get_screen_info(screen_sizes):
             }
     for i, x in enumerate(screen_sizes):
         if type(x) not in (tuple, list):
-            #legacy clients:
-            info["screen[%s]" % i] = str(x)
             continue
-        info["screen[%s].display" % i] = x[0]
+        sinfo = info.setdefault("screen", {}).setdefault(i, {})
+        sinfo["display"] = x[0]
         if len(x)>=3:
-            info["screen[%s].size" % i] = x[1], x[2]
+            sinfo["size"] = x[1], x[2]
         if len(x)>=5:
-            info["screen[%s].size_mm" % i] = x[3], x[4]
+            sinfo["size_mm"] = x[3], x[4]
         if len(x)>=6:
             monitors = x[5]
             for j, monitor in enumerate(monitors):
                 if len(monitor)>=7:
+                    minfo = sinfo.setdefault("monitor", {}).setdefault(j, {})
                     for k,v in {
                                 "name"      : monitor[0],
                                 "geometry"  : monitor[1:5],
                                 "size_mm"   : monitor[5:7],
                                 }.items():
-                        info["screen[%s].monitor[%s].%s" % (i, j, k)] = v
+                        minfo[k] = v
         if len(x)>=10:
-            info["screen[%s].workarea" % i] = x[6:10]
+            sinfo["workarea"] = x[6:10]
     return info
 
 
@@ -524,13 +524,13 @@ def notypedict(info):
         return dict(d)
     return ntd(info)
 
-def flatten_dict(info):
+def flatten_dict(info, sep="."):
     to = {}
     def add_dict(path, d):
         for k,v in d.items():
             if path:
                 if k:
-                    npath = path+"."+str(k)
+                    npath = path+sep+str(k)
                 else:
                     npath = path
             else:
@@ -567,14 +567,24 @@ def pver(v):
             return ", ".join(v)
     return v
 
-def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=pver):
+def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None):
+    #"smart" value formatting function:
+    def vf(k, v):
+        if vformat:
+            return nonl(vformat(v))
+        try:
+            if k.find("version")>=0 or k.find("revision")>=0:
+                return nonl(pver(v))
+        except:
+            pass
+        return nonl(repr(v))
     l = pad-len(prefix)-len(lchar)
     for k in sorted(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             nokey = v.get("", (v.get(None)))
             if nokey is not None:
-                print("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), nonl(vformat(nokey))))
+                print("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), vf(k, nokey)))
                 for x in ("", None):
                     try:
                         del v[x]
@@ -584,7 +594,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=pver):
                 print("%s%s %s" % (prefix, lchar, k))
             print_nested_dict(v, prefix+"  ", "-")
         else:
-            print("%s%s %s : %s" % (prefix, lchar, k.ljust(l), nonl(vformat(v))))
+            print("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), vf(k, v)))
 
 
 def std(s, extras="-,./: "):

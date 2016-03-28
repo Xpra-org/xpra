@@ -194,13 +194,14 @@ class VideoHelper(object):
         d = {}
         einfo = d.setdefault("encoding", {})
         dinfo = d.setdefault("decoding", {})
+        cinfo = d.setdefault("csc", {})
         for encoding, encoder_specs in self._video_encoder_specs.items():
             for in_csc, specs in encoder_specs.items():
                 for spec in specs:
                     einfo.setdefault("%s_to_%s" % (in_csc, encoding), []).append(spec.codec_type)
         for in_csc, specs in self._csc_encoder_specs.items():
             for out_csc, specs in specs.items():
-                d["csc.%s_to_%s" % (in_csc, out_csc)] = [spec.codec_type for spec in specs]
+                cinfo["%s_to_%s" % (in_csc, out_csc)] = [spec.codec_type for spec in specs]
         for encoding, decoder_specs in self._video_decoder_specs.items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:

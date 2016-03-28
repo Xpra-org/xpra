@@ -175,13 +175,17 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
             "min_speed"                 : int(min_speed),
             "frame_delay"               : int(frame_delay),
             "mpixels"                   : int(mpixels_per_s),
-            "damage_latency.ref"        : int(1000.0*ref_damage_latency),
-            "damage_latency.avg"        : int(1000.0*statistics.avg_damage_in_latency),
-            "damage_latency.target"     : int(1000.0*target_damage_latency),
-            "damage_latency.abs_factor" : int(100.0*dam_lat_abs),
-            "damage_latency.rel_factor" : int(100.0*dam_lat_rel),
-            "decoding_latency.target"   : int(target_decode_speed),
-            "decoding_latency.factor"   : int(100.0*dec_lat),
+            "damage_latency"            : {
+                                           "ref"        : int(1000.0*ref_damage_latency),
+                                           "avg"        : int(1000.0*statistics.avg_damage_in_latency),
+                                           "target"     : int(1000.0*target_damage_latency),
+                                           "abs_factor" : int(100.0*dam_lat_abs),
+                                           "rel_factor" : int(100.0*dam_lat_rel),
+                                           },
+            "decoding_latency"          : {
+                                           "target"   : int(target_decode_speed),
+                                           "factor"   : int(100.0*dec_lat),
+                                           },
             }
     return info, target_speed
 

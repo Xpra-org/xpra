@@ -12,15 +12,16 @@ def get_posix_sys_info():
     info = {}
     try:
         import resource
-        for k, constant in {"server"   : "RUSAGE_SELF",
-                         "children" : "RUSAGE_CHILDREN",
-                         "total"    : "RUSAGE_BOTH"}.items():
+        for k, constant in {
+                            "server"    : "RUSAGE_SELF",
+                            "children"  : "RUSAGE_CHILDREN",
+                            "total"     : "RUSAGE_BOTH"}.items():
             try:
                 v = getattr(resource, constant)
             except (NameError, AttributeError):
                 continue
             stats = resource.getrusage(v)
-            prefix = "memory.%s." % k
+            minfo = info.setdefault("memory", {}).setdefault(k, {})
             for var in ("utime", "stime", "maxrss",
                         "ixrss", "idrss", "isrss",
                         "minflt", "majflt", "nswap",
@@ -30,7 +31,7 @@ def get_posix_sys_info():
                 value = getattr(stats, "ru_%s" % var)
                 if type(value)==float:
                     value = int(value)
-                info[prefix+var] = value
+                minfo[var] = value
     except:
         from xpra.log import Logger
         log = Logger("posix")

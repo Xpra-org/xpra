@@ -45,16 +45,24 @@ def get_pycuda_version():
 
 def get_pycuda_info():
     init_all_devices()
-    i = {"version"               : pycuda.VERSION,
-         "version.text"          : pycuda.VERSION_TEXT}
+    i = {
+         "version" : {
+                      ""        : pycuda.VERSION,
+                      "text"    : pycuda.VERSION_TEXT,
+                      }
+         }
     if pycuda.VERSION_STATUS:
         i["version.status"] = pycuda.VERSION_STATUS
     return i
 
 def get_cuda_info():
     init_all_devices()
-    return {"driver.version"        : driver.get_version(),
-            "driver.driver_version" : driver.get_driver_version()}
+    return {
+            "driver"    : {
+                           "version"        : driver.get_version(),
+                           "driver_version" : driver.get_driver_version(),
+                           }
+            }
 
 
 DEVICE_INFO = {}

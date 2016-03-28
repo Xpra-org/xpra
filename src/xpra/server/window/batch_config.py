@@ -79,9 +79,9 @@ class DamageBatchConfig(object):
             batch_delays = [x for _,x in list(self.last_actual_delays)]
             info["actual_delays"] = get_list_stats(batch_delays, show_percentile=[9])
         for name, details, factor, weight in self.factors:
-            info[name] = (int(100.0*factor), int(100.0*weight))
-            for k,v in details.items():
-                info[name+"."+k] = v
+            fdetails = details.copy()
+            fdetails[""] = int(100.0*factor), int(100.0*weight)
+            info[name] = fdetails
         return info
 
 

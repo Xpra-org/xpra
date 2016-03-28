@@ -163,10 +163,9 @@ class WindowVideoSource(WindowSource):
             einfo["pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
         if lps:
-            popts = {}
+            popts = einfo.setdefault("pipeline_option", {})
             for i, lp in enumerate(lps):
                 popts[i] = self.get_pipeline_score_info(*lp)
-            einfo["pipeline_option"] = popts
         info.setdefault("encoding", {}).update(einfo)
         return info
 
@@ -182,22 +181,31 @@ class WindowVideoSource(WindowSource):
                 }
 
     def get_pipeline_score_info(self, score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec):
+        def specinfo(x):
+            try:
+                return x.codec_type
+            except:
+                return repr(x)
         pi  = {
-            "score"             : score,
-            "scaling"           : scaling,
-            "csc"               : repr(csc_spec),
-            "format"            : str(enc_in_format),
-            "encoder"           : repr(encoder_spec),
-            "encoder.scaling"   : encoder_scaling,
-            "encoder.width"     : enc_width,
-            "encoder.height"    : enc_height
-              }
+               "score"             : score,
+               "scaling"           : scaling,
+               "format"            : str(enc_in_format),
+               "encoder"           : {
+                                      ""        : specinfo(encoder_spec),
+                                      "scaling" : encoder_scaling,
+                                      "width"   : enc_width,
+                                      "height"  : enc_height,
+                                      },
+               }
         if csc_spec:
-            pi.update({
-                "csc"           : repr(csc_spec),
-                "csc.scaling"   : csc_scaling,
-                "csc.width"     : csc_width,
-                "csc.height"    : csc_height})
+            pi["csc"] = {
+                         ""         : specinfo(csc_spec),
+                         "scaling"  : csc_scaling,
+                         "width"    : csc_width,
+                         "height"   : csc_height,
+                         }
+        else:
+            pi["csc"] = "None"
         return pi
 
 

@@ -35,7 +35,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, get_hex_uuid, livefds, load_binary_file
-from xpra.util import typedict, updict, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
+from xpra.util import typedict, flatten_dict, updict, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
@@ -1217,26 +1217,31 @@ class ServerBase(ServerCore, FileTransferHandler):
     def get_server_features(self):
         #these are flags that have been added over time with new versions
         #to expose new server features:
-        return (
+        f = dict((k, True) for k in (
                 #all these flags are assumed enabled in 0.17 (they are present in 0.14.x onwards):
                 "window_refresh_config",
                 "toggle_cursors_bell_notify",
                 "toggle_keyboard_sync",
                 "window_unmap",
                 "xsettings-tuple",
-                "encoding.generic",
                 "event_request",
                 "sound_sequence",
-                "sound.eos-sequence",
                 "notify-startup-complete",
                 "suspend-resume",
                 "server-events",
                 "change-quality", "change-min-quality", "change-speed", "change-min-speed",
                 #newer flags:
-                "sound.ogg-latency-fix",
-                "clipboard.enable-selections",
                 "av-sync",
-                "window-filters")
+                "window-filters"))
+        f["sound"] = {
+                      "ogg-latency-fix" : True,
+                      "eos-sequence"    : True,
+                      }
+        f["clipboard"] = {"enable-selections" : True}
+        f["encoding"] = {
+                         "generic" : True,
+                         }
+        return f
 
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)
@@ -1263,8 +1268,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                  "virtual-video-devices"        : self.virtual_video_devices,
                  })
             capabilities.update(self.get_file_transfer_features())
-            for x in self.get_server_features():
-                capabilities[x] = True
+            capabilities.update(flatten_dict(self.get_server_features()))
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
         capabilities["exit_server"] = True
@@ -1829,8 +1833,7 @@ class ServerBase(ServerCore, FileTransferHandler):
              "idle_timeout"     : self.idle_timeout,
              "file-size-limit"  : self.file_size_limit,
              }
-        for x in self.get_server_features():
-            i[x] = True
+        i.update(self.get_server_features())
         return i
 
     def get_encoding_info(self):

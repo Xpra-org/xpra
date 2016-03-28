@@ -473,17 +473,22 @@ def get_version():
     return pyopencl.version.VERSION
 
 def get_pyopencl_info():
-    info = {"version"               : pyopencl.version.VERSION,
-            "version.text"          : pyopencl.VERSION_TEXT,
+    info = {
+            "version"   : {
+                           ""       : pyopencl.version.VERSION,
+                           "text"   : pyopencl.VERSION_TEXT,
+                           },
             }
     if pyopencl.VERSION_STATUS:
-            info["version.status"] = pyopencl.VERSION_STATUS
+        info["version"]["status"] = pyopencl.VERSION_STATUS
     return info
 
 def get_info():
     global selected_device, selected_platform, context, KERNELS_DEFS
     info = {
-            "version.cl_header"     : pyopencl.get_cl_header_version(),
+            "version"               : {
+                                       "cl_header"     : pyopencl.get_cl_header_version(),
+                                       },
             "opengl"                : pyopencl.have_gl(),
             #"kernels"               : KERNELS_DEFS.keys()
             "pyopencl"              : get_pyopencl_info(),

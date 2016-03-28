@@ -1452,10 +1452,13 @@ cdef class Encoder:
             self.pycuda_info = get_pycuda_info()
             log("init_cuda pycuda info=%s", self.pycuda_info)
             self.cuda_device_info = {
-                "device.name"       : d.name(),
-                "device.pci_bus_id" : d.pci_bus_id(),
-                "device.memory"     : d.total_memory()/1024/1024,
-                "api_version"       : self.cuda_context.get_api_version()}
+                                     "device" : {
+                                                 "name"         : d.name(),
+                                                 "pci_bus_id"   : d.pci_bus_id(),
+                                                 "memory"       : d.total_memory()/1024/1024,
+                                                 },
+                                     "api_version" : self.cuda_context.get_api_version(),
+                                     }
         except driver.MemoryError as e:
             last_context_failure = time.time()
             log("init_cuda %s", e)

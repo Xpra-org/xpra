@@ -190,9 +190,12 @@ class WindowPerformanceStatistics(object):
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
         dinfo["out_latency"] = get_list_stats(latencies, show_percentile=[9])
         #per encoding totals:
+        if self.encoding_totals:
+            tf = info.setdefault("total_frames", {})
+            tp = info.setdefault("total_pixels", {})
         for encoding, totals in self.encoding_totals.items():
-            info["total_frames[%s]" % encoding] = totals[0]
-            info["total_pixels[%s]" % encoding] = totals[1]
+            tf[encoding] = totals[0]
+            tp[encoding] = totals[1]
         return info
 
 

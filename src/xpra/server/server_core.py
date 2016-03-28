@@ -53,7 +53,7 @@ def get_server_info():
     #this function is for non UI thread info
     info = {
             "platform"  : get_platform_info(),
-            "build"     : get_version_info_full()
+            "build"     : get_version_info_full(),
             }
     info.update(get_host_info())
     return info
@@ -112,8 +112,7 @@ def get_thread_info(proto=None, protocols=[]):
             sanestack = []
             for e in stack:
                 sanestack.append(tuple([nn(x) for x in e]))
-            info["frame[%s].stack" % i] = sanestack
-            fi[i] = {"thread"   : thread_ident.get(frame_pair[0], "unknown"),
+            fi[i] = {""         : thread_ident.get(frame_pair[0], "unknown"),
                      "stack"    : sanestack}
     except Exception as e:
         log.error("failed to get frame info: %s", e)
@@ -930,24 +929,27 @@ class ServerCore(object):
         if filtered_env.get('XPRA_ENCRYPTION_KEY'):
             filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
 
-        up("network",   get_network_caps())
-        up("network", {"encryption"     : self.encryption or "",
-                       "tcp-encryption" : self.tcp_encryption or "",
-                       })
-        up("server",    get_server_info())
+        si = get_server_info()
+        si.update({
+                   "mode"              : self.get_server_mode(),
+                   "type"              : "Python",
+                   "start_time"        : int(self.start_time),
+                   "idle-timeout"      : int(self.server_idle_timeout),
+                   "authenticator"     : str((self.auth_class or str)("")),
+                   "argv"              : sys.argv,
+                   "path"              : sys.path,
+                   "exec_prefix"       : sys.exec_prefix,
+                   "executable"        : sys.executable,
+                })
+        up("server", si)
+        ni = get_network_caps()
+        ni.update({
+                   "encryption"     : self.encryption or "",
+                   "tcp-encryption" : self.tcp_encryption or "",
+                   })
+        up("network", ni)
         up("threads",   self.get_thread_info(proto))
         up("env",       filtered_env)
-        up("server", {
-                "mode"              : self.get_server_mode(),
-                "type"              : "Python",
-                "start_time"        : int(self.start_time),
-                "idle-timeout"      : int(self.server_idle_timeout),
-                "authenticator"     : str((self.auth_class or str)("")),
-                "argv"              : sys.argv,
-                "path"              : sys.path,
-                "exec_prefix"       : sys.exec_prefix,
-                "executable"        : sys.executable,
-                })
         if self.session_name:
             info["session"] = {"name" : self.session_name}
         if self.child_reaper:
