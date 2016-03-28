@@ -70,10 +70,18 @@ class ShadowServer(GTKShadowServerBase):
         if not self.mapped_at:
             return
         self.refresh_count += 1
+        rlist = []
         for r in rects:
             assert isinstance(r, CG.CGRect), "invalid rectangle in list: %s" % r
             self.refresh_rectangle_count += 1
-            self.idle_add(self._damage, self.root_window_model, r.origin.x, r.origin.y, r.size.width, r.size.height)
+            rlist.append((r.origin.x, r.origin.y, r.size.width, r.size.height))
+            #return quickly, and process the list copy via idle add:
+            self.idle_add(self.do_screen_refresh, rlist)
+
+    def do_screen_refresh(self, rlist):
+        #TODO: improve damage method to handle lists directly:
+        for x, y, w, h in rlist:
+            self._damage(self.root_window_model, x, y, w, h)
 
     def start_refresh(self):
         #don't use the timer, get damage notifications:
