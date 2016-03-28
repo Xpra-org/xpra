@@ -28,19 +28,28 @@ def main():
             proc = subprocess.Popen(cmd)
         except:
             print("failed to execute %s" % p)
-            sys.exit(1)
-        assert proc.wait()==0, "failure on %s" % name
+            return 1
+        v = proc.wait()
+        if v!=0:
+            print("failure on %s" % name)
+            return v
+        return 0
     def add_recursive(d):
         paths = os.listdir(d)
         for path in paths:
             p = os.path.join(d, path)
             if os.path.isfile(p) and p.endswith("test.py"):
-                run_file(p)
+                v = run_file(p)
+                if v!=0:
+                    return v
             elif os.path.isdir(p):
                 fp = os.path.join(d, p)
-                add_recursive(fp)
+                return add_recursive(fp)
+        return 0
     print("running all the tests in %s" % p)
-    add_recursive(p)
+    return add_recursive(p)
 
 if __name__ == '__main__':
-    main()
+    import sys
+    v = main()
+    sys.exit(v)
