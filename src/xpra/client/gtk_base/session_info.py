@@ -945,18 +945,15 @@ class SessionInfo(gtk.Window):
         window_encoder_stats = {}
         #new-style server with namespace (easier):
         window_dict = self.client.server_last_info.get("window")
-        log.error("window dict=%s", window_dict)
         if window_dict and isinstance(window_dict, dict):
             for k,v in window_dict.items():
-                log.error("dict(%s)=%s", k, v)
                 try:
                     wid = int(k)
                     encoder_stats = v.get("encoder")
-                    log.error("encoder_stats=%s", encoder_stats)
                     if encoder_stats:
                         window_encoder_stats[wid] = encoder_stats
                 except:
-                    log.error("cannot lookup window dict", exc_info=True)
+                    log.error("Error: cannot lookup window dict", exc_info=True)
             return window_encoder_stats
         #fallback code, we are interested in string data like:
         #window[1].encoder=x264
