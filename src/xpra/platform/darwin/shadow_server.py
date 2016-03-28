@@ -72,8 +72,8 @@ class ShadowServer(GTKShadowServerBase):
         return client_keycode
 
     def fake_key(self, keycode, press):
-        log.info("fake_key(%s, %s)", keycode, press)
         e = CG.CGEventCreateKeyboardEvent(None, keycode, press)
+        log("fake_key(%s, %s)", keycode, press)
         #CGEventSetFlags(keyPress, modifierFlags)
         #modifierFlags: kCGEventFlagMaskShift, ...
         CG.CGEventPost(CG.kCGSessionEventTap, e)
