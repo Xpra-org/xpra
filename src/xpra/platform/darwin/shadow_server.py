@@ -77,7 +77,8 @@ class ShadowServer(GTKShadowServerBase):
         #CGEventSetFlags(keyPress, modifierFlags)
         #modifierFlags: kCGEventFlagMaskShift, ...
         CG.CGEventPost(CG.kCGSessionEventTap, e)
-        CG.CFRelease(e)
+        #this causes crashes, don't do it!
+        #CG.CFRelease(e)
 
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
