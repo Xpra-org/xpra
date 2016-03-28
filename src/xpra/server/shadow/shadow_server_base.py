@@ -145,6 +145,24 @@ class ShadowServerBase(object):
             ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
 
 
+    def _adjust_pointer(self, pointer):
+        #adjust pointer position for offset in client:
+        x, y = pointer
+        ma = self.mapped_at
+        if ma:
+            wx, wy = ma[:2]
+            pointer = x-wx, y-wy
+        return pointer
+
+    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+        pointer = self._adjust_pointer(pointer)
+        self.do_process_mouse_common(proto, wid, pointer, modifiers)
+
+    def do_process_mouse_common(self, proto, wid, pointer, modifiers):
+        #actuallly move the mouse here in subclasses
+        pass
+
+
     def _add_new_window(self, window):
         self._add_new_window_common(window)
         self._send_new_window_packet(window)

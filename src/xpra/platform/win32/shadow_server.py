@@ -267,12 +267,9 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+    def do_process_mouse_common(self, proto, wid, pointer, modifiers):
         #adjust pointer position for offset in client:
-        x, y = pointer
-        wx, wy = self.mapped_at[:2]
-        rx, ry = x-wx, y-wy
-        win32api.SetCursorPos((rx, ry))
+        win32api.SetCursorPos(pointer)
 
     def get_keyboard_config(self, props):
         return KeyboardConfig()

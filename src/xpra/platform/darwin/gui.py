@@ -256,11 +256,19 @@ except:
     CG = None
 
 
-def get_CG_imagewrapper():
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
+def get_CG_imagewrapper(rect=None):
     from xpra.codecs.image_wrapper import ImageWrapper
     assert CG, "cannot capture without Quartz.CoreGraphics"
-    #region = CG.CGRectMake(0, 0, 100, 100)
-    region = CG.CGRectInfinite
+    if rect is None:
+        x = 0
+        y = 0
+        region = CG.CGRectInfinite
+    else:
+        x, y, w, h = rect
+        region = CG.CGRectMake(x, y, roundup(w, 2), roundup(h, 2))
     image = CG.CGWindowListCreateImage(region,
                 CG.kCGWindowListOptionOnScreenOnly,
                 CG.kCGNullWindowID,
@@ -275,7 +283,7 @@ def get_CG_imagewrapper():
     log("get_CG_imagewrapper(..) image size: %sx%s, bpc=%s, bpp=%s, rowstride=%s, alpha=%s", width, height, bpc, bpp, rowstride, alpha_str)
     prov = CG.CGImageGetDataProvider(image)
     argb = CG.CGDataProviderCopyData(prov)
-    return ImageWrapper(0, 0, width, height, argb, "BGRX", 24, rowstride)
+    return ImageWrapper(x, y, width, height, argb, "BGRX", 24, rowstride)
 
 def take_screenshot():
     log("grabbing screenshot")

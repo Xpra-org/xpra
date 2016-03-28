@@ -28,7 +28,8 @@ ALPHA = {
 class OSXRootWindowModel(RootWindowModel):
 
     def get_image(self, x, y, width, height, logger=None):
-        return get_CG_imagewrapper()
+        rect = (x, y, width, height)
+        return get_CG_imagewrapper(rect)
 
     def take_screenshot(self):
         log("grabbing screenshot")
@@ -47,6 +48,9 @@ class ShadowServer(GTKShadowServerBase):
             from xpra.scripts.config import InitExit
             log("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
             raise InitExit(1, "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
+        self.refresh_count = 0
+        self.refresh_rectangle_count = 0
+        self.refresh_registered = False
         GTKShadowServerBase.__init__(self)
 
     def init(self, opts):
@@ -60,11 +64,51 @@ class ShadowServer(GTKShadowServerBase):
     def makeRootWindowModel(self):
         return  OSXRootWindowModel(self.root)
 
-    def last_client_exited(self):
-        self.stop_refresh()
-        GTKServerBase.last_client_exited(self)
 
-    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+    def screen_refresh_callback(self, count, rects, info):
+        #log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped_at)
+        if not self.mapped_at:
+            return
+        self.refresh_count += 1
+        for r in rects:
+            assert isinstance(r, CG.CGRect), "invalid rectangle in list: %s" % r
+            self.refresh_rectangle_count += 1
+            self.idle_add(self._damage, self.root_window_model, r.origin.x, r.origin.y, r.size.width, r.size.height)
+
+    def start_refresh(self):
+        #don't use the timer, get damage notifications:
+        if self.refresh_registered:
+            log.warn("Warning: screen refresh callback already registered!")
+            return
+        err = CG.CGRegisterScreenRefreshCallback(self.screen_refresh_callback, None)
+        log("CGRegisterScreenRefreshCallback(%s)=%s", self.screen_refresh_callback, err)
+        if err!=0:
+            log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
+            log.warn(" using fallback timer method")
+            GTKShadowServerBase.start_refresh(self)
+        else:
+            self.refresh_registered = True
+
+    def stop_refresh(self):
+        log("stop_refresh() mapped_at=%s, timer=%s", self.mapped_at, self.timer)
+        if self.refresh_registered:
+            self.mapped_at = None
+            try:
+                err = CG.CGUnregisterScreenRefreshCallback(self.screen_refresh_callback, None)
+                log("CGUnregisterScreenRefreshCallback(%s)=%s", self.screen_refresh_callback, err)
+                if err:
+                    log.warn(" unregistering the existing one returned %s", {0 : "OK"}.get(err, err))
+                else:
+                    self.refresh_registered = False
+            except ValueError as e:
+                log.warn("Error unregistering screen refresh callback:")
+                log.warn(" %s", e)
+        else:
+            #may stop the timer fallback:
+            GTKShadowServerBase.stop_refresh(self)
+
+
+    def do_process_mouse_common(self, proto, wid, pointer, modifiers):
         CG.CGWarpMouseCursorPosition(pointer)
 
     def get_keycode(self, ss, client_keycode, keyname, modifiers):
@@ -84,6 +128,7 @@ class ShadowServer(GTKShadowServerBase):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         log("process_button_action(%s, %s)", proto, packet)
         self._process_mouse_common(proto, wid, pointer, modifiers)
+        pointer = self._adjust_pointer(pointer)
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well
@@ -118,4 +163,9 @@ class ShadowServer(GTKShadowServerBase):
         info = GTKServerBase.get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
+        info.setdefault("damage", {}).update({
+                                              "notifications"   : self.refresh_registered,
+                                              "count"           : self.refresh_count,
+                                              "rectangles"      : self.refresh_rectangle_count,
+                                              })
         return info

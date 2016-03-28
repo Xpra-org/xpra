@@ -112,11 +112,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
         X11ServerBase.last_client_exited(self)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
-        #adjust pointer position for offset in client:
-        x, y = pointer
-        wx, wy = self.mapped_at[:2]
-        pointer = x-wx, y-wy
+        pointer = self._adjust_pointer(pointer)
         X11ServerBase._process_mouse_common(self, proto, wid, pointer, modifiers)
+
 
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
