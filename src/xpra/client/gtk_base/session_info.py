@@ -76,7 +76,10 @@ def dictlook(d, k, fallback=None):
     if v is not None:
         return v
     parts = k.split(".")
-    #["batch", "delay", "avg"]
+    return newdictlook(d, parts, fallback)
+
+def newdictlook(d, parts, fallback=None):
+    #ie: {}, ["batch", "delay", "avg"], 0
     v = d
     for p in parts:
         try:
@@ -818,7 +821,12 @@ class SessionInfo(gtk.Window):
             values = []
             for wid in self.client._window_to_id.values():
                 for window_prop in window_props:
-                    v = dictlook(self.client.server_last_info, "window[%s].%s.%s" % (wid, window_prop, suffix))
+                    #Warning: this is ugly...
+                    v = self.client.server_last_info.get("window[%s].%s.%s" % (wid, window_prop, suffix))
+                    if v is None:
+                        wprop = window_prop.split(".")              #ie: "encoding.speed" -> ["encoding", "speed"]
+                        newpath = ["window", wid]+wprop+[suffix]    #ie: ["window", 1, "encoding", "speed", "cur"]
+                        v = newdictlook(self.client.server_last_info, newpath)
                     if v is not None:
                         values.append(v)
                         break
@@ -935,17 +943,20 @@ class SessionInfo(gtk.Window):
 
     def get_window_encoder_stats(self):
         window_encoder_stats = {}
-        #new-style server with namespace:
+        #new-style server with namespace (easier):
         window_dict = self.client.server_last_info.get("window")
+        log.error("window dict=%s", window_dict)
         if window_dict and isinstance(window_dict, dict):
             for k,v in window_dict.items():
+                log.error("dict(%s)=%s", k, v)
                 try:
                     wid = int(k)
                     encoder_stats = v.get("encoder")
+                    log.error("encoder_stats=%s", encoder_stats)
                     if encoder_stats:
                         window_encoder_stats[wid] = encoder_stats
                 except:
-                    pass
+                    log.error("cannot lookup window dict", exc_info=True)
             return window_encoder_stats
         #fallback code, we are interested in string data like:
         #window[1].encoder=x264

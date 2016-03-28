@@ -148,12 +148,17 @@ class WindowVideoSource(WindowSource):
         if sr:
             info["video_subregion"] = sr.get_info()
         info["scaling"] = self.actual_scaling
-        csce = self._csc_encoder
-        if csce:
-            info["csc"] = csce.get_info()
-        ve = self._video_encoder
-        if ve:
-            info["encoder"] = ve.get_info()
+        def addcinfo(prefix, x):
+            if not x:
+                return
+            try:
+                i = x.get_info()
+                i[""] = x.get_type()
+                info[prefix] = i
+            except:
+                log.error("Error collecting codec information from %s", x, exc_info=True)
+        addcinfo("csc", self._csc_encoder)
+        addcinfo("encoder", self._video_encoder)
         info.setdefault("encodings", {}).update({
                                                  "non-video"    : self.non_video_encodings,
                                                  "edge"         : self.edge_encoding or "",

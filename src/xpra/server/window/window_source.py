@@ -315,8 +315,9 @@ class WindowSource(object):
         """
             Add window specific stats
         """
-        #"encoding" info:
-        einfo = self.get_quality_speed_info()
+        info = self.statistics.get_info()
+        einfo = info.setdefault("encoding", {})     #defined in statistics.get_info()
+        einfo.update(self.get_quality_speed_info())
         einfo.update({
                       ""                    : self.encoding,
                       "lossless_threshold"  : {
@@ -353,14 +354,13 @@ class WindowSource(object):
                 w, h, pixel_format, coding, store, buflen, _, hits, last_used = x
                 buckets_info[i] = w, h, pixel_format, coding, store, buflen, hits, int((now-last_used)*1000)
         #remove large default dict:
-        info = {
+        info.update({
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
                 "av-sync"               : {
                                            "current"    : self.av_sync_delay,
                                            "target"     : self.av_sync_delay_target
                                            },
-                "encoding"              : einfo,
                 "encodings"             : esinfo,
                 "rgb_threshold"         : self._rgb_auto_threshold,
                 "mmap"                  : bool(self._mmap) and (self._mmap_size>0),
@@ -379,7 +379,7 @@ class WindowSource(object):
                                            },
                  "rgb_formats"          : self.rgb_formats,
                  #"icons"                : self.icons_encoding_options,
-                 }
+                 })
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
         idata = self.window_icon_data
@@ -391,7 +391,6 @@ class WindowSource(object):
                             "stride"    : stride,
                             "bytes"     : len(pixel_data)
                             }
-        info.update(self.statistics.get_info())
         return info
 
     def get_quality_speed_info(self):
