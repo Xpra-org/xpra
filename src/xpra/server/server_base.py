@@ -384,7 +384,7 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def init_virtual_video_devices(self):
         webcamlog("init_virtual_video_devices")
-        if os.name!="posix":
+        if os.name!="posix" or sys.platform.startswith("darwin"):
             return 0
         try:
             from xpra.codecs.v4l2.pusher import Pusher
