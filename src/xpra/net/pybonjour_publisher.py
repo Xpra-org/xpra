@@ -58,7 +58,7 @@ class BonjourPublishers:
         for publisher in self.publishers:
             try:
                 publisher.stop()
-            except Exception, e:
+            except Exception as e:
                 log.error("Error stopping publisher %s:", publisher)
                 log.error(" %s" % publisher, e)
 
@@ -104,7 +104,7 @@ class BonjourPublisher:
                                     port = self.port,
                                     txtRecord = self.text_record,
                                     callBack = _callback)
-        except pybonjour.BonjourError, e:
+        except pybonjour.BonjourError as e:
             if e.errorCode==pybonjour.kDNSServiceErr_NameConflict:
                 log.error("Error: another server is already claiming our service type '%s'!", self.service_type)
             else:
