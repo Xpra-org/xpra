@@ -109,7 +109,7 @@ else:
         try:
             _libdnssd = ctypes.cdll.LoadLibrary(lib)
             break
-        except Exception, e:
+        except Exception as e:
             print("error loading %s: %s" % (lib, e))
     if not _libdnssd:
         raise ImportError("Failed to load dns library: %s" % str(libs))
