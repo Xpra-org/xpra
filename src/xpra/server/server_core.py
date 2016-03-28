@@ -356,8 +356,9 @@ class ServerCore(object):
     def run(self):
         self.print_run_info()
         self.print_screen_info()
-        signal.signal(signal.SIGTERM, self.signal_quit)
+        #SIGINT breaks GTK3.. (but there are no py3k servers yet!)
         signal.signal(signal.SIGINT, self.signal_quit)
+        signal.signal(signal.SIGTERM, self.signal_quit)
         def start_ready_callbacks():
             for x in self._when_ready:
                 try:
