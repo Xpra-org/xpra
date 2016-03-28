@@ -68,8 +68,16 @@ class SoundSource(SoundPipeline):
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
         codec = matching[0]
         encoder, fmt = get_encoder_formatter(codec)
-        SoundPipeline.__init__(self, codec)
+        self.queue = None
+        self.caps = None
+        self.volume = None
+        self.sink = None
+        self.src = None
         self.src_type = src_type
+        self.buffer_latency = False
+        self.jitter_queue = None
+        self.file = None
+        SoundPipeline.__init__(self, codec)
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
@@ -97,8 +105,6 @@ class SoundSource(SoundPipeline):
         self.sink = self.pipeline.get_by_name("sink")
         if SOURCE_QUEUE_TIME>0:
             self.queue  = self.pipeline.get_by_name("queue")
-        else:
-            self.queue = None
         if self.queue:
             try:
                 self.queue.set_property("silent", True)
@@ -111,7 +117,6 @@ class SoundSource(SoundPipeline):
                 self.sink.set_property("enable-last-sample", False)
         except Exception as e:
             log("failed to disable last buffer: %s", e)
-        self.caps = None
         self.skipped_caps = set()
         if JITTER>0:
             self.jitter_queue = Queue()
@@ -124,7 +129,6 @@ class SoundSource(SoundPipeline):
             self.sink.connect("new-buffer", self.on_new_buffer)
             self.sink.connect("new-preroll", self.on_new_preroll0)
         self.src = self.pipeline.get_by_name("src")
-        self.buffer_latency = False
         if not WIN32 and not OSX:
             try:
                 global BUFFER_TIME, LATENCY_TIME
@@ -143,7 +147,6 @@ class SoundSource(SoundPipeline):
                 self.buffer_latency = True
             except Exception as e:
                 log.info("source %s does not support 'buffer-time' or 'latency-time': %s", self.src_type, e)
-        self.file = None
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
             parts = codec.split("+")

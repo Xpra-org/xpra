@@ -75,6 +75,18 @@ class SoundSink(SoundPipeline):
         SoundPipeline.__init__(self, codec)
         self.sink_type = sink_type
         self.levels = deque(maxlen=100)
+        self.volume = None
+        self.src    = None
+        self.queue  = None
+        self.overruns = 0
+        self.underruns = 0
+        self.overrun_events = deque(maxlen=100)
+        self.underrun_events = deque(maxlen=100)
+        self.queue_state = "starting"
+        self.last_underrun = 0
+        self.last_overrun = 0
+        self.last_max_update = time.time()
+        self.level_lock = Lock()
         decoder_str = plugin_str(decoder, codec_options)
         pipeline_els = []
         appsrc_el = ["appsrc",
@@ -122,15 +134,6 @@ class SoundSink(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
-        self.overruns = 0
-        self.underruns = 0
-        self.overrun_events = deque(maxlen=100)
-        self.underrun_events = deque(maxlen=100)
-        self.queue_state = "starting"
-        self.last_underrun = 0
-        self.last_overrun = 0
-        self.last_max_update = time.time()
-        self.level_lock = Lock()
         if QUEUE_SILENT==0 and self.queue:
             self.queue.connect("overrun", self.queue_overrun)
             self.queue.connect("underrun", self.queue_underrun)
