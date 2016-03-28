@@ -14,10 +14,10 @@ cdef extern from "math.h":
 
 from math import sqrt
 def logp(double x):
-    return log(1.0+x)*1.8204784532536746
+    return log(1.0+x)*1.4426950408889634
 
 cdef inline double clogp(double x):
-    return log(1.0+x)*1.8204784532536746
+    return log(1.0+x)*1.4426950408889634
 
 SMOOTHING_NAMES = {sqrt: "sqrt", logp: "logp"}
 def smn(fn):

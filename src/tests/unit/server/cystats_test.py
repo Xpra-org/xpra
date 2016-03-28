@@ -102,10 +102,13 @@ class TestCystats(unittest.TestCase):
 		assert 0<a<1 and 0<ra<1
 	
 	def test_logp(self):
-		for _ in range(10000):
+		for _ in range(1000):
 			x = random.random()
 			v = cystats.logp(x)
-			assert v>0 and v<1
+			assert v>=0 and v<=1
+		for x in (0, 1):
+			v = cystats.logp(x)
+			assert v>=0 and v<=1
 
 
 def main():
