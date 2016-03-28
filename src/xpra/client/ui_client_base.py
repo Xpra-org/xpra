@@ -818,11 +818,11 @@ class UIXpraClient(XpraClientBase):
         tray = None
         #this is our own tray
         def xpra_tray_click(button, pressed, time=0):
-            traylog("xpra_tray_click(%s, %s)", button, pressed)
+            traylog("xpra_tray_click(%s, %s, %s)", button, pressed, time)
             if button==1 and pressed:
-                self.menu_helper.activate()
+                self.idle_add(self.menu_helper.activate)
             elif button==3 and not pressed:
-                self.menu_helper.popup(button, time)
+                self.idle_add(self.menu_helper.popup, button, time)
         def xpra_tray_mouseover(*args):
             traylog("xpra_tray_mouseover(%s)", args)
         def xpra_tray_exit(*args):
