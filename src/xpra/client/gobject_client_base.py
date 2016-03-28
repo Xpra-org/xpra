@@ -13,13 +13,12 @@ log = Logger("gobject", "client")
 
 import os
 import sys
-import re
-from xpra.util import nonl, DONE
+from xpra.util import nonl, sorted_nicely, print_nested_dict, DONE
 from xpra.os_util import bytestostr
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT, \
     EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG
 
-FLATTEN_INFO = os.environ.get("XPRA_FLATTEN_INFO", "1")=="1"
+FLATTEN_INFO = int(os.environ.get("XPRA_FLATTEN_INFO", "1"))
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -201,36 +200,31 @@ class InfoXpraClient(CommandConnectClient):
 
     def do_command(self):
         if self.server_capabilities:
-            def sorted_nicely(l):
-                """ Sort the given iterable in the way that humans expect."""
-                def convert(text):
-                    if text.isdigit():
-                        return int(text)
-                    else:
-                        return text
-                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', bytestostr(key)) ]
-                return sorted(l, key = alphanum_key)
-            for k in sorted_nicely(self.server_capabilities.keys()):
-                v = self.server_capabilities.get(k)
-                if sys.version_info[0]>=3:
-                    #FIXME: this is a nasty and horrible python3 workaround (yet again)
-                    #we want to print bytes as strings without the ugly 'b' prefix..
-                    #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
-                    def fixvalue(w):
-                        if type(w)==bytes:
-                            return bytestostr(w)
-                        elif type(w) in (tuple,list):
-                            return type(w)([fixvalue(x) for x in w])
-                        return w
-                    v = fixvalue(v)
-                log.info("%s=%s", bytestostr(k), nonl(v))
+            if FLATTEN_INFO<2:
+                #compatibility mode:
+                for k in sorted_nicely(self.server_capabilities.keys()):
+                    v = self.server_capabilities.get(k)
+                    if sys.version_info[0]>=3:
+                        #FIXME: this is a nasty and horrible python3 workaround (yet again)
+                        #we want to print bytes as strings without the ugly 'b' prefix..
+                        #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
+                        def fixvalue(w):
+                            if type(w)==bytes:
+                                return bytestostr(w)
+                            elif type(w) in (tuple,list):
+                                return type(w)([fixvalue(x) for x in w])
+                            return w
+                        v = fixvalue(v)
+                    log.info("%s=%s", bytestostr(k), nonl(v))
+            else:
+                print_nested_dict(self.server_capabilities)
         self.quit(EXIT_OK)
 
     def make_hello(self):
         capabilities = GObjectXpraClient.make_hello(self)
         log("make_hello() adding info_request to %s", capabilities)
         capabilities["info_request"] = True
-        if not FLATTEN_INFO:
+        if FLATTEN_INFO!=1:
             capabilities["info-namespace"] = True
         return capabilities
 

@@ -9,6 +9,7 @@ from xpra.os_util import strtobytes, bytestostr
 import traceback
 import threading
 import sys
+import re
 
 
 #constants shared between client and server:
@@ -567,6 +568,16 @@ def pver(v):
             return ", ".join(v)
     return v
 
+def sorted_nicely(l):
+    """ Sort the given iterable in the way that humans expect."""
+    def convert(text):
+        if text.isdigit():
+            return int(text)
+        else:
+            return text
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', bytestostr(key)) ]
+    return sorted(l, key = alphanum_key)
+
 def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None):
     #"smart" value formatting function:
     def vf(k, v):
@@ -579,7 +590,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None):
             pass
         return nonl(repr(v))
     l = pad-len(prefix)-len(lchar)
-    for k in sorted(d.keys()):
+    for k in sorted_nicely(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             nokey = v.get("", (v.get(None)))
