@@ -925,6 +925,7 @@ def build_xpra_conf(install_dir):
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,
             'postscript_printer'    : postscript,
+            'webcam'                : ["auto", "no"][OSX],
             'printing'              : printing_ENABLED,
             'dbus_control'          : dbus_ENABLED,
             'mmap'                  : bstr(not OSX and not WIN32),

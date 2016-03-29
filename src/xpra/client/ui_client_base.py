@@ -173,7 +173,7 @@ class UIXpraClient(XpraClientBase):
         self.encoding = None
 
         #webcam:
-        self.webcam_option = False
+        self.webcam_option = ""
         self.webcam_forwarding = False
         self.webcam_device = None
         self.webcam_device_no = -1
@@ -317,8 +317,8 @@ class UIXpraClient(XpraClientBase):
         self.mmap_group = opts.mmap_group
         self.shadow_fullscreen = opts.shadow_fullscreen
 
-        self.webcam_option = opts.webcam.lower()
-        self.webcam_forwarding = self.webcam_option not in ("no", "false")
+        self.webcam_option = opts.webcam
+        self.webcam_forwarding = self.webcam_option.lower() not in ("no", "false")
         self.server_supports_webcam = False
         self.server_virtual_video_devices = 0
         if self.webcam_forwarding:
@@ -331,7 +331,7 @@ class UIXpraClient(XpraClientBase):
                 webcamlog.warn(" %s", e)
                 webcamlog.warn(" webcam forwarding is disabled")
                 self.webcam_forwarding = False
-        webcamlog("webcam forwarding: %s", self.webcam_option)
+        webcamlog("webcam forwarding: %s", self.webcam_forwarding)
 
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")

@@ -211,7 +211,7 @@ av-sync = on
 # webcam = auto
 # webcam = no
 # webcam = /dev/video0
-webcam = auto
+webcam = %(webcam)s
 
 
 ################################################################################
