@@ -329,6 +329,7 @@ class ClientExtras(object):
             log.error("Error setting up OSX event listener", exc_info=True)
 
     def setup_event_listener(self):
+        log("setup_event_listener()")
         if NSObject is object:
             log.warn("NSObject is missing, not setting up OSX event listener")
             return
@@ -340,6 +341,7 @@ class ClientExtras(object):
 
         class Delegate(NSObject):
             def applicationDidFinishLaunching_(self, notification):
+                log("applicationDidFinishLaunching_(%s)", notification)
                 if not SLEEP_HANDLER:
                     return
                 workspace          = NSWorkspace.sharedWorkspace()
@@ -380,6 +382,7 @@ class ClientExtras(object):
             self.delegate.wake_callback = self.client.resume
             self.delegate.deiconify_callback = self.client.deiconify_windows
         self.shared_app.setDelegate_(self.delegate)
+        log("setup_event_listener() the application delegate has been registered")
 
 
     def run(self):
