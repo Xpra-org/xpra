@@ -558,15 +558,15 @@ def updict(todict, prefix, d, suffix=""):
                 k = k+"."+suffix
             todict[k] = v
 
-def pver(v):
+def pver(v, numsep=".", strsep=", "):
     #print for lists with version numbers, or CSV strings
     if type(v) in (list, tuple):
         types = list(set([type(x) for x in v]))
         if len(types)==1 and types[0]==int:
-            return ".".join([str(x) for x in v])
-        if len(types)==1 and types[0]==str:
-            return ", ".join(v)
-    return v
+            return numsep.join(str(x) for x in v)
+        if len(types)==1 and types[0] in (str, unicode):
+            return strsep.join(str(x) for x in v)
+    return str(v)
 
 def sorted_nicely(l):
     """ Sort the given iterable in the way that humans expect."""
@@ -588,7 +588,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None):
                 return nonl(pver(v))
         except:
             pass
-        return nonl(repr(v))
+        return nonl(pver(v, ", ", ", "))
     l = pad-len(prefix)-len(lchar)
     for k in sorted_nicely(d.keys()):
         v = d[k]

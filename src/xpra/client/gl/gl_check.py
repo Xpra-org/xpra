@@ -547,7 +547,7 @@ def check_support(force_enable=False, check_colormap=False):
 def main(force_enable=False):
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
-    from xpra.util import pver
+    from xpra.util import print_nested_dict
     from xpra.log import enable_color
     with program_context("OpenGL-Check"):
         gui_init()
@@ -572,11 +572,7 @@ def main(force_enable=False):
                 log.info("  %s", e)
         log.info("")
         log.info("OpenGL properties:")
-        for k in sorted(props.keys()):
-            v = props[k]
-            #skip not human readable:
-            if k not in ("extensions", "glconfig"):
-                log.info("* %s : %s", str(k).ljust(24), pver(v))
+        print_nested_dict(props)
         return len(errors)
 
 
