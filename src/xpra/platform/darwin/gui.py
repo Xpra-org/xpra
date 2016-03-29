@@ -8,7 +8,7 @@ import os
 from xpra.log import Logger
 log = Logger("osx", "events")
 
-SLEEP_HANDLER = os.environ.get("XPRA_OSX_SLEEP_HANDLER", "0")=="1"
+SLEEP_HANDLER = os.environ.get("XPRA_OSX_SLEEP_HANDLER", "1")=="1"
 
 
 exit_cb = None
@@ -342,8 +342,11 @@ class ClientExtras(object):
         class Delegate(NSObject):
             def applicationDidFinishLaunching_(self, notification):
                 log("applicationDidFinishLaunching_(%s)", notification)
-                if not SLEEP_HANDLER:
-                    return
+                if SLEEP_HANDLER:
+                    self.register_sleep_handlers()
+
+            def register_sleep_handlers(self):
+                log("register_sleep_handlers()")
                 workspace          = NSWorkspace.sharedWorkspace()
                 notificationCenter = workspace.notificationCenter()
                 notificationCenter.addObserver_selector_name_object_(self, self.receiveSleepNotification_,
