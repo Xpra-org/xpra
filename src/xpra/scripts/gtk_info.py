@@ -7,7 +7,7 @@
 
 def main():
     from xpra.util import nonl, pver, flatten_dict, print_nested_dict
-    def print_dict(d, vformat=pver):
+    def print_version_dict(d, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
             print("* %-48s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
@@ -20,7 +20,7 @@ def main():
         if "-v" in sys.argv or "--verbose" in sys.argv:
             gtk_util.SHOW_ALL_VISUALS = True
         print("GTK Version:")
-        print_dict(flatten_dict(gtk_util.get_gtk_version_info()))
+        print_version_dict(flatten_dict(gtk_util.get_gtk_version_info()))
         print("Display:")
         print_nested_dict(gtk_util.get_display_info(), vformat=str)
 

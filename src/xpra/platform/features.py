@@ -72,17 +72,13 @@ platform_import(globals(), "features", False,
 
 
 def main():
-    from xpra.util import nonl, pver
-    def print_dict(d):
-        for k in sorted(d.keys()):
-            v = d[k]
-            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+    from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Features-Info", "Features Info"):
         d = {}
-        for k in sorted(_features_list_):
+        for k in _features_list_:
             d[k] = globals()[k]
-        print_dict(d)
+        print_nested_dict(d)
 
 
 if __name__ == "__main__":

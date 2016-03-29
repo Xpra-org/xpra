@@ -283,6 +283,7 @@ def encoding_help(encoding):
 def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
+    from xpra.util import print_nested_dict, pver
     with program_context("Loader", "Encoding Info"):
         enable_color()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
@@ -322,15 +323,9 @@ def main():
                     print("error getting extra information on %s: %s" % (name, e))
         print("")
         print("codecs versions:")
-        def pver(v):
-            if type(v)==tuple:
-                return ".".join([str(x) for x in v])
-            elif type(v) in (str, unicode) and v.startswith("v"):
-                return v[1:]
-            return str(v)
-        for name in sorted(codec_versions.keys()):
-            version = codec_versions[name]
-            print("* %s : %s" % (name.ljust(20), pver(version)))
+        def forcever(v):
+            return pver(v, numsep=".", strsep=".").lstrip("v")
+        print_nested_dict(codec_versions, vformat=forcever)
 
 
 if __name__ == "__main__":

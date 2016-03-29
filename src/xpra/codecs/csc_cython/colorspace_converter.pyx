@@ -109,7 +109,7 @@ def get_type():
     return "cython"
 
 def get_version():
-    return tuple(CSC_CYTHON_VERSION + CYTHON_VERSION)
+    return tuple([str(x) for x in CSC_CYTHON_VERSION] + CYTHON_VERSION)
 
 def get_info():
     info = {"version"   : CSC_CYTHON_VERSION,

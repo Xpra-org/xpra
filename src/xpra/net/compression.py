@@ -274,10 +274,10 @@ def decompress_by_name(data, algo):
 
 
 def main():
+    from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):
-        for k,v in sorted(get_compression_caps().items()):
-            print(k.ljust(20)+": "+str(v))
+        print_nested_dict(get_compression_caps())
 
 
 if __name__ == "__main__":

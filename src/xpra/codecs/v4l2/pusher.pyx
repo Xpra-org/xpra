@@ -10,7 +10,7 @@ from xpra.log import Logger
 from _dbus_bindings import UInt32
 log = Logger("webcam")
 
-from xpra.util import nonl
+from xpra.util import nonl, print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
 
@@ -223,17 +223,11 @@ PIX_FMT = {}
 for k,v in FORMAT_STR.items():
     PIX_FMT[v] = k
 
-def print_dict(name, d, ljust=32):
-    log("%s:", name)
-    for k in sorted(d.keys()):
-        v = d[k]
-        log("* %s : %s" % (str(k).ljust(ljust), nonl(v)))
-
 
 log("v4l2.pusher init")
-print_dict("FIELD_STR", FIELD_STR)
-print_dict("COLORSPACE_STR", COLORSPACE_STR)
-print_dict("FORMAT_STR", dict((hex(k),v) for k,v in FORMAT_STR.items()))
+print_nested_dict("FIELD_STR", FIELD_STR)
+print_nested_dict("COLORSPACE_STR", COLORSPACE_STR)
+print_nested_dict("FORMAT_STR", dict((hex(k),v) for k,v in FORMAT_STR.items()))
 
 
 def get_version():

@@ -437,6 +437,7 @@ def getVideoHelper():
 
 def main():
     from xpra.codecs.loader import log as loader_log, load_codecs
+    from xpra.util import print_nested_dict
     from xpra.log import enable_color
     from xpra.platform import program_context
     with program_context("Video Helper"):
@@ -450,11 +451,7 @@ def main():
         vh.init()
         log.info("VideoHelper.get_info():")
         info = vh.get_info()
-        for k in sorted(info.keys()):
-            v = info.get(k)
-            if type(v) in (list, tuple):
-                v = csv(v)
-            log.info("%s=%s", k, v)
+        print_nested_dict(info)
 
 
 if __name__ == "__main__":

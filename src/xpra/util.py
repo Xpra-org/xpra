@@ -585,7 +585,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None):
             return nonl(vformat(v))
         try:
             if k.find("version")>=0 or k.find("revision")>=0:
-                return nonl(pver(v))
+                return nonl(pver(v)).lstrip("v")
         except:
             pass
         return nonl(pver(v, ", ", ", "))

@@ -46,13 +46,14 @@ def get_decryptor(secret, iv):
 
 def main():
     from xpra.platform import program_context
+    from xpra.util import print_nested_dict
     import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
     with program_context("Encryption Properties"):
         init()
-        for k,v in sorted(get_info().items()):
-            print(k.ljust(32)+": "+str(v))
+        print_nested_dict(get_info())
+
 
 if __name__ == "__main__":
     main()

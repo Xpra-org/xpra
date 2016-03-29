@@ -227,14 +227,10 @@ def main():
         from xpra.log import add_debug_category
         add_debug_category("util")
 
-    from xpra.util import nonl, pver
-    def print_dict(d):
-        for k in sorted(d.keys()):
-            v = d[k]
-            print("* %s : %s" % (k.ljust(32), nonl(pver(v))))
+    from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Path-Info", "Path Info"):
-        print_dict(get_info())
+        print_nested_dict(get_info())
 
 
 if __name__ == "__main__":
