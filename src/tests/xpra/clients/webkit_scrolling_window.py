@@ -16,7 +16,7 @@ from browser import WebBrowser, vscroll_listeners, hscroll_listeners
 from xpra.log import Logger
 log = Logger()
 
-from xpra.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra
 from xpra.client.gobject_client_base import CommandConnectClient
 from xpra.net.bytestreams import SocketConnection
 from collections import deque

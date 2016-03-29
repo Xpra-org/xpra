@@ -62,7 +62,7 @@ def main():
     import signal
     from xpra.scripts.server import setup_local_socket, start_Xvfb, check_xvfb_process
     from xpra.scripts.main import parse_cmdline, configure_logging
-    from xpra.dotxpra import DotXpra
+    from xpra.platform.dotxpra import DotXpra
     script_file = sys.argv[0]
     print("main() script_file=%s" % script_file)
     cmdline = sys.argv

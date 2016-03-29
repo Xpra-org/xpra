@@ -97,7 +97,7 @@ def main():
 
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
-    from xpra.dotxpra import DotXpra
+    from xpra.platform.dotxpra import DotXpra
     target = DotXpra().socket_path(display)
     print("will attempt to connect to socket: %s" % target)
 

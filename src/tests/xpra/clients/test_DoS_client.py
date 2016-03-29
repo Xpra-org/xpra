@@ -10,7 +10,7 @@ import socket
 from xpra.log import Logger
 log = Logger()
 
-from xpra.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection
 from xpra.scripts.config import make_defaults_struct
 
