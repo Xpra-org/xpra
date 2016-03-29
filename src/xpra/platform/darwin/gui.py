@@ -340,6 +340,8 @@ class ClientExtras(object):
 
         class Delegate(NSObject):
             def applicationDidFinishLaunching_(self, notification):
+                if not SLEEP_HANDLER:
+                    return
                 workspace          = NSWorkspace.sharedWorkspace()
                 notificationCenter = workspace.notificationCenter()
                 notificationCenter.addObserver_selector_name_object_(self, self.receiveSleepNotification_,
