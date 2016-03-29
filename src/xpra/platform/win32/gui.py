@@ -726,6 +726,9 @@ class ClientExtras(object):
             from xpra.make_thread import make_thread
             make_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True).start()
 
+    def ready(self):
+        pass
+
     def cleanup(self):
         log("ClientExtras.cleanup()")
         if self._console_handler_registered:

@@ -568,6 +568,8 @@ class UIXpraClient(XpraClientBase):
 
 
     def run(self):
+        if self.client_extras:
+            self.idle_add(self.client_extras.ready)
         XpraClientBase.run(self)    #start network threads
         self._draw_thread.start()
         self.send_hello()

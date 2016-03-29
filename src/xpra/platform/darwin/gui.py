@@ -215,9 +215,6 @@ def window_focused(window, event):
 
 def add_window_hooks(window):
     window.connect("focus-in-event", window_focused)
-    client = getattr(window, "_client", None)
-    if client:
-        init_dock_listener(client)
 
 def remove_window_hooks(window):
     try:
@@ -301,62 +298,13 @@ def take_screenshot():
 
 
 try:
-    import AppKit                               #@UnresolvedImport
-    import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
-    from AppKit import NSObject, NSApplication, NSWorkspace #@UnresolvedImport
+    from AppKit import NSObject                 #@UnresolvedImport
 except Exception as e:
     log.warn("Warning: failed to load critical modules")
     log.warn(" %s", e)
     log.warn(" cannot enable sleep notification support")
-    log.warn(" and dock click notification")
+    log.warn(" or dock click notification")
     NSObject = object
-    NSApplication = None
-    NSWorkspace = None
-
-
-class NotificationHandler(NSObject):
-    """Class that handles the sleep notifications."""
-
-    def handleSleepNotification_(self, aNotification):
-        log("handleSleepNotification(%s) sleep_callback=%s", aNotification, self.sleep_callback)
-        if self.sleep_callback:
-            try:
-                self.sleep_callback()
-            except:
-                log.error("Error in sleep callback %s", self.sleep_callback, exc_info=True)
-
-    def handleWakeNotification_(self, aNotification):
-        log("handleWakeNotification(%s) wake_callback=%s", aNotification, self.wake_callback)
-        if self.wake_callback:
-            try:
-                self.wake_callback()
-            except:
-                log.error("Error in wake callback %s", self.wake_callback, exc_info=True)
-
-
-dock_listener = None
-def init_dock_listener(client):
-    global dock_listener
-    if dock_listener:
-        return
-    try:
-        import objc         #@UnresolvedImport
-        shared_app = NSApplication.sharedApplication()
-
-        class Delegate(NSObject):
-            @objc.signature('B@:#B')
-            def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
-                log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
-                client.deiconify_windows()
-                return True
-
-        delegate = Delegate.alloc().init()
-        delegate.retain()
-        shared_app.setDelegate_(delegate)
-        dock_listener = delegate
-    except:
-        log.error("Error setting up dock listener", exc_info=True)
-        dock_listener = False
 
 
 class ClientExtras(object):
@@ -364,10 +312,7 @@ class ClientExtras(object):
         swap_keys = opts and opts.swap_keys
         log("ClientExtras.__init__(%s, %s) swap_keys=%s", client, opts, swap_keys)
         self.client = client
-        self.notificationCenter = None
-        self.handler = None
-        if SLEEP_HANDLER:
-            self.setup_event_loop()
+        self.event_loop_started = False
         if opts and client:
             log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
             if client.keyboard_helper and client.keyboard_helper.keyboard:
@@ -376,46 +321,79 @@ class ClientExtras(object):
 
     def cleanup(self):
         self.client = None
-        self.stop_event_loop()
 
-    def stop_event_loop(self):
-        if self.notificationCenter:
-            self.notificationCenter = None
-        if self.handler:
-            self.handler = None
+    def ready(self):
+        try:
+            self.setup_event_listener()
+        except:
+            log.error("Error setting up OSX event listener", exc_info=True)
 
-    def setup_event_loop(self):
-        if NSWorkspace is None:
-            self.notificationCenter = None
-            self.handler = None
-            log.warn("event loop not started")
+    def setup_event_listener(self):
+        if NSObject is object:
+            log.warn("NSObject is missing, not setting up OSX event listener")
             return
-        ws = NSWorkspace.sharedWorkspace()
-        self.notificationCenter = ws.notificationCenter()
-        self.handler = NotificationHandler.new()
+        self.shared_app = None
+        self.delegate = None
+        from AppKit import NSApplication, NSWorkspace, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+        import objc         #@UnresolvedImport
+        self.shared_app = NSApplication.sharedApplication()
+
+        class Delegate(NSObject):
+            def applicationDidFinishLaunching_(self, notification):
+                workspace          = NSWorkspace.sharedWorkspace()
+                notificationCenter = workspace.notificationCenter()
+                notificationCenter.addObserver_selector_name_object_(self, self.receiveSleepNotification_,
+                                                                     NSWorkspaceWillSleepNotification, None)
+                notificationCenter.addObserver_selector_name_object_(self, self.receiveWakeNotification_,
+                                                                     NSWorkspaceDidWakeNotification, None)
+
+            @objc.signature('B@:#B')
+            def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
+                log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
+                self.cb("deiconify_callback")
+                return True
+
+            def receiveSleepNotification_(self, aNotification):
+                log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
+                self.cb("sleep_callback")
+
+            def receiveWakeNotification_(self, aNotification):
+                log("receiveWakeNotification_(%s)", aNotification)
+                self.cb("wake_callback")
+
+            def cb(self, name):
+                #find the named callback and call it
+                callback = getattr(self, name, None)
+                log("cb(%s)=%s", name, callback)
+                if callback:
+                    try:
+                        callback()
+                    except:
+                        log.error("Error in %s callback %s", name, callback, exc_info=True)
+
+        self.delegate = Delegate.alloc().init()
+        self.delegate.retain()
         if self.client:
-            self.handler.sleep_callback = self.client.suspend
-            self.handler.wake_callback = self.client.resume
-        else:
-            self.handler.sleep_callback = None
-            self.handler.wake_callback = None
-        self.notificationCenter.addObserver_selector_name_object_(
-                 self.handler, "handleSleepNotification:",
-                 AppKit.NSWorkspaceWillSleepNotification, None)
-        self.notificationCenter.addObserver_selector_name_object_(
-                 self.handler, "handleWakeNotification:",
-                 AppKit.NSWorkspaceDidWakeNotification, None)
-        log("starting console event loop with notifcation center=%s and handler=%s", self.notificationCenter, self.handler)
+            self.delegate.sleep_callback = self.client.suspend
+            self.delegate.wake_callback = self.client.resume
+            self.delegate.deiconify_callback = self.client.deiconify_windows
+        self.shared_app.setDelegate_(self.delegate)
 
 
     def run(self):
         #this is for running standalone
+        log("starting console event loop")
+        self.event_loop_started = True
+        import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
         AppHelper.runConsoleEventLoop(installInterrupt=True)
         #when running from the GTK main loop, we rely on another part of the code
         #to run the event loop for us
 
     def stop(self):
-        AppHelper.stopEventLoop()
+        if self.event_loop_started:
+            self.event_loop_started = False
+            import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
+            AppHelper.stopEventLoop()
 
 
 def main():

@@ -480,6 +480,9 @@ class ClientExtras(object):
             self.setup_xprops()
         self.setup_dbus_signals()
 
+    def ready(self):
+        pass
+
     def cleanup(self):
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self._xsettings_watcher:
