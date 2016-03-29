@@ -225,9 +225,11 @@ for k,v in FORMAT_STR.items():
 
 
 log("v4l2.pusher init")
-print_nested_dict("FIELD_STR", FIELD_STR)
-print_nested_dict("COLORSPACE_STR", COLORSPACE_STR)
-print_nested_dict("FORMAT_STR", dict((hex(k),v) for k,v in FORMAT_STR.items()))
+print_nested_dict({
+                   "FIELD_STR"      : FIELD_STR,
+                   "COLORSPACE_STR" : COLORSPACE_STR,
+                   "FORMAT_STR"     : dict((hex(k),v) for k,v in FORMAT_STR.items()),
+                   }, print_fn=log.debug)
 
 
 def get_version():
