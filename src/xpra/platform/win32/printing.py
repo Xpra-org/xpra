@@ -143,7 +143,6 @@ def print_files(printer, filenames, title, options):
         PATH = os.environ.get("PATH")
         os.environ["PATH"] = str(PATH+";"+GSVIEW_DIR)
         log("environment: %s", os.environ)
-        #two ways of hiding the shell window:
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=GSVIEW_DIR, startupinfo=startupinfo)
