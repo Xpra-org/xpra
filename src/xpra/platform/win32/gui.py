@@ -39,6 +39,8 @@ DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
 DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
 FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "0")=="1"
 WHEEL = os.environ.get("XPRA_WHEEL", "1")=="1"
+WHEEL_DELTA = int(os.environ.get("XPRA_WHEEL_DELTA", "120"))
+assert WHEEL_DELTA>0
 
 
 KNOWN_EVENTS = {}
@@ -379,7 +381,6 @@ def add_window_hooks(window):
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
         if WHEEL:
-            WHEEL_DELTA = 120
             VERTICAL = "vertical"
             HORIZONTAL = "horizontal"
             class WheelEvent(AdHocStruct):
