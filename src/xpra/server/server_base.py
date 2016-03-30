@@ -2453,10 +2453,13 @@ class ServerBase(ServerCore, FileTransferHandler):
     def _move_pointer(self, wid, pos):
         raise NotImplementedError()
 
-    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+    def _process_mouse_common(self, proto, wid, pointer):
         pass
 
     def _process_button_action(self, proto, packet):
+        pass
+
+    def _update_modifiers(self, proto, wid, modifiers):
         pass
 
     def _process_pointer_position(self, proto, packet):
@@ -2464,7 +2467,8 @@ class ServerBase(ServerCore, FileTransferHandler):
         ss = self._server_sources.get(proto)
         if ss is not None:
             ss.mouse_last_position = pointer
-        self._process_mouse_common(proto, wid, pointer, modifiers)
+        self._update_modifiers(proto, wid, modifiers)
+        self._process_mouse_common(proto, wid, pointer)
 
 
     def _process_damage_sequence(self, proto, packet):

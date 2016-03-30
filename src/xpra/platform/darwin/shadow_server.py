@@ -116,7 +116,7 @@ class ShadowServer(GTKShadowServerBase):
             GTKShadowServerBase.stop_refresh(self)
 
 
-    def do_process_mouse_common(self, proto, wid, pointer, modifiers):
+    def do_process_mouse_common(self, proto, wid, pointer):
         CG.CGWarpMouseCursorPosition(pointer)
 
     def get_keycode(self, ss, client_keycode, keyname, modifiers):
@@ -135,7 +135,8 @@ class ShadowServer(GTKShadowServerBase):
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         log("process_button_action(%s, %s)", proto, packet)
-        self._process_mouse_common(proto, wid, pointer, modifiers)
+        self._update_modifiers(proto, wid, modifiers)
+        self._process_mouse_common(proto, wid, pointer)
         pointer = self._adjust_pointer(pointer)
         if button<=3:
             #we should be using CGEventCreateMouseEvent

@@ -154,11 +154,11 @@ class ShadowServerBase(object):
             pointer = x-wx, y-wy
         return pointer
 
-    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+    def _process_mouse_common(self, proto, wid, pointer):
         pointer = self._adjust_pointer(pointer)
-        self.do_process_mouse_common(proto, wid, pointer, modifiers)
+        self.do_process_mouse_common(proto, wid, pointer)
 
-    def do_process_mouse_common(self, proto, wid, pointer, modifiers):
+    def do_process_mouse_common(self, proto, wid, pointer):
         #actuallly move the mouse here in subclasses
         pass
 

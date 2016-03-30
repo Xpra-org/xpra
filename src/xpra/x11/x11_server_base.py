@@ -533,11 +533,13 @@ class X11ServerBase(GTKServerBase):
         x, y = pos
         X11Keyboard.xtest_fake_motion(self.screen_number, x, y)
 
-    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+    def _process_mouse_common(self, proto, wid, pointer):
         pos = self.root_window.get_pointer()[:2]
         if pos!=pointer:
             with xswallow:
                 self._move_pointer(wid, pointer)
+
+    def _update_modifiers(self, proto, wid, modifiers):
         ss = self._server_sources.get(proto)
         if ss:
             ss.make_keymask_match(modifiers)
@@ -549,7 +551,8 @@ class X11ServerBase(GTKServerBase):
         if ss is None:
             return
         wid, button, pressed, pointer, modifiers = packet[1:6]
-        self._process_mouse_common(proto, wid, pointer, modifiers)
+        self._update_modifiers(proto, wid, modifiers)
+        self._process_mouse_common(proto, wid, pointer)
         ss.user_event()
         mouselog("xtest_fake_button(%s, %s) at %s", button, pressed, pointer)
         try:
