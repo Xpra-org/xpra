@@ -591,6 +591,8 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
         try:
             if k.find("version")>=0 or k.find("revision")>=0:
                 return nonl(pver(v)).lstrip("v")
+            elif k=="data":
+                return binascii.hexlify(v)
         except:
             pass
         return nonl(pver(v, ", ", ", "))

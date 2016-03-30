@@ -93,7 +93,7 @@ def get_icc_info():
                       INTENT_ABSOLUTE_COLORIMETRIC  : "absolute-colorimetric",
                       }
         def getDefaultIntentStr(_p):
-            return INTENT_STR.get(getDefaultIntent(_p))
+            return INTENT_STR.get(getDefaultIntent(_p), "unknown")
         p = get_display_profile()
         if p:
             for (k, fn) in {
@@ -114,6 +114,7 @@ def get_icc_info():
         log.warn("Warning: cannot query ICC profiles:")
         log.warn(" %s", e)
     return info
+
 
 #global workarea for all screens
 def get_workarea():
@@ -267,7 +268,7 @@ def main():
             except:
                 pass    #maybe running on OSX? hope for the best..
         i = get_info()
-        print_nested_dict(i, vformat=str)
+        print_nested_dict(i)
 
 
 if __name__ == "__main__":

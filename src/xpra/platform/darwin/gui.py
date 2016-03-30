@@ -127,6 +127,45 @@ def get_window_frame_size(x, y, w, h):
                }
 
 
+def get_icc_info():
+    from AppKit import NSScreen     #@UnresolvedImport
+    ms = NSScreen.mainScreen()    
+    info = do_get_screen_icc_info(ms)
+    screens = NSScreen.screens()
+    for i, screen in enumerate(screens):
+        si = do_get_screen_icc_info(screen)
+        if si:
+            info[i] = si
+    return info
+
+def do_get_screen_icc_info(nsscreen):
+    info = {}
+    try:
+        from AppKit import NSUnknownColorSpaceModel, NSGrayColorSpaceModel, NSRGBColorSpaceModel, NSCMYKColorSpaceModel, NSLABColorSpaceModel, NSDeviceNColorSpaceModel, NSIndexedColorSpaceModel, NSPatternColorSpaceModel    #@UnresolvedImport
+        COLORSPACE_STR = {
+                          NSUnknownColorSpaceModel  : "unknown",
+                          NSGrayColorSpaceModel     : "gray",
+                          NSRGBColorSpaceModel      : "RGB",
+                          NSCMYKColorSpaceModel     : "CMYK",
+                          NSLABColorSpaceModel      : "LAB",
+                          NSDeviceNColorSpaceModel  : "DeviceN",
+                          NSIndexedColorSpaceModel  : "Indexed",
+                          NSPatternColorSpaceModel  : "Pattern",
+                          }
+        mscs = nsscreen.colorSpace()
+        log("%s.colorSpace=%s", nsscreen, mscs)
+        info.update({
+                     "colorspace"   : COLORSPACE_STR.get(mscs.colorSpaceModel(), "unknown"),
+                     "data"         : str(mscs.ICCProfileData() or ""),
+                     "name"         : str(mscs.localizedName()),
+                     "components"   : mscs.numberOfColorComponents(),
+                     })
+    except Exception as e:
+        log.warn("Warning: cannot query ICC profiles:")
+        log.warn(" %s", e)
+    return info
+
+
 #global menu handling:
 window_menus = {}
 
