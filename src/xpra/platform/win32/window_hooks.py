@@ -88,8 +88,8 @@ class Win32Hooks(object):
             info.ptMaxSize       = point
             info.ptMaxTrackSize  = point
             log("on_getminmaxinfo window=%#x max_size=%s, frame=%sx%s, minmaxinfo size=%sx%s", hwnd, self.max_size, fw, fh, w, h)
-        else:
-            log("on_getminmaxinfo window=%#x max_size=%s", hwnd, self.max_size)
+            return 0
+        log("on_getminmaxinfo window=%#x max_size=%s", hwnd, self.max_size)
 
     def cleanup(self, *args):
         log("cleanup%s", args)
@@ -107,10 +107,18 @@ class Win32Hooks(object):
     def _wndproc(self, hwnd, msg, wparam, lparam):
         event_name = WNDPROC_EVENT_NAMES.get(msg, msg)
         callback = self._message_map.get(msg)
-        v = CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
         vlog("_wndproc%s event name=%s, callback=%s", (hwnd, msg, wparam, lparam), event_name, callback)
+        v = None
         if callback:
             #run our callback
-            callback(hwnd, msg, wparam, lparam)
-        vlog("_wndproc%s return value=%s", (hwnd, msg, wparam, lparam), v)
+            try:
+                v = callback(hwnd, msg, wparam, lparam)
+                vlog("%s=%s", callback, (hwnd, msg, wparam, lparam), v)
+            except Exception as e:
+                log.error("Error: callback %s failed:", callback)
+                log.error(" %s", e)
+        #if our callback doesn't define the return value, use the default handler:
+        if v is None:
+            v = CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
+            vlog("_wndproc%s return value=%s", (hwnd, msg, wparam, lparam), v)
         return v

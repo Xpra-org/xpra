@@ -14,6 +14,7 @@ log = Logger("win32")
 grablog = Logger("win32", "grab")
 screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
+mouselog = Logger("win32", "mouse")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
@@ -37,7 +38,7 @@ LANGCHANGE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_LANGCHANGE", "1")=="1"
 DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
 DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
 FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "0")=="1"
-WHEEL_DEBUG = os.environ.get("XPRA_WHEEL_DEBUG", "0")=="1"
+WHEEL = os.environ.get("XPRA_WHEEL", "1")=="1"
 
 
 KNOWN_EVENTS = {}
@@ -377,21 +378,59 @@ def add_window_hooks(window):
                 log("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
-        if WHEEL_DEBUG:
-            #WHEEL_DELTA = 120
-            def wheel_log(event, wParam, lParam):
+        if WHEEL:
+            WHEEL_DELTA = 120
+            VERTICAL = "vertical"
+            HORIZONTAL = "horizontal"
+            class WheelEvent(AdHocStruct):
+                pass
+            def handle_wheel(orientation, wParam, lParam):
                 distance = wParam>>16
                 keys = wParam & 0xFFFF
                 y = lParam>>16
                 x = lParam & 0xFFFF
-                log.info("%s distance=%.1f, keys=%#x, x=%i, y=%i", event, distance, keys, x, y)
+                #FIXME: we should reset those values when the window loses focus..
+                cval = getattr(window, "_win32_%swheel" % orientation, 0)
+                nval = cval + distance
+                units = nval // WHEEL_DELTA
+                client = getattr(window, "_client")
+                wid = getattr(window, "_id", 0)
+                mouselog("mousewheel: orientation=%s distance=%.1f, units=%i, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i", orientation, distance, units, nval, keys, x, y, client, wid)
+                if units!=0 and client and wid>0:
+                    if orientation==VERTICAL:
+                        button = 4 + int(units<0)       #4 for UP, 5 for DOWN
+                    else:
+                        button = 6 + int(units<0)       #6 for LEFT, 7 for RIGHT
+                    buttons = []
+                    modifiers = client.get_current_modifiers()
+                    def send_button(pressed):
+                        client.send_button(wid, button, pressed, (x, y), modifiers, buttons)
+                    count = 0
+                    v = nval
+                    while abs(v)>=WHEEL_DELTA:
+                        send_button(True)
+                        send_button(False)
+                        if v>0:
+                            v -= WHEEL_DELTA
+                        else:
+                            v += WHEEL_DELTA
+                        count += 1
+                    mouselog("mousewheel: send %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
+                    setattr(window, "_win32_%swheel" % orientation, v)
             def mousewheel(hwnd, event, wParam, lParam):
-                wheel_log("MOUSEWHEEL", wParam, lParam)
+                handle_wheel(VERTICAL, wParam, lParam)
+                return 0
             def mousehwheel(hwnd, event, wParam, lParam):
-                wheel_log("MOUSEHWHEEL", wParam, lParam)
+                handle_wheel(HORIZONTAL, wParam, lParam)
+                return 0
             WM_MOUSEHWHEEL = 0x020E
             win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
             win32hooks.add_window_event_handler(WM_MOUSEHWHEEL, mousehwheel)
+            def reset_wheel_counters(*args):
+                mouselog("window lost focus, resetting current wheel deltas")
+                for orientation in (VERTICAL, HORIZONTAL):
+                    setattr(window, "_win32_%swheel" % orientation, 0)
+            window.connect("focus-out-event", reset_wheel_counters)
 
 
 def remove_window_hooks(window):
