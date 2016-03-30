@@ -23,7 +23,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, is_blacklisted
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, is_blacklisted
 
 from xpra.log import Logger
 from xpra.codecs.nvenc4.encoder import context_counter
@@ -33,6 +33,7 @@ import ctypes
 from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
+CLIENT_KEYS_STR = get_nvenc_license_keys(6) + get_nvenc_license_keys()
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30
@@ -371,7 +372,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    version         #[in]: Struct version. Must be set to ::NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER.
         NV_ENC_DEVICE_TYPE deviceType   #[in]: (NV_ENC_DEVICE_TYPE) Specified the device Type
         void        *device         #[in]: Pointer to client device.
-        GUID        *clientKeyPtr   #[in]: Pointer to a GUID key issued to the client.
+        GUID        *reserved       #[in]: Pointer to a GUID key issued to the client.
         uint32_t    apiVersion      #[in]: API version. Should be set to NVENCAPI_VERSION.
         uint32_t    reserved1[253]  #[in]: Reserved and must be set to 0
         void        *reserved2[64]  #[in]: Reserved and must be set to NULL
@@ -1040,6 +1041,20 @@ def test_parse():
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)
 test_parse()
 
+
+cdef GUID CLIENT_KEY_GUID
+memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
+if CLIENT_KEYS_STR:
+    #if we have client keys, parse them and keep the ones that look valid
+    validated = []
+    for x in CLIENT_KEYS_STR:
+        if x:
+            try:
+                CLIENT_KEY_GUID = c_parseguid(x)
+                validated.append(x)
+            except Exception as e:
+                log.error("invalid nvenc client key specified: '%s' (%s)", x, e)
+    CLIENT_KEYS_STR = validated
 
 CODEC_GUIDS = {
     guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
@@ -1726,7 +1741,7 @@ cdef class Encoder:
             info.update({
                 "bytes_in"  : self.bytes_in,
                 "bytes_out" : self.bytes_out,
-                "ratio_pct" : int(100.0 * self.bytes_out // b)})
+                "ratio_pct" : int(100 * self.bytes_out // b)})
         if self.preset_name:
             info["preset"] = self.preset_name
         cdef double t = self.time
@@ -2417,7 +2432,7 @@ cdef class Encoder:
         params.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
         params.deviceType = NV_ENC_DEVICE_TYPE_CUDA
         params.device = self.cuda_context_ptr
-        #params.clientKeyPtr = &CLIENT_KEY_GUID
+        params.reserved = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
         cstr = <unsigned char*> &params
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
@@ -2471,24 +2486,30 @@ def init_module():
     #load the library / DLL:
     init_nvencode_library()
 
-    log("**************************************************************************")
-    test_encodings = ("h264", "h265")
-    #test_encodings = ("h264", )
-    log("will probe: %s", csv(test_encodings))
-    global ENCODINGS
-    validated_encodings = []
-    for encoding in test_encodings:
+    success = False
+    valid_keys = []
+    failed_keys = []
+    try_keys = CLIENT_KEYS_STR or [None]
+    #check NVENC availibility by creating a context:
+    for client_key in try_keys:
+        if client_key:
+            #this will set the global key object used by all encoder contexts:
+            log("init_module() testing with key '%s'", client_key)
+            CLIENT_KEY_GUID = c_parseguid(client_key)
+
         test_encoder = Encoder()
-        log("**************************************************************************")
-        log("testing encoder=%s with %s", test_encoder, encoding)
-        colorspaces = get_input_colorspaces(encoding)
-        assert colorspaces, "cannot use NVENC: no colorspaces available for %s" % encoding
-        src_format = colorspaces[0]
-        dst_formats = get_output_colorspaces(encoding, src_format)
-        try:
+        for encoding in get_encodings():
+            colorspaces = get_input_colorspaces(encoding)
+            assert colorspaces, "cannot use NVENC: no colorspaces available"
+            src_format = colorspaces[0]
+            dst_formats = get_output_colorspaces(encoding, src_format)
             try:
-                test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
-                if encoding=="h264":
+                try:
+                    test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {})
+                    success = True
+                    if client_key:
+                        log("the license key '%s' is valid", client_key)
+                        valid_keys.append(client_key)
                     #check for YUV444 support
                     if YUV444_ENABLED and not test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE):
                         log.warn("Warning: hardware or nvenc library version does not support YUV444")
@@ -2500,21 +2521,43 @@ def init_module():
                         log.warn("Warning: hardware or nvenc library version does not support lossless mode")
                         LOSSLESS_ENABLED = False
                     log("%s lossless support: %s", encoding, LOSSLESS_ENABLED)
-                validated_encodings.append(encoding)
-            except NVENCException as e:
-                log("encoder %s failed: %s", test_encoder, e)
-                #special handling for license key issues:
-                if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
-                    raise Exception("unsupported card, the API claims a license is required")
-                elif e.code==NV_ENC_ERR_INVALID_VERSION:
-                    #we can bail out already:
-                    raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
-                raise Exception("error initializing a test context: %s" % e)
-        finally:
-            test_encoder.clean()
-    ENCODINGS[:] = validated_encodings
-    if not ENCODINGS:
-        raise Exception("no encodings supported!")
+                except NVENCException as e:
+                    log("encoder %s failed: %s", test_encoder, e)
+                    #special handling for license key issues:
+                    if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
+                        if client_key:
+                            log("invalid license key '%s' (skipped)", client_key)
+                            failed_keys.append(client_key)
+                        else:
+                            log("a license key is required")
+                    elif e.code==NV_ENC_ERR_INVALID_VERSION:
+                        #we can bail out already:
+                        raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
+                    else:
+                        #it seems that newer version will fail with
+                        #seemingly random errors when we supply the wrong key
+                        log.warn("error during NVENC v4 encoder test: %s", e)
+                        if client_key:
+                            log(" license key '%s' may not be valid (skipped)", client_key)
+                            failed_keys.append(client_key)
+                        else:
+                            log(" a license key may be required")
+            finally:
+                test_encoder.clean()
+    if success:
+        #pick the first valid license key:
+        if len(valid_keys)>0:
+            x = valid_keys[0]
+            log("using the license key '%s'", x)
+            CLIENT_KEY_GUID = c_parseguid(x)
+        else:
+            log("no license keys are required")
+    else:
+        #we got license key error(s)
+        if len(failed_keys)>0:
+            raise Exception("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
+        else:
+            raise Exception("you may need to provide a license key")
     log.info("NVENC v6 successfully initialized")
     log("**************************************************************************")
 

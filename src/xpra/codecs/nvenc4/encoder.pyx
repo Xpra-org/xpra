@@ -35,7 +35,7 @@ from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 CLIENT_KEYS_STR = get_nvenc_license_keys(4) + get_nvenc_license_keys()
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
-MIN_COMPUTE = 0x30
+cdef int MIN_COMPUTE = 0x30
 
 cdef int YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
 cdef int LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
@@ -65,6 +65,7 @@ cdef extern from "stdlib.h":
 
 CUresult = ctypes.c_int
 CUcontext = ctypes.c_void_p
+
 
 cdef extern from "nvEncodeAPI.h":
     ctypedef int NVENCSTATUS
@@ -2320,9 +2321,9 @@ cdef class Encoder:
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
-        raiseNVENC(r, "opening session")
         if self.context==NULL:
             raise TransientCodecException("cannot open encoding session, context is NULL")
+        raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
         log("success, encoder context=%#x (%s context%s in use)", <unsigned long> self.context, context_counter, engs(context_counter))
