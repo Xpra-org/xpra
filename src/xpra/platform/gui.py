@@ -84,7 +84,16 @@ def get_icc_info():
     info = {}
     try:
         from PIL.ImageCms import get_display_profile, \
-            getProfileName, getProfileInfo, getProfileCopyright, getProfileManufacturer, getProfileModel, getProfileDescription
+            getProfileName, getProfileInfo, getProfileCopyright, getProfileManufacturer, getProfileModel, getProfileDescription, getDefaultIntent, \
+            INTENT_PERCEPTUAL, INTENT_RELATIVE_COLORIMETRIC, INTENT_SATURATION, INTENT_ABSOLUTE_COLORIMETRIC
+        INTENT_STR = {
+                      INTENT_PERCEPTUAL             : "perceptual",
+                      INTENT_RELATIVE_COLORIMETRIC  : "relative-colorimetric",
+                      INTENT_SATURATION             : "saturation",
+                      INTENT_ABSOLUTE_COLORIMETRIC  : "absolute-colorimetric",
+                      }
+        def getDefaultIntentStr(_p):
+            return INTENT_STR.get(getDefaultIntent(_p))
         p = get_display_profile()
         if p:
             for (k, fn) in {
@@ -94,6 +103,7 @@ def get_icc_info():
                             "manufacturer"  : getProfileManufacturer,
                             "model"         : getProfileModel,
                             "description"   : getProfileDescription,
+                            "default-intent": getDefaultIntentStr,
                             }.items():
                 try:
                     v = fn(p)
