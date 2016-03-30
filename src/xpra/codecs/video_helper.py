@@ -14,7 +14,7 @@ from xpra.codecs.loader import get_codec, get_codec_error
 from xpra.util import csv, engs
 
 
-NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", "4,5,6").split(",")]
+NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", "6,5,4").split(",")]
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
