@@ -78,6 +78,33 @@ def get_icon_size():
 def get_antialias_info():
     return {}
 
+def get_icc_info():
+    from xpra.log import Logger
+    log = Logger("platform")
+    info = {}
+    try:
+        from PIL.ImageCms import get_display_profile, \
+            getProfileName, getProfileInfo, getProfileCopyright, getProfileManufacturer, getProfileModel, getProfileDescription
+        p = get_display_profile()
+        if p:
+            for (k, fn) in {
+                            "name"          : getProfileName,
+                            "info"          : getProfileInfo,
+                            "copyright"     : getProfileCopyright,
+                            "manufacturer"  : getProfileManufacturer,
+                            "model"         : getProfileModel,
+                            "description"   : getProfileDescription,
+                            }.items():
+                try:
+                    v = fn(p)
+                    info[k] = v
+                except Exception as e:
+                    log("ICC profile error on %s using %s: %s", k, fn, e)
+    except Exception as e:
+        log.warn("Warning: cannot query ICC profiles:")
+        log.warn(" %s", e)
+    return info
+
 #global workarea for all screens
 def get_workarea():
     return None
@@ -177,6 +204,7 @@ def get_info_base():
                                                "y"          : get_ydpi(),
                                                },
             "antialias"                     : get_antialias_info(),
+            "icc"                           : get_icc_info(),
             "window_frame"                  : get_window_frame_sizes(),
             }
 
@@ -198,7 +226,8 @@ platform_import(globals(), "gui", False,
                 "get_native_notifier_classes",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
-                "get_antialias_info", "get_icon_size", "get_xdpi", "get_ydpi",
+                "get_antialias_info", "get_icc_info", "get_xdpi", "get_ydpi",
+                "get_icon_size",
                 "get_mouse_config",
                 "get_double_click_time", "get_double_click_distance",
                 "get_fixed_cursor_size", "get_cursor_size", "get_window_frame_sizes",
