@@ -26,7 +26,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, is_blacklisted
 
 from xpra.log import Logger
-from xpra.codecs.nvenc4.encoder import context_counter
 log = Logger("encoder", "nvenc")
 
 import ctypes
