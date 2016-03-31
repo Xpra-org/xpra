@@ -1628,7 +1628,11 @@ def no_gtk():
 def run_glcheck(opts):
     from xpra.util import pver
     from xpra.client.gl.gl_check import check_support
-    props = check_support(force_enable=opts.opengl)
+    try:
+        props = check_support(force_enable=opts.opengl)
+    except Exception as e:
+        sys.stdout.write("error=%s\n" % e)
+        return 1
     for k in sorted(props.keys()):
         v = props[k]
         #skip not human readable:
