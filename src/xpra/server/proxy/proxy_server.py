@@ -19,6 +19,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 
+from xpra.scripts.config import InitException
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
@@ -67,7 +68,7 @@ class ProxyServer(ServerCore):
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
         if not opts.auth:
-            raise Exception("The proxy server requires an authentication mode (use 'none' to disable authentication)")
+            raise InitException("The proxy server requires an authentication mode (use 'none' to disable authentication)")
         self.video_encoders = opts.video_encoders
         self.csc_modules = opts.csc_modules
         ServerCore.init(self, opts)
