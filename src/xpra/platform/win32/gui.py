@@ -401,7 +401,7 @@ def add_window_hooks(window):
                     if orientation==VERTICAL:
                         button = 4 + int(units<0)       #4 for UP, 5 for DOWN
                     else:
-                        button = 6 + int(units<0)       #6 for LEFT, 7 for RIGHT
+                        button = 7 - int(units<0)       #6 for LEFT, 7 for RIGHT
                     buttons = []
                     modifiers = client.get_current_modifiers()
                     def send_button(pressed):
