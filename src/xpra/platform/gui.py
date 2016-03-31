@@ -94,6 +94,8 @@ def get_icc_info():
                       }
         def getDefaultIntentStr(_p):
             return INTENT_STR.get(getDefaultIntent(_p), "unknown")
+        def getData(_p):
+            return _p.tobytes()
         p = get_display_profile()
         if p:
             for (k, fn) in {
@@ -104,6 +106,7 @@ def get_icc_info():
                             "model"         : getProfileModel,
                             "description"   : getProfileDescription,
                             "default-intent": getDefaultIntentStr,
+                            "data"          : getData,
                             }.items():
                 try:
                     v = fn(p)
