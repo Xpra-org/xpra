@@ -67,7 +67,7 @@ class ProxyServer(ServerCore):
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
-        if not opts.auth:
+        if not opts.tcp_auth:
             raise InitException("The proxy server requires an authentication mode (use 'none' to disable authentication)")
         self.video_encoders = opts.video_encoders
         self.csc_modules = opts.csc_modules
