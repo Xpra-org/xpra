@@ -72,6 +72,10 @@ class ProxyServer(ServerCore):
         self.csc_modules = opts.csc_modules
         ServerCore.init(self, opts)
 
+    def init_components(self, opts):
+        pass
+
+
     def get_server_mode(self):
         return "proxy"
 
