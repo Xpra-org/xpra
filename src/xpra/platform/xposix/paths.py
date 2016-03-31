@@ -8,6 +8,9 @@ import sys
 import site
 
 
+USE_RUNTIME_DIR = os.environ.get("XPRA_USE_RUNTIME_DIR", "0")=="1"
+
+
 def do_get_install_prefix():
     #special case for "user" installations, ie:
     #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
@@ -58,6 +61,8 @@ def do_get_script_bin_dirs():
 
 
 def _get_xpra_runtime_dir():
+    if not USE_RUNTIME_DIR:
+        return None
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     if runtime_dir:
         #replace uid with the string "$UID"
