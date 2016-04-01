@@ -8,7 +8,7 @@
 %define __requires_exclude ^libcuda.*$
 
 Name:           python-pycuda
-Version:        2015.1.3
+Version:        2016.1
 Release:        1
 Url:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
@@ -61,6 +61,9 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
+* Fri Apr 01 2016 Antoine Martin <antoine@devloop.org.uk - 2016.1-1
+- new upstream release
+
 * Wed Nov 04 2015 Antoine Martin <antoine@devloop.org.uk - 2015.1.3-1
 - new upstream release
 
