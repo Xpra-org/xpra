@@ -1,5 +1,5 @@
 Name:	     x264-xpra
-Version:     20160205
+Version:     20160331
 %if 0%{?beta} < 1
 %define SNAPSHOTTYPE -stable
 Release:     1%{?dist}

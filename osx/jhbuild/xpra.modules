@@ -179,9 +179,9 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
-	<branch module="/pub/x264/snapshots/x264-snapshot-20160205-2245-stable.tar.bz2"
-		version="20160205-2245-stable"
-		hash="md5:873968dd602b4d91ab02a466186b7f22"
+	<branch module="/pub/x264/snapshots/x264-snapshot-20160331-2245-stable.tar.bz2"
+		version="20160331-2245-stable"
+		hash="md5:7ee80f1c7a8a1b35e8218b0292343055"
 		repo="download.videolan.org"/>
 	<dependencies>
 		<dep package="yasm"/>
@@ -210,15 +210,16 @@
 					--disable-everything
 					--enable-swscale --enable-libx264 --enable-decoder=h264 --enable-decoder=mpeg4
 					--enable-libvpx --enable-decoder=vp8 --enable-decoder=vp9 --enable-decoder=hevc
+					--enable-decoder=mpeg4 --enable-muxer=mp4 --enable-muxer=webm --enable-muxer=matroska --enable-muxer=ogg
 					--disable-protocol=tcp --disable-protocol=rtp
 					--disable-filter=aformat --disable-filter=crop --disable-filter=setpts
 					--disable-filter=anull --disable-filter=format --disable-filter=trim
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.0.tar.bz2"
-		version="3.0"
-		hash="md5:026859cc76dddffd809cad879db07658"
+	<branch module="/releases/ffmpeg-3.0.1.tar.bz2"
+		version="3.0.1"
+		hash="md5:51ca580a64c0d2ecb6dba721b2744815"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -497,9 +498,9 @@
 
   <distutils id="python-numpy">
         <branch repo="pypi.python.org"
-	        module="/packages/source/n/numpy/numpy-1.10.4.tar.gz"
-	        version="1.10.4"
-	        hash="md5:aed294de0aa1ac7bd3f9745f4f1968ad"/>
+	        module="/packages/source/n/numpy/numpy-1.11.0.tar.gz"
+	        version="1.11.0"
+	        hash="md5:bc56fb9fc2895aa4961802ffbdb31d0b"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -633,9 +634,9 @@
 
   <distutils id="python-pyobjc-core">
 	<branch repo="pypi.python.org"
-		module="/packages/source/p/pyobjc-core/pyobjc-core-3.0.4.tar.gz"
-		hash="md5:6baaa0d2533cc9c26ad9f889ca9ecb01"
-		version="3.0.4"/>
+		module="/packages/source/p/pyobjc-core/pyobjc-core-3.1.1.tar.gz"
+		hash="md5:e071bc40a3341a97d2c91c49fc3783cb"
+		version="3.1.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -646,9 +647,9 @@
 
   <distutils id="python-pyobjc-framework-cocoa">
 	<branch repo="pypi.python.org"
-		module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.0.4.tar.gz"
-		hash="md5:5df56f66608812d6db42aa6e554f1529"
-		version="3.0.4"/>
+		module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.1.1.tar.gz"
+		hash="md5:2832205d33d88ea53289563bd61771cf"
+		version="3.1.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -659,9 +660,9 @@
 
   <distutils id="python-pyobjc-framework-quartz">
 	<branch repo="pypi.python.org"
-		module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.0.4.tar.gz"
-		hash="md5:85d82afedef8ecf7e20344890a543312"
-		version="3.0.4"/>
+		module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.1.1.tar.gz"
+		hash="md5:fadebaecc17338bad9aa1ae45c7fae77"
+		version="3.1.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>

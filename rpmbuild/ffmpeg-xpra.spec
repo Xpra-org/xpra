@@ -1,6 +1,6 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     3.0
+Version:     3.0.1
 Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra	
 
@@ -58,6 +58,10 @@ This package contains the development files for %{name}.
     --enable-decoder=vp8 \
     --enable-decoder=vp9 \
     --enable-decoder=mpeg4 \
+	--enable-muxer=mp4 \
+	--enable-muxer=webm \
+	--enable-muxer=matroska \
+	--enable-muxer=ogg \
     --enable-shared \
 	--enable-debug \
 	--disable-stripping \
@@ -124,8 +128,9 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Thu Mar 10 2016 Antoine Martin <antoine@devloop.org.uk> 3.0-2
-- rebuild with mpeg4 decoding support
+* Fri Apr 01 2016 Antoine Martin <antoine@devloop.org.uk> 3.0.1-1
+- new upstream release
+- include mpeg4, ogg, matroska and webm support
 
 * Mon Feb 15 2016 Antoine Martin <antoine@devloop.org.uk> 3.0-1
 - new upstream release
