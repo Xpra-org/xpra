@@ -21,6 +21,7 @@ SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
 FAKE_START_FAILURE = os.environ.get("XPRA_SOUND_FAKE_START_FAILURE", "0")=="1"
 FAKE_EXIT = int(os.environ.get("XPRA_SOUND_FAKE_EXIT", "0"))
 FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
+SOUND_START_TIMEOUT = int(os.environ.get("XPRA_SOUND_START_TIMEOUT", "3000"))
 
 
 def get_sound_wrapper_env():
@@ -231,7 +232,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.state = "starting"
         subprocess_caller.start(self)
         log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
-        self.timeout_add(2500, self.verify_started)
+        self.timeout_add(SOUND_START_TIMEOUT, self.verify_started)
 
 
     def cleanup(self):
@@ -360,7 +361,7 @@ def query_sound():
     env = exec_env()
     env.update(get_sound_wrapper_env())
     log("query_sound() command=%s, env=%s, kwargs=%s", command, env, kwargs)
-    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=env, **kwargs)
+    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=env, **kwargs)
     out, err = proc.communicate(None)
     log("query_sound() process returned %s", proc.returncode)
     log("query_sound() out=%s, err=%s", out, err)
