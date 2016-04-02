@@ -8,7 +8,6 @@
   <repository type="tarball" name="code.entropywave.com" href="http://code.entropywave.com"/>
   <repository type="tarball" name="downloads.xiph.org" href="http://downloads.xiph.org"/>
   <repository type="tarball" name="winswitch.org" href="http://winswitch.org"/>
-  <repository type="tarball" name="wavpack.com" href="http://www.wavpack.com"/>
   <repository type="tarball" name="webm.googlecode.com" href="https://webm.googlecode.com"/>
   <repository type="tarball" name="download.videolan.org" href="http://download.videolan.org"/>
   <repository type="tarball" name="downloads.webmproject.org" href="http://downloads.webmproject.org"/>
@@ -125,28 +124,11 @@
     </dependencies>
   </autotools>
 
-  <autotools id="speex" autogenargs="" autogen-sh="configure">
-	<branch module="/releases/speex/speex-1.1.12.tar.gz"
-		version="1.1.12"
-		hash="md5:1bd6cdf3a0ebabf818cd72a3401e2610"
-		repo="downloads.xiph.org"/>
-    <dependencies>
-                <dep package="libogg"/>
-    </dependencies>
-  </autotools>
-
   <autotools id="opus" autogenargs="" autogen-sh="configure">
 	<branch module="/releases/opus/opus-1.1.2.tar.gz"
 		version="1.1.2"
 		hash="md5:1f08a661bc72930187893a07f3741a91"
 		repo="downloads.xiph.org"/>
-  </autotools>
-
-  <autotools id="wavpack" autogenargs="" autogen-sh="configure">
-	<branch module="/wavpack-4.75.2.tar.bz2"
-		version="4.75.2"
-		hash="md5:e8bbc4c3382f9148918ad7b896e10ac1"
-		repo="wavpack.com"/>
   </autotools>
 
   <autotools id="libvpx-13"
@@ -821,8 +803,6 @@
       <dep package="faac"/>
       <dep package="faad2"/>
       <dep package="flac"/>
-      <dep package="speex"/>
-      <dep package="wavpack"/>
       <dep package="opus"/>
       <dep package="lzo"/>
       <!--  dep package="libvpx-13"/-->
