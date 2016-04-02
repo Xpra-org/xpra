@@ -459,9 +459,9 @@
 
   <distutils id="python-pillow">
         <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-3.1.1.zip"
-             hash="md5:3868f54fd164e65f95fbcb32f62940ae"
-	     version="3.1.1"/>
+	     module="/packages/source/P/Pillow/Pillow-3.2.0.tar.gz"
+             hash="md5:7cfd093c11205d9e2ebe3c51dfcad510"
+	     version="3.2.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
