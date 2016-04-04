@@ -152,7 +152,11 @@ def do_get_screen_icc_info(nsscreen):
                           NSIndexedColorSpaceModel  : "Indexed",
                           NSPatternColorSpaceModel  : "Pattern",
                           }
-        mscs = nsscreen.colorSpace()
+        try:
+            mscs = nsscreen.colorSpace()
+        except AttributeError as e:
+            #OSX 10.5.x and earlier don't have this attribute
+            return info
         log("%s.colorSpace=%s", nsscreen, mscs)
         info.update({
                      "colorspace"   : COLORSPACE_STR.get(mscs.colorSpaceModel(), "unknown"),
