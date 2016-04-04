@@ -86,7 +86,7 @@ def get_iface(ip):
 		return None
 	ip_parts = ip.split(".")
 	if len(ip_parts)!=4:
-		log.error("invalid IPv4! (%d parts)", len(ip_parts))
+		log.error("Error: invalid IPv4 format, %d parts in '%s'", len(ip_parts), ip_parts)
 		return	None
 
 	best_match = None
