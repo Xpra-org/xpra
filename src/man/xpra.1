@@ -47,6 +47,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bind\fP=\fIBIND_LOCATION\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-tcp\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIKEYFILE\fP]
@@ -132,6 +133,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\fP=\fISOCKET|DIRECTORY\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
@@ -597,6 +599,9 @@ and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
 Use it only if you have special needs, and understand the consequences
 of your actions.
+.TP
+\fB\-\-bind\-vsock\fP=\fICID:PORT\fP
+Create a VSOCK socket for each \fB\-\-bind\-vsock\fP option specified.
 .TP
 \fB\-\-auth\fP=\fIMODULE\fP
 Specifies the authentication module to use for unix domain sockets

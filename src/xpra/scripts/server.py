@@ -362,6 +362,31 @@ def parse_bind_tcp(bind_tcp):
             tcp_sockets.add((host, iport))
     return tcp_sockets
 
+def setup_vsock_socket(cid, iport):
+    from xpra.log import Logger
+    log = Logger("network")
+    try:
+        from xpra.net.vsock import bind_vsocket     #@UnresolvedImport
+        vsock_socket = bind_vsocket(cid=cid, port=iport)
+    except Exception as e:
+        raise InitException("failed to setup vsock socket on %s:%s %s" % (cid, iport, e))
+    def cleanup_vsock_socket():
+        log.info("closing vsock socket %s:%s", cid, iport)
+        try:
+            vsock_socket.close()
+        except:
+            pass
+    _cleanups.append(cleanup_vsock_socket)
+    return "vsock", vsock_socket, (cid, iport)
+
+def parse_bind_vsock(bind_vsock):
+    vsock_sockets = set()
+    if bind_vsock:
+        from xpra.scripts.main import parse_vsock
+        for spec in bind_vsock:
+            vsock_sockets.add(parse_vsock(spec))
+    return vsock_sockets
+
 
 def normalize_local_display_name(local_display_name):
     if not local_display_name.startswith(":"):
@@ -1046,7 +1071,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         socket = setup_tcp_socket(host, iport)
         sockets.append(socket)
         if opts.mdns:
-            mdns_recs.append(("tcp", bind_tcp))
+            rec = "tcp", [(host, iport)]
+            mdns_recs.append(rec)
+
+    bind_vsock = parse_bind_vsock(opts.bind_vsock)
+    for cid, iport in bind_vsock:
+        socket = setup_vsock_socket(cid, iport)
+        sockets.append(socket)
+        if opts.mdns:
+            rec = "vsock", [("", iport)]
+            mdns_recs.append(rec)
 
     # Do this after writing out the shell script:
     if display_name[0] != 'S':

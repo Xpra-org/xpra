@@ -29,6 +29,7 @@ from xpra.scripts.config import OPTION_TYPES, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
+VSOCK_TIMEOUT = int(os.environ.get("XPRA_VSOCK_TIMEOUT", 5))
 SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
@@ -380,6 +381,18 @@ def do_parse_cmdline(cmdline, defaults):
                             + " You may specify this option multiple times with different host and port combinations")
     else:
         ignore({"bind-tcp" : []})
+    try:
+        from xpra.net import vsock
+    except:
+        vsock = None
+    if vsock:
+        group.add_option("--bind-vsock", action="append",
+                          dest="bind_vsock", default=list(defaults.bind_vsock or []),
+                          metavar="[CID]:[PORT]",
+                          help="Listen for connections over VSOCK (use --password-file to secure it)."
+                            + " You may specify this option multiple times with different CID and port combinations")
+    else:
+        ignore({"bind-vsock" : []})
     legacy_bool_parse("mdns")
     if (supports_server or supports_shadow):
         group.add_option("--mdns", action="store", metavar="yes|no",
@@ -674,6 +687,12 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tcp-auth", action="store",
                       dest="tcp_auth", default=defaults.tcp_auth,
                       help="The authentication module to use for TCP sockets (default: '%default')")
+    if vsock:
+        group.add_option("--vsock-auth", action="store",
+                         dest="vsock_auth", default=defaults.vsock_auth,
+                         help="The authentication module to use for vsock sockets (default: '%default')")
+    else:
+        ignore({"vsock-auth" : ""})
     if os.name=="posix":
         group.add_option("--mmap-group", action="store_true",
                           dest="mmap_group", default=defaults.mmap_group,
@@ -1009,6 +1028,29 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         return 128+signal.SIGINT
 
 
+def parse_vsock(vsock_str):
+    from xpra.net.vsock import STR_TO_CID, CID_ANY, PORT_ANY    #@UnresolvedImport
+    if not vsock_str.find(":")>=0:
+        raise InitException("invalid vsocket format '%s'" % vsock_str)
+    cid_str, port_str = vsock_str.split(":", 1)
+    if cid_str.lower() in ("auto", "any"):
+        cid = CID_ANY
+    else:
+        try:
+            cid = int(cid_str)
+        except ValueError:
+            cid = STR_TO_CID.get(cid_str.upper())
+            if cid is None:
+                raise InitException("invalid vsock cid '%s'" % cid_str)
+    if port_str.lower() in ("auto", "any"):
+        iport = PORT_ANY
+    else:
+        try:
+            iport = int(port_str)
+        except ValueError:
+            raise InitException("invalid vsock port '%s'" % port_str)
+    return cid, iport
+
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
     if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
@@ -1172,6 +1214,18 @@ def parse_display_name(error_cb, opts, display_name):
             host = "127.0.0.1"
         desc["host"] = host
         return desc
+    elif display_name.startswith("vsock:"):
+        #use the vsock specified:
+        vsock_str = display_name[len("vsock:"):]
+        cid, iport = parse_vsock(vsock_str)
+        desc.update({
+                "type"          : "vsock",
+                "local"         : False,
+                "display"       : display_name,
+                "vsock"         : (cid, iport),
+                })
+        opts.display = display_name
+        return desc
     elif sys.platform.startswith("win") or display_name.startswith("named-pipe:"):
         pipe_name = display_name
         if display_name.startswith("named-pipe:"):
@@ -1248,8 +1302,6 @@ def connect_or_fail(display_desc):
     except InitException:
         raise
     except Exception as e:
-        raise
-    #    traceback.print_stack()
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
@@ -1390,6 +1442,15 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             raise InitException("failed to connect to the named pipe '%s': %s" % (pipe_name, e))
         conn = NamedPipeConnection(pipe_name, pipe_handle)
         conn.timeout = SOCKET_TIMEOUT
+
+    elif dtype == "vsock":
+        cid, iport = display_desc["vsock"]
+        from xpra.net.vsock import connect_vsocket, CID_TYPES       #@UnresolvedImport
+        sock = connect_vsocket(cid=cid, port=iport)
+        sock.timeout = VSOCK_TIMEOUT
+        sock.settimeout(None)
+        from xpra.net.bytestreams import SocketConnection
+        return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
