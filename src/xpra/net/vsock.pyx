@@ -119,11 +119,8 @@ class VSocket(object):
         cdef int fd = accept(self.sockfd, <sockaddr*> &vmsock, &socklen)
         if fd<0:
             raise Exception("accept failed: %s" % fd)
-        conn = pysocket.fromfd(fd, AF_VSOCK, 0)
-        if getsockname(fd, <sockaddr *> &vmsock, &socklen):
-            close(fd)
-            raise Exception("getsockname failed")
         self.address = (vmsock.svm_cid, vmsock.svm_port)
+        conn = pysocket.fromfd(fd, AF_VSOCK, 0)
         return VSocket(conn.fileno()), self.address
 
     def getsockname(self):
