@@ -1217,20 +1217,20 @@ def pick_display(error_cb, opts, extra_args):
 
 def single_display_match(dir_servers, error_cb):
     #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
-    if len(dir_servers) == 0:
+    #aggregate all the different locations:
+    allservers = []
+    for sockdir, servers in dir_servers.items():
+        for state, name, path in servers:
+            if state==DotXpra.LIVE:
+                allservers.append((sockdir, name, path))
+    if len(allservers) == 0:
         error_cb("cannot find any live servers to connect to")
-    if len(dir_servers) > 1:
-        error_cb("there are multiple servers running in multiple locations, please specify")
-    assert len(dir_servers)==1, "len(dir_servers)=%s" % len(dir_servers)
-    #ie: [(LIVE, "desktop-10", "/tmp/desktop-10"), ]
-    sockdir, servers = list(dir_servers.items())[0]
-    assert len(servers)>0
-    if len(servers) > 1:
-        error_cb("there are multiple servers running in %s, please specify" % sockdir)
-    #ie: (LIVE, "desktop-10", "/tmp/desktop-10")
-    server = servers[0]
+    if len(allservers) > 1:
+        error_cb("there are multiple servers running, please specify")
+    assert len(allservers)==1, "len(dir_servers)=%s" % len(dir_servers)
+    sockdir, name, path = allservers[0]
     #ie: ("/tmp", "desktop-10", "/tmp/desktop-10")
-    return sockdir, server[1], server[2]
+    return sockdir, name, path
 
 
 def _socket_connect(sock, endpoint, description, dtype):
