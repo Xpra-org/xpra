@@ -163,7 +163,7 @@ class AvahiPublisher:
             if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
                 log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
                 return
-            log.warn("Warning: failed to start Avahi publisher for %s", self.info())
+            log.warn("Warning: failed to start Avahi publisher for %s", self.get_info())
             for l in str(e).splitlines():
                 for x in l.split(":", 1):
                     if x:
