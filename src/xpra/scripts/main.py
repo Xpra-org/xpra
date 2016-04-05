@@ -511,9 +511,9 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
     else:
         ignore({"av-sync"           : False,
-                "speaker"           : False,
+                "speaker"           : "no",
                 "speaker-codec"     : [],
-                "microphone"        : False,
+                "microphone"        : "no",
                 "microphone-codec"  : [],
                 "sound-source"      : ""})
 
