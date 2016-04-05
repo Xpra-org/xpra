@@ -41,7 +41,12 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
             raise Exception("TMPDIR %s does not exist!" % mmap_dir)
         #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
         #that the file is readable and writable only by the creating user ID
-        temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+        try:
+            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+        except OSError as e:
+            log.error("Error: cannot create mmap file:")
+            log.error(" %s", e)
+            return False, None, 0, None, None
         #keep a reference to it so it does not disappear!
         mmap_temp_file = temp
         mmap_filename = temp.name
