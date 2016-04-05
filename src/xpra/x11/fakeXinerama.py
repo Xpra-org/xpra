@@ -87,7 +87,8 @@ def save_fakeXinerama_config(supported=True, source="", ss=[]):
             with open(filename, 'wb') as f:
                 f.write(contents)
         except Exception as e:
-            log.warn("error writing fake xinerama file %s: %s", filename, e)
+            log.warn("Error writing fake xinerama file '%s':", filename)
+            log.warn(" %s", e)
     log("saved %s monitors to fake xinerama files: %s", len(monitors), fakeXinerama_config_files)
     return True
 
