@@ -10,7 +10,7 @@ Name:		python-Cython
 Name:		Cython
 %endif
 
-Version:	0.23.5
+Version:	0.24
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -112,6 +112,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Apr 05 2016 Antoine Martin <antoine@devloop.org.uk> - 0.24-1
+- new upstream release
+
 * Sat Mar 26 2016 Antoine Martin <antoine@devloop.org.uk> - 0.23.5-1
 - new upstream release
 

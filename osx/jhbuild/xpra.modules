@@ -467,9 +467,9 @@
 
   <distutils id="python-cython">
 	<branch repo="cython.org"
-		module="/release/Cython-0.23.5.tar.gz"
-		hash="md5:66b62989a67c55af016c916da36e7514"
-		version="0.23.5"/>
+		module="/release/Cython-0.24.tar.gz"
+		hash="md5:14fbc970f4a856845e633cbc09e61048"
+		version="0.24"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
