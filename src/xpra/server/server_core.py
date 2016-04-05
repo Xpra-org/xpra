@@ -443,7 +443,12 @@ class ServerCore(object):
             return False
         socktype = self.socket_types.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
-        sock, address = listener.accept()
+        try:
+            sock, address = listener.accept()
+        except socket.error as e:
+            netlog.error("Error: cannot accept new connection:")
+            netlog.error(" %s", e)
+            return True
         if len(self._potential_protocols)>=self._max_connections:
             netlog.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
