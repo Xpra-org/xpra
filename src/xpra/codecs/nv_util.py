@@ -37,7 +37,7 @@ def get_proc_driver_version():
     proc_file = "/proc/driver/nvidia/version"
     v = load_binary_file(proc_file)
     if not v:
-        log.warn("Warning: NVvidia kernel module not installed?")
+        log.warn("Warning: NVidia kernel module not installed?")
         log.warn(" cannot open '%s'", proc_file)
         return ""
     KSTR = "Kernel Module"
