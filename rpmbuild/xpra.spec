@@ -398,8 +398,29 @@ fi
 
 
 %changelog
-* Wed Dec 16 2015 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1
-- TODO
+* Wed Apr 06 2016 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1
+- GStreamer 1.6.3 on MS Windows
+- use newer Plink SSH with Windows Vista onwards
+- libyuv codec for faster colourspace conversion
+- NVENC v6, HEVC hardware encoding
+- microphone and speaker forwarding no longer cause sound loops
+- new sound container formats: matroska, gdp
+- opus is now the default sound codec
+- shadow servers now expose a tray icon and menu
+- improved tablet input device support on MS Windows
+- improved window geometry handling
+- OSX dock clicks now restore existing windows
+- new encryption backend: python-cryptography, hardware accelerated AES
+- the dbus server can now be started automatically
+- support for using /var/run on Linux
+- broadcast sessions via mDNS on MS Windows and OSX
+- window geometry fixes
+- window close event is now configurable
+- webcam forwarding (limited scope)
+- SELinux policy improvements (still incomplete)
+- new event based start commands: after connection / on connection
+- split file authentication module
+- debug logging and message improvements
 
 * Wed Dec 16 2015 Antoine Martin <antoine@devloop.org.uk> 0.16.0-1
 - remove more legacy code, cleanups, etc
