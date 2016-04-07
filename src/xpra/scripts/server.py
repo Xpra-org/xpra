@@ -947,6 +947,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             print(" * %s" % encoding_help(e))
         return 0
 
+    bind_tcp = parse_bind_tcp(opts.bind_tcp)
+    bind_vsock = parse_bind_vsock(opts.bind_vsock)
+
     assert mode in ("start", "upgrade", "shadow", "proxy")
     starting  = mode == "start"
     upgrading = mode == "upgrade"
@@ -1066,7 +1069,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    bind_tcp = parse_bind_tcp(opts.bind_tcp)
     for host, iport in bind_tcp:
         socket = setup_tcp_socket(host, iport)
         sockets.append(socket)
@@ -1074,7 +1076,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             rec = "tcp", [(host, iport)]
             mdns_recs.append(rec)
 
-    bind_vsock = parse_bind_vsock(opts.bind_vsock)
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
