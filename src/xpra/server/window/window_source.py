@@ -706,7 +706,7 @@ class WindowSource(object):
         elif self._want_alpha:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
-            if self.encoding in ("png", "webp", "png/P"):
+            if self.encoding in ("png", "png/P"):
                 #chosen encoding does alpha, stick to it:
                 #(prevents alpha bleeding artifacts,
                 # as different encoders may encode alpha differently)
@@ -741,11 +741,6 @@ class WindowSource(object):
         #small areas prefer rgb, also when high speed and high quality
         if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90)):
             return "rgb32"
-        #choose webp for limited sizes:
-        if "webp" in self.common_encodings:
-            max_webp = 1024*1024*(200-quality)/100*speed/100
-            if 16384<pixel_count<max_webp:
-                return "webp"
         if "png" in self.common_encodings and quality>75:
             return "png"
         for x in ("rgb32", "png", "webp", "rgb32"):
