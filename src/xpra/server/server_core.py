@@ -142,6 +142,7 @@ class ServerCore(object):
         self._closing = False
         self._upgrading = False
         #networking bits:
+        self._socket_info = []
         self._potential_protocols = []
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
@@ -254,6 +255,7 @@ class ServerCore(object):
 
 
     def init_sockets(self, sockets):
+        self._socket_info = sockets
         ### All right, we're ready to accept customers:
         for socktype, sock, info in sockets:
             netlog("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
@@ -952,6 +954,7 @@ class ServerCore(object):
         up("server", si)
         ni = get_network_caps()
         ni.update({
+                   "sockets"        : self.get_socket_info(),
                    "encryption"     : self.encryption or "",
                    "tcp-encryption" : self.tcp_encryption or "",
                    })
@@ -965,6 +968,14 @@ class ServerCore(object):
         end = time.time()
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
+
+    def get_socket_info(self):
+        si = {}
+        for socktype, _, info in self._socket_info:
+            if info:
+                si.setdefault(socktype, []).append(info)
+        return si
+
 
     def process_packet(self, proto, packet):
         try:
