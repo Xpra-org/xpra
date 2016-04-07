@@ -871,43 +871,59 @@ class GTKTrayMenuBase(object):
         return menu
 
     def make_webcammenuitem(self):
-        def webcam_toggled(*args):
-            active = self.client.webcam_device is not None
-            v = webcam.get_active()
-            webcamlog("webcam_toggled%s active=%s, menu=%s", args, active, v)
-            changed = active != v
-            if not changed:
-                return
-            if v:
-                self.client.start_sending_webcam()
-            else:
-                self.client.stop_sending_webcam()
-            active = self.client.webcam_device is not None
-            if webcam.get_active()!=active:
-                webcam.set_active(active)
-        webcam = self.checkitem("Webcam", webcam_toggled)
+        menu = gtk.Menu()
+        #so we can toggle the menu items without causing yet more events and infinite loops:
+        menu.ignore_events = False
+        def onoffitem(label, active, cb):
+            c = CheckMenuItem(label)
+            c.set_draw_as_radio(True)
+            c.set_active(active)
+            def activate_cb(item, *args):
+                webcamlog("activate_cb(%s, %s) ignore_events=%s", item, menu, menu.ignore_events)
+                if not menu.ignore_events:
+                    try:
+                        menu.ignore_events = True
+                        ensure_item_selected(menu, item)
+                        cb()
+                    finally:
+                        menu.ignore_events = False
+            c.connect("toggled", activate_cb, menu)
+            return c
+        def start_webcam(*args):
+            webcamlog("start_webcam%s", args)
+            self.client.start_sending_webcam()
+        def stop_webcam(*args):
+            webcamlog("stop_webcam%s", args)
+            self.client.stop_sending_webcam()
+        on = onoffitem("On", False, start_webcam)
+        off = onoffitem("Off", True, stop_webcam)
+        menu.append(on)
+        menu.append(off)
+
+        webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam pictures to the server", None)
+        webcam.set_submenu(menu)
         def webcam_changed(*args):
-            active = self.client.webcam_device is not None
-            v = webcam.get_active()
-            webcamlog("webcam_changed%s active=%s, menu=%s", args, active, v)
-            if webcam.get_active()!=active:
-                webcam.set_active(active)
-        self.client.connect("webcam-changed", webcam_changed)
-        #webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam", None)
-        set_sensitive(webcam, False)
-        def set_webcam(*args):
-            webcamlog("set_webcam%s webcam forwarding=%s, server virtual video devices=%i", args, self.client.webcam_forwarding, self.client.server_virtual_video_devices)
+            webcamlog("webcam_changed%s webcam_device=%s", args, self.client.webcam_device)
             if not self.client.webcam_forwarding:
-                set_sensitive(webcam, False)
+                for x in (webcam, on, off):
+                    set_sensitive(x, False)
                 webcam.set_tooltip_text("Webcam forwarding is disabled")
                 return
             if self.client.server_virtual_video_devices<=0:
-                set_sensitive(webcam, False)
+                for x in (webcam, on, off):
+                    set_sensitive(x, False)
                 webcam.set_tooltip_text("Server does not support webcam forwarding")
                 return
             set_sensitive(webcam, True)
-            webcam.set_active(self.client.webcam_device is not None)
-        self.client.after_handshake(set_webcam)
+            active = self.client.webcam_device is not None
+            webcamlog("webcam_changed%s active=%s", args, active)
+            menu.ignore_events = True
+            on.set_active(active)
+            off.set_active(not active)
+            menu.ignore_events = False
+        self.client.connect("webcam-changed", webcam_changed)
+        set_sensitive(webcam, False)
+        self.client.after_handshake(webcam_changed)
         return webcam
 
     def make_layoutsmenuitem(self):
