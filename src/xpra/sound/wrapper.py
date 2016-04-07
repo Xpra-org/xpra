@@ -217,7 +217,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.state = "stopped"
         self.codec = "unknown"
         self.codec_description = ""
-        self.last_info = {}
+        self.info = {}
         #hook some default packet handlers:
         self.connect("state-changed", self.state_changed)
         self.connect("info", self.info_update)
@@ -245,12 +245,12 @@ class sound_subprocess_wrapper(subprocess_caller):
 
     def verify_started(self):
         p = self.process
-        log("verify_started() process=%s, last_info=%s, codec=%s", p, self.last_info, self.codec)
+        log("verify_started() process=%s, info=%s, codec=%s", p, self.info, self.codec)
         if p is None or p.poll() is not None:
             #process has terminated already
             return
         #if we don't get an "info" packet, then the pipeline must have failed to start
-        if not self.last_info:
+        if not self.info:
             log.warn("the %s process has failed to start, stopping it", self.description)
             self.cleanup()
 
@@ -269,15 +269,15 @@ class sound_subprocess_wrapper(subprocess_caller):
 
 
     def get_info(self):
-        return self.last_info
+        return self.info
 
     def info_update(self, wrapper, info):
         log("info_update: %s", info)
-        self.last_info = info
-        self.last_info["time"] = int(time.time())
+        self.info.update(info)
+        self.info["time"] = int(time.time())
         p = self.process
         if p and not p.poll():
-            self.last_info["pid"] = p.pid
+            self.info["pid"] = p.pid
         self.codec_description = info.get("codec_description")
 
 
@@ -285,7 +285,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.send("set_volume", int(v*100))
 
     def get_volume(self):
-        return self.last_info.get("volume", 100)/100.0
+        return self.info.get("volume", 100)/100.0
 
 
 class source_subprocess_wrapper(sound_subprocess_wrapper):

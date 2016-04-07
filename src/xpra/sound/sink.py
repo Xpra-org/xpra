@@ -150,12 +150,12 @@ class SoundSink(SoundPipeline):
 
 
     def queue_pushing(self, *args):
-        self.queue_state = "pushing"
+        self.update_state("pushing")
         self.emit_info()
         return True
 
     def queue_running(self, *args):
-        self.queue_state = "running"
+        self.update_state("running")
         self.set_min_level()
         self.set_max_level()
         self.emit_info()
@@ -166,7 +166,7 @@ class SoundSink(SoundPipeline):
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
-        self.queue_state = "underrun"
+        self.update_state("underrun")
         if now-self.last_underrun>2:
             self.last_underrun = now
             self.set_min_level()
@@ -288,14 +288,15 @@ class SoundSink(SoundPipeline):
             #ts = metadata.get("timestamp")
             #if ts is not None:
             #    buf.timestamp = normv(ts)
+            #    log.info("timestamp=%s", ts)
             d = metadata.get("duration")
             if d is not None:
                 d = normv(d)
                 if d>0:
                     buf.duration = normv(d)
         if self.push_buffer(buf):
-            self.buffer_count += 1
-            self.byte_count += len(data)
+            self.inc_buffer_count()
+            self.inc_byte_count(len(data))
             if self.queue:
                 clt = self.queue.get_property("current-level-time")//MS_TO_NS
                 log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
@@ -316,7 +317,7 @@ class SoundSink(SoundPipeline):
         if r!=gst.FLOW_OK:
             if self.queue_state != "error":
                 log.error("Error pushing buffer: %s", r)
-                self.queue_state = "error"
+                self.update_state("error")
                 self.emit('error', "push-buffer error: %s" % r)
             return 0
         return 1

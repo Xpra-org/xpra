@@ -56,6 +56,10 @@ class SoundPipeline(gobject.GObject):
         self.buffer_count = 0
         self.byte_count = 0
         self.emit_info_due = False
+        self.info = {
+                     "codec"        : self.codec,
+                     "state"        : self.state,
+                     }
         glib = import_glib()
         self.idle_add = glib.idle_add
         self.timeout_add = glib.timeout_add
@@ -80,18 +84,7 @@ class SoundPipeline(gobject.GObject):
         self.timeout_add(50, do_emit_info)
 
     def get_info(self):
-        info = {"codec"             : self.codec or "",
-                "codec_description" : self.codec_description,
-                "state"             : self.get_state() or "unknown",
-                "buffers"           : self.buffer_count,
-                "bytes"             : self.byte_count,
-                "pipeline"          : self.pipeline_str,
-                "volume"            : self.get_volume(),
-                }
-        if self.codec_mode:
-            info["codec_mode"] = self.codec_mode
-        if self.bitrate>0:
-            info["bitrate"] = self.bitrate
+        info = self.info.copy()
         if inject_fault():
             info["INJECTING_NONE_FAULT"] = None
             log.warn("injecting None fault: get_info()=%s", info)
@@ -116,6 +109,7 @@ class SoundPipeline(gobject.GObject):
         self.bus = self.pipeline.get_bus()
         self.bus_message_handler_id = self.bus.connect("message", self.on_message)
         self.bus.add_signal_watch()
+        self.info["pipeline"] = self.pipeline_str
         return True
 
     def do_get_state(self, state):
@@ -134,12 +128,25 @@ class SoundPipeline(gobject.GObject):
             return
         self.bitrate = new_bitrate
         log("new bitrate: %s", self.bitrate)
-        self.emit_info()
+        self.info["bitrate"] = new_bitrate
+
+    def update_state(self, state):
+        self.state = state
+        self.info["state"] = state
+
+    def inc_buffer_count(self, inc=1):
+        self.buffer_count += inc
+        self.info["buffer_count"] = self.buffer_count
+
+    def inc_byte_count(self, count):
+        self.byte_count += count
+        self.info["bytes"]  = self.byte_count
 
 
     def set_volume(self, volume=100):
         if self.volume:
             self.volume.set_property("volume", volume/100.0)
+            self.info["volume"]  = volume
 
     def get_volume(self):
         if self.volume:
@@ -153,7 +160,7 @@ class SoundPipeline(gobject.GObject):
             return
         log("SoundPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
-        self.state = "active"
+        self.update_state("active")
         self.pipeline.set_state(gst.STATE_PLAYING)
         self.emit_info()
         #we may never get the stream start, synthesize codec event so we get logging:
@@ -175,7 +182,7 @@ class SoundPipeline(gobject.GObject):
         #            log(v)
         if self.state not in ("starting", "stopped", "ready", None):
             log.info("stopping")
-        self.state = "stopped"
+        self.update_state("stopped")
         p.set_state(gst.STATE_NULL)
         log("SoundPipeline.stop() done")
 
@@ -198,15 +205,15 @@ class SoundPipeline(gobject.GObject):
         self.bitrate = -1
         self.state = None
         self.volume = None
+        self.info = {}
         log("SoundPipeline.cleanup() done")
 
 
     def new_codec_description(self, desc):
-        if self.codec_description!=desc.lower():
-            if self.codec_description!=self.codec and desc==self.codec:
-                return
+        if self.codec_description.lower()!=desc.lower():
             gstlog.info("using audio codec: %s", desc)
             self.codec_description = desc.lower()
+            self.info["codec_description"]  = self.codec_description
 
 
     def on_message(self, bus, message):
@@ -216,7 +223,7 @@ class SoundPipeline(gobject.GObject):
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
             gstlog.info("EOS")
-            self.state = "stopped"
+            self.update_state("stopped")
             self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_ERROR:
             self.pipeline.set_state(gst.STATE_NULL)
@@ -232,7 +239,7 @@ class SoundPipeline(gobject.GObject):
                         gstlog.error(" %s", dl.strip())
             except:
                 gstlog.error(" %s", details)
-            self.state = "error"
+            self.update_state("error")
             self.idle_emit("error", str(err))
         elif t == gst.MESSAGE_TAG or t == MESSAGE_ELEMENT:
             try:
@@ -260,8 +267,8 @@ class SoundPipeline(gobject.GObject):
             gstlog("state-changed on %s: %s", message.src, gst.element_state_get_name(new_state))
             state = self.do_get_state(new_state)
             if isinstance(message.src, gst.Pipeline):
-                self.state = state
-                self.idle_emit("state-changed", self.state)
+                self.update_state(state)
+                self.idle_emit("state-changed", state)
         elif t == gst.MESSAGE_DURATION:
             if gst_major_version==0:
                 d = message.parse_duration()
@@ -294,9 +301,7 @@ class SoundPipeline(gobject.GObject):
             found = True
         if structure.has_field("codec"):
             desc = structure["codec"]
-            if self.codec_description!=desc:
-                gstlog.info("codec: %s", desc)
-                self.codec_description = desc
+            self.new_codec_description(desc)
             found = True
         if structure.has_field("audio-codec"):
             desc = structure["audio-codec"]
@@ -307,11 +312,13 @@ class SoundPipeline(gobject.GObject):
             if self.codec_mode!=mode:
                 gstlog("mode: %s", mode)
                 self.codec_mode = mode
+                self.info["codec_mode"] = self.codec_mode
             found = True
         if structure.has_field("type"):
             if structure["type"]=="volume-changed":
                 gstlog.info("volumes=%s", csv("%i%%" % (v*100/2**16) for v in structure["volumes"]))
                 found = True
+                self.info["volume"]  = self.get_volume()
             else:
                 gstlog.info("type=%s", structure["type"])
         if not found:
@@ -340,9 +347,8 @@ class SoundPipeline(gobject.GObject):
                 gstlog("bitrate: %s", new_bitrate[1])
         if "codec" in tags:
             desc = taglist.get_string("codec")
-            if desc[0] is True and self.codec_description!=desc[1]:
-                gstlog.info("codec: %s", desc[1])
-                self.codec_description = desc[1]
+            if desc[0] is True:
+                self.new_codec_description(desc[1])
         if "audio-codec" in tags:
             desc = taglist.get_string("audio-codec")
             if desc[0] is True:
@@ -353,6 +359,7 @@ class SoundPipeline(gobject.GObject):
             if mode[0] is True and self.codec_mode!=mode[1]:
                 gstlog("mode: %s", mode[1])
                 self.codec_mode = mode[1]
+                self.info["codec_mode"] = self.codec_mode
         if "container-format" in tags:
             cf = taglist.get_string("container-format")
             if cf[0] is True:

@@ -173,8 +173,6 @@ class SoundSource(SoundPipeline):
 
     def get_info(self):
         info = SoundPipeline.get_info(self)
-        if self.caps:
-            info["caps"] = self.caps
         if self.queue:
             info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}
         if self.buffer_latency:
@@ -258,6 +256,7 @@ class SoundSource(SoundPipeline):
         d = self.caps_to_dict(buf.get_caps())
         if not self.caps or self.caps!=d:
             self.caps = d
+            self.info["caps"] = self.caps
             metadata["caps"] = self.caps
         return self.emit_buffer(buf.data, metadata)
 
@@ -288,8 +287,8 @@ class SoundSource(SoundPipeline):
             self.do_emit_buffer(d, m)
 
     def do_emit_buffer(self, data, metadata={}):
-        self.buffer_count += 1
-        self.byte_count += len(data)
+        self.inc_buffer_count()
+        self.inc_byte_count(len(data))
         metadata["time"] = int(time.time()*1000)
         self.idle_emit("new-buffer", data, metadata)
         self.emit_info()
