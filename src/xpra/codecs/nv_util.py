@@ -74,8 +74,9 @@ def identify_nvidia_module_version():
             except ValueError:
                 if len(numver)==0:
                     raise
-        log.info("NVidia driver version %s", pver(numver))
-        return numver
+        if numver:
+            log.info("NVidia driver version %s", pver(numver))
+            return numver
     except Exception as e:
         log.warn("failed to parse Nvidia driver version '%s': %s", v, e)
     return []
