@@ -1246,6 +1246,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _cleanups.append(kill_xvfb)
 
     try:
+        app.original_desktop_display = desktop_display
         app.exec_cwd = cwd
         app.init(opts)
         app.init_components(opts)

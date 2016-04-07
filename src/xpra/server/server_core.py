@@ -137,6 +137,7 @@ class ServerCore(object):
         self.tcp_auth_class = None
         self._when_ready = []
         self.child_reaper = None
+        self.original_desktop_display = None
 
         self._closing = False
         self._upgrading = False
@@ -946,6 +947,8 @@ class ServerCore(object):
                    "exec_prefix"       : sys.exec_prefix,
                    "executable"        : sys.executable,
                 })
+        if self.original_desktop_display:
+            si["original-desktop-display"] = self.original_desktop_display
         up("server", si)
         ni = get_network_caps()
         ni.update({
