@@ -850,6 +850,7 @@ def do_validate_encryption(encryption, tcp_encryption, password_file, encryption
     if not encryption and not tcp_encryption:
         return
     env_key = os.environ.get("XPRA_ENCRYPTION_KEY")
+    pass_key = os.environ.get("XPRA_PASSWORD")
     from xpra.net.crypto import ENCRYPTION_CIPHERS
     if not ENCRYPTION_CIPHERS:
         raise InitException("cannot use encryption: no ciphers available (a crypto library must be installed)")
@@ -863,10 +864,13 @@ def do_validate_encryption(encryption, tcp_encryption, password_file, encryption
         raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % encryption)
     if tcp_encryption and not tcp_encryption_keyfile and not env_key:
         raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
-    if encryption and password_file==encryption_keyfile:
-        raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
-    if tcp_encryption and password_file==tcp_encryption_keyfile:
-        raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
+    if pass_key and env_key and pass_key==env_key:
+        raise InitException("encryption and authentication should not use the same value")
+    if password_file and encryption_keyfile and password_file==encryption_keyfile:
+        if encryption:
+            raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
+        elif tcp_encryption:
+            raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
 
 def dump_frames(*arsg):
     frames = sys._current_frames()
