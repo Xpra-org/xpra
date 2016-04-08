@@ -105,6 +105,15 @@ def check_pyopencl_AMD():
         pass
     return True
 
+def is_RH():
+    try:
+        with open("/etc/redhat-release", mode='rb') as f:
+            data = f.read()
+        return data.startswith("CentOS") or data.startswith("RedHat")
+    except:
+        pass
+    return False
+
 def is_msvc():
     #ugly: assume we want to use visual studio if we find the env var:
     return os.environ.get("VCINSTALLDIR") is not None
@@ -921,7 +930,7 @@ def build_xpra_conf(install_dir):
             'bind'                  : bind,
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : get_default_log_dir(),
-            'mdns'                  : True,
+            'mdns'                  : not is_RH(),      #no python-avahi on RH / CentOS
             'dbus_proxy'            : bstr(not OSX and not WIN32),
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,
