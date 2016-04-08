@@ -128,8 +128,8 @@ class XpraClientBase(FileTransferHandler):
         self.display = opts.display
         self.username = opts.username
         self.password_file = opts.password_file
-        self.encryption = opts.encryption
-        self.encryption_keyfile = opts.encryption_keyfile
+        self.encryption = opts.encryption or opts.tcp_encryption
+        self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.quality = opts.quality
         self.min_quality = opts.min_quality
         self.speed = opts.speed
