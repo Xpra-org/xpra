@@ -849,6 +849,7 @@ def do_validate_encryption(encryption, tcp_encryption, password_file, encryption
     crypto_backend_init()
     if not encryption and not tcp_encryption:
         return
+    env_key = os.environ.get("XPRA_ENCRYPTION_KEY")
     from xpra.net.crypto import ENCRYPTION_CIPHERS
     if not ENCRYPTION_CIPHERS:
         raise InitException("cannot use encryption: no ciphers available (a crypto library must be installed)")
@@ -858,9 +859,9 @@ def do_validate_encryption(encryption, tcp_encryption, password_file, encryption
         raise InitException("encryption %s is not supported, try: %s" % (encryption, csv(ENCRYPTION_CIPHERS)))
     if tcp_encryption and tcp_encryption not in ENCRYPTION_CIPHERS:
         raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, csv(ENCRYPTION_CIPHERS)))
-    if encryption and not encryption_keyfile:
+    if encryption and not encryption_keyfile and not env_key:
         raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % encryption)
-    if tcp_encryption and not tcp_encryption_keyfile:
+    if tcp_encryption and not tcp_encryption_keyfile and not env_key:
         raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
     if encryption and password_file==encryption_keyfile:
         raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
