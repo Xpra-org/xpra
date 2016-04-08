@@ -83,10 +83,13 @@ class Authenticator(FileAuthenticatorBase):
                 log.error(" '%s'", line)
                 log.error(" %s", e)
                 continue
-        log("parsed auth data from file %s: %s", password_file, auth_data)
+        log("parsed auth data from file %s: %s", self.password_filename, auth_data)
         return auth_data
 
     def get_auth_info(self):
+        self.load_password_file()
+        if not self.password_filedata:
+            return None
         return self.password_filedata.get(strtobytes(self.username))
 
     def get_password(self):

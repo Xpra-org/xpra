@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import unittest
 import tempfile
@@ -14,7 +15,7 @@ from xpra.util import xor
 from xpra.os_util import strtobytes
 
 try:
-	from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth
+	from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, env_auth, password_auth
 except:
 	pass
 
@@ -26,7 +27,7 @@ class FakeOpts(object):
 
 class TestAuth(unittest.TestCase):
 
-	def _init_auth(self, module, options={}, username="foo"):
+	def _init_auth(self, module, options={}, username="foo", **kwargs):
 		opts = FakeOpts(options)
 		module.init(opts)
 		try:
@@ -34,7 +35,7 @@ class TestAuth(unittest.TestCase):
 		except Exception as e:
 			raise Exception("module %s does not contain an Authenticator class!")
 		try:
-			return c(username)
+			return c(username, **kwargs)
 		except Exception as e:
 			raise Exception("failed to instantiate %s: %s" % (c, e))
 
@@ -47,11 +48,15 @@ class TestAuth(unittest.TestCase):
 			assert challenge
 
 	def test_all(self):
-		test_modules = [reject_auth,
+		test_modules = [
+						reject_auth,
 						allow_auth,
 						none_auth,
 						file_auth,
-						multifile_auth]
+						multifile_auth,
+						env_auth,
+						password_auth,
+						]
 		try:
 			from xpra.server.auth import pam_auth
 			test_modules.append(pam_auth)
@@ -99,6 +104,37 @@ class TestAuth(unittest.TestCase):
 			assert a.authenticate(x, "")
 			assert a.authenticate("", x)
 
+	def _test_hmac_auth(self, auth_class, password, **kwargs):
+		for x in (password, "somethingelse"):
+			a = self._init_auth(auth_class, **kwargs)
+			assert a.requires_challenge()
+			assert a.get_password()
+			salt, mac = a.get_challenge()
+			assert salt
+			assert mac=="hmac", "invalid mac: %s" % mac
+			client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
+			auth_salt = strtobytes(xor(salt, client_salt))
+			verify = hmac.HMAC(x, auth_salt, digestmod=hashlib.md5).hexdigest()
+			passed = a.authenticate(verify, client_salt)
+			assert passed == (x==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)
+			assert not a.authenticate(verify, client_salt)
+
+	def test_env(self):
+		for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
+			password = strtobytes(uuid.uuid4().hex)
+			os.environ[var_name] = password
+			try:
+				kwargs = {}
+				if var_name!="XPRA_PASSWORD":
+					kwargs["name"] = var_name
+				self._test_hmac_auth(env_auth, password, name=var_name)
+			finally:
+				del os.environ[var_name]
+
+	def test_password(self):
+		password = strtobytes(uuid.uuid4().hex)
+		self._test_hmac_auth(password_auth, password, value=password)
+
 
 	def _test_file_auth(self, name, module, genauthdata):
 		#no file, no go:
@@ -116,6 +152,7 @@ class TestAuth(unittest.TestCase):
 			with f:
 				a = self._init_auth(module, {"password_file" : filename})
 				password, filedata = genauthdata(a)
+				print("saving password file data='%s' to '%s'", filedata, filename)
 				f.write(strtobytes(filedata))
 				f.flush()
 				assert a.requires_challenge()
@@ -145,7 +182,7 @@ class TestAuth(unittest.TestCase):
 			password = uuid.uuid4().hex
 			return password, "%s|%s|||" % (a.username, password)
 		self._test_file_auth("multifile", multifile_auth, genfiledata)
-			
+
 
 def main():
 	try:

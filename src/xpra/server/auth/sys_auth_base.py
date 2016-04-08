@@ -3,9 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import hmac, hashlib, binascii
+
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
-from xpra.os_util import get_hex_uuid
+from xpra.os_util import get_hex_uuid, strtobytes
 from xpra.log import Logger
 log = Logger("auth")
 
@@ -44,13 +46,13 @@ class SysAuthenticator(object):
     def requires_challenge(self):
         return True
 
-    def get_challenge(self):
+    def get_challenge(self, mac="xor"):
         if self.salt is not None:
             log.error("challenge already sent!")
             return None
         self.salt = get_hex_uuid()+get_hex_uuid()
         #we need the raw password, so tell the client to use "xor":
-        return self.salt, "xor"
+        return self.salt, mac
 
     def get_password(self):
         return None
@@ -59,8 +61,12 @@ class SysAuthenticator(object):
         raise NotImplementedError()
 
     def authenticate(self, challenge_response, client_salt):
+        #this will call check(password)
+        self.authenticate_check(challenge_response, client_salt)
+
+    def authenticate_check(self, challenge_response, client_salt):
         if self.salt is None:
-            log.error("got a challenge response with no salt!")
+            log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
         if client_salt is None:
             salt = self.salt
@@ -75,7 +81,35 @@ class SysAuthenticator(object):
             if not self.check(password):
                 return False
         except Exception as e:
-            log.error("authentication error: %s", e)
+            log.error("Error in %s authentication checks:", self)
+            log.error(" %s", e)
+            return False
+        return True
+
+    def authenticate_hmac(self, challenge_response, client_salt):
+        if not self.salt:
+            log.error("Error: illegal challenge response received - salt cleared or unset")
+            return None
+        #ensure this salt does not get re-used:
+        if client_salt is None:
+            salt = self.salt
+        else:
+            salt = xor(self.salt, client_salt)
+        self.salt = None
+        password = self.get_password()
+        if not password:
+            log.error("Error: %s authentication failed", self)
+            log.error(" no password defined for '%s'", self.username)
+            return False
+        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
+        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, password, binascii.hexlify(strtobytes(salt)), verify)
+        if hasattr(hmac, "compare_digest"):
+            eq = hmac.compare_digest(verify, challenge_response)
+        else:
+            eq = verify==challenge_response
+        if not eq:
+            log("expected '%s' but got '%s'", verify, challenge_response)
+            log.error("Error: hmac password challenge for '%s' does not match", self.username)
             return False
         return True
 

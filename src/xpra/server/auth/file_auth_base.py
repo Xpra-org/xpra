@@ -27,6 +27,7 @@ class FileAuthenticatorBase(SysAuthenticator):
         self.password_filename = kwargs.get("filename", password_file)
         self.password_filedata = None
         self.password_filetime = None
+        self.authenticate = self.authenticate_hmac
 
     def requires_challenge(self):
         return True
@@ -68,7 +69,7 @@ class FileAuthenticatorBase(SysAuthenticator):
                     self.password_filedata = self.parse_filedata(data)
                     self.password_filetime = ptime
                 except Exception as e:
-                    log.error("Error password from '%s':", password_file)
+                    log.error("Error reading password data from '%s':", self.password_filename, exc_info=True)
                     log.error(" %s", e)
                     self.password_filedata = None
         return self.password_filedata

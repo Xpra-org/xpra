@@ -54,7 +54,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tcp\-encryption\-keyfile\fP=\fIKEYFILE\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
-[\fB\-\-password\-file\fP=\fIFILENAME\fP]
+[\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
@@ -136,7 +136,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
-[\fB\-\-password\-file\fP=\fIFILENAME\fP]
+[\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -603,7 +603,7 @@ of your actions.
 \fB\-\-bind\-vsock\fP=\fICID:PORT\fP
 Create a VSOCK socket for each \fB\-\-bind\-vsock\fP option specified.
 .TP
-\fB\-\-auth\fP=\fIMODULE\fP
+\fB\-\-auth\fP=\fIMODULE[:OPTION=VALUE]\fP
 Specifies the authentication module to use for unix domain sockets
 created using the \fBbind\fP switch. Authentication modules can
 validate a username and password against a variety of backend modules:
@@ -613,9 +613,19 @@ always allows authentication - this is dangerous
 and should only be used for testing
 .IP \fBfail\fP
 always fails authentication, useful for testing
+.IP \fBenv\fP
+matches against the environment variable specified by the \fIname\fP option
+(which defaults to \fBXPRA_PASSWORD\fP).
+ie: \fB--auth=env:name=SOME_OTHER_ENV_VAR_NAME\fP.
+.IP \fBpassword\fP
+matches against the password specified using the \fIvalue\fP option.
+ie: \fB--auth=password:value=YOURPASSWORD\fP.
+Note: this command line option may be exposed to other processes
+on the same system.
 .IP \fBfile\fP
 checks the password against the password data found in the file
-specified using the \fBpassword\-file\fP switch.
+specified using the \fBfilename\fP option.
+ie: \fB--auth=file:filename=./password.txt\fP.
 
 The contents of this file will be treated as binary data,
 there are no restrictions on character encodings or file size,
@@ -626,7 +636,7 @@ and the pipe character \fI|\fP.
 
 .IP \fBmultifile\fP
 checks the username and password against the file specified using
-the \fBpassword\-file\fP switch.
+the filename option.
 The file must contain each user credentials on one line of the form:
 
 \fIusername|password|uid|gid|displays|env_opts|session_opts\fP
@@ -648,6 +658,10 @@ automatically (either \fBpam\fP or \fBwin32\fP)
 \fB\-\-tcp\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
+.TP
+\fB\-\-vsock\-auth\fP=\fIMODULE\fP
+Just like the \fBauth\fP switch, except this one only applies
+to VSOCK sockets (sockets defined using the \fBbind\-vsock\fP switch).
 .TP
 \fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
@@ -765,14 +779,6 @@ Defaults to 600. This is ignored when \fImmap\-group\fP is enabled.
 
 .SS Options for start, upgrade and attach
 .TP
-\fB\-\-password\-file\fP=\fIFILENAME\fP
-This allows sessions to be secured with a password stored in a text
-file.  You should use this if you use the \fB\-\-bind\-tcp\fP option.
-If this is used on the server, it will reject any client connections
-that do not provide the same password value.
-The format of this file depends on the authentication option used,
-see \fIauth\fP and \fItcp\-auth\fP for details.
-.TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
 prying eyes.
@@ -880,6 +886,12 @@ The client can specify the value \fIboth\fP to both send
 it to the server and keep it locally.
 
 .SS Options for attach
+.TP
+\fB\-\-password\-file\fP=\fIFILENAME\fP
+Supply the password to be used for connecting to a server that
+uses authentication. See \fIauth\fP, \fItcp\-auth\fP and \fIvsock\-auth\fP
+for details.
+Alternatively, you may use the \fP=\fIXPRA_PASSWORD\fP environment variable.
 .TP
 \fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use OpenGL accelerated rendering on the client.
@@ -1199,11 +1211,14 @@ environment of the child to point to the xpra display.
 \fBxpra attach\fP, on the other hand, uses this variable to determine
 which display the remote applications should be shown on.
 
+fIXPRA_PASSWORD\fP may be used with \fBxpra attach\fP instead of the
+\fBpassword\-file\fP option.
+
 .\" --------------------------------------------------------------------
 .SH FILES
 \fIxpra.conf\fP stores default values for most options.
-There is a global config file in \fI/etc\fP or \fI/usr/local/etc\fP,
-and each user may override it using \fI.xpra/xpra.conf\fP.
+There is a global configuration file in \fI/etc\fP or \fI/usr/local/etc\fP,
+and each user may override those defaults by creating the file \fI.xpra/xpra.conf\fP.
 Xpra uses the directory \fI~/.xpra\fP to store a number of files.
 (The examples below are given for the display \fI:7\fP.)
 .TP

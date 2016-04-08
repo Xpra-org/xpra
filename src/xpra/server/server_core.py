@@ -225,12 +225,14 @@ class ServerCore(object):
             else:
                 auth = "pam"
             authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
-        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth
+        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, password_auth, env_auth
         AUTH_MODULES = {
                         "fail"      : fail_auth,
                         "reject"    : reject_auth,
                         "allow"     : allow_auth,
                         "none"      : none_auth,
+                        "env"       : env_auth,
+                        "password"  : password_auth,
                         "multifile" : multifile_auth,
                         "file"      : file_auth,
                         }
@@ -805,10 +807,15 @@ class ServerCore(object):
     def get_encryption_key(self, authenticator=None, keyfile=None):
         #if we have a keyfile specified, use that:
         authlog("get_encryption_key(%s, %s)", authenticator, keyfile)
+        v = None
         if keyfile:
             authlog("loading encryption key from keyfile: %s", keyfile)
-            return self.filedata_nocrlf(keyfile)
-        return None
+            v = self.filedata_nocrlf(keyfile)
+        if not v:
+            v = os.environ.get('XPRA_ENCRYPTION_KEY')
+            if v:
+                authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
+        return v
 
     def hello_oked(self, proto, packet, c, auth_caps):
         pass
