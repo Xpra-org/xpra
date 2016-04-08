@@ -1558,6 +1558,9 @@ def run_client(error_cb, opts, extra_args, mode):
         app.init_ui(opts, extra_args)
         try:
             conn = connect()
+            #UGLY warning: connect will parse the display string,
+            #which may change the username..
+            app.username = opts.username
             app.setup_connection(conn)
         except Exception as e:
             app.cleanup()
