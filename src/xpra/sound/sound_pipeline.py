@@ -219,10 +219,10 @@ class SoundPipeline(gobject.GObject):
             return
         cdl = self.codec_description.lower()
         dl = desc.lower()
-        if not cdl or (cdl!=dl and not dl.startswith(cdl) and not cdl.startswith(dl)):
+        if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
             gstlog.info("using audio codec %s", dl)
-            self.codec_description = desc.lower()
-            self.info["codec_description"]  = self.codec_description
+        self.codec_description = dl
+        self.info["codec_description"]  = dl
 
     def new_container_description(self, desc):
         log("new_container_description(%s) current container description=%s", desc, self.container_description)
@@ -230,10 +230,10 @@ class SoundPipeline(gobject.GObject):
             return
         cdl = self.container_description.lower()
         dl = desc.lower()
-        if not cdl or (cdl!=dl and not dl.startswith(cdl) and not cdl.startswith(dl)):
+        if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
             gstlog.info("using container format %s", dl)
-            self.container_description = desc.lower()
-            self.info["container_description"]  = self.container_description
+        self.container_description = dl
+        self.info["container_description"]  = dl
 
 
     def on_message(self, bus, message):
@@ -279,7 +279,7 @@ class SoundPipeline(gobject.GObject):
                 #with gstreamer 1.x, we don't always get the "audio-codec" message..
                 #so print the codec from here instead (and assume gstreamer is using what we told it to)
                 #after a delay, just in case we do get the real "audio-codec" message!
-                self.timeout_add(500, self.new_codec_description, self.codec)
+                self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             gstlog("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
