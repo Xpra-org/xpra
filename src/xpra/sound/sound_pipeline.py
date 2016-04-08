@@ -46,6 +46,7 @@ class SoundPipeline(gobject.GObject):
         self.codec = codec
         self.codec_description = ""
         self.codec_mode = ""
+        self.container_description = ""
         self.bus = None
         self.bus_message_handler_id = None
         self.bitrate = -1
@@ -164,7 +165,10 @@ class SoundPipeline(gobject.GObject):
         self.pipeline.set_state(gst.STATE_PLAYING)
         self.emit_info()
         #we may never get the stream start, synthesize codec event so we get logging:
-        self.timeout_add(1000, self.new_codec_description, self.codec)
+        parts = self.codec.split("+")
+        self.timeout_add(1000, self.new_codec_description, parts[0])
+        if len(parts)>1:
+            self.timeout_add(1000, self.new_container_description, parts[1])
         log("SoundPipeline.start() done")
 
     def stop(self):
@@ -216,9 +220,20 @@ class SoundPipeline(gobject.GObject):
         cdl = self.codec_description.lower()
         dl = desc.lower()
         if not cdl or (cdl!=dl and not dl.startswith(cdl) and not cdl.startswith(dl)):
-            gstlog.info("using audio codec: %s", dl)
+            gstlog.info("using audio codec %s", dl)
             self.codec_description = desc.lower()
             self.info["codec_description"]  = self.codec_description
+
+    def new_container_description(self, desc):
+        log("new_container_description(%s) current container description=%s", desc, self.container_description)
+        if not desc:
+            return
+        cdl = self.container_description.lower()
+        dl = desc.lower()
+        if not cdl or (cdl!=dl and not dl.startswith(cdl) and not cdl.startswith(dl)):
+            gstlog.info("using container format %s", dl)
+            self.container_description = desc.lower()
+            self.info["container_description"]  = self.container_description
 
 
     def on_message(self, bus, message):
@@ -326,9 +341,13 @@ class SoundPipeline(gobject.GObject):
                 self.info["volume"]  = self.get_volume()
             else:
                 gstlog.info("type=%s", structure["type"])
+        if structure.has_field("container-format"):
+            v = structure["container-format"]
+            self.new_container_description(v)
+            found = True
         if not found:
             #these, we know about, so we just log them:
-            for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode", "container-format"):
+            for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode"):
                 if structure.has_field(x):
                     v = structure[x]
                     gstlog("tag message: %s = %s", x, v)
@@ -368,7 +387,7 @@ class SoundPipeline(gobject.GObject):
         if "container-format" in tags:
             cf = taglist.get_string("container-format")
             if cf[0] is True:
-                gstlog.info("container format: %s", cf[1])
+                self.new_container_description(cf[1])
         for x in ("encoder", "description", "language-code"):
             if x in tags:
                 desc = taglist.get_string(x)
