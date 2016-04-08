@@ -1694,11 +1694,6 @@ class UIXpraClient(XpraClientBase):
         if not XpraClientBase.parse_server_capabilities(self):
             return  False
         c = self.server_capabilities
-        if self.client_supports_remote_logging and c.boolget("remote-logging"):
-            log.info("enabled remote logging")
-            if not self.log_both:
-                log.info(" see server log file for further output")
-            self.local_logging = set_global_logging_handler(self.remote_logging_handler)
         if not self.session_name:
             self.session_name = c.strget("session_name", "")
         from xpra.platform import set_name
@@ -1888,6 +1883,14 @@ class UIXpraClient(XpraClientBase):
             self.timeout_add(1000, self.send_ping)
         else:
             self.timeout_add(10*1000, self.send_ping)
+
+    def parse_logging_capabilities(self):
+        c = self.server_capabilities
+        if self.client_supports_remote_logging and c.boolget("remote-logging"):
+            log.info("enabled remote logging")
+            if not self.log_both:
+                log.info(" see server log file for further output")
+            self.local_logging = set_global_logging_handler(self.remote_logging_handler)
 
 
     def _startup_complete(self, *args):
