@@ -12,6 +12,7 @@
 	%global with_python3 0
 	%global with_filter 0
 	%global with_webp 0
+	%global lcms %{nil}
 %endif
 %if 0%{?el7}
 	%global with_python3 0
@@ -41,7 +42,7 @@
 
 Name:           python-pillow
 Version:        3.2.0
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -62,7 +63,9 @@ BuildRequires:  tk-devel
 BuildRequires:  %{libjpeg}-devel
 BuildRequires:  zlib-devel
 BuildRequires:  freetype-devel
+%if "%{?lcms}"!="%{nil}"
 BuildRequires:  %{lcms}-devel
+%endif
 %if 0%{with_webp} > 0
 BuildRequires:  libwebp-devel
 %endif
@@ -80,6 +83,9 @@ BuildRequires:  python3-numpy
 
 Provides:       python-imaging = %{version}-%{release}
 Obsoletes:      python-imaging <= 1.1.7-12
+%if "%{?lcms}"!="%{nil}"
+Requires:		%{lcms}
+%endif
 
 %if 0%{with_filter} > 0
 %filter_provides_in %{python_sitearch}
@@ -288,6 +294,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Fri Apr 08 2016 Antoine Martin <antoine@devloop.org.uk - 3.2.0-2
+- tweak liblcms dependencies (not useful on centos)
+
 * Sat Apr 02 2016 Antoine Martin <antoine@devloop.org.uk - 3.2.0-1
 - new upstream release
 
