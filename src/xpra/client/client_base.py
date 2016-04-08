@@ -238,8 +238,8 @@ class XpraClientBase(FileTransferHandler):
         self._protocol.enable_default_encoder()
         self._protocol.enable_default_compressor()
         if self.encryption and ENCRYPT_FIRST_PACKET:
-            password = self.get_encryption_key()
-            self._protocol.set_cipher_out(self.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+            key = self.get_encryption_key()
+            self._protocol.set_cipher_out(self.encryption, DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = self._protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
