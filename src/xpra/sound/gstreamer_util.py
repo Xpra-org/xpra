@@ -430,6 +430,12 @@ def get_codecs():
             continue
         if force_enabled(encoding):
             log.info("sound codec %s force enabled", encoding)
+        elif len([x for x in elements if (x and (x.find("matroska")>=0 or x.find("gdp")>=0))])>0 and get_gst_version()<(0, 10, 36):
+            #outdated versions of gstreamer cause problems with the gdp and matroskademux muxers,
+            #the receiver may not be able to process the data
+            #and we have no way of knowing what version they have at this point, so just disable those:
+            log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
+            continue
         elif encoding==FLAC:
             #flac problems:
             if WIN32 and gst_major_version==0:
