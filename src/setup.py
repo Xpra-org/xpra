@@ -136,7 +136,7 @@ gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT and not WIN32 and not OSX
 
-vsock_ENABLED           = sys.platform.startswith("linux")
+vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 clipboard_ENABLED       = DEFAULT and not PYTHON3
