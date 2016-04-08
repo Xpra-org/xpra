@@ -1330,7 +1330,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         if ss is None:
             return
         printers = packet[1]
-        ss.set_printers(printers, self.auth_class, self.encryption, self.encryption_keyfile)
+        ss.set_printers(printers, self.password_file, self.auth_class, self.encryption, self.encryption_keyfile)
 
 
     #########################################

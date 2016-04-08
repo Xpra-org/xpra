@@ -1620,8 +1620,8 @@ class ServerSource(object):
         self.send("webcam-stop", device, message)
 
 
-    def set_printers(self, printers, auth, encryption, encryption_keyfile):
-        printlog("set_printers(%s, %s, %s, %s) for %s", printers, auth, encryption, encryption_keyfile, self)
+    def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
+        printlog("set_printers(%s, %s, %s, %s, %s) for %s", printers, password_file, auth, encryption, encryption_keyfile, self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             printlog("local client with identical machine id,")
@@ -1663,15 +1663,16 @@ class ServerSource(object):
             #convert to an absolute path since the backend may run as a different user:
             return os.path.abspath(os.path.expanduser(filename))
         if auth:
+            auth_password_file = None
             try:
                 name, authclass, authoptions = auth
-                password_file = authoptions.get("file")
+                auth_password_file = authoptions.get("file")
                 log("file for %s / %s: '%s'", name, authclass, password_file)
-                if password_file:
-                    attributes["password-file"] = makeabs(password_file)
             except Exception as e:
                 log.error("Error: cannot forward authentication attributes to printer backend:")
                 log.error(" %s", e)
+            if auth_password_file or password_file:
+                attributes["password-file"] = makeabs(auth_password_file or password_file)
         if encryption:
             if not encryption_keyfile:
                 log.error("Error: no encryption keyfile found for printing")
