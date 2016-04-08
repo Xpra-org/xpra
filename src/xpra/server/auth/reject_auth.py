@@ -11,7 +11,7 @@ def init(opts):
 
 
 class Authenticator(object):
-    def __init__(self, username):
+    def __init__(self, username, **kwargs):
         pass
 
     def requires_challenge(self):

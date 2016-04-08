@@ -543,6 +543,22 @@ def flatten_dict(info, sep="."):
     add_dict(None, info)
     return to
 
+def parse_simple_dict(s="", sep=","):
+    #parse the options string and add the pairs:
+    d = {}
+    for s in s.split(sep):
+        if not s:
+            continue
+        try:
+            k,v = s.split("=", 1)
+            d[k] = v
+        except Exception as e:
+            from xpra.log import Logger
+            log = Logger("util")
+            log.warn("Warning: failed to parse dictionary option '%s':", s)
+            log.warn(" %s", e)
+    return d
+
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
 def updict(todict, prefix, d, suffix=""):

@@ -19,7 +19,7 @@ def init(opts):
 
 
 class SysAuthenticator(object):
-    def __init__(self, username):
+    def __init__(self, username, **kwargs):
         self.username = username
         self.salt = None
         try:
@@ -27,6 +27,9 @@ class SysAuthenticator(object):
             self.pw = pwd.getpwnam(username)
         except:
             self.pw = None
+        if kwargs:
+            log.warn("Warning: unused keyword arguments for %s authentication:", self)
+            log.warn(" %s", kwargs)
 
     def get_uid(self):
         if self.pw is None:

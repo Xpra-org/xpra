@@ -40,7 +40,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, repr_ellipsized, dump_all_frames, \
+from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -135,6 +135,7 @@ class ServerCore(object):
         self.start_time = time.time()
         self.auth_class = None
         self.tcp_auth_class = None
+        self.vsock_auth_class = None
         self._when_ready = []
         self.child_reaper = None
         self.original_desktop_display = None
@@ -202,19 +203,22 @@ class ServerCore(object):
         self.init_auth(opts)
 
     def init_auth(self, opts):
-        a = opts.auth.lower()
-        ta = opts.tcp_auth.lower()
-        self.auth_class = self.get_auth_module("unix-domain-socket", a, opts)
-        self.tcp_auth_class = self.get_auth_module("tcp-socket", ta or a, opts)
-        if (a=="multifile" and ta=="file") or (ta=="multifile" and a=="file"):
-            raise InitException("multifile and file authentication cannot be used at the same time")
-        authlog("init_auth(..) auth class(%s)=%s, tcp auth class(%s)=%s", a, self.auth_class, ta, self.tcp_auth_class)
+        self.auth_class = self.get_auth_module("unix-domain", opts.auth, opts)
+        self.tcp_auth_class = self.get_auth_module("tcp", opts.tcp_auth or opts.auth, opts)
+        self.vsock_auth_class = self.get_auth_module("vsock", opts.vsock_auth, opts)
+        authlog("init_auth(..) auth class=%s, tcp auth class=%s, vsock auth class=%s", self.auth_class, self.tcp_auth_class, self.vsock_auth_class)
 
-    def get_auth_module(self, socket_type, auth, opts):
-        authlog("get_auth_module(%s, %s, %s)", socket_type, auth, opts)
-        if not auth:
+    def get_auth_module(self, socket_type, auth_str, opts):
+        authlog("get_auth_module(%s, %s, %s)", socket_type, auth_str, opts)
+        if not auth_str:
             return None
-        elif auth=="sys":
+        #separate options from the auth module name
+        parts = auth_str.split(":", 1)
+        auth = parts[0]
+        auth_options = {}
+        if len(parts)>1:
+            auth_options = parse_simple_dict(parts[1])
+        if auth=="sys":
             #resolve virtual "sys" auth:
             if sys.platform.startswith("win"):
                 auth = "win32"
@@ -249,7 +253,7 @@ class ServerCore(object):
             auth_module.init(opts)
             auth_class = getattr(auth_module, "Authenticator")
             auth_class.auth_name = auth.lower()
-            return auth_class
+            return auth, auth_class, auth_options
         except Exception as e:
             raise InitException("Authenticator class not found in %s" % auth_module)
 
@@ -484,6 +488,10 @@ class ServerCore(object):
             protocol.auth_class = self.tcp_auth_class
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
+        if socktype=="vsock":
+            protocol.auth_class = self.vsock_auth_class
+            protocol.encryption = None
+            protocol.keyfile = None
         else:
             protocol.auth_class = self.auth_class
             protocol.encryption = self.encryption
@@ -702,9 +710,13 @@ class ServerCore(object):
         if proto.authenticator is None and proto.auth_class:
             authlog("creating authenticator %s", proto.auth_class)
             try:
-                proto.authenticator = proto.auth_class(username)
+                auth, aclass, options = proto.auth_class
+                ainstance = aclass(username, **options)
+                proto.authenticator = ainstance
+                authlog("%s=%s", auth, ainstance)
             except Exception as e:
-                authlog.error("Error instantiating %s: %s", proto.auth_class, e)
+                authlog.error("Error instantiating %s:", proto.auth_class)
+                authlog.error(" %s", e)
                 auth_failed("authentication failed")
                 return False
         self.digest_modes = c.get("digest", ("hmac", ))
@@ -943,7 +955,6 @@ class ServerCore(object):
                    "type"              : "Python",
                    "start_time"        : int(self.start_time),
                    "idle-timeout"      : int(self.server_idle_timeout),
-                   "authenticator"     : str((self.auth_class or str)("")),
                    "argv"              : sys.argv,
                    "path"              : sys.path,
                    "exec_prefix"       : sys.exec_prefix,
@@ -973,7 +984,14 @@ class ServerCore(object):
         si = {}
         for socktype, _, info in self._socket_info:
             if info:
-                si.setdefault(socktype, []).append(info)
+                si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
+        for socktype, auth_class in {
+                                     "tcp"          : self.tcp_auth_class,
+                                     "unix-domain"  : self.auth_class,
+                                     "vsock"        : self.vsock_auth_class,
+                                     }.items():
+            if auth_class:
+                si.setdefault(socktype, {})["authenticator"] = auth_class[0], auth_class[2]
         return si
 
 

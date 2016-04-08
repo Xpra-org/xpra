@@ -64,7 +64,7 @@ remote-logging = %(remote_logging)s
 
 
 ################################################################################
-# File transfer
+# File transfers
 
 # Receive files
 file-transfer = yes
@@ -76,6 +76,16 @@ file-transfer = yes
 
 # File size limit in MB
 file-size-limit = 10
+
+# How to open files:
+#open-command = xdg-open
+
+# Open files
+open-files = no
+
+
+################################################################################
+# Printer forwarding
 
 # Print support:
 printing = %(printing)s
@@ -96,12 +106,6 @@ lpinfo = /usr/sbin/lpinfo
 postscript-printer = %(postscript_printer)s
 # pdf-printer = /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
 pdf-printer = %(pdf_printer)s
-
-# How to open files:
-#open-command = xdg-open
-
-# Open files
-open-files = no
 
 
 ################################################################################
@@ -175,6 +179,18 @@ auto-refresh-delay = 0.15
 #dpi = 96
 #automatic (which is the default):
 #dpi = 0
+
+# Video encoders loaded by the server
+# (all of them unless specified)
+# examples:
+#video-encoders=x264,vpx,nvenc
+#video-encoders=x264
+
+# Colourspace conversion modules loaded by the server
+# (all of them unless specified)
+# examples:
+#csc-modules=swscale,cython,opencl
+#csc-modules=swscale
 
 
 ################################################################################
@@ -373,13 +389,25 @@ exit-with-children = no
 # dbus-launch = /usr/bin/dbus-launch --close-stderr
 dbus-launch = dbus-launch --close-stderr
 
-# A wrapper for executing commands
+# Start a dbus server which can be used to interact with the server process:
+#dbus-control = no
+dbus-control = %(dbus_control)s
+
+# Forward client dbus rpc requests:
+# (requires client configuration)
+#dbus-proxy = no
+dbus-proxy = %(dbus_proxy)s
+
+# A wrapper for executing all sub-commands:
 # exec-wrapper = vglrun --
 # exec-wrapper = vglrun -d :1 --
 
 # Allows clients to start new commands in the server context:
 #start-new-commands = yes
 start-new-commands = no
+
+########################################################################
+# Server Connection Options:
 
 # Where to create local sockets:
 # bind=none
@@ -390,7 +418,7 @@ start-new-commands = no
 # bind=/run/user/$UID/xpra/
 bind = %(bind)s
 
-# Authentication module to use:
+# Authentication module to use for local sockets:
 #auth=fail
 #auth=reject
 #auth=allow
@@ -399,26 +427,20 @@ bind = %(bind)s
 #auth=sys
 #auth=none
 
+# To listen on TCP sockets:
+# bind-tcp=:10000
+# bind-tcp=0.0.0.0:10000
+# bind-tcp=192.168.0.1:10000
+
 # Authentication module to use for TCP sockets:
 #tcp-auth=none
 
-# Set the _NET_WM_NAME,
-# used by some application that make too many assumptions (ie: Java)
-# To workaround JDK6 window positioning issues, use:
-#wm-name = Sawfish
-wm-name = Xpra
+# To listen on AF_VSOCK sockets:
+# bind-vsock=auto:2000
+# bind-vsock=2:2000
 
-# Video encoders loaded by the server
-# (all of them unless specified)
-# examples:
-#video-encoders=x264,vpx,nvenc
-#video-encoders=x264
-
-# Colourspace conversion modules loaded by the server
-# (all of them unless specified)
-# examples:
-#csc-modules=swscale,cython,opencl
-#csc-modules=swscale
+# Authentication to use for VSOCK:
+#vsock-auth=none
 
 # Where to send non xpra clients:
 # (can be used to share the port with a web server)
@@ -434,14 +456,14 @@ wm-name = Xpra
 #mdns = no
 mdns = %(mdns)s
 
-# Forward client dbus rpc requests:
-# (requires client configuration)
-#dbus-proxy = no
-dbus-proxy = %(dbus_proxy)s
+########################################################################
+# Server Environment:
 
-# Start a dbus server which can be used to interact with the server process:
-#dbus-control = no
-dbus-control = %(dbus_control)s
+# Set the _NET_WM_NAME,
+# used by some application that make too many assumptions (ie: Java)
+# To workaround JDK6 window positioning issues, use:
+#wm-name = Sawfish
+wm-name = Xpra
 
 # Input methods
 # To disable input method completely:
@@ -479,7 +501,7 @@ pulseaudio-command = %(pulseaudio_command)s
 sync-xvfb = 0
 
 # Virtual display command:
-# - Old Xvfb option:
+# - Old Xvfb option (required on Ubuntu where Xorg is broken):
 # xvfb = Xvfb +extension Composite -nolisten tcp -noreset \
 #        -auth $XAUTHORITY \
 #        -screen 0 5760x2560x24+32

@@ -377,7 +377,7 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
                           metavar="[HOST]:PORT",
-                          help="Listen for connections over TCP (use --password-file to secure it)."
+                          help="Listen for connections over TCP (use --tcp-auth to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
     else:
         ignore({"bind-tcp" : []})
@@ -389,7 +389,7 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--bind-vsock", action="append",
                           dest="bind_vsock", default=list(defaults.bind_vsock or []),
                           metavar="[CID]:[PORT]",
-                          help="Listen for connections over VSOCK (use --password-file to secure it)."
+                          help="Listen for connections over VSOCK."
                             + " You may specify this option multiple times with different CID and port combinations")
     else:
         ignore({"bind-vsock" : []})
@@ -1150,7 +1150,8 @@ def parse_display_name(error_cb, opts, display_name):
                 with open(opts.password_file, "rb") as f:
                     desc["password"] = f.read()
             except Exception as e:
-                print("failed to read password file %s: %s", opts.password_file, e)
+                sys.stderr.write("Error: failed to read the password file '%s':\n", opts.password_file)
+                sys.stderr.write(" %s\n", e)
         return desc
     elif display_name.startswith("socket:"):
         #use the socketfile specified:

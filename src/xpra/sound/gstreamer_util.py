@@ -7,7 +7,7 @@
 import sys
 import os
 
-from xpra.util import csv, engs
+from xpra.util import csv, engs, parse_simple_dict
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
@@ -705,20 +705,6 @@ DEFAULT_SINK_PLUGIN_OPTIONS = {
     }
 
 
-
-def parse_element_options(options_str):
-    #parse the options string and add the pairs:
-    options = {}
-    for s in options_str.split(","):
-        if not s:
-            continue
-        try:
-            k,v = s.split("=", 1)
-            options[k] = v
-        except Exception as e:
-            log.warn("failed to parse plugin option '%s': %s", s, e)
-    return options
-
 def format_element_options(options):
     return csv("%s=%s" % (k,v) for k,v in options.items())
 
@@ -746,7 +732,7 @@ def get_sound_source_options(plugin, options_str, device, want_monitor_device, r
             #assume the user knows the "device-name"...
             #(since I have no idea where to get the "device" string)
             options["device-name"] = device
-    options.update(parse_element_options(options_str))
+    options.update(parse_simple_dict(options_str))
     return options
 
 

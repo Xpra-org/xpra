@@ -7,11 +7,11 @@ import os
 import time
 import sys
 
-from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, parse_element_options, format_element_options, \
+from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, format_element_options, \
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct, typedict, parse_simple_dict
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")
@@ -164,11 +164,11 @@ def run_sound(mode, error_cb, options, args):
         #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
         plugin = args[2]
         #plugin options (ie: "device=monitor_device,something=value")
-        options = parse_element_options(args[3])
+        options = parse_simple_dict(args[3])
         #codecs:
         codecs = [x.strip() for x in args[4].split(",")]
         #codec options:
-        codec_options = parse_element_options(args[5])
+        codec_options = parse_simple_dict(args[5])
         #volume (optional):
         try:
             volume = int(args[6])

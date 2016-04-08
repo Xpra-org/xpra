@@ -916,8 +916,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     except:
         cwd = os.path.expanduser("~")
         sys.stderr.write("current working directory does not exist, using '%s'\n" % cwd)
-    if opts.password_file and not (opts.auth or opts.tcp_auth):
-        raise InitException("when specifying a password-file, you must use auth or tcp-auth")
     validate_encryption(opts)
     if opts.encoding=="help" or "help" in opts.encodings:
         #avoid errors and warnings:
