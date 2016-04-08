@@ -704,7 +704,8 @@ class ServerCore(object):
             return  False
 
         def auth_failed(msg):
-            authlog.error("Error: authentication failed: %s", msg)
+            authlog.error("Error: authentication failed")
+            authlog.error(" %s", msg)
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
         #authenticator:
@@ -751,7 +752,7 @@ class ServerCore(object):
         else:
             if proto.encryption:
                 authlog("client does not provide encryption tokens")
-                auth_failed("missing encryption")
+                auth_failed("missing encryption tokens")
                 return False
             auth_caps = None
 
