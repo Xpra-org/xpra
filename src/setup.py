@@ -127,6 +127,7 @@ gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT and not WIN32 and not OSX
 
+vsock_ENABLED           = sys.platform.startswith("linux")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 clipboard_ENABLED       = DEFAULT and not PYTHON3
@@ -201,7 +202,7 @@ SWITCHES = ["enc_x264", "enc_x265", "xvid",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython", "csc_opencv", "csc_libyuv",
             "memoryview",
-            "bencode", "cython_bencode",
+            "bencode", "cython_bencode", "vsock",
             "clipboard",
             "server", "client", "dbus", "x11", "gtk_x11",
             "gtk2", "gtk3", "html5",
@@ -2349,6 +2350,12 @@ if cython_bencode_ENABLED:
     cython_add(Extension("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx", buffers_c],
                 **bencode_pkgconfig))
+
+if vsock_ENABLED:
+    vsock_pkgconfig = pkgconfig()
+    cython_add(Extension("xpra.net.vsock",
+                ["xpra/net/vsock.pyx"],
+                **vsock_pkgconfig))
 
 
 if ext_modules:
