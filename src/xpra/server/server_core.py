@@ -209,7 +209,7 @@ class ServerCore(object):
         authlog("init_auth(..) auth class=%s, tcp auth class=%s, vsock auth class=%s", self.auth_class, self.tcp_auth_class, self.vsock_auth_class)
 
     def get_auth_module(self, socket_type, auth_str, opts):
-        authlog("get_auth_module(%s, %s, %s)", socket_type, auth_str, opts)
+        authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
         if not auth_str:
             return None
         #separate options from the auth module name
@@ -490,7 +490,7 @@ class ServerCore(object):
             protocol.auth_class = self.tcp_auth_class
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
-        if socktype=="vsock":
+        elif socktype=="vsock":
             protocol.auth_class = self.vsock_auth_class
             protocol.encryption = None
             protocol.keyfile = None
@@ -743,7 +743,7 @@ class ServerCore(object):
             if padding not in ALL_PADDING_OPTIONS:
                 auth_failed("unsupported padding: %s" % padding)
                 return False
-            authlog("set output cipher using encryption key %s", encryption_key)
+            authlog("set output cipher using encryption key '%s'", repr_ellipsized(encryption_key))
             proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
             auth_caps = new_cipher_caps(proto, cipher, encryption_key, padding_options)
