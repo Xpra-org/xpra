@@ -482,6 +482,7 @@ class ApplicationWindow:
     def connect_builtin(self):
         #cooked vars used by connect_to
         params = {"type"    : self.config.mode}
+        username = self.config.username
         if self.config.mode=="ssh":
             remote_xpra = self.config.remote_xpra.split()
             if self.config.socket_dir:
@@ -496,7 +497,6 @@ class ApplicationWindow:
                 params["display_as_args"] = []
             full_ssh = shlex.split(self.config.ssh)
             password = self.config.password
-            username = self.config.username
             host = self.config.host
             upos = host.find("@")
             if upos>=0:
@@ -530,6 +530,11 @@ class ApplicationWindow:
             params["display_name"] = "tcp:%s:%s" % (self.config.host, self.config.port)
 
         #print("connect_to(%s)" % params)
+        #UGLY warning: the username may have been updated during display parsing,
+        #or the config file may contain a username which is different from the default one
+        #which is used for initializing the client during init,
+        #so update the client now:
+        self.client.username = username
         self.set_info_text("Connecting...")
         thread.start_new_thread(self.do_connect_builtin, (params,))
 
