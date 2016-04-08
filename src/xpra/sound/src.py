@@ -222,6 +222,8 @@ class SoundSource(SoundPipeline):
 
 
     def caps_to_dict(self, caps):
+        if not caps:
+            return {}
         d = {}
         try:
             for cap in caps:
