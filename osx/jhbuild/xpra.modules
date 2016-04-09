@@ -754,9 +754,9 @@
   </autotools>
 
   <distutils id="scons">
-	<branch repo="sourceforge.net" module="/project/scons/scons/2.3.4/scons-2.3.4.tar.gz"
-		hash="md5:91fbbb67c2c65b03c746601baac4a6a5"
-		version="2.3.4"/>
+	<branch repo="sourceforge.net" module="/project/scons/scons/2.4.1/scons-2.4.1.tar.gz"
+		hash="md5:9a0ddf33d9839f04380e0fae87cc4b40"
+		version="2.4.1"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="libxml2"/>
@@ -767,9 +767,9 @@
   </distutils>
 
   <autotools id="serf" autogenargs="" autogen-sh="configure">
-	<branch module="/files/serf-1.2.1.tar.bz2"
-		hash="md5:4f8e76c9c6567aee1d66aba49f76a58b"
-		version="1.2.1"
+	<branch module="/files/serf-1.3.8.tar.bz2"
+		hash="md5:2e4efe57ff28cb3202a112e90f0c2889"
+		version="1.3.8"
 		repo="serf.googlecode.com"/>
         <dependencies>
                 <dep package="apr-util"/>
@@ -779,9 +779,9 @@
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.8.15.tar.bz2"
-		hash="md5:42f2ff8194b52e6287faec29f5775edf"
-		version="1.8.15"
+    <branch module="/dist/subversion/subversion-1.9.3.tar.bz2"
+		hash="md5:243036eb28b50ce517fc228eb3250add"
+		version="1.9.3"
 		repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="apr-util"/>
