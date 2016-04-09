@@ -93,6 +93,8 @@ RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
 WEBCAM_ALLOW_VIRTUAL = os.environ.get("XPRA_WEBCAM_ALLOW_VIRTUAL", "0")=="1"
 
+WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
+TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
     return iround(v*rounding)
@@ -1274,11 +1276,11 @@ class UIXpraClient(XpraClientBase):
                 class_instance = metadata.get("class-instance")
                 title = metadata.get("title")
                 log("window_close_event(%i) title=%s, class-instance(%s)=%s", wid, title, class_instance)
-                if title=="Xnest":
+                if title in TITLE_CLOSEEXIT:
                     log.info("window-close event on %s window, disconnecting", title)
                     self.quit(0)
                     return True
-                if class_instance and class_instance[0] in ("Xephyr", ):
+                if class_instance and class_instance[0] in WM_CLASS_CLOSEEXIT:
                     log.info("window-close event on %s window, disconnecting", class_instance[0])
                     self.quit(0)
                     return True
