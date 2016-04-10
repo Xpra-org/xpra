@@ -67,6 +67,7 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
         pass
 
 
+SAVE_WINDOW_ICONS = os.environ.get("XPRA_SAVE_WINDOW_ICONS", "0")=="1"
 UNDECORATED_TRANSIENT_IS_OR = int(os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "1"))
 
 #window types we map to POPUP rather than TOPLEVEL
@@ -1119,3 +1120,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #pixbuf.save("C-%s-%s.png" % (self._id, int(time.time())), "png")
         iconlog("%s.set_icon(%s)", self, pixbuf)
         self.set_icon(pixbuf)
+        if SAVE_WINDOW_ICONS:
+            filename = "client-window-%i-icon-%i.png" % (self._id, int(time.time()))
+            pixbuf.save(filename, "png")
+            iconlog("client window icon saved to %s", filename)

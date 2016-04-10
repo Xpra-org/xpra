@@ -45,6 +45,7 @@ AV_SYNC_RATE_CHANGE = int(os.environ.get("XPRA_AV_SYNC_RATE_CHANGE", "20"))
 AV_SYNC_TIME_CHANGE = int(os.environ.get("XPRA_AV_SYNC_TIME_CHANGE", "500"))
 
 LOG_THEME_DEFAULT_ICONS = os.environ.get("XPRA_LOG_THEME_DEFAULT_ICONS", "0")=="1"
+SAVE_WINDOW_ICONS = os.environ.get("XPRA_SAVE_WINDOW_ICONS", "0")=="1"
 
 
 from xpra.os_util import StringIOClass, memoryview_to_bytes
@@ -531,7 +532,7 @@ class WindowSource(object):
         #use png if supported and:
         # * if we must downscale it (bigger than what the client is willing to deal with)
         # * if not using a 4-stride (FIXME: should handle this with PIL too)
-        use_png = PIL and ("png" in self.encodings) and (w>max_w or h>max_h or stride!=4*w)
+        use_png = PIL and ("png" in self.encodings) and (SAVE_WINDOW_ICONS or (w>max_w or h>max_h or stride!=4*w))
         iconlog("compress_and_send_window_icon: %sx%s, sending as png=%s", w, h, use_png)
         if use_png:
             img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
@@ -551,6 +552,10 @@ class WindowSource(object):
             compressed_data = output.getvalue()
             output.close()
             wrapper = compression.Compressed("png", compressed_data)
+            if SAVE_WINDOW_ICONS:
+                filename = "server-window-%i-icon-%i.png" % (self.wid, int(time.time()))
+                img.save(filename, 'PNG')
+                iconlog("server window icon saved to %s", filename)
         else:
             wrapper = self.compressed_wrapper("premult_argb32", str(pixel_data))
         assert wrapper.datatype in ("premult_argb32", "png")
