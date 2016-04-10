@@ -399,22 +399,26 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
     # XShape
     #########################################
 
-    def _read_xshape(self):
+    def _read_xshape(self, x=0, y=0):
         if not X11Window.displayHasXShape():
             return {}
         extents = X11Window.XShapeQueryExtents(self.xid)
         if not extents:
             shapelog("read_shape for window %#x: no extents", self.xid)
             return {}
-        v = {}
         #w,h = X11Window.getGeometry(xid)[2:4]
+        shapelog("read_shape for window %#x: extents=%s", self.xid, extents)
         bextents = extents[0]
         cextents = extents[1]
         if bextents[0]==0 and cextents[0]==0:
             shapelog("read_shape for window %#x: none enabled", self.xid)
             return {}
-        v["Bounding.extents"] = bextents
-        v["Clip.extents"] = cextents
+        v = {
+             "x"                : x,
+             "y"                : y,
+             "Bounding.extents" : bextents,
+             "Clip.extents"     : cextents,
+             }
         for kind in SHAPE_KIND.keys():
             kind_name = SHAPE_KIND[kind]
             rectangles = X11Window.XShapeGetRectangles(self.xid, kind)
@@ -698,7 +702,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
         cur_shape = self.get_property("shape")
         if cur_shape and cur_shape.get("serial", 0)>=event.serial:
-            shapelog("same or older xshape serial no: %#x", event.serial)
+            shapelog("same or older xshape serial no: %#x (current=%#x)", event.serial, cur_shape.get("serial", 0))
             return
         #remove serial before comparing dicts:
         try:
@@ -707,7 +711,12 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             pass
         #read new xshape:
         with xswallow:
-            v = self._read_xshape()
+            #should we pass the x and y offsets here?
+            #v = self._read_xshape(event.x, event.y)
+            if event.shaped:
+                v = self._read_xshape()
+            else:
+                v = {}
             if cur_shape==v:
                 shapelog("xshape unchanged")
                 return

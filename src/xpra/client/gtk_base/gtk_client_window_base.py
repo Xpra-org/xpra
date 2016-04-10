@@ -467,56 +467,58 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         def do_set_shape():
             xid = get_xid(self.get_window())
+            x_off, y_off = shape.get("x", 0), shape.get("y", 0)
             for kind, name in SHAPE_KIND.items():
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
-                if rectangles is not None:
+                if rectangles:
                     #adjust for scaling:
                     if self._client.xscale!=1 or self._client.yscale!=1:
-                        try:
-                            from PIL import Image, ImageDraw        #@UnresolvedImport
-                        except:
-                            Image, ImageDraw = None, None
-                        if Image and ImageDraw:
-                            ww, wh = self._size
-                            sw, sh = self._client.cp(ww, wh)
-                            img = Image.new('1', (sw, sh), color=0)
-                            shapelog("drawing %s on bitmap(%s,%s)=%s", kind, sw, sh, img)
-                            d = ImageDraw.Draw(img)
-                            for x,y,w,h in rectangles:
-                                d.rectangle([x, y, x+w, y+h], fill=1)
-                            img = img.resize((ww, wh))
-                            shapelog("resized %s bitmap to window size %sx%s: %s", kind, ww, wh, img)
-                            #now convert back to rectangles...
-                            rectangles = []
-                            for y in range(wh):
-                                #for debugging, this is very useful, but costly!
-                                #shapelog("pixels[%3i]=%s", y, "".join([str(img.getpixel((x, y))) for x in range(ww)]))
-                                x = 0
-                                start = None
-                                while x<ww:
-                                    #find first white pixel:
-                                    while x<ww and img.getpixel((x, y))==0:
-                                        x += 1
-                                    start = x
-                                    #find next black pixel:
-                                    while x<ww and img.getpixel((x, y))!=0:
-                                        x += 1
-                                    end = x
-                                    if start<end:
-                                        rectangles.append((start, y, end-start, 1))
-                        else:
-                            #scale the rectangles without a bitmap...
-                            #results aren't so good! (but better than nothing?)
-                            srect = self._client.srect
-                            rectangles = [srect(*x) for x in rectangles]
-                    #FIXME: are we supposed to get the offset from the "extents"?
-                    x_off, y_off = 0, 0
-                    shapelog("XShapeCombineRectangles %s=%i rectangles", name, len(rectangles))
-                    #too expensive to log:
-                    #shapelog("XShapeCombineRectangles %s=%s", name, rectangles)
+                        x_off, y_off = self._client.sp(x_off, y_off)
+                        rectangles = self.scale_shape_rectangles(name, rectangles)
+                    #too expensive to log with actual rectangles:
+                    shapelog("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)", xid, name, x_off, y_off, len(rectangles))
                     with xsync:
                         X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
         self.when_realized("shape", do_set_shape)
+
+    def scale_shape_rectangles(self, kind_name, rectangles):
+        try:
+            from PIL import Image, ImageDraw        #@UnresolvedImport
+        except:
+            Image, ImageDraw = None, None
+        if not Image or not ImageDraw:
+            #scale the rectangles without a bitmap...
+            #results aren't so good! (but better than nothing?)
+            srect = self._client.srect
+            return [srect(*x) for x in rectangles]
+        ww, wh = self._size
+        sw, sh = self._client.cp(ww, wh)
+        img = Image.new('1', (sw, sh), color=0)
+        shapelog("drawing %s on bitmap(%s,%s)=%s", kind_name, sw, sh, img)
+        d = ImageDraw.Draw(img)
+        for x,y,w,h in rectangles:
+            d.rectangle([x, y, x+w, y+h], fill=1)
+        img = img.resize((ww, wh))
+        shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
+        #now convert back to rectangles...
+        rectangles = []
+        for y in range(wh):
+            #for debugging, this is very useful, but costly!
+            #shapelog("pixels[%3i]=%s", y, "".join([str(img.getpixel((x, y))) for x in range(ww)]))
+            x = 0
+            start = None
+            while x<ww:
+                #find first white pixel:
+                while x<ww and img.getpixel((x, y))==0:
+                    x += 1
+                start = x
+                #find next black pixel:
+                while x<ww and img.getpixel((x, y))!=0:
+                    x += 1
+                end = x
+                if start<end:
+                    rectangles.append((start, y, end-start, 1))
+        return rectangles
 
     def set_bypass_compositor(self, v):
         if not HAS_X11_BINDINGS:
