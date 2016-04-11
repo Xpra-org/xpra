@@ -13,7 +13,7 @@ from xpra.util import csv, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
-                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM, WIN32, OSX
+                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -23,8 +23,8 @@ APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=
 JITTER = int(os.environ.get("XPRA_SOUND_SOURCE_JITTER", "0"))
 SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
-BUFFER_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_BUFFER_TIME", "64"))
-LATENCY_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_LATENCY_TIME", "32"))
+BUFFER_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_BUFFER_TIME", "0"))     #ie: 64
+LATENCY_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_LATENCY_TIME", "0"))   #ie: 32
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
@@ -129,24 +129,32 @@ class SoundSource(SoundPipeline):
             self.sink.connect("new-buffer", self.on_new_buffer)
             self.sink.connect("new-preroll", self.on_new_preroll0)
         self.src = self.pipeline.get_by_name("src")
-        if not WIN32 and not OSX:
-            try:
-                global BUFFER_TIME, LATENCY_TIME
-                assert BUFFER_TIME>=LATENCY_TIME, "invalid settings: latency must be lower than the buffer time"
-                def settime(attr, v):
-                    cval = self.src.get_property(attr)
-                    gstlog("default: %s=%i", attr, cval//1000)
-                    if v>=0:
-                        self.src.set_property(attr, v*1000)
-                        gstlog("overriding with: %s=%i", attr, v)
-                settime("buffer-time", BUFFER_TIME)
-                settime("latency-time", LATENCY_TIME)
-                for x in ("actual-buffer-time", "actual-latency-time"):
-                    #don't comment this out, it is used to verify the attributes are present:
-                    gstlog("initial %s: %s", x, self.src.get_property(x))
-                self.buffer_latency = True
-            except Exception as e:
-                log.info("source %s does not support 'buffer-time' or 'latency-time': %s", self.src_type, e)
+        try:
+            for x in ("actual-buffer-time", "actual-latency-time"):
+                #don't comment this out, it is used to verify the attributes are present:
+                gstlog("initial %s: %s", x, self.src.get_property(x))
+            self.buffer_latency = True
+        except Exception as e:
+            log.info("source %s does not support 'buffer-time' or 'latency-time':", self.src_type)
+            log.info(" %s", e)
+        else:
+            #if the env vars have been set, try to honour the settings:
+            global BUFFER_TIME, LATENCY_TIME
+            if BUFFER_TIME>0:
+                if BUFFER_TIME<LATENCY_TIME:
+                    log.warn("Warning: latency (%ims) must be lower than the buffer time (%ims)", LATENCY_TIME, BUFFER_TIME)
+                else:
+                    def settime(attr, v):
+                        try:
+                            cval = self.src.get_property(attr)
+                            gstlog("default: %s=%i", attr, cval//1000)
+                            if v>=0:
+                                self.src.set_property(attr, v*1000)
+                                gstlog("overriding with: %s=%i", attr, v)
+                        except Exception as e:
+                            log.warn("source %s does not support '%s': %s", self.src_type, attr, e)
+                    settime("buffer-time", BUFFER_TIME)
+                    settime("latency-time", LATENCY_TIME)
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
             parts = codec.split("+")
