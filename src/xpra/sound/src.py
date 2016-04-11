@@ -90,7 +90,7 @@ class SoundSource(SoundPipeline):
                         "min-threshold-time=0",
                         "max-size-buffers=0",
                         "max-size-bytes=0",
-                        "max-size-time=%s" % (50*MS_TO_NS),
+                        "max-size-time=%s" % (SOURCE_QUEUE_TIME*MS_TO_NS),
                         "leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM]
             pipeline_els += [" ".join(queue_el)]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
