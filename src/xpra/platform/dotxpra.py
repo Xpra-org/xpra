@@ -26,8 +26,9 @@ def osexpand(s, actual_username=""):
     return v
 
 def norm_makepath(dirpath, name):
-    assert name[0]==":"
-    return os.path.join(dirpath, PREFIX + name[1:])
+    if name[0]==":":
+        name = name[1:]
+    return os.path.join(dirpath, PREFIX + name)
 
 
 class DotXpra(object):
@@ -119,4 +120,6 @@ class DotXpra(object):
 
 #win32 re-defines DotXpra for namedpipes:
 from xpra.platform import platform_import
-platform_import(globals(), "dotxpra", False, "DotXpra")
+platform_import(globals(), "dotxpra", False,
+                "DotXpra",
+                "norm_makepath")
