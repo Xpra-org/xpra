@@ -248,7 +248,7 @@ class ShadowServer(GTKShadowServerBase):
             return GTKServerBase._new_connection(self, listener)
         pipe_handle = args[0]
         conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
-        return self.make_protocol(socktype, conn, frominfo=" on %s" % listener.pipe_name)
+        return self.make_protocol(socktype, conn, frominfo=" on %s" % conn.target)
 
 
     def make_tray_widget(self):
