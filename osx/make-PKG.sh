@@ -80,6 +80,8 @@ cat > ./image/flat/Distribution << EOF
   return true;
 }
     </script>
+    <background file="background.png" alignment="bottomleft" scaling="none"/>
+    <license file="GPL.rtf"/>
     <choices-outline>
         <line choice="choice1"/>
     </choices-outline>
@@ -89,6 +91,9 @@ cat > ./image/flat/Distribution << EOF
     <pkg-ref id="org.xpra.pkg" installKBytes="$DISKUSAGE" version="$VERSION" auth="Root">#base.pkg</pkg-ref>
 </installer-script>
 EOF
+
+#add license and background files to image:
+cp background.png GPL.rtf ./image/flat/Resources/en.lproj/
 
 pushd ./image/flat >& /dev/null
 xar --compression none -cf "../$PKG_FILENAME" *
