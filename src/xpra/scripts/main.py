@@ -1738,6 +1738,9 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             if len(args)==1 and args[0]==":":
                 #display_name was provided:
                 display_name = args[0]
+            elif sys.platform.startswith("darwin") or sys.platform.startswith("win"):
+                #no need for a specific display
+                pass
             else:
                 display_name = guess_X11_display(opts.socket_dir, opts.socket_dirs)
                 #we now know the display name, so add it:
