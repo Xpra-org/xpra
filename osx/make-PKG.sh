@@ -16,6 +16,7 @@ if [ -z "${REVISION}" ]; then
 fi
 PKG_FILENAME="Xpra-$VERSION-r$REVISION.pkg"
 rm -f ./image/$PKG_FILENAME >& /dev/null
+echo "Making $PKG_FILENAME"
 
 #create directory structure:
 rm -fr ./image/flat ./image/root
@@ -23,6 +24,15 @@ mkdir -p ./image/flat/base.pkg ./image/flat/Resources/en.lproj
 mkdir -p ./image/root/Applications
 
 mv ./image/Xpra.app ./image/root/Applications/
+#man page:
+mkdir -p ./image/root/usr/share/man/man1
+for x in xpra xpra_launcher; do
+	gzip -c ../src/man/$x.1 > ./image/root/usr/share/man/man1/$x.1.gz
+done
+#add cups backend:
+mkdir -p ./image/root/usr/libexec/cups/backend/
+cp ../src/cups/xpraforwarder ./image/root/usr/libexec/cups/backend/
+chmod 700 ./image/root/usr/libexec/cups/backend
 
 pushd ./image/root >& /dev/null
 find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Payload
@@ -31,11 +41,22 @@ popd >& /dev/null
 FILECOUNT=`find ./image/root | wc -l`
 DISKUSAGE=`du -sk ./image/root`
 
+#add the postinstall fix script (cups backend and shortcuts)
+mkdir ./image/scripts
+cp postinstall ./image/scripts/
+chmod +x ./image/scripts/postinstall
+pushd ./image/scripts >& /dev/null
+find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Scripts
+popd >& /dev/null
+
 mkbom -u 0 -g 80 ./image/root ./image/flat/base.pkg/Bom
 
 cat > ./image/flat/base.pkg/PackageInfo << EOF
 <pkg-info format-version="2" identifier="org.xpra.pkg" version="$VERSION" install-location="/" auth="root">
   <payload installKBytes="$DISKUSAGE" numberOfFiles="$FILECOUNT"/>
+  <scripts>
+    <postinstall file="./postinstall"/>
+  </scripts>
   <bundle-version>
     <bundle id="org.xpra.Xpra" CFBundleIdentifier="Xpra" path="./Applications/Xpra.app" CFBundleVersion="1.3.0"/>
   </bundle-version>
@@ -73,8 +94,9 @@ pushd ./image/flat >& /dev/null
 xar --compression none -cf "../$PKG_FILENAME" *
 popd >& /dev/null
 
-#clean temporary directories
-rm -fr ./image/flat ./image/root
+#clean temporary build directories
+rm -fr ./image/flat ./image/root ./image/scripts
 
-#show resulting file
+#show resulting file and copy it to the desktop
 du -sm ./image/$PKG_FILENAME
+cp ./image/$PKG_FILENAME ~/Desktop/
