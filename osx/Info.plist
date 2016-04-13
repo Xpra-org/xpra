@@ -32,5 +32,43 @@
 	<string>10.5</string>
 	<key>LSUIElement</key>
 	<string>0</string>
+
+	<key>CFBundleDocumentTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleTypeExtensions</key>
+		<array>
+			<string>xpra</string>
+		</array>
+		<key>CFBundleTypeIconFile</key>
+		<string>xpra.icns</string>
+		<key>CFBundleTypeMIMETypes</key>
+		<array>
+			<string>application/x-xpra</string>
+		</array>
+		<key>CFBundleTypeName</key>
+		<string>Xpra Session</string>
+		<key>CFBundleTypeOSTypes</key>
+		<array>
+			<string>xpra</string>
+		</array>
+		<key>CFBundleTypeRole</key>
+		<string>Viewer</string>
+		<key>LSTypeIsPackage</key>
+		<false/>
+	</dict>
+	</array>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>xpra</string>
+        </array>
+        <key>CFBundleURLName</key>
+        <string>Xpra Session</string>
+    </dict>
+</array>
 </dict>
 </plist>

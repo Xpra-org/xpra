@@ -470,6 +470,7 @@ class ApplicationWindow:
             self.set_info_color(True)
             self.set_info_text(t)
             self.window.show()
+            self.window.present()
         glib.idle_add(ui_handle_exception)
 
     def do_connect(self):
@@ -809,7 +810,35 @@ def main():
                 app.reset_errors()
             gui_ready()
             if not app.config.autoconnect or app.config.debug:
-                app.show()
+                #FIXME: this is ugly as hell
+                #We have to wait for the main loop to be running
+                #to get the NSApplicationOpneFile signal,
+                #so we end up duplicating some of the logic from just above
+                #maybe we should always run this code from the main loop instead
+                if sys.platform.startswith("darwin"):
+                    #wait a little bit for the "openFile" signal
+                    app.__osx_open_file = False
+                    def do_open_file(filename):
+                        app.__osx_open_file = True
+                        app.update_options_from_file(filename)
+                        #the compressors and packet encoders cannot be changed from the UI
+                        #so apply them now:
+                        configure_network(app.config)
+                        app.update_gui_from_config()
+                        if app.config.autoconnect:
+                            glib.idle_add(app.do_connect)
+                    def open_file(_, filename):
+                        log("open_file(%s)", filename)
+                        glib.idle_add(do_open_file, filename)
+                    from xpra.platform.darwin.gui import get_OSXApplication
+                    get_OSXApplication().connect("NSApplicationOpenFile", open_file)
+                    def may_show():
+                        log("may_show() osx open file=%s", app.__osx_open_file)
+                        if not app.__osx_open_file:
+                            app.show()
+                    glib.timeout_add(500, may_show)
+                else:
+                    app.show()
             app.run()
         except KeyboardInterrupt:
             pass
