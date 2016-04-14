@@ -201,11 +201,11 @@ if (!window.location.getParameter ) {
 
 function doConnect() {
 	var server = document.getElementById("server").value;
-	var port = document.getElementById("port").value;
+	var port = parseInt(document.getElementById("port").value);
 	var encoding = document.getElementById("encoding").value;
 	var keyboard_layout = document.getElementById("keyboard_layout").value;
 	// url to client
-	var url = "/index.html?server="+server+"&port="+port+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&submit=true";
+	var url = "/index.html?server="+encodeURIComponent(server)+"&port="+port+"&encoding="+encodeURIComponent(encoding)+"&keyboard_layout="+encodeURIComponent(keyboard_layout)+"&submit=true";
 	// check options
 	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
 	if(normal_fullscreen) {

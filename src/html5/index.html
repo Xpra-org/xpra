@@ -168,7 +168,7 @@
 
 			if (!window.location.getParameter ) {
 				window.location.getParameter = function(key) {
-					var rx = new RegExp(key+"=([a-zA-Z0-9]+)");
+					var rx = new RegExp(key+"=([a-zA-Z0-9\.]+)");
 					try {
 						var value = document.URL.match(rx)[1];
 						console.log("parameter "+key+" is "+value);
