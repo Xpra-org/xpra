@@ -169,8 +169,8 @@ min-quality = 30
 speed = auto
 
 # For auto speed only:
-#min-speed = 20
-min-speed = 0
+#min-speed = 0
+min-speed = 30
 
 # Idle delay in seconds before doing an automatic lossless refresh:
 auto-refresh-delay = 0.15

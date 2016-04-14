@@ -500,7 +500,7 @@ def get_defaults():
                     "quality"           : 0,
                     "min-quality"       : 30,
                     "speed"             : 0,
-                    "min-speed"         : 0,
+                    "min-speed"         : 30,
                     "compression_level" : 1,
                     "dpi"               : 0,
                     "video-scaling"     : 1,
