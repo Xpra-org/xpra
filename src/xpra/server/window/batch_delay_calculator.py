@@ -190,7 +190,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     return info, target_speed
 
 
-def get_target_quality(wid, window_dimensions, batch, global_statistics, statistics, min_quality):
+def get_target_quality(wid, window_dimensions, batch, global_statistics, statistics, min_quality, min_speed):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # quality:
@@ -237,10 +237,19 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
         target = min(target, latency_q)
     target = min(1.0, max(0.0, target))
+    if min_speed>0:
+        #discount the quality more aggressively if we have speed requirements to satisfy:
+        #ie: for min_speed=50:
+        #target=1.0   -> target=1.0
+        #target=0.8   -> target=0.51
+        #target=0.5   -> target=0.125
+        #target=0     -> target=0
+        target = target ** ((100.0 + 4*min_speed)/100.0)
     mq = min(100.0, max(min_quality, 0.0))
     target_quality = mq + (100.0-mq) * target
     info = {
             "min_quality"   : min_quality,
+            "min_speed"     : min_speed,
             "backlog_factor": (packets_backlog, pixels_backlog, int(100.0*pixels_bl)),
             }
     if cratio_factor:

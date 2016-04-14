@@ -910,7 +910,7 @@ class WindowSource(object):
             return
         quality = self._fixed_quality
         if quality<=0:
-            info, quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_quality)
+            info, quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_quality, self._fixed_min_speed)
             #make a copy to work on (and discard "info")
             ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
             ves_copy.append((time.time(), quality))
