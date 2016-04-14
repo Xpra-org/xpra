@@ -1115,6 +1115,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #xvfb problem: exit now
         return  1
 
+    display = None
+    if not sys.platform.startswith("win") and not sys.platform.startswith("darwin") and not proxying:
+        display = verify_display_ready(xvfb, display_name, shadowing)
+        if not display:
+            return 1
+    elif not proxying:
+        no_gtk()
+        import gtk          #@Reimport
+        assert gtk
+
     #setup unix domain socket:
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
     for socket, cleanup_socket in local_sockets:
@@ -1126,16 +1136,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             rec = "ssh", [("", ssh_port)]
             if ssh_port and rec not in mdns_recs:
                 mdns_recs.append(rec)
-
-    display = None
-    if not sys.platform.startswith("win") and not sys.platform.startswith("darwin") and not proxying:
-        display = verify_display_ready(xvfb, display_name, shadowing)
-        if not display:
-            return 1
-    elif not proxying:
-        no_gtk()
-        import gtk          #@Reimport
-        assert gtk
 
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
