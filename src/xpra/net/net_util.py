@@ -31,6 +31,25 @@ def get_interfaces():
 		return	[]
 	return	netifaces.interfaces()
 
+def get_gateways():
+	if not has_netifaces:
+		return	{}
+	try:
+		d =	netifaces.gateways()
+		AF_NAMES = {}
+		for k in dir(netifaces):
+			if k.startswith("AF_"):
+				v = getattr(netifaces, k)
+				AF_NAMES[v] = k[3:]
+		gateways = {}
+		for family, gws in d.items():
+			if family=="default":
+				continue
+			gateways[AF_NAMES.get(family, family)] = gws
+		return gateways
+	except:
+		return {}
+
 def get_bind_IPs():
 	global bind_IPs
 	if not bind_IPs:
@@ -222,7 +241,9 @@ def get_net_sys_config():
 def get_info():
 	from xpra.net.protocol import get_network_caps
 	i = get_network_caps()
-	i["interfaces"] = get_interfaces()
+	if has_netifaces:
+		i["interfaces"] = get_interfaces()
+		i["gateways"] = get_gateways()
 	s = get_net_sys_config()
 	if s:
 		i["system"] = s
@@ -264,6 +285,9 @@ def main():
 			if type(v)==str and v.startswith("v"):
 				return v[1:]
 			return str(v)
+
+		print("Gateways found:")
+		print_nested_dict(get_gateways())
 
 		print("")
 		print("Protocol Capabilities:")
