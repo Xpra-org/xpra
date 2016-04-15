@@ -971,7 +971,8 @@ class ServerCore(object):
         if self.original_desktop_display:
             si["original-desktop-display"] = self.original_desktop_display
         up("server", si)
-        ni = get_network_caps()
+        from xpra.net.net_util import get_info as get_net_info
+        ni = get_net_info()
         ni.update({
                    "sockets"        : self.get_socket_info(),
                    "encryption"     : self.encryption or "",
