@@ -115,7 +115,10 @@ VIRTUAL_KEYS = {
     #no useful mapping:
     "ICO_CLEAR"             : "IcoClr",
     "ICO_HELP"              : "Help",
+    "DIVIDE"                : "KP_Divide",
     "MULTIPLY"              : "KP_Multiply",
+    "SUBTRACT"              : "KP_Substract",
+    "ADD"                   : "KP_Add",
     "NONAME"                : "NoSymbol",
     "NUMPAD0"               : "KP_0",
     "NUMPAD1"               : "KP_1",
@@ -128,8 +131,6 @@ VIRTUAL_KEYS = {
     "NUMPAD8"               : "KP_8",
     "NUMPAD9"               : "KP_9",
     "OEM_PERIOD"            : "KP_Decimal",
-    "ASCIITILDE"            : "asciitilde",
-    "DEAD_GRAVE"            : "grave",
     "OEM_1"                 : "OEM_1",
     "OEM_102"               : "OEM_102",
     "OEM_2"                 : "OEM_2",
@@ -160,10 +161,11 @@ VIRTUAL_KEYS = {
     "OEM_PA1"               : "OemPa1",
     "OEM_PA2"               : "OemPa2",
     "OEM_PA3"               : "OemPa3",
-    "OEM_PLUS"              : "plus",
+    #"OEM_PLUS"              : "equal",
     "OEM_RESET"             : "Reset",
     "OEM_WSCTRL"            : "WsCtrl",
     "PA1"                   : "Pa1",
+    #"OEM_102"               : "backslash",
     #missing:?
     #"PACKET"                : "Packet",
     "PLAY"                  : "Play",
@@ -258,6 +260,72 @@ VIRTUAL_KEYS = {
     "XBUTTON2"              : "X2",
 }
 
+KEYSYM_DEFS = {
+               "bracketleft"        : u"[",
+               "bracketright"       : u"]",
+               "grave"              : u"`",
+               "braceleft"          : u"{",
+               "braceright"         : u"}",
+               "colon"              : u":",
+               "semicolon"          : u";",
+               "apostrophe"         : u"'",
+               "at"                 : u"@",
+               "numbersign"         : u"#",
+               "comma"              : u",",
+               "less"               : u"<",
+               "equal"              : u"=",
+               "greater"            : u">",
+               "period"             : u".",
+               "slash"              : u"/",
+               "question"           : u"?",
+               "bar"                : u"|",
+               "exclam"             : u"!",
+               "quotedbl"           : u'"',
+               "sterling"           : u"£",
+               "dollar"             : u"$",
+               "percent"            : u"%",
+               "asciicircum"        : u"^",
+               "ampersand"          : u"&",
+               "asterisk"           : u"*",
+               "parenleft"          : u"(",
+               "parenright"         : u")",
+               "underscore"         : u"_",
+               "backslash"          : u"\\",
+               "asciitilde"         : u"~",
+               "notsign"            : u"¬",
+               "plus"               : u"+",
+               "eacute"             : u"é",
+               "onesuperior"        : u"¹",
+               "twosuperior"        : u"²",
+               "egrave"             : u"è",
+               "ccedilla"           : u"ç",
+               "agrave"             : u"à",
+               "dead_circumflex"    : u"^",
+               "ugrave"             : u"ù",
+               "mu"                 : u"µ",
+               "section"            : u"§",
+               "currency"           : u"¤",
+               "exclamdown"         : u"¡",
+               "oneeighth"          : u"⅛",
+               "threeeighths"       : u"⅜",
+               "fiveeighths"        : u"⅝",
+               "seveneighths"       : u"⅞",
+               "trademark"          : u"™",
+               "plusminus"          : u"±",
+               "degree"             : u"°",
+               "questiondown"       : u"¿",
+               "dead_ogonek"        : u"˛",
+               "dead_macron"        : u"¯",
+               "dead_abovering"     : u"°",
+               "dead_breve"         : u"˘",
+               "dead_caron"         : u"ˇ",
+               "masculine"          : u"º",
+               "dead_abovedot"      : u"˙",
+               "division"           : u"÷",
+               "multiply"           : u"×",
+               "brokenbar"          : u"¦",
+               }
+
 #these aren't defined in win32con...
 DEFS = {
     "SLEEP"                 : 0x5F,
@@ -306,16 +374,13 @@ DEFS = {
     "OEM_FINISH"            : 0xF1,
     "OEM_ENLW"              : 0xF4,
     "OEM_BACKTAB"           : 0xF5,
-    "ASCIITILDE"            : 65107,        #aka 0x00fe53
-    "DEAD_GRAVE"            : 65104,        #aka 0x00fe50
 }
 
 VK_NAMES = {}
-for name in dir(win32con):
-    if name.startswith("VK_"):
-        VK_NAMES[getattr(win32con, name)] = name
+for name in (x for x in dir(win32con) if x.startswith("VK_")):
+    VK_NAMES[getattr(win32con, name)] = name
 for name, val in DEFS.items():
-    VK_NAMES[val] = name
+    VK_NAMES[val] = "VK_"+name
 log("VK_NAMES=%s", VK_NAMES)
 
 #lookup the constants:
@@ -333,6 +398,21 @@ for vk, name in VIRTUAL_KEYS.items():
         log("KEYCODES[%s]=%s=%s", name, vk, val)
     else:
         log.warn("missing key constant: %s", vk_name)
+
+for name, char in KEYSYM_DEFS.items():
+    try:
+        bchar = char.encode("latin1")
+    except:
+        continue
+    if len(char)!=1:
+        log.warn("invalid character '%s' : '%s' (len=%i)", name, char, len(char))
+        continue
+    v = win32api.VkKeyScan(char)
+    vk_code = v & 0xff
+    if vk_code>0 and vk_code!=0xff:
+        log("KEYCODE[%s]=%i (%s)", char, vk_code, name)
+        KEYCODES[name] = vk_code
+
 KEYCODES.update({
     "Shift_L"       : win32con.VK_LSHIFT,
     "Shift_R"       : win32con.VK_RSHIFT,
