@@ -10,6 +10,7 @@ log = Logger("shadow", "osx")
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
+from xpra.platform.darwin.keyboard_config import KeyboardConfig
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
@@ -70,6 +71,9 @@ class ShadowServer(GTKShadowServerBase):
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
         self.keycodes = {}
+
+    def get_keyboard_config(self, props):
+        return KeyboardConfig()
 
     def make_tray_widget(self):
         from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
@@ -132,10 +136,6 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_process_mouse_common(self, proto, wid, pointer):
         CG.CGWarpMouseCursorPosition(pointer)
-
-    def get_keycode(self, ss, client_keycode, keyname, modifiers):
-        #no mapping yet...
-        return client_keycode
 
     def fake_key(self, keycode, press):
         e = CG.CGEventCreateKeyboardEvent(None, keycode, press)
