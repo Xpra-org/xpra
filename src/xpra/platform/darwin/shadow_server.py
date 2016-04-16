@@ -71,6 +71,8 @@ class ShadowServer(GTKShadowServerBase):
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
         self.keycodes = {}
+        #printing fails silently on OSX
+        self.printing = False
 
     def get_keyboard_config(self, props):
         return KeyboardConfig()
