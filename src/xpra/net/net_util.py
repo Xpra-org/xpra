@@ -34,6 +34,9 @@ def get_interfaces():
 def get_gateways():
 	if not has_netifaces:
 		return	{}
+	#no idea why, but this causes crashes on OSX:
+	if sys.platform.startswith("darwin"):
+		return {}
 	try:
 		d =	netifaces.gateways()
 		AF_NAMES = {}
@@ -48,6 +51,7 @@ def get_gateways():
 			gateways[AF_NAMES.get(family, family)] = gws
 		return gateways
 	except:
+		log("get_gateways() failed", exc_info=True)
 		return {}
 
 def get_bind_IPs():
