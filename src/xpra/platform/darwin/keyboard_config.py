@@ -33,8 +33,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
 #we currently assume that all key events are sent using X11 names,
 #so we need to translate them to osx keys
-#this list has been generated using:
-#$cat /Developer/Examples/Speech/Recognition/fauxTunes/Virtual\ Key\ Code\ Mappings.txt  | awk  '{print "            \""$1"\" : "$2$3","}'
+#http://x86osx.com/bbs/c_data/pds_comment/MacintoshToolboxEssentials.pdf
 KEYCODES = {
             #Standardkeys
             "A"     : 0,
@@ -83,7 +82,10 @@ KEYCODES = {
             ","     : 43,
             "."     : 47,
             "/"     : 44,
-            "Delete"    : 51,
+            "grave"     : 50,
+            "backslash" : 42,
+            "BackSpace" : 51,
+            "Escape"    : 53,
             "Return"    : 35,
             "Tab"       : 48,
             "Caps_Lock" : 57,
@@ -99,8 +101,8 @@ KEYCODES = {
             "KP_8"  : 91,
             "KP_9"  : 92,
             "KP_0"  : 82,
-            "KP_Decimal" : 65,
-            "equal" : 81,
+            "KP_Decimal"    : 65,
+            "equal"         : 81,
             "KP_Divide"     : 75,
             "KP_Multiply"   : 67,
             "KP_Subtract"   : 78,
@@ -134,10 +136,18 @@ KEYCODES = {
             "F13" : 105,
             "F14" : 107,
             "F15" : 113,
+            "F16" : 106,
+            "F17" : 64,
+            "F18" : 79,
+            "F19" : 80,
+            "F20" : 90,
             #Modifier keys:
             "Shift_L"   : 56,
+            "Shift_R"   : 60,
             "Control_L" : 59,
+            "Control_R" : 62,
             "Alt_L"     : 58,   #option
+            "Alt_R"     : 61,
             "Super_L"   : 55,   #apple
             }
 
