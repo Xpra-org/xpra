@@ -19,6 +19,10 @@ class KeyboardConfig(KeyboardConfigBase):
         return "osx.KeyboardConfig"
 
 
+    def get_current_mask(self):
+        return []
+
+
     def get_keycode(self, client_keycode, keyname, modifiers):
         global KEYCODES
         keycode = KEYCODES.get(keyname, -1)
