@@ -37,9 +37,6 @@ class KeyboardConfig(KeyboardConfigBase):
         return "win32.KeyboardConfig"
 
 
-    def parse_options(self, props):
-        return KeyboardConfigBase.parse_options(self, props)
-
     def get_keycode(self, client_keycode, keyname, modifiers):
         keycode = KEYCODES.get(keyname, -1)
         log("get_keycode%s=%s", (client_keycode, keyname, modifiers), keycode)
