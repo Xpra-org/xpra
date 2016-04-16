@@ -205,6 +205,15 @@ class KeyboardConfig(KeyboardConfigBase):
         return False
 
 
+    def set_layout(self, layout, variant):
+        log("set_layout(%s, %s)", layout, variant)
+        if layout!=self.xkbmap_layout or variant!=self.xkbmap_variant:
+            self.keyboard_config.xkbmap_layout = layout
+            self.keyboard_config.xkbmap_variant = variant
+            return True
+        return False
+
+
     def set_keymap(self):
         if not self.enabled:
             return

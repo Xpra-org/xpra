@@ -27,12 +27,14 @@ class KeyboardConfigBase(object):
                 }
         return info
 
-
     def parse_options(self, props):
         pass
 
     def get_hash(self):
         return ""
+
+    def set_layout(self, layout, variant):
+        pass
 
     def set_keymap(self):
         pass

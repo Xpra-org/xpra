@@ -1166,12 +1166,7 @@ class ServerSource(object):
 # Keyboard magic
 #
     def set_layout(self, layout, variant):
-        keylog("set_layout(%s, %s)", layout, variant)
-        if layout!=self.keyboard_config.xkbmap_layout or variant!=self.keyboard_config.xkbmap_variant:
-            self.keyboard_config.xkbmap_layout = layout
-            self.keyboard_config.xkbmap_variant = variant
-            return True
-        return False
+        return self.keyboard_config.set_layout(layout, variant)
 
     def keys_changed(self):
         if self.keyboard_config:
