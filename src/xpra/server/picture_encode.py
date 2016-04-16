@@ -13,7 +13,8 @@ log = Logger("window", "compress")
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
-from xpra.os_util import memoryview_to_bytes, _memoryview
+#"pixels_to_bytes" gets patched up by the OSX shadow server
+from xpra.os_util import memoryview_to_bytes as pixels_to_bytes, _memoryview
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
@@ -138,7 +139,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     if level==0:
         #can't pass a raw buffer to bencode / rencode,
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
-        cwrapper = compression.Compressed(coding, memoryview_to_bytes(pixels), True)
+        cwrapper = compression.Compressed(coding, pixels_to_bytes(pixels), True)
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
     else:
