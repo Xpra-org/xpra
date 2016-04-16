@@ -144,6 +144,7 @@ class SoundSource(SoundPipeline):
                 if BUFFER_TIME<LATENCY_TIME:
                     log.warn("Warning: latency (%ims) must be lower than the buffer time (%ims)", LATENCY_TIME, BUFFER_TIME)
                 else:
+                    log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i", src_type, BUFFER_TIME, LATENCY_TIME)
                     def settime(attr, v):
                         try:
                             cval = self.src.get_property(attr)

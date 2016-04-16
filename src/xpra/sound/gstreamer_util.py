@@ -538,11 +538,11 @@ def get_source_plugins():
             sources.append("pulsesrc")
     except ImportError as e:
         log("get_source_plugins() no pulsesrc: %s", e)
-    sources.append("autoaudiosrc")
     if OSX:
         sources.append("osxaudiosrc")
     elif WIN32:
         sources.append("directsoundsrc")
+    sources.append("autoaudiosrc")
     if os.name=="posix":
         sources += ["alsasrc", "jackaudiosrc",
                     "osssrc", "oss4src",
