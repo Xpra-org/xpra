@@ -516,7 +516,7 @@ class ServerCore(object):
             #start a new proxy in a thread
             def run_proxy():
                 self.start_tcp_proxy(proto, data)
-            make_thread(run_proxy, "web-proxy-for-%s" % proto).start()
+            make_thread(run_proxy, "web-proxy-for-%s" % proto, daemon=True).start()
             return
         err = "invalid packet format, not an xpra client?"
         proto.gibberish(err, data)
