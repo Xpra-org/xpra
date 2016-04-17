@@ -240,7 +240,8 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.send("cleanup")
         #cleanup should cause the process to exit
         self.timeout_add(500, self.send, "stop")
-        self.timeout_add(1000, self.stop)
+        self.timeout_add(1000, self.send, "exit")
+        self.timeout_add(1500, self.stop)
 
 
     def verify_started(self):
