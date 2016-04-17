@@ -80,7 +80,7 @@ class subprocess_callee(object):
         self.name = ""
         self.input_filename = input_filename
         self.output_filename = output_filename
-        self.method_whitelist = None
+        self.method_whitelist = method_whitelist
         self.large_packets = []
         #the gobject instance which is wrapped:
         self.wrapped_object = wrapped_object
