@@ -511,13 +511,14 @@ class GTKTrayMenuBase(object):
             send_tokens = False
             new_state = False
             selections = []
-        #tell the server what to look for:
-        self.client.send_clipboard_selections(selections)
         clipboardlog("set_new_remote_clipboard(%s) old_state=%s, new_state=%s", remote_clipboard, old_state, new_state)
         if new_state!=old_state:
             self.client.clipboard_enabled = new_state
             self.client.emit("clipboard-toggled")
             send_tokens = True
+        #tell the server what to look for:
+        #(now that "clipboard-toggled" has re-enabled clipboard if necessary)
+        self.client.send_clipboard_selections(selections)
         if send_tokens and self.client.clipboard_helper:
             self.client.clipboard_helper.send_all_tokens()
 
