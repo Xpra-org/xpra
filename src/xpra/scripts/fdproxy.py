@@ -31,18 +31,22 @@ class XpraProxy(object):
     def __repr__(self):
         return "XpraProxy(%s: %s - %s)" % (self._name, self._client_conn, self._server_conn)
 
-    def __init__(self, name, client_conn, server_conn):
+    def __init__(self, name, client_conn, server_conn, quit_cb=None):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
+        self._quit_cb = quit_cb
         self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop)
         self._to_server = threading.Thread(target=self._to_server_loop)
 
-    def run(self):
-        log("XpraProxy.run() %s", self._name)
+    def start_threads(self):
         self._to_client.start()
         self._to_server.start()
+
+    def run(self):
+        log("XpraProxy.run() %s", self._name)
+        self.start_threads()
         self._to_client.join()
         self._to_server.join()
         log("XpraProxy.run() %s: all the threads have ended, calling quit() to close the connections", self._name)
@@ -83,6 +87,10 @@ class XpraProxy(object):
     def quit(self, *args):
         log("XpraProxy.quit(%s) %s: closing connections", args,  self._name)
         self._closed = True
+        quit_cb = self._quit_cb
+        if quit_cb:
+            self._quit_cb = None
+            quit_cb(self)
         try:
             self._client_conn.close()
         except:

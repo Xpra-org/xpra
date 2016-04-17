@@ -563,13 +563,15 @@ class ServerCore(object):
             if buf:
                 proxylog("pushing read buffer to its new destination: %s", repr_ellipsized(buf))
                 web_server_connection.write(buf)
-        p = XpraProxy(client_connection.target, client_connection, web_server_connection)
+        p = XpraProxy(client_connection.target, client_connection, web_server_connection, self.tcp_proxy_quit)
         self._tcp_proxy_clients.append(p)
         proxylog.info("client connection from %s forwarded to proxy server on %s:%s", client_connection.target, host, port)
-        p.run()
-        proxylog("run_proxy() %s ended", p)
-        if p in self._tcp_proxy_clients:
-            self._tcp_proxy_clients.remove(p)
+        p.start_threads()
+
+    def tcp_proxy_quit(self, proxy):
+        proxylog("tcp_proxy_quit(%s)", proxy)
+        if proxy in self._tcp_proxy_clients:
+            self._tcp_proxy_clients.remove(proxy)
 
     def is_timedout(self, protocol):
         #subclasses may override this method (ServerBase does)
