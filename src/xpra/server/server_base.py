@@ -2723,7 +2723,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             if packet_type.startswith("clipboard-"):
                 handler = self.process_clipboard_packet
                 ss = self._server_sources.get(proto)
-                self.process_clipboard_packet(ss, packet)
+                handler(ss, packet)
                 return
             if proto in self._server_sources:
                 handlers = self._authenticated_packet_handlers
