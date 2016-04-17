@@ -486,8 +486,7 @@ class GTKTrayMenuBase(object):
             return
         try:
             setattr(clipboard_submenu, "_in_change_handler_", True)
-            if False:
-                selected_item = ensure_item_selected(clipboard_submenu, item)
+            selected_item = ensure_item_selected(clipboard_submenu, item)
             selected = selected_item.get_label()
             remote_clipboard = CLIPBOARD_LABEL_TO_NAME.get(selected)
             self.set_new_remote_clipboard(remote_clipboard)
