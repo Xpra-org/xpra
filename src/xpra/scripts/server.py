@@ -27,6 +27,7 @@ from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
 # or when the user requests it with the env var:
 USE_PROCESS_POLLING = os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
+WAIT_FOR_UNKNOWN = int(os.environ.get("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", "5"))
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "1920x1080").replace(",", "x").split("x", 1))
 
@@ -409,7 +410,8 @@ def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wai
             sys.stdout.write(".")
             sys.stdout.flush()
             counter += 1
-            time.sleep(1)
+            if counter<wait_for_unknown:
+                time.sleep(1)
             state = dotxpra.get_server_state(sockpath)
         if counter>0:
             sys.stdout.write("\n")
@@ -461,7 +463,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     log.info("created named pipe: %s", sockpath)
                     defs.append((("named-pipe", npl, sockpath), npl.stop))
                 else:
-                    setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=5)
+                    setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=WAIT_FOR_UNKNOWN)
                     sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
                     log.info("created unix domain socket: %s", sockpath)
                     defs.append((("unix-domain", sock, sockpath), cleanup_socket))
