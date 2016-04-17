@@ -199,8 +199,20 @@ class XpraClient(GTKXpraClient):
             else:
                 clipboardlog.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
             clipboard_options = filtered
-        clipboardlog("get_clipboard_helper_classes()=%s", clipboard_options)
-        return clipboard_options
+        #now try to load them:
+        clipboardlog("get_clipboard_helper_classes() options=%s", clipboard_options)
+        loadable = []
+        for co in clipboard_options:
+            try:
+                parts = co.split(".")
+                mod = ".".join(parts[:-1])
+                __import__(mod, {}, {}, [parts[-1]])
+                loadable.append(co)
+            except ImportError as e:
+                clipboardlog("cannot load %s: %s", co, e)
+                continue
+        clipboardlog("get_clipboard_helper_classes()=%s", loadable)
+        return loadable
 
     def make_clipboard_helper(self):
         """
