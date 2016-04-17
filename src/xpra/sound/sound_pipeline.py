@@ -81,7 +81,8 @@ class SoundPipeline(gobject.GObject):
         self.emit_info_due = True
         def do_emit_info():
             self.emit_info_due = False
-            self.emit("info", self.get_info())
+            if self.pipeline:
+                self.emit("info", self.get_info())
         self.timeout_add(50, do_emit_info)
 
     def get_info(self):
