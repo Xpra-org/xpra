@@ -20,6 +20,7 @@ except AttributeError:
 from xpra.log import Logger
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
+clipboardlog = Logger("server", "clipboard")
 
 from xpra.util import flatten_dict
 from xpra.gtk_common.quit import (gtk_main_quit_really,
@@ -183,12 +184,17 @@ class GTKServerBase(ServerBase):
         self.idle_add(do_check)
 
     def clipboard_nesting_check(self, ss):
-        log("clipboard_nesting_check(%s)", ss)
-        if self._clipboard_client is None or not self._clipboard_client.clipboard_enabled:
+        clipboardlog("clipboard_nesting_check(%s)", ss)
+        cc = self._clipboard_client
+        if cc is None:
+            clipboardlog("ignoring clipboard packet: no clipboard client")
+            return False
+        if not cc.clipboard_enabled:
+            clipboardlog("ignoring clipboard packet: client %s has clipboard disabled", cc)
             return False
         if gtk.main_level()>=10:
-            log.warn("loop nesting too deep: %s", gtk.main_level())
-            log.warn("you may have a clipboard forwarding loop, disabling the clipboard")
+            clipboardlog.warn("loop nesting too deep: %s", gtk.main_level())
+            clipboardlog.warn("you may have a clipboard forwarding loop, disabling the clipboard")
             #turn off clipboard at our end:
             self.set_clipboard_enabled_status(ss, False)
             #if we can, tell the client to do the same:
