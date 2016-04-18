@@ -993,6 +993,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/webp/encode.c",
                    "xpra/codecs/webp/decode.c",
                    "xpra/codecs/dec_avcodec2/decoder.c",
+                   "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
@@ -1005,15 +1006,13 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    #special case for the generated xpra.conf in build (see #891):
                    "build/etc/xpra/xpra.conf"]
     for x in list(CLEAN_FILES):
-        if x.endswith(".c"):
+        p, ext = os.path.splitext(x)
+        if ext in (".c", ".cpp", ".pxi"):
             #clean the Cython annotated html files:
-            CLEAN_FILES.append(x[:-2]+".html")
-            if WIN32:
+            CLEAN_FILES.append(p+".html")
+            if WIN32 and ext!=".pxi":
                 #on win32, the build creates ".pyd" files, clean those too:
-                CLEAN_FILES.append(x[:-2]+".pyd")
-        if x.endswith(".pxi"):
-            #clean the Cython annotated html files:
-            CLEAN_FILES.append(x[:-4]+".html")
+                CLEAN_FILES.append(p+".pyd")
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
