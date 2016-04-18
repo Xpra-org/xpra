@@ -19,6 +19,7 @@ PixbufLoader = import_pixbufloader()
 
 from xpra.log import Logger
 log = Logger("gtk", "util")
+traylog = Logger("gtk", "tray")
 
 
 SHOW_ALL_VISUALS = False
@@ -419,10 +420,10 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
         self.connect("button-release-event", self.on_button_release_event)
 
     def on_button_release_event(self, *args):
-        log("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
+        traylog("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
         self.active_state = self.get_active()
         def recheck():
-            log("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s", self.active_state, self.get_active())
+            traylog("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s", self.active_state, self.get_active())
             state = self.active_state
             self.active_state = None
             if state is not None and state==self.get_active():
