@@ -438,7 +438,7 @@ def CheckMenuItem(*args, **kwargs):
 
 def set_use_tray_workaround(enabled):
     global CheckMenuItemClass
-    if enabled and WIN32:
+    if enabled:
         CheckMenuItemClass = TrayCheckMenuItem
     else:
         CheckMenuItemClass = gtk.CheckMenuItem
