@@ -371,13 +371,13 @@ else:
                 gdk.threads_leave()
 
     if WIN32:
-        traylog = Logger("tray", "win32")
         mouse_in_tray_menu_counter = 0
         mouse_in_tray_menu = False
+        OUTSIDE_TRAY_TIMEOUT = 500
         def popup_menu_workaround(menu, close_cb):
             """ MS Windows does not automatically close the popup menu when we click outside it
                 so we workaround it by using a timer and closing the menu when the mouse
-                has stayed outside it for more than 0.5s.
+                has stayed outside it for more than OUTSIDE_TRAY_TIMEOUT (0.5s).
                 This code must be added to all the sub-menus of the popup menu too!
             """
             global mouse_in_tray_menu, mouse_in_tray_menu_counter
@@ -397,7 +397,7 @@ else:
                     if expected_counter!=mouse_in_tray_menu_counter:
                         return    False            #counter has changed
                     close_cb()
-                gobject.timeout_add(500, check_menu_left, mouse_in_tray_menu_counter)
+                gobject.timeout_add(OUTSIDE_TRAY_TIMEOUT, check_menu_left, mouse_in_tray_menu_counter)
             mouse_in_tray_menu_counter = 0
             mouse_in_tray_menu = False
             traylog("popup_menu_workaround: adding events callbacks")
