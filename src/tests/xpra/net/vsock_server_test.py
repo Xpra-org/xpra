@@ -25,8 +25,18 @@ def main(args):
     while True:
         connection, client_address = sock.accept()
         log("new connection! %s", (connection, client_address))
-        data = connection.recv(1024)
-        log("got data: %s" % data)
+        l = 0
+        import time
+        start = time.time()
+        while True:
+            buf = connection.recv(1024*1024)
+            if buf:
+                log("got data: %s" % len(buf))
+                l += len(buf)
+                now = time.time()
+                log("speed=%iMB/s", (l/1024/1024/(now-start)))
+            else:
+                break
         connection.send("hello")
     return 0
 

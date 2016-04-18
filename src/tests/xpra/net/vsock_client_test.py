@@ -21,6 +21,7 @@ def main(args):
 
     vsock = connect_vsocket(cid=cid, port=port)
     log("vsock=%s", vsock)
+    vsock.send(" "*1024*1024*1024)
     data = vsock.recv(1024)
     log("recv()=%s", data)
 
