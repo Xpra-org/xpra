@@ -2189,27 +2189,30 @@ class UIXpraClient(XpraClientBase):
     def start_sending_sound(self, device=None):
         """ (re)start a sound source and emit client signal """
         soundlog("start_sending_sound(%s)", device)
-        assert self.microphone_allowed, "microphone forwarding is disabled"
-        assert self.server_sound_receive, "client support for receiving sound is disabled"
-        from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
-        if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
-            #looks like we're on the same machine, verify it's a different user:
-            if self._remote_uuid==get_user_uuid():
-                loop_warning("microphone", self._remote_uuid)
-                return
-
-        ss = self.sound_source
-        if ss:
-            if ss.get_state()=="active":
-                soundlog.error("Error: microphone forwarding is already active")
-                return
-            ss.start()
-        elif not self.start_sound_source(device):
-            self.microphone_enabled = False
-        else:
-            self.microphone_enabled = True
-        self.emit("microphone-changed")
-        soundlog("start_sending_sound(%s) done", device)
+        enabled = False
+        try:
+            assert self.microphone_allowed, "microphone forwarding is disabled"
+            assert self.server_sound_receive, "client support for receiving sound is disabled"
+            from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
+            if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
+                #looks like we're on the same machine, verify it's a different user:
+                if self._remote_uuid==get_user_uuid():
+                    loop_warning("microphone", self._remote_uuid)
+                    return
+            ss = self.sound_source
+            if ss:
+                if ss.get_state()=="active":
+                    soundlog.error("Error: microphone forwarding is already active")
+                    enabled = True
+                    return
+                ss.start()
+            else:
+                enabled = self.start_sound_source(device)
+        finally:
+            if enabled!=self.microphone_enabled:
+                self.microphone_enabled = enabled
+                self.emit("microphone-changed")
+            soundlog("start_sending_sound(%s) done, microphone_enabled=%s", device, enabled)
 
     def start_sound_source(self, device=None):
         soundlog("start_sound_source(%s)", device)
@@ -2256,7 +2259,9 @@ class UIXpraClient(XpraClientBase):
         """ stop the sound source and emit client signal """
         soundlog("stop_sending_sound() sound source=%s", self.sound_source)
         ss = self.sound_source
-        self.microphone_enabled = False
+        if self.microphone_enabled:
+            self.microphone_enabled = False
+            self.emit("microphone-changed")
         self.sound_source = None
         if ss is None:
             log.warn("stop_sending_sound: sound not started!")
@@ -2264,43 +2269,50 @@ class UIXpraClient(XpraClientBase):
         #tell the server to stop:
         self.send("sound-data", ss.codec or "", "", {"end-of-stream" : True})
         ss.cleanup()
-        self.emit("microphone-changed")
 
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
         soundlog("start_receiving_sound() sound sink=%s", self.sound_sink)
-        if self.sound_sink is not None:
-            soundlog("start_receiving_sound: we already have a sound sink")
-            return
-        elif not self.server_sound_send:
-            log.error("Error receiving sound: support not enabled on the server")
-            return
-        #choose a codec:
-        matching_codecs = [x for x in self.speaker_codecs if x in self.server_sound_encoders]
-        soundlog("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
-        if len(matching_codecs)==0:
-            log.error("Error: no matching codecs between client and server")
-            log.error(" server supports: %s", csv(self.server_sound_encoders))
-            log.error(" client supports: %s", csv(self.speaker_codecs))
-            return
-        codec = matching_codecs[0]
-        if not self.server_ogg_latency_fix and codec in ("flac", "opus", "speex"):
-            log.warn("Warning: this server's sound support is out of date")
-            log.warn(" the sound latency with the %s codec will be high", codec)
-        self.speaker_enabled = True
-        self.emit("speaker-changed")
-        def sink_ready(*args):
-            soundlog("sink_ready(%s) codec=%s", args, codec)
-            self.send("sound-control", "start", codec)
-            return False
-        self.on_sink_ready = sink_ready
-        self.start_sound_sink(codec)
+        enabled = False
+        try:
+            if self.sound_sink is not None:
+                soundlog("start_receiving_sound: we already have a sound sink")
+                enabled = True
+                return
+            elif not self.server_sound_send:
+                log.error("Error receiving sound: support not enabled on the server")
+                return
+            #choose a codec:
+            matching_codecs = [x for x in self.speaker_codecs if x in self.server_sound_encoders]
+            soundlog("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
+            if len(matching_codecs)==0:
+                log.error("Error: no matching codecs between client and server")
+                log.error(" server supports: %s", csv(self.server_sound_encoders))
+                log.error(" client supports: %s", csv(self.speaker_codecs))
+                return
+            codec = matching_codecs[0]
+            if not self.server_ogg_latency_fix and codec in ("flac", "opus", "speex"):
+                log.warn("Warning: this server's sound support is out of date")
+                log.warn(" the sound latency with the %s codec will be high", codec)
+            def sink_ready(*args):
+                soundlog("sink_ready(%s) codec=%s", args, codec)
+                self.send("sound-control", "start", codec)
+                return False
+            self.on_sink_ready = sink_ready
+            enabled = self.start_sound_sink(codec)
+        finally:
+            if self.speaker_enabled!=enabled:
+                self.speaker_enabled = enabled
+                self.emit("speaker-changed")
+            soundlog("start_receiving_sound() done, speaker_enabled=%s", enabled)
 
     def stop_receiving_sound(self, tell_server=True):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
         soundlog("stop_receiving_sound(%s) sound sink=%s", tell_server, self.sound_sink)
         ss = self.sound_sink
-        self.speaker_enabled = False
+        if self.speaker_enabled:
+            self.speaker_enabled = False
+            self.emit("speaker-changed")
         if tell_server:
             self.send("sound-control", "stop", self.min_sound_sequence)
         self.min_sound_sequence += 1
@@ -2310,7 +2322,6 @@ class UIXpraClient(XpraClientBase):
         self.sound_sink = None
         soundlog("stop_receiving_sound(%s) calling %s", tell_server, ss.cleanup)
         ss.cleanup()
-        self.emit("speaker-changed")
         soundlog("stop_receiving_sound(%s) done", tell_server)
 
     def sound_sink_state_changed(self, sound_sink, state):
