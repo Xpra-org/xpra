@@ -1,22 +1,27 @@
-v0.17.0 (2015-04-06)
+v0.17.0 (2015-04-18)
 ======================
-	-- GStreamer 1.6.3 on MS Windows
-	-- use newer Plink SSH with Windows Vista onwards
-	-- libyuv codec for faster colourspace conversion
-	-- NVENC v6, HEVC hardware encoding
+	-- GStreamer 1.6.x on MS Windows and OSX
+	-- opus is now the default sound codec
 	-- microphone and speaker forwarding no longer cause sound loops
 	-- new sound container formats: matroska, gdp
-	-- opus is now the default sound codec
+	-- much improved shadow servers, especially for OSX and MS Windows
+	-- use newer Plink SSH with Windows Vista onwards
+	-- OSX PKG installer, with file association
+	-- libyuv codec for faster colourspace conversion
+	-- NVENC v6, HEVC hardware encoding
+	-- xvid mpeg4 codec
 	-- shadow servers now expose a tray icon and menu
 	-- improved tablet input device support on MS Windows
 	-- improved window geometry handling
 	-- OSX dock clicks now restore existing windows
+	-- OSX clipboard synchronization menu
 	-- new encryption backend: python-cryptography, hardware accelerated AES
 	-- the dbus server can now be started automatically
-	-- support for using /var/run on Linux
+	-- support for using /var/run on Linux and multiple sockets
+	-- support for AF_VSOCK virtual networking
 	-- broadcast sessions via mDNS on MS Windows and OSX
 	-- window geometry fixes
-	-- window close event is now configurable
+	-- window close event is now configurable, automatically disconnects
 	-- webcam forwarding (limited scope)
 	-- SELinux policy improvements (still incomplete)
 	-- new event based start commands: after connection / on connection

@@ -1,28 +1,33 @@
 xpra (0.17.0-1) UNRELEASED; urgency=low
-  * GStreamer 1.6.3 on MS Windows
-  * use newer Plink SSH with Windows Vista onwards
-  * libyuv codec for faster colourspace conversion
-  * NVENC v6, HEVC hardware encoding
+  * GStreamer 1.6.x on MS Windows and OSX
+  * opus is now the default sound codec
   * microphone and speaker forwarding no longer cause sound loops
   * new sound container formats: matroska, gdp
-  * opus is now the default sound codec
+  * much improved shadow servers, especially for OSX and MS Windows
+  * use newer Plink SSH with Windows Vista onwards
+  * OSX PKG installer, with file association
+  * libyuv codec for faster colourspace conversion
+  * NVENC v6, HEVC hardware encoding
+  * xvid mpeg4 codec
   * shadow servers now expose a tray icon and menu
   * improved tablet input device support on MS Windows
   * improved window geometry handling
   * OSX dock clicks now restore existing windows
+  * OSX clipboard synchronization menu
   * new encryption backend: python-cryptography, hardware accelerated AES
   * the dbus server can now be started automatically
-  * support for using /var/run on Linux
+  * support for using /var/run on Linux and multiple sockets
+  * support for AF_VSOCK virtual networking
   * broadcast sessions via mDNS on MS Windows and OSX
   * window geometry fixes
-  * window close event is now configurable
+  * window close event is now configurable, automatically disconnects
   * webcam forwarding (limited scope)
   * SELinux policy improvements (still incomplete)
   * new event based start commands: after connection / on connection
   * split file authentication module
   * debug logging and message improvements
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Apr 2016 10:30:27 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 18 Apr 2016 12:28:05 +0700
 
 
 xpra (0.16.0-1) UNRELEASED; urgency=low
