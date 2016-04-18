@@ -830,6 +830,14 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(microphone_state)
         return microphone
 
+    def sound_submenu_activate(self, item, menu, cb):
+        log("submenu_uncheck(%s, %s, %s) ignore_events=%s, active=%s", item, menu, cb, menu.ignore_events, item.get_active())
+        if menu.ignore_events:
+            return
+        ensure_item_selected(menu, item)
+        if item.get_active():
+            cb()
+
     def make_soundsubmenu(self, is_on_cb, on_cb, off_cb, client_signal):
         menu = gtk.Menu()
         menu.ignore_events = False
@@ -837,24 +845,18 @@ class GTKTrayMenuBase(object):
             c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
             c.set_active(active)
-            def submenu_uncheck(item, menu):
-                if not menu.ignore_events:
-                    ensure_item_selected(menu, item)
-            c.connect('activate', submenu_uncheck, menu)
-            def check_enabled(item):
-                if not menu.ignore_events and item.get_active():
-                    cb()
-            c.connect('activate', check_enabled)
+            set_sensitive(c, True)
+            c.connect('activate', self.sound_submenu_activate, menu, cb)
             return c
         is_on = is_on_cb()
         on = onoffitem("On", is_on, on_cb)
         off = onoffitem("Off", not is_on, off_cb)
         menu.append(on)
         menu.append(off)
-        def client_signalled_change(obj):
+        def update_soundsubmenu_state(*args):
             menu.ignore_events = True
             is_on = is_on_cb()
-            log("sound: client_signalled_change(%s) is_on=%s", obj, is_on)
+            log("update_soundsubmenu_state%s is_on=%s", args, is_on)
             if is_on:
                 if not on.get_active():
                     on.set_active(True)
@@ -864,9 +866,8 @@ class GTKTrayMenuBase(object):
                     off.set_active(True)
                     ensure_item_selected(menu, off)
             menu.ignore_events = False
-        self.client.connect(client_signal, client_signalled_change)
-        #menu.append(gtk.SeparatorMenuItem())
-        #...
+        self.client.connect(client_signal, update_soundsubmenu_state)
+        self.client.after_handshake(update_soundsubmenu_state)
         self.popup_menu_workaround(menu)
         menu.show_all()
         return menu
