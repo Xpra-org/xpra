@@ -160,7 +160,7 @@ def run_sound(mode, error_cb, options, args):
             log.error("unknown mode: %s" % mode)
             return 1
         assert len(args)>=6, "not enough arguments"
-    
+
         #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
         plugin = args[2]
         #plugin options (ie: "device=monitor_device,something=value")
@@ -174,7 +174,7 @@ def run_sound(mode, error_cb, options, args):
             volume = int(args[6])
         except:
             volume = 1.0
-    
+
         ss = None
         try:
             ss = subproc(plugin, options, codecs, codec_options, volume)

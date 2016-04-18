@@ -414,7 +414,7 @@ def get_encoder_default_options(encoder):
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
     options.update(ENCODER_DEFAULT_OPTIONS.get(gst_major_version).get(enc, {}))
     return options
-    
+
 
 CODECS = None
 def get_codecs():

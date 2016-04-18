@@ -253,7 +253,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         options = selected_items+default_items
         if not options:
             log.error("Error: cannot find any clipboard menu options to match!")
-            return 
+            return
         self._clipboard_change_pending = True
         sel = options[0]
         remote_clipboard = CLIPBOARD_LABEL_TO_NAME.get(sel.get_label())

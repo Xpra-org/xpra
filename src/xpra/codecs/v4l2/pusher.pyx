@@ -58,7 +58,7 @@ cdef extern from "linux/videodev2.h":
     int V4L2_FIELD_SEQ_BT
     int V4L2_FIELD_ALTERNATE
     int V4L2_FIELD_INTERLACED_TB
-    int V4L2_FIELD_INTERLACED_BT 
+    int V4L2_FIELD_INTERLACED_BT
     #formats:
     int V4L2_PIX_FMT_GREY
     int V4L2_PIX_FMT_YUV422P
@@ -267,7 +267,7 @@ cdef class Pusher:
         self.src_format = src_format
         self.frames = 0
         self.init_device(device)
-    
+
     cdef init_device(self, device):
         cdef v4l2_capability vid_caps
         cdef v4l2_format vid_format

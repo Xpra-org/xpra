@@ -134,7 +134,7 @@ def save_dbus_env(env):
         except Exception as e:
             sys.stderr.write("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
             sys.stderr.write(" %s\n" % e)
-            
+
 
 def sh_quotemeta(s):
     safe = ("abcdefghijklmnopqrstuvwxyz"
@@ -1198,7 +1198,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             X11Window = X11WindowBindings()
             if starting and not clobber and False:
                 try:
-                    from xpra.x11.bindings.randr_bindings import RandRBindings 
+                    from xpra.x11.bindings.randr_bindings import RandRBindings
                     #try to set a reasonable display size:
                     randr = RandRBindings()
                     if not randr.has_randr():

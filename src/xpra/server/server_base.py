@@ -383,7 +383,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         if not self.webcam_forwarding:
             return
         try:
-            from xpra.codecs.pillow.decode import get_encodings            
+            from xpra.codecs.pillow.decode import get_encodings
             self.webcam_encodings = get_encodings()
         except Exception as e:
             webcamlog.error("Error: webcam forwarding disabled:")
@@ -2659,7 +2659,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         if not self.webcam_forwarding_device:
             webcamlog.warn("Warning: webcam forwarding is not active, dropping frame")
             ss.send_webcam_stop(device, "not started")
-            return            
+            return
         try:
             from xpra.codecs.pillow.decode import get_encodings
             assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())

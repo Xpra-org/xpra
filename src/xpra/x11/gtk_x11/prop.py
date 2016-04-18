@@ -176,7 +176,7 @@ class MotifWMHints(object):
                        BORDER_BIT   : "border",
                        RESIZEH_BIT  : "resizeh",
                        TITLE_BIT    : "title",
-                       MENU_BIT     : "menu", 
+                       MENU_BIT     : "menu",
                        MINIMIZE_BIT : "minimize",
                        MAXIMIZE_BIT : "maximize",
                        }

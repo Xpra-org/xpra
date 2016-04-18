@@ -56,7 +56,7 @@ class Authenticator(FileAuthenticatorBase):
     def __init__(self, username, **kwargs):
         FileAuthenticatorBase.__init__(self, username, **kwargs)
         self.sessions = None
-    
+
     def parse_filedata(self, data):
         global socket_dir, socket_dirs
         if not data:

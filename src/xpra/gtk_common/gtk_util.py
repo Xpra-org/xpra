@@ -662,7 +662,6 @@ def get_display_info():
                     dinfo[name] = trans(v, v)
                 except:
                     pass
-                
     return info
 
 

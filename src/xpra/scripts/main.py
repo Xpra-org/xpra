@@ -1261,7 +1261,6 @@ def pick_display(error_cb, opts, extra_args):
                     "display_name"      : display,
                     "named-pipe"        : path,
                     }
-            
         return {
                 "type"          : "unix-domain",
                 "local"         : True,

@@ -39,7 +39,7 @@ DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = [
                                          ["pactl", "set-default-sink", "Xpra-Speaker"],
                                          ["pactl", "set-default-source", "Xpra-Microphone.monitor"],
                                          ]
-                              
+
 
 if sys.version<'3':
     CLIENT_MODULES = ["xpra.client.gtk2.client"]

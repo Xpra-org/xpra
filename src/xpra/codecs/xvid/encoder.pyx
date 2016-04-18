@@ -256,7 +256,6 @@ def init_module():
     cdef int r = xvid_global(NULL, XVID_GBL_INIT, &init, NULL)
     log("xvid_global XVID_BGL_INIT returned %i", r)
     assert r==0
-    
 
 def cleanup_module():
     log("xvid.encoder.cleanup_module()")
@@ -355,7 +354,7 @@ cdef class Encoder:
         create.max_key_interval = 2**31-1
         create.num_threads = 0
         #create.bquant_ratio = ARG_BQRATIO
-        #create.bquant_offset = ARG_BQOFFSET        
+        #create.bquant_offset = ARG_BQOFFSET
         r = xvid_encore(NULL, XVID_ENC_CREATE, &create, NULL)
         raise_xvid("error creating context", r)
         self.context = create.handle

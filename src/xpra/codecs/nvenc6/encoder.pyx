@@ -234,7 +234,7 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_LEVEL_HEVC_52
         NV_ENC_LEVEL_HEVC_6
         NV_ENC_LEVEL_HEVC_61
-        NV_ENC_LEVEL_HEVC_62        
+        NV_ENC_LEVEL_HEVC_62
 
     ctypedef enum NV_ENC_PARAMS_RC_MODE:
         NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode

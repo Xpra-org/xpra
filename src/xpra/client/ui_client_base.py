@@ -519,7 +519,7 @@ class UIXpraClient(XpraClientBase):
                     sx, sy = tsx, tsy
                     matched = True
                     break
-            scalinglog("matched=%s : %sx%s with limits %s: %sx%s", matched, root_w, root_h, limits, sx, sy)                
+            scalinglog("matched=%s : %sx%s with limits %s: %sx%s", matched, root_w, root_h, limits, sx, sy)
             return sx,sy
         def parse_item(v):
             div = 1
@@ -1287,7 +1287,7 @@ class UIXpraClient(XpraClientBase):
             #default to forward:
             self.send("close-window", wid)
         else:
-            log.warn("unknown close-window action: %s", self.window_close_action)            
+            log.warn("unknown close-window action: %s", self.window_close_action)
         return True
 
 
@@ -2116,7 +2116,7 @@ class UIXpraClient(XpraClientBase):
         webcamlog("stop_sending_webcam()")
         with self.webcam_lock:
             self.do_stop_sending_webcam()
- 
+
     def do_stop_sending_webcam(self):
         wd = self.webcam_device
         webcamlog("do_stop_sending_webcam() device=%s", wd)

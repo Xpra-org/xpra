@@ -129,7 +129,7 @@ def get_window_frame_size(x, y, w, h):
 
 def get_icc_info():
     from AppKit import NSScreen     #@UnresolvedImport
-    ms = NSScreen.mainScreen()    
+    ms = NSScreen.mainScreen()
     info = do_get_screen_icc_info(ms)
     screens = NSScreen.screens()
     for i, screen in enumerate(screens):

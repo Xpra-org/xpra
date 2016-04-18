@@ -99,7 +99,7 @@ class ColorspaceConverter(object):
                          "BGRA" : cv2.COLOR_BGRA2YUV_I420,
                          "BGRX" : cv2.COLOR_BGRA2YUV_I420,
                          }.get(src_format)
-        assert self.flag, "invalid colorspace conversion: %s to %s" % (src_format, dst_format)            
+        assert self.flag, "invalid colorspace conversion: %s to %s" % (src_format, dst_format)
         log("csc_opencv: %s to %s=%s (%i)", src_format, dst_format, FLAG_STR.get(self.flag, self.flag), self.flag)
 
     def clean(self):                        #@DuplicatedSignature
