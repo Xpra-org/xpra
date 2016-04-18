@@ -557,7 +557,7 @@ class GTKTrayMenuBase(object):
             #ugly alert: the helper does not exist yet.. we just check the helper classnames:
             if len(copts)>0:
                 chname = copts[0].lower()
-                if chname.find("translated_clipboard")>0 or chname.find("osxclipboard"):
+                if chname.find("translated_clipboard")>=0 or chname.find("osxclipboard")>=0:
                     return self.make_translatedclipboard_optionsmenuitem()
         except:
             clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
