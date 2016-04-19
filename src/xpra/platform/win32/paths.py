@@ -98,14 +98,14 @@ APP_DIR = None
 if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe"):    #@UndefinedVariable
     #cx_freeze = sys.frozen == True
     #py2exe =  sys.frozen in ("windows_exe", "console_exe")
-    if sys.version > '3':
+    if sys.version_info >= (3,0):
         APP_DIR = os.path.dirname(sys.executable)
     else:
         APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
     #so we can easily load DLLs with ctypes:
-    if sys.version > '3':
+    if sys.version_info >= (3,0):
         os.environ['PATH'] = APP_DIR + os.pathsep + os.environ['PATH']
     else:
         os.environ['PATH'] = APP_DIR.encode('utf8') + os.pathsep + os.environ['PATH']
