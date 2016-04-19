@@ -105,7 +105,10 @@ if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe")
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
     #so we can easily load DLLs with ctypes:
-    os.environ['PATH'] = APP_DIR + ';' + os.environ['PATH']
+    if sys.version > '3':
+        os.environ['PATH'] = APP_DIR + os.pathsep + os.environ['PATH']
+    else:
+        os.environ['PATH'] = APP_DIR.encode('utf8') + os.pathsep + os.environ['PATH']
 
 def do_get_resources_dir():
     from xpra.platform.paths import get_app_dir
