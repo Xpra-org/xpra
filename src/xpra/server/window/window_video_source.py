@@ -650,7 +650,7 @@ class WindowVideoSource(WindowSource):
         WindowSource.update_encoding_options(self, force_reload)
         log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         if self.supports_video_subregion:
-            if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0:
+            if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0 and not (self._mmap and self._mmap_size>0):
                 ww, wh = self.window_dimensions
                 self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
             else:
