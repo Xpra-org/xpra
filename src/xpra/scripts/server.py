@@ -1087,6 +1087,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if display_name[0] != 'S':
         os.environ["DISPLAY"] = display_name
     sanitize_env()
+    os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
     configure_imsettings_env(opts.input_method)
 
     # Start the Xvfb server first to get the display_name if needed
