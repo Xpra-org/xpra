@@ -773,7 +773,7 @@ class ServerCore(object):
                     if challenge is None:
                         auth_failed("invalid state, unexpected challenge response")
                         return False
-                    authlog.info("challenge: %s", challenge)
+                    authlog("challenge: %s", challenge)
                     salt, digest = challenge
                     authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                     authlog.info(" sending challenge for '%s' using %s digest", username, digest)
