@@ -120,7 +120,7 @@ class SubprocessWrapperTest(unittest.TestCase):
     def test_loopback_callee(self):
         mainloop = glib.MainLoop()
         callee = TestCallee()
-        lc = loopback_callee(wrapped_object=callee, method_whitelist=["test-signal", "loop_stop", "unused"])
+        lc = loopback_callee(wrapped_object=callee, method_whitelist=["test_signal", "loop_stop", "unused"])
         #this will cause the "test-signal" to be sent via the loopback connection
         lc.connect_export("test-signal")
         readback = []
