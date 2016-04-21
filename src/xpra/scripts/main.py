@@ -865,11 +865,12 @@ def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, password_
         raise InitException("tcp-encryption %s cannot be used without a tcp authentication module or keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
     if pass_key and env_key and pass_key==env_key:
         raise InitException("encryption and authentication should not use the same value")
-    if password_file and encryption_keyfile and password_file==encryption_keyfile:
-        if encryption:
-            raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
-        elif tcp_encryption:
-            raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
+    #discouraged but not illegal:
+    #if password_file and encryption_keyfile and password_file==encryption_keyfile:
+    #    if encryption:
+    #        raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
+    #    elif tcp_encryption:
+    #        raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
 
 def dump_frames(*arsg):
     frames = sys._current_frames()
