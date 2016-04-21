@@ -61,7 +61,13 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                 if SELFTEST and selftest:
                     if name in CODEC_FAIL_SELFTEST:
                         raise ImportError("codec found in fail selftest list")
-                    selftest(FULL_SELFTEST)
+                    try:
+                        selftest(FULL_SELFTEST)
+                    except Exception as e:
+                        log.warn("Warning: %s failed its self test", name)
+                        log.warn(" %s", e)
+                        log("%s failed", selftest, exc_info=True)
+                        continue
                 #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 log(" found %s : %s", name, ic)
                 codecs[name] = ic
