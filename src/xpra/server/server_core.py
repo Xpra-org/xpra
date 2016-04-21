@@ -818,6 +818,8 @@ class ServerCore(object):
             v = os.environ.get('XPRA_ENCRYPTION_KEY')
             if v:
                 authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
+        if not v and authenticator:
+            v = authenticator.get_password()
         return v
 
     def hello_oked(self, proto, packet, c, auth_caps):

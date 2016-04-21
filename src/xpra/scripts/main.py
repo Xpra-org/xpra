@@ -838,10 +838,9 @@ def do_parse_cmdline(cmdline, defaults):
     return options, args
 
 def validate_encryption(opts):
-    do_validate_encryption(opts.encryption, opts.tcp_encryption, opts.password_file, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
+    do_validate_encryption(opts.auth, opts.tcp_auth, opts.encryption, opts.tcp_encryption, opts.password_file, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
 
-def do_validate_encryption(encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile):
-    #print("do_validate_encryption%s", (encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile))
+def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile):
     if not encryption and not tcp_encryption:
         #don't bother initializing anything
         return
@@ -860,10 +859,10 @@ def do_validate_encryption(encryption, tcp_encryption, password_file, encryption
         raise InitException("encryption %s is not supported, try: %s" % (encryption, csv(ENCRYPTION_CIPHERS)))
     if tcp_encryption and tcp_encryption not in ENCRYPTION_CIPHERS:
         raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, csv(ENCRYPTION_CIPHERS)))
-    if encryption and not encryption_keyfile and not env_key:
-        raise InitException("encryption %s cannot be used without a keyfile (see --encryption-keyfile option)" % encryption)
-    if tcp_encryption and not tcp_encryption_keyfile and not env_key:
-        raise InitException("tcp-encryption %s cannot be used without a keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
+    if encryption and not encryption_keyfile and not env_key and not auth:
+        raise InitException("encryption %s cannot be used without an authentication module or keyfile (see --encryption-keyfile option)" % encryption)
+    if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
+        raise InitException("tcp-encryption %s cannot be used without a tcp authentication module or keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
     if pass_key and env_key and pass_key==env_key:
         raise InitException("encryption and authentication should not use the same value")
     if password_file and encryption_keyfile and password_file==encryption_keyfile:
