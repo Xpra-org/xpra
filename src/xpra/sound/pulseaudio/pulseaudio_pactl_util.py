@@ -31,8 +31,10 @@ def which(name):
                 return ""
             return c
         return ""
-    except:
-        log.error("which(%s) error", name, exc_info=True)
+    except Exception as e:
+        log.error("Error: failed to run '%s'", " ".join(cmd))
+        log.error(" %s", e)
+        log("which(%s) error", name, exc_info=True)
     return ""
 
 pactl_bin = None
