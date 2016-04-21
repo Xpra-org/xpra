@@ -601,7 +601,7 @@ class XpraClientBase(FileTransferHandler):
             return os.environ.get('XPRA_PASSWORD')
         filename = os.path.expanduser(self.password_file)
         password = load_binary_file(filename)
-        netlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in password]))
+        netlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in (password or "")]))
         return password
 
     def _process_hello(self, packet):
