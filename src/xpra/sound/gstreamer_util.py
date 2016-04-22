@@ -436,6 +436,9 @@ def get_codecs():
             #and we have no way of knowing what version they have at this point, so just disable those:
             log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
             continue
+        elif encoding==OPUS_GDP and get_gst_version()>=(1, 8):
+            log("avoiding %s with gstreamer version %s", encoding, get_gst_version())
+            continue
         elif encoding==FLAC:
             #flac problems:
             if WIN32 and gst_major_version==0:
