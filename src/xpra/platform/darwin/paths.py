@@ -90,13 +90,12 @@ def do_get_user_conf_dirs():
         #when running sandboxed, it may look like this:
         #~/Library/Containers/<bundle_id>/Data/Library/Application Support/
         from Foundation import  NSSearchPathForDirectoriesInDomains, NSApplicationSupportDirectory, NSUserDomainMask    #@UnresolvedImport
-        dirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, False)
-        return list(dirs)
+        dirs = list(NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, False))
     except:
-        pass
-    #fallback to hardcoded:
-    default_conf_dir = "/Library/Application Support/Xpra"
-    return [os.environ.get("XPRA_USER_CONF_DIR", default_conf_dir)]
+        #fallback to hardcoded:
+        dirs = ["/Library/Application Support/Xpra"]
+    dirs.append("~/.xpra")
+    return dirs
 
 def do_get_default_log_dir():
     try:
