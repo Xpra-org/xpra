@@ -268,9 +268,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self.frame_request_window:
             v = self.get_frame_extents(self.frame_request_window)
             if v:
-                l, r, t, b = v
-                wfs["frame"] = (l, r, t, b)
-                wfs["offset"] = (l, t)
+                try:
+                    l, r, t, b = v
+                    wfs["frame"] = (l, r, t, b)
+                    wfs["offset"] = (l, t)
+                except Exception as e:
+                    framelog.warn("Warning: invalid frame extents value '%s'", v)
+                    framelog.warn(" %s", e)
+                    pass
         framelog("get_window_frame_sizes()=%s", wfs)
         return wfs
 
