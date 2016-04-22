@@ -198,7 +198,8 @@ class SoundSink(SoundPipeline):
                 pct = max(0, int((self.last_underrun+2-now)*50))
                 #cannot go higher than mst-50:
                 mst = self.queue.get_property("max-size-time")
-                mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, lrange+50)//200)
+                mrange = max(lrange+100, 150)
+                mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, mrange)//200)
                 log("set_min_level pct=%2i, cmtt=%3i, mtt=%3i, lrange=%s (UNDERRUN_MIN_LEVEL=%s)", pct, cmtt, mtt, lrange, UNDERRUN_MIN_LEVEL)
                 if cmtt!=mtt:
                     self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
