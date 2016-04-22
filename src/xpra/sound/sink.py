@@ -43,6 +43,8 @@ QUEUE_TIME = get_queue_time(450)
 GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
 #percentage: from 0 for no margin, to 200% which triples the buffer target
 MARGIN = max(0, min(200, int(os.environ.get("XPRA_SOUND_MARGIN", "50"))))
+#how high we push up the min-level to prevent underruns:
+UNDERRUN_MIN_LEVEL = max(0, int(os.environ.get("XPRA_UNDERRUN_MIN_LEVEL", "50")))
 
 
 GST_FORMAT_BYTES = 2
@@ -194,8 +196,10 @@ class SoundSink(SoundPipeline):
                 #from 100% down to 0% in 2 seconds after underrun:
                 now = time.time()
                 pct = max(0, int((self.last_underrun+2-now)*50))
-                mtt = min(50, pct*max(50, lrange)//200)
-                log("set_min_level pct=%2i, cmtt=%3i, mtt=%3i", pct, cmtt, mtt)
+                #cannot go higher than mst-50:
+                mst = self.queue.get_property("max-size-time")
+                mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, lrange+50)//200)
+                log("set_min_level pct=%2i, cmtt=%3i, mtt=%3i, lrange=%s (UNDERRUN_MIN_LEVEL=%s)", pct, cmtt, mtt, lrange, UNDERRUN_MIN_LEVEL)
                 if cmtt!=mtt:
                     self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
                     log("set_min_level min-threshold-time=%s", mtt)
