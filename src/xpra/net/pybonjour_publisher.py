@@ -11,7 +11,11 @@ log = Logger("network", "mdns")
 
 from xpra.util import csv
 from xpra.net.net_util import if_indextoname, if_nametoindex, get_iface
-from xpra.net import pybonjour
+try:
+    from xpra.net import pybonjour
+except OSError as e:
+    log("failed to load pybonjour", exc_info=True)
+    raise ImportError("cannot load pybonjour module: %s" % e.strerror)
 from xpra.net import XPRA_MDNS_TYPE
 
 SHOW_INTERFACE = True            #publishes the name of the interface we broadcast from
