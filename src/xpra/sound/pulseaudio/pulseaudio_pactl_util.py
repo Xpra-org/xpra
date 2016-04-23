@@ -214,8 +214,7 @@ def main():
             data = load_binary_file(filename)
             devices = do_get_pa_device_options(data, True, False)
             log.info("%s devices found in '%s'", len(devices), filename)
-            for d,info in devices.items():
-                log.info("* %s : %s", d, info)
+            print_nested_dict(devices)
         return
 
     i = get_info()
