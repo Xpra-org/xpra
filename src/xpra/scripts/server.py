@@ -231,8 +231,8 @@ def write_runner_shell_scripts(contents, overwrite=True):
                 os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
                 scriptfile.write(contents)
         except Exception as e:
-            sys.stderr.write("Error: failed to write script file '%s':\n" % scriptfile)
-            sys.stderr.write(" %s\n" % (scriptfile, e))
+            sys.stderr.write("Error: failed to write script file '%s':\n" % scriptpath)
+            sys.stderr.write(" %s\n" % e)
 
 
 def display_name_check(display_name):
