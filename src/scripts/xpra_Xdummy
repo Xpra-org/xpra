@@ -30,8 +30,14 @@ find_ld_linux() {
 	fi
 
 	if [ ! -x "$LD_LINUX" ]; then
-		LD_LINUX=''
-		echo "could not determine ld path for $arch, please file an xpra bug"
+		# Musl C / Alpine Linux
+		ldmusl=$(ls /lib | grep ^ld-musl)
+		if [ -n "$ldmusl" ]; then
+			LD_LINUX="/lib/$ldmusl"
+		else
+			LD_LINUX=''
+			echo "could not determine ld path for $arch, please file an xpra bug"
+		fi
 	fi
 }
 
