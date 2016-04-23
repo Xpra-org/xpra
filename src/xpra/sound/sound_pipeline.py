@@ -214,6 +214,18 @@ class SoundPipeline(gobject.GObject):
         log("SoundPipeline.cleanup() done")
 
 
+    def gstloginfo(self, msg, *args):
+        if self.state!="stopped":
+            gstlog.info(msg, *args)
+        else:
+            gstlog(msg, *args)
+
+    def gstlogwarn(self, msg, *args):
+        if self.state!="stopped":
+            gstlog.warn(msg, *args)
+        else:
+            gstlog(msg, *args)
+
     def new_codec_description(self, desc):
         log("new_codec_description(%s) current codec description=%s", desc, self.codec_description)
         if not desc:
@@ -221,7 +233,7 @@ class SoundPipeline(gobject.GObject):
         cdl = self.codec_description.lower()
         dl = desc.lower()
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
-            gstlog.info("using audio codec %s", dl)
+            self.gstloginfo("using audio codec %s", dl)
         self.codec_description = dl
         self.info["codec_description"]  = dl
 
@@ -232,7 +244,7 @@ class SoundPipeline(gobject.GObject):
         cdl = self.container_description.lower()
         dl = desc.lower()
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
-            gstlog.info("using container format %s", dl)
+            self.gstloginfo("using container format %s", dl)
         self.container_description = dl
         self.info["container_description"]  = dl
 
@@ -243,7 +255,7 @@ class SoundPipeline(gobject.GObject):
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
-            gstlog.info("EOS")
+            self.gstloginfo("EOS")
             self.update_state("stopped")
             self.idle_emit("state-changed", self.state)
         elif t == gst.MESSAGE_ERROR:
@@ -266,8 +278,8 @@ class SoundPipeline(gobject.GObject):
             try:
                 self.parse_message(message)
             except Exception as e:
-                gstlog.warn("Warning: failed to parse gstreamer message:")
-                gstlog.warn(" %s: %s", type(e), e)
+                self.gstlogwarn("Warning: failed to parse gstreamer message:")
+                self.gstlogwarn(" %s: %s", type(e), e)
         elif t == gst.MESSAGE_STREAM_STATUS:
             gstlog("stream status: %s", message)
             try:
@@ -302,13 +314,13 @@ class SoundPipeline(gobject.GObject):
         elif t == gst.MESSAGE_LATENCY:
             gstlog("latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:
-            log.info("pipeline message: %s", message)
+            self.gstloginfo("pipeline message: %s", message)
         elif t == gst.MESSAGE_WARNING:
             w = message.parse_warning()
-            gstlog.warn("pipeline warning: %s", w[0].message)
-            gstlog.info("pipeline warning: %s", w[1:])
+            self.gstlogwarn("pipeline warning: %s", w[0].message)
+            self.gstlogwarn("                  %s", w[1:])
         else:
-            gstlog.info("unhandled bus message type %s: %s", t, message)
+            self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()
         return 0
 
@@ -337,11 +349,11 @@ class SoundPipeline(gobject.GObject):
             found = True
         if structure.has_field("type"):
             if structure["type"]=="volume-changed":
-                gstlog.info("volumes=%s", csv("%i%%" % (v*100/2**16) for v in structure["volumes"]))
+                self.gstloginfo("volumes=%s", csv("%i%%" % (v*100/2**16) for v in structure["volumes"]))
                 found = True
                 self.info["volume"]  = self.get_volume()
             else:
-                gstlog.info("type=%s", structure["type"])
+                self.gstloginfo("type=%s", structure["type"])
         if structure.has_field("container-format"):
             v = structure["container-format"]
             self.new_container_description(v)
@@ -353,8 +365,8 @@ class SoundPipeline(gobject.GObject):
                     v = structure[x]
                     gstlog("tag message: %s = %s", x, v)
                     return      #handled
-            gstlog.info("unknown sound pipeline message %s: %s", message, structure)
-            gstlog.info(" %s", structure.keys())
+            self.gstloginfo("unknown sound pipeline message %s: %s", message, structure)
+            self.gstloginfo(" %s", structure.keys())
 
 
     def parse_message1(self, message):
@@ -398,4 +410,4 @@ class SoundPipeline(gobject.GObject):
             #no match yet
             if len([x for x in tags if x in ("minimum-bitrate", "maximum-bitrate", "channel-mode")])==0:
                 structure = message.get_structure()
-                gstlog.info("unknown sound pipeline tag message: %s", structure.to_string())
+                self.gstloginfo("unknown sound pipeline tag message: %s", structure.to_string())
