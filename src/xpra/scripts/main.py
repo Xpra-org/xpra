@@ -1379,11 +1379,11 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                     from xpra.log import Logger
                     log = Logger()
                     if conn.input_bytecount==0 and conn.output_bytecount==0:
-                        cmd_info = " ".join(display_desc["full_ssh"])
                         log.error("Connection to the xpra server via SSH failed for: %s", display_name)
                         log.error(" check your username, hostname, display number, firewall, etc")
                     else:
                         log.error("The SSH process has terminated with exit code %s", e)
+                    cmd_info = " ".join(display_desc["full_ssh"])
                     log.error(" the command line used was:")
                     log.error(" %s", cmd_info)
                 raise ConnectionClosedException(error_message)
