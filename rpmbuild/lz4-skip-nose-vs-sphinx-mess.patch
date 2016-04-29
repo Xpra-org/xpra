@@ -1,11 +1,13 @@
---- a/setup.py  2014-08-08 05:00:01.054064000 -0400
-+++ b/setup.py  2014-08-08 05:00:10.824064000 -0400
-@@ -31,8 +31,6 @@
-             "-DLZ4_VERSION=\"r130\"",
-         ])
-     ],
--    setup_requires=["nose>=1.0"],
+--- a/setup.py	2016-04-29 11:52:02.628483556 +0700
++++ b/setup.py	2016-04-29 11:52:15.427381771 +0700
+@@ -71,8 +71,8 @@
+     packages=find_packages('src'),
+     package_dir={'': 'src'},
+     ext_modules=[lz4mod,],
+-    tests_require=["nose>=1.0"],
 -    test_suite = "nose.collector",
++    #tests_require=["nose>=1.0"],
++    #test_suite = "nose.collector",
      classifiers=[
          'Development Status :: 5 - Production/Stable',
          'License :: OSI Approved :: BSD License',
