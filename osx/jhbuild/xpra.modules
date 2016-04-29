@@ -161,8 +161,8 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-pic --enable-shared --enable-static"
              autogen-sh="configure">
-	<branch module="/pub/x264/snapshots/x264-snapshot-20160418-2245-stable.tar.bz2"
-		version="20160418-2245-stable"
+	<branch module="/pub/x264/snapshots/x264-snapshot-20160428-2245-stable.tar.bz2"
+		version="20160428-2245-stable"
 		hash="sha256:6095fde38937d13d20e4256e44afbe033e546ae9edb60b120de5c7ddf5365cc3"
 		repo="download.videolan.org"/>
 	<dependencies>
@@ -199,9 +199,9 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.0.1.tar.bz2"
-		version="3.0.1"
-		hash="md5:51ca580a64c0d2ecb6dba721b2744815"
+	<branch module="/releases/ffmpeg-3.0.2.tar.bz2"
+		version="3.0.2"
+		hash="md5:7db5efb1070872823143e1365fdfcd53"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
