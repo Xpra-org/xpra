@@ -520,10 +520,10 @@
   </distutils>
 
   <distutils id="python-lz4">
-	<branch repo="xpra.org"
-	        module="/src/python-lz4-0.8.0-rc2.tar.xz"
-	        hash="md5:f856e1f307a6d3d3a7c126b573e64d51"
-	        version="0.8.0-rc2"/>
+	<branch repo="pypi.python.org"
+	        module="/packages/63/a5/6fe9d19f5ecd3918c48408f6e14e0cbb87a171dc33ed64cfb93e93229ef5/lz4-0.8.1.tar.gz"
+	        hash="md5:44aa59da191cde5f72bc011d7a1a2cbe"
+	        version="0.8.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
