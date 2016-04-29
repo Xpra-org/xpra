@@ -18,7 +18,7 @@
 
 Name:           python-lz4
 Version:        0.8.1
-Release:        1.%{?dist}
+Release:        1%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
