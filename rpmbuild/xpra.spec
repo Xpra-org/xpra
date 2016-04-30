@@ -211,6 +211,7 @@ So basically it's screen for remote X apps.
 Summary: Common files for xpra packages
 Group: Networking
 BuildArch: noarch
+Requires(pre): shadow-utils
 %description common
 This package contains the files which are common to both the Python 2 and Python 3 xpra packages.
 
