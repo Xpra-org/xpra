@@ -285,12 +285,6 @@ class XpraClient(GTKXpraClient):
             self.clipboard_notify(n)
         def register_clipboard_toggled(*args):
             def clipboard_toggled(*targs):
-                clipboardlog("clipboard_toggled(%s) enabled=%s, server_supports_clipboard=%s", targs, self.clipboard_enabled, self.server_supports_clipboard)
-                if self.clipboard_enabled and self.server_supports_clipboard:
-                    assert self.clipboard_helper is not None
-                    self.clipboard_helper.send_all_tokens()
-                else:
-                    pass    #FIXME: todo!
                 #reset tray icon:
                 self.local_clipboard_requests = 0
                 self.remote_clipboard_requests = 0

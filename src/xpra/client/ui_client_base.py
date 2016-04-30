@@ -1878,7 +1878,8 @@ class UIXpraClient(XpraClientBase):
         self.emit("clipboard-toggled")
         if self.server_supports_clipboard:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
-            self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
+            self.connect("clipboard-toggled", self.clipboard_toggled)
+            self.clipboard_toggled()
         self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
         if self.pings:
@@ -2495,9 +2496,17 @@ class UIXpraClient(XpraClientBase):
             self.clipboard_enabled = bool(clipboard_enabled)
             self.emit("clipboard-toggled")
 
-    def send_clipboard_enabled_status(self, *args):
-        clipboardlog("send_clipboard_enabled_status%s clipboard_enabled=%s", args, self.clipboard_enabled)
-        self.send("set-clipboard-enabled", self.clipboard_enabled)
+    def clipboard_toggled(self, *args):
+        clipboardlog("clipboard_toggled%s clipboard_enabled=%s, server_supports_clipboard=%s", args, self.clipboard_enabled, self.server_supports_clipboard)
+        if self.server_supports_clipboard:
+            self.send("set-clipboard-enabled", self.clipboard_enabled)
+            if self.clipboard_enabled:
+                ch = self.clipboard_helper
+                assert ch is not None
+                self.send_clipboard_selections(ch.remote_clipboards)
+                ch.send_all_tokens()
+            else:
+                pass    #FIXME: todo!
 
     def send_clipboard_selections(self, selections):
         clipboardlog("send_clipboard_selections(%s) server_supports_clipboard_enable_selections=%s", selections, self.server_supports_clipboard_enable_selections)
