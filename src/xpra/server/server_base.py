@@ -2271,12 +2271,15 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def set_clipboard_enabled_status(self, ss, clipboard_enabled):
         if not self._clipboard_helper:
-            log.warn("client toggled clipboard-enabled but we do not support clipboard at all! ignoring it")
+            clipboardlog.warn("Warning: client try to toggle clipboard-enabled status,")
+            clipboardlog.warn(" but we do not support clipboard at all! Ignoring it.")
             return
-        assert self._clipboard_client==ss, \
-                "the request to change the clipboard enabled status does not come from the clipboard owner!"
-        self._clipboard_client.clipboard_enabled = clipboard_enabled
-        log("toggled clipboard to %s", clipboard_enabled)
+        cc = self._clipboard_client
+        if cc!=ss or ss is None:
+            clipboardlog.warn("Warning: received a request to change the clipboard status,")
+            clipboardlog.warn(" but it does not come from the clipboard owner! Ignoring it.")
+        cc.clipboard_enabled = clipboard_enabled
+        clipboardlog("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
 
     def _process_keyboard_sync_enabled_status(self, proto, packet):
         self.keyboard_sync = bool(packet[1])

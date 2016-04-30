@@ -172,29 +172,29 @@ class GTKServerBase(ServerBase):
 
     def send_clipboard_packet(self, *parts):
         #overriden so we can inject the nesting check:
-        if self.clipboard_nesting_check(self._clipboard_client):
+        if self.clipboard_nesting_check("sending", parts[0], self._clipboard_client):
             ServerBase.send_clipboard_packet(self, *parts)
 
     def process_clipboard_packet(self, ss, packet):
         #overriden so we can inject the nesting check:
         def do_check():
-            if self.clipboard_nesting_check(ss):
+            if self.clipboard_nesting_check("receiving", packet[0], ss):
                 ServerBase.process_clipboard_packet(self, ss, packet)
         #the nesting check calls gtk, so we must call it from the main thread:
         self.idle_add(do_check)
 
-    def clipboard_nesting_check(self, ss):
-        clipboardlog("clipboard_nesting_check(%s)", ss)
+    def clipboard_nesting_check(self, action, packet_type, ss):
+        clipboardlog("clipboard_nesting_check(%s, %s, %s)", action, packet_type, ss)
         cc = self._clipboard_client
         if cc is None:
-            clipboardlog("ignoring clipboard packet: no clipboard client")
+            clipboardlog("not %s clipboard packet '%s': no clipboard client", action, packet_type)
             return False
         if not cc.clipboard_enabled:
-            clipboardlog("ignoring clipboard packet: client %s has clipboard disabled", cc)
+            clipboardlog("not %s clipboard packet '%s': client %s has clipboard disabled", action, packet_type, cc)
             return False
         if gtk.main_level()>=10:
-            clipboardlog.warn("loop nesting too deep: %s", gtk.main_level())
-            clipboardlog.warn("you may have a clipboard forwarding loop, disabling the clipboard")
+            clipboardlog.warn("Warning: loop nesting too deep: %s", gtk.main_level())
+            clipboardlog.warn(" you may have a clipboard forwarding loop, disabling the clipboard")
             #turn off clipboard at our end:
             self.set_clipboard_enabled_status(ss, False)
             #if we can, tell the client to do the same:
