@@ -565,7 +565,10 @@ class ClipboardProxy(gtk.Invisible):
         # Either call selection_data.set() or don't, and then return.
         # In practice, send a call across the wire, then block in a recursive
         # main loop.
+        def nodata():
+            selection_data.set("STRING", 8, "")
         if not self._enabled:
+            nodata()
             return
         log("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection_data.selection)
         self._selection_get_events += 1
@@ -575,7 +578,7 @@ class ClipboardProxy(gtk.Invisible):
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is None or result["type"] is None:
             log("remote selection fetch timed out or empty")
-            selection_data.set("STRING", 8, "")
+            nodata()
             return
         data = result["data"]
         dformat = result["format"]
