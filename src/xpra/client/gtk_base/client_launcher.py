@@ -485,10 +485,9 @@ class ApplicationWindow:
         params = {"type"    : self.config.mode}
         username = self.config.username
         if self.config.mode=="ssh":
-            remote_xpra = self.config.remote_xpra.split()
             if self.config.socket_dir:
-                remote_xpra.append("--socket-dir=%s" % self.config.socket_dir)
-            params["remote_xpra"] = remote_xpra
+                params["socket_dir"] = self.config.socket_dir
+            params["remote_xpra"] = self.config.remote_xpra
             params["proxy_command"] = ["_proxy"]
             if self.config.port and self.config.port>0:
                 params["display"] = ":%s" % self.config.port

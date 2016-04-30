@@ -742,6 +742,11 @@ def do_parse_cmdline(cmdline, defaults):
 
     options, args = parser.parse_args(cmdline[1:])
 
+    #remote-xpra is meant to be a list, but the user can specify a string using the command line,
+    #in which case we replace all the default values with this single entry:
+    if not isinstance(options.remote_xpra, (list, tuple)):
+        options.remote_xpra = [options.remote_xpra]
+
     #ensure all the option fields are set even though
     #some options are not shown to the user:
     for k,v in hidden_options.items():
