@@ -494,7 +494,7 @@ class ClipboardProxy(gtk.Invisible):
 
     def do_owner_changed(self, *args):
         #log("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
-        log("clipboard: %s owner_changed greedy_client=%s, block_owner_change=%s", self._selection, self._greedy_client, self._block_owner_change)
+        log("clipboard: %s owner_changed, enabled=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._have_token, self._greedy_client, self._block_owner_change)
         if self._enabled and self._greedy_client and not self._block_owner_change:
             self._block_owner_change = True
             self._have_token = False
