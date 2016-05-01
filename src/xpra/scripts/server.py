@@ -802,7 +802,11 @@ def start_Xvfb(xvfb_str, display_name, cwd):
             #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
             f1 = shellsub(tmp_xorg_log_file, subs)
             if f0 != f1:
-                os.rename(f0, f1)
+                try:
+                    os.rename(f0, f1)
+                except Exception as e:
+                    sys.stdout.write("failed to rename Xorg log file from '%s' to '%s'" % (f0, f1))
+                    sys.stdout.write(" %s" % e)
         display_name = new_display_name
     else:
         # use display specified
