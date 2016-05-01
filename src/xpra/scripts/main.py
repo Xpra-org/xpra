@@ -1915,7 +1915,7 @@ def run_list(error_cb, opts, extra_args):
                 unknown.append((socket_dir, display, sockpath))
     #now, re-probe the "unknown" ones:
     if len(unknown)>0:
-        sys.stdout.write("Re-probing unknown sessions: %s\n" % [x[0] for x in unknown])
+        sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
     counter = 0
     while len(unknown)>0 and counter<5:
         time.sleep(1)
