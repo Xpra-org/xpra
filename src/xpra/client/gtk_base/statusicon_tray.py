@@ -94,12 +94,17 @@ class GTKStatusIconTray(TrayBase):
 
     def get_geometry(self):
         assert self.tray_widget
-        ag = self.tray_widget.get_geometry()
-        log("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
+        #on X11, if we don't have an xid, don't bother querying its geometry,
+        #as this would trigger some ugly GTK warnings we can do nothing about
+        if os.name=="posix" and os.environ.get("DISPLAY") and self.tray_widget.get_x11_window_id()==0:
+            ag = None
+        else:
+            ag = self.tray_widget.get_geometry()
+            log("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
-            #probably win32 or OSX...
+            #probably win32 or OSX, gnome-shell or KDE5..
             self.may_guess()
-            log("GTKStatusIconTray.get_geometry() returning guess: %s", self.geometry_guess)
+            log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s", self.geometry_guess)
             return self.geometry_guess
         #gtk3 adds an extra argument.. at the beginning!
         _, geom, _ = ag[-3:]
