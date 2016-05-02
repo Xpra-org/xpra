@@ -86,7 +86,7 @@ def do_get_script_bin_dirs():
 def get_remote_run_xpra_scripts():
     return envaslist_or_delegate("XPRA_REMOTE_RUN_XPRA_SCRIPTS", do_get_remote_run_xpra_scripts)
 def do_get_remote_run_xpra_scripts():
-    return ["$XDG_RUNTIME_DIR/xpra/run-xpra", "~/.xpra/run-xpra", "xpra"]
+    return ["~/.xpra/run-xpra", "$XDG_RUNTIME_DIR/xpra/run-xpra", "xpra"]
 
 
 #overriden in platform code:

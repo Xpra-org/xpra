@@ -53,10 +53,10 @@ def do_get_icon_dir():
 def do_get_script_bin_dirs():
     #versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
+    script_bin_dirs.append("~/.xpra")
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
         script_bin_dirs.append(runtime_dir)
-    script_bin_dirs.append("~/.xpra")
     return script_bin_dirs
 
 
