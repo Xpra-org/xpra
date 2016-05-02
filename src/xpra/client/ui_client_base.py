@@ -954,8 +954,8 @@ class UIXpraClient(XpraClientBase):
         screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
         if self.dpi>0:
             #use command line value supplied, but scale it:
-            xdpi = self.cx(self.cy(self.dpi))
-            ydpi = xdpi
+            xdpi = self.cx(self.dpi)
+            ydpi = self.cy(self.dpi)
         else:
             #not supplied, use platform detection code:
             xdpi = self.cx(get_xdpi())
