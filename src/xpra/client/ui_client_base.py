@@ -46,7 +46,7 @@ from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_double_click_time, show_desktop, get_cursor_size,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
-                               get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, ClientExtras)
+                               get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
@@ -1325,6 +1325,9 @@ class UIXpraClient(XpraClientBase):
 
         capabilities["modifiers"] = self.get_current_modifiers()
         u_root_w, u_root_h = self.get_root_size()
+        wm_name = get_wm_name()
+        if wm_name:
+            capabilities["wm_name"] = wm_name
         capabilities["desktop_size"] = self.cp(u_root_w, u_root_h)
         ndesktops = get_number_of_desktops()
         capabilities["desktops"] = ndesktops

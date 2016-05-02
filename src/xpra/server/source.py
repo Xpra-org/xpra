@@ -370,6 +370,7 @@ class ServerSource(object):
         self.client_processor = None
         self.client_release = None
         self.client_proxy = False
+        self.client_wm_name = None
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
@@ -660,6 +661,7 @@ class ServerSource(object):
         self.client_version = c.strget("version")
         self.client_revision = c.strget("build.revision")
         self.client_proxy = c.boolget("proxy")
+        self.client_wm_name = c.strget("wm_name")
         #general features:
         self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False) and compression.use_lz4
@@ -1353,7 +1355,7 @@ class ServerSource(object):
             v = getattr(self, name)
             if v is not None:
                 info[k] = v
-        for x in ("type", "platform", "release", "machine", "processor", "proxy"):
+        for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name"):
             addattr(x, "client_"+x)
         #remove very large item:
         ieo = dict(self.icons_encoding_options)
