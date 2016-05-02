@@ -31,7 +31,7 @@ def get_native_system_tray_classes():
         traylog("cannot load appindicator tray: %s", e)
     return []
 
-def get_native_tray_classes():
+def get_wm_name():
     wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
     try:
         wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
@@ -43,11 +43,14 @@ def get_native_tray_classes():
     except Exception as e:
         traylog.error("Error accessing window manager information:")
         traylog.error(" %s", e)
+    return wm_name
+
+def get_native_tray_classes():
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     if has_gtk_menu_support():  #and wm_name=="GNOME Shell":
         try:
             from xpra.platform.xposix.gtkmenu_tray import GTKMenuTray
-            traylog("using GTKMenuTray for %s", wm_name)
+            traylog("using GTKMenuTray for '%s' window manager", get_wm_name() or "unknown")
             return [GTKMenuTray]
         except Exception as e:
             traylog("cannot load gtk menu tray: %s", e)
@@ -93,7 +96,8 @@ def _get_X11_root_property(name, req_type):
         root_xid = window_bindings.getDefaultRootWindow()
         return _get_X11_window_property(root_xid, name, req_type)
     except Exception as e:
-        log.warn("failed to get X11 root property %s: %s", name, e)
+        log.warn("Warning: failed to get X11 root property '%s'", name)
+        log.warn(" %s", e)
     return None
 
 

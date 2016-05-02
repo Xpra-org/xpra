@@ -181,6 +181,9 @@ def gl_check():
 def get_menu_support_function():
     return None
 
+def get_wm_name():
+    return None
+
 
 take_screenshot = None
 ClientExtras = None
@@ -200,6 +203,7 @@ def get_info_base():
             "native_system_trays"           : fnames(get_native_system_tray_classes()),
             "system_bell"                   : fname(system_bell),
             "native_notifiers"              : fnames(get_native_notifier_classes()),
+            "wm_name"                       : get_wm_name() or "",
             "workarea"                      : get_workarea() or "",
             "workareas"                     : get_workareas(),
             "desktops"                      : get_number_of_desktops(),
@@ -230,6 +234,7 @@ platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
                 "gl_check",
+                "get_wm_name",
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "ClientExtras",
                 "take_screenshot",

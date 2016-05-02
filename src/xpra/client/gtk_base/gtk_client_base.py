@@ -37,7 +37,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_workarea, get_workareas, get_fixed_cursor_size, get_menu_support_function
+from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_workarea, get_workareas, get_fixed_cursor_size, get_menu_support_function, get_wm_name
 
 missing_cursor_names = set()
 
@@ -275,7 +275,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 except Exception as e:
                     framelog.warn("Warning: invalid frame extents value '%s'", v)
                     framelog.warn(" %s", e)
-                    pass
+                    wm_name = get_wm_name()
+                    if wm_name:
+                        framelog.warn(" this is probably a bug in '%s'", wm_name)
         framelog("get_window_frame_sizes()=%s", wfs)
         return wfs
 
