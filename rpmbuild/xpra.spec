@@ -95,6 +95,10 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %endif
 
 %if 0%{?suse_version}
+#SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there 
+%if 0%{?suse_version} == 1315
+%define with_python3 0
+%endif
 #causes problems with automatic dependency calculations:
 %global __requires_exclude typelib\\(.*\\)
 %define numpy python-numpy
