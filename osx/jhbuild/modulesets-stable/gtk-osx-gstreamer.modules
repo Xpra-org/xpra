@@ -92,7 +92,9 @@
   <autotools id="gst-plugins-good-1.0" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-good/gst-plugins-good-1.6.4.tar.xz" version="1.6.4" repo="gstreamer"
-            hash="sha256:6915335458d0421d30d2545f85cc4d891d10d48f2be8dc1bd8f45e38b8f64a9c"/>
+            hash="sha256:6915335458d0421d30d2545f85cc4d891d10d48f2be8dc1bd8f45e38b8f64a9c">
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gst-plugins-good-1.6.4-osx-10.5-fixdefs.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="gstreamer-1.0"/>
       <dep package="gst-plugins-base-1.0"/>
