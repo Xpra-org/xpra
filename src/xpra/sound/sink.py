@@ -151,11 +151,13 @@ class SoundSink(SoundPipeline):
 
 
     def queue_pushing(self, *args):
+        gstlog("queue_pushing")
         self.queue_state = "pushing"
         self.emit_info()
         return True
 
     def queue_running(self, *args):
+        gstlog("queue_running")
         self.queue_state = "running"
         self.set_min_level()
         self.set_max_level()
@@ -167,6 +169,7 @@ class SoundSink(SoundPipeline):
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
+        gstlog("queue_underrun")
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
             self.last_underrun = now
