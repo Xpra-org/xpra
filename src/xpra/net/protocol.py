@@ -213,7 +213,9 @@ class Protocol(object):
             "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size,
+            "aliases"               : USE_ALIASES,
             "input" : {
+                       "buffer-size"            : READ_BUFFER_SIZE,
                        "packetcount"            : self.input_packetcount,
                        "raw_packetcount"        : self.input_raw_packetcount,
                        "count"                  : self.input_stats,
@@ -222,6 +224,10 @@ class Protocol(object):
                                                    },
                         },
             "output" : {
+                        "packet-join-size"      : PACKET_JOIN_SIZE,
+                        "large-packet-size"     : LARGE_PACKET_SIZE,
+                        "inline-size"           : INLINE_SIZE,
+                        "min-compress-size"     : MIN_COMPRESS_SIZE,
                         "packetcount"           : self.output_packetcount,
                         "raw_packetcount"       : self.output_raw_packetcount,
                         "count"                 : self.output_stats,
