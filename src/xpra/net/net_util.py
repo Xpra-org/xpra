@@ -242,6 +242,17 @@ def get_net_sys_config():
 				addproc("/proc/sys/net/ipv4/%s" % k, 	"ipv4", k, int)
 	return net_sys_config
 
+def get_net_config():
+	try:
+		from xpra.scripts.main import VSOCK_TIMEOUT, SOCKET_TIMEOUT, TCP_NODELAY
+		return {
+				"vsocket.timeout"	: VSOCK_TIMEOUT,
+				"socket.timeout"	: SOCKET_TIMEOUT,
+				"tcp.nodelay"		: TCP_NODELAY,
+				}
+	except:
+		return {}
+
 def get_info():
 	from xpra.net.protocol import get_network_caps
 	i = get_network_caps()
@@ -251,6 +262,7 @@ def get_info():
 	s = get_net_sys_config()
 	if s:
 		i["system"] = s
+	i["config"] = get_net_config()
 	return i
 
 
