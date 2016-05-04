@@ -35,12 +35,13 @@ TTY_READ = os.read
 TTY_WRITE = os.write
 
 
-FAMILY_STR = {}
+PROTOCOL_STR = {}
 for x in ("UNIX", "INET", "INET6"):
     try:
-        FAMILY_STR[getattr(socket, "AF_%s" % x)] = x
+        PROTOCOL_STR[getattr(socket, "AF_%s" % x)] = x
     except:
         pass
+FAMILY_STR = {}
 for x in ("STREAM", "DGRAM", "RAW", "RDM", "SEQPACKET"):
     try:
         FAMILY_STR[getattr(socket, "SOCK_%s" % x)] = x
@@ -276,7 +277,7 @@ class SocketConnection(Connection):
                         "timeout"       : int(1000*(s.gettimeout() or 0)),
                         "family"        : FAMILY_STR.get(s.family, s.family),
                         "proto"         : s.proto,
-                        "type"          : s.type}
+                        "type"          : PROTOCOL_STR.get(s.type, s.type)}
         except:
             log.warn("failed to get socket information", exc_info=True)
         return d
