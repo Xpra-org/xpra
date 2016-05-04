@@ -315,8 +315,13 @@ def main():
 		netcaps["netifaces"] = netif
 		print_nested_dict(netcaps)
 
+		print("")
+		print("Network Config:")
+		print_nested_dict(get_net_config())
+
 		net_sys = get_net_sys_config()
 		if net_sys:
+			print("")
 			print("Network System Config:")
 			print_nested_dict(net_sys)
 
