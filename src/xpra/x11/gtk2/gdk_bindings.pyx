@@ -540,11 +540,11 @@ def calc_constrained_size(int width, int height, object hints):
     if "increment" in hints:
         flags = flags | gtk.gdk.HINT_RESIZE_INC
         geom.width_inc, geom.height_inc = hints["increment"]
-    if "min_aspect_ratio" in hints:
-        assert "max_aspect_ratio" in hints
+    if "min_aspect" in hints:
+        assert "max_aspect" in hints
         flags = flags | gtk.gdk.HINT_ASPECT
-        geom.min_aspect = hints["min_aspect_ratio"]
-        geom.max_aspect = hints["max_aspect_ratio"]
+        geom.min_aspect = hints["min_aspect"]
+        geom.max_aspect = hints["max_aspect"]
     gdk_window_constrain_size(&geom, flags, width, height, &new_width, &new_height)
     if (new_width!=width or new_height!=height) and "increment" in hints:
         #we will change the dimensions specified and gdk_window_constrain_size rounds down,
