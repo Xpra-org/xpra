@@ -134,7 +134,7 @@ gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
-html5_ENABLED = DEFAULT and not WIN32 and not OSX
+html5_ENABLED = not WIN32           #websockify is broken on win32, see https://github.com/kanaka/websockify/issues/28
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
@@ -316,12 +316,16 @@ external_excludes = [
                     #formats we don't use:
                     "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
                     #not used:
-                    "curses", "mimetypes", "mimetools", "pdb",
+                    "curses", "pdb",
                     "urllib2", "tty",
-                    "ssl", "_ssl",
-                    "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
+                    "cookielib", "ftplib", "httplib", "fileinput",
                     "distutils", "setuptools", "doctest"
                     ]
+if not html5_ENABLED and not crypto_ENABLED:
+    external_excludes += ["ssl", "_ssl"]
+if not html5_ENABLED:
+    external_excludes += ["BaseHTTPServer", "mimetypes", "mimetools"]
+
 if not client_ENABLED and not server_ENABLED:
     excludes += ["PIL"]
 if not dbus_ENABLED:
@@ -1524,6 +1528,8 @@ if WIN32:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
             add_gui_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
+        if html5_ENABLED:
+            add_console_exe("win32/websockify.py",              "network.ico",      "websockify")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             if os.path.exists("C:\\Program Files (x86)\\Ghostgum\\gsview"):
@@ -1754,8 +1760,7 @@ if WIN32:
         #we need numpy for opengl or as a fallback for the Cython xor module
         external_includes.append("numpy")
     else:
-        remove_packages("numpy",
-                        "unittest", "difflib",  #avoid numpy warning (not an error)
+        remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
 
     if sound_ENABLED:
@@ -1786,7 +1791,7 @@ if WIN32:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
 
-    html5_dir = ''
+    html5_dir = 'www'
 
     #END OF win32
 #*******************************************************************************
@@ -1800,7 +1805,11 @@ else:
     add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
     add_data_files("share/icons",         ["xdg/xpra.png"])
     add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
-    html5_dir = "share/xpra/www"
+    if OSX:
+        #Xpra.app/Contents/Resources/www/
+        html5_dir = "www"
+    else:
+        html5_dir = "share/xpra/www"
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf
@@ -1919,6 +1928,15 @@ if html5_ENABLED:
         if (k!=""):
             k = os.sep+k
         add_data_files(html5_dir+k, v)
+    if WIN32 or OSX:
+        external_includes.append("websockify")
+        external_includes.append("numpy")
+        external_includes.append("ssl")
+        external_includes.append("_ssl")
+        if not PYTHON3:
+            external_includes.append("mimetypes")
+            external_includes.append("mimetools")
+            external_includes.append("BaseHTTPServer")
 
 
 if printing_ENABLED and os.name=="posix":

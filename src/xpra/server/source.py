@@ -215,6 +215,7 @@ class ServerSource(object):
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  window_filters,
+                 printing,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -229,6 +230,7 @@ class ServerSource(object):
                  get_transient_for, get_focus,
                  get_window_id,
                  window_filters,
+                 printing,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -285,6 +287,8 @@ class ServerSource(object):
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
         self.av_sync_delta = AV_SYNC_DELTA
+
+        self.printing = printing
 
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
@@ -399,7 +403,6 @@ class ServerSource(object):
         self.supports_transparency = False
         self.file_transfer = False
         self.file_size_limit = 10
-        self.printing = False
         self.printers = {}
         self.vrefresh = -1
         self.double_click_time  = -1
@@ -681,7 +684,7 @@ class ServerSource(object):
         self.share = c.boolget("share")
         self.file_transfer = c.boolget("file-transfer")
         self.file_size_limit = c.intget("file-size-limit")
-        self.printing = c.boolget("printing")
+        self.printing = self.printing and c.boolget("printing")
         self.named_cursors = c.boolget("named_cursors")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")

@@ -492,7 +492,10 @@ def get_free_tcp_port():
     return port
 
 def start_websockify(child_reaper, opts, tcp_sockets):
+    from xpra.log import Logger
+    log = Logger("server")
     # start websockify?
+    log("html=%s", opts.html)
     if not opts.html:
         return
     html = opts.html
@@ -502,14 +505,17 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     if html in FALSE_OPTIONS:
         #html disabled
         return
+    log("tcp_proxy=%s", opts.tcp_proxy)
     if opts.tcp_proxy:
         raise InitException("cannot use tcp-proxy mode with html, use one or the other")
         return 1
-    from xpra.platform.paths import get_resources_dir
+    from xpra.platform.paths import get_resources_dir, get_websockify_command
     www_dir = os.path.abspath(os.path.join(get_resources_dir(), "www"))
     if not os.path.exists(www_dir):
         raise InitException("cannot find xpra's html directory (not found in '%s')" % www_dir)
+    log("www_dir=%s", www_dir)
     import websockify           #@UnresolvedImport
+    log("websockify=%s", websockify)
     assert websockify
     html_port = -1
     html_host = "127.0.0.1"
@@ -522,8 +528,6 @@ def start_websockify(child_reaper, opts, tcp_sockets):
         except Exception as e:
             raise InitException("invalid html port: %s" % e)
         #we now have the host and port (port may be -1 to mean auto..)
-    from xpra.log import Logger
-    log = Logger("server")
     if html_port==-1:
         #try to find a free port and hope that websockify can then use it..
         html_port = get_free_tcp_port()
@@ -533,17 +537,26 @@ def start_websockify(child_reaper, opts, tcp_sockets):
         raise InitException("html web server requires at least one tcp socket, see 'bind-tcp'")
     #use the first tcp socket for websockify to talk back to us:
     _, xpra_tcp_port = list(tcp_sockets)[0]
-    websockify_command = ["websockify", "--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
-    log("websockify_command: %s", websockify_command)
-    websockify_proc = subprocess.Popen(websockify_command, close_fds=True)
+    kwargs = {}
+    if sys.platform.startswith("win"):
+        #this is a "DOS" command, but we want to hide the shell window
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        kwargs = {"startupinfo" : startupinfo}
+    #add bundler bin directories to path (for OSX):
+    websockify_command = get_websockify_command() + ["--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
+    log("websockify_command: %s, kwargs=%s, sys.path=%s", websockify_command, kwargs, sys.path)
+    websockify_proc = subprocess.Popen(websockify_command, close_fds=True, **kwargs)
     websockify_proc._closed = False
     start_time = time.time()
     def websockify_ended(proc):
         elapsed = time.time()-start_time
         log("websockify_ended(%s) after %i seconds", proc, elapsed)
         if not websockify_proc._closed:
-            log.warn("Warning: websockify has terminated, the html web server will not be available.")
-            log.warn(" command used: %s", " ".join(websockify_command))
+            log.warn("Warning: websockify has terminated,")
+            log.warn(" the html web server will not be available.")
+            log.warn(" the command used was:")
+            log.warn(" %s", " ".join(websockify_command))
         return False
     child_reaper.add_process(websockify_proc, "websockify", websockify_command, ignore=True, callback=websockify_ended)
     log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
@@ -1270,7 +1283,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return 1
 
     #honour start child, html webserver, and setup child reaper
-    if os.name=="posix" and not proxying and not upgrading and not shadowing:
+    if not proxying and not upgrading:
         # start websockify?
         try:
             start_websockify(app.child_reaper, opts, bind_tcp)

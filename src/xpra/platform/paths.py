@@ -178,6 +178,16 @@ def get_license_text(self):
     return LICENSE_TEXT
 
 
+def get_websockify_command():
+    envvalue = os.environ.get("XPRA_WEBSOCKIFY_COMMAND")
+    if envvalue:
+        import shlex
+        return shlex.split(envvalue)
+    return do_get_websockify_command()
+def do_get_websockify_command():
+    return ["websockify"]
+
+
 def get_sound_command():
     envvalue = os.environ.get("XPRA_SOUND_COMMAND")
     if envvalue:
@@ -194,6 +204,7 @@ platform_import(globals(), "paths", True,
                 "do_get_app_dir",
                 "do_get_icon_dir")
 platform_import(globals(), "paths", False,
+                "do_get_websockify_command",
                 "do_get_sound_command",
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
@@ -219,6 +230,7 @@ def get_info():
             "icons"             : get_icon_dir(),
             "home"              : os.path.expanduser("~"),
             "sound_command"     : get_sound_command(),
+            "websockify_command": get_websockify_command(),
             }
 
 

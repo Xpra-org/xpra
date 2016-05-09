@@ -1039,6 +1039,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.window_filters,
+                          self.printing,
                           self.supports_mmap, self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_properties,

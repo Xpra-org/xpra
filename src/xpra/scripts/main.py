@@ -275,7 +275,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
 
     legacy_bool_parse("html")
-    if supports_server:
+    if supports_server or supports_shadow:
         group.add_option("--tcp-proxy", action="store",
                           dest="tcp_proxy", default=defaults.tcp_proxy,
                           metavar="HOST:PORT",
