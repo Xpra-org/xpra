@@ -514,6 +514,20 @@
   </distutils>
 
 
+  <distutils id="python-websockify">
+	<branch repo="pypi.python.org"
+		module="/packages/source/w/websockify/websockify-0.8.0.tar.gz"
+		hash="md5:8fa547ca4de84a96aa3472d55fbcdd59"
+		version="0.8.0"/>
+        <dependencies>
+                <dep package="python-numpy"/>
+        </dependencies>
+        <after>
+                <dep package="python-numpy"/>
+        </after>
+  </distutils>
+
+
   <distutils id="python-nose">
 	<branch repo="pypi.python.org"
 		module="/packages/source/n/nose/nose-1.3.7.tar.gz"
@@ -838,6 +852,7 @@
       <dep package="python-py2app"/>
       <dep package="python-cython"/>
       <dep package="python-numpy"/>
+      <dep package="python-websockify"/>
       <dep package="python-twisted"/>
       <dep package="python-nose"/>
       <dep package="python-lz4"/>

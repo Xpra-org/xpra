@@ -64,7 +64,7 @@ def do_get_websockify_command():
     helpers_dir = os.path.join(get_app_dir(), "Helpers")
     if os.path.exists(helpers_dir) and os.path.isdir(helpers_dir):
         return [os.path.join(helpers_dir, "websockify")]
-    return ["websockify"]
+    return ["Websockify"]
 
 def do_get_icon_dir():
     from xpra.platform.paths import get_resources_dir
