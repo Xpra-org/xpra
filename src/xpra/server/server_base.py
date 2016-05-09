@@ -212,7 +212,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.init_options(opts)
 
     def init_options(self, opts):
-        self.supports_mmap = opts.mmap
+        self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
         self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
 

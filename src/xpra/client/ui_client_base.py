@@ -315,8 +315,13 @@ class UIXpraClient(XpraClientBase):
 
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
-        self.supports_mmap = MMAP_SUPPORTED and opts.mmap
-        self.mmap_group = opts.mmap_group
+        if MMAP_SUPPORTED:
+            self.mmap_group = opts.mmap_group
+            if os.path.isabs(opts.mmap):
+                self.mmap_filename = opts.mmap
+                self.supports_mmap = True
+            else:
+                self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
         self.shadow_fullscreen = opts.shadow_fullscreen
 
         self.webcam_option = opts.webcam
@@ -464,7 +469,7 @@ class UIXpraClient(XpraClientBase):
     def setup_connection(self, conn):
         XpraClientBase.setup_connection(self, conn)
         if self.supports_mmap:
-            self.init_mmap(self.mmap_group, conn.filename)
+            self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
 
     def parse_border(self, border_str, extra_args):
@@ -1084,8 +1089,8 @@ class UIXpraClient(XpraClientBase):
         raise Exception("override me!")
 
 
-    def init_mmap(self, mmap_group, socket_filename):
-        log("init_mmap(%s, %s)", mmap_group, socket_filename)
+    def init_mmap(self, mmap_filename, mmap_group, socket_filename):
+        log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
         from xpra.os_util import get_int_uuid
         from xpra.net.mmap_pipe import init_client_mmap
         #calculate size:
@@ -1095,7 +1100,7 @@ class UIXpraClient(XpraClientBase):
         mmap_size = min(1024*1024*1024, mmap_size)
         self.mmap_token = get_int_uuid()
         self.mmap_enabled, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
-            init_client_mmap(self.mmap_token, mmap_group, socket_filename, mmap_size)
+            init_client_mmap(self.mmap_token, mmap_group, socket_filename, mmap_size, self.mmap_filename)
 
     def clean_mmap(self):
         log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)

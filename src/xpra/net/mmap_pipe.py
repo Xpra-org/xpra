@@ -21,36 +21,51 @@ def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
 
-def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024*1024):
+def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024*1024, filename=None):
     """
         Initializes an mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
     """
+    def rerr():
+        return False, None, 0, None, None
     if not can_use_mmap():
         log.error("cannot use mmap: python version is too old?")
-        return False, None, 0, None, None
-    log("init_mmap(%s, %s, %s)", token, mmap_group, socket_filename)
+        return rerr()
+    log("init_mmap%s", (token, mmap_group, socket_filename, size, filename))
     try:
         import mmap
-        import tempfile
-        from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
-        mmap_dir = os.getenv("TMPDIR", "/tmp")
-        if not os.path.exists(mmap_dir):
-            raise Exception("TMPDIR %s does not exist!" % mmap_dir)
-        #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
-        #that the file is readable and writable only by the creating user ID
-        try:
-            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
-        except OSError as e:
-            log.error("Error: cannot create mmap file:")
-            log.error(" %s", e)
-            return False, None, 0, None, None
-        #keep a reference to it so it does not disappear!
-        mmap_temp_file = temp
-        mmap_filename = temp.name
-        fd = temp.file.fileno()
+        if filename:
+            import errno
+            flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+            try:
+                fd = os.open(filename, flags)
+                mmap_temp_file = None   #os.fdopen(fd, 'w')
+                mmap_filename = filename
+            except OSError as e:
+                if e.errno == errno.EEXIST:
+                    log.error("Error: the mmap file '%s' already exists", filename)
+                    return rerr()
+                raise
+        else:
+            import tempfile
+            from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
+            mmap_dir = os.getenv("TMPDIR", "/tmp")
+            if not os.path.exists(mmap_dir):
+                raise Exception("TMPDIR %s does not exist!" % mmap_dir)
+            #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
+            #that the file is readable and writable only by the creating user ID
+            try:
+                temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+            except OSError as e:
+                log.error("Error: cannot create mmap file:")
+                log.error(" %s", e)
+                return rerr()
+            #keep a reference to it so it does not disappear!
+            mmap_temp_file = temp
+            mmap_filename = temp.name
+            fd = temp.file.fileno()
         #set the group permissions and gid if the mmap-group option is specified
         if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
             s = os.stat(socket_filename)
@@ -69,9 +84,11 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         write_mmap_token(mmap_area, token)
         return True, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
-        log.error("failed to setup mmap: %s", e, exc_info=True)
+        log("failed to setup mmap: %s", e, exc_info=True)
+        log.error("Error: mmap setup failed:")
+        log.error(" %s", e)
         clean_mmap(mmap_filename)
-        return False, None, 0, None, None
+        return rerr()
 
 def clean_mmap(mmap_filename):
     log("clean_mmap(%s)", mmap_filename)

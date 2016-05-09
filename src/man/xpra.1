@@ -70,7 +70,7 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
-[\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|ABSOLUTEFILENAME]
 [\fB\-\-windows\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
@@ -427,12 +427,14 @@ Displays a summary of command line usage.
 Enable debug logging.  The special value \fBall\fP enables all
 debugging.
 .TP
-\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP
+\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and local network traffic.
+When attaching, you can also specify an absolute path where
+the mmap file will be created. 
 .TP
 \fB\-\-windows\fP=\fIyes\fP|\fIno\fP
 Enable or disable the forwarding of windows. This is usually
