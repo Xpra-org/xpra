@@ -39,6 +39,7 @@ OSX = sys.platform.startswith("darwin")
 ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
 GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "1")=="1"
 PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
+USE_DEFAULT_DEVICE = os.environ.get("XPRA_USE_DEFAULT_DEVICE", "1")=="1"
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 
@@ -593,12 +594,27 @@ def get_test_defaults(*args):
 
 WARNED_MULTIPLE_DEVICES = False
 def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, xpra_device_name=None):
+    device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, xpra_device_name)
+    if not device:
+        return {}
+    #make sure it is not muted:
+    try:
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, set_source_mute, set_sink_mute
+        if has_pa():
+            if input_or_output is True or want_monitor_device:
+                set_source_mute(device, mute=False)
+            elif input_or_output is False:
+                set_sink_mute(device, mute=False)
+    except Exception as e:
+        log("device %s may still be muted: %s", device, e)
+    return {"device" : device}
+
+def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, xpra_device_name=None):
     """
         choose the device to use
     """
     try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
-        from xpra.sound.pulseaudio.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute, set_sink_mute
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink, get_pulse_server, get_pulse_id
         if not has_pa():
             log.warn("Warning: pulseaudio is not available!")
             return None
@@ -635,6 +651,8 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_o
         log.error("Error: sound forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return None
+
+    #try to match one of the devices using the device name filters:
     if len(devices)>1:
         filters = []
         matches = []
@@ -656,44 +674,51 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_o
             if len(matches)==0:
                 log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
                 log.warn(" %s", csv("'%s'" % x for x in filters))
-                log.warn(" did not match the devices found:")
+                log.warn(" did not match any of the devices found:")
                 for k,v in devices.items():
                     log.warn(" * '%s'", k)
                     log.warn("   '%s'", v)
                 return None
             devices = matches
-    #default to first one:
-    device, device_name = devices.items()[0]
+
+    #still have too many devices to choose from?
     if len(devices)>1:
-        default_sink = get_default_sink()
-        default_monitor = default_sink+".monitor"
+        if want_monitor_device:
+            #use the monitor of the default sink if we find it:
+            default_sink = get_default_sink()
+            default_monitor = default_sink+".monitor"
+            if default_monitor in devices:
+                device_name = devices.get(default_monitor)
+                log.info("using monitor of default sink: %s", device_name)
+                return default_monitor
+
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
             if not PULSEAUDIO_DEVICE_NAME: #warned already
-                log.warn("Warning: found %i audio devices:", len(devices))
+                dtype = "audio"
+                if want_monitor_device:
+                    dtype = "output monitor"
+                elif input_or_output is False:
+                    dtype = "audio input"
+                elif input_or_output is True:
+                    dtype = "audio output"
+                log.warn("Warning: found %i %s devices:", len(devices), dtype)
             for k,v in devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
             if not PULSEAUDIO_DEVICE_NAME: #used already!
                 log.warn(" to select a specific one,")
                 log.warn(" use the environment variable XPRA_PULSEAUDIO_DEVICE_NAME")
-        if default_monitor in devices:
-            device = default_monitor
-            device_name = devices.get(default_monitor)
-            if not WARNED_MULTIPLE_DEVICES:
-                log.warn("using monitor of default sink: %s", device_name)
-        else:
-            if not WARNED_MULTIPLE_DEVICES:
-                log.warn("using the first device")
+        #default to first one:
+        if USE_DEFAULT_DEVICE:
+            log.info("using default pulseaudio device")
+            return None
+    #default to first one:
+    device, device_name = devices.items()[0]
     log.info("using pulseaudio device:")
     log.info(" '%s'", device_name)
-    #make sure it is not muted:
-    if input_or_output is True or want_monitor_device:
-        set_source_mute(device, mute=False)
-    elif input_or_output is False:
-        set_sink_mute(device, mute=False)
-    return {"device" : device}
+    return device
 
 def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
     return get_pulse_defaults(device_name_match, want_monitor_device, input_or_output=not want_monitor_device, remote=remote, xpra_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
