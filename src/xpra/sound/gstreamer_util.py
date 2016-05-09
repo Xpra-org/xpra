@@ -153,7 +153,10 @@ SOURCE_NEEDS_AUDIOCONVERT = ("directsoundsrc", "osxaudiosrc", "autoaudiosrc")
 OGG_DELAY = 20*MS_TO_NS
 ENCODER_DEFAULT_OPTIONS_COMMON = {
             "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
-            "wavpackenc"    : {"mode" : 1},     #"fast" (0 aka "very fast" is not supported)
+            "wavpackenc"    : {
+                               "mode"       : 1,    #"fast" (0 aka "very fast" is not supported)
+                               "bitrate"    : 256000,
+                               },
             "flacenc"       : {"quality" : 0},  #"fast"
                            }
 ENCODER_DEFAULT_OPTIONS = {
