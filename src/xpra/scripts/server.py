@@ -540,7 +540,7 @@ def start_websockify(child_reaper, opts, tcp_sockets):
     start_time = time.time()
     def websockify_ended(proc):
         elapsed = time.time()-start_time
-        log("websockify_ended(%s) after %i seconds", elapsed)
+        log("websockify_ended(%s) after %i seconds", proc, elapsed)
         if not websockify_proc._closed:
             log.warn("Warning: websockify has terminated, the html web server will not be available.")
             log.warn(" command used: %s", " ".join(websockify_command))
