@@ -1326,6 +1326,9 @@ class ServerBase(ServerCore, FileTransferHandler):
             clientlog.log(level, x)
 
     def _process_printers(self, proto, packet):
+        if not self.printing:
+            log.error("Error: received printer definitions but this server does not support printing")
+            return
         ss = self._server_sources.get(proto)
         if ss is None:
             return
