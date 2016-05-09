@@ -39,6 +39,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -81,6 +82,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP]
 [\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -126,6 +128,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
 [\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
@@ -884,6 +887,11 @@ Enable or disable webcam forwarding.
 Allow the client to forward its log output to the server.
 The client can specify the value \fIboth\fP to both send
 it to the server and keep it locally.
+\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP
+Enable or disable audio-video synchronization.
+The video data will be delayed so that it is displayed in sync with the audio.
+Note: this only applies to video regions, either auto-detected via the builtin
+heuristics or specified using the dbus interface.
 
 .SS Options for attach
 .TP
