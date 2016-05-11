@@ -37,7 +37,7 @@ SINK_DEFAULT_ATTRIBUTES = {0 : {
                                },
                           }
 
-QUEUE_SILENT = int(os.environ.get("XPRA_QUEUE_SILENT", "0")=="1")
+QUEUE_SILENT = int(os.environ.get("XPRA_QUEUE_SILENT", "-1"))
 QUEUE_TIME = get_queue_time(450)
 
 GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
@@ -134,7 +134,16 @@ class SoundSink(SoundPipeline):
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
         if self.queue:
-            if QUEUE_SILENT==0:
+            #-1=auto, 0=not silent, 1=silent
+            silent = QUEUE_SILENT
+            if silent!=1 and get_gst_version()<(1, ):
+                log.warn("Warning: outdated version of gstreamer,")
+                if silent==0:
+                    log.warn(" sound queue self tuning is enabled")
+                else:
+                    log.warn(" disabling sound queue self tuning")
+                    silent = 1
+            if silent<=0:
                 self.queue.connect("overrun", self.queue_overrun)
                 self.queue.connect("underrun", self.queue_underrun)
                 self.queue.connect("running", self.queue_running)
