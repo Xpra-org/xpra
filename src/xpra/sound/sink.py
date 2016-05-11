@@ -80,6 +80,7 @@ class SoundSink(SoundPipeline):
         self.volume = None
         self.src    = None
         self.queue  = None
+        self.silent = False
         self.overruns = 0
         self.underruns = 0
         self.overrun_events = deque(maxlen=100)
@@ -135,15 +136,20 @@ class SoundSink(SoundPipeline):
         self.queue  = self.pipeline.get_by_name("queue")
         if self.queue:
             #-1=auto, 0=not silent, 1=silent
-            silent = QUEUE_SILENT
-            if silent!=1 and get_gst_version()<(1, ):
-                log.warn("Warning: outdated version of gstreamer,")
-                if silent==0:
-                    log.warn(" sound queue self tuning is enabled")
+            if QUEUE_SILENT==1:
+                self.silent = True
+            else:
+                if get_gst_version()<(1, ):
+                    log.warn("Warning: outdated version of gstreamer,")
+                    if QUEUE_SILENT==0:
+                        log.warn(" sound queue self tuning is enabled")
+                        self.silent = False
+                    else:
+                        log.warn(" disabling sound queue self tuning")
+                        self.silent = True
                 else:
-                    log.warn(" disabling sound queue self tuning")
-                    silent = 1
-            if silent<=0:
+                    self.silent = False
+            if not self.silent:
                 self.queue.connect("overrun", self.queue_overrun)
                 self.queue.connect("underrun", self.queue_underrun)
                 self.queue.connect("running", self.queue_running)
@@ -290,7 +296,8 @@ class SoundSink(SoundPipeline):
                              "pct"          : min(QUEUE_TIME, clt)*100//qmax,
                              "overruns"     : self.overruns,
                              "underruns"    : self.underruns,
-                             "state"        : self.queue_state
+                             "state"        : self.queue_state,
+                             "silent"       : self.silent,
                              }
         return info
 
@@ -322,7 +329,7 @@ class SoundSink(SoundPipeline):
                 clt = self.queue.get_property("current-level-time")//MS_TO_NS
                 log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
                 self.levels.append((time.time(), clt))
-            if self.queue_state=="pushing":
+            if self.queue_state=="pushing" and not self.silent:
                 self.set_min_level()
                 self.set_max_level()
         self.emit_info()
