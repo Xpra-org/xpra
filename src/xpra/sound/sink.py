@@ -105,16 +105,15 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
         pipeline_els.append("volume name=volume volume=%s" % volume)
-        queue_el = ["queue",
-                    "name=queue",
-                    "min-threshold-time=0",
-                    "max-size-buffers=0",
-                    "max-size-bytes=0",
-                    "max-size-time=%s" % QUEUE_TIME,
-                    "leaky=%s" % QUEUE_LEAK]
         if QUEUE_TIME>0:
             #pipeline_els.append("audiorate")
-            pipeline_els.append(" ".join(queue_el))
+            pipeline_els.append(" ".join(["queue",
+                                          "name=queue",
+                                          "min-threshold-time=0",
+                                          "max-size-buffers=0",
+                                          "max-size-bytes=0",
+                                          "max-size-time=%s" % QUEUE_TIME,
+                                          "leaky=%s" % QUEUE_LEAK]))
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
         from xpra.sound.gstreamer_util import gst_major_version, get_gst_version
         #anything older than this may cause problems (ie: centos 6.x)
