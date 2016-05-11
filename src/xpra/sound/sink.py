@@ -37,7 +37,7 @@ SINK_DEFAULT_ATTRIBUTES = {0 : {
                                },
                           }
 
-QUEUE_SILENT = 0
+QUEUE_SILENT = int(os.environ.get("XPRA_QUEUE_SILENT", "0")=="1")
 QUEUE_TIME = get_queue_time(450)
 
 GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
@@ -109,10 +109,9 @@ class SoundSink(SoundPipeline):
                     "min-threshold-time=0",
                     "max-size-buffers=0",
                     "max-size-bytes=0",
+                    "silent=%s" % QUEUE_SILENT,
                     "max-size-time=%s" % QUEUE_TIME,
                     "leaky=%s" % QUEUE_LEAK]
-        if QUEUE_SILENT:
-            queue_el.append("silent=%s" % QUEUE_SILENT)
         if QUEUE_TIME>0:
             #pipeline_els.append("audiorate")
             pipeline_els.append(" ".join(queue_el))
@@ -216,7 +215,7 @@ class SoundSink(SoundPipeline):
             now = time.time()
             log("set_max_level lrange=%3i, last_max_update=%is", lrange, int(now-self.last_max_update))
             #more than one second since last update and we have a range:
-            if now-self.last_max_update>1 and lrange>0 and self.queue:
+            if now-self.last_max_update>1 and self.queue:
                 cmst = self.queue.get_property("max-size-time")//MS_TO_NS
                 #overruns in the last minute:
                 olm = len([x for x in list(self.overrun_events) if now-x<60])
