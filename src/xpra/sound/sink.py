@@ -109,7 +109,6 @@ class SoundSink(SoundPipeline):
                     "min-threshold-time=0",
                     "max-size-buffers=0",
                     "max-size-bytes=0",
-                    "silent=%s" % QUEUE_SILENT,
                     "max-size-time=%s" % QUEUE_TIME,
                     "leaky=%s" % QUEUE_LEAK]
         if QUEUE_TIME>0:
@@ -134,11 +133,19 @@ class SoundSink(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
-        if QUEUE_SILENT==0 and self.queue:
-            self.queue.connect("overrun", self.queue_overrun)
-            self.queue.connect("underrun", self.queue_underrun)
-            self.queue.connect("running", self.queue_running)
-            self.queue.connect("pushing", self.queue_pushing)
+        if self.queue:
+            if QUEUE_SILENT==0:
+                self.queue.connect("overrun", self.queue_overrun)
+                self.queue.connect("underrun", self.queue_underrun)
+                self.queue.connect("running", self.queue_running)
+                self.queue.connect("pushing", self.queue_pushing)
+            else:
+                #older versions may not have the "silent" attribute,
+                #in which case we will emit the signals for nothing
+                try:
+                    self.queue.set_property("silent", False)
+                except Exception as e:
+                    log.warn("cannot silence the queue %s: %s", self.queue, e)
 
     def __repr__(self):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
