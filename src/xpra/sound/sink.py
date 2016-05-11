@@ -145,7 +145,7 @@ class SoundSink(SoundPipeline):
                 try:
                     self.queue.set_property("silent", False)
                 except Exception as e:
-                    log.warn("cannot silence the queue %s: %s", self.queue, e)
+                    log("cannot silence the queue %s: %s", self.queue, e)
 
     def __repr__(self):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
