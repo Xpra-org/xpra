@@ -133,6 +133,7 @@ class SoundPipeline(gobject.GObject):
         self.info["bitrate"] = new_bitrate
 
     def update_state(self, state):
+        log("update_state(%s)", state)
         self.state = state
         self.info["state"] = state
 
@@ -318,7 +319,8 @@ class SoundPipeline(gobject.GObject):
         elif t == gst.MESSAGE_WARNING:
             w = message.parse_warning()
             self.gstlogwarn("pipeline warning: %s", w[0].message)
-            self.gstlogwarn("                  %s", w[1:])
+            for x in w[1:].split(":"):
+                self.gstlogwarn("                  %s", x)
         else:
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()
