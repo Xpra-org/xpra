@@ -84,7 +84,9 @@ class SoundSink(SoundPipeline):
         self.volume = None
         self.src    = None
         self.queue  = None
+        self.normal_volume = volume
         self.target_volume = volume
+        self.volume_timer = 0
         self.overruns = 0
         self.underruns = 0
         self.overrun_events = deque(maxlen=100)
@@ -171,10 +173,13 @@ class SoundSink(SoundPipeline):
 
     def start(self):
         SoundPipeline.start(self)
-        def start_adjust_volume():
-            self.timeout_add(100, self.adjust_volume)            
-            return False
-        self.timeout_add(UNMUTE_DELAY, start_adjust_volume)
+        self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
+
+    def start_adjust_volume(self, interval=100):
+        if self.volume_timer!=0:
+            glib.source_remove(self.volume_timer)
+        self.volume_timer = self.timeout_add(interval, self.adjust_volume)
+        return False
 
 
     def adjust_volume(self):
@@ -183,8 +188,11 @@ class SoundSink(SoundPipeline):
         from math import sqrt, copysign
         change = copysign(sqrt(abs(delta)), delta)/15.0
         gstlog("adjust_volume current volume=%.2f, change=%.2f", cv, change)
-        self.volume.set_property("volume", max(0, cv+change))
-        return abs(delta)>0.01
+        self.volume.set_property("volume", cv+change)
+        if abs(delta)<0.01:
+            self.volume_timer = 0
+            return False
+        return True
 
 
     def _queue_pushing(self, *args):
@@ -226,6 +234,18 @@ class SoundSink(SoundPipeline):
         if clt==0 and mintt==0 and self.state in ("running", "active"):
             if self.last_data:
                 self.add_data(self.last_data)
+                #this is going to cause scratchy sound,
+                #temporarily lower the volume:
+                def fadeout():
+                    gstlog("fadeout")
+                    self.target_volume = 0.0
+                    self.start_adjust_volume(10)
+                def fadein():
+                    gstlog("fadein")
+                    self.target_volume = self.normal_volume
+                    self.start_adjust_volume(10)
+                glib.timeout_add(max(0, clt-200), fadeout)
+                glib.timeout_add(max(0, clt+200), fadein)
                 return 1
         self.emit_info()
         return 1
