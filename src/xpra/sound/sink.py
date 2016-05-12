@@ -179,13 +179,12 @@ class SoundSink(SoundPipeline):
 
     def adjust_volume(self):
         cv = self.volume.get_property("volume")
-        gstlog("adjust_volume current volume=%.2f", cv)
         delta = self.target_volume-cv
-        if abs(delta)<0.01:
-            return False
-        from math import sqrt
-        self.volume.set_property("volume", cv+sqrt(delta)/10.0)
-        return True
+        from math import sqrt, copysign
+        change = copysign(sqrt(abs(delta)), delta)/15.0
+        gstlog("adjust_volume current volume=%.2f, change=%.2f", cv, change)
+        self.volume.set_property("volume", cv+change)
+        return abs(delta)>0.01
 
 
     def _queue_pushing(self, *args):
