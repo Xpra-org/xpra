@@ -167,6 +167,9 @@ class SoundSink(SoundPipeline):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):
+        if self.volume_timer!=0:
+            glib.source_remove(self.volume_timer)
+            self.volume_timer = 0
         SoundPipeline.cleanup(self)
         self.sink_type = ""
         self.src = None
@@ -183,6 +186,9 @@ class SoundSink(SoundPipeline):
 
 
     def adjust_volume(self):
+        if not self.volume:
+            self.volume_timer = 0
+            return False
         cv = self.volume.get_property("volume")
         delta = self.target_volume-cv
         from math import sqrt, copysign
@@ -379,8 +385,8 @@ class SoundSink(SoundPipeline):
         if not self.src:
             log("no source, dropping buffer")
             return False
-        if self.state=="stopped":
-            log("pipeline is stopped, dropping buffer")
+        if self.state in ("stopped", "error"):
+            log("pipeline is %s, dropping buffer", self.state)
             return False
         return True
 
