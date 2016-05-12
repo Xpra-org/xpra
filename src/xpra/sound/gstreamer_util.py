@@ -112,8 +112,8 @@ CODEC_OPTIONS = [
         #this only works in gstreamer 0.10 and is filtered out during initialization:
         (FLAC       , "flacenc",        "oggmux",       "flacdec",      "oggdemux"),
         (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay"),
-        (MP3        , "lamemp3enc",     None,           "mad",          "mp3parse"),
-        (MP3        , "lamemp3enc",     None,           "mad",          "mpegaudioparse"),
+        (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None),
+        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None),
         (WAV        , "wavenc",         None,           None,           "wavparse"),
         (OPUS       , "opusenc",        "oggmux",       "opusdec",      "oggdemux"),
         (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay"),
