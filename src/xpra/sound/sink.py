@@ -37,7 +37,7 @@ SINK_DEFAULT_ATTRIBUTES = {0 : {
                                },
                           }
 
-QUEUE_SILENT = int(os.environ.get("XPRA_QUEUE_SILENT", "-1"))
+QUEUE_SILENT = os.environ.get("XPRA_QUEUE_SILENT", "0")=="1"
 QUEUE_TIME = get_queue_time(450)
 
 GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
@@ -80,7 +80,7 @@ class SoundSink(SoundPipeline):
         self.volume = None
         self.src    = None
         self.queue  = None
-        self.silent = False
+        self.target_volume = volume
         self.overruns = 0
         self.underruns = 0
         self.overrun_events = deque(maxlen=100)
@@ -106,7 +106,6 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioresample")
         pipeline_els.append("volume name=volume volume=%s" % volume)
         if QUEUE_TIME>0:
-            #pipeline_els.append("audiorate")
             pipeline_els.append(" ".join(["queue",
                                           "name=queue",
                                           "min-threshold-time=0",
@@ -134,21 +133,7 @@ class SoundSink(SoundPipeline):
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
         if self.queue:
-            #-1=auto, 0=not silent, 1=silent
-            if QUEUE_SILENT==1:
-                self.silent = True
-            else:
-                if get_gst_version()<(1, ):
-                    log.warn("Warning: outdated version of gstreamer,")
-                    if QUEUE_SILENT==0:
-                        log.warn(" sound queue self tuning is enabled")
-                        self.silent = False
-                    else:
-                        log.warn(" disabling sound queue self tuning")
-                        self.silent = True
-                else:
-                    self.silent = False
-            if not self.silent:
+            if not QUEUE_SILENT:
                 self.queue.connect("overrun", self.queue_overrun)
                 self.queue.connect("underrun", self.queue_underrun)
                 self.queue.connect("running", self.queue_running)
@@ -296,7 +281,6 @@ class SoundSink(SoundPipeline):
                              "overruns"     : self.overruns,
                              "underruns"    : self.underruns,
                              "state"        : self.queue_state,
-                             "silent"       : self.silent,
                              }
         return info
 
@@ -328,7 +312,7 @@ class SoundSink(SoundPipeline):
                 clt = self.queue.get_property("current-level-time")//MS_TO_NS
                 log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
                 self.levels.append((time.time(), clt))
-            if self.queue_state=="pushing" and not self.silent:
+            if self.queue_state=="pushing":
                 self.set_min_level()
                 self.set_max_level()
         self.emit_info()
@@ -355,8 +339,6 @@ gobject.type_register(SoundSink)
 def main():
     from xpra.platform import program_context
     with program_context("Sound-Record"):
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
         args = sys.argv
         log.enable_debug()
         import os.path
@@ -392,10 +374,12 @@ def main():
         with open(filename, "rb") as f:
             data = f.read()
         print("loaded %s bytes from %s" % (len(data), filename))
+        from xpra.gtk_common.gobject_compat import import_glib
+        glib = import_glib()
         #force no leak since we push all the data at once
         global QUEUE_LEAK, QUEUE_SILENT
         QUEUE_LEAK = GST_QUEUE_NO_LEAK
-        QUEUE_SILENT = 1
+        QUEUE_SILENT = True
         ss = SoundSink(codecs=codecs)
         def eos(*args):
             print("eos")
