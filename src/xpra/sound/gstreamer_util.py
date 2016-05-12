@@ -89,6 +89,7 @@ WAVPACK = "wavpack"
 GDP = "gdp"
 OGG = "ogg"
 MKA = "mka"
+MPEG4 = "mpeg4"
 #RTP = "rtp"
 
 FLAC_GDP    = FLAC+"+"+GDP
@@ -97,7 +98,10 @@ SPEEX_GDP   = SPEEX+"+"+GDP
 VORBIS_OGG  = VORBIS+"+"+OGG
 #OPUS_WEBM   = OPUS+"+"+WEBM
 #OPUS_RTP    = OPUS+"+"+RTP
-VORBIS_MKA = VORBIS+"+"+MKA
+VORBIS_MKA  = VORBIS+"+"+MKA
+AAC_GDP     = AAC+"+"+GDP
+AAC_MPEG4   = AAC+"+"+MPEG4
+
 
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
@@ -126,12 +130,17 @@ CODEC_OPTIONS = [
         (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux"),
         (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay"),
         (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None),
+        (AAC_GDP    , "faac",           "gdppay",       "faad",         "gdpdepay"),
+        (AAC_GDP    , "avenc_aac",      "gdppay",       "avdec_aac",    "gdpdepay"),
+        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",         "qtdemux"),
+        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",    "qtdemux"),
             ]
 
 MUX_OPTIONS = [
                (GDP,    "gdppay",   "gdpdepay"),
                (OGG,    "oggmux",   "oggdemux"),
                (MKA,    "webmmux",  "matroskademux"),
+               (MPEG4,  "mp4mux",   "qtdemux"),
               ]
 emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
 if emux:
@@ -158,6 +167,7 @@ ENCODER_DEFAULT_OPTIONS_COMMON = {
                                "bitrate"    : 256000,
                                },
             "flacenc"       : {"quality" : 0},  #"fast"
+            "avenc_aac"     : {"compliance" : -2}       #allows experimental
                            }
 ENCODER_DEFAULT_OPTIONS = {
                             0       : {
@@ -185,6 +195,12 @@ MUXER_DEFAULT_OPTIONS = {
                                "crc-payload"   : int(GDPPAY_CRC),
                                },
             "webmmux"       : {"writing-app"    : "Xpra"},
+            "mp4mux"        : {
+                               "faststart"      : 1,
+                               "streamable"     : 1,
+                               "fragment-duration"  : 1,
+                               "presentation-time"  : 0,
+                               }
            }
 
 #based on the encoder options above:
@@ -203,7 +219,7 @@ ENCODER_LATENCY = {
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, AAC_GDP, AAC_MPEG4, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None
