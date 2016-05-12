@@ -188,7 +188,7 @@ class SoundSink(SoundPipeline):
         from math import sqrt, copysign
         change = copysign(sqrt(abs(delta)), delta)/15.0
         gstlog("adjust_volume current volume=%.2f, change=%.2f", cv, change)
-        self.volume.set_property("volume", cv+change)
+        self.volume.set_property("volume", max(0, cv+change))
         if abs(delta)<0.01:
             self.volume_timer = 0
             return False
@@ -239,13 +239,13 @@ class SoundSink(SoundPipeline):
                 def fadeout():
                     gstlog("fadeout")
                     self.target_volume = 0.0
-                    self.start_adjust_volume(10)
+                    self.start_adjust_volume(1)
                 def fadein():
                     gstlog("fadein")
                     self.target_volume = self.normal_volume
                     self.start_adjust_volume(10)
-                glib.timeout_add(max(0, clt-200), fadeout)
-                glib.timeout_add(max(0, clt+200), fadein)
+                fadeout()
+                glib.timeout_add(200, fadein)
                 return 1
         self.emit_info()
         return 1
