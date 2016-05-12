@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -89,6 +89,7 @@ class SoundSink(SoundPipeline):
         self.underruns = 0
         self.overrun_events = deque(maxlen=100)
         self.queue_state = "starting"
+        self.last_data = None
         self.last_underrun = 0
         self.last_overrun = 0
         self.last_max_update = time.time()
@@ -136,12 +137,22 @@ class SoundSink(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
+        if get_gst_version()<(1, ):
+            self.add_data = self.add_data0
+        else:
+            self.add_data = self.add_data1
         if self.queue:
             if not QUEUE_SILENT:
-                self.queue.connect("overrun", self.queue_overrun)
-                self.queue.connect("underrun", self.queue_underrun)
-                self.queue.connect("running", self.queue_running)
-                self.queue.connect("pushing", self.queue_pushing)
+                if get_gst_version()<(1, ):
+                    self.queue.connect("overrun", self.queue_overrun0)
+                    self.queue.connect("underrun", self.queue_underrun0)
+                    self.queue.connect("running", self.queue_running0)
+                    self.queue.connect("pushing", self.queue_pushing0)
+                else:
+                    self.queue.connect("overrun", self.queue_overrun1)
+                    self.queue.connect("underrun", self.queue_underrun1)
+                    self.queue.connect("running", self.queue_running1)
+                    self.queue.connect("pushing", self.queue_pushing1)
             else:
                 #older versions may not have the "silent" attribute,
                 #in which case we will emit the signals for nothing
@@ -168,21 +179,36 @@ class SoundSink(SoundPipeline):
 
     def adjust_volume(self):
         cv = self.volume.get_property("volume")
-        gstlog.error("adjust_volume cv=%.2f", cv)
+        gstlog("adjust_volume current volume=%.2f", cv)
         delta = self.target_volume-cv
         if abs(delta)<0.01:
             return False
-        self.volume.set_property("volume", cv+delta/20.0)
+        from math import sqrt
+        self.volume.set_property("volume", cv+sqrt(delta)/10.0)
         return True
 
 
-    def queue_pushing(self, *args):
-        gstlog("queue_pushing")
+    def _queue_pushing(self, *args):
         self.queue_state = "pushing"
         self.emit_info()
         return True
 
-    def queue_running(self, *args):
+    def queue_pushing0(self, *args):
+        gstlog("queue_pushing0")
+        return self._queue_pushing()
+
+    def queue_pushing1(self, *args):
+        gstlog("queue_pushing1")
+        return self._queue_pushing()
+
+
+    def queue_running0(self, *args):
+        gstlog("queue_running")
+        self.queue_state = "running"
+        self.emit_info()
+        return True
+
+    def queue_running1(self, *args):
         gstlog("queue_running")
         self.queue_state = "running"
         self.set_min_level()
@@ -190,12 +216,27 @@ class SoundSink(SoundPipeline):
         self.emit_info()
         return True
 
-    def queue_underrun(self, *args):
+    def queue_underrun0(self, *args):
+        now = time.time()
+        gstlog("queue_underrun0")
+        self.queue_state = "underrun"
+        self.last_underrun = now
+        clt = self.queue.get_property("current-level-time")//MS_TO_NS
+        mintt = self.queue.get_property("min-threshold-time")//MS_TO_NS
+        gstlog("underrun: clt=%s mintt=%s state=%s", clt, mintt, self.state)
+        if clt==0 and mintt==0 and self.state in ("running", "active"):
+            if self.last_data:
+                self.add_data(self.last_data)
+                return 1
+        self.emit_info()
+        return 1
+
+    def queue_underrun1(self, *args):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
-        gstlog("queue_underrun")
+        gstlog("queue_underrun1")
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
             self.last_underrun = now
@@ -212,6 +253,33 @@ class SoundSink(SoundPipeline):
             #range of the levels recorded:
             return maxl-minl
         return 0
+
+    def queue_overrun0(self, *args):
+        clt = self.queue.get_property("current-level-time")//MS_TO_NS
+        log("queue_overrun0 level=%ims", clt)
+        now = time.time()
+        self.last_overrun = now
+        self.overrun_events.append(now)
+        self.overruns += 1
+        return 1
+
+    def queue_overrun1(self, *args):
+        now = time.time()
+        if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
+            gstlog("ignoring overrun during startup")
+            return 1
+        clt = self.queue.get_property("current-level-time")//MS_TO_NS
+        log("overrun level=%ims", clt)
+        now = time.time()
+        #grace period of recording overruns:
+        #(because when we record an overrun, we lower the max-time,
+        # which causes more overruns!)
+        if self.last_overrun is None or now-self.last_overrun>2:
+            self.last_overrun = now
+            self.set_max_level()
+            self.overrun_events.append(now)
+        self.overruns += 1
+        return 1
 
     def set_min_level(self):
         if not self.level_lock.acquire(False):
@@ -263,23 +331,6 @@ class SoundSink(SoundPipeline):
         finally:
             self.level_lock.release()
 
-    def queue_overrun(self, *args):
-        now = time.time()
-        if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
-            gstlog("ignoring overrun during startup")
-            return 1
-        clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        log("overrun level=%ims", clt)
-        now = time.time()
-        #grace period of recording overruns:
-        #(because when we record an overrun, we lower the max-time,
-        # which causes more overruns!)
-        if self.last_overrun is None or now-self.last_overrun>2:
-            self.last_overrun = now
-            self.set_max_level()
-            self.overrun_events.append(now)
-        self.overruns += 1
-        return 1
 
     def eos(self):
         gstlog("eos()")
@@ -305,13 +356,42 @@ class SoundSink(SoundPipeline):
                              }
         return info
 
-    def add_data(self, data, metadata=None):
+    def can_push_buffer(self):
         if not self.src:
-            log("add_data(..) dropped, no source")
-            return
+            log("no source, dropping buffer")
+            return False
         if self.state=="stopped":
-            log("add_data(..) dropped, pipeline is stopped")
+            log("pipeline is stopped, dropping buffer")
+            return False
+        return True
+
+    def add_data0(self, data, metadata=None):
+        if not self.can_push_buffer():
             return
+        self.last_data = data
+        now = time.time()
+        clt = self.queue.get_property("current-level-time")//MS_TO_NS
+        delta = QUEUE_TIME//MS_TO_NS-clt
+        gstlog("add_data current-level-time=%s, QUEUE_TIME=%s, delta=%s", clt, QUEUE_TIME//MS_TO_NS, delta)
+        if now-self.last_overrun<QUEUE_TIME//MS_TO_NS//2//1000:
+            gstlog("dropping sample to try to stop overrun")
+            return
+        if delta<50:
+            gstlog("dropping sample to try to avoid overrun")
+            return
+        self.do_add_data(data, metadata)
+        self.emit_info()
+
+    def add_data1(self, data, metadata=None):
+        if not self.can_push_buffer():
+            return
+        self.do_add_data(data, metadata)
+        if self.queue_state=="pushing":
+            self.set_min_level()
+            self.set_max_level()
+        self.emit_info()
+
+    def do_add_data(self, data, metadata=None):
         #having a timestamp causes problems with the queue and overruns:
         log("add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         buf = gst.new_buffer(data)
@@ -333,10 +413,8 @@ class SoundSink(SoundPipeline):
                 clt = self.queue.get_property("current-level-time")//MS_TO_NS
                 log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
                 self.levels.append((time.time(), clt))
-            if self.queue_state=="pushing":
-                self.set_min_level()
-                self.set_max_level()
-        self.emit_info()
+            return True
+        return False
 
     def push_buffer(self, buf):
         #buf.size = size
