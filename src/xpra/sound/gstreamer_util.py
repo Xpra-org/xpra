@@ -466,7 +466,7 @@ def get_codecs():
     log("initialized sound codecs:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         def ci(v):
-            return "%-12s" % v
+            return "%-22s" % (v or "")
         log("* %-10s : %s", k, csv([ci(v) for v in CODECS[k]]))
     return CODECS
 
@@ -857,6 +857,8 @@ def main():
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
         print("encoders supported: %s" % csv(encs))
         print("decoders supported: %s" % csv(decs))
+        print("muxers supported: %s" % csv(get_muxers()))
+        print("demuxers supported: %s" % csv(get_demuxers()))
         print("source plugins: %s" % csv([x for x in get_source_plugins() if x in apn]))
         print("sink plugins: %s" % csv([x for x in get_sink_plugins() if x in apn]))
         print("default sink: %s" % get_default_sink())
