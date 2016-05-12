@@ -73,7 +73,8 @@ def crypto_backend_init():
         if backend:
             log.warn("Warning: using fallback encryption library %s", tb)
             for k,e in errors.items():
-                log.warn(" %s is not available: %s", k, e)
+                log.warn(" %s is not available:", k)
+                log.warn(" %s", e)
         else:
             log.error("Error: no encryption libraries could be loaded")
             for k,e in errors.items():
