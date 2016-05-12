@@ -12,6 +12,7 @@ from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
                                         MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS
+from xpra.gtk_common.gobject_compat import import_glib
 
 from xpra.scripts.config import InitExit
 from xpra.util import csv
@@ -19,6 +20,8 @@ from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger("sound")
 gstlog = Logger("gstreamer")
+
+glib = import_glib()
 
 
 SINKS = get_sink_plugins()
@@ -40,6 +43,7 @@ SINK_DEFAULT_ATTRIBUTES = {0 : {
 QUEUE_SILENT = os.environ.get("XPRA_QUEUE_SILENT", "0")=="1"
 QUEUE_TIME = get_queue_time(450)
 
+UNMUTE_DELAY = int(os.environ.get("XPRA_UNMUTE_DELAY", "1000"))
 GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
 #percentage: from 0 for no margin, to 200% which triples the buffer target
 MARGIN = max(0, min(200, int(os.environ.get("XPRA_SOUND_MARGIN", "50"))))
@@ -104,7 +108,7 @@ class SoundSink(SoundPipeline):
         pipeline_els.append(decoder_str)
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
-        pipeline_els.append("volume name=volume volume=%s" % volume)
+        pipeline_els.append("volume name=volume volume=0")
         if QUEUE_TIME>0:
             pipeline_els.append(" ".join(["queue",
                                           "name=queue",
@@ -153,6 +157,23 @@ class SoundSink(SoundPipeline):
         SoundPipeline.cleanup(self)
         self.sink_type = ""
         self.src = None
+
+    def start(self):
+        SoundPipeline.start(self)
+        def start_adjust_volume():
+            self.timeout_add(100, self.adjust_volume)            
+            return False
+        self.timeout_add(UNMUTE_DELAY, start_adjust_volume)
+
+
+    def adjust_volume(self):
+        cv = self.volume.get_property("volume")
+        gstlog.error("adjust_volume cv=%.2f", cv)
+        delta = self.target_volume-cv
+        if abs(delta)<0.01:
+            return False
+        self.volume.set_property("volume", cv+delta/20.0)
+        return True
 
 
     def queue_pushing(self, *args):
@@ -374,8 +395,6 @@ def main():
         with open(filename, "rb") as f:
             data = f.read()
         print("loaded %s bytes from %s" % (len(data), filename))
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
         #force no leak since we push all the data at once
         global QUEUE_LEAK, QUEUE_SILENT
         QUEUE_LEAK = GST_QUEUE_NO_LEAK
