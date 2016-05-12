@@ -245,7 +245,7 @@ class SoundSink(SoundPipeline):
                     self.target_volume = self.normal_volume
                     self.start_adjust_volume(10)
                 fadeout()
-                glib.timeout_add(200, fadein)
+                glib.timeout_add(300, fadein)
                 return 1
         self.emit_info()
         return 1
@@ -392,6 +392,19 @@ class SoundSink(SoundPipeline):
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
         delta = QUEUE_TIME//MS_TO_NS-clt
         gstlog("add_data current-level-time=%s, QUEUE_TIME=%s, delta=%s", clt, QUEUE_TIME//MS_TO_NS, delta)
+        def fade():
+            #this is going to cause scratchy sound,
+            #temporarily lower the volume:
+            def fadeout():
+                gstlog("fadeout")
+                self.target_volume = 0.0
+                self.start_adjust_volume(10)
+            def fadein():
+                gstlog("fadein")
+                self.target_volume = self.normal_volume
+                self.start_adjust_volume(10)
+            glib.timeout_add(max(0, clt-100), fadeout)
+            glib.timeout_add(clt+300, fadein)
         if now-self.last_overrun<QUEUE_TIME//MS_TO_NS//2//1000:
             gstlog("dropping sample to try to stop overrun")
             return
