@@ -183,7 +183,7 @@ class SoundSink(SoundPipeline):
         from math import sqrt, copysign
         change = copysign(sqrt(abs(delta)), delta)/15.0
         gstlog("adjust_volume current volume=%.2f, change=%.2f", cv, change)
-        self.volume.set_property("volume", cv+change)
+        self.volume.set_property("volume", max(0, cv+change))
         return abs(delta)>0.01
 
 
