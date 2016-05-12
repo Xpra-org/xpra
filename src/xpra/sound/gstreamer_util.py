@@ -114,7 +114,7 @@ CODEC_OPTIONS = [
         (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay"),
         (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None),
-        (WAV        , "wavenc",         None,           None,           "wavparse"),
+        (WAV        , "wavenc",         None,           "wavparse",     None),
         (OPUS       , "opusenc",        "oggmux",       "opusdec",      "oggdemux"),
         (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay"),
         #for rtp, we would need to send the caps:
@@ -125,7 +125,7 @@ CODEC_OPTIONS = [
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusparse ! opusdec",      "matroskademux"),
         (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux"),
         (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay"),
-        (WAVPACK    , "wavpackenc",      None,          "wavpackdec",   "wavpackparse"),
+        (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None),
             ]
 
 MUX_OPTIONS = [
