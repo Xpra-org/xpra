@@ -1826,8 +1826,8 @@ else:
             install_data.run(self)
 
             etc_prefix = self.install_dir
-            if etc_prefix=="/usr":
-                etc_prefix = "/"
+            if etc_prefix.endswith("/usr"):
+                etc_prefix = etc_prefix[:-3]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
             build_xpra_conf(etc_prefix)
 
             if printing_ENABLED and os.name=="posix":
