@@ -1556,15 +1556,6 @@ if WIN32:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
         add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
 
-    if "install" in sys.argv or "install_exe" in sys.argv or "py2exe" in sys.argv:
-        #a bit naughty here: we copy directly to the output dir:
-        try:
-            #more uglyness: locate -d DISTDIR in command line:
-            dist = sys.argv[sys.argv.index("-d")+1]
-        except:
-            dist = "dist"
-        build_xpra_conf(dist)
-
 
     #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
     #the win32 py-gi installers don't have development headers for pycairo
@@ -1828,11 +1819,32 @@ else:
 
     class install_data_override(install_data):
         def run(self):
-            install_data.run(self)
+            print("install_data_override: install_dir=%s" % self.install_dir)
             build_xpra_conf(self.install_dir)
-            for fn in self.get_outputs():
-                if fn.endswith("/xpraforwarder"):
-                    os.chmod(fn, 0o700)
+            install_data.run(self)
+
+            if printing_ENABLED and os.name=="posix":
+                #install "/usr/lib/cups/backend" with 0700 permissions:
+                xpraforwarder_src = os.path.join("cups", "xpraforwarder")
+                cups_backend_dir = os.path.join(self.install_dir, "lib", "cups", "backend")
+                self.mkpath(cups_backend_dir)
+                xpraforwarder_dst = os.path.join(cups_backend_dir, "xpraforwarder")
+                shutil.copyfile(xpraforwarder_src, xpraforwarder_dst)
+                os.chmod(xpraforwarder_dst, 0o700)
+
+            if server_ENABLED and x11_ENABLED:
+                #install xpra_Xdummy if we need it:
+                _, _, use_Xdummy_wrapper = detect_xorg_setup()
+                if use_Xdummy_wrapper:
+                    bin_dir = os.path.join(self.install_dir, "bin")
+                    self.mkpath(bin_dir)
+                    dummy_script = os.path.join(bin_dir, "xpra_Xdummy")
+                    shutil.copyfile("scripts/xpra_Xdummy", dummy_script)
+                    os.chmod(dummy_script, 0o755)
+                #install xorg.conf:
+                etc_xpra = os.path.join(self.install_dir, "etc", "xpra")
+                self.mkpath(etc_xpra)
+                shutil.copyfile("etc/xpra/xorg.conf", os.path.join(etc_xpra, "xorg.conf"))
 
     # add build_conf to build step
     cmdclass.update({
@@ -1854,9 +1866,6 @@ else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
-        #always include the wrapper in case we need it later:
-        #(we remove it during the 'install' step below if it isn't actually needed)
-        scripts.append("scripts/xpra_Xdummy")
         #not supported by all distros, but doesn't hurt to install it anyway:
         add_data_files("lib/tmpfiles.d", ["tmpfiles.d/xpra.conf"])
 
@@ -1867,25 +1876,6 @@ else:
     if ("--no-compile" in sys.argv or "--skip-build" in sys.argv) and not ("build" in sys.argv and "install" in sys.argv):
         def pkgconfig(*pkgs_options, **ekw):
             return {}
-    if "install" in sys.argv:
-        #prepare default [/usr/local]/etc configuration files:
-        if '--user' in sys.argv:
-            etc_prefix = 'etc/xpra'
-        elif sys.prefix == '/usr':
-            etc_prefix = '/etc/xpra'
-        else:
-            etc_prefix = sys.prefix + '/etc/xpra'
-
-        etc_files = []
-        #note: xpra.conf is handled above using build overrides
-        if server_ENABLED and x11_ENABLED:
-            etc_files = ["etc/xpra/xorg.conf"]
-            #figure out the version of the Xorg server:
-            _, _, use_Xdummy_wrapper = detect_xorg_setup()
-            if not use_Xdummy_wrapper and "scripts/xpra_Xdummy" in scripts:
-                #if we're not using the wrapper, don't install it
-                scripts.remove("scripts/xpra_Xdummy")
-        add_data_files(etc_prefix, etc_files)
 
     if OSX and "py2app" in sys.argv:
         import py2app    #@UnresolvedImport
@@ -1938,11 +1928,6 @@ if html5_ENABLED:
             external_includes.append("mimetools")
             external_includes.append("BaseHTTPServer")
 
-
-if printing_ENABLED and os.name=="posix":
-    #"/usr/lib/cups/backend":
-    cups_backend_dir = os.path.join(sys.prefix, "lib", "cups", "backend")
-    add_data_files(cups_backend_dir, ["cups/xpraforwarder"])
 
 if annotate_ENABLED:
     from Cython.Compiler import Options
