@@ -1820,8 +1820,12 @@ else:
     class install_data_override(install_data):
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
-            build_xpra_conf(self.install_dir)
             install_data.run(self)
+
+            etc_prefix = self.install_dir
+            if etc_prefix=="/usr":
+                etc_prefix = "/"
+            build_xpra_conf(etc_prefix)
 
             if printing_ENABLED and os.name=="posix":
                 #install "/usr/lib/cups/backend" with 0700 permissions:
@@ -1842,7 +1846,7 @@ else:
                     shutil.copyfile("scripts/xpra_Xdummy", dummy_script)
                     os.chmod(dummy_script, 0o755)
                 #install xorg.conf:
-                etc_xpra = os.path.join(self.install_dir, "etc", "xpra")
+                etc_xpra = os.path.join(etc_prefix, "etc", "xpra")
                 self.mkpath(etc_xpra)
                 shutil.copyfile("etc/xpra/xorg.conf", os.path.join(etc_xpra, "xorg.conf"))
 
