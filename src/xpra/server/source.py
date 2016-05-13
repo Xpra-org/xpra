@@ -713,6 +713,7 @@ class ServerSource(object):
         self.sound_encoders = c.strlistget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
+        self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         av_sync = c.boolget("av-sync")
         self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
@@ -980,18 +981,30 @@ class ServerSource(object):
                    "sequence"           : sound_source.sequence})
         self.update_av_sync_delay_total()
 
-    def new_sound_buffer(self, sound_source, data, metadata):
-        soundlog("new_sound_buffer(%s, %s, %s) suspended=%s",
-                 sound_source, len(data or []), metadata, self.suspended)
+    def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
+        soundlog("new_sound_buffer(%s, %s, %s, %s) suspended=%s",
+                 sound_source, len(data or []), metadata, [len(x) for x in packet_metadata], self.suspended)
         if self.sound_source!=sound_source or self.is_closed():
             soundlog("sound buffer dropped: from old source or closed")
             return
         if sound_source.sequence<self.sound_source_sequence:
             soundlog("sound buffer dropped: old sequence number: %s (current is %s)", sound_source.sequence, self.sound_source_sequence)
             return
+        if packet_metadata and not self.sound_bundle_metadata:
+            #client does not support bundling, send packet metadata as individual packets before the main packet:
+            for x in packet_metadata:
+                self.send_sound_data(sound_source, x)
+            packet_metadata = ()
+        self.send_sound_data(sound_source, data, metadata, packet_metadata)
+
+    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):
+        packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
+        if packet_metadata:
+            assert self.sound_bundle_metadata
+            packet_data.append(packet_metadata)
         if sound_source.sequence>=0:
             metadata["sequence"] = sound_source.sequence
-        self.send("sound-data", sound_source.codec, Compressed(sound_source.codec, data), metadata)
+        self.send("sound-data", *packet_data)
 
     def stop_receiving_sound(self):
         ss = self.sound_sink
@@ -1083,8 +1096,8 @@ class ServerSource(object):
             log.error(msg)
             return msg
 
-    def sound_data(self, codec, data, metadata, *args):
-        soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, args, self.sound_sink)
+    def sound_data(self, codec, data, metadata, packet_metadata=()):
+        soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, packet_metadata, self.sound_sink)
         if self.is_closed():
             return
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
@@ -1112,7 +1125,12 @@ class ServerSource(object):
             except Exception:
                 soundlog.error("failed to setup sound", exc_info=True)
                 return
-        self.sound_sink.add_data(data, metadata)
+        if packet_metadata:
+            if not self.sound_properties.get("bundle-metadata"):
+                for x in packet_metadata:
+                    self.sound_sink.add_data(x)
+                packet_metadata = ()
+        self.sound_sink.add_data(data, metadata, packet_metadata)
 
 
     def set_av_sync_delta(self, delta):

@@ -53,6 +53,7 @@ from xpra.scripts.main import sound_option
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
+from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
@@ -208,6 +209,7 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_encoders = []
         self.server_sound_receive = False
         self.server_sound_send = False
+        self.server_sound_bundle_metadata = False
         self.server_ogg_latency_fix = False
         self.queue_used_sent = None
 
@@ -1546,6 +1548,7 @@ class UIXpraClient(XpraClientBase):
             sound_caps["encoders"] = self.microphone_codecs
             sound_caps["send"] = self.microphone_allowed
             sound_caps["receive"] = self.speaker_allowed
+            sound_caps["bundle-metadata"] = self.sound_properties.get("bundle-metadata")
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
                 sound_caps.update(get_pa_info())
@@ -1870,6 +1873,7 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_encoders = c.strlistget("sound.encoders", [])
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
+        self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         self.server_ogg_latency_fix = c.boolget("sound.ogg-latency-fix", False)
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
@@ -2398,11 +2402,26 @@ class UIXpraClient(XpraClientBase):
             self.sound_sink_error(self.sound_sink, e)
             return False
 
-    def new_sound_buffer(self, sound_source, data, metadata):
-        soundlog("new_sound_buffer(%s, %s, %s)", sound_source, len(data or []), metadata)
-        if self.sound_source:
-            self.sound_out_bytecount += len(data)
-            self.send("sound-data", self.sound_source.codec, compression.Compressed(self.sound_source.codec, data), metadata)
+    def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
+        soundlog("new_sound_buffer(%s, %s, %s, %s)", sound_source, len(data or []), metadata, packet_metadata)
+        if not self.sound_source:
+            return
+        self.sound_out_bytecount += len(data)
+        for x in packet_metadata:
+            self.sound_out_bytecount += len(x)
+        if packet_metadata and not self.server_sound_bundle_metadata:
+            #server does not support bundling, send packet metadata as individual packets before the main packet:
+            for x in packet_metadata:
+                self.send_sound_data(sound_source, x)
+            packet_metadata = ()
+        self.send_sound_data(sound_source, data, metadata, packet_metadata)
+
+    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):
+        packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
+        if packet_metadata:
+            assert self.server_sound_bundle_metadata
+            packet_data.append(packet_metadata)
+        self.send("sound-data", *packet_data)
 
     def _process_sound_data(self, packet):
         codec, data, metadata = packet[1:4]
@@ -2450,9 +2469,18 @@ class UIXpraClient(XpraClientBase):
             soundlog("sound data received, sound sink is stopped - telling server to stop")
             self.stop_receiving_sound()
             return
+        #the server may send packet_metadata, which is pushed before the actual sound data:
+        packet_metadata = ()
+        if len(packet)>4:
+            packet_metadata = packet[4]
+            if not self.sound_properties.get("bundle-metadata"):
+                #we don't handle bundling, so push individually:
+                for x in packet_metadata:
+                    ss.add_data(x)
+                packet_metadata = ()
         #(some packets (ie: sos, eos) only contain metadata)
-        if len(data)>0:
-            ss.add_data(data, metadata)
+        if len(data)>0 or packet_metadata:
+            ss.add_data(data, metadata, packet_metadata)
         if self.av_sync and self.server_av_sync:
             info = ss.get_info()
             queue_used = info.get("queue.cur") or info.get("queue", {}).get("cur")

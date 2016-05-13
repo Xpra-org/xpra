@@ -26,6 +26,8 @@ SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 BUFFER_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_BUFFER_TIME", "0"))     #ie: 64
 LATENCY_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_LATENCY_TIME", "0"))   #ie: 32
 
+BUNDLE_METADATA = os.environ.get("XPRA_SOUND_BUNDLE_METADATA", "1")=="1"
+
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 generation = AtomicInteger()
@@ -35,7 +37,7 @@ class SoundSource(SoundPipeline):
 
     __gsignals__ = SoundPipeline.__generic_signals__.copy()
     __gsignals__.update({
-        "new-buffer"    : n_arg_signal(2),
+        "new-buffer"    : n_arg_signal(3),
         })
 
     def __init__(self, src_type=None, src_options={}, codecs=get_codecs(), codec_options={}, volume=1.0):
@@ -74,6 +76,7 @@ class SoundSource(SoundPipeline):
         self.sink = None
         self.src = None
         self.src_type = src_type
+        self.pending_metadata = []
         self.buffer_latency = False
         self.jitter_queue = None
         self.file = None
@@ -214,9 +217,15 @@ class SoundSource(SoundPipeline):
             from xpra.sound.gst_hacks import map_gst_buffer
             with map_gst_buffer(buf) as a:
                 data = bytes(a[:])
-        return self.emit_buffer(data, {"timestamp"  : normv(buf.pts),
-                                   "duration"   : normv(buf.duration),
-                                   })
+        pts = normv(buf.pts)
+        duration = normv(buf.duration)
+        if pts==-1 and duration==-1 and BUNDLE_METADATA and len(self.pending_metadata)<10:
+            self.pending_metadata.append(data)
+            return 0
+        return self.emit_buffer(data, {
+                                       "timestamp"  : pts,
+                                       "duration"   : duration,
+                                       })
 
 
     def on_new_preroll0(self, appsink):
@@ -273,8 +282,11 @@ class SoundSource(SoundPipeline):
 
     def emit_buffer(self, data, metadata={}):
         f = self.file
-        if f and data:
-            self.file.write(data)
+        if f:
+            for x in self.pending_metadata:
+                self.file.write(x)
+            if data:
+                self.file.write(data)
             self.file.flush()
         if self.state=="stopped":
             #don't bother
@@ -287,6 +299,8 @@ class SoundSource(SoundPipeline):
                 jitter = randint(1, JITTER)
                 self.timeout_add(jitter, self.flush_jitter_queue)
                 log("emit_buffer: will flush jitter queue in %ims", jitter)
+            for x in self.pending_metadata:
+                self.jitter_queue.put((x, {}))
             self.jitter_queue.put((data, metadata))
             return 0
         log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
@@ -300,8 +314,11 @@ class SoundSource(SoundPipeline):
     def do_emit_buffer(self, data, metadata={}):
         self.inc_buffer_count()
         self.inc_byte_count(len(data))
+        for x in self.pending_metadata:
+            self.inc_byte_count(len(x))
         metadata["time"] = int(time.time()*1000)
-        self.idle_emit("new-buffer", data, metadata)
+        self.idle_emit("new-buffer", data, metadata, self.pending_metadata)
+        self.pending_metadata = []
         self.emit_info()
         return 0
 
@@ -363,10 +380,12 @@ def main():
             f = open(filename, "wb")
         ss = SoundSource(codecs=[codec])
         lock = Lock()
-        def new_buffer(ss, data, metadata):
+        def new_buffer(ss, data, metadata, packet_metadata):
             log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
                 if f:
+                    for x in packet_metadata:
+                        f.write(x)
                     f.write(data)
                     f.flush()
 

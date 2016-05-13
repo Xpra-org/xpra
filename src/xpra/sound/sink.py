@@ -390,7 +390,7 @@ class SoundSink(SoundPipeline):
             return False
         return True
 
-    def add_data0(self, data, metadata=None):
+    def add_data0(self, data, metadata=None, packet_metadata=()):
         if not self.can_push_buffer():
             return
         self.last_data = data
@@ -417,12 +417,16 @@ class SoundSink(SoundPipeline):
         if delta<50:
             gstlog("dropping sample to try to avoid overrun")
             return
+        for x in packet_metadata:
+            self.do_add_data(x)
         self.do_add_data(data, metadata)
         self.emit_info()
 
-    def add_data1(self, data, metadata=None):
+    def add_data1(self, data, metadata=None, packet_metadata=()):
         if not self.can_push_buffer():
             return
+        for x in packet_metadata:
+            self.do_add_data(x)
         self.do_add_data(data, metadata)
         if self.queue_state=="pushing":
             self.set_min_level()

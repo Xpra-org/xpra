@@ -22,6 +22,7 @@ FAKE_START_FAILURE = os.environ.get("XPRA_SOUND_FAKE_START_FAILURE", "0")=="1"
 FAKE_EXIT = int(os.environ.get("XPRA_SOUND_FAKE_EXIT", "0"))
 FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
 SOUND_START_TIMEOUT = int(os.environ.get("XPRA_SOUND_START_TIMEOUT", "3000"))
+BUNDLE_METADATA = os.environ.get("XPRA_SOUND_BUNDLE_METADATA", "1")=="1"
 
 
 def get_sound_wrapper_env():
@@ -155,6 +156,8 @@ def run_sound(mode, error_cb, options, args):
                 }
             for k,v in d.items():
                 print("%s=%s" % (k, ",".join(str(x) for x in v)))
+            if BUNDLE_METADATA:
+                print("bundle-metadata=True")
             return 0
         else:
             log.error("unknown mode: %s" % mode)
@@ -313,10 +316,15 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         self.command = get_sound_command()+["_sound_play", "-", "-", plugin or "", format_element_options(element_options), codec, "", str(volume)]
         _add_debug_args(self.command)
 
-    def add_data(self, data, metadata):
+    def add_data(self, data, metadata={}, packet_metadata=()):
         if DEBUG_SOUND:
-            log("add_data(%s bytes, %s) forwarding to %s", len(data), metadata, self.protocol)
-        self.send("add_data", data, dict(metadata))
+            log("add_data(%s bytes, %s, %s) forwarding to %s", len(data), metadata, len(packet_metadata), self.protocol)
+        #theoretically, the sound process could be a different version,
+        #so don't add the extra packet_metadata argument unless we know we actually want it:
+        if packet_metadata:
+            self.send("add_data", data, dict(metadata), packet_metadata)
+        else:
+            self.send("add_data", data, dict(metadata))
 
     def __repr__(self):
         try:
