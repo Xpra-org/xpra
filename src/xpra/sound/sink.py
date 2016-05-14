@@ -419,7 +419,8 @@ class SoundSink(SoundPipeline):
             return
         for x in packet_metadata:
             self.do_add_data(x)
-        self.do_add_data(data, metadata)
+        if self.do_add_data(data, metadata):
+            self.rec_queue_level(data)
         self.emit_info()
 
     def add_data1(self, data, metadata=None, packet_metadata=()):
@@ -427,10 +428,11 @@ class SoundSink(SoundPipeline):
             return
         for x in packet_metadata:
             self.do_add_data(x)
-        self.do_add_data(data, metadata)
-        if self.queue_state=="pushing":
-            self.set_min_level()
-            self.set_max_level()
+        if self.do_add_data(data, metadata):
+            self.rec_queue_level(data)
+            if self.queue_state=="pushing":
+                self.set_min_level()
+                self.set_max_level()
         self.emit_info()
 
     def do_add_data(self, data, metadata=None):
@@ -451,12 +453,14 @@ class SoundSink(SoundPipeline):
         if self.push_buffer(buf):
             self.inc_buffer_count()
             self.inc_byte_count(len(data))
-            if self.queue:
-                clt = self.queue.get_property("current-level-time")//MS_TO_NS
-                log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
-                self.levels.append((time.time(), clt))
             return True
         return False
+
+    def rec_queue_level(self, data):
+        if self.queue:
+            clt = self.queue.get_property("current-level-time")//MS_TO_NS
+            log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
+            self.levels.append((time.time(), clt))
 
     def push_buffer(self, buf):
         #buf.size = size

@@ -301,6 +301,7 @@ class SoundSource(SoundPipeline):
                 log("emit_buffer: will flush jitter queue in %ims", jitter)
             for x in self.pending_metadata:
                 self.jitter_queue.put((x, {}))
+            self.pending_metadata = []
             self.jitter_queue.put((data, metadata))
             return 0
         log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
@@ -315,6 +316,7 @@ class SoundSource(SoundPipeline):
         self.inc_buffer_count()
         self.inc_byte_count(len(data))
         for x in self.pending_metadata:
+            self.inc_buffer_count()
             self.inc_byte_count(len(x))
         metadata["time"] = int(time.time()*1000)
         self.idle_emit("new-buffer", data, metadata, self.pending_metadata)
