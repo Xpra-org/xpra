@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 
 def main():
     from xpra.util import nonl, pver, flatten_dict, print_nested_dict
@@ -26,6 +27,5 @@ def main():
 
 
 if __name__ == "__main__":
-    import sys
     main()
     sys.exit(0)
