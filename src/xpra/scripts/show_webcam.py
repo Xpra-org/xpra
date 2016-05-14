@@ -14,7 +14,11 @@ def main():
         if "-v" in sys.argv or "--verbose" in sys.argv:
             add_debug_category("webcam")
             log.enable_debug()
-        import cv2
+        try:
+            import cv2
+        except ImportError as e:
+            command_error("Error: no opencv support module: %s" % e)
+            return 1
         device = 0
         if len(sys.argv)==2:
             try:

@@ -1870,6 +1870,7 @@ else:
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
         modules.append("xpra.scripts.gtk_info")
+        modules.append("xpra.scripts.show_webcam")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
