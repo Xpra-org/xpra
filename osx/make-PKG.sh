@@ -33,6 +33,9 @@ done
 mkdir -p ./image/root/usr/libexec/cups/backend/
 cp ../src/cups/xpraforwarder ./image/root/usr/libexec/cups/backend/
 chmod 700 ./image/root/usr/libexec/cups/backend
+#add launchd agent:
+mkdir -p ./image/root/System/Library/LaunchAgents/
+cp ./org.xpra.Agent.plist ./image/root/System/Library/LaunchAgents/
 
 pushd ./image/root >& /dev/null
 find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Payload

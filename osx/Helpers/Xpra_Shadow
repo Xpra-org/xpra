@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#call the "Python" wrapper:
+exe_name=$(basename $0)
+full_path=$(cd "$(dirname "$0")"; pwd -P)
+PYTHON="$full_path/PythonExecWrapper"
+
+#ugly hack for passing command line arguments through launchctl:
+#we store them in a file and re-read them here:
+SHADOW_ARGS="$HOME/.xpra/shadow-args"
+if [ ! -r "$SHADOW_ARGS" ]; then
+	echo "Run_Xpra: missing $SHADOW_ARGS"
+	exit 1
+fi
+args=`cat $SHADOW_ARGS`
+rm $SHADOW_ARGS
+
+"$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;main('xpra', $args)"

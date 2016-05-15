@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -19,7 +19,7 @@ import shlex
 import traceback
 
 from xpra import __version__ as XPRA_VERSION
-from xpra.platform.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra, norm_makepath
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv
@@ -1320,6 +1320,10 @@ def ssh_connect_failed(message):
     from xpra.gtk_common.quit import gtk_main_quit_really
     gtk_main_quit_really()
 
+def setsid():
+    #run in a new session
+    os.setsid()
+
 def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
@@ -1332,9 +1336,6 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             env = display_desc.get("env")
             kwargs["stderr"] = sys.stderr
             if not display_desc.get("exit_ssh", False) and os.name=="posix" and not sys.platform.startswith("darwin"):
-                def setsid():
-                    #run in a new session
-                    os.setsid()
                 kwargs["preexec_fn"] = setsid
             elif sys.platform.startswith("win"):
                 from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
@@ -1739,13 +1740,14 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
             cmd.append("shadow")
             display_name = None
-            OSXWIN = sys.platform.startswith("darwin") or sys.platform.startswith("win")
-            if len(args)==1 and (args[0]==":" or OSXWIN):
+            WIN32 = sys.platform.startswith("win")
+            OSX = sys.platform.startswith("darwin")
+            if len(args)==1 and (args[0]==":" or OSX or WIN32):
                 #display_name was provided:
                 display_name = args[0]
-            elif OSXWIN:
+            elif OSX or WIN32:
                 #no need for a specific display
-                display_name = "MAIN"
+                display_name = ":0"
             else:
                 display_name = guess_X11_display(opts.socket_dir, opts.socket_dirs)
                 #we now know the display name, so add it:
@@ -1770,9 +1772,25 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             import uuid
             new_server_uuid = str(uuid.uuid4())
             server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
-        def setsid():
-            os.setsid()
-        proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
+        if mode=="_shadow_start" and OSX:
+            #launch the shadow server via launchctl so it will have GUI access:
+            argfile = os.path.expanduser("~/.xpra/shadow-args")
+            with open(argfile, "w") as f:
+                f.write('["Xpra", "--no-daemon"')
+                for x in cmd[1:]:
+                    f.write(', "%s"' % x)
+                f.write(']')
+            launch_commands = [
+                               ["launchctl", "unload", "/System/Library/LaunchAgents/org.xpra.Agent.plist"],
+                               ["launchctl", "load", "-S", "Aqua", "/System/Library/LaunchAgents/org.xpra.Agent.plist"],
+                               ["launchctl", "start", "org.xpra.Agent"],
+                               ]
+            for x in launch_commands:
+                proc = Popen(x, shell=False, close_fds=True)
+                proc.wait()
+            proc = None
+        else:
+            proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
         start = time.time()
         if display_name[0]=='S':
             #wait until the new socket appears:
@@ -1802,19 +1820,23 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 time.sleep(0.10)
         else:
             #wait for the display specified to become live:
-            socket_path = dotxpra.socket_path(display_name)
-            while dotxpra.get_server_state(socket_path, 1)!=DotXpra.LIVE:
-                if time.time()-start>15:
-                    warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
+            while True:
+                states = [dotxpra.get_server_state(norm_makepath(x, display_name), 1) for x in dotxpra._sockdirs]
+                if DotXpra.LIVE in states:
+                    break
+                elapsed = int(time.time()-start)
+                if elapsed>=15:
+                    warn("server for display %s failed to start, giving up after %i seconds - sorry!" % (display_name, elapsed))
                     return
                 time.sleep(0.10)
         display = parse_display_name(error_cb, opts, display_name)
-        #start a thread just to reap server startup process (yuk)
-        #(as the server process will exit as it daemonizes)
-        def reaper():
-            proc.wait()
-        from xpra.make_thread import make_thread
-        make_thread(reaper, "server-startup-reaper").start()
+        if proc and proc.poll() is None:
+            #start a thread just to reap server startup process (yuk)
+            #(as the server process will exit as it daemonizes)
+            def reaper():
+                proc.wait()
+            from xpra.make_thread import make_thread
+            make_thread(reaper, "server-startup-reaper").start()
     else:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)
