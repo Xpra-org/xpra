@@ -177,6 +177,30 @@ def ignore_options(args, options):
             while r in args:
                 args.remove(r)
 
+def parse_URL(url):
+    from urlparse import urlparse, parse_qs
+    up = urlparse(url)
+    address = up.netloc
+    qpos = url.find("?")
+    options = {}
+    if qpos>0:
+        params_str = url[qpos+1:]
+        params = parse_qs(params_str, keep_blank_values=True)
+        f_params = {}
+        #print("params=%s" % str(params))
+        for k,v in params.items():
+            t = OPTION_TYPES.get(k)
+            if t is not None and t!=list:
+                v = v[0]
+            f_params[k] = v
+        options = validate_config(f_params)
+    al = address.lower()
+    if not al.startswith(":") and not al.startswith("tcp") and not al.startswith("ssh"):
+        #assume tcp if not specified
+        address = "tcp:%s" % address
+    return address, options
+
+
 def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
@@ -799,27 +823,9 @@ def do_parse_cmdline(cmdline, defaults):
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
     if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://"):
         url = args[1]
-        from urlparse import urlparse, parse_qs
-        up = urlparse(url)
-        address = up.netloc
-        qpos = url.find("?")
-        if qpos>0:
-            params_str = url[qpos+1:]
-            params = parse_qs(params_str, keep_blank_values=True)
-            f_params = {}
-            #print("params=%s" % str(params))
-            for k,v in params.items():
-                t = OPTION_TYPES.get(k)
-                if t is not None and t!=list:
-                    v = v[0]
-                f_params[k] = v
-            v_params = validate_config(f_params)
-            for k,v in v_params.items():
-                setattr(options, k, v)
-        al = address.lower()
-        if not al.startswith(":") and not al.startswith("tcp") and not al.startswith("ssh"):
-            #assume tcp if not specified
-            address = "tcp:%s" % address
+        address, params = parse_URL(url)
+        for k,v in params.items():
+            setattr(options, k, v)
         args[1] = address
 
     try:
