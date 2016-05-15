@@ -620,10 +620,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     valid_option = option
                     break
             if not valid_option:
-                sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
+                raise Exception("ERROR: cannot find a valid pkg-config entry for %s using PKG_CONFIG_PATH=%s" % (options, os.environ["PKG_CONFIG_PATH"]))
             package_names.append(valid_option)
         if verbose_ENABLED and list(pkgs_options)!=list(package_names):
-            print("pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
+            print("exec_pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
@@ -693,7 +693,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
-        print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
+        print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
     return kw
 pkgconfig = exec_pkgconfig
 
@@ -704,6 +704,7 @@ def get_xorg_bin():
     for p in ("/usr/libexec/Xorg.bin",          #fedora 21?
               "/usr/libexec/Xorg",              #fedora 22
               "/usr/lib/xorg-server/Xorg"       #arch linux
+              "/usr/X11/bin/X"                  #OSX
               ):
         if os.path.exists(p):
             return p
@@ -796,6 +797,9 @@ def detect_xorg_setup(install_dir=None):
 
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
+        return Xvfb()
+
+    if OSX:
         return Xvfb()
 
     def Xorg_suid_check():
@@ -1920,6 +1924,22 @@ else:
             }
         setup_options["options"] = {"py2app": py2app_options}
         setup_options["app"]     = ["xpra/client/gtk_base/client_launcher.py"]
+
+    if OSX:
+        #simply adding the X11 path to PKG_CONFIG_PATH breaks things in mysterious ways,
+        #so instead we have to query each package seperately and merge the results:
+        def osx_pkgconfig(*pkgs_options, **ekw):
+            kw = dict(ekw)
+            for pkg in pkgs_options:
+                saved_pcp = os.environ.get("PKG_CONFIG_PATH")
+                if pkg.lower().startswith("x"):
+                    os.environ["PKG_CONFIG_PATH"] = "/usr/X11/lib/pkgconfig"
+                #print("exec_pkgconfig(%s, %s)", pkg, kw)
+                kw = exec_pkgconfig(pkg, **kw)
+                os.environ["PKG_CONFIG_PATH"] = saved_pcp
+            return kw
+
+        pkgconfig = osx_pkgconfig
 
 
 if html5_ENABLED:

@@ -434,7 +434,7 @@ def get_defaults():
         username = get_username()
     except:
         username = ""
-    if WIN32 or OSX or PYTHON3:
+    if WIN32 or PYTHON3:
         xvfb = ""
     elif XDUMMY:
         xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER, log_dir=get_default_log_dir())
