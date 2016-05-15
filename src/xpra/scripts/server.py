@@ -182,9 +182,28 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
     script.append("cd %s\n" % sh_quotemeta(starting_dir))
-    script.append("_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable),))
-    script.append("_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file),))
-    script.append("""
+    if sys.platform.startswith("darwin"):
+        #OSX contortions:
+        #The executable is the python interpreter,
+        #which is execed by a shell script, which we have to find..
+        sexec = sys.executable
+        bini = sexec.rfind("Resources/bin/")
+        if bini>0:
+            sexec = os.path.join(sexec[:bini], "Resources", "MacOS", "Xpra")
+        script.append("_XPRA_SCRIPT=%s\n" % (sh_quotemeta(sexec),))
+        script.append("""
+if which "$_XPRA_SCRIPT" > /dev/null; then
+    # Happypath:
+    exec "$_XPRA_SCRIPT" "$@"
+else
+    # Hope for the best:
+    exec Xpra "$@"
+fi
+""")
+    else:
+        script.append("_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable),))
+        script.append("_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file),))
+        script.append("""
 if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
     # Happypath:
     exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
