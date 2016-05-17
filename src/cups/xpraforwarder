@@ -50,10 +50,10 @@ def err(msg):
 	syslog.syslog(syslog.LOG_ERR, msg)
 
 
-def exec_command(command, env=os.environ.copy(), shell=True):
+def exec_command(command, env=os.environ.copy()):
 	info("running: %s" % command)
 	PIPE = subprocess.PIPE
-	proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
+	proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env)
 	out,err = proc.communicate()
 	info("returncode=%s" % proc.returncode)
 	if proc.returncode!=0:
@@ -81,7 +81,7 @@ def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_ke
 	#(using "su" causes even more problems)
 	env = os.environ.copy()
 	env["XPRA_NO_ROOT_WARNING"] = "1"
-	return exec_command(command, env=env, shell=False)
+	return exec_command(command, env=env)
 
 
 def do_main():
