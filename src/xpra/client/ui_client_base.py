@@ -2746,7 +2746,9 @@ class UIXpraClient(XpraClientBase):
                 #or the new dimensions, etc
                 window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
                 window._resize_counter = resize_counter
-                if video_decoder or csc_decoder:
+                #if we had a backing already,
+                #restore the attributes we had saved from it
+                if backing:
                     backing = window._backing
                     backing._delta_pixel_data = delta_pixel_data
                     backing._video_decoder = video_decoder
