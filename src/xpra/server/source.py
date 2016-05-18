@@ -2128,6 +2128,6 @@ class ServerSource(object):
                 if self.is_closed():
                     log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])
                     log(" %s", e)
-                    return
-                log.error("Error during encoding:", exc_info=True)
+                else:
+                    log.error("Error during encoding:", exc_info=True)
             NOYIELD or time.sleep(0)
