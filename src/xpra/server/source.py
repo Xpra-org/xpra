@@ -2118,7 +2118,7 @@ class ServerSource(object):
             Must run until we hit the end of queue marker,
             to ensure all the queued items get called.
         """
-        while not self.is_closed():
+        while True:
             fn_and_args = self.encode_work_queue.get(True)
             if fn_and_args is None:
                 return              #empty marker
