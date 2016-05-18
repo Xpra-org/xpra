@@ -1548,7 +1548,7 @@ class ServerSource(object):
                 self.send_clipboard_enabled(msg)
                 return
         #call compress_clibboard via the work queue:
-        self.encode_work_queue.put((self.compress_clipboard, packet))
+        self.encode_work_queue.put((True, self.compress_clipboard, packet))
 
     def compress_clipboard(self, packet):
         #Note: this runs in the 'encode' thread!
@@ -2122,8 +2122,13 @@ class ServerSource(object):
             fn_and_args = self.encode_work_queue.get(True)
             if fn_and_args is None:
                 return              #empty marker
+            #some function calls are optional and can be skipped when closing:
+            #(but some are not, like encoder clean functions)
+            optional_when_closing = fn_and_args[0]
+            if optional_when_closing and self.is_closed():
+                continue
             try:
-                fn_and_args[0](*fn_and_args[1:])
+                fn_and_args[1](*fn_and_args[2:])
             except Exception as e:
                 if self.is_closed():
                     log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])

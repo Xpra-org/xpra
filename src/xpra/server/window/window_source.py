@@ -518,7 +518,7 @@ class WindowSource(object):
                 #and delay sending it by a bit to allow basic icon batching:
                 delay = max(50, int(self.batch_config.delay))
                 iconlog("send_window_icon(%s) wid=%s, icon=%s, compression scheduled in %sms", window, self.wid, surf, delay)
-                self.timeout_add(delay, self.call_in_encode_thread, self.compress_and_send_window_icon)
+                self.timeout_add(delay, self.call_in_encode_thread, True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
         #this runs in the work queue
@@ -1350,20 +1350,20 @@ class WindowSource(object):
         av_sync = options.get("av-sync", False)
         av_delay = self.av_sync_delay*int(av_sync)
         if not av_sync:
-            self.call_in_encode_thread(self.make_data_packet_cb, *item)
+            self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         else:
             #schedule encode via queue, after freezing the pixels:
             if not image.freeze():
                 avsynclog("Warning: failed to freeze image pixels for:")
                 avsynclog(" %s", image)
-                self.call_in_encode_thread(self.make_data_packet_cb, *item)
+                self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
                 return
             self.encode_queue.append(item)
             l = len(self.encode_queue)
             if l>=self.encode_queue_max_size:
                 av_delay = 0        #we must free some space!
             avsynclog("scheduling encode queue iteration in %ims, encode queue size=%i (max=%i)", av_delay, l, self.encode_queue_max_size)
-            self.timeout_add(av_delay, self.call_in_encode_thread, self.encode_from_queue)
+            self.timeout_add(av_delay, self.call_in_encode_thread, True, self.encode_from_queue)
 
     def encode_from_queue(self):
         #note: we use a queue here to ensure we preserve the order
@@ -1413,7 +1413,7 @@ class WindowSource(object):
             return
         first_due = int(max(0, min(still_due)-time.time())*1000)
         avsynclog("encode_from_queue: first due in %ims, due list=%s", first_due, still_due)
-        self.timeout_add(first_due, self.call_in_encode_thread, self.encode_from_queue)
+        self.timeout_add(first_due, self.call_in_encode_thread, True, self.encode_from_queue)
 
 
     def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, wid, image, coding, sequence, options, flush):
