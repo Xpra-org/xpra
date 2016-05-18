@@ -478,9 +478,10 @@ cdef class Encoder:
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     def clean(self):                        #@DuplicatedSignature
-        if self.context!=NULL:
+        cdef x264_t *context = self.context
+        if context!=NULL:
             self.context = NULL
-            x264_encoder_close(self.context)
+            x264_encoder_close(context)
         self.frames = 0
         self.width = 0
         self.height = 0
