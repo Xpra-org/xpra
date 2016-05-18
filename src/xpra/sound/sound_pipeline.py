@@ -319,8 +319,9 @@ class SoundPipeline(gobject.GObject):
         elif t == gst.MESSAGE_WARNING:
             w = message.parse_warning()
             self.gstlogwarn("pipeline warning: %s", w[0].message)
-            for x in w[1:].split(":"):
-                self.gstlogwarn("                  %s", x)
+            for x in w[1:]:
+                for l in x.split(":"):
+                    self.gstlogwarn("                  %s", l)
         else:
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()
