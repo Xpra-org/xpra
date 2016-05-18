@@ -479,8 +479,8 @@ cdef class Encoder:
 
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
-            x264_encoder_close(self.context)
             self.context = NULL
+            x264_encoder_close(self.context)
         self.frames = 0
         self.width = 0
         self.height = 0
