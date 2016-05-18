@@ -251,7 +251,7 @@ cdef class ColorspaceConverter:
     def __repr__(self):
         if not self.src_format or not self.dst_format:
             return "libyuv(uninitialized)"
-        return "libyuv(%s %sx%s %s)" % (self.src_format, self.width, self.height, self.dst_format)
+        return "libyuv(%s %sx%s %s)" % (self.src_format, self.src_width, self.src_height, self.dst_format)
 
     def __dealloc__(self):                  #@DuplicatedSignature
         self.clean()
