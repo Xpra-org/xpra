@@ -1322,9 +1322,13 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def _process_logging(self, proto, packet):
         assert self.remote_logging
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         level, msg = packet[1:3]
+        prefix = "client %i: " % ss.counter
         for x in msg.splitlines():
-            clientlog.log(level, x)
+            clientlog.log(level, prefix+x)
 
     def _process_printers(self, proto, packet):
         if not self.printing:

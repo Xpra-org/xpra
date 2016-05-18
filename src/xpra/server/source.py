@@ -41,7 +41,7 @@ from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid
 from xpra.server.background_worker import add_work_item
-from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
+from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, AtomicInteger, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -55,6 +55,9 @@ AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+
+
+counter = AtomicInteger()
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
@@ -239,6 +242,8 @@ class ServerSource(object):
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed))
+        global counter
+        self.counter = counter.increase()
         self.close_event = Event()
         self.ordinary_packets = []
         self.protocol = protocol
@@ -1368,6 +1373,7 @@ class ServerSource(object):
                 "elapsed_time"      : int(time.time()-self.connection_time),
                 "last-ping-echo"    : lpe,
                 "suspended"         : self.suspended,
+                "counter"           : self.counter,
                 }
         if self.desktop_size_unscaled:
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
