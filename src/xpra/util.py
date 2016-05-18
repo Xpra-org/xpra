@@ -437,7 +437,7 @@ def dump_references(log, instances, exclude=[]):
                         elif v is instance:
                             log.info("  for key=%s", k)
                 else:
-                    log.info("     %s : %s", type(r), r)
+                    log.info("     %s", r)
     finally:
         del frame
 
