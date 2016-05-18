@@ -495,6 +495,7 @@ cdef class Decoder:
         #copy the whole input buffer into a padded C buffer:
         assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
         padded_buf = <unsigned char *> xmemalign(buf_len+128)
+        assert padded_buf!=NULL, "failed to allocate %i bytes of memory" % (buf_len+128)
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 128)
 
@@ -511,6 +512,7 @@ cdef class Decoder:
             avpkt.data = <uint8_t *> (padded_buf)
             avpkt.size = buf_len
             len = avcodec_decode_video2(self.codec_ctx, self.av_frame, &got_picture, &avpkt)
+        free(padded_buf)
         if len<0:
             av_frame_unref(self.av_frame)
             log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
@@ -567,17 +569,15 @@ cdef class Decoder:
             nplanes = 0
             log("decompress_image() read back rgb buffer: %s bytes", outsize)
 
-        #FIXME: we could lose track of framewrappers if an error occurs before the end:
-        framewrapper = AVFrameWrapper()
-        framewrapper.set_context(self.codec_ctx, self.av_frame)
-
         if outsize==0:
             av_frame_unref(self.av_frame)
             raise Exception("output size is zero!")
-
-        free(padded_buf)
         assert self.codec_ctx.width>=self.width, "codec width is smaller than our width: %s<%s" % (self.codec_ctx.width, self.width)
         assert self.codec_ctx.height>=self.height, "codec height is smaller than our height: %s<%s" % (self.codec_ctx.height, self.height)
+
+        #FIXME: we could lose track of framewrappers if an error occurs before the end:
+        framewrapper = AVFrameWrapper()
+        framewrapper.set_context(self.codec_ctx, self.av_frame)
         img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes, thread_safe=False)
         img.av_frame = framewrapper
         self.frames += 1
