@@ -29,7 +29,7 @@
 %define requires_cython Cython
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
-%define requires_dbus_python dbus-python
+%define requires_dbus dbus-python dbus-x11
 %define requires_crypto python-cryptography
 %define py3requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
@@ -108,7 +108,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %define requires_pygobject2 python-gobject2
 %define requires_pygtk2 python-gtk
 %define requires_printing , python-cups
-%define requires_dbus_python dbus-1-python
+%define requires_dbus dbus-1-python dbus-1-x11
 %define gstreamer1 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly
 #no python-gstreamer in the standard repos:
 #(see recommends below)
@@ -137,7 +137,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing}
 Requires: python-lz4
 Requires: %{requires_pygtk2}
-Requires: %{requires_dbus_python}
+Requires: %{requires_dbus}
 Requires: %{requires_crypto}
 #used for locating the Xorg binary:
 Requires: which
