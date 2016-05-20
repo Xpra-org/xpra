@@ -140,6 +140,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     if level==0:
         #can't pass a raw buffer to bencode / rencode,
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
+        algo = "not"
         cwrapper = compression.Compressed(coding, pixels_to_bytes(pixels), True)
     if pixel_format.upper().find("A")>=0 or pixel_format.upper().find("X")>=0:
         bpp = 32
