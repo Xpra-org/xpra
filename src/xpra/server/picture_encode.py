@@ -13,8 +13,9 @@ log = Logger("window", "compress")
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
+from xpra.os_util import memoryview_to_bytes, _memoryview
 #"pixels_to_bytes" gets patched up by the OSX shadow server
-from xpra.os_util import memoryview_to_bytes as pixels_to_bytes, _memoryview
+pixels_to_bytes = memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:

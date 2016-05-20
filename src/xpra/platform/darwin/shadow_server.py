@@ -37,7 +37,6 @@ def patch_picture_encode():
         return memoryview_to_bytes(v)
     from xpra.server import picture_encode
     picture_encode.pixels_to_bytes = pixels_to_bytes
-patch_picture_encode()
 
 
 class OSXRootWindowModel(RootWindowModel):
@@ -63,6 +62,7 @@ class ShadowServer(GTKShadowServerBase):
             from xpra.scripts.config import InitExit
             log("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
             raise InitExit(1, "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
+        patch_picture_encode()
         self.refresh_count = 0
         self.refresh_rectangle_count = 0
         self.refresh_registered = False
