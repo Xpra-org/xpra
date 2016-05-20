@@ -243,7 +243,7 @@ class XpraClientBase(FileTransferHandler):
         self.have_more = self._protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
-        process = getattr(conn, "process")      #ie: ssh is handled by anotherprocess
+        process = getattr(conn, "process", None)        #ie: ssh is handled by anotherprocess
         if process:
             proc, name, command = process
             getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
