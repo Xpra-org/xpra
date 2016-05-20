@@ -1423,6 +1423,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         from xpra.net.bytestreams import TwoFileConnection
         conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
         conn.timeout = 0            #taken care of by abort_test
+        conn.process = (child, "ssh", cmd)
 
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
