@@ -236,6 +236,9 @@ def get_compression_type(level):
     else:
         return "zlib"
 
+
+MAX_SIZE = 256*1024*1024
+
 import struct
 LZ4_HEADER = struct.Struct('<L')
 def decompress(data, level):
@@ -248,7 +251,8 @@ def decompress(data, level):
         size = LZ4_HEADER.unpack_from(data[:4])[0]
         #TODO: it would be better to use the max_size we have in protocol,
         #but this hardcoded value will do for now
-        assert size<=(256*1024*1024)
+        if size>MAX_SIZE:
+            raise Exception("compressed data too large: %iMB, limit is %iMB" % (size//1024//1024, MAX_SIZE//1024//1024))
         return LZ4_uncompress(data)
     elif level & LZO_FLAG:
         if not has_lzo:
