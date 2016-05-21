@@ -139,8 +139,10 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
         add_codec_version("enc_webp", "xpra.codecs.webp.encode")
 
-        codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
-        add_codec_version("vpx", "xpra.codecs.vpx.decoder")
+        if not sys.platform.startswith("darwin"):
+            #causes crashes with osx shadow servers, disabled in setup.py:
+            codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
+            add_codec_version("vpx", "xpra.codecs.vpx.decoder")
 
         codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
         add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
