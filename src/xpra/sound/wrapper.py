@@ -255,7 +255,7 @@ class sound_subprocess_wrapper(subprocess_caller):
             return
         #if we don't get an "info" packet, then the pipeline must have failed to start
         if not self.info:
-            log.warn("the %s process has failed to start, stopping it", self.description)
+            log.warn("Warning: the %s process has failed to start", self.description)
             self.cleanup()
 
 
