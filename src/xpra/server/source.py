@@ -939,6 +939,7 @@ class ServerSource(object):
             ss.connect("new-stream", self.new_stream)
             ss.connect("info", self.sound_source_info)
             ss.connect("exit", self.sound_source_exit)
+            ss.connect("error", self.sound_source_error)
             ss.start()
             return ss
         except Exception as e:
@@ -950,6 +951,11 @@ class ServerSource(object):
             if ss is None:
                 #tell the client we're not sending anything:
                 self.send_eos(codec)
+
+    def sound_source_error(self, source, message):
+        #this should be printed to stderr by the sound process already
+        if source==self.sound_source:
+            soundlog("sound source error: %s", message)
 
     def sound_source_exit(self, source, *args):
         soundlog("sound_source_exit(%s, %s)", source, args)
