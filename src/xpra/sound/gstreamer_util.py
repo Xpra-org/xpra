@@ -459,6 +459,9 @@ def get_codecs():
         elif encoding==OPUS_GDP and get_gst_version()>=(1, 8):
             log("avoiding %s with gstreamer version %s", encoding, get_gst_version())
             continue
+        elif encoding in (OPUS_GDP, OPUS) and OSX:
+            log("avoiding %s on Mac OS X", encoding)
+            continue
         elif encoding==FLAC:
             #flac problems:
             if WIN32 and gst_major_version==0:
