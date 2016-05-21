@@ -2314,9 +2314,10 @@ if webp_ENABLED:
         add_data_files('', [libwebp4, libwebp5])
 
     webp_pkgconfig = pkgconfig("webp")
-    cython_add(Extension("xpra.codecs.webp.encode",
-                ["xpra/codecs/webp/encode.pyx", buffers_c],
-                **webp_pkgconfig))
+    if not OSX:
+        cython_add(Extension("xpra.codecs.webp.encode",
+                    ["xpra/codecs/webp/encode.pyx", buffers_c],
+                    **webp_pkgconfig))
     cython_add(Extension("xpra.codecs.webp.decode",
                 ["xpra/codecs/webp/decode.pyx"]+membuffers_c,
                 **webp_pkgconfig))
