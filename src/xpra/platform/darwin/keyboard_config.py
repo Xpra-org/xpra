@@ -89,7 +89,7 @@ KEYCODES = {
             "Return"    : 35,
             "Tab"       : 48,
             "Caps_Lock" : 57,
-            "space" : 9,
+            "space" : 49,
             #Numeric pad keys:
             "KP_1"  : 83,
             "KP_2"  : 84,
