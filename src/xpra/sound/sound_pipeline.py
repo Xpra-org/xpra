@@ -275,6 +275,8 @@ class SoundPipeline(gobject.GObject):
                 gstlog.error(" %s", details)
             self.update_state("error")
             self.idle_emit("error", str(err))
+            #exit
+            self.cleanup()
         elif t == gst.MESSAGE_TAG or t == MESSAGE_ELEMENT:
             try:
                 self.parse_message(message)
