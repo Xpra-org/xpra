@@ -86,7 +86,7 @@ KEYCODES = {
             "backslash" : 42,
             "BackSpace" : 51,
             "Escape"    : 53,
-            "Return"    : 35,
+            "Return"    : 36,
             "Tab"       : 48,
             "Caps_Lock" : 57,
             "space" : 49,
