@@ -13,11 +13,18 @@ log = Logger("window")
 statelog = Logger("state")
 eventslog = Logger("events")
 workspacelog = Logger("workspace")
+grablog = Logger("grab")
 
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES
+
+try:
+    from xpra.x11.gtk2.gdk_bindings import add_event_receiver       #@UnresolvedImport
+except:
+    add_event_receiver = None
 
 def wn(w):
     return WORKSPACE_NAMES.get(w, w)
@@ -50,6 +57,14 @@ GTK2_SCROLL_MAP = {
 GTK2 version of the ClientWindow class
 """
 class GTK2WindowBase(GTKClientWindowBase):
+
+    #add GTK focus workaround so we will get focus events
+    #even when we grab the keyboard:
+    __common_gsignals__ = GTKClientWindowBase.__common_gsignals__
+    __common_gsignals__.update({
+                                "xpra-focus-out-event"  : one_arg_signal,
+                                "xpra-focus-in-event"   : one_arg_signal,
+                                })
 
     WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
     OR_TYPE_HINTS       = GTK2_OR_TYPE_HINTS
@@ -84,6 +99,55 @@ class GTK2WindowBase(GTKClientWindowBase):
                 if screen:
                     self.set_screen(screen)
         GTKClientWindowBase.setup_window(self, *args)
+
+
+    def on_realize(self, widget):
+        GTKClientWindowBase.on_realize(self, widget)
+        #hook up the X11 gdk event notifications so we can get focus-out when grabs are active:
+        if add_event_receiver:
+            self._focus_latest = None
+            grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
+            add_event_receiver(self.get_window(), self)
+        #other platforms should bet getting regular focus events instead:
+        def focus_in(window, event):
+            grablog("focus-in-event for wid=%s", self._id)
+            self.do_xpra_focus_in_event(event)
+        def focus_out(window, event):
+            grablog("focus-out-event for wid=%s", self._id)
+            self.do_xpra_focus_out_event(event)
+        self.connect("focus-in-event", focus_in)
+        self.connect("focus-out-event", focus_out)
+
+    def recheck_focus(self):
+        #we receive pairs of FocusOut + FocusIn following a keyboard grab,
+        #so we recheck the focus status via this timer to skip unnecessary churn
+        focused = self._client._focused
+        grablog("recheck_focus() wid=%i, focused=%s, latest=%s", self._id, focused, self._focus_latest)
+        hasfocus = focused==self._id
+        if not focused:
+            #we should never own the grab if we don't have focus
+            self.keyboard_ungrab()
+            return            
+        if hasfocus==self._focus_latest:
+            #we're already up to date
+            return
+        if not self._focus_latest:
+            self.keyboard_ungrab()
+            self._client.update_focus(self._id, False)
+        else:
+            self._client.update_focus(self._id, True)
+
+    def do_xpra_focus_out_event(self, event):
+        grablog("do_xpra_focus_out_event(%s)", event)
+        self._focus_latest = False
+        self.idle_add(self.recheck_focus)
+        return True
+
+    def do_xpra_focus_in_event(self, event):
+        grablog("do_xpra_focus_in_event(%s)", event)
+        self._focus_latest = True
+        self.idle_add(self.recheck_focus)
+        return True
 
 
     def enable_alpha(self):

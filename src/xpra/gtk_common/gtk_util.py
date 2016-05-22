@@ -210,6 +210,12 @@ if is_gtk3():
                 "DND"           : gdk.WindowTypeHint.DND
                 }
 
+    GRAB_SUCCESS        = gdk.GrabStatus.SUCCESS
+    ALREADY_GRABBED     = gdk.GrabStatus.ALREADY_GRABBED
+    GRAB_INVALID_TIME   = gdk.GrabStatus.INVALID_TIME
+    GRAB_NOT_VIEWABLE   = gdk.GrabStatus.NOT_VIEWABLE
+    GRAB_FROZEN         = gdk.GrabStatus.FROZEN
+
     from gi.repository.Gtk import Clipboard     #@UnresolvedImport
     CLIPBOARD_SELECTION = {}
     #gtk2: uses strings:
@@ -355,6 +361,12 @@ else:
                 "DND"           : gdk.WINDOW_TYPE_HINT_DND
                 }
 
+    GRAB_SUCCESS        = gdk.GRAB_SUCCESS
+    ALREADY_GRABBED     = gdk.GRAB_ALREADY_GRABBED
+    GRAB_INVALID_TIME   = gdk.GRAB_INVALID_TIME
+    GRAB_NOT_VIEWABLE   = gdk.GRAB_NOT_VIEWABLE
+    GRAB_FROZEN         = gdk.GRAB_FROZEN
+
     OptionMenu  = gtk.OptionMenu
 
     def GetClipboard(selection):
@@ -403,6 +415,14 @@ else:
             traylog("popup_menu_workaround: adding events callbacks")
             menu.connect("enter-notify-event", enter_menu)
             menu.connect("leave-notify-event", leave_menu)
+
+GRAB_STATUS_STRING = {
+                      GRAB_SUCCESS          : "SUCCESS",
+                      ALREADY_GRABBED       : "ALREADY_GRABBED",
+                      GRAB_INVALID_TIME     : "INVALID_TIME",
+                      GRAB_NOT_VIEWABLE     : "NOT_VIEWABLE",
+                      GRAB_FROZEN           : "FROZEN",
+                      }
 
 
 class TrayCheckMenuItem(gtk.CheckMenuItem):

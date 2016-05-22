@@ -15,6 +15,8 @@ Adds a red border around the window contents
 """
 class BorderClientWindow(ClientWindow):
 
+    __gsignals__ = ClientWindow.__common_gsignals__
+
     def setup_window(self, *args):
         self.border = None
         ClientWindow.setup_window(self, *args)

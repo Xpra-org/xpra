@@ -213,6 +213,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("gtk"          , "All GTK code: bindings, client, etc"),
                 ("util"         , "All utility functions"),
                 ("gobject"      , "Command line clients"),
+                ("grab"         , "Window grabs (both keyboard and mouse)"),
                 #server bits:
                 ("test"         , "Test code"),
                 ("verbose"      , "Very verbose flag"),
@@ -238,7 +239,6 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("mdns"         , "mDNS session publishing"),
                 #server internals:
                 ("stats"        , "Server statistics"),
-                ("grab"         , "Window grabs"),
                 ("xshm"         , "XShm pixel capture"),
                 ])),
     ("Sound", OrderedDict([

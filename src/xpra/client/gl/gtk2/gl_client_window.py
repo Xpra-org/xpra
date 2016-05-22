@@ -15,6 +15,8 @@ from xpra.client.gl.gtk2.gl_window_backing import GLPixmapBacking
 
 class GLClientWindow(GTK2WindowBase):
 
+    __gsignals__ = GTK2WindowBase.__common_gsignals__
+
     def __init__(self, *args):
         log("GLClientWindow(..)")
         GTK2WindowBase.__init__(self, *args)

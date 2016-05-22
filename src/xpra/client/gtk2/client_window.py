@@ -24,5 +24,7 @@ either using CairoBacking or PixmapBacking.
 """
 class ClientWindow(GTK2WindowBase):
 
+    __common_gsignals__ = GTK2WindowBase.__common_gsignals__
+
     def get_backing_class(self):
         return BACKING_CLASS

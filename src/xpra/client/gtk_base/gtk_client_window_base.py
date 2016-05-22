@@ -22,13 +22,14 @@ shapelog = Logger("shape")
 mouselog = Logger("mouse")
 geomlog = Logger("geometry")
 menulog = Logger("menu")
+grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
@@ -119,8 +120,8 @@ class GTKKeyEvent(AdHocStruct):
 
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
-    __gsignals__ = {
-        "state-updated" : no_arg_signal,
+    __common_gsignals__ = {
+        "state-updated"         : no_arg_signal,
         }
 
     #maximum size of the actual window:
@@ -770,6 +771,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", get_xid(gdkwin), self.is_mapped(), gdkwin.is_visible())
         with xsync:
             send_wm_workspace(root, gdkwin, workspace)
+
+
+    def keyboard_ungrab(self, *args):
+        grablog("keyboard_ungrab%s", args)
+        self._client.keyboard_grabbed = False
+        self.get_window().get_display().keyboard_ungrab()
+        return True
+
+    def toggle_keyboard_grab(self):
+        grablog("toggle_keyboard_grab()")
+        if self._client.keyboard_grabbed:
+            self.keyboard_ungrab()
+        else:
+            r = gtk.gdk.keyboard_grab(self.get_window(), True)
+            self._client.keyboard_grabbed = r==GRAB_SUCCESS
+            grablog("toggle_keyboard_grab() keyboard_grab(%s, True)=%s, keyboard_grabbed=%s", self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
 
     def set_menu(self, menu):

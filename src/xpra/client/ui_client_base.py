@@ -274,6 +274,7 @@ class UIXpraClient(XpraClientBase):
         #helpers and associated flags:
         self.client_extras = None
         self.keyboard_helper = None
+        self.keyboard_grabbed = False
         self.kh_warning = False
         self.clipboard_helper = None
         self.menu_helper = None

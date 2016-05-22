@@ -15,6 +15,7 @@ grablog = Logger("win32", "grab")
 screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
 mouselog = Logger("win32", "mouse")
+grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
@@ -37,7 +38,7 @@ LANGCHANGE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_LANGCHANGE", "1")=="1"
 
 DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
 DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
-FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "0")=="1"
+FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "1")=="1"
 WHEEL = os.environ.get("XPRA_WHEEL", "1")=="1"
 WHEEL_DELTA = int(os.environ.get("XPRA_WHEEL_DELTA", "120"))
 assert WHEEL_DELTA>0
@@ -812,7 +813,7 @@ class ClientExtras(object):
                 keycode = 0
                 modifiers = []
                 kh = self.client.keyboard_helper
-                if focused and keyname and kh and kh.keyboard and wParam in ALL_KEY_EVENTS:
+                if self.client.keyboard_grabbed and focused and keyname and kh and kh.keyboard and wParam in ALL_KEY_EVENTS:
                     modifier_keycodes = kh.keyboard.modifier_keycodes
                     modifier_keys = kh.keyboard.modifier_keys
                     #find the keycode: (try the exact key we hit first)
@@ -840,7 +841,7 @@ class ClientExtras(object):
                                     modifiers.append(mod)
                                     break
                     #keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
-                    keylog("scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
+                    grablog("scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
                     if keycode>0:
                         key_event = WindowsKeyEvent()
                         key_event.keyname = keyname
@@ -850,7 +851,7 @@ class ClientExtras(object):
                         key_event.keycode = keycode
                         key_event.string = ""
                         key_event.group = 0
-                        keylog("detected windows key, sending %s", key_event)
+                        grablog("detected windows key, sending %s", key_event)
                         self.client.keyboard_helper.send_key_action(focused, key_event)
                         #swallow this event:
                         return 1

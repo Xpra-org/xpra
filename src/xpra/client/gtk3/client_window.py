@@ -50,6 +50,9 @@ GTK3 version of the ClientWindow class
 """
 class ClientWindow(GTKClientWindowBase, Gtk.Window):
 
+    __gsignals__ = GTKClientWindowBase.__common_gsignals__
+
+
     WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
     BUTTON_MASK         = BUTTON_MASK
     SCROLL_MAP          = GTK3_SCROLL_MAP
