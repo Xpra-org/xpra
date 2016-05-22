@@ -23,10 +23,11 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
     from xpra.gtk_common.gtk_util import get_default_keymap, import_gdk, is_gtk3
     gdk = import_gdk()
     keymap = get_default_keymap()
+    log("get_default_keymap()=%s, direction=%s, bidirectional layouts: %s", keymap, keymap.get_direction(), keymap.have_bidi_layouts())
     keycodes=[]
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
-        log("%s.get_entries_for_keycode(%s)=%s", keymap, i, entries)
+        log("get_entries_for_keycode(%s)=%s", i, entries)
         if not entries:
             continue
         if is_gtk3():
