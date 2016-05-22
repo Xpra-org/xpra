@@ -756,6 +756,50 @@ def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, 
 def get_pulse_sink_defaults():
     return get_pulse_defaults(want_monitor_device=False, input_or_output=False, xpra_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
+def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
+    try:
+        from win32com.directsound import directsound
+    except ImportError as e:
+        log.warn("Warning: failed to import directsound")
+        log.warn(" %s", e)
+        return {}
+    try:
+        if not want_monitor_device:
+            devices = directsound.DirectSoundEnumerate()
+            log("DirectSoundEnumerate found %i device%s", len(devices), engs(devices))
+        else:
+            devices = directsound.DirectSoundCaptureEnumerate()
+            log("DirectSoundCaptureEnumerate found %i device%s", len(devices), engs(devices))
+        names = []
+        if devices:
+            for guid, name, mod in devices:
+                if mod or guid:
+                    log("* %-32s %s : %s", name, mod, guid)
+                else:
+                    log("* %s", name)
+                names.append(name)
+            device_name = None
+            if device_name_match:
+                for name in names:
+                    if name.lower().find(device_name_match)>=0:
+                        device_name = name
+                        break
+            if device_name is None:
+                for name in names:
+                    if name.lower().find("primary")>=0:
+                        device_name = name
+                        break
+            device_name = names[0]
+            log("best matching device: %s", device_name)
+            if device_name:
+                return {
+                        "device-name"   : device_name,
+                        }
+    except Exception as e:
+        log.error("Error quering sound devices using %s:", directsound)
+        log.error(" %s", e)
+    return {}
+
 
 #a list of functions to call to get the plugin options
 #at runtime (so we can perform runtime checks on remote data,
@@ -763,6 +807,7 @@ def get_pulse_sink_defaults():
 DEFAULT_SRC_PLUGIN_OPTIONS = {
     "test"                  : get_test_defaults,
     "pulse"                 : get_pulse_source_defaults,
+    "direct"                : get_directsound_source_defaults,
     }
 
 DEFAULT_SINK_PLUGIN_OPTIONS = {
@@ -784,8 +829,10 @@ def get_sound_source_options(plugin, options_str, device, want_monitor_device, r
     #ie: get_sound_source_options("audiotestsrc", "wave=4,freq=220", {remote_pulseaudio_server=XYZ}):
     #use the defaults as starting point:
     defaults_fn = DEFAULT_SRC_PLUGIN_OPTIONS.get(plugin)
+    log("DEFAULT_SRC_PLUGIN_OPTIONS(%s)=%s", plugin, defaults_fn)
     if defaults_fn:
         options = defaults_fn(device, want_monitor_device, remote)
+        log("%s%s=%s", defaults_fn, (device, want_monitor_device, remote), options)
         if options is None:
             #means failure
             return None
