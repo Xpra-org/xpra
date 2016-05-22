@@ -11,6 +11,9 @@ from xpra.util import csv, engs, parse_simple_dict
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
+
 
 #used on the server (reversed):
 XPRA_PULSE_SOURCE_DEVICE_NAME = "Speaker"
@@ -547,9 +550,14 @@ def plugin_str(plugin, options):
     if plugin is None:
         return None
     s = "%s" % plugin
+    def qstr(v):
+        #only quote strings
+        if type(v) in (str, unicode):
+            return "\"%s\"" % v
+        return v
     if options:
         s += " "
-        s += " ".join([("%s=%s" % (k,v)) for k,v in options.items()])
+        s += " ".join([("%s=%s" % (k,qstr(v))) for k,v in options.items()])
     return s
 
 
@@ -747,6 +755,7 @@ def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, 
 
 def get_pulse_sink_defaults():
     return get_pulse_defaults(want_monitor_device=False, input_or_output=False, xpra_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
+
 
 #a list of functions to call to get the plugin options
 #at runtime (so we can perform runtime checks on remote data,
