@@ -14,6 +14,9 @@ from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
 from xpra.os_util import _memoryview
 
 
+MAX_SIZE = 256*1024*1024
+
+
 python_lz4_version = None
 lz4_version = None
 try:
@@ -206,9 +209,13 @@ class Uncompressed(object):
     def compress(self):
         raise Exception("compress() not defined on %s" % self)
 
+
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
     if _memoryview and isinstance(data, _memoryview):
         data = data.tobytes()
+    size = len(data)
+    if size>MAX_SIZE:
+        raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (size//1024//1024, MAX_SIZE//1024//1024))
     if lz4:
         assert use_lz4, "cannot use lz4"
         algo = "lz4"
@@ -237,8 +244,6 @@ def get_compression_type(level):
         return "zlib"
 
 
-MAX_SIZE = 256*1024*1024
-
 import struct
 LZ4_HEADER = struct.Struct('<L')
 def decompress(data, level):
@@ -252,7 +257,7 @@ def decompress(data, level):
         #TODO: it would be better to use the max_size we have in protocol,
         #but this hardcoded value will do for now
         if size>MAX_SIZE:
-            raise Exception("compressed data too large: %iMB, limit is %iMB" % (size//1024//1024, MAX_SIZE//1024//1024))
+            raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (size//1024//1024, MAX_SIZE//1024//1024))
         return LZ4_uncompress(data)
     elif level & LZO_FLAG:
         if not has_lzo:
