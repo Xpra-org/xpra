@@ -46,6 +46,7 @@ class SoundPipeline(gobject.GObject):
         self.codec = codec
         self.codec_description = ""
         self.codec_mode = ""
+        self.container_format = ""
         self.container_description = ""
         self.bus = None
         self.bus_message_handler_id = None
@@ -174,6 +175,8 @@ class SoundPipeline(gobject.GObject):
         self.timeout_add(1000, self.new_codec_description, parts[0])
         if len(parts)>1:
             self.timeout_add(1000, self.new_container_description, parts[1])
+        elif self.container_format:
+            self.timeout_add(1000, self.new_container_description, self.container_format)
         log("SoundPipeline.start() done")
 
     def stop(self):

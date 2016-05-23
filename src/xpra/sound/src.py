@@ -70,6 +70,7 @@ class SoundSource(SoundPipeline):
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
         codec = matching[0]
         encoder, fmt = get_encoder_formatter(codec)
+        self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
         self.queue = None
         self.caps = None
         self.volume = None

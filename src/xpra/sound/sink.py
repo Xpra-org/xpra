@@ -79,6 +79,7 @@ class SoundSink(SoundPipeline):
         codec = matching[0]
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
+        self.container_format = (parser or "").replace("demux", "").replace("depay", "")
         self.sink_type = sink_type
         self.levels = deque(maxlen=100)
         self.volume = None
