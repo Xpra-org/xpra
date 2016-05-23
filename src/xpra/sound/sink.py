@@ -328,31 +328,36 @@ class SoundSink(SoundPipeline):
             self.level_lock.release()
 
     def set_max_level(self, force=False):
+        if not self.queue:
+            return
+        now = time.time()
+        elapsed = now-self.last_max_update
+        if elapsed<1:
+            #not more than once a second
+            return
         if not self.level_lock.acquire(False):
+            log("cannot get level lock for setting max-size-time")
             return
         try:
             lrange = self.get_level_range(mintime=0)
-            now = time.time()
-            log("set_max_level lrange=%3i, last_max_update=%is", lrange, int(now-self.last_max_update))
-            #more than one second since last update and we have a range:
-            if now-self.last_max_update>1 and self.queue:
-                cmst = self.queue.get_property("max-size-time")//MS_TO_NS
-                #overruns in the last minute:
-                olm = len([x for x in list(self.overrun_events) if now-x<60])
-                #increase target if we have more than 5 overruns in the last minute:
-                target_mst = lrange*(100 + MARGIN + min(100, olm*20))//100
-                #from 100% down to 0% in 2 seconds after underrun:
-                pct = max(0, int((self.last_overrun+2-now)*50))
-                #use this last_overrun percentage value to temporarily decrease the target
-                #(causes overruns that drop packets and lower the buffer level)
-                target_mst = max(50, int(target_mst - pct*lrange//100))
-                mst = (cmst + target_mst)//2
-                #cap it at 1 second:
-                mst = min(mst, 1000)
-                log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, mst=%3i", olm, MARGIN, pct, cmst, mst)
-                if force or abs(cmst-mst)>=max(50, lrange//2):
-                    self.queue.set_property("max-size-time", mst*MS_TO_NS)
-                    self.last_max_update = now
+            log("set_max_level lrange=%3i, elapsed=%is", lrange, int(elapsed))
+            cmst = self.queue.get_property("max-size-time")//MS_TO_NS
+            #overruns in the last minute:
+            olm = len([x for x in list(self.overrun_events) if now-x<60])
+            #increase target if we have more than 5 overruns in the last minute:
+            target_mst = lrange*(100 + MARGIN + min(100, olm*20))//100
+            #from 100% down to 0% in 2 seconds after underrun:
+            pct = max(0, int((self.last_overrun+2-now)*50))
+            #use this last_overrun percentage value to temporarily decrease the target
+            #(causes overruns that drop packets and lower the buffer level)
+            target_mst = max(50, int(target_mst - pct*lrange//100))
+            mst = (cmst + target_mst)//2
+            #cap it at 1 second:
+            mst = min(mst, 1000)
+            log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, mst=%3i", olm, MARGIN, pct, cmst, mst)
+            if force or abs(cmst-mst)>=max(50, lrange//2):
+                self.queue.set_property("max-size-time", mst*MS_TO_NS)
+                self.last_max_update = now
         finally:
             self.level_lock.release()
 
