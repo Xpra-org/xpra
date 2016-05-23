@@ -51,7 +51,11 @@ def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpr
         Xorg = "xpra_Xdummy"
     else:
         Xorg = "Xorg"
-    return [Xorg,
+    cmd = [Xorg]
+    if os.path.exists("/etc/debian_version"):
+        #no patched dummy driver for debian, so force reasonable DPI instead:
+        cmd += ["-dpi", "96"]
+    cmd += [
           "-noreset",
           "-nolisten", "tcp",
           "+extension", "GLX",
@@ -62,16 +66,16 @@ def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpr
           #must be specified with some Xorg versions (ie: arch linux)
           #this directory can store xorg config files, it does not need to be created:
           "-configdir", "${HOME}/.xpra/xorg.conf.d",
-          "-config", xorg_conf]
+          "-config", xorg_conf
+          ]
+    return cmd
 
 def get_Xvfb_command():
     cmd = ["Xvfb",
            "+extension", "Composite",
-           "-screen", "0", "5760x2560x24+32"]
-    if os.path.exists("/etc/debian_version"):
-        #no patched dummy driver for debian, so force reasonable DPI instead:
-        cmd += ["-dpi", "96"]
-    cmd += [
+           "-screen", "0", "5760x2560x24+32",
+           #better than leaving to vfb after a resize?
+           "-dpi", "96",
            "-nolisten", "tcp",
            "-noreset",
            "-auth", "$XAUTHORITY"
