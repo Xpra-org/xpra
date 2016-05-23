@@ -789,9 +789,14 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
                     if name.lower().find("primary")>=0:
                         device_name = name
                         break
-            device_name = names[0]
-            log("best matching device: %s", device_name)
+            log("best matching %sdevice: %s", ["","capture "][want_monitor_device], device_name)
+            if device_name is None and want_monitor_device:
+                #we have to choose one because the default device
+                #may not be a capture device?
+                device_name = names[0]
             if device_name:
+                log.info("using directsound %sdevice:", ["","capture "][want_monitor_device])
+                log.info(" '%s'", device_name)
                 return {
                         "device-name"   : device_name,
                         }
