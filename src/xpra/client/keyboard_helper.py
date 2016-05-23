@@ -98,7 +98,7 @@ class KeyboardHelper(object):
             #example for s: Control+F8:some_action()
             parts = s.split(":", 1)
             if len(parts)!=2:
-                log.error("invalid shortcut: %s" % s)
+                log.error("Error: invalid key shortcut '%s'", s)
                 continue
             #example for action: "quit"
             action = parts[1]
@@ -123,6 +123,7 @@ class KeyboardHelper(object):
                 except Exception as e:
                     log.warn("failed to parse arguments of shortcut '%s': %s", s, e)
                     continue
+            log("action(%s)=%s%s", s, action, args)
 
             #example for keyspec: ["Alt", "F8"]
             keyspec = parts[0].split("+")
@@ -144,6 +145,7 @@ class KeyboardHelper(object):
             #TODO: validate keyname
             keyname = keyspec[len(keyspec)-1]
             shortcuts[keyname] = (modifiers, action, args)
+            log("shortcut(%s)=%s", keyname, (modifiers, action, args))
         log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         return  shortcuts
 
