@@ -339,7 +339,7 @@ class SoundSink(SoundPipeline):
         finally:
             self.level_lock.release()
 
-    def set_max_level(self, force=False):
+    def set_max_level(self):
         if not self.queue:
             return
         now = time.time()
@@ -367,7 +367,7 @@ class SoundSink(SoundPipeline):
             #cap it at 1 second:
             mst = min(mst, 1000)
             log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i", olm, MARGIN, pct, cmst)
-            if force or abs(cmst-mst)>=max(50, lrange//2):
+            if abs(cmst-mst)>=max(50, lrange//2):
                 self.queue.set_property("max-size-time", mst*MS_TO_NS)
                 log("set_max_level max-size-time=%s", mst)
                 self.last_max_update = now
