@@ -65,12 +65,18 @@ def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpr
           "-config", xorg_conf]
 
 def get_Xvfb_command():
-    return ["Xvfb",
+    cmd = ["Xvfb",
            "+extension", "Composite",
-           "-screen", "0", "5760x2560x24+32",
+           "-screen", "0", "5760x2560x24+32"]
+    if os.path.exists("/etc/debian_version"):
+        #no patched dummy driver for debian, so force reasonable DPI instead:
+        cmd += ["-dpi", "96"]
+    cmd += [
            "-nolisten", "tcp",
            "-noreset",
-           "-auth", "$XAUTHORITY"]
+           "-auth", "$XAUTHORITY"
+           ]
+    return cmd
 
 
 def OpenGL_safety_check():
