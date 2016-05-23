@@ -1001,11 +1001,15 @@ class ServerSource(object):
         if sound_source.sequence<self.sound_source_sequence:
             soundlog("sound buffer dropped: old sequence number: %s (current is %s)", sound_source.sequence, self.sound_source_sequence)
             return
-        if packet_metadata and not self.sound_bundle_metadata:
-            #client does not support bundling, send packet metadata as individual packets before the main packet:
-            for x in packet_metadata:
-                self.send_sound_data(sound_source, x)
-            packet_metadata = ()
+        if packet_metadata:
+            if not self.sound_bundle_metadata:
+                #client does not support bundling, send packet metadata as individual packets before the main packet:
+                for x in packet_metadata:
+                    self.send_sound_data(sound_source, x)
+                packet_metadata = ()
+            else:
+                #the packet metadata is compressed already:
+                packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_sound_data(sound_source, data, metadata, packet_metadata)
 
     def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):

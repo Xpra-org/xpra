@@ -2410,11 +2410,15 @@ class UIXpraClient(XpraClientBase):
         self.sound_out_bytecount += len(data)
         for x in packet_metadata:
             self.sound_out_bytecount += len(x)
-        if packet_metadata and not self.server_sound_bundle_metadata:
-            #server does not support bundling, send packet metadata as individual packets before the main packet:
-            for x in packet_metadata:
-                self.send_sound_data(sound_source, x)
-            packet_metadata = ()
+        if packet_metadata:
+            if not self.server_sound_bundle_metadata:
+                #server does not support bundling, send packet metadata as individual packets before the main packet:
+                for x in packet_metadata:
+                    self.send_sound_data(sound_source, x)
+                packet_metadata = ()
+            else:
+                #the packet metadata is compressed already:
+                packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_sound_data(sound_source, data, metadata, packet_metadata)
 
     def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):
