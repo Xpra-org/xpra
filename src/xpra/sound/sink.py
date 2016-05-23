@@ -95,6 +95,7 @@ class SoundSink(SoundPipeline):
         self.last_underrun = 0
         self.last_overrun = 0
         self.last_max_update = time.time()
+        self.last_min_update = time.time()
         self.level_lock = Lock()
         decoder_str = plugin_str(decoder, codec_options)
         pipeline_els = []
@@ -307,23 +308,34 @@ class SoundSink(SoundPipeline):
         return 1
 
     def set_min_level(self):
+        if not self.queue:
+            return
+        now = time.time()
+        elapsed = now-self.last_min_update
+        if elapsed<1:
+            #not more than once a second
+            return
+        lrange = self.get_level_range()
+        if lrange==0:
+            #not enough data
+            return
         if not self.level_lock.acquire(False):
+            log("cannot get level lock for setting min-threshold-time")
             return
         try:
-            lrange = self.get_level_range()
-            if lrange>0 and self.queue:
-                cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
-                #from 100% down to 0% in 2 seconds after underrun:
-                now = time.time()
-                pct = max(0, int((self.last_underrun+2-now)*50))
-                #cannot go higher than mst-50:
-                mst = self.queue.get_property("max-size-time")
-                mrange = max(lrange+100, 150)
-                mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, mrange)//200)
-                log("set_min_level pct=%2i, cmtt=%3i, mtt=%3i, lrange=%s (UNDERRUN_MIN_LEVEL=%s)", pct, cmtt, mtt, lrange, UNDERRUN_MIN_LEVEL)
-                if cmtt!=mtt:
-                    self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
-                    log("set_min_level min-threshold-time=%s", mtt)
+            cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
+            #from 100% down to 0% in 2 seconds after underrun:
+            now = time.time()
+            pct = max(0, int((self.last_underrun+2-now)*50))
+            #cannot go higher than mst-50:
+            mst = self.queue.get_property("max-size-time")
+            mrange = max(lrange+100, 150)
+            mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, mrange)//200)
+            log("set_min_level pct=%2i, cmtt=%3i, lrange=%s (UNDERRUN_MIN_LEVEL=%s)", pct, cmtt, lrange, UNDERRUN_MIN_LEVEL)
+            if cmtt!=mtt:
+                self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
+                log("set_min_level min-threshold-time=%s", mtt)
+                self.last_min_update = now
         finally:
             self.level_lock.release()
 
@@ -354,9 +366,10 @@ class SoundSink(SoundPipeline):
             mst = (cmst + target_mst)//2
             #cap it at 1 second:
             mst = min(mst, 1000)
-            log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, mst=%3i", olm, MARGIN, pct, cmst, mst)
+            log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i", olm, MARGIN, pct, cmst)
             if force or abs(cmst-mst)>=max(50, lrange//2):
                 self.queue.set_property("max-size-time", mst*MS_TO_NS)
+                log("set_max_level max-size-time=%s", mst)
                 self.last_max_update = now
         finally:
             self.level_lock.release()
