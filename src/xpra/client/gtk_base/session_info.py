@@ -756,8 +756,10 @@ class SessionInfo(gtk.Window):
             d = typedict(get_sound_info(supported, prop))
             state = d.strget("state", "")
             codec_descr = d.strget("codec") or d.strget("codec_description")
+            container_descr = d.strget("container_description")
             if state=="active" and codec_descr:
-                state = "%s: %s" % (state, codec_descr)
+                descr = " + ".join(x for x in (codec_descr, container_descr) if x)
+                state = "%s: %s" % (state, descr)
             label.set_text(state)
             if details:
                 s = ""
