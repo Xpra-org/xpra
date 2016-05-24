@@ -120,6 +120,7 @@ VIRTUAL_KEYS = [
     ("SUBTRACT",                "KP_Subtract"),
     ("ADD",                     "KP_Add"),
     ("NONAME",                  "NoSymbol"),
+    ("RETURN",                  "KP_Enter"),
     ("NUMPAD0",                 "KP_0"),
     ("NUMPAD1",                 "KP_1"),
     ("NUMPAD2",                 "KP_2"),
