@@ -26,9 +26,9 @@ def sanitize_size_hints(size_hints):
                 f = float(v)
             except:
                 f = None
-            if f is None or f>=MAX_ASPECT:
+            if f is None or f<=0 or f>=MAX_ASPECT:
                 log.warn("clearing invalid aspect hint value for %s: %s", attr, v)
-                size_hints[attr] = -1.0
+                del size_hints[attr]
     for attr in ["max_size", "min_size", "base_size", "resize_inc",
                  "min_aspect_ratio", "max_aspect_ratio"]:
         v = size_hints.get(attr)
