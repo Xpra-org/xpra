@@ -888,6 +888,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         source.close()
         remaining_sources = [x for x in self._server_sources.values() if x!=source]
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
+        netlog.info("xpra client %i disconnected.", source.counter)
         if len(remaining_sources)==0:
             self.last_client_exited()
 
@@ -896,7 +897,6 @@ class ServerBase(ServerCore, FileTransferHandler):
             netlog.info("Last client has disconnected, terminating")
             self.quit(False)
         else:
-            netlog.info("xpra client disconnected.")
             self.reset_server_timeout(True)
 
     def get_all_protocols(self):
