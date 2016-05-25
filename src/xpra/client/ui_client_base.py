@@ -1362,7 +1362,7 @@ class UIXpraClient(XpraClientBase):
         #command line (or config file) override supplied:
         if self.dpi>0:
             #scale it:
-            dpi = self.cx(self.cy(2.0*self.dpi))
+            dpi = self.cx(self.cy(self.dpi))
             xdpi = self.cx(dpi)
             ydpi = self.cy(dpi)
         else:
