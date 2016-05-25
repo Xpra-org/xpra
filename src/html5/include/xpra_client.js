@@ -915,15 +915,17 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	if(ctx.audio_enabled) {
 		ctx._sound_start_receiving();
 	}
-	// send our printer definition
-	var printers = {
-		"HTML5 client": {
-			"printer-info": "Print to PDF in client browser",
-			"printer-make-and-model": "HTML5 client version",
-			"mimetypes": ["application/pdf"]
-		}
-	};
-	ctx.protocol.send(["printers", printers]);
+	if (hello["printing"]) {
+		// send our printer definition
+		var printers = {
+			"HTML5 client": {
+				"printer-info": "Print to PDF in client browser",
+				"printer-make-and-model": "HTML5 client version",
+				"mimetypes": ["application/pdf"]
+			}
+		};
+		ctx.protocol.send(["printers", printers]);
+	}
 	// start sending our own pings
 	ctx._send_ping();
 	ctx.ping_timer = setInterval(function () {
