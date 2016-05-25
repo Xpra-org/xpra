@@ -216,6 +216,7 @@ class GTKTrayMenuBase(object):
         self.session_info = None
         self.menu = None
         self.menu_shown = False
+        self.menu_icon_size = 0
 
     def build(self):
         if self.menu is None:
@@ -235,6 +236,7 @@ class GTKTrayMenuBase(object):
 
     def setup_menu(self, show_close=True):
         self.menu_shown = False
+        self.menu_icon_size = get_icon_size()
         menu = gtk.Menu()
         menu.set_title(self.client.session_name or "Xpra")
         def set_menu_title(*args):
@@ -285,6 +287,7 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menu.connect("deactivate", self.menu_deactivated)
         menu.show_all()
+        self.menu_icon_size = 0
         return menu
 
     def cleanup(self):
@@ -332,7 +335,7 @@ class GTKTrayMenuBase(object):
         """ Utility method for easily creating an ImageMenuItem """
         image = None
         if icon_name:
-            icon_size = get_icon_size()
+            icon_size = self.menu_icon_size or get_icon_size()
             image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
 
