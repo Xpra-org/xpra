@@ -22,7 +22,6 @@ function XpraClient(container) {
 	this.ssl = null;
 	// some client stuff
 	this.capabilities = {};
-	this.OLD_ENCODING_NAMES_TO_NEW = {"x264" : "h264", "vpx" : "vp8"};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
 	this.supported_encodings = ["h264", "jpeg", "png", "rgb", "rgb32"];
 	this.enabled_encodings = [];
@@ -1036,8 +1035,6 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 		options = {};
 	if (packet.length>10)
 		options = packet[10];
-	if (coding in ctx.OLD_ENCODING_NAMES_TO_NEW)
-		coding = ctx.OLD_ENCODING_NAMES_TO_NEW[coding];
 	var win = ctx.id_to_window[wid];
 	var decode_time = -1;
 	if (win) {
