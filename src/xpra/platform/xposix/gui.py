@@ -202,7 +202,7 @@ def _get_randr_dpi():
         w, h =  randr_bindings.get_screen_size()
         dpix = iround(w * 25.4 / wmm)
         dpiy = iround(h * 25.4 / hmm)
-        screenlog("dpix=%s, dpiy=%s", dpix, dpiy)
+        screenlog("dpix=%s, dpiy=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
         return dpix, dpiy
     except Exception as e:
         screenlog.warn("failed to get dpi: %s", e)
