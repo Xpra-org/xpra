@@ -348,8 +348,8 @@ class ServerBase(ServerCore, FileTransferHandler):
     def init_sockets(self, sockets):
         ServerCore.init_sockets(self, sockets)
         #verify we have a local socket for printing:
-        nontcpsockets = [info for socktype, _, info in sockets if socktype!="tcp"]
-        printlog("non-tcp sockets we can use for printing: %s", nontcpsockets)
+        nontcpsockets = [info for socktype, _, info in sockets if socktype not in ("tcp", "vsock")]
+        printlog("local sockets we can use for printing: %s", nontcpsockets)
         if not nontcpsockets:
             log.warn("Warning: no local sockets defined, cannot enable printing")
             self.printing = False
