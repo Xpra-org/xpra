@@ -73,6 +73,7 @@ function XpraClient(container) {
 	this.packet_handlers = {
 		'open': this._process_open,
 		'close': this._process_close,
+		'error': this._process_error,
 		'disconnect': this._process_disconnect,
 		'challenge': this._process_challenge,
 		'startup-complete': this._process_startup_complete,
@@ -811,6 +812,16 @@ XpraClient.prototype._process_open = function(packet, ctx) {
 	ctx._send_hello();
 }
 
+XpraClient.prototype._process_error = function(packet, ctx) {
+	// terminate the worker
+	ctx.protocol.terminate();
+	// call the client's close callback
+	ctx.callback_close(ctx.disconnect_reason);
+	// clear the reason
+	ctx.disconnect_reason = null;
+	console.log("error: "+packet[1]);
+}
+
 XpraClient.prototype._process_close = function(packet, ctx) {
 	// terminate the worker
 	ctx.protocol.terminate();
@@ -818,6 +829,7 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 	ctx.callback_close(ctx.disconnect_reason);
 	// clear the reason
 	ctx.disconnect_reason = null;
+	console.log("close: "+packet[1]);
 }
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
