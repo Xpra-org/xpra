@@ -87,7 +87,7 @@ class WindowSource(object):
                     av_sync, av_sync_delay,
                     video_helper,
                     server_core_encodings, server_encodings,
-                    encoding, encodings, core_encodings, encoding_options, icons_encoding_options,
+                    encoding, encodings, core_encodings, window_icon_encodings, encoding_options, icons_encoding_options,
                     rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
@@ -116,6 +116,7 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.core_encodings = core_encodings            #the core encodings supported by the client
+        self.window_icon_encodings = window_icon_encodings  #for window icons only
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.icons_encoding_options = icons_encoding_options    #icon caps
@@ -532,7 +533,8 @@ class WindowSource(object):
         #use png if supported and:
         # * if we must downscale it (bigger than what the client is willing to deal with)
         # * if not using a 4-stride (FIXME: should handle this with PIL too)
-        use_png = PIL and ("png" in self.encodings) and (SAVE_WINDOW_ICONS or (w>max_w or h>max_h or stride!=4*w))
+        use_png = PIL and ("png" in self.window_icon_encodings)
+        use_png = use_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or stride!=4*w or "premult_argb32" not in self.window_icon_encodings)
         iconlog("compress_and_send_window_icon: %sx%s, sending as png=%s", w, h, use_png)
         if use_png:
             img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
@@ -556,8 +558,11 @@ class WindowSource(object):
                 filename = "server-window-%i-icon-%i.png" % (self.wid, int(time.time()))
                 img.save(filename, 'PNG')
                 iconlog("server window icon saved to %s", filename)
-        else:
+        elif "premult_argb32" in self.window_icon_encodings:
             wrapper = self.compressed_wrapper("premult_argb32", str(pixel_data))
+        else:
+            log("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
+            return
         assert wrapper.datatype in ("premult_argb32", "png")
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         iconlog("queuing window icon update: %s", packet)

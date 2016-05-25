@@ -725,6 +725,12 @@ class UIXpraClient(XpraClientBase):
             self.core_encodings = self.do_get_core_encodings()
         return self.core_encodings
 
+    def get_window_icon_encodings(self):
+        e = ["premult_argb32"]
+        if "png" in self.get_core_encodings():
+            e.append("png")
+        return e
+
     def do_get_core_encodings(self):
         """
             This method returns the actual encodings supported.
@@ -1436,6 +1442,7 @@ class UIXpraClient(XpraClientBase):
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
+            "encodings.window-icon"     : self.get_window_icon_encodings(),
             #sound:
             "sound.server_driven"       : True,
             "sound.ogg-latency-fix"     : True,

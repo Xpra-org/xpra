@@ -103,7 +103,13 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	if((this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
 		if(!this.override_redirect) {
 			// create header
-			jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> <span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> <span class="windowbuttons"> <span id="maximize' + String(wid) + '"><img src="include/maximize.png" /></span> <span id="close' + String(wid) + '"><img src="include/close.png" /></span> </span></div>');
+			jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
+					'<span class="windowicon"><img src="include/noicon.png" id="windowicon' + String(wid) + '" /></span> '+
+					'<span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> '+
+					'<span class="windowbuttons"> '+
+					'<span id="maximize' + String(wid) + '"><img src="include/maximize.png" /></span> '+
+					'<span id="close' + String(wid) + '"><img src="include/close.png" /></span> '+
+					'</span></div>');
 			// make draggable
 			jQuery(this.div).draggable({
 				cancel: "canvas",
@@ -665,11 +671,16 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 };
 
 
-XpraWindow.prototype.update_icon = function(w, h, pixel_format, data) {
+XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 	"use strict";
-	// update icon
-	// TODO
-}
+
+	if (encoding=="png") {
+		var img = this.offscreen_canvas_ctx.createImageData(width, height);
+		jQuery('#windowicon' + String(this.wid)).attr('src', "data:image/"+encoding+";base64," + this._arrayBufferToBase64(img_data));
+		//console.log("setting window icon on "+jQuery('#windowicon' + String(this.wid)));
+	}
+};
+
 
 /**
  * This function draws the contents of the off-screen canvas to the visible
@@ -714,7 +725,8 @@ XpraWindow.prototype._init_avc = function() {
         img.data.set(buffer);
 		me.offscreen_canvas_ctx.putImageData(img, 0, 0);
     };
-}
+};
+
 
 /**
  * Updates the window image with new pixel data

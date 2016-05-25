@@ -358,6 +358,7 @@ class ServerSource(object):
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.core_encodings = []
+        self.window_icon_encodings = ["premult_argb32"]
         self.rgb_formats = ["RGB"]
         self.encoding_options = typedict()
         self.icons_encoding_options = typedict()
@@ -765,6 +766,10 @@ class ServerSource(object):
         #encodings:
         self.encodings = c.strlistget("encodings")
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        self.window_icon_encodings = ["premult_argb32"]
+        if "png" in self.core_encodings:
+            self.window_icon_encodings.append("png")
+        self.window_icon_encodings = c.strlistget("encodings.window-icon", self.window_icon_encodings)
         self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
@@ -1406,7 +1411,8 @@ class ServerSource(object):
         info.update({
                      "encodings"        : {
                                            ""      : self.encodings,
-                                           "core"  : self.core_encodings
+                                           "core"  : self.core_encodings,
+                                           "window-icon"    : self.window_icon_encodings,
                                            },
                      "icons"            : ieo,
                      "connection"       : self.protocol.get_info(),
@@ -2050,7 +2056,7 @@ class ServerSource(object):
                               self.av_sync, self.av_sync_delay,
                               self.video_helper,
                               self.server_core_encodings, self.server_encodings,
-                              self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.icons_encoding_options,
+                              self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                               self.rgb_formats,
                               self.default_encoding_options,
                               self.mmap, self.mmap_size)

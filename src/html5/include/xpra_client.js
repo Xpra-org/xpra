@@ -84,6 +84,7 @@ function XpraClient(container) {
 		'window-metadata': this._process_window_metadata,
 		'lost-window': this._process_lost_window,
 		'raise-window': this._process_raise_window,
+		'window-icon': this._process_window_icon,
 		'window-resized': this._process_window_resized,
 		'draw': this._process_draw,
 		'sound-data': this._process_sound_data,
@@ -624,11 +625,13 @@ XpraClient.prototype._make_hello = function() {
 		"window.raise"				: true,
 		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
+		"encoding.icons.max_size"	: [30, 30],
 		//rgb24 is not efficient in HTML so don't use it:
 		//png and jpeg will need extra code
 		//"encodings.core"			: ["rgb24", "rgb32", "png", "jpeg"],
 		"encodings.core"			: this.supported_encodings,
 		"encodings.rgb_formats"	 	: this.RGB_FORMATS,
+		"encodings.window-icon"		: ["png"],
 		"encoding.generic"	  		: true,
 		"encoding.transparency"		: true,
 		"encoding.client_options"	: true,
@@ -1020,6 +1023,19 @@ XpraClient.prototype._process_window_resized = function(packet, ctx) {
 	var win = ctx.id_to_window[wid];
 	if (win!=null) {
 		win.resize(width, height);
+	}
+}
+
+XpraClient.prototype._process_window_icon = function(packet, ctx) {
+	var wid = packet[1];
+	var w = packet[2];
+	var h = packet[3];
+	var encoding = packet[4];
+	var img_data = packet[5];
+	console.log("window-icon: "+encoding+" size "+w+"x"+h);
+	var win = ctx.id_to_window[wid];
+	if (win) {
+		win.update_icon(w, h, encoding, img_data);
 	}
 }
 
