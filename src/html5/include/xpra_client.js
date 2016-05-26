@@ -20,6 +20,7 @@ function XpraClient(container) {
 	this.host = null;
 	this.port = null;
 	this.ssl = null;
+	this.debug = false;
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
@@ -231,7 +232,8 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 	var packet_type = "";
 	var fn = "";
 	packet_type = packet[0];
-	console.log("received a " + packet_type + " packet");
+	if (ctx.debug)
+		console.log("received a " + packet_type + " packet");
 	fn = ctx.packet_handlers[packet_type];
 	if (fn==undefined) {
 		console.error("no packet handler for "+packet_type+"!");
@@ -532,7 +534,6 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 }
 
 XpraClient.prototype._send_ping = function() {
-	console.log("sending ping");
 	var me = this;
 	var now_ms = Date.now();
 	this.protocol.send(["ping", now_ms]);
@@ -704,6 +705,7 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 		this._window_set_focus,
 		this._window_closed
 		);
+	win.debug = this.debug;
 	this.id_to_window[wid] = win;
 	if (!override_redirect) {
 		if(this.normal_fullscreen_mode) {

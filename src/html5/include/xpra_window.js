@@ -22,6 +22,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	"use strict";
 	// use me in jquery callbacks as we lose 'this'
 	var me = this;
+	this.debug = false;
 	// there might be more than one client
 	this.client = client;
 	//keep reference both the internal canvas and screen drawn canvas:
@@ -655,7 +656,8 @@ XpraWindow.prototype.get_internal_geometry = function() {
  */
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
 	"use strict";
-	console.log("got mouse click at ", mx, my)
+	if (this.debug)
+		console.log("got mouse click at ", mx, my)
 	// mouse click event is from canvas just for this window so no need to check
 	// internal geometry anymore
 	this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
@@ -750,7 +752,8 @@ XpraWindow.prototype._init_avc = function() {
  */
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
 	"use strict";
-	//console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
+ 	if (this.debug)
+ 		console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
 
 	if (coding=="rgb32") {
 		// create image data
@@ -795,7 +798,8 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		if(img_data.length > img.data.length) {
 			console.error("data size mismatch: wanted",img.data.length,", got",img_data.length, ", stride",rowstride);
 		} else {
-			console.log("got ",img_data.length,"to paint with stride",rowstride);
+			if (this.debug)
+				console.log("got ",img_data.length,"to paint with stride",rowstride);
 		}
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
