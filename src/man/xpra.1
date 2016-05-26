@@ -31,6 +31,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-csc\-modules\fP=\fIMODULES\fP]
 [\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
+[\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
@@ -126,6 +127,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
@@ -441,6 +443,9 @@ the mmap file will be created.
 \fB\-\-windows\fP=\fIyes\fP|\fIno\fP
 Enable or disable the forwarding of windows. This is usually
 the primary use for xpra and should be enabled.
+.TP
+\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP
+Read only mode ignores all keyboard and mouse activity.
 .TP
 \fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP
 Enable or disable clipboard synchronization.
@@ -1008,10 +1013,6 @@ Force all windows to be refreshed.
 .RE
 .PP
 
-.TP
-\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP
-Read only mode prevents all keyboard and mouse activity from being sent
-to the server.
 .TP
 \fB\-\-sharing\fP=\fIyes\fP|\fIno\fP
 Sharing allows more than one client to connect to the same session.

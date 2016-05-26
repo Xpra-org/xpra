@@ -456,6 +456,10 @@ def do_parse_cmdline(cmdline, defaults):
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     parser.add_option_group(group)
+    replace_option("--readwrite", "--readonly=no")
+    group.add_option("--readonly", action="store", metavar="yes|no",
+                      dest="readonly", default=defaults.readonly,
+                      help="Disable keyboard input and mouse events from the clients. Default: %s." % enabled_str(defaults.readonly))
     legacy_bool_parse("clipboard")
     group.add_option("--clipboard", action="store", metavar="yes|no|clipboard-type",
                       dest="clipboard", default=defaults.clipboard,
@@ -495,10 +499,6 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--mmap", action="store", metavar="yes|no",
                       dest="mmap", default=defaults.mmap,
                       help="Use memory mapped transfers for local connections. Default: %s." % enabled_str(defaults.mmap))
-    replace_option("--readwrite", "--readonly=no")
-    group.add_option("--readonly", action="store", metavar="yes|no",
-                      dest="readonly", default=defaults.readonly,
-                      help="Disable keyboard input and mouse events from the clients. Default: %s." % enabled_str(defaults.readonly))
     legacy_bool_parse("sharing")
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
