@@ -295,5 +295,4 @@ def set_socket_timeout(conn, timeout=None):
     #FIXME: this is ugly, but less intrusive than the alternative?
     log("set_socket_timeout(%s, %s)", conn, timeout)
     if isinstance(conn, SocketConnection):
-        log.warn("%s.settimeout(%s)", conn._socket, timeout)
         conn._socket.settimeout(timeout)
