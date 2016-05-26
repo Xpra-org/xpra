@@ -167,7 +167,6 @@ class UIXpraClient(XpraClientBase):
         self.client_ping_latency = deque(maxlen=1000)
         self._server_ok = True
         self.last_ping_echoed_time = 0
-        self.server_info_request = False
         self.server_last_info = None
         self.info_request_pending = False
         self.screen_size_change_pending = False
@@ -1685,7 +1684,6 @@ class UIXpraClient(XpraClientBase):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
     def send_info_request(self):
-        assert self.server_info_request
         if not self.info_request_pending:
             self.info_request_pending = True
             self.send("info-request", [self.uuid], list(self._id_to_window.keys()))
@@ -1787,7 +1785,6 @@ class UIXpraClient(XpraClientBase):
         log("server has randr: %s", self.server_randr)
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
-        self.server_info_request = c.boolget("info-request")
         e = c.strget("encoding")
         if e:
             if self.encoding and e!=self.encoding:

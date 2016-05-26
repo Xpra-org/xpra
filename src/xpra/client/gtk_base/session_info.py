@@ -346,17 +346,16 @@ class SessionInfo(gtk.Window):
         tb.add_row(label("Client Latency (ms)", "The time it takes for the client to respond to pings, as measured by the server"),
                    *self.client_latency_labels)
         if self.client.windows_enabled:
-            if self.client.server_info_request:
-                self.batch_labels = maths_labels()
-                tb.add_row(label("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
-                           *self.batch_labels)
-                self.damage_labels = maths_labels()
-                tb.add_row(label("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
-                           *self.damage_labels)
-                self.quality_labels = maths_labels()
-                tb.add_row(label("Encoding Quality (pct)"), *self.quality_labels)
-                self.speed_labels = maths_labels()
-                tb.add_row(label("Encoding Speed (pct)"), *self.speed_labels)
+            self.batch_labels = maths_labels()
+            tb.add_row(label("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
+                       *self.batch_labels)
+            self.damage_labels = maths_labels()
+            tb.add_row(label("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
+                       *self.damage_labels)
+            self.quality_labels = maths_labels()
+            tb.add_row(label("Encoding Quality (pct)"), *self.quality_labels)
+            self.speed_labels = maths_labels()
+            tb.add_row(label("Encoding Speed (pct)"), *self.speed_labels)
 
             self.decoding_labels = maths_labels()
             tb.add_row(label("Decoding Latency (ms)", "How long it takes the client to decode a screen update"), *self.decoding_labels)
@@ -845,8 +844,7 @@ class SessionInfo(gtk.Window):
             #don't repopulate more than every second
             return True
         self.last_populate_statistics = time.time()
-        if self.client.server_info_request:
-            self.client.send_info_request()
+        self.client.send_info_request()
         def setall(labels, values):
             assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
             for i in range(len(labels)):
@@ -877,11 +875,10 @@ class SessionInfo(gtk.Window):
             cpl = [1000.0*x for _,x in list(self.client.client_ping_latency)]
             setlabels(self.client_latency_labels, cpl)
         if self.client.windows_enabled:
-            if self.client.server_info_request:
-                setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
-                setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
-                setall(self.quality_labels, self.all_values_from_info("quality", "encoding.quality"))
-                setall(self.speed_labels, self.all_values_from_info("speed", "encoding.speed"))
+            setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
+            setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
+            setall(self.quality_labels, self.all_values_from_info("quality", "encoding.quality"))
+            setall(self.speed_labels, self.all_values_from_info("speed", "encoding.speed"))
 
             region_sizes = []
             rps = []
@@ -986,8 +983,7 @@ class SessionInfo(gtk.Window):
 
 
     def populate_graphs(self, *args):
-        if self.client.server_info_request:
-            self.client.send_info_request()
+        self.client.send_info_request()
         box = self.tab_box
         _, h = get_preferred_size(box)
         _, bh = get_preferred_size(self.tab_button_box)
