@@ -248,6 +248,7 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_sessioninfomenuitem())
         menu.append(self.make_bugreportmenuitem())
         menu.append(gtk.SeparatorMenuItem())
+        menu.append(self.make_readonlymenuitem())
         menu.append(self.make_bellmenuitem())
         menu.append(self.make_notificationsmenuitem())
         if self.client.windows_enabled:
@@ -367,6 +368,24 @@ class GTKTrayMenuBase(object):
             self.show_bug_report()
         return  self.handshake_menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
 
+    def make_readonlymenuitem(self):
+        def readonly_toggled(*args):
+            v = self.readonly_menuitem.get_active()
+            self.client.readonly = v
+            log("readonly_toggled(%s) readonly=%s", args, self.client.readonly)
+        self.readonly_menuitem = self.checkitem("Read-only", readonly_toggled)
+        set_sensitive(self.readonly_menuitem, False)
+        def set_readonly_menuitem(*args):
+            log("set_readonly_menuitem%s enabled=%s", args, self.client.readonly)
+            self.bell_menuitem.set_active(self.client.readonly)
+            can_toggle_readonly = True      #TODO: add server readonly flag here
+            set_sensitive(self.readonly_menuitem, can_toggle_readonly)
+            if can_toggle_readonly:
+                self.bell_menuitem.set_tooltip_text("Disable all mouse and keyboard input")
+            else:
+                self.bell_menuitem.set_tooltip_text("Cannot disable readonly mode: the server has locked the session to read only")
+        self.client.after_handshake(set_readonly_menuitem)
+        return self.readonly_menuitem
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
