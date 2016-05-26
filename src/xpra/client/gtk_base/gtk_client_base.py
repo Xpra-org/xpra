@@ -433,7 +433,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             screenlog(" screen %s has %s monitors", i, n_monitors)
             if n_screens==1:
                 workareas = get_workareas()
-                if len(workareas)!=n_monitors:
+                if workareas and len(workareas)!=n_monitors:
                     screenlog(" workareas: %s", workareas)
                     screenlog(" number of monitors does not match number of workareas!")
                     workareas = []
@@ -477,7 +477,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def set_windows_cursor(self, windows, cursor_data):
-        cursorlog("set_windows_cursor(%s, ..)", windows)
+        cursorlog("set_windows_cursor(%s, args[%i])", windows, len(cursor_data))
         cursor = None
         if cursor_data:
             try:
@@ -498,9 +498,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
         display = display_get_default()
-        cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s", len(cursor_data)>=9, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
+        cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s", len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         #named cursors cannot be scaled (round to 10 to compare so 0.95 and 1.05 are considered the same as 1.0, no scaling):
-        if len(cursor_data)>=9 and cursor_types and iround(self.xscale*10)==10 and iround(self.yscale*10)==10:
+        if len(cursor_data)>=10 and cursor_types and iround(self.xscale*10)==10 and iround(self.yscale*10)==10:
             cursor_name = bytestostr(cursor_data[8])
             if cursor_name and USE_LOCAL_CURSORS:
                 gdk_cursor = cursor_types.get(cursor_name.upper())
@@ -513,11 +513,22 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                         cursorlog("cursor name '%s' not found", cursor_name)
                         missing_cursor_names.add(cursor_name)
         #create cursor from the pixel data:
-        w, h, xhot, yhot, serial, pixels = cursor_data[2:8]
+        encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
+        if encoding=="png":
+            from xpra.os_util import BytesIOClass
+            from PIL import Image
+            buf = BytesIOClass(pixels)
+            img = Image.open(buf)
+            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
+            pixels = data_fn("raw", "BGRA")
+            cursorlog("used PIL to convert png cursor to raw")
+        elif encoding!="raw":
+            cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
+            return None
         if len(pixels)<w*h*4:
             import binascii
             cursorlog.warn("not enough pixels provided in cursor data: %s needed and only %s bytes found (%s)", w*h*4, len(pixels), binascii.hexlify(pixels)[:100])
-            return
+            return None
         pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
         x = max(0, min(xhot, w-1))
         y = max(0, min(yhot, h-1))
@@ -527,7 +538,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             ssize = cursor_data[9]
             smax = cursor_data[10]
             cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
-        cursorlog("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", xhot,yhot, serial, w,h, len(pixels), csize, (cmaxw, cmaxh))
+        cursorlog("new %s cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", encoding, xhot, yhot, serial, w, h, len(pixels), csize, (cmaxw, cmaxh))
         fw, fh = get_fixed_cursor_size()
         if fw>0 and fh>0 and (w!=fw or h!=fh):
             #OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
