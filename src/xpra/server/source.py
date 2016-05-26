@@ -39,7 +39,7 @@ from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
 from xpra.make_thread import make_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, AtomicInteger, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 
@@ -386,12 +386,12 @@ class ServerSource(object):
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
+        self.cursor_encodings = []
         self.send_bell = False
         self.send_notifications = False
         self.send_windows = True
         self.pointer_grabs = False
         self.randr_notify = False
-        self.named_cursors = False
         self.window_initiate_moveresize = False
         self.clipboard_enabled = False
         self.clipboard_notifications = False
@@ -681,6 +681,7 @@ class ServerSource(object):
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.info_namespace = c.boolget("info-namespace")
         self.send_cursors = self.send_windows and c.boolget("cursors")
+        self.cursor_encodings = c.strlistget("encodings.cursor")
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
         self.randr_notify = c.boolget("randr_notify")
@@ -693,7 +694,6 @@ class ServerSource(object):
         self.file_transfer = c.boolget("file-transfer")
         self.file_size_limit = c.intget("file-size-limit")
         self.printing = self.printing and c.boolget("printing")
-        self.named_cursors = c.boolget("named_cursors")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.control_commands = c.strlistget("control_commands")
@@ -728,7 +728,7 @@ class ServerSource(object):
                  self.pulseaudio_id, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
         avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
 
-        log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
+        log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
         pinfo = ""
         if self.client_platform:
@@ -1448,7 +1448,7 @@ class ServerSource(object):
         info = {}
         def battr(k, prop):
             info[k] = bool(getattr(self, prop))
-        for prop in ("named_cursors", "share", "randr_notify",
+        for prop in ("share", "randr_notify",
                      "clipboard_notifications", "system_tray",
                      "lz4", "lzo",
                      "printing", "file_transfer"):
@@ -1610,20 +1610,29 @@ class ServerSource(object):
                 self.last_cursor_sent = cursor_data[:8]
                 w, h, _xhot, _yhot, serial, pixels = cursor_data[2:8]
                 #compress pixels if needed:
+                encoding = None
                 if pixels is not None:
                     #convert bytearray to string:
                     cpixels = str(pixels)
-                    if len(cpixels)>=256:
+                    if "png" in self.cursor_encodings:
+                        from xpra.codecs.loader import get_codec
+                        PIL = get_codec("PIL")
+                        assert PIL
+                        img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
+                        buf = BytesIOClass()
+                        img.save(buf, "PNG")
+                        cpixels = Compressed("png cursor", buf.getvalue(), can_inline=True)
+                        buf.close()
+                        encoding = "png"
+                    elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
                         cpixels = self.compressed_wrapper("cursor", pixels)
                         cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
+                        encoding = "raw"
                     cursor_data[7] = cpixels
-                cursorlog("do_send_cursor(..) %sx%s cursor %s with delay=%s", w, h, serial, delay)
-                #prepare packet format:
-                if not self.named_cursors:
-                    #old versions have limited support (no cursor names, no sizes):
-                    args = cursor_data[:8]
-                else:
-                    args = list(cursor_data[:9]) + list(cursor_sizes)
+                cursorlog("do_send_cursor(..) %sx%s %s cursor %s with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), serial, delay, self.cursor_encodings)
+                args = list(cursor_data[:9]) + list(cursor_sizes)
+                if self.cursor_encodings and encoding:
+                    args = [encoding] + args
             else:
                 cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
                 args = [""]

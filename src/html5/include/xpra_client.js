@@ -87,6 +87,7 @@ function XpraClient(container) {
 		'window-icon': this._process_window_icon,
 		'window-resized': this._process_window_resized,
 		'draw': this._process_draw,
+		'cursor': this._process_cursor,
 		'sound-data': this._process_sound_data,
 		'clipboard-token': this._process_clipboard_token,
 		'set-clipboard-enabled': this._process_set_clipboard_enabled,
@@ -505,7 +506,6 @@ XpraClient.prototype._update_capabilities = function(appendobj) {
 	for (var attr in appendobj) {
 		this.capabilities[attr] = appendobj[attr];
 	}
-	console.log(this.capabilities);
 }
 
 XpraClient.prototype._check_server_echo = function(ping_sent_time) {
@@ -568,6 +568,7 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 			});
 		}
 	}
+	console.log("hello capabilities: "+this.capabilities);
 	// send the packet
 	this.protocol.send(["hello", this.capabilities]);
 }
@@ -632,6 +633,7 @@ XpraClient.prototype._make_hello = function() {
 		"encodings.core"			: this.supported_encodings,
 		"encodings.rgb_formats"	 	: this.RGB_FORMATS,
 		"encodings.window-icon"		: ["png"],
+		"encodings.cursor"			: ["png"],
 		"encoding.generic"	  		: true,
 		"encoding.transparency"		: true,
 		"encoding.client_options"	: true,
@@ -1023,6 +1025,38 @@ XpraClient.prototype._process_window_resized = function(packet, ctx) {
 	var win = ctx.id_to_window[wid];
 	if (win!=null) {
 		win.resize(width, height);
+	}
+}
+
+XpraClient.prototype.reset_cursor = function(packet, ctx) {
+	for (var wid in ctx.id_to_window) {
+		var window = ctx.id_to_window[wid];
+		window.reset_cursor();
+	}
+	return;
+}
+
+XpraClient.prototype._process_cursor = function(packet, ctx) {
+	if (packet.length==2) {
+		ctx.reset_cursor(packet, ctx);
+		return;
+	}
+	if (packet.length<9) {
+		ctx.reset_cursor();
+		return;
+	}
+	//we require a png encoded cursor packet:
+	var encoding = packet[1];
+	if (encoding!="png") {
+		console.log("invalid cursor encoding: "+encoding);
+		return;
+	}
+	var w = packet[4];
+	var h = packet[5];
+	var img_data = packet[9];
+	for (var wid in ctx.id_to_window) {
+		var window = ctx.id_to_window[wid];
+		window.set_cursor(encoding, w, h, img_data);
 	}
 }
 

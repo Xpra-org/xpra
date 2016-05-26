@@ -725,6 +725,12 @@ class UIXpraClient(XpraClientBase):
             self.core_encodings = self.do_get_core_encodings()
         return self.core_encodings
 
+    def get_cursor_encodings(self):
+        e = ["raw"]
+        if "png" in self.get_core_encodings():
+            e.append("png")
+        return e
+
     def get_window_icon_encodings(self):
         e = ["premult_argb32"]
         if "png" in self.get_core_encodings():
@@ -1443,6 +1449,7 @@ class UIXpraClient(XpraClientBase):
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             "encodings.window-icon"     : self.get_window_icon_encodings(),
+            "encodings.cursor"          : self.get_cursor_encodings(),
             #sound:
             "sound.server_driven"       : True,
             "sound.ogg-latency-fix"     : True,
@@ -2912,12 +2919,24 @@ class UIXpraClient(XpraClientBase):
     def _process_cursor(self, packet):
         if not self.cursors_enabled:
             return
-        if len(packet)==2:
-            new_cursor = packet[1]
-        elif len(packet)>=8:
-            new_cursor = packet[1:]
+        #trim packet type:
+        packet = packet[1:]
+        log.info("cursor: %s", packet[:6])
+        #log.info("cursor: %s", packet)
+        if len(packet)==1:
+            new_cursor = packet[0]
         else:
-            raise Exception("invalid cursor packet: %s items" % len(packet))
+            if len(packet)<7:
+                raise Exception("invalid cursor packet: %s items" % len(packet))
+            #newer versions include the cursor encoding as first argument,
+            #we know this is it because it will be a string rather than an int:
+            log.info("cursor packet[0]: %s", type(packet[0]))
+            if type(packet[0]) in (str, bytes):
+                #we have the encoding in the packet already
+                new_cursor = packet
+            else:
+                #prepend "raw" which is the default
+                new_cursor = ["raw"] + packet
         self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
     def _process_bell(self, packet):

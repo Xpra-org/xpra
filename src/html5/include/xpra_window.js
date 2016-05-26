@@ -675,11 +675,25 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 	"use strict";
 
 	if (encoding=="png") {
-		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		jQuery('#windowicon' + String(this.wid)).attr('src', "data:image/"+encoding+";base64," + this._arrayBufferToBase64(img_data));
-		//console.log("setting window icon on "+jQuery('#windowicon' + String(this.wid)));
 	}
 };
+
+
+XpraWindow.prototype.reset_cursor = function() {
+	"use strict";
+	
+};
+
+XpraWindow.prototype.set_cursor = function(encoding, w, h, img_data) {
+	"use strict";
+
+	if (encoding=="png") {
+		var cursor_url = "url('data:image/"+encoding+";base64," + window.btoa(img_data) + "'),default";
+		jQuery("#"+String(this.wid)).css("cursor", cursor_url);
+	}
+};
+
 
 
 /**
