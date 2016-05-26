@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python-pytools
-Version:        2015.1.2
+Version:        2016.2.1
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 
@@ -56,6 +56,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu May 26 2016 Antoine Martin <antoine@devloop.org.uk - 2016.2.1-1
+- new upstream release
+
 * Thu Jul 16 2015 Antoine Martin <antoine@devloop.org.uk - 2015.1.2-1
 - new upstream release
 
