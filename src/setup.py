@@ -620,7 +620,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     valid_option = option
                     break
             if not valid_option:
-                raise Exception("ERROR: cannot find a valid pkg-config entry for %s using PKG_CONFIG_PATH=%s" % (options, os.environ.get("PKG_CONFIG_PATH", "(empty)")))
+                raise Exception("ERROR: cannot find a valid pkg-config entry for %s using PKG_CONFIG_PATH=%s" % (" or ".join(options), os.environ.get("PKG_CONFIG_PATH", "(empty)")))
             package_names.append(valid_option)
         if verbose_ENABLED and list(pkgs_options)!=list(package_names):
             print("exec_pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
