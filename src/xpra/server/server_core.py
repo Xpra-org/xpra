@@ -28,10 +28,10 @@ import xpra
 from xpra.server import ClientException
 from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.config import InitException
-from xpra.net.bytestreams import SocketConnection, pretty_socket, set_socket_timeout
+from xpra.scripts.config import InitException, parse_bool
+from xpra.net.bytestreams import SocketConnection, pretty_socket
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES, Queue
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, \
@@ -40,7 +40,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, \
+from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -147,6 +147,8 @@ class ServerCore(object):
         self._potential_protocols = []
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
+        self._html = False
+        self._www_dir = None
         self._aliases = {}
         self._reverse_aliases = {}
         self.socket_types = {}
@@ -190,7 +192,6 @@ class ServerCore(object):
 
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
-        self._tcp_proxy = opts.tcp_proxy
         self.encryption = opts.encryption
         self.encryption_keyfile = opts.encryption_keyfile
         self.tcp_encryption = opts.tcp_encryption
@@ -200,7 +201,52 @@ class ServerCore(object):
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
 
+        self.init_html_proxy(opts)
         self.init_auth(opts)
+
+    def init_html_proxy(self, opts):
+        self._tcp_proxy = opts.tcp_proxy
+        #opts.html can contain a boolean, "auto" or the path to the webroot
+        www_dir = None
+        if opts.html and os.path.isabs(opts.html):
+            www_dir = opts.html
+            self._html = True
+        else:
+            self._html = parse_bool("html", opts.html)
+        if self._html is not False:     #True or None (for "auto")
+            if not opts.bind_tcp:
+                #we need a tcp socket!
+                if self._html:
+                    #html was enabled, so log an error:
+                    log.error("Error: cannot use the html server without a bind-tcp socket")
+                self._html = False
+        if self._html is not False:
+            try:
+                from xpra.net.websocket import WebSocketConnection
+                assert WebSocketConnection
+                self._html = True
+            except ImportError as e:
+                if self._html is None:  #auto mode
+                    log.info("html server unavailable, cannot find websockify module")
+                else:
+                    log.error("Error: cannot import websockify connection handler:")
+                    log.error(" %s", e)
+                    log.error(" the html server will not be available")
+                self._html = False
+        #make sure we have the web root:
+        if self._html:
+            from xpra.platform.paths import get_resources_dir
+            self._www_dir = www_dir or os.path.abspath(os.path.join(get_resources_dir(), "www"))
+            if not os.path.exists(self._www_dir):
+                log.error("Error: cannot find the html web root")
+                log.error(" '%s' does not exist", self._www_dir)
+                self._html = False
+        if self._html:
+            log.info("serving html content from '%s'", self._www_dir)
+        if self._html and self._tcp_proxy:
+            log.warn("Warning: the built in html server is enabled,")
+            log.warn(" disabling the tcp-proxy option")
+            self._tcp_proxy = False
 
     def init_auth(self, opts):
         self.auth_class = self.get_auth_module("unix-domain", opts.auth, opts)
@@ -472,15 +518,49 @@ class ServerCore(object):
         netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s", args, sock, self._socket_timeout, sockname, address, peername)
         conn = SocketConnection(sock, sockname, address, target, socktype)
         netlog("socket connection: %s", conn)
-        frominfo = ""
         if peername:
-            frominfo = " from %s" % pretty_socket(peername)
+            frominfo = pretty_socket(peername)
+            info_msg = "New %s connection received from %s" % (socktype, frominfo)
         elif socktype=="unix-domain":
-            frominfo = " on %s" % sockname
+            frominfo = sockname
+            info_msg = "New %s connection received on %s" % (socktype, frominfo)
+        else:
+            frominfo = ""
+            info_msg = "New %s connection received"
+
+        if socktype=="tcp" and self._html or self._tcp_proxy:
+            #see if the packet data is actually xpra or something else
+            #that we need to handle via a tcp proxy or the websockify adapter:
+            conn._socket.settimeout(25)
+            v = conn.peek(128)
+            netlog("peek()=%s", nonl(v))
+            if v and v[0] not in ("P", ord("P")):
+                if self._html:
+                    line1 = v.splitlines()[0]
+                    if line1.find("HTTP/")>0:
+                        if line1.startswith("GET ") or line1.startswith("POST "):
+                            parts = line1.split(" ")
+                            log.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
+                            tname = "%s-request" % parts[0]
+                        else:
+                            log.info("New http connection received from %s", frominfo)
+                            tname = "websockify-proxy"
+                        def run_websockify():
+                            self.start_websockify(conn, frominfo)
+                        make_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True).start()
+                        return True
+                elif self._tcp_proxy:
+                    log.info("New tcp proxy connection received from %s", frominfo)
+                    def run_proxy():
+                        self.start_tcp_proxy(conn, frominfo)
+                    make_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True).start()
+                    return True
+        #FIXME: if we have peek data and it isn't an xpra client,
+        #we can bail out early without making a protocol
+        netlog.info(info_msg)
         return self.make_protocol(socktype, conn, frominfo)
 
     def make_protocol(self, socktype, conn, frominfo=""):
-        netlog.info("New %s connection received%s", socktype, frominfo)
         protocol = Protocol(self, conn, self.process_packet)
         self._potential_protocols.append(protocol)
         protocol.large_packets.append("info-response")
@@ -509,64 +589,61 @@ class ServerCore(object):
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
         return True
 
-
     def invalid_header(self, proto, data):
-        netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy)
-        if proto.input_packetcount==0 and self._tcp_proxy and not proto._closed:
-            #start a new proxy in a thread
-            def run_proxy():
-                self.start_tcp_proxy(proto, data)
-            make_thread(run_proxy, "web-proxy-for-%s" % proto, daemon=True).start()
-            return
+        netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s, html=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html)
         err = "invalid packet format, not an xpra client?"
         proto.gibberish(err, data)
 
-    def start_tcp_proxy(self, proto, data):
-        proxylog("start_tcp_proxy(%s, '%s')", proto, repr_ellipsized(data))
+
+    def start_websockify(self, conn, frominfo):
+        netlog("start_websockify(%s, %s) www dir=%s", conn, frominfo, self._www_dir)
+        from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
-            self._potential_protocols.remove(proto)
-        except:
-            pass        #might already have been removed by now
-        proxylog("start_tcp_proxy: protocol state before stealing: %s", proto.get_info(alias_info=False))
-        #any buffers read after we steal the connection will be placed in this temporary queue:
-        temp_read_buffer = Queue()
-        client_connection = proto.steal_connection(temp_read_buffer.put)
+            def new_websocket_client(wsh):
+                netlog("new_websocket_client(%s)", wsh)
+                wsc = WebSocketConnection(conn._socket, conn.local, conn.remote, conn.target, conn.info, wsh)
+                self.make_protocol("tcp", wsc, frominfo)
+            WSRequestHandler(conn._socket, frominfo, new_websocket_client, self._www_dir)
+            return
+        except IOError as e:
+            netlog.error("Error: http failure responding to %s:", frominfo)
+            netlog.error(" %s", e)
+            netlog("", exc_info=True)
+        except Exception as e:
+            netlog.error("Error: http failure responding to %s:", frominfo, exc_info=True)
+        try:
+            conn.close()
+        except Exception as ce:
+            netlog("error closing connection following error: %s", ce)
+
+    def start_tcp_proxy(self, conn, frominfo):
+        proxylog("start_tcp_proxy(%s, %s)", conn, frominfo)
         #connect to web server:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
         host, port = self._tcp_proxy.split(":", 1)
         try:
-            web_server_connection = _socket_connect(sock, (host, int(port)), "web-proxy-for-%s" % proto, "tcp")
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            host, port = self._tcp_proxy.split(":", 1)
+            tcp_server_connection = _socket_connect(sock, (host, int(port)), "web-proxy-for-%s" % frominfo, "tcp")
         except:
             proxylog.warn("failed to connect to proxy: %s:%s", host, port)
-            proto.gibberish("invalid packet header", data)
+            conn.close()
             return
-        proxylog("proxy connected to tcp server at %s:%s : %s", host, port, web_server_connection)
+        proxylog("proxy connected to tcp server at %s:%s : %s", host, port, tcp_server_connection)
+        sock = tcp_server_connection._socket
         sock.settimeout(self._socket_timeout)
 
-        ioe = proto.wait_for_io_threads_exit(0.5+self._socket_timeout)
-        if not ioe:
-            proxylog.warn("proxy failed to stop all existing network threads!")
-            self.disconnect_protocol(proto, "internal threading error")
-            return
-        #now that we own it, we can start it again:
-        client_connection.set_active(True)
-        #and we can use blocking sockets:
-        set_socket_timeout(client_connection, None)
-        #prevent deadlocks on exit:
+        #we can use blocking sockets for the client:
+        conn.settimeout(None)
+        #but not for the server, which could deadlock on exit:
         sock.settimeout(1)
 
-        proxylog("pushing initial buffer to its new destination: %s", repr_ellipsized(data))
-        web_server_connection.write(data)
-        while not temp_read_buffer.empty():
-            buf = temp_read_buffer.get()
-            if buf:
-                proxylog("pushing read buffer to its new destination: %s", repr_ellipsized(buf))
-                web_server_connection.write(buf)
-        p = XpraProxy(client_connection.target, client_connection, web_server_connection, self.tcp_proxy_quit)
+        #now start forwarding:
+        p = XpraProxy(frominfo, conn, tcp_server_connection, self.tcp_proxy_quit)
         self._tcp_proxy_clients.append(p)
-        proxylog.info("client connection from %s forwarded to proxy server on %s:%s", client_connection.target, host, port)
+        proxylog.info("client connection from %s forwarded to proxy server on %s:%s", frominfo, host, port)
         p.start_threads()
+
 
     def tcp_proxy_quit(self, proxy):
         proxylog("tcp_proxy_quit(%s)", proxy)

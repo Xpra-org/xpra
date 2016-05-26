@@ -17,6 +17,7 @@ from xpra.util import AdHocStruct
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
+netlog = Logger("network")
 
 from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
@@ -248,7 +249,8 @@ class ShadowServer(GTKShadowServerBase):
             return GTKServerBase._new_connection(self, listener)
         pipe_handle = args[0]
         conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
-        return self.make_protocol(socktype, conn, frominfo=" on %s" % conn.target)
+        netlog.info("New %s connection received on %s", socktype, conn.target)
+        return self.make_protocol(socktype, conn, frominfo=conn.target)
 
 
     def make_tray_widget(self):

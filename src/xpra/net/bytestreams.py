@@ -151,6 +151,10 @@ class Connection(object):
     def untilConcludes(self, *args):
         return untilConcludes(self.is_active, *args)
 
+    def peek(self, n):
+        #not implemented
+        return None
+
     def _write(self, *args):
         w = self.untilConcludes(*args)
         self.output_bytecount += w or 0
@@ -245,8 +249,13 @@ class SocketConnection(Connection):
         self._socket = socket
         self.local = local
         self.remote = remote
+        self.socket_type = "socket"
         if type(remote)==str:
             self.filename = remote
+
+    def peek(self, n):
+        self._socket.settimeout(None)
+        return self._socket.recv(n, socket.MSG_PEEK)
 
     def read(self, n):
         return self._read(self._socket.recv, n)
@@ -263,13 +272,13 @@ class SocketConnection(Connection):
 
     def __repr__(self):
         if self.remote:
-            return "%s socket: %s <- %s" % (self.info, pretty_socket(self.local), pretty_socket(self.remote))
-        return "%s socket:%s" % (self.info, pretty_socket(self.local))
+            return "%s %s: %s <- %s" % (self.info, self.socket_type, pretty_socket(self.local), pretty_socket(self.remote))
+        return "%s %s:%s" % (self.info, self.socket_type, pretty_socket(self.local))
 
     def get_info(self):
         d = Connection.get_info(self)
         try:
-            d["type"] = "socket"
+            d["type"] = self.socket_type
             s = self._socket
             if s:
                 d["socket"] = {
@@ -286,4 +295,5 @@ def set_socket_timeout(conn, timeout=None):
     #FIXME: this is ugly, but less intrusive than the alternative?
     log("set_socket_timeout(%s, %s)", conn, timeout)
     if isinstance(conn, SocketConnection):
+        log.warn("%s.settimeout(%s)", conn._socket, timeout)
         conn._socket.settimeout(timeout)

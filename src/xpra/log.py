@@ -224,6 +224,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("network"      , "All network code"),
                 ("mmap"         , "mmap transfers"),
                 ("protocol"     , "Packet input and output (formatting, parsing, sending and receiving)"),
+                ("websocket"    , "Websocket layer"),
                 ("crypto"       , "Encryption"),
                 ("auth"         , "Authentication"),
                 ])),

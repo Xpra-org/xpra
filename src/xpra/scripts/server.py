@@ -510,88 +510,6 @@ def get_free_tcp_port():
     s.close()
     return port
 
-def start_websockify(child_reaper, opts, tcp_sockets):
-    from xpra.log import Logger
-    log = Logger("server")
-    # start websockify?
-    log("html=%s", opts.html)
-    if not opts.html:
-        return
-    html = opts.html
-    if type(html)==str:
-        html = html.lower()
-    from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-    if html in FALSE_OPTIONS:
-        #html disabled
-        return
-    log("tcp_proxy=%s", opts.tcp_proxy)
-    if opts.tcp_proxy:
-        raise InitException("cannot use tcp-proxy mode with html, use one or the other")
-        return 1
-    from xpra.platform.paths import get_resources_dir, get_websockify_command
-    www_dir = os.path.abspath(os.path.join(get_resources_dir(), "www"))
-    if not os.path.exists(www_dir):
-        raise InitException("cannot find xpra's html directory (not found in '%s')" % www_dir)
-    log("www_dir=%s", www_dir)
-    import websockify           #@UnresolvedImport
-    log("websockify=%s", websockify)
-    assert websockify
-    html_port = -1
-    html_host = "127.0.0.1"
-    if html not in TRUE_OPTIONS:
-        #we expect either HOST:PORT, or just PORT
-        if html.find(":")>=0:
-            html_host, html = html.split(":", 1)
-        try:
-            html_port = int(html)
-        except Exception as e:
-            raise InitException("invalid html port: %s" % e)
-        #we now have the host and port (port may be -1 to mean auto..)
-    if html_port==-1:
-        #try to find a free port and hope that websockify can then use it..
-        html_port = get_free_tcp_port()
-    elif os.name=="posix" and html_port<1024 and os.geteuid()!=0:
-        log.warn("Warning: the html port specified may require special privileges (%s:%s)", html_host, html_port)
-    if len(tcp_sockets)<1:
-        raise InitException("html web server requires at least one tcp socket, see 'bind-tcp'")
-    #use the first tcp socket for websockify to talk back to us:
-    _, xpra_tcp_port = list(tcp_sockets)[0]
-    kwargs = {}
-    if sys.platform.startswith("win"):
-        #this is a "DOS" command, but we want to hide the shell window
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        kwargs = {"startupinfo" : startupinfo}
-    #add bundler bin directories to path (for OSX):
-    websockify_command = get_websockify_command() + ["--web", www_dir, "%s:%s" % (html_host, html_port), "127.0.0.1:%s" % xpra_tcp_port]
-    log("websockify_command: %s, kwargs=%s, sys.path=%s", websockify_command, kwargs, sys.path)
-    websockify_proc = subprocess.Popen(websockify_command, close_fds=True, **kwargs)
-    websockify_proc._closed = False
-    start_time = time.time()
-    def websockify_ended(proc):
-        elapsed = time.time()-start_time
-        log("websockify_ended(%s) after %i seconds", proc, elapsed)
-        if not websockify_proc._closed:
-            log.warn("Warning: websockify has terminated,")
-            log.warn(" the html web server will not be available.")
-            log.warn(" the command used was:")
-            log.warn(" %s", " ".join(websockify_command))
-        return False
-    child_reaper.add_process(websockify_proc, "websockify", websockify_command, ignore=True, callback=websockify_ended)
-    log.info("websockify started, serving %s on %s:%s", www_dir, html_host, html_port)
-    def cleanup_websockify():
-        log("cleanup_websockify() process.poll()=%s, pid=%s", websockify_proc.poll(), websockify_proc.pid)
-        if websockify_proc.poll() is None and not websockify_proc._closed:
-            log.info("stopping websockify with pid %s", websockify_proc.pid)
-            try:
-                websockify_proc._closed = True
-                websockify_proc.terminate()
-            except:
-                log.warn("error trying to stop websockify", exc_info=True)
-    _cleanups.append(cleanup_websockify)
-    opts.tcp_proxy = "%s:%s" % (html_host, html_port)
-
-
 def close_all_fds(exceptions=[]):
     fd_dirs = ["/dev/fd", "/proc/self/fd"]
     for fd_dir in fd_dirs:
@@ -1303,13 +1221,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #honour start child, html webserver, and setup child reaper
     if not proxying and not upgrading:
-        # start websockify?
-        try:
-            start_websockify(app.child_reaper, opts, bind_tcp)
-            #websockify overrides the tcp proxy, so we must re-set it:
-            app._tcp_proxy = opts.tcp_proxy
-        except Exception as e:
-            error_cb("failed to setup websockify html server: %s" % e)
         if opts.exit_with_children:
             assert opts.start_child, "exit-with-children was specified but start-child is missing!"
         app.start_commands              = opts.start
