@@ -1355,6 +1355,8 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def control_command_focus(self, wid):
+        if self.readonly:
+            return
         assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
         self._focus(None, wid, None)
         return "gave focus to window %s" % wid
@@ -1629,6 +1631,8 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def control_command_key(self, keycode_str, press = True):
+        if self.readonly:
+            return
         try:
             if keycode_str.startswith("0x"):
                 keycode = int(keycode_str, 16)
@@ -2157,6 +2161,8 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def _process_rpc(self, proto, packet):
+        if self.readonly:
+            return
         ss = self._server_sources.get(proto)
         assert ss is not None
         rpc_type = packet[1]
@@ -2273,6 +2279,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             ss.sound_data(*packet[1:])
 
     def _process_clipboard_enabled_status(self, proto, packet):
+        if self.readonly:
+            return
         clipboard_enabled = packet[1]
         ss = self._server_sources.get(proto)
         self.set_clipboard_enabled_status(ss, clipboard_enabled)
@@ -2293,6 +2301,8 @@ class ServerBase(ServerCore, FileTransferHandler):
         clipboardlog("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
 
     def _process_keyboard_sync_enabled_status(self, proto, packet):
+        if self.readonly:
+            return
         self.keyboard_sync = bool(packet[1])
         keylog("toggled keyboard-sync to %s", self.keyboard_sync)
 
@@ -2324,6 +2334,8 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def _process_focus(self, proto, packet):
+        if self.readonly:
+            return
         wid = packet[1]
         focuslog("process_focus: wid=%s", wid)
         if len(packet)>=3:
@@ -2338,12 +2350,16 @@ class ServerBase(ServerCore, FileTransferHandler):
                 ss.user_event()
 
     def _process_layout(self, proto, packet):
+        if self.readonly:
+            return
         layout, variant = packet[1:3]
         ss = self._server_sources.get(proto)
         if ss and ss.set_layout(layout, variant):
             self.set_keymap(ss, force=True)
 
     def _process_keymap(self, proto, packet):
+        if self.readonly:
+            return
         props = typedict(packet[1])
         ss = self._server_sources.get(proto)
         if ss is None:
@@ -2357,6 +2373,8 @@ class ServerBase(ServerCore, FileTransferHandler):
         ss.make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet):
+        if self.readonly:
+            return
         wid, keyname, pressed, modifiers, keyval, _, client_keycode = packet[1:8]
         ss = self._server_sources.get(proto)
         if ss is None:
@@ -2449,6 +2467,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             self.key_repeat_timer = self.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
+        if self.readonly:
+            return
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         ss = self._server_sources.get(proto)
         if ss is None:
@@ -2488,6 +2508,8 @@ class ServerBase(ServerCore, FileTransferHandler):
         pass
 
     def _process_pointer_position(self, proto, packet):
+        if self.readonly:
+            return
         wid, pointer, modifiers = packet[1:4]
         ss = self._server_sources.get(proto)
         if ss is not None:
@@ -2612,6 +2634,8 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def _process_webcam_start(self, proto, packet):
+        if self.readonly:
+            return
         assert self.webcam_forwarding
         ss = self._server_sources.get(proto)
         if not ss:
@@ -2648,6 +2672,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             ss.send_webcam_stop(device, str(e))
 
     def _process_webcam_stop(self, proto, packet):
+        if self.readonly:
+            return
         device, message = (packet+[""])[1:3]
         webcamlog("stopping webcam device %s", ": ".join([str(x) for x in (device, message)]))
         if not self.webcam_forwarding_device:
@@ -2663,6 +2689,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             vfd.clean()
 
     def _process_webcam_frame(self, proto, packet):
+        if self.readonly:
+            return
         device, frame_no, encoding, w, h, data = packet[1:7]
         assert encoding and w and h and data
         ss = self._server_sources.get(proto)
@@ -2715,6 +2743,8 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def process_clipboard_packet(self, ss, packet):
+        if self.readonly:
+            return
         if not ss:
             #protocol has been dropped!
             return

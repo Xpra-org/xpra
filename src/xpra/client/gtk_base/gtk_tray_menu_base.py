@@ -255,12 +255,11 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_cursorsmenuitem())
         if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
-        if self.client.windows_enabled and not self.client.readonly:
+        if self.client.windows_enabled:
             menu.append(self.make_keyboardsyncmenuitem())
-        if not self.client.readonly and self.client.keyboard_helper:
+        if self.client.keyboard_helper:
             menu.append(self.make_layoutsmenuitem())
-        if not self.client.readonly:
-            menu.append(self.make_clipboardmenuitem())
+        menu.append(self.make_clipboardmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
         if self.client.can_scale:
@@ -378,9 +377,8 @@ class GTKTrayMenuBase(object):
         def set_readonly_menuitem(*args):
             log("set_readonly_menuitem%s enabled=%s", args, self.client.readonly)
             self.bell_menuitem.set_active(self.client.readonly)
-            can_toggle_readonly = True      #TODO: add server readonly flag here
-            set_sensitive(self.readonly_menuitem, can_toggle_readonly)
-            if can_toggle_readonly:
+            set_sensitive(self.readonly_menuitem, not self.client.server_readonly)
+            if not self.client.server_readonly:
                 self.bell_menuitem.set_tooltip_text("Disable all mouse and keyboard input")
             else:
                 self.bell_menuitem.set_tooltip_text("Cannot disable readonly mode: the server has locked the session to read only")

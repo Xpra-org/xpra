@@ -200,6 +200,7 @@ class ServerCore(object):
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
+        self.readonly = opts.readonly
 
         self.init_html_proxy(opts)
         self.init_auth(opts)
@@ -976,6 +977,9 @@ class ServerCore(object):
                         })
         if source.wants_features:
             capabilities["info-request"] = True
+            capabilities["readonly-server"] = True
+            if self.readonly:
+                capabilities["readonly"] = True
         if source.wants_versions:
             capabilities["uuid"] = get_user_uuid()
             mid = get_machine_id()

@@ -267,6 +267,8 @@ class X11ServerBase(GTKServerBase):
 
 
     def set_keymap(self, server_source, force=False):
+        if self.readonly:
+            return
         try:
             #prevent _keys_changed() from firing:
             #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
@@ -534,12 +536,16 @@ class X11ServerBase(GTKServerBase):
         X11Keyboard.xtest_fake_motion(self.screen_number, x, y)
 
     def _process_mouse_common(self, proto, wid, pointer):
+        if self.readonly:
+            return
         pos = self.root_window.get_pointer()[:2]
         if pos!=pointer:
             with xswallow:
                 self._move_pointer(wid, pointer)
 
     def _update_modifiers(self, proto, wid, modifiers):
+        if self.readonly:
+            return
         ss = self._server_sources.get(proto)
         if ss:
             ss.make_keymask_match(modifiers)
@@ -547,6 +553,8 @@ class X11ServerBase(GTKServerBase):
                 ss.user_event()
 
     def _process_button_action(self, proto, packet):
+        if self.readonly:
+            return
         ss = self._server_sources.get(proto)
         if ss is None:
             return

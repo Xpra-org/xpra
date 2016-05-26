@@ -1116,6 +1116,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _handle_menu_rpc(self, ss, rpcid, action_type, wid, action, state, pdata, *extra):
+        if self.readonly:
+            return
         menulog("_handle_menu_rpc%s", (ss, rpcid, action_type, wid, action, state, pdata, extra))
         def native(args):
             return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]

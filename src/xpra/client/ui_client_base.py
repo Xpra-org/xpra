@@ -1765,6 +1765,10 @@ class UIXpraClient(XpraClientBase):
             log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
+        self.server_readonly = c.boolget("readonly")
+        if self.server_readonly and not self.readonly:
+            log.info("server is read only")
+            self.readonly = True
         server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
         if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
             log.warn("Warning: server does not support auto-refresh!")
@@ -2918,8 +2922,6 @@ class UIXpraClient(XpraClientBase):
             return
         #trim packet type:
         packet = packet[1:]
-        log.info("cursor: %s", packet[:6])
-        #log.info("cursor: %s", packet)
         if len(packet)==1:
             new_cursor = packet[0]
         else:
