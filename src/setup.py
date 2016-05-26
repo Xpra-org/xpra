@@ -747,20 +747,20 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
     dirs = (install_dir or sys.prefix).split(os.path.sep)
     if install_dir and stripbuildroot:
-        if "BUILDROOT" in dirs:
-            if "debian" in dirs and "tmp" in dirs:
-                #ugly fix for stripping the debian tmp dir:
-                #ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
-                while "tmp" in dirs:
-                    dirs = dirs[dirs.index("tmp")+1:]
-            else:
-                #strip rpm style build root:
-                #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
-                dirs = dirs[dirs.index("BUILDROOT")+2:]
+        if "debian" in dirs and "tmp" in dirs:
+            #ugly fix for stripping the debian tmp dir:
+            #ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
+            while "tmp" in dirs:
+                dirs = dirs[dirs.index("tmp")+1:]
+        elif "BUILDROOT" in dirs:
+            #strip rpm style build root:
+            #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
+            dirs = dirs[dirs.index("BUILDROOT")+2:]
         elif "usr" in dirs:
             #ie: ["some", "path", "to", "usr"] -> ["usr"]
             #assume "/usr" or "/usr/local" is the build root
-            dirs = dirs[dirs.index("usr"):]
+            while "usr" in dirs:
+                dirs = dirs[dirs.index("usr"):]
     #now deal with the fact that "/etc" is used for the "/usr" prefix
     #but "/usr/local/etc" is used for the "/usr/local" prefix..
     if dirs[-1]=="usr":
