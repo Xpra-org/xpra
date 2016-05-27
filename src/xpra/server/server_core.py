@@ -541,26 +541,27 @@ class ServerCore(object):
                     if line1.find("HTTP/")>0:
                         if line1.startswith("GET ") or line1.startswith("POST "):
                             parts = line1.split(" ")
-                            log.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
+                            netlog.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
                             tname = "%s-request" % parts[0]
                         else:
-                            log.info("New http connection received from %s", frominfo)
+                            netlog.info("New http connection received from %s", frominfo)
                             tname = "websockify-proxy"
                         def run_websockify():
                             self.start_websockify(conn, frominfo)
                         make_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True).start()
                         return True
                 elif self._tcp_proxy:
-                    log.info("New tcp proxy connection received from %s", frominfo)
+                    netlog.info("New tcp proxy connection received from %s", frominfo)
                     def run_proxy():
                         self.start_tcp_proxy(conn, frominfo)
                     make_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True).start()
                     return True
         else:
             v = conn.peek(128)
-        log("%s.peek(128)=%s", conn, v)
+        netlog("%s.peek(128)=%s", conn, v)
         if v and v[0] not in ("P", ord("P")):
             #not an xpra client
+            netlog("new %s connection is not an xpra client, disconnecting it", socktype)
             msg = "disconnect: invalid packet format, not an xpra client?\n"
             try:
                 from xpra.net.bytestreams import set_socket_timeout
@@ -568,7 +569,7 @@ class ServerCore(object):
                 conn.write(msg)
                 conn.close()
             except Exception as e:
-                log("error sending '%s': %s", nonl(msg), e)
+                netlog("error sending '%s': %s", nonl(msg), e)
             return True
         netlog.info(info_msg)
         return self.make_protocol(socktype, conn, frominfo)
