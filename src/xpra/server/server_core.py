@@ -556,8 +556,20 @@ class ServerCore(object):
                         self.start_tcp_proxy(conn, frominfo)
                     make_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True).start()
                     return True
-        #FIXME: if we have peek data and it isn't an xpra client,
-        #we can bail out early without making a protocol
+        else:
+            v = conn.peek(128)
+        log("%s.peek(128)=%s", conn, v)
+        if v and v[0] not in ("P", ord("P")):
+            #not an xpra client
+            msg = "disconnect: invalid packet format, not an xpra client?\n"
+            try:
+                from xpra.net.bytestreams import set_socket_timeout
+                set_socket_timeout(conn, 1)
+                conn.write(msg)
+                conn.close()
+            except Exception as e:
+                log("error sending '%s': %s", nonl(msg), e)
+            return True
         netlog.info(info_msg)
         return self.make_protocol(socktype, conn, frominfo)
 
