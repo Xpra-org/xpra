@@ -94,6 +94,7 @@ OGG = "ogg"
 MKA = "mka"
 MPEG4 = "mpeg4"
 #RTP = "rtp"
+RAW = "raw"
 
 FLAC_GDP    = FLAC+"+"+GDP
 OPUS_GDP    = OPUS+"+"+GDP
@@ -104,6 +105,7 @@ VORBIS_OGG  = VORBIS+"+"+OGG
 VORBIS_MKA  = VORBIS+"+"+MKA
 AAC_GDP     = AAC+"+"+GDP
 AAC_MPEG4   = AAC+"+"+MPEG4
+RAW_GDP   = RAW+"+"+GDP
 
 
 #format: encoder, container-formatter, decoder, container-parser
@@ -137,6 +139,7 @@ CODEC_OPTIONS = [
         (AAC_GDP    , "avenc_aac",      "gdppay",       "avdec_aac",    "gdpdepay"),
         (AAC_MPEG4  , "faac",           "mp4mux",       "faad",         "qtdemux"),
         (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",    "qtdemux"),
+        (RAW_GDP    , None,             "gdppay",       None,           "gdpdepay"),
             ]
 
 MUX_OPTIONS = [
@@ -222,7 +225,7 @@ ENCODER_LATENCY = {
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, AAC_GDP, AAC_MPEG4, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, AAC_GDP, AAC_MPEG4, RAW_GDP, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None

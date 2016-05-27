@@ -85,8 +85,6 @@ class SoundSource(SoundPipeline):
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
-        encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
-        fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
         pipeline_els = [source_str]
         if SOURCE_QUEUE_TIME>0:
             queue_el = ["queue",
@@ -100,9 +98,13 @@ class SoundSource(SoundPipeline):
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
         pipeline_els.append("volume name=volume volume=%s" % volume)
-        pipeline_els += [encoder_str,
-                        fmt_str,
-                        APPSINK]
+        if encoder:
+            encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
+            pipeline_els.append(encoder_str)
+        if fmt:
+            fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
+            pipeline_els.append(fmt_str)
+        pipeline_els.append(APPSINK)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
         self.volume = self.pipeline.get_by_name("volume")

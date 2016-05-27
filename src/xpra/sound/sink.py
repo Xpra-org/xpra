@@ -98,7 +98,6 @@ class SoundSink(SoundPipeline):
         self.last_max_update = time.time()
         self.last_min_update = time.time()
         self.level_lock = Lock()
-        decoder_str = plugin_str(decoder, codec_options)
         pipeline_els = []
         appsrc_el = ["appsrc",
                      "do-timestamp=1",
@@ -109,8 +108,11 @@ class SoundSink(SoundPipeline):
                      "stream-type=%s" % STREAM_TYPE,
                      "format=%s" % BUFFER_FORMAT]
         pipeline_els.append(" ".join(appsrc_el))
-        pipeline_els.append(parser)
-        pipeline_els.append(decoder_str)
+        if parser:
+            pipeline_els.append(parser)
+        if decoder:
+            decoder_str = plugin_str(decoder, codec_options)
+            pipeline_els.append(decoder_str)
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
         pipeline_els.append("volume name=volume volume=0")
