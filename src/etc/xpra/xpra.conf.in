@@ -518,3 +518,15 @@ xvfb = %(xvfb_command)s
 
 # Does the xvfb command support the "-displayfd" argument?
 displayfd = %(has_displayfd)s
+
+# Nested display command:
+# xnest = Xnest \
+#         -geometry 1600x1200+100+100 \
+#         -dpi 96 -nolisten tcp -noreset \
+#         -auth $XAUTHORITY
+# xnest = Xephyr \
+#         +extension Composite \
+#         -screen 1600x1200x24+32 \
+#         -dpi 96 -nolisten tcp -noreset \
+#         -auth $XAUTHORITY
+xnest = %(xnest_command)s

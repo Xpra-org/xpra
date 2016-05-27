@@ -674,6 +674,7 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         except Exception as e:
             #trying to continue anyway!
             sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
+    use_display_fd = display_name[0]=='S'
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
@@ -685,7 +686,7 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last (found at index %i)" % logfile_argindex
     tmp_xorg_log_file = None
     if logfile_argindex>0:
-        if display_name[0]=='S':
+        if use_display_fd:
             #keep track of it so we can rename it later:
             tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
         #make sure the Xorg log directory exists:
@@ -714,7 +715,9 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
     xvfb_executable = xvfb_cmd[0]
-    if display_name[0]=='S':
+    sys.stdout.write("running %s\n" % xvfb_cmd)
+    sys.stdout.flush()
+    if use_display_fd:
         # 'S' means that we allocate the display automatically
         r_pipe, w_pipe = os.pipe()
         xvfb_cmd += ["-displayfd", str(w_pipe)]
@@ -723,7 +726,7 @@ def start_Xvfb(xvfb_str, display_name, cwd):
             setsid()
             close_fds([0, 1, 2, r_pipe, w_pipe])
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                stdin=subprocess.PIPE, preexec_fn=preexec)
+                                stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
         # Read the display number from the pipe we gave to Xvfb
         # waiting up to 10 seconds for it to show up
         limit = time.time()+10
@@ -767,7 +770,10 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         xvfb_cmd.append(display_name)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=setsid)
+    xauth_add(display_name)
+    return xvfb, display_name
 
+def xauth_add(display_name):
     from xpra.os_util import get_hex_uuid
     xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
     try:
@@ -777,9 +783,8 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     except OSError as e:
         #trying to continue anyway!
         sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
-    return xvfb, display_name
 
-def check_xvfb_process(xvfb=None):
+def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb is None:
         #we don't have a process to check
         return True
@@ -789,23 +794,35 @@ def check_xvfb_process(xvfb=None):
     from xpra.log import Logger
     log = Logger("server")
     log.error("")
-    log.error("Xvfb command has terminated! xpra cannot continue")
+    log.error("%s command has terminated! xpra cannot continue", cmd)
     log.error(" if the display is already running, try a different one,")
     log.error(" or use the --use-display flag")
     log.error("")
     return False
 
-def verify_display_ready(xvfb, display_name, shadowing):
-    from xpra.log import Logger
-    log = Logger("server")
+def verify_display_ready(xvfb, display_name, shadowing_check=True):
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
         wait_for_x_server(display_name, 3) # 3s timeout
     except Exception as e:
+        sys.stderr.write("display %s failed:\n" % display_name)
         sys.stderr.write("%s\n" % e)
-        return  None
+        return False
+    if shadowing_check and not check_xvfb_process(xvfb):
+        #if we're here, there is an X11 server, but it isn't the one we started!
+        from xpra.log import Logger
+        log = Logger("server")
+        log.error("There is an X11 server already running on display %s:" % display_name)
+        log.error("You may want to use:")
+        log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
+        log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
+        log.error("")
+        return False
+    return True
+
+def verify_gdk_display(display_name):
     # Now we can safely load gtk and connect:
     no_gtk()
     import gtk.gdk          #@Reimport
@@ -821,14 +838,6 @@ def verify_display_ready(xvfb, display_name, shadowing):
     if default_display is not None:
         default_display.close()
     manager.set_default_display(display)
-    if not shadowing and not check_xvfb_process(xvfb):
-        #if we're here, there is an X11 server, but it isn't the one we started!
-        log.error("There is an X11 server already running on display %s:" % display_name)
-        log.error("You may want to use:")
-        log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
-        log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
-        log.error("")
-        return  None
     return display
 
 def guess_xpra_display(socket_dir, socket_dirs):
@@ -907,8 +916,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     bind_tcp = parse_bind_tcp(opts.bind_tcp)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
-    assert mode in ("start", "upgrade", "shadow", "proxy")
+    assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
     starting  = mode == "start"
+    starting_desktop = mode == "start-desktop"
     upgrading = mode == "upgrade"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
@@ -998,7 +1008,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     log = Logger("server")
 
     #warn early about this:
-    if starting and desktop_display:
+    if (starting or starting_desktop) and desktop_display:
         de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
         if de:
             warn = []
@@ -1043,6 +1053,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # Do this after writing out the shell script:
     if display_name[0] != 'S':
         os.environ["DISPLAY"] = display_name
+    else:
+        try:
+            del os.environ["DISPLAY"]
+        except:
+            pass
     sanitize_env()
     os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
     configure_imsettings_env(opts.input_method)
@@ -1062,6 +1077,20 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
 
+    child_display = display_name
+    nested = None
+    if starting_desktop:
+        nested_cmd = opts.xnest
+        try:
+            #will allocate a new display automatically:
+            child_display = 'SN' + str(os.getpid())
+            nested, child_display = start_Xvfb(nested_cmd, child_display, cwd)
+        except OSError as e:
+            log.error("Error starting '%s':", nested_cmd)
+            log.error(" %s", e)
+            log("start_Xvfb error", exc_info=True)
+            return  1
+
     if opts.daemon:
         log_filename1 = select_log_file(log_dir, opts.log_file, display_name)
         if log_filename0 != log_filename1:
@@ -1074,10 +1103,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
         return  1
+    if nested and not check_xvfb_process(nested):
+        #nested display problem: exit now
+        return  1
 
     display = None
-    if not sys.platform.startswith("win") and not sys.platform.startswith("darwin") and not proxying:
-        display = verify_display_ready(xvfb, display_name, shadowing)
+    if start_vfb:
+        if not verify_display_ready(xvfb, display_name, shadowing):
+            return 1
+        if nested and not verify_display_ready(nested, child_display, False):
+            return 1
+        display = verify_gdk_display(display_name)
         if not display:
             return 1
     elif not proxying:
@@ -1106,7 +1142,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app = ProxyServer()
         info = "proxy"
     else:
-        assert starting or upgrading
+        assert starting or starting_desktop or upgrading
         from xpra.x11.gtk2 import gdk_display_source
         assert gdk_display_source
         #(now we can access the X11 server)
@@ -1117,7 +1153,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             dbus_pid = get_dbus_pid()
             dbus_env = get_dbus_env()
         else:
-            assert starting
+            assert starting or starting_desktop
             if xvfb_pid is not None:
                 #save the new pid (we should have one):
                 save_xvfb_pid(xvfb_pid)
@@ -1195,12 +1231,19 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     #the server should be able to manage the display
     #from now on, if we exit without upgrading we will also kill the Xvfb
     def kill_xvfb():
+        if nested and nested.poll() is None:
+            try:
+                log.info("killing nested X11 server with pid %s" % nested.pid)
+                os.kill(nested.pid, signal.SIGTERM)
+            except:
+                pass
         # Close our display(s) first, so the server dying won't kill us.
         log.info("killing xvfb with pid %s" % xvfb_pid)
         import gtk  #@Reimport
         for display in gtk.gdk.display_manager_get().list_displays():
             display.close()
         os.kill(xvfb_pid, signal.SIGTERM)
+
     if xvfb_pid is not None and not opts.use_display and not shadowing:
         _cleanups.append(kill_xvfb)
 
@@ -1209,6 +1252,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app.exec_cwd = cwd
         app.init(opts)
         app.init_components(opts)
+        if nested:
+            app.add_process(nested, "nested display", nested_cmd, True)
+            app.child_display = child_display
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)

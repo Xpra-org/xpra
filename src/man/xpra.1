@@ -14,7 +14,8 @@ xpra \- viewer for remote, persistent X applications
 .SH SYNOPSIS
 .PD 0
 .HP \w'xpra\ 'u
-\fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP
+\fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP |
+\fBxpra\fP \fBstart-desktop\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart-desktop\fP \fIssh:HOST:DISPLAY\fP
 [\fB\-\-start\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
 [\fB\-\-start\-child\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
 [\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP]
@@ -245,6 +246,9 @@ Start an xpra server using display number \fI:7\fP.
 \fBxpra start\fP \fIssh:bigbox:7 \-\-start=xterm\fP
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
+\fBxpra start-desktop \-\-start=xfce4-session\fP
+Start an xfce session in a nested X11 server on an automatically
+assigned display number.
 .TP
 \fBDISPLAY=\fP\fI:7 firefox\fP
 Start \fIfirefox\fP running inside the xpra server.  Run this on the host
@@ -349,6 +353,9 @@ number.)
 This command starts a new xpra server, including any necessary setup.
 (When starting a remote server with the \fBssh:HOST:DISPLAY\fP syntax,
 the new session will also be attached.)
+.SS xpra start-desktop
+Starts a nested X11 server, all child commands will be started in the
+nested X11 server.
 .SS xpra attach
 This command attaches to a running xpra server, and forwards any
 applications using that server to appear on your current screen.

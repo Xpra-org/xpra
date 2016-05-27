@@ -227,6 +227,7 @@ def do_parse_cmdline(cmdline, defaults):
     server_modes = []
     if supports_server:
         server_modes.append("start")
+        server_modes.append("start-desktop")
         server_modes.append("upgrade")
         #display: default to required
         dstr = " DISPLAY"
@@ -234,6 +235,7 @@ def do_parse_cmdline(cmdline, defaults):
             #display argument is optional (we can use "-displayfd")
             dstr = " [DISPLAY]"
         command_options = ["\t%prog start"+dstr+"\n",
+                           "\t%prog start-desktop"+dstr+"\n",
                            "\t%prog stop [DISPLAY]\n",
                            "\t%prog exit [DISPLAY]\n",
                            "\t%prog list\n",
@@ -386,9 +388,15 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
                           help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
+        group.add_option("--xnest", action="store",
+                          dest="xnest",
+                          default=defaults.xnest,
+                          metavar="CMD",
+                          help="How to run the nested X server. Default: '%default'.")
     else:
         ignore({"use-display"   : False,
                 "xvfb"          : '',
+                "xnest"         : '',
                 "fake-xinerama" : defaults.fake_xinerama})
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",
@@ -927,7 +935,7 @@ def configure_logging(options, mode):
     to = sys.stderr
     if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl"):
         to = sys.stdout
-    if mode in ("start", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig"):
+    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
@@ -999,16 +1007,16 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
-        if mode not in ("attach", "start", "upgrade", "proxy", "shadow"):
+        if mode not in ("attach", "start", "start-desktop", "upgrade", "proxy", "shadow"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     try:
         ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
-        if mode in ("start", "shadow") and ssh_display:
+        if mode in ("start", "start-desktop", "shadow") and ssh_display:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
-        elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
+        elif (mode in ("start", "start-desktop", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
             current_display = nox()
             from xpra.scripts.server import run_server
             return run_server(error_cb, options, mode, script_file, args, current_display)
@@ -1019,7 +1027,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_stopexit(mode, error_cb, options, args)
         elif mode == "list" and (supports_server or supports_shadow):
             return run_list(error_cb, options, args)
-        elif mode in ("_proxy", "_proxy_start", "_shadow_start") and (supports_server or supports_shadow):
+        elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
         elif mode in ("_sound_record", "_sound_play", "_sound_query"):
@@ -1643,9 +1651,10 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     #and use _proxy_start subcommand:
     if mode=="shadow":
         params["proxy_command"] = ["_shadow_start"]
-    else:
-        assert mode=="start"
+    elif mode=="start":
         params["proxy_command"] = ["_proxy_start"]
+    elif mode=="start-desktop":
+        params["proxy_command"] = ["_proxy_start_desktop"]
     app = make_client(error_cb, opts)
     app.init(opts)
     app.init_ui(opts)
@@ -1726,12 +1735,15 @@ def run_glcheck(opts):
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     from xpra.scripts.fdproxy import XpraProxy
     no_gtk()
-    if mode in ("_proxy_start", "_shadow_start"):
+    if mode in ("_proxy_start", "_proxy_start_desktop", "_shadow_start"):
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         #we must use a subprocess to avoid messing things up - yuk
         cmd = [script_file]
-        if mode=="_proxy_start":
-            cmd.append("start")
+        if mode in ("_proxy_start", "_proxy_start_desktop"):
+            if mode=="start":
+                cmd.append("start")
+            else:
+                cmd.append("start-desktop")
             if len(args)==1:
                 display_name = args[0]
             elif len(args)==0:
@@ -1741,7 +1753,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 display_name = 'S' + str(os.getpid())
                 existing_sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
             else:
-                raise InitException("_proxy_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args))
+                raise InitException("%s: expected 0 or 1 arguments but got %s: %s" % (mode, len(args), args))
         else:
             assert mode=="_shadow_start"
             assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)

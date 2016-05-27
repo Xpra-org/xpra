@@ -698,8 +698,28 @@ class ApplicationWindow:
         self.window = None
         gtk.main_quit()
 
+    def update_options_from_URL(self, url):
+        from xpra.scripts.main import parse_URL
+        address, props = parse_URL(url)
+        pa = address.split(":")
+        if pa[0] in ("tcp", "ssh") and len(pa)>=2:
+            props["mode"] = pa
+            host = pa[1]
+            ph = host.split("@", 1)
+            if len(ph)==2:
+                username, host = ph
+                props["username"] = username
+            props["host"] = host
+            if len(pa)>=3:
+                props["port"] = pa[2]
+        self._apply_props(props)
+
     def update_options_from_file(self, filename):
+        log("update_options_from_file(%s)", filename)
         props = read_config(filename)
+        self._apply_props(props)
+
+    def _apply_props(self, props):
         #we rely on "ssh_port" being defined on the config object
         #so try to load it from file, and define it if not present:
         options = validate_config(props, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
@@ -707,7 +727,7 @@ class ApplicationWindow:
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
         self.config_keys = self.config_keys.union(set(props.keys()))
-        log("update_options_from_file(%s) populated config with keys '%s', ssh=%s", filename, options.keys(), self.config.ssh)
+        log("_apply_props(%s) populated config with keys '%s', ssh=%s", props, options.keys(), self.config.ssh)
 
     def choose_session_file(self, title, action, action_button, callback):
         file_filter = gtk.FileFilter()
@@ -816,9 +836,9 @@ def main():
                 #maybe we should always run this code from the main loop instead
                 if sys.platform.startswith("darwin"):
                     #wait a little bit for the "openFile" signal
-                    app.__osx_open_file = False
+                    app.__osx_open_signal = False
                     def do_open_file(filename):
-                        app.__osx_open_file = True
+                        app.__osx_open_signal = True
                         app.update_options_from_file(filename)
                         #the compressors and packet encoders cannot be changed from the UI
                         #so apply them now:
@@ -829,11 +849,24 @@ def main():
                     def open_file(_, filename):
                         log("open_file(%s)", filename)
                         glib.idle_add(do_open_file, filename)
+                    def do_open_URL(url):
+                        app.__osx_open_signal = True
+                        app.update_options_from_URL(url)
+                        #the compressors and packet encoders cannot be changed from the UI
+                        #so apply them now:
+                        configure_network(app.config)
+                        app.update_gui_from_config()
+                        if app.config.autoconnect:
+                            glib.idle_add(app.do_connect)
+                    def open_URL(_, url):
+                        log("open_URL(%s)", url)
+                        glib.idle_add(do_open_URL, url)                        
                     from xpra.platform.darwin.gui import get_OSXApplication
+                    get_OSXApplication().connect("NSApplicationOpenURL", open_URL)
                     get_OSXApplication().connect("NSApplicationOpenFile", open_file)
                     def may_show():
-                        log("may_show() osx open file=%s", app.__osx_open_file)
-                        if not app.__osx_open_file:
+                        log("may_show() osx open file=%s", app.__osx_open_signal)
+                        if not app.__osx_open_signal:
                             app.show()
                     glib.timeout_add(500, may_show)
                 else:

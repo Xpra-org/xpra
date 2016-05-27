@@ -132,6 +132,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.lpadmin = ""
         self.lpinfo = ""
         #starting child commands:
+        self.child_display = None
         self.start_commands = []
         self.start_child_commands = []
         self.start_after_connect = []
@@ -768,6 +769,8 @@ class ServerBase(ServerCore, FileTransferHandler):
         #subclasses may add more items (ie: fakexinerama)
         env = os.environ.copy()
         env.update(self.env)
+        if self.child_display:
+            env["DISPLAY"] = self.child_display
         return env
 
     def get_full_child_command(self, cmd, use_wrapper=True):
