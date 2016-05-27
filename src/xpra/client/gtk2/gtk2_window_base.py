@@ -82,9 +82,16 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def do_init_window(self, window_type=gtk.WINDOW_TOPLEVEL):
         gtk.Window.__init__(self, window_type)
+        self.recheck_focus_timer = 0
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         self.set_data("_kde_no_window_grab", 1)
+
+    def destroy(self):
+        if self.recheck_focus_timer>0:
+            self.source_remove(self.recheck_focus_timer)
+            self.recheck_focus_timer = -1
+        GTKClientWindowBase.destroy(self)
 
 
     def setup_window(self, *args):
@@ -119,6 +126,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         self.connect("focus-out-event", focus_out)
 
     def recheck_focus(self):
+        self.recheck_focus_timer = 0
         #we receive pairs of FocusOut + FocusIn following a keyboard grab,
         #so we recheck the focus status via this timer to skip unnecessary churn
         focused = self._client._focused
@@ -137,17 +145,20 @@ class GTK2WindowBase(GTKClientWindowBase):
         else:
             self._client.update_focus(self._id, True)
 
+    def schedule_recheck_focus(self):
+        if self.recheck_focus_timer==0:
+            self.recheck_focus_timer = self.idle_add(self.recheck_focus)
+        return True
+
     def do_xpra_focus_out_event(self, event):
         grablog("do_xpra_focus_out_event(%s)", event)
         self._focus_latest = False
-        self.idle_add(self.recheck_focus)
-        return True
+        return self.schedule_recheck_focus()
 
     def do_xpra_focus_in_event(self, event):
         grablog("do_xpra_focus_in_event(%s)", event)
         self._focus_latest = True
-        self.idle_add(self.recheck_focus)
-        return True
+        return self.schedule_recheck_focus()
 
 
     def enable_alpha(self):
