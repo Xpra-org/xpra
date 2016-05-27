@@ -2929,7 +2929,6 @@ class UIXpraClient(XpraClientBase):
                 raise Exception("invalid cursor packet: %s items" % len(packet))
             #newer versions include the cursor encoding as first argument,
             #we know this is it because it will be a string rather than an int:
-            log.info("cursor packet[0]: %s", type(packet[0]))
             if type(packet[0]) in (str, bytes):
                 #we have the encoding in the packet already
                 new_cursor = packet
