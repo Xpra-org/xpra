@@ -12,8 +12,9 @@ from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_stream_compressor, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
                                 MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 log = Logger("sound")
@@ -70,7 +71,7 @@ class SoundSource(SoundPipeline):
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
         codec = matching[0]
         encoder, fmt = get_encoder_formatter(codec)
-        self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
+        SoundPipeline.__init__(self, codec)
         self.queue = None
         self.caps = None
         self.volume = None
@@ -81,7 +82,8 @@ class SoundSource(SoundPipeline):
         self.buffer_latency = False
         self.jitter_queue = None
         self.file = None
-        SoundPipeline.__init__(self, codec)
+        self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
+        self.stream_compressor = get_stream_compressor(codec)
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
@@ -284,6 +286,10 @@ class SoundSource(SoundPipeline):
         return self.emit_buffer(buf.data, metadata)
 
     def emit_buffer(self, data, metadata={}):
+        if self.stream_compressor and data:
+            data = compressed_wrapper("sound", data, level=9, zlib=False, lz4=(self.stream_compressor=="lz4"), lzo=(self.stream_compressor=="lzo"), can_inline=True)
+            #log("compressed using %s from %i bytes down to %i bytes", self.stream_compressor, len(odata), len(data))
+            metadata["compress"] = self.stream_compressor
         f = self.file
         if f:
             for x in self.pending_metadata:

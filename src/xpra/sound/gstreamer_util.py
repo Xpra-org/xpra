@@ -96,6 +96,10 @@ MPEG4 = "mpeg4"
 #RTP = "rtp"
 RAW = "raw"
 
+#stream compression
+LZ4 = "lz4"
+LZO = "lzo"
+
 FLAC_GDP    = FLAC+"+"+GDP
 OPUS_GDP    = OPUS+"+"+GDP
 SPEEX_GDP   = SPEEX+"+"+GDP
@@ -105,41 +109,49 @@ VORBIS_OGG  = VORBIS+"+"+OGG
 VORBIS_MKA  = VORBIS+"+"+MKA
 AAC_GDP     = AAC+"+"+GDP
 AAC_MPEG4   = AAC+"+"+MPEG4
-RAW_GDP   = RAW+"+"+GDP
+RAW_GDP     = RAW+"+"+GDP
+WAV_LZ4     = WAV+"+"+LZ4
+WAV_LZO     = WAV+"+"+LZO
+RAW_GDP_LZ4 = RAW+"+"+GDP+"+"+LZ4
+RAW_GDP_LZO = RAW+"+"+GDP+"+"+LZO
 
 
 #format: encoder, container-formatter, decoder, container-parser
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-        (VORBIS     , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay"),
-        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux"),
+        (VORBIS     , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay",                 None),
+        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux",            None),
         #fails silently - no idea why:
         #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",    "oggdemux"),
         #does not work - no idea why:
         #(FLAC       , "flacenc",        "oggmux",       "flacparse ! flacdec",      "oggdemux"),
         #this only works in gstreamer 0.10 and is filtered out during initialization:
-        (FLAC       , "flacenc",        "oggmux",       "flacdec",      "oggdemux"),
-        (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay"),
-        (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None),
-        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None),
-        (WAV        , "wavenc",         None,           "wavparse",     None),
-        (OPUS       , "opusenc",        "oggmux",       "opusdec",      "oggdemux"),
-        (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay"),
+        (FLAC       , "flacenc",        "oggmux",       "flacdec",      "oggdemux",                 None),
+        (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay",     None),
+        (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None,           None),
+        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None,           None),
+        (WAV        , "wavenc",         None,           "wavparse",     None,                       None),
+        (WAV_LZ4    , "wavenc",         None,           "wavparse",     None,                       "lz4"),
+        (WAV_LZO    , "wavenc",         None,           "wavparse",     None,                       "lzo"),
+        (OPUS       , "opusenc",        "oggmux",       "opusdec",      "oggdemux",                 None),
+        (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay",                 None),
         #for rtp, we would need to send the caps:
         #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusdec",      "rtpopusdepay"),
         #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusparse ! opusdec",      "rtpopusdepay"),
         #this causes "could not link opusenc0 to webmmux0"
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusdec",      "matroskademux"),
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusparse ! opusdec",      "matroskademux"),
-        (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux"),
-        (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay"),
-        (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None),
-        (AAC_GDP    , "faac",           "gdppay",       "faad",         "gdpdepay"),
-        (AAC_GDP    , "avenc_aac",      "gdppay",       "avdec_aac",    "gdpdepay"),
-        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",         "qtdemux"),
-        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",    "qtdemux"),
-        (RAW_GDP    , None,             "gdppay",       None,           "gdpdepay"),
+        (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux",                 None),
+        (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay",                 None),
+        (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None,        None),
+        (AAC_GDP    , "faac",           "gdppay",       "faad",         "gdpdepay",                 None),
+        (AAC_GDP    , "avenc_aac",      "gdppay",       "avdec_aac",    "gdpdepay",                 None),
+        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",         "qtdemux",                  None),
+        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",    "qtdemux",                  None),
+        (RAW_GDP    , None,             "gdppay",       None,           "gdpdepay",                 None),
+        (RAW_GDP_LZ4, None,             "gdppay",       None,           "gdpdepay",                 "lz4"),
+        (RAW_GDP_LZO, None,             "gdppay",       None,           "gdpdepay",                 "lzo"),
             ]
 
 MUX_OPTIONS = [
@@ -225,7 +237,7 @@ ENCODER_LATENCY = {
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, AAC_GDP, AAC_MPEG4, RAW_GDP, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, AAC_GDP, AAC_MPEG4, RAW_GDP_LZ4, RAW_GDP_LZO, RAW_GDP, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_GDP, SPEEX]
 
 
 gst = None
@@ -484,15 +496,26 @@ def get_codecs():
                 log("skipping opus with GStreamer 0.10")
                 continue
         #verify we have all the elements needed:
-        if has_plugins(*elements[1:]):
-            #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux" = elements
-            encoding, encoder, muxer, decoder, demuxer = elements
-            CODECS[encoding] = (encoder, muxer, decoder, demuxer)
+        #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux", None = elements
+        try:
+            encoder, muxer, decoder, demuxer, stream_comp = elements[1:]
+        except ValueError as e:
+            log.error("Error: invalid codec entry: %s", e)
+            log.error(" %s", elements)
+            continue
+        if stream_comp:
+            assert stream_comp in ("lz4", "lzo")
+            from xpra.net.compression import use_lz4
+            if not use_lz4:
+                log("skipping %s: missing lz4", encoding)
+                continue
+        if has_plugins(encoder, muxer, decoder, demuxer):
+            CODECS[encoding] = (encoder, muxer, decoder, demuxer, stream_comp)
     log("initialized sound codecs:")
     for k in [x for x in CODEC_ORDER if x in CODECS]:
         def ci(v):
             return "%-22s" % (v or "")
-        log("* %-10s : %s", k, csv([ci(v) for v in CODECS[k]]))
+        log("* %-12s : %s", k, csv([ci(v) for v in CODECS[k]]))
     return CODECS
 
 def get_muxers():
@@ -510,10 +533,16 @@ def get_demuxers():
     return demuxers
 
 
+def get_stream_compressor(name):
+    codecs = get_codecs()
+    assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
+    _, _, _, _, stream_comp = codecs.get(name)
+    return stream_comp
+
 def get_encoder_formatter(name):
     codecs = get_codecs()
     assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
-    encoder, formatter, _, _ = codecs.get(name)
+    encoder, formatter, _, _, _ = codecs.get(name)
     assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
     assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
     return encoder, formatter
@@ -521,7 +550,7 @@ def get_encoder_formatter(name):
 def get_decoder_parser(name):
     codecs = get_codecs()
     assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
-    _, _, decoder, parser = codecs.get(name)
+    _, _, decoder, parser, _ = codecs.get(name)
     assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
     assert parser is None or has_plugins(parser), "parser %s not found" % parser
     return decoder, parser
@@ -530,14 +559,14 @@ def has_encoder(name):
     codecs = get_codecs()
     if name not in codecs:
         return False
-    encoder, fmt, _, _ = codecs.get(name)
+    encoder, fmt, _, _, _ = codecs.get(name)
     return has_plugins(encoder, fmt)
 
 def has_decoder(name):
     codecs = get_codecs()
     if name not in codecs:
         return False
-    _, _, decoder, parser = codecs.get(name)
+    _, _, decoder, parser, _ = codecs.get(name)
     return has_plugins(decoder, parser)
 
 def has_codec(name):

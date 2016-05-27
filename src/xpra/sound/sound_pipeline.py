@@ -43,6 +43,7 @@ class SoundPipeline(gobject.GObject):
 
     def __init__(self, codec):
         gobject.GObject.__init__(self)
+        self.stream_compressor = None
         self.codec = codec
         self.codec_description = ""
         self.codec_mode = ""
@@ -169,14 +170,20 @@ class SoundPipeline(gobject.GObject):
         self.idle_emit("new-stream", self.codec)
         self.update_state("active")
         self.pipeline.set_state(gst.STATE_PLAYING)
+        if self.stream_compressor:
+            self.info["stream-compressor"] = self.stream_compressor
         self.emit_info()
         #we may never get the stream start, synthesize codec event so we get logging:
         parts = self.codec.split("+")
         self.timeout_add(1000, self.new_codec_description, parts[0])
-        if len(parts)>1:
+        if len(parts)>1 and parts[1]!=self.stream_compressor:
             self.timeout_add(1000, self.new_container_description, parts[1])
         elif self.container_format:
             self.timeout_add(1000, self.new_container_description, self.container_format)
+        if self.stream_compressor:
+            def logsc():
+                self.gstloginfo("using stream compression %s", self.stream_compressor)
+            self.timeout_add(1000, logsc)
         log("SoundPipeline.start() done")
 
     def stop(self):

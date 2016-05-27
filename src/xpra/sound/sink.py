@@ -10,9 +10,10 @@ from threading import Lock
 
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_stream_compressor, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
                                         MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS
 from xpra.gtk_common.gobject_compat import import_glib
+from xpra.net.compression import decompress_by_name
 
 from xpra.scripts.config import InitExit
 from xpra.util import csv
@@ -80,6 +81,7 @@ class SoundSink(SoundPipeline):
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
+        self.stream_compressor = get_stream_compressor(codec)
         self.sink_type = sink_type
         self.levels = deque(maxlen=100)
         self.volume = None
@@ -411,10 +413,24 @@ class SoundSink(SoundPipeline):
             return False
         return True
 
+
+    def uncompress_data(self, data, metadata):
+        if not data or not metadata:
+            return data
+        compress = metadata.get("compress")
+        if not compress:
+            return data
+        assert compress in ("lz4", "lzo")
+        v = decompress_by_name(data, compress)
+        #log("decompressed %s data: %i bytes into %i bytes", compress, len(data), len(v))
+        return v
+
+
     def add_data0(self, data, metadata=None, packet_metadata=()):
         if not self.can_push_buffer():
             return
         self.last_data = data
+        data = self.uncompress_data(data, metadata)
         now = time.time()
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
         delta = QUEUE_TIME//MS_TO_NS-clt
@@ -447,6 +463,7 @@ class SoundSink(SoundPipeline):
     def add_data1(self, data, metadata=None, packet_metadata=()):
         if not self.can_push_buffer():
             return
+        data = self.uncompress_data(data, metadata)
         for x in packet_metadata:
             self.do_add_data(x)
         if self.do_add_data(data, metadata):
