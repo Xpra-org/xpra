@@ -1293,13 +1293,14 @@ class UIXpraClient(XpraClientBase):
                 metadata = getattr(window, "_metadata", {})
                 log("window_close_event(%i) metadata=%s", wid, metadata)
                 class_instance = metadata.get("class-instance")
-                title = metadata.get("title")
-                log("window_close_event(%i) title=%s, class-instance(%s)=%s", wid, title, class_instance)
-                if title in TITLE_CLOSEEXIT:
+                title = metadata.get("title", "")
+                log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
+                matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
+                if matching_title_close:
                     log.info("window-close event on %s window, disconnecting", title)
                     self.quit(0)
                     return True
-                if class_instance and class_instance[0] in WM_CLASS_CLOSEEXIT:
+                if class_instance and class_instance[1] in WM_CLASS_CLOSEEXIT:
                     log.info("window-close event on %s window, disconnecting", class_instance[0])
                     self.quit(0)
                     return True
