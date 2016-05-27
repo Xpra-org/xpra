@@ -900,6 +900,8 @@ def build_xpra_conf(install_dir):
     pdf, postscript = "", ""
     if os.name=="posix" and printing_ENABLED:
         try:
+            if "/usr/sbin" not in sys.path:
+                sys.path.append("/usr/sbin")
             from xpra.platform.pycups_printing import get_printer_definitions
             print("probing cups printer definitions")
             defs = get_printer_definitions()
