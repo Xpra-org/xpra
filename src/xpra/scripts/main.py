@@ -1740,9 +1740,10 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         #we must use a subprocess to avoid messing things up - yuk
         cmd = [script_file]
         if mode in ("_proxy_start", "_proxy_start_desktop"):
-            if mode=="start":
+            if mode=="_proxy_start":
                 cmd.append("start")
             else:
+                assert mode=="_proxy_start_desktop"
                 cmd.append("start-desktop")
             if len(args)==1:
                 display_name = args[0]
