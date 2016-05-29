@@ -26,6 +26,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.codecs.image_wrapper import ImageWrapper
 
 NOEVENT = object()
@@ -230,6 +231,18 @@ class ShadowServer(GTKShadowServerBase):
     def __init__(self):
         GTKShadowServerBase.__init__(self)
         self.keycodes = {}
+        el = get_win32_event_listener()
+        #TODO: deal with those messages?
+        #el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
+        #el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
+        #these are bound to callbacks in the client,
+        #but on the server we just ignore them:
+        el.ignore_events.update({
+                                 win32con.WM_ACTIVATEAPP        : "WM_ACTIVATEAPP",
+                                 win32con.WM_MOVE               : "WM_MOVE",
+                                 win32con.WM_INPUTLANGCHANGE    : "WM_INPUTLANGCHANGE",
+                                 win32con.WM_WININICHANGE       : "WM_WININICHANGE",
+                                 })
 
 
     def add_listen_socket(self, socktype, sock):
@@ -306,7 +319,8 @@ class ShadowServer(GTKShadowServerBase):
         info.setdefault("server", {
                                    "type"       : "Python/gtk2/win32-shadow",
                                    "tray"       : self.tray,
-                                   "tray-icon"  :self.tray_icon or ""})
+                                   "tray-icon"  : self.tray_icon or ""
+                                   })
         return info
 
 

@@ -86,6 +86,8 @@ class Win32EventListener(object):
                         100, 100, 900, 900, 0, 0, 0, None)
         self.old_win32_proc = None
         self.event_callbacks = {}
+        self.ignore_events = IGNORE_EVENTS
+        self.log_events = LOG_EVENTS
         self.detect_win32_session_events()
         log("Win32EventListener create with hwnd=%s", self.hwnd)
 
@@ -159,12 +161,10 @@ class Win32EventListener(object):
                         c(wParam, lParam)
                     except:
                         log.error("error in callback %s", c, exc_info=True)
-            elif msg in IGNORE_EVENTS:
-                log("%s: %s / %s", IGNORE_EVENTS.get(msg), wParam, lParam)
-            elif msg in LOG_EVENTS:
-                log.info("%s: %s / %s", LOG_EVENTS.get(msg), wParam, lParam)
-            #elif msg==win32con.WM_ACTIVATEAPP:
-            #    log("WM_ACTIVATEAPP focus changed: %s / %s", wParam, lParam)
+            elif msg in self.ignore_events:
+                log("%s: %s / %s", self.ignore_events.get(msg), wParam, lParam)
+            elif msg in self.log_events:
+                log.info("%s: %s / %s", self.log_events.get(msg), wParam, lParam)
             else:
                 l = log.warn
                 if (msg>=0 and msg<=win32con.WM_USER) or msg>0xFFFF:
