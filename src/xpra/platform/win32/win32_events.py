@@ -19,6 +19,7 @@ WM_WTSSESSION_CHANGE        = 0x02b1
 WM_DWMNCRENDERINGCHANGED    = 0x031F
 WM_DWMCOMPOSITIONCHANGED    = 0x031E
 IGNORE_EVENTS = {
+            win32con.WM_TIMECHANGE          : "WM_TIMECHANGE",
             win32con.WM_DESTROY             : "WM_DESTROY",
             win32con.WM_COMMAND             : "WM_COMMAND",
             win32con.WM_DEVICECHANGE        : "WM_DEVICECHANGE",
