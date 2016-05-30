@@ -189,6 +189,11 @@ class DBUS_Server(dbus.service.Object):
         return d
 
 
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def SetClipboardDirection(self, direction):
+        self.server.control_command_clipboard_direction(direction)
+
+
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
         self.server.control_command_workspace(ni(wid), ni(workspace))

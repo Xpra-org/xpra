@@ -732,6 +732,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3),
             ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
             ArgsControlCommand("encoder",               "sets the packet encoder",          min_args=1, max_args=1),
+            ArgsControlCommand("clipboard-direction",   "restrict clipboard transfers",     min_args=1, max_args=1),
             #session and clients:
             ArgsControlCommand("client",                "forwards a control command to the client(s)", min_args=1),
             ArgsControlCommand("name",                  "set the session name",             min_args=1, max_args=1),
@@ -1598,6 +1599,14 @@ class ServerBase(ServerCore, FileTransferHandler):
             ws.refresh(window, {})
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
 
+    def control_command_clipboard_direction(self, direction, *args):
+        ch = self._clipboard_helper
+        assert self.supports_clipboard and ch
+        assert direction in ("to-server", "to-client", "both", "disabled")
+        self.clipboard_direction = direction
+        can_send = direction in ("to-server", "both")
+        can_receive = direction in ("to-client", "both")
+        self.client.clipboard_helper.set_direction(can_send, can_receive)
 
     def _control_video_subregions_from_wid(self, wid):
         if wid not in self._id_to_window:
