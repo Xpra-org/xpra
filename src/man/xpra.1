@@ -34,7 +34,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
 [\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP]
-[\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client|both|disabled\fP]
+[\fB\-\-clipboard\-direction\fP=
+\fIto\-server\fP|\fIto\-client\fP|
+\fIboth\fP|\fIdisabled\fP]
 [\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
@@ -76,7 +78,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|ABSOLUTEFILENAME]
 [\fB\-\-windows\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client|both|disabled\fP]
+[\fB\-\-clipboard\-direction\fP=
+\fIto\-server\fP|\fIto\-client\fP|
+\fIboth\fP|\fIdisabled\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
@@ -480,7 +484,7 @@ OSX specific clipboard
 .RE
 
 .TP
-\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client|both|disabled\fP
+\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client\fP|\fIboth\fP|\fIdisabled\fP
 Choose the direction of the clipboard synchronization.
 .TP
 \fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP
