@@ -811,7 +811,7 @@ def title_box(label_str):
 
 #utility method to ensure there is always only one CheckMenuItem
 #selected in a submenu:
-def ensure_item_selected(submenu, item):
+def ensure_item_selected(submenu, item, recurse=True):
     if not isinstance(item, gtk.CheckMenuItem):
         return
     if item.get_active():
@@ -822,7 +822,7 @@ def ensure_item_selected(submenu, item):
                     continue
                 if isinstance(x, gtk.MenuItem):
                     submenu = x.get_submenu()
-                    if submenu:
+                    if submenu and recurse:
                         deactivate(submenu.get_children(), skip)
                 if isinstance(x, gtk.CheckMenuItem):
                     if x!=item and x.get_active():

@@ -34,6 +34,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
 [\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP]
+[\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client|both|disabled\fP]
+[\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
@@ -60,7 +62,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
-[\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-input\-method\fP=\fIMETHOD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -75,6 +76,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|ABSOLUTEFILENAME]
 [\fB\-\-windows\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client|both|disabled\fP]
 [\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
@@ -472,11 +474,14 @@ Clipboard which can translate from one type of selection to another
 .IP \fBGDK\fP
 The most complete clipboard implementation, includes full X11 support
 .IP \fBdefault\fP
-Simple clipboard with limited X11 support
+Fallback clipboard, with limited X11 support
 .IP \fBOSX\fP
 OSX specific clipboard
 .RE
 
+.TP
+\fB\-\-clipboard\-direction\fP=\fIto\-server\fP|\fIto\-client|both|disabled\fP
+Choose the direction of the clipboard synchronization.
 .TP
 \fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP
 Enable or disable the starting of a pulseaudio server with the session.

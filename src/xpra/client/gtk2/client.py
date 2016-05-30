@@ -206,8 +206,9 @@ class XpraClient(GTKXpraClient):
             try:
                 parts = co.split(".")
                 mod = ".".join(parts[:-1])
-                __import__(mod, {}, {}, [parts[-1]])
-                loadable.append(co)
+                module = __import__(mod, {}, {}, [parts[-1]])
+                helperclass = getattr(module, parts[-1])
+                loadable.append(helperclass)
             except ImportError as e:
                 clipboardlog("cannot load %s: %s", co, e)
                 continue
@@ -221,39 +222,26 @@ class XpraClient(GTKXpraClient):
         """
         clipboard_options = self.get_clipboard_helper_classes()
         clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
-        for classname in clipboard_options:
-            module_name, _class = classname.rsplit(".", 1)
-            c = self.try_load_clipboard_helper(module_name, _class)
-            if c:
-                return c
-        return None
-
-    def try_load_clipboard_helper(self, module, classname):
-        try:
-            m = __import__(module, {}, {}, classname)
-            if m:
-                if not hasattr(m, classname):
-                    log.warn("cannot load %s from %s, odd", classname, m)
-                    return None
-                c = getattr(m, classname)
-                if c:
-                    return self.setup_clipboard_helper(c)
-        except ImportError as e:
-            clipboardlog.error("Error: cannot load %s.%s:", module, classname)
-            clipboardlog.error(" %s", e)
-            return None
-        except:
-            clipboardlog.error("cannot load %s.%s", module, classname, exc_info=True)
-            return None
-        clipboardlog.error("cannot load %s.%s", module, classname)
+        for helperclass in clipboard_options:
+            try:
+                return self.setup_clipboard_helper(helperclass)
+            except ImportError as e:
+                clipboardlog.error("Error: cannot instantiate %s:", helperclass)
+                clipboardlog.error(" %s", e)
+            except:
+                clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
         return None
 
     def setup_clipboard_helper(self, helperClass):
         clipboardlog("setup_clipboard_helper(%s)", helperClass)
         #first add the platform specific one, (may be None):
         from xpra.platform.features import CLIPBOARDS
-        kwargs= {"clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
-                 "clipboards.remote"    : self.server_clipboards}       #all the remote clipboards supported
+        kwargs= {
+                 "clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
+                 "clipboards.remote"    : self.server_clipboards,       #all the remote clipboards supported
+                 "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
+                 "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
+                 }
         #only allow translation overrides if we have a way of telling the server about them:
         if self.server_supports_clipboard_enable_selections:
             kwargs.update({

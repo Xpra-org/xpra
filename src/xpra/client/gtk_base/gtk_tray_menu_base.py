@@ -60,11 +60,23 @@ SPEED_OPTIONS[0]    = "Auto"
 SPEED_OPTIONS[1]    = "Lowest Bandwidth"
 SPEED_OPTIONS[100]  = "Lowest Latency"
 
-CLIPBOARD_LABELS = ["Disabled", "Clipboard", "Primary", "Secondary"]
-CLIPBOARD_LABEL_TO_NAME = {"Disabled"   : None,
+CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
+CLIPBOARD_LABEL_TO_NAME = {
                            "Clipboard"  : "CLIPBOARD",
                            "Primary"    : "PRIMARY",
-                           "Secondary"  : "SECONDARY"}
+                           "Secondary"  : "SECONDARY"
+                           }
+CLIPBOARD_NAME_TO_LABEL  = dict((v,k) for k,v in CLIPBOARD_LABEL_TO_NAME.items())
+
+CLIPBOARD_DIRECTION_LABELS = ["Client to server only", "Server to client only", "Both directions", "Disabled"]
+CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
+                                     "Client to server only"    : "to-server",
+                                     "Server to client only"    : "to-client",
+                                     "Both directions"          : "both",
+                                     "Disabled"                 : "disabled",
+                                     }
+CLIPBOARD_DIRECTION_NAME_TO_LABEL = dict((v,k) for k,v in CLIPBOARD_DIRECTION_LABEL_TO_NAME.items()) 
+
 
 def ll(m):
     try:
@@ -456,132 +468,117 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(set_notifications_menuitem)
         return self.notifications_menuitem
 
-    def make_clipboard_togglemenuitem(self):
-        clipboardlog("make_clipboard_togglemenuitem()")
-        def menu_clipboard_toggled(*args):
-            new_state = self.clipboard_menuitem.get_active()
-            clipboardlog("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
-            if self.client.clipboard_enabled!=new_state:
-                self.client.clipboard_enabled = new_state
-                self.client.emit("clipboard-toggled")
-        self.clipboard_menuitem = self.checkitem("Clipboard", menu_clipboard_toggled)
-        set_sensitive(self.clipboard_menuitem, False)
-        def set_clipboard_menuitem(*args):
-            clipboardlog("set_clipboard_menuitem%s enabled=%s", args, self.client.clipboard_enabled)
-            self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
-            c = self.client
-            can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
-            set_sensitive(self.clipboard_menuitem, can_clipboard)
-            if can_clipboard:
-                self.clipboard_menuitem.set_tooltip_text("Enable clipboard synchronization")
-            else:
-                self.clipboard_menuitem.set_tooltip_text("Clipboard synchronization cannot be enabled: disabled by server")
-        self.client.after_handshake(set_clipboard_menuitem)
-        def clipboard_toggled(*args):
-            #keep menu in sync with actual "clipboard_enabled" flag:
-            if self.client.clipboard_enabled != self.clipboard_menuitem.get_active():
-                self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
-        self.client.connect("clipboard-toggled", clipboard_toggled)
-        return self.clipboard_menuitem
-
-    def _can_handle_clipboard(self):
-        c = self.client
-        return c.server_supports_clipboard and c.client_supports_clipboard
-
-    def get_clipboard_helper_class(self):
-        return TranslatedClipboardProtocolHelper
 
     def remote_clipboard_changed(self, item, clipboard_submenu):
-        if not self._can_handle_clipboard():
-            item = None
-        if item is None:
-            item = ([x for x in clipboard_submenu.get_children() if x.get_label()=="Disabled"]+[None])[0]
-            if item is None:
-                return
+        c = self.client
+        if not c or not c.server_supports_clipboard or not c.client_supports_clipboard:
+            return
         #prevent infinite recursion where ensure_item_selected
         #ends up calling here again
-        ich = getattr(clipboard_submenu, "_in_change_handler_", False)
+        key = "_in_remote_clipboard_changed"
+        ich = getattr(clipboard_submenu, key, False)
         clipboardlog("remote_clipboard_changed%s already in change handler: %s, visible=%s", (ll(item), clipboard_submenu), ich, clipboard_submenu.get_visible())
         if ich: # or not clipboard_submenu.get_visible():
             return
         try:
-            setattr(clipboard_submenu, "_in_change_handler_", True)
+            setattr(clipboard_submenu, key, True)
             selected_item = ensure_item_selected(clipboard_submenu, item)
             selected = selected_item.get_label()
             remote_clipboard = CLIPBOARD_LABEL_TO_NAME.get(selected)
             self.set_new_remote_clipboard(remote_clipboard)
         finally:
-            setattr(clipboard_submenu, "_in_change_handler_", False)
+            setattr(clipboard_submenu, key, False)
 
     def set_new_remote_clipboard(self, remote_clipboard):
         clipboardlog("set_new_remote_clipboard(%s)", remote_clipboard)
-        old_state = self.client.clipboard_enabled
-        send_tokens = False
-        if remote_clipboard is not None:
-            #clipboard is not disabled
-            if self.client.clipboard_helper is None:
-                self.client.clipboard_helper = self.client.setup_clipboard_helper(self.get_clipboard_helper_class())
-            self.client.clipboard_helper.remote_clipboard = remote_clipboard
-            self.client.clipboard_helper.remote_clipboards = [remote_clipboard]
-            send_tokens = True
-            new_state = True
-            selections = [remote_clipboard]
-        else:
-            self.client.clipboard_helper = None
-            send_tokens = False
-            new_state = False
-            selections = []
-        clipboardlog("set_new_remote_clipboard(%s) old_state=%s, new_state=%s", remote_clipboard, old_state, new_state)
-        if new_state!=old_state:
-            self.client.clipboard_enabled = new_state
-            self.client.emit("clipboard-toggled")
-            send_tokens = True
+        ch = self.client.clipboard_helper
+        ch.remote_clipboard = remote_clipboard
+        ch.remote_clipboards = [remote_clipboard]
+        selections = [remote_clipboard]
+        clipboardlog.info("server clipboard synchronization changed to %s selection", remote_clipboard)
         #tell the server what to look for:
         #(now that "clipboard-toggled" has re-enabled clipboard if necessary)
         self.client.send_clipboard_selections(selections)
-        if send_tokens and self.client.clipboard_helper:
-            self.client.clipboard_helper.send_all_tokens()
+        ch.send_all_tokens()
 
     def make_translatedclipboard_optionsmenuitem(self):
         clipboardlog("make_translatedclipboard_optionsmenuitem()")
-        clipboard_menu = self.menuitem("Clipboard", "clipboard.png", "Choose which remote clipboard to connect to", None)
-        set_sensitive(clipboard_menu, False)
-        def set_clipboard_menu(*args):
-            clipboard_submenu = gtk.Menu()
-            clipboard_menu.set_submenu(clipboard_submenu)
-            self.popup_menu_workaround(clipboard_submenu)
-            c = self.client
-            can_clipboard = self._can_handle_clipboard()
-            clipboardlog("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
-            set_sensitive(clipboard_menu, can_clipboard)
-            for label in CLIPBOARD_LABELS:
-                remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
-                clipboard_item = CheckMenuItem(label)
-                ch = self.client.clipboard_helper
-                active = bool(ch) and isinstance(ch, TranslatedClipboardProtocolHelper) \
-                            and ch.remote_clipboard==remote_clipboard
-                clipboard_item.set_active(active)
-                set_sensitive(clipboard_item, can_clipboard)
-                clipboard_item.set_draw_as_radio(True)
-                def remote_clipboard_changed(item):
-                    self.remote_clipboard_changed(item, clipboard_submenu)
-                clipboard_item.connect("toggled", remote_clipboard_changed)
-                clipboard_submenu.append(clipboard_item)
-            clipboard_submenu.show_all()
-        self.client.after_handshake(set_clipboard_menu)
-        return clipboard_menu
+        ch = self.client.clipboard_helper
+        selection_menu = self.menuitem("Selection", None, "Choose which remote clipboard to connect to")
+        selection_submenu = gtk.Menu()
+        selection_menu.set_submenu(selection_submenu)
+        self.popup_menu_workaround(selection_submenu)
+        for label in CLIPBOARD_LABELS:
+            remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
+            selection_item = CheckMenuItem(label)
+            active = getattr(ch, "remote_clipboard", "CLIPBOARD")==remote_clipboard
+            selection_item.set_active(active)
+            selection_item.set_draw_as_radio(True)
+            def remote_clipboard_changed(item):
+                self.remote_clipboard_changed(item, selection_submenu)
+            selection_item.connect("toggled", remote_clipboard_changed)
+            selection_submenu.append(selection_item)
+        selection_submenu.show_all()
+        return selection_menu
+
+    def clipboard_direction_changed(self, item, submenu):
+        log("clipboard_direction_changed(%s, %s)", item, submenu)
+        sel = ensure_item_selected(submenu, item, recurse=False)
+        if not sel:
+            return
+        self.do_clipboard_direction_changed(sel.get_label() or "")
+
+    def do_clipboard_direction_changed(self, label):
+        #find the value matching this item label:
+        d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
+        if d and d!=self.client.client_clipboard_direction:
+            log.info("clipboard synchronization direction changed to: %s", label.lower())
+            self.client.client_clipboard_direction = d
+            can_send = d in ("to-server", "both")
+            can_receive = d in ("to-client", "both")
+            self.client.clipboard_helper.set_direction(can_send, can_receive)
+            #will send new tokens and may help reset things:
+            self.client.emit("clipboard-toggled")
 
     def make_clipboardmenuitem(self):
-        try:
-            copts = self.client.get_clipboard_helper_classes()
-            #ugly alert: the helper does not exist yet.. we just check the helper classnames:
-            if len(copts)>0:
-                chname = copts[0].lower()
-                if chname.find("translated_clipboard")>=0 or chname.find("osxclipboard")>=0:
-                    return self.make_translatedclipboard_optionsmenuitem()
-        except:
-            clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
-        return self.make_clipboard_togglemenuitem()
+        clipboardlog("make_clipboardmenuitem()")
+        self.clipboard_menuitem = self.menuitem("Clipboard", "clipboard.png")
+        set_sensitive(self.clipboard_menuitem, False)
+        def set_clipboard_menu(*args):
+            c = self.client
+            if not c.server_supports_clipboard:
+                self.clipboard_menuitem.set_tooltip_text("Server does not support clipboard synchronization")
+                return
+            if not c.client_supports_clipboard:
+                self.client_menuitem.set_tooltip_text("Client does not support clipboard synchronization")
+                return
+            #add a submenu:
+            set_sensitive(self.clipboard_menuitem, True)
+            c = self.client
+            ch = self.client.clipboard_helper
+            clipboard_submenu = gtk.Menu()
+            self.clipboard_menuitem.set_submenu(clipboard_submenu)
+            self.popup_menu_workaround(clipboard_submenu)
+            #figure out if this is a translated clipboard (win32 or osx)
+            #and if so, add a submenu to change the selection we synchronize with:
+            try:
+                from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
+                assert TranslatedClipboardProtocolHelper
+                clipboardlog("set_clipboard_menu(%s) helper=%s, server=%s, client=%s", args, ch, c.server_supports_clipboard, c.client_supports_clipboard)
+                if issubclass(type(ch), TranslatedClipboardProtocolHelper):
+                    clipboard_submenu.append(self.make_translatedclipboard_optionsmenuitem())
+                    clipboard_submenu.append(gtk.SeparatorMenuItem())
+            except:
+                clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
+            for label in CLIPBOARD_DIRECTION_LABELS:
+                direction_item = CheckMenuItem(label)
+                d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
+                direction_item.set_active(d==self.client.client_clipboard_direction)
+                direction_item.connect("toggled", self.clipboard_direction_changed, clipboard_submenu)
+                clipboard_submenu.append(direction_item)
+            clipboard_submenu.show_all()
+        self.client.after_handshake(set_clipboard_menu)
+        return self.clipboard_menuitem
 
 
     def make_keyboardsyncmenuitem(self):

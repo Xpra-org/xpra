@@ -125,6 +125,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
         self.supports_clipboard = False
+        self.clipboard_direction = "both"
         self.supports_dbus_proxy = False
         self.dbus_helper = None
         self.dbus_control = False
@@ -228,6 +229,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
         self.supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
+        self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children
@@ -574,7 +576,11 @@ class ServerBase(ServerCore, FileTransferHandler):
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-            kwargs = {"filters" : clipboard_filter_res}
+            kwargs = {
+                      "filters"     : clipboard_filter_res,
+                      "can-send"    : self.clipboard_direction in ("to-client", "both"),
+                      "can-receive" : self.clipboard_direction in ("to-server", "both"),
+                      }
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
             self._clipboards = CLIPBOARDS
         except Exception:
@@ -1268,6 +1274,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         if source.wants_features:
             capabilities.update({
                  "clipboards"                   : self._clipboards,
+                 "clipboard-direction"          : self.clipboard_direction,
                  "notifications"                : self.notifications,
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,

@@ -30,6 +30,11 @@
 #clipboard = auto
 clipboard = yes
 
+# Direction of clipboard transfers:
+#clipboard-direction = to-server
+#clipboard-direction = to-client
+clipboard-direction = both
+
 # Forward notifications:
 notifications = yes
 

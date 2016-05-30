@@ -304,6 +304,7 @@ OPTION_TYPES = {
                     "window-icon"       : str,
                     "password-file"     : str,
                     "clipboard"         : str,
+                    "clipboard-direction" : str,
                     "clipboard-filter-file" : str,
                     "remote-clipboard"  : str,
                     "local-clipboard"   : str,
@@ -490,6 +491,7 @@ def get_defaults():
                     "window-icon"       : "",
                     "password-file"     : "",
                     "clipboard"         : "yes",
+                    "clipboard-direction" : "both",
                     "clipboard-filter-file" : "",
                     "remote-clipboard"  : "CLIPBOARD",
                     "local-clipboard"   : "CLIPBOARD",
@@ -837,12 +839,26 @@ def fixup_packetencoding(options):
             warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
     options.packet_encoders = packet_encoders
 
+def fixup_clipboard(options):
+    cd = options.clipboard_direction.lower().replace("-", "")
+    if cd=="toserver":
+        options.clipboard_direction = "to-server"
+    elif cd=="toclient":
+        options.clipboard_direction = "to-client"
+    elif cd=="both":
+        options.clipboard_direction = "both"
+    else:
+        warn("Warning: invalid value for clipboard-direction: '%s'" % options.clipboard_direction)
+        warn(" specify 'to-server', 'to-client' or 'both'")
+        options.clipboard_direction = "disabled"
+
 def fixup_options(options):
     fixup_encodings(options)
     fixup_compression(options)
     fixup_packetencoding(options)
     fixup_video_all_or_none(options)
     fixup_socketdirs(options)
+    fixup_clipboard(options)
 
 
 def main():

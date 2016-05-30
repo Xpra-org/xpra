@@ -63,6 +63,8 @@ class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
+        self.can_send = kwargs.get("can-send", True)
+        self.can_receive = kwargs.get("can-receive", True)
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
         self.filter_res = []
         filter_res = kwargs.get("filters")
@@ -83,11 +85,14 @@ class ClipboardProtocolHelperBase(object):
         return "ClipboardProtocolHelperBase"
 
     def get_info(self):
-        info = {"type"      : str(self),
+        info = {
+                "type"      : str(self),
                 "max_size"  : self.max_clipboard_packet_size,
                 "filters"   : [x.pattern for x in self.filter_res],
                 "requests"  : self._clipboard_request_counter,
                 "pending"   : self._clipboard_outstanding_requests.keys(),
+                "can-send"      : self.can_send,
+                "can-receive"   : self.can_receive,
                 "want_targets"  : self._want_targets,
                 }
         for clipboard, proxy in self._clipboard_proxies.items():
@@ -101,6 +106,12 @@ class ClipboardProtocolHelperBase(object):
         for x in self._clipboard_proxies.values():
             x.cleanup()
         self._clipboard_proxies = {}
+
+    def set_direction(self, can_send, can_receive):
+        self.can_send = can_send
+        self.can_receive = can_receive
+        for proxy in self._clipboard_proxies.values():
+            proxy.set_direction(can_send, can_receive)
 
     def enable_selections(self, selections):
         #when clients first connect or later through the "clipboard-enable-selections" packet,
@@ -135,6 +146,7 @@ class ClipboardProtocolHelperBase(object):
         self._clipboard_proxies = {}
         for clipboard in clipboards:
             proxy = self.make_proxy(clipboard)
+            proxy.set_direction(self.can_send, self.can_receive)
             proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
@@ -212,6 +224,9 @@ class ClipboardProtocolHelperBase(object):
     def _send_clipboard_token_handler(self, proxy, selection):
         log("send clipboard token: %s", selection)
         rsel = self.local_to_remote(selection)
+        def send_token(*args):
+            proxy._have_token = False
+            self.send("clipboard-token", *args)
         if self._want_targets:
             #send the token with the target and data once we get them:
             #first get the targets, then get the contents for targets we want to send (if any)
@@ -220,7 +235,7 @@ class ClipboardProtocolHelperBase(object):
                 #if there is a text target, send that too (just the first one that matches for now..)
                 send_now = [x for x in targets if x in TEXT_TARGETS]
                 def send_targets_only():
-                    self.send("clipboard-token", rsel, targets)
+                    send_token(rsel, targets)
                 if len(send_now)==0:
                     send_targets_only()
                     return
@@ -242,11 +257,11 @@ class ClipboardProtocolHelperBase(object):
                         return
                     target_data = (target, dtype, dformat, wire_encoding, wire_data)
                     log("sending token with target data: %s", target_data)
-                    self.send("clipboard-token", rsel, targets, *target_data)
+                    send_token(rsel, targets, *target_data)
                 proxy.get_contents(target, got_contents)
             proxy.get_contents("TARGETS", got_targets)
             return
-        self.send("clipboard-token", rsel)
+        send_token(rsel)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         # Some types just cannot be marshalled:
@@ -457,6 +472,10 @@ class ClipboardProxy(gtk.Invisible):
 
         self._clipboard.connect("owner-change", self.do_owner_changed)
 
+    def set_direction(self, can_send, can_receive):
+        self._can_send = can_send
+        self._can_receive = can_receive
+
     def get_info(self):
         info = {"have_token"    : self._have_token,
                 "enabled"       : self._enabled,
@@ -474,7 +493,7 @@ class ClipboardProxy(gtk.Invisible):
         return info
 
     def cleanup(self):
-        if not self._have_token and STORE_ON_EXIT:
+        if self._can_receive and not self._have_token and STORE_ON_EXIT:
             self._clipboard.store()
         self.destroy()
 
@@ -493,9 +512,11 @@ class ClipboardProxy(gtk.Invisible):
         return  "ClipboardProxy(%s)" % self._selection
 
     def do_owner_changed(self, *args):
+        #an application on our side owns the clipboard selection
+        #(they are ready to provide something via the clipboard)
         #log("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
-        log("clipboard: %s owner_changed, enabled=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._have_token, self._greedy_client, self._block_owner_change)
-        if self._enabled and self._greedy_client and not self._block_owner_change:
+        log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
+        if self._enabled and self._can_send and not self._block_owner_change and (self._greedy_client or not self._can_receive):
             self._block_owner_change = True
             self._have_token = False
             self.emit("send-clipboard-token", self._selection)
@@ -505,7 +526,7 @@ class ClipboardProxy(gtk.Invisible):
     def do_selection_request_event(self, event):
         log("do_selection_request_event(%s)", event)
         self._selection_request_events += 1
-        if not self._enabled:
+        if not self._enabled or not self._can_receive:
             gtk.Invisible.do_selection_request_event(self, event)
             return
         # Black magic: the superclass default handler for this signal
@@ -567,7 +588,7 @@ class ClipboardProxy(gtk.Invisible):
         # main loop.
         def nodata():
             selection_data.set("STRING", 8, "")
-        if not self._enabled:
+        if not self._enabled or not self._can_receive:
             nodata()
             return
         log("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection_data.selection)
@@ -591,7 +612,7 @@ class ClipboardProxy(gtk.Invisible):
         # Someone else on our side has the selection
         log("do_selection_clear_event(%s) have_token=%s, block_owner_change=%s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
         self._selection_clear_events += 1
-        if self._enabled:
+        if self._enabled and self._can_send:
             #if greedy_client is set, do_owner_changed will fire the token
             #so don't bother sending it now (same if we don't have it)
             send = ((self._greedy_client and not self._block_owner_change) or self._have_token)
@@ -610,14 +631,17 @@ class ClipboardProxy(gtk.Invisible):
 
     def got_token(self, targets, target_data):
         # We got the anti-token.
-        log("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
+        log("got token, selection=%s, targets=%s, target data=%s, can-receive=%s", self._selection, targets, target_data, self._can_receive)
         if not self._enabled:
             return
         self._got_token_events += 1
         self._have_token = True
         if self._greedy_client:
             self._block_owner_change = True
-        self.claim()
+        if self._can_receive:
+            #if we don't claim the selection (can-receive=False),
+            #we will have to send the token back on owner-change!
+            self.claim()
         if self._block_owner_change:
             #re-enable the flag via idle_add so events like do_owner_changed
             #get a chance to run first.
@@ -640,8 +664,8 @@ class ClipboardProxy(gtk.Invisible):
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
     def get_contents(self, target, cb):
-        log("get_contents(%s,%s) selection=%s", target, cb, self._selection)
-        if not self._enabled:
+        log("get_contents(%s,%s) selection=%s, enabled=%s, can-send=%s", target, cb, self._selection, self._enabled, self._can_send)
+        if not self._enabled or not self._can_send:
             cb(None, None, None)
             return
         self._get_contents_events += 1

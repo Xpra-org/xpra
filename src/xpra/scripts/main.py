@@ -472,6 +472,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--clipboard", action="store", metavar="yes|no|clipboard-type",
                       dest="clipboard", default=defaults.clipboard,
                       help="Enable clipboard support. Default: %s." % defaults.clipboard)
+    group.add_option("--clipboard-direction", action="store", metavar="to-server|to-client|both",
+                      dest="clipboard_direction", default=defaults.clipboard_direction,
+                      help="Direction of clipboard synchronization. Default: %s." % defaults.clipboard_direction)
     legacy_bool_parse("notifications")
     group.add_option("--notifications", action="store", metavar="yes|no",
                       dest="notifications", default=defaults.notifications,
@@ -511,6 +514,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
                       help="Allow more than one client to connect to the same session. Default: %s." % enabled_str(defaults.sharing))
+    legacy_bool_parse("remote-logging")
     group.add_option("--remote-logging", action="store", metavar="yes|no|both",
                       dest="remote_logging", default=defaults.remote_logging,
                       help="Forward all the client's log output to the server. Default: %s." % enabled_str(defaults.remote_logging))

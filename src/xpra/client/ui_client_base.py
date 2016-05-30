@@ -234,6 +234,7 @@ class UIXpraClient(XpraClientBase):
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless = ()
+        self.server_clipboard_direction = "both"
         self.readonly = False
         self.windows_enabled = True
         self.pings = False
@@ -262,6 +263,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_remote_logging = False
         self.log_both = False
         self.notifications_enabled = False
+        self.client_clipboard_direction = "both"
         self.clipboard_enabled = False
         self.cursors_enabled = False
         self.bell_enabled = False
@@ -392,6 +394,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_notifications = opts.notifications
         self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
         self.client_clipboard_type = opts.clipboard
+        self.client_clipboard_direction = opts.clipboard_direction
         self.client_supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
@@ -1736,6 +1739,19 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = c.boolget("clipboard")
+        self.server_clipboard_direction = c.strget("clipboard-direction", "both")
+        if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
+            if self.client_clipboard_direction=="disabled":
+                pass
+            elif self.server_clipboard_direction=="disabled":
+                log.warn("Warning: server clipboard synchronization is currently disabled")
+                self.client_clipboard_direction = "disabled"
+            elif self.client_clipboard_direction=="both":
+                log.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
+                self.client_clipboard_direction = self.server_clipboard_direction
+            else:
+                log.warn("Warning: incompatible clipboard direction settings")
+                log.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
         self.server_supports_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
         self.server_compressors = c.strlistget("compressors", ["zlib"])
@@ -1942,6 +1958,7 @@ class UIXpraClient(XpraClientBase):
                 log.error("Error processing handshake callback %s", cb, exc_info=True)
 
     def after_handshake(self, cb, *args):
+        log("after_handshake(%s, %s) on_handshake=%s", cb, args, self._on_handshake)
         if self._on_handshake is None:
             #handshake has already occurred, just call it:
             self.idle_add(cb, *args)
