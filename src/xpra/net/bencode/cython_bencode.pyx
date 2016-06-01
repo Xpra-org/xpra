@@ -53,33 +53,35 @@ cdef decode_int(const unsigned char *x, unsigned int f, int l):
     cdef int newf = find(x, 'e', f, l)
     cdef object n
     assert newf>=0, "end of int not found"
+    cdef unsigned int unewf = newf
     try:
-        n = int(x[f:newf])
+        n = int(x[f:unewf])
     except (OverflowError, ValueError):
-        n = long(x[f:newf])
+        n = long(x[f:unewf])
     if x[f] == '-':
         if x[f + 1] == '0':
             raise ValueError("-0 is not a valid number")
-    elif x[f] == '0' and newf != f+1:
+    elif x[f] == '0' and unewf != f+1:
         raise ValueError("leading zeroes are not allowed")
-    return (n, newf+1)
+    return (n, unewf+1)
 
 cdef decode_string(const unsigned char *x, unsigned int f, int l):
     cdef int colon = find(x, ':', f, l)
     cdef int slen
     assert colon>=0, "colon not found in string size header"
     lenstr = x[f:colon]
+    cdef unsigned int ucolon = colon
     try:
         slen = IntType(lenstr)
     except (OverflowError, ValueError):
         try:
             slen = LongType(lenstr)
         except:
-            raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, colon, x))
-    if x[f] == '0' and colon != f+1:
+            raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, ucolon, x))
+    if x[f] == '0' and ucolon != f+1:
         raise ValueError("leading zeroes are not allowed (found in string length)")
-    colon += 1
-    return (x[colon:colon+slen], colon+slen)
+    ucolon += 1
+    return (x[ucolon:ucolon+slen], ucolon+slen)
 
 cdef decode_unicode(const unsigned char *x, unsigned int f, int l):
     xs, fs = decode_string(x, f+1, l)
