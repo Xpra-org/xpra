@@ -241,8 +241,9 @@ XpraProtocol.prototype._process = function() {
 		packet_size += buf[4+i];
 	}
 	// work out padding if necessary
+	var padding = 0
 	if (proto_crypto) {
-		var padding = (this.cipher_in_block_size - packet_size % this.cipher_in_block_size);
+		padding = (this.cipher_in_block_size - packet_size % this.cipher_in_block_size);
 		packet_size += padding;
 	}
 	//debug("packet_size="+packet_size+", level="+level+", index="+index);
@@ -267,6 +268,7 @@ XpraProtocol.prototype._process = function() {
 		packet_data = [];
 		for (var i=0; i<decrypted.length; i++)
 			packet_data.push(decrypted[i].charCodeAt(0));
+		packet_data = packet_data.slice(0, -1 * padding);
 	}
 
 	//decompress it if needed:
