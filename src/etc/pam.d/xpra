@@ -1,0 +1,2 @@
+session    required     pam_localuser.so
+session    sufficient   pam_systemd.so class=background type=x11

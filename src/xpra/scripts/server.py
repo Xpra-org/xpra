@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -715,8 +715,6 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
     xvfb_executable = xvfb_cmd[0]
-    sys.stdout.write("running %s\n" % xvfb_cmd)
-    sys.stdout.flush()
     if use_display_fd:
         # 'S' means that we allocate the display automatically
         r_pipe, w_pipe = os.pipe()
@@ -966,6 +964,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     atexit.register(run_cleanups)
+
+    # if pam is present, create a new session:
+    if os.name=="posix":
+        try:
+            from xpra.server.pam import pam_open, pam_close
+        except ImportError as e:
+            sys.stderr.write("No pam support: %s\n" % e)
+        else:
+            if pam_open():
+                _cleanups.append(pam_close)
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:

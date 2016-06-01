@@ -10,3 +10,4 @@ usr/share/xpra/www/*
 usr/share/xpra/cuda/*
 etc/xpra/xorg.conf
 etc/xpra/xpra.conf
+etc/pam.d/xpra

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -135,6 +135,7 @@ gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = not WIN32           #websockify is broken on win32, see https://github.com/kanaka/websockify/issues/28
+pam_ENABLED = DEFAULT and server_ENABLED and os.name=="posix" and os.path.exists("/usr/include/security/pam_misc.h")
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
@@ -214,7 +215,7 @@ SWITCHES = ["enc_x264", "enc_x265", "xvid",
             "bencode", "cython_bencode", "vsock",
             "clipboard",
             "server", "client", "dbus", "x11", "gtk_x11",
-            "gtk2", "gtk3", "html5",
+            "gtk2", "gtk3", "html5", "pam",
             "sound", "opengl", "printing",
             "rebuild",
             "annotate", "warn", "strict", "shadow", "debug", "PIC",
@@ -739,7 +740,7 @@ def get_xorg_version(xorg_bin):
     return xorg_version
 
 
-def get_conf_dir(install_dir, stripbuildroot=True):
+def get_base_conf_dir(install_dir, stripbuildroot=True):
     #in some cases we want to strip the buildroot (to generate paths in the config file)
     #but in other cases we want the buildroot path (when writing out the config files)
     #and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
@@ -769,6 +770,10 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     if len(dirs)==0 or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
         #ie: ["/", "usr"] or ["/", "usr", "local"]
         dirs.insert(0, os.path.sep)
+    return dirs
+
+def get_conf_dir(install_dir, stripbuildroot=True):
+    dirs = get_base_conf_dir(install_dir, stripbuildroot)
     if not WIN32:
         dirs.append("etc")
         dirs.append("xpra")
@@ -1018,6 +1023,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/cystats.c",
                    "xpra/server/window/region.c",
+                   "xpra/server/pam.c",
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra.conf in build (see #891):
                    "build/etc/xpra/xpra.conf"]
@@ -1862,6 +1868,11 @@ else:
                 self.mkpath(etc_xpra)
                 shutil.copyfile("etc/xpra/xorg.conf", os.path.join(etc_xpra, "xorg.conf"))
 
+            if pam_ENABLED:
+                etc_pam_d = os.path.join(etc_prefix, "etc", "pam.d")
+                self.mkpath(etc_pam_d)
+                shutil.copyfile("etc/pam.d/xpra", os.path.join(etc_pam_d, "xpra"))
+
     # add build_conf to build step
     cmdclass.update({
              'build'        : build_override,
@@ -2405,6 +2416,13 @@ if vsock_ENABLED:
     cython_add(Extension("xpra.net.vsock",
                 ["xpra/net/vsock.pyx"],
                 **vsock_pkgconfig))
+
+if pam_ENABLED:
+    pam_pkgconfig = pkgconfig()
+    add_to_keywords(pam_pkgconfig, "extra_link_args", "-lpam", "-lpam_misc")
+    cython_add(Extension("xpra.server.pam",
+                ["xpra/server/pam.pyx"],
+                **pam_pkgconfig))
 
 
 if ext_modules:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -186,8 +186,8 @@ class TestAuth(unittest.TestCase):
 
 def main():
 	try:
-		from xpra import server
-		assert server
+		from xpra.server import auth
+		assert auth
 	except ImportError as e:
 		print("non server build, skipping auth module test: %s" % e)
 		return
