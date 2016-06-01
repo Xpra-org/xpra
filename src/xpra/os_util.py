@@ -159,11 +159,28 @@ def is_Fedora():
     except:
         return False
 
+_linux_distribution = None
+def get_linux_distribution():
+    global _linux_distribution
+    if sys.platform.startswith("linux") and not _linux_distribution:
+        import subprocess
+        cmd = 'lsb_release -a'
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, _ = p.communicate()
+        if p.returncode==0:
+            d = {}
+            for line in strtobytes(out).splitlines():
+                line = bytestostr(line)
+                parts = line.rstrip("\n\r").split(":", 1)
+                if len(parts)==2:
+                    d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
+            v = [d.get(x) for x in ("distributor_id", "release", "codename")]
+            if None not in v:
+                return tuple([bytestostr(x) for x in v])
+    return _linux_distribution
+
 def getUbuntuVersion():
-    from xpra.scripts.config import python_platform
-    distro = ""
-    if hasattr(python_platform, "linux_distribution"):
-        distro = python_platform.linux_distribution()
+    distro = get_linux_distribution()
     if distro and len(distro)==3 and distro[0]=="Ubuntu":
         ur = distro[1]  #ie: "12.04"
         try:
@@ -314,6 +331,9 @@ def main():
     log.info("get_machine_id()=%s", get_machine_id())
     log.info("get_hex_uuid()=%s", get_hex_uuid())
     log.info("get_int_uuid()=%s", get_int_uuid())
+    ld = get_linux_distribution()
+    if ld:
+        log.info("get_linux_distribution()=%s", ld)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from xpra.scripts.config import python_platform
 import sys
 import os
 from xpra.util import updict
+from xpra.os_util import get_linux_distribution
 from xpra import __version__ as local_version
 from xpra.log import Logger
 log = Logger("util")
@@ -125,8 +126,9 @@ def do_get_platform_info():
                     return re.sub(".*model name.*:", "", line,1).strip()
         assert False
     info = {}
-    if sys.platform.startswith("linux") and hasattr(pp, "linux_distribution"):
-        info["linux_distribution"] = pp.linux_distribution()
+    ld = get_linux_distribution()
+    if ld:
+        info["linux_distribution"] = ld
     info.update({
             ""          : sys.platform,
             "name"      : platform_name(sys.platform, info.get("linux_distribution") or pp.release()),

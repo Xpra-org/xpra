@@ -13,7 +13,7 @@ import sys
 import time
 import datetime
 
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, get_linux_distribution
 from xpra.util import prettify_plug_name, typedict, csv, engs
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
@@ -135,9 +135,7 @@ class SessionInfo(gtk.Window):
             elif platform_platform:
                 s.append(platform_platform)
             return "\n".join(s)
-        distro = ""
-        if hasattr(python_platform, "linux_distribution"):
-            distro = python_platform.linux_distribution()
+        distro = get_linux_distribution()
         LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), distro)
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
         tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
