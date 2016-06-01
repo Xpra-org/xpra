@@ -249,9 +249,9 @@ def get_input_colorspaces():
 
 cdef class Pusher:
     cdef unsigned long frames
-    cdef int width
-    cdef int height
-    cdef int rowstride
+    cdef unsigned int width
+    cdef unsigned int height
+    cdef unsigned int rowstride
     cdef size_t framesize
     cdef object src_format
     cdef object device
