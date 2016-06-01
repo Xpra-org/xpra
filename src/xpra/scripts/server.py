@@ -877,6 +877,34 @@ def start_dbus(dbus_launch):
         sys.stderr.write(" %s\n" % e)
         return 0, {}
 
+def show_encoding_help(opts):
+    #avoid errors and warnings:
+    opts.encoding = ""
+    opts.clipboard = False
+    opts.notifications = False
+    print("xpra server supports the following encodings:")
+    print("(please wait, encoder initialization may take a few seconds)")
+    #disable info logging which would be confusing here
+    from xpra.log import get_all_loggers, set_default_level
+    import logging
+    set_default_level(logging.WARN)
+    logging.root.setLevel(logging.WARN)
+    for x in get_all_loggers():
+        x.logger.setLevel(logging.WARN)
+    from xpra.server.server_base import ServerBase
+    sb = ServerBase()
+    sb.init_options(opts)
+    from xpra.codecs.loader import PREFERED_ENCODING_ORDER, HELP_ORDER
+    if "help" in opts.encodings:
+        sb.allowed_encodings = PREFERED_ENCODING_ORDER
+    from xpra.codecs.video_helper import getVideoHelper
+    getVideoHelper().init()
+    sb.init_encodings()
+    from xpra.codecs.loader import encoding_help
+    for e in (x for x in HELP_ORDER if x in sb.encodings):
+        print(" * %s" % encoding_help(e))
+    return 0
+
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
@@ -886,32 +914,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         sys.stderr.write("current working directory does not exist, using '%s'\n" % cwd)
     validate_encryption(opts)
     if opts.encoding=="help" or "help" in opts.encodings:
-        #avoid errors and warnings:
-        opts.encoding = ""
-        opts.clipboard = False
-        opts.notifications = False
-        print("xpra server supports the following encodings:")
-        print("(please wait, encoder initialization may take a few seconds)")
-        #disable info logging which would be confusing here
-        from xpra.log import get_all_loggers, set_default_level
-        import logging
-        set_default_level(logging.WARN)
-        logging.root.setLevel(logging.WARN)
-        for x in get_all_loggers():
-            x.logger.setLevel(logging.WARN)
-        from xpra.server.server_base import ServerBase
-        sb = ServerBase()
-        sb.init_options(opts)
-        from xpra.codecs.loader import PREFERED_ENCODING_ORDER, HELP_ORDER
-        if "help" in opts.encodings:
-            sb.allowed_encodings = PREFERED_ENCODING_ORDER
-        from xpra.codecs.video_helper import getVideoHelper
-        getVideoHelper().init()
-        sb.init_encodings()
-        from xpra.codecs.loader import encoding_help
-        for e in (x for x in HELP_ORDER if x in sb.encodings):
-            print(" * %s" % encoding_help(e))
-        return 0
+        return show_encoding_help(opts)
 
     bind_tcp = parse_bind_tcp(opts.bind_tcp)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
