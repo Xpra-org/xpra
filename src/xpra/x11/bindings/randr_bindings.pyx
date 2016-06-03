@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -109,10 +109,12 @@ cdef class _RandRBindings(_X11CoreBindings):
         cdef XRRScreenSize xrr
         xrrs = XRRSizes(self.display, 0, &num_sizes)
         sizes = []
+        if xrrs==NULL:
+            return sizes
         for i in range(num_sizes):
             xrr = xrrs[i]
             sizes.append((xrr.width, xrr.height))
-        return    sizes
+        return sizes
 
     def get_screen_sizes(self):
         return self._get_screen_sizes()
@@ -133,7 +135,13 @@ cdef class _RandRBindings(_X11CoreBindings):
         window = XDefaultRootWindow(self.display)
         try:
             config = XRRGetScreenInfo(self.display, window)
+            if config==NULL:
+                log.error("Error: failed to get randr screen info")
+                return False
             xrrs = XRRConfigSizes(config, &num_sizes)
+            if xrrs==NULL:
+                log.error("Error: failed to get randr screen sizes")
+                return False
             sizes = []
             sizeID = -1
             for i in range(num_sizes):
@@ -144,6 +152,9 @@ cdef class _RandRBindings(_X11CoreBindings):
                 log.error("size not found for %ix%i" % (width, height))
                 return False
             rates = XRRConfigRates(config, sizeID, &num_rates)
+            if rates==NULL:
+                log.error("Error: failed to get randr config rates")
+                return False
             rate = rates[0]
             rotation = RR_Rotate_0
             time = CurrentTime
@@ -167,8 +178,8 @@ cdef class _RandRBindings(_X11CoreBindings):
         return tw, th
 
     def get_screen_sizes_mm(self):
-        cdef int n = XScreenCount(self.display)
-        cdef int i, w, h
+        cdef unsigned int n = XScreenCount(self.display)
+        cdef unsigned int i, w, h
         cdef object sizes = []
         for i in range(n):
             w = XDisplayWidthMM(self.display, i)
@@ -186,17 +197,24 @@ cdef class _RandRBindings(_X11CoreBindings):
         cdef int num_sizes = 0                          #@DuplicatedSignature
         cdef SizeID size_id
         window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config             #@DuplicatedSignature
+        cdef XRRScreenConfiguration *config = NULL      #@DuplicatedSignature
         try:
             config = XRRGetScreenInfo(self.display, window)
+            if config==NULL:
+                raise Exception("failed to get screen info")
             xrrs = XRRConfigSizes(config, &num_sizes)
-            size_id = XRRConfigCurrentConfiguration(config, &original_rotation);
+            if xrrs==NULL:
+                raise Exception("failed to get screen sizes")
+            size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
+            if size_id<0:
+                raise Exception("failed to get current configuration")
 
             width = xrrs[size_id].width;
             height = xrrs[size_id].height;
             return int(width), int(height)
         finally:
-            XRRFreeScreenConfigInfo(config)
+            if config!=NULL:
+                XRRFreeScreenConfigInfo(config)
 
     def get_vrefresh(self):
         cdef Window window                              #@DuplicatedSignature
@@ -204,9 +222,13 @@ cdef class _RandRBindings(_X11CoreBindings):
         cdef XRRScreenConfiguration *config             #@DuplicatedSignature
         try:
             config = XRRGetScreenInfo(self.display, window)
+            if config==NULL:
+                log.error("Error: cannot get refresh rate from screen info")
+                return 0
             return XRRConfigCurrentRate(config)
         finally:
-            XRRFreeScreenConfigInfo(config)
+            if config!=NULL:
+                XRRFreeScreenConfigInfo(config)
 
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)

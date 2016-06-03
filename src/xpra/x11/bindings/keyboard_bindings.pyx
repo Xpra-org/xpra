@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -874,7 +874,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         XUngrabKey(self.display, AnyKey, AnyModifier, root_window)
 
 
-    cdef get_xatom(self, str_or_int):
+    cdef Atom get_xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         cdef char* string
@@ -886,12 +886,12 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
     def device_bell(self, xwindow, deviceSpec, bellClass, bellID, percent, name):
         if not self.hasXkb():
             return
-        name_atom = self.get_xatom(name)
+        cdef Atom name_atom = self.get_xatom(name)
         #until (if ever) we replicate the same devices on the server,
         #use the default device:
-        deviceSpec = XkbUseCoreKbd
-        bellID = XkbDfltXIId
-        return XkbDeviceBell(self.display, xwindow, deviceSpec, bellClass, bellID,  percent, name_atom)
+        #deviceSpec = XkbUseCoreKbd
+        #bellID = XkbDfltXIId
+        return XkbDeviceBell(self.display, xwindow, XkbUseCoreKbd, bellClass, XkbDfltXIId,  percent, name_atom)
 
 
     def hasXTest(self):
@@ -915,20 +915,24 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
 
     def xtest_fake_key(self, keycode, is_press):
-        if self.hasXTest():
-            XTestFakeKeyEvent(self.display, keycode, is_press, 0)
+        if not self.hasXTest():
+            return False
+        return XTestFakeKeyEvent(self.display, keycode, is_press, 0)
 
     def xtest_fake_button(self, button, is_press):
-        if self.hasXTest():
-            XTestFakeButtonEvent(self.display, button, is_press, 0)
+        if not self.hasXTest():
+            return False
+        return XTestFakeButtonEvent(self.display, button, is_press, 0)
 
     def xtest_fake_motion(self, int screen, int x, int y, int delay=0):
-        if self.hasXTest():
-            XTestFakeMotionEvent(self.display, screen, x, y, delay)
+        if not self.hasXTest():
+            return False
+        return XTestFakeMotionEvent(self.display, screen, x, y, delay)
 
     def xtest_fake_relative_motion(self, int x, int y, int delay=0):
-        if self.hasXTest():
-            XTestFakeRelativeMotionEvent(self.display, x, y, delay)
+        if not self.hasXTest():
+            return False
+        return XTestFakeRelativeMotionEvent(self.display, x, y, delay)
 
 
     def get_key_repeat_rate(self):
@@ -952,7 +956,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
 
     def hasXFixes(self):
-        cdef int r, evbase, errbase
+        cdef int evbase, errbase
         if not self.XFixes_checked:
             self.XFixes_checked = True
             if os.environ.get("XPRA_X11_XFIXES", "1")!="1":
@@ -1004,12 +1008,14 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         if not self.hasXFixes():
             log.warn("Warning: no cursor change notifications without XFixes support")
             return
+        cdef Window root_window
+        cdef unsigned int mask = 0
         root_window = XDefaultRootWindow(self.display)
         if on:
-            v = XFixesDisplayCursorNotifyMask
-        else:
-            v = 0
-        XFixesSelectCursorInput(self.display, root_window, v)
+            mask = XFixesDisplayCursorNotifyMask
+        #no return value..
+        XFixesSelectCursorInput(self.display, root_window, mask)
+        return True
 
 
     def selectBellNotification(self, on):
@@ -1019,4 +1025,4 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef int bits = XkbBellNotifyMask
         if not on:
             bits = 0
-        XkbSelectEvents(self.display, XkbUseCoreKbd, XkbBellNotifyMask, bits)
+        return XkbSelectEvents(self.display, XkbUseCoreKbd, XkbBellNotifyMask, bits)

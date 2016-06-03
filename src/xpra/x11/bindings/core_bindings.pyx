@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -23,8 +23,6 @@ cdef extern from "X11/Xutil.h":
 ######
 # Xlib primitives and constants
 ######
-
-ctypedef unsigned long CARD32
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
@@ -71,7 +69,7 @@ cdef class _X11CoreBindings:
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-    cdef xatom(self, str_or_int):
+    cdef Atom xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         cdef char* string

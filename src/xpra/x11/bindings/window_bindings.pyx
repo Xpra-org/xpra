@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -484,25 +484,31 @@ cdef class _X11WindowBindings(_X11CoreBindings):
     # XUnmapWindow
     ###################################
     def Unmap(self, Window xwindow):
-        serial = NextRequest(self.display)
+        cdef unsigned long serial = NextRequest(self.display)
         XUnmapWindow(self.display, xwindow)
         return serial
 
     # Mapped status
     def is_mapped(self, Window xwindow):
         cdef XWindowAttributes attrs
-        XGetWindowAttributes(self.display, xwindow, &attrs)
+        cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
+        if status==0:
+            return False
         return attrs.map_state != IsUnmapped
 
     # Override-redirect status
     def is_override_redirect(self, Window xwindow):
         cdef XWindowAttributes or_attrs
-        XGetWindowAttributes(self.display, xwindow, &or_attrs)
+        cdef Status status = XGetWindowAttributes(self.display, xwindow, &or_attrs)
+        if status==0:
+            return False
         return or_attrs.override_redirect
 
     def geometry_with_border(self, Window xwindow):
         cdef XWindowAttributes geom_attrs
-        XGetWindowAttributes(self.display, xwindow, &geom_attrs)
+        cdef Status status = XGetWindowAttributes(self.display, xwindow, &geom_attrs)
+        if status==0:
+            return False
         return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
 
     def get_depth(self, Drawable d):
@@ -532,7 +538,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
     # XKillClient
     ###################################
     def XKillClient(self, Window xwindow):
-        XKillClient(self.display, xwindow)
+        return XKillClient(self.display, xwindow)
 
 
     ###################################
@@ -590,7 +596,10 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         cdef int n_rects = len(rectangles)
         cdef int op = 0     #SET
         cdef int ordering = 0   #Unsorted
-        cdef XRectangle *rects = <XRectangle*> malloc(sizeof(XRectangle) * n_rects)
+        cdef size_t l = sizeof(XRectangle) * n_rects
+        cdef XRectangle *rects = <XRectangle*> malloc(l)
+        if rects==NULL:
+            raise Exception("failed to allocate %i bytes of memory for xshape rectangles" % l)
         cdef int i = 0
         for r in rectangles:
             rects[i].x = r[0]
