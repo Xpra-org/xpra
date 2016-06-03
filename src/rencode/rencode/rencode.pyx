@@ -29,7 +29,7 @@ if py3:
     unicode = str
 
 from cpython cimport bool
-from libc.stdlib cimport realloc, malloc, free
+from libc.stdlib cimport realloc, free
 from libc.string cimport memcpy
 
 __version__ = ("Cython", 1, 0, 3)
@@ -151,11 +151,15 @@ cdef swap_byte_order_double(char *c):
 
 cdef write_buffer_char(char **buf, int *pos, char c):
     buf[0] = <char*>realloc(buf[0], pos[0] + 1)
+    if buf[0]==NULL:
+        raise Exception("memory allocation failure for output buffer: %i bytes needed" % (pos[0] + 1))
     memcpy(&buf[0][pos[0]], &c, 1)
     pos[0] += 1
 
 cdef write_buffer(char **buf, int *pos, void* data, int size):
     buf[0] = <char*>realloc(buf[0], pos[0] + size)
+    if buf[0]==NULL:
+        raise Exception("memory allocation failure for output buffer: %i bytes needed" % (pos[0] + 1))
     memcpy(&buf[0][pos[0]], data, size)
     pos[0] += size
 
@@ -375,7 +379,7 @@ cdef decode_big_number(char *data, int *pos):
     cdef int x = 18
     while (data[pos[0]+x] != CHR_TERM):
         x += 1
-    s = data[pos[0]:x+1]
+    s = data[pos[0]:pos[0]+x]
     pos[0] += x + 1
     big_number = int(s)
     return big_number
