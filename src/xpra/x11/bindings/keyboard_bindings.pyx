@@ -510,7 +510,11 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         MAX_KEYSYMS_PER_KEYCODE = 8
         keysyms_per_keycode = min(MAX_KEYSYMS_PER_KEYCODE, max([1]+[len(keysyms) for keysyms in keycodes.values()]))
         log("xmodmap_setkeycodes using %s keysyms_per_keycode", keysyms_per_keycode)
-        ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
+        cdef size_t l = sizeof(KeySym)*num_codes*keysyms_per_keycode
+        ckeysyms = <KeySym*> malloc(l)
+        if ckeysyms==NULL:
+            log.error("Error: failed to allocate %i bytes of memory for keysyms" % l)
+            return False
         try:
             missing_keysyms = []
             for i in range(0, num_codes):

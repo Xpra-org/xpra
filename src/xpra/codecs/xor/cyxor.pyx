@@ -3,13 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-    void free(void* mem)
-
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size) nogil
 
 cdef extern from "../../buffers/buffers.h":
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)

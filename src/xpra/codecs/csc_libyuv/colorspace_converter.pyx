@@ -224,6 +224,8 @@ cdef class ColorspaceConverter:
                 self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
         if self.scaling:
             self.output_buffer = <uint8_t *> malloc(self.out_buffer_size)
+            if self.output_buffer==NULL:
+                raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         else:
             self.output_buffer = NULL
         log("buffer size=%i, scaling=%s, filtermode=%s", self.out_buffer_size, self.scaling, get_fiter_mode_str(self.filtermode))
@@ -330,6 +332,8 @@ cdef class ColorspaceConverter:
         else:
             #allocate output buffer:
             output_buffer = <unsigned char*> malloc(self.out_buffer_size)
+            if output_buffer==NULL:
+                raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         for i in range(3):
             #offsets are aligned, so this is safe and gives us aligned pointers:
             out_planes[i] = <uint8_t*> (<unsigned long> memalign_ptr(output_buffer) + self.out_offsets[i])
@@ -348,6 +352,8 @@ cdef class ColorspaceConverter:
         if self.scaling:
             start = time.time()
             scaled_buffer = <unsigned char*> malloc(self.scaled_buffer_size)
+            if scaled_buffer==NULL:
+                raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
             with nogil:
                 for i in range(3):
                     scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]

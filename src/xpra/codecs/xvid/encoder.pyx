@@ -481,7 +481,8 @@ cdef class Encoder:
         frame.motion = XVID_ME_FASTREFINE16 | XVID_ME_FASTREFINE8 | XVID_ME_SKIP_DELTASEARCH | XVID_ME_FAST_MODEINTERPOLATE | XVID_ME_BFRAME_EARLYSTOP
         cdef size_t l = self.width*self.height*3
         cdef char *bitstream = <char*> malloc(l)
-        assert bitstream!=NULL, "failed to allocate output buffer"
+        if bitstream==NULL:
+            raise Exception("failed to allocate %i bytes for output buffer" % l)
         frame.bitstream = bitstream
         frame.length = l
         with nogil:
