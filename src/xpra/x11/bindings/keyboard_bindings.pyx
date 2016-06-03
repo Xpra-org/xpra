@@ -462,8 +462,10 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
     cdef _keysym_str(self, keysym_val):
         cdef KeySym keysym                      #@DuplicatedSignature
         keysym = int(keysym_val)
-        s = XKeysymToString(keysym)
-        return s
+        cdef char *s = XKeysymToString(keysym)
+        if s==NULL:
+            return ""
+        return bytestostr(s)
 
     def keysym_str(self, keysym_val):
         return self._keysym_str(keysym_val)
@@ -689,6 +691,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         (index and keycode), so here we convert into names:
         """
         cdef KeySym keysym                      #@DuplicatedSignature
+        cdef char *keyname
         keysyms_per_keycode, raw_mappings = self._get_raw_modifier_mappings()
         mappings = {}
         for mod, keycodes in raw_mappings.items():
@@ -707,8 +710,12 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                     log.warn("Warning: no keysym found for keycode %i of modifier %s", keycode, modifier)
                     continue
                 keyname = XKeysymToString(keysym)
-                if keyname not in keynames:
-                    keynames.append((keycode, keyname))
+                if keyname==NULL:
+                    log.warn("Warning: cannot convert keysym %i to a string", keysym)
+                    continue
+                kstr = bytestostr(keyname)
+                if kstr not in keynames:
+                    keynames.append((keycode, kstr))
             mappings[modifier] = keynames
         return mappings
 
@@ -771,12 +778,16 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             {}
         cdef Display * display                          #@DuplicatedSignature
         cdef char* key
+        cdef KeySym keysym
         keycodes = self._get_keycodes_down()
         keys = {}
         for keycode in keycodes:
             keysym = XkbKeycodeToKeysym(self.display, keycode, 0, 0)
+            if keysym==NoSymbol:
+                continue
             key = XKeysymToString(keysym)
-            keys[keycode] = str(key)
+            if key!=NULL:
+                keys[keycode] = bytestostr(key)
         return keys
 
     def unpress_all_keys(self):
