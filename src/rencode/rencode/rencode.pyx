@@ -375,12 +375,9 @@ cdef decode_big_number(char *data, int *pos):
     cdef int x = 18
     while (data[pos[0]+x] != CHR_TERM):
         x += 1
-    cdef char *s = <char *>malloc(x)
-    memcpy(s, &data[pos[0]], x)
-    s[x] = '\0'
+    s = data[pos[0]:x+1]
     pos[0] += x + 1
     big_number = int(s)
-    free(s)
     return big_number
 
 cdef decode_float32(char *data, int *pos):
