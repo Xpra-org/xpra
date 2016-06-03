@@ -1254,6 +1254,12 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
+cdef unsigned long cmalloc(size_t size, what) except 0:
+    cdef void *ptr = malloc(size)
+    if ptr==NULL:
+        raise Exception("failed to allocate %i bytes of memory for %s" % (size, what))
+    return <unsigned long> ptr
+
 cdef nvencStatusInfo(NVENCSTATUS ret):
     if ret in NV_ENC_STATUS_TXT:
         return "%s: %s" % (ret, NV_ENC_STATUS_TXT[ret])
@@ -1532,16 +1538,14 @@ cdef class Encoder:
         cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         cdef NVENCSTATUS r
 
-        self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> malloc(sizeof(NV_ENCODE_API_FUNCTION_LIST))
-        assert self.functionList!=NULL
+        self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> cmalloc(sizeof(NV_ENCODE_API_FUNCTION_LIST), "function list")
         assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
         log("init_nvenc() functionList=%#x", <unsigned long> self.functionList)
 
         self.open_encode_session()
 
         cdef GUID codec = self.init_codec()
-        params = <NV_ENC_INITIALIZE_PARAMS*> malloc(sizeof(NV_ENC_INITIALIZE_PARAMS))
-        assert params!=NULL
+        params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         try:
             self.init_params(codec, params)
@@ -1583,7 +1587,7 @@ cdef class Encoder:
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
 
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
-        config = <NV_ENC_CONFIG*> malloc(sizeof(NV_ENC_CONFIG))
+        config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
 
         presetConfig = self.get_preset_config(self.preset_name, codec, preset)
         assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
@@ -2201,8 +2205,7 @@ cdef class Encoder:
         """ you must free it after use! """
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-        presetConfig = <NV_ENC_PRESET_CONFIG*> malloc(sizeof(NV_ENC_PRESET_CONFIG))
-        assert presetConfig!=NULL, "failed to allocate memory for preset config"
+        presetConfig = <NV_ENC_PRESET_CONFIG*> cmalloc(sizeof(NV_ENC_PRESET_CONFIG), "preset config")
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
@@ -2231,8 +2234,7 @@ cdef class Encoder:
         raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
         log("found %s preset%s:", presetCount, engs(presetCount))
         assert presetCount<2**8
-        preset_GUIDs = <GUID*> malloc(sizeof(GUID) * presetCount)
-        assert preset_GUIDs!=NULL, "could not allocate memory for %s preset GUIDs!" % (presetCount)
+        preset_GUIDs = <GUID*> cmalloc(sizeof(GUID) * presetCount, "preset GUIDs")
         try:
             if DEBUG_API:
                 log("nvEncGetEncodePresetGUIDs(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
@@ -2283,8 +2285,7 @@ cdef class Encoder:
         raiseNVENC(r, "getting profile count")
         log("%s profiles:", profileCount)
         assert profileCount<2**8
-        profile_GUIDs = <GUID*> malloc(sizeof(GUID) * profileCount)
-        assert profile_GUIDs!=NULL, "could not allocate memory for %s profile GUIDs!" % (profileCount)
+        profile_GUIDs = <GUID*> cmalloc(sizeof(GUID) * profileCount, "profile GUIDs")
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
             if DEBUG_API:
@@ -2318,8 +2319,7 @@ cdef class Encoder:
         raiseNVENC(r, "getting input format count")
         log("%s input format type%s:", inputFmtCount, engs(inputFmtCount))
         assert inputFmtCount>0 and inputFmtCount<2**8
-        inputFmts = <NV_ENC_BUFFER_FORMAT*> malloc(sizeof(int) * inputFmtCount)
-        assert inputFmts!=NULL, "could not allocate memory for %s input formats!" % (inputFmtCount)
+        inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
         try:
             if DEBUG_API:
                 log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
@@ -2368,8 +2368,7 @@ cdef class Encoder:
         raiseNVENC(r, "getting encoder count")
         log("found %i encoder%s:", GUIDCount, engs(GUIDCount))
         assert GUIDCount<2**8
-        encode_GUIDs = <GUID*> malloc(sizeof(GUID) * GUIDCount)
-        assert encode_GUIDs!=NULL, "could not allocate memory for %s encode GUIDs!" % (GUIDCount)
+        encode_GUIDs = <GUID*> cmalloc(sizeof(GUID) * GUIDCount, "encode GUIDs")
         codecs = {}
         try:
             if DEBUG_API:
