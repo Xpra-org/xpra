@@ -441,6 +441,8 @@ class WindowVideoSource(WindowSource):
         else:
             #keep the region, but cancel the refresh:
             self.video_subregion.cancel_refresh_timer()
+        #refresh the whole window in one go:
+        damage_options["novideo"] = True
         WindowSource.full_quality_refresh(self, window, damage_options)
 
 
@@ -543,6 +545,11 @@ class WindowVideoSource(WindowSource):
             sublog("not a video encoding")
             #keep current encoding selection function
             return send_nonvideo(get_best_encoding=self.get_best_encoding)
+
+        if options.get("novideo"):
+            sublog("video disabled in options")
+            #keep current encoding selection function
+            return send_nonvideo()
 
         vr = self.video_subregion.rectangle
         if not vr:
