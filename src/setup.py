@@ -760,11 +760,11 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
         elif "usr" in dirs:
             #ie: ["some", "path", "to", "usr"] -> ["usr"]
             #assume "/usr" or "/usr/local" is the build root
-            while "usr" in dirs:
+            while "usr" in dirs and dirs.index("usr")>0:
                 dirs = dirs[dirs.index("usr"):]
     #now deal with the fact that "/etc" is used for the "/usr" prefix
     #but "/usr/local/etc" is used for the "/usr/local" prefix..
-    if dirs[-1]=="usr":
+    if dirs and dirs[-1]=="usr":
         dirs = dirs[:-1]
     #is this an absolute path?
     if len(dirs)==0 or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
