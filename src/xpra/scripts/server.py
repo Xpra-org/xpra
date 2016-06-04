@@ -1119,16 +1119,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return  1
 
     display = None
-    if start_vfb:
-        if not verify_display_ready(xvfb, display_name, shadowing):
-            return 1
-        if nested and not verify_display_ready(nested, child_display, False):
-            return 1
+    if not proxying:
+        no_gtk()
+        if os.name=="posix" and starting or starting_desktop:
+            #check that we can access the X11 display:
+            if not verify_display_ready(xvfb, display_name, shadowing):
+                return 1
+            if nested and not verify_display_ready(nested, child_display, False):
+                return 1
         display = verify_gdk_display(display_name)
         if not display:
             return 1
-    elif not proxying:
-        no_gtk()
         import gtk          #@Reimport
         assert gtk
 
@@ -1249,10 +1250,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             except:
                 pass
         # Close our display(s) first, so the server dying won't kill us.
+        if display:
+            import gtk  #@Reimport
+            for display in gtk.gdk.display_manager_get().list_displays():
+                display.close()
         log.info("killing xvfb with pid %s" % xvfb_pid)
-        import gtk  #@Reimport
-        for display in gtk.gdk.display_manager_get().list_displays():
-            display.close()
         os.kill(xvfb_pid, signal.SIGTERM)
 
     if xvfb_pid is not None and not opts.use_display and not shadowing:
