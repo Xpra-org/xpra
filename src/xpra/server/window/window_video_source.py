@@ -434,8 +434,13 @@ class WindowVideoSource(WindowSource):
 
 
     def full_quality_refresh(self, window, damage_options={}):
-        #override so we reset the video region on full quality refresh
-        self.video_subregion.reset()
+        #override so we can:
+        if self.video_subregion.detection:
+            #reset the video region on full quality refresh
+            self.video_subregion.reset()
+        else:
+            #keep the region, but cancel the refresh:
+            self.video_subregion.cancel_refresh_timer()
         WindowSource.full_quality_refresh(self, window, damage_options)
 
 
