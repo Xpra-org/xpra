@@ -26,6 +26,7 @@
 %define requires_websockify , python-websockify
 %define requires_lzo , python-lzo
 %define numpy numpy
+%define requires_shadow shadow-utils
 %define requires_cython Cython
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
@@ -108,6 +109,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 #causes problems with automatic dependency calculations:
 %global __requires_exclude typelib\\(.*\\)
 %define numpy python-numpy
+%define requires_shadow shadow
 %define requires_xorg xauth, xf86-video-dummy
 %define requires_lzo %{nil}
 %define requires_cython python-Cython
