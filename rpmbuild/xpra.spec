@@ -188,6 +188,7 @@ BuildRequires: libXdamage-devel
 BuildRequires: libXrandr-devel
 BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
+BuildRequires: pam-devel
 %if 0%{?fedora}
 BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
