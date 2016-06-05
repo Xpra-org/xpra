@@ -1242,23 +1242,27 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     #we got this far so the sockets have initialized and
     #the server should be able to manage the display
     #from now on, if we exit without upgrading we will also kill the Xvfb
-    def kill_xvfb():
+    def close_display():
         if nested and nested.poll() is None:
+            log.info("killing nested X11 server with pid %s", nested.pid)
             try:
-                log.info("killing nested X11 server with pid %s" % nested.pid)
                 os.kill(nested.pid, signal.SIGTERM)
-            except:
-                pass
+            except OSError as e:
+                log.info("failed to kill nested X11 server process with pid %s:", nested.pid)
+                log.info(" %s", e)                
         # Close our display(s) first, so the server dying won't kill us.
-        if display:
-            import gtk  #@Reimport
-            for display in gtk.gdk.display_manager_get().list_displays():
-                display.close()
-        log.info("killing xvfb with pid %s" % xvfb_pid)
-        os.kill(xvfb_pid, signal.SIGTERM)
-
-    if xvfb_pid is not None and not opts.use_display and not shadowing:
-        _cleanups.append(kill_xvfb)
+        import gtk  #@Reimport
+        for d in gtk.gdk.display_manager_get().list_displays():
+            d.close()
+        if xvfb_pid:
+            log.info("killing xvfb with pid %s", xvfb_pid)
+            try:
+                os.kill(xvfb_pid, signal.SIGTERM)
+            except OSError as e:
+                log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
+                log.info(" %s", e)                
+    if not proxying:
+        _cleanups.append(close_display)
 
     try:
         app.original_desktop_display = desktop_display
@@ -1307,8 +1311,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         e = -128
     if e>0:
         # Upgrading/exiting, so leave X and dbus servers running
-        if kill_xvfb in _cleanups:
-            _cleanups.remove(kill_xvfb)
+        if close_display in _cleanups:
+            _cleanups.remove(close_display)
             _cleanups.remove(kill_dbus)
         from xpra.server.server_core import ServerCore
         if e==ServerCore.EXITING_CODE:
