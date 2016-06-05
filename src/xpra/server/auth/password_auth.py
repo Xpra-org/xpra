@@ -11,7 +11,6 @@ assert init
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        print("kwargs=%s" % (kwargs, ))
         SysAuthenticator.__init__(self, username)
         self.value = kwargs.get("value")
         self.authenticate = self.authenticate_hmac
