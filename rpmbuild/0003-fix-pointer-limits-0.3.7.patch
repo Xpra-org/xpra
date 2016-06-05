@@ -1,0 +1,46 @@
+diff --git a/src/dummy_driver.c b/src/dummy_driver.c
+index 9d4d5bf..737f11c 100644
+--- a/src/dummy_driver.c
++++ b/src/dummy_driver.c
+@@ -49,6 +49,9 @@
+ #include <X11/extensions/xf86dgaproto.h>
+ #endif
+ 
++/* Needed for fixing pointer limits on resize */
++#include "inputstr.h"
++
+ /* Mandatory functions */
+ static const OptionInfoRec *	DUMMYAvailableOptions(int chipid, int busid);
+ static void     DUMMYIdentify(int flags);
+@@ -666,7 +669,30 @@ Bool
+ DUMMYSwitchMode(SWITCH_MODE_ARGS_DECL)
+ {
+     SCRN_INFO_PTR(arg);
+-    return dummyModeInit(pScrn, mode);
++    if (!dummyModeInit(pScrn, mode))
++        return FALSE;
++
++    //ensure the screen dimensions are also updated:
++    pScrn->pScreen->width = mode->HDisplay;
++    pScrn->pScreen->height = mode->VDisplay;
++    pScrn->virtualX = mode->HDisplay;
++    pScrn->virtualY = mode->VDisplay;
++    pScrn->frameX1 = mode->HDisplay;
++    pScrn->frameY1 = mode->VDisplay;
++
++    //ensure the pointer uses the new limits too:
++    DeviceIntPtr pDev;
++    SpritePtr pSprite;
++    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
++        if (pDev->spriteInfo!=NULL && pDev->spriteInfo->sprite!=NULL) {
++            pSprite = pDev->spriteInfo->sprite;
++            pSprite->hotLimits.x2 = mode->HDisplay;
++            pSprite->hotLimits.y2 = mode->VDisplay;
++            pSprite->physLimits.x2 = mode->HDisplay;
++            pSprite->physLimits.y2 = mode->VDisplay;
++        }
++    }
++    return TRUE;
+ }
+ 
+ /* Mandatory */
