@@ -120,6 +120,8 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 #(see recommends below)
 %define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
+%define requires_opengl , python-opengl, python-opengl-accelerate, python-gtkglext
+%define py3requires_opengl , python3-opengl, python3-opengl-accelerate
 %define requires_crypto python-pycrypto
 %define py3requires_crypto python3-pycrypto
 #different naming prefix ("python-") for pygtkglext:
