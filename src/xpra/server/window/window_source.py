@@ -1283,7 +1283,15 @@ class WindowSource(object):
                     return
 
         #we're processing a number of regions separately,
-        #start by figuring out which encoding will get used, and shortcut out if this needs to be a full window update
+        #start by removing the exclude region if there is one:
+        if exclude_region:
+            e_regions = []
+            for r in regions:
+                for v in r.substract_rect(exclude_region):
+                    e_regions.append(v)
+            regions = e_regions
+        #then figure out which encoding will get used,
+        #and shortcut out if this needs to be a full window update:
         i_reg_enc = []
         for i,region in enumerate(regions):
             actual_encoding = get_encoding(region.width*region.height)

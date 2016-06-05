@@ -591,7 +591,7 @@ class WindowVideoSource(WindowSource):
 
         if actual_vr is None:
             sublog("send_delayed_regions: video region %s not found in: %s (using non video encoding)", vr, regions)
-            return send_nonvideo(encoding=None)
+            return send_nonvideo(encoding=None, exclude_region=vr)
 
         #found the video region:
         #send this using the video encoder:
@@ -660,7 +660,7 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         WindowSource.update_encoding_options(self, force_reload)
-        log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
+        log("update_encoding_options(%s) supports_video_subregion=%s, csc_encoder=%s, video_encoder=%s", force_reload, self.supports_video_subregion, self._csc_encoder, self._video_encoder)
         if self.supports_video_subregion:
             if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0 and not (self._mmap and self._mmap_size>0):
                 ww, wh = self.window_dimensions
