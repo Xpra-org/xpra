@@ -30,13 +30,13 @@ cdef extern from "pwd.h":
         char   *pw_shell        #shell program
     passwd *getpwuid(uid_t uid)
 
-cdef extern from "security/pam_misc.h":
+cdef extern from "pam_misc.h":
     ctypedef struct pam_handle_t:
         pass
     void misc_conv(int num_msg, const pam_message **msgm, pam_response **response, void *appdata_ptr)
 
 
-cdef extern from "security/pam_appl.h":
+cdef extern from "pam_appl.h":
     int PAM_SUCCESS
     struct pam_conv:
         void *conv
