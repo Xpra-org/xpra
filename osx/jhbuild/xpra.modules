@@ -419,9 +419,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/f8/70/d7bd5c9c764732d5876ad34293e1ca55b2305a73ae6fcf1312202d1a798e/cryptography-1.3.4.tar.gz"
-		hash="md5:defd153ed901089f5aeac6eb066d5ef7"
-		version="1.3.4"/>
+		module="/packages/a9/5b/a383b3a778609fe8177bd51307b5ebeee369b353550675353f46cb99c6f0/cryptography-1.4.tar.gz"
+		hash="md5:a9763e3831cc7cdb402c028fac1ceb39"
+		version="1.4"/>
 	<dependencies>
                 <dep package="python"/>
 		<dep package="openssl"/>
