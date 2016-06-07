@@ -552,7 +552,7 @@ class WindowVideoSource(WindowSource):
             return send_nonvideo()
 
         vr = self.video_subregion.rectangle
-        if not vr:
+        if not vr or not self.video_subregion.enabled:
             sublog("no video region, we may use the video encoder for something else")
             WindowSource.do_send_delayed_regions(self, damage_time, window, regions, coding, options)
             return
