@@ -2419,6 +2419,7 @@ if vsock_ENABLED:
 if pam_ENABLED:
     pam_pkgconfig = pkgconfig()
     add_to_keywords(pam_pkgconfig, 'extra_compile_args', "-I/usr/include/pam", "-I/usr/include/security")
+    add_to_keywords(pam_pkgconfig, 'extra_link_args', "-lpam", "-lpam_misc")
     cython_add(Extension("xpra.server.pam",
                 ["xpra/server/pam.pyx"],
                 **pam_pkgconfig))
