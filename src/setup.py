@@ -2180,10 +2180,11 @@ if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v6.5\\bin",
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.0\\bin",
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\bin",
+                         "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v8.0\\bin",
                          ] + path_options
     else:
         nvcc_exe = "nvcc"
-        for v in ("-5.5", "-6.0", "-6.5", "-7.0", "-7.5", ""):
+        for v in ("-5.5", "-6.0", "-6.5", "-7.0", "-7.5", "8.0", ""):
             path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     if not WIN32:
@@ -2259,6 +2260,10 @@ if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
             comp_code_options.append((52, 52))
         if version>="7.5":
             comp_code_options.append((53, 53))
+        if version>="8.0":
+            comp_code_options.append((60, 60))
+            comp_code_options.append((61, 61))
+            comp_code_options.append((62, 62))
         for arch, code in comp_code_options:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
