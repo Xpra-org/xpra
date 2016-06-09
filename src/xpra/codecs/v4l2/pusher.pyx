@@ -55,10 +55,10 @@ cdef extern from "./video.h":
     int V4L2_FIELD_BOTTOM
     int V4L2_FIELD_INTERLACED
     int V4L2_FIELD_SEQ_TB
-    #int V4L2_FIELD_SEQ_BT
-    #int V4L2_FIELD_ALTERNATE
-    int V4L2_FIELD_INTERLACED_TB
-    int V4L2_FIELD_INTERLACED_BT
+    int V4L2_FIELD_SEQ_BT
+    int V4L2_FIELD_ALTERNATE
+    #int V4L2_FIELD_INTERLACED_TB
+    #int V4L2_FIELD_INTERLACED_BT
     #formats:
     int V4L2_PIX_FMT_GREY
     int V4L2_PIX_FMT_YUV422P
@@ -159,10 +159,10 @@ FIELD_STR = {
     V4L2_FIELD_BOTTOM               : "Bottom",
     V4L2_FIELD_INTERLACED           : "Interlaced",
     V4L2_FIELD_SEQ_TB               : "SEQ TB",
-    #V4L2_FIELD_SEQ_BT               : "SEQ BT",
-    #V4L2_FIELD_ALTERNATE            : "ALTERNATE",
-    V4L2_FIELD_INTERLACED_TB        : "INTERLACED TB",
-    V4L2_FIELD_INTERLACED_BT        : "INTERLACED BT",
+    V4L2_FIELD_SEQ_BT               : "SEQ BT",
+    V4L2_FIELD_ALTERNATE            : "ALTERNATE",
+    #V4L2_FIELD_INTERLACED_TB        : "INTERLACED TB",
+    #V4L2_FIELD_INTERLACED_BT        : "INTERLACED BT",
 }
 COLORSPACE_STR = {
     V4L2_COLORSPACE_SRGB            : "SRGB",
