@@ -97,7 +97,7 @@ def pam_open(service_name="xpra"):
 
 def pam_close():
     global pam_handle
-    if pam_handle!=NULL:
+    if pam_handle==NULL:
         log.error("Error: no pam session to close!")
         return False
 
