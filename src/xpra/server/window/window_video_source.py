@@ -618,10 +618,16 @@ class WindowVideoSource(WindowSource):
                 sublog("send_delayed_regions: non video regions have waited %sms already, sending", elapsed)
                 self.video_subregion.non_waited = 0
             else:
-                #delay further: just create new delayed region:
+                #delay further: just add-to / create delayed region:
                 sublog("send_delayed_regions: delaying non video regions some more")
-                self._damage_delayed = time.time(), window, trimmed, coding, options or {}
+                dr = self._damage_delayed
+                if dr:
+                    delayed = dr[2] + trimmed
+                else:
+                    delayed = trimmed
+                self._damage_delayed = time.time(), window, delayed, coding, options or {}
                 delay = self.video_subregion.non_max_wait-elapsed
+                self.cancel_expire_timer()
                 self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
                 return
         send_nonvideo(regions=trimmed, encoding=None, exclude_region=actual_vr)
