@@ -30,7 +30,6 @@
   <repository type="tarball" name="storage.googleapis.com" href="http://storage.googleapis.com/"/>
   <repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
   <repository type="tarball" name="oberhumer.com" default="yes" href="http://www.oberhumer.com/"/>
-  <repository type="tarball" name="openssl.org" default="yes" href="https://www.openssl.org/"/>
   <repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
   <repository type="tarball" name="ftp.gnu.org" href="ftp://ftp.gnu.org"/>
 
@@ -56,6 +55,13 @@
 		version="2.12"
 		hash="md5:93eea9f07c0058c097891c73e4955456"
 		repo="ftp.gnu.org"/>
+  </autotools>
+
+  <autotools id="xar" autogen-sh="configure">
+	<branch module="/downloads/mackyle/xar/xar-1.6.1.tar.gz"
+		version="1.6.1"
+		hash="md5:a624535d6a1e8fdf420b36a6b334047b"
+		repo="github.com"/>
   </autotools>
 
   <autotools id="libogg" autogenargs="" autogen-sh="configure">
