@@ -19,7 +19,7 @@ def get_type():
 def do_get_encodings():
     log("PIL.Image.OPEN=%s", Image.OPEN)
     encodings = []
-    for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
+    for encoding in ["png", "png/L", "png/P", "jpeg"]:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in Image.OPEN:

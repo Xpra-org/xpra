@@ -154,7 +154,7 @@ enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 xvid_ENABLED            = DEFAULT and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
-webp_ENABLED            = DEFAULT and pkg_config_ok("--atleast-version=0.4", "libwebp")
+webp_ENABLED            = False
 vpx_ENABLED             = DEFAULT and pkg_config_ok("--atleast-version=1.3", "vpx", fallback=WIN32)
 webcam_ENABLED          = DEFAULT and not OSX
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX)
