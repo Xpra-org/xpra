@@ -1005,7 +1005,7 @@ class WindowSource(object):
                         existing_options[k] = options[k]
             log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
                 x, y, w, h, options, self.wid, delayed[3], now-delayed[0])
-            if not self.expire_timer and not self.soft_timer:
+            if not self.expire_timer and not self.soft_timer and self.soft_expired==0:
                 log.error("Error: bug, found a delayed region without a timer!")
                 self.expire_timer = self.timeout_add(0, self.expire_delayed_region, 0)
             return
