@@ -602,35 +602,35 @@ class WindowVideoSource(WindowSource):
             trimmed = []
             for r in regions:
                 trimmed += r.substract_rect(actual_vr)
-            if len(trimmed)==0:
+            if not trimmed:
                 sublog("send_delayed_regions: nothing left after removing video region %s", actual_vr)
                 return
             sublog("send_delayed_regions: substracted %s from %s gives us %s", actual_vr, regions, trimmed)
             regions = trimmed
 
-        if not regions:
-            return
         #merge existing damage delayed region if there is one:
         #(this codepath can fire from a video region refresh callback)
         dr = self._damage_delayed
         if dr:
             regions = dr[2] + regions
             damage_time = min(damage_time, dr[0])
+            self._damage_delayed = None
+            self.cancel_expire_timer()
         #decide if we want to send the rest now or delay some more,
         #only delay once the video encoder has dealt with a few frames:
         event_count = max(0, self.statistics.damage_events_count - self.video_subregion.set_at)
-        elapsed = int(1000.0*(time.time()-damage_time))
-        #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
-        delay = max(self.batch_config.delay*4, 50)
-        delay = min(delay, self.video_subregion.non_max_wait-elapsed)
         if event_count<100:
             delay = 0
-        if delay<=0:
+        else:
+            #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
+            elapsed = int(1000.0*(time.time()-damage_time))
+            delay = max(self.batch_config.delay*4, 50)
+            delay = min(delay, self.video_subregion.non_max_wait-elapsed)
+        if delay<=25:
             send_nonvideo(regions=regions, encoding=None)
         else:
             self._damage_delayed = damage_time, window, regions, coding, options or {}
             sublog("send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
-            self.cancel_expire_timer()
             self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
 
