@@ -13,17 +13,20 @@ log = Logger("opengl")
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
-WHITELIST = {}
-GREYLIST = {}
-VERSION_REQ = {"nouveau" : [3, 0],      #older versions have issues
+WHITELIST = {
+             "renderer" : ["Skylake"]
+             }
+GREYLIST = {
+            "vendor"    : ["Intel"]
+            }
+VERSION_REQ = {
+               "nouveau" : [3, 0],      #older versions have issues
                }
-BLACKLIST = {"vendor" : ["Humper", "VMware, Inc."],
-             "renderer" : ["Software Rasterizer"]}
+BLACKLIST = {
+             "vendor"   : ["Humper", "VMware, Inc."],
+             "renderer" : ["Software Rasterizer"]
+             }
 
-#the Intel driver causes too many problems:
-GREYLIST.setdefault("vendor", []).append("Intel")
-GREYLIST.setdefault("vendor", []).append("Intel Inc.")
-GREYLIST.setdefault("vendor", []).append("Intel Open Source Technology Center")
 from xpra.os_util import getUbuntuVersion
 uv = getUbuntuVersion()
 if uv and uv<[15]:
@@ -280,24 +283,18 @@ def do_check_GL_support(force_enable):
             log("%s: %s", d, v)
             props[d] = v
 
-        blacklisted = None
-        whitelisted = None
-        greylisted = None
-        for k,vlist in BLACKLIST.items():
-            v = props.get(k)
-            if v in vlist:
-                log("%s '%s' found in blacklist: %s", k, v, vlist)
-                blacklisted = k, v
-        for k,vlist in GREYLIST.items():
-            v = props.get(k)
-            if v in vlist:
-                log("%s '%s' found in greylist: %s", k, v, vlist)
-                greylisted = k, v
-        for k,vlist in WHITELIST.items():
-            v = props.get(k)
-            if v in vlist:
-                log("%s '%s' found in whitelist: %s", k, v, vlist)
-                whitelisted = k, v
+        def match_list(thelist, listname):
+            for k,vlist in thelist.items():
+                v = props.get(k)
+                matches = [x for x in vlist if v.find(x)>=0]
+                if matches:
+                    log("%s '%s' found in %s: %s", k, v, listname, vlist)
+                    return (k, v)
+                log("%s '%s' not found in %s: %s", k, v, listname, vlist)
+            return None
+        blacklisted = match_list(BLACKLIST, "blacklist")
+        whitelisted = match_list(GREYLIST, "greylist")
+        greylisted = match_list(WHITELIST, "whitelist")
         if blacklisted:
             if whitelisted:
                 log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
