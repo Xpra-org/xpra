@@ -491,6 +491,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         bw, bh = self.size
         ww, wh = self.render_size
 
+        rect_count = len(self.pending_fbo_paint)
         if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
             #refresh the whole window:
             rectangles = ((0, 0, bw, bh), )
@@ -560,7 +561,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnd()
 
         # Show the backbuffer on screen
-        self.gl_show()
+        self.gl_show(rect_count)
         self.gl_frame_terminator()
 
         #restore pbo viewport
@@ -573,7 +574,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         log("%s.do_present_fbo() done", self)
 
-    def gl_show(self):
+    def gl_show(self, rect_count):
         start = time.time()
         if self.glconfig.is_double_buffered():
             # Show the backbuffer on screen
@@ -585,7 +586,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             log("%s.gl_show() flushing", self)
             glFlush()
         end = time.time()
-        fpslog("gl_show took %ims", (end-start)*1000)
+        fpslog("gl_show took %ims, %i updates", (end-start)*1000, rect_count)
 
 
     def paint_box(self, encoding, is_delta, x, y, w, h):
