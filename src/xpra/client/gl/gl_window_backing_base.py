@@ -209,6 +209,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
         self.pending_fbo_paint = []
+        self.last_flush = time.time()
         self.default_paint_box_line_width = OPENGL_PAINT_BOX or 1
         self.paint_box_line_width = OPENGL_PAINT_BOX
 
@@ -586,7 +587,9 @@ class GLWindowBackingBase(GTKWindowBacking):
             log("%s.gl_show() flushing", self)
             glFlush()
         end = time.time()
-        fpslog("gl_show took %ims, %i updates", (end-start)*1000, rect_count)
+        flush_elapsed = end-self.last_flush
+        self.last_flush = end
+        fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)
 
 
     def paint_box(self, encoding, is_delta, x, y, w, h):
