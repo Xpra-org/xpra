@@ -40,7 +40,6 @@ class VideoSubregion(object):
         self.refresh_timer = None
         self.refresh_regions = []
         #keep track of how much extra we batch non-video regions (milliseconds):
-        self.non_waited = 0
         self.non_max_wait = 150
 
     def reset(self):
@@ -100,7 +99,6 @@ class VideoSubregion(object):
                      "rectangle"    : (r.x, r.y, r.width, r.height),
                      "set_at"       : self.set_at,
                      "time"         : int(self.time),
-                     "non_waited"   : self.non_waited,
                      "non_max_wait" : self.non_max_wait})
         rr = list(self.refresh_regions)
         if rr:

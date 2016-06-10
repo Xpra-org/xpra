@@ -619,15 +619,13 @@ class WindowVideoSource(WindowSource):
         #decide if we want to send the rest now or delay some more,
         #only delay once the video encoder has dealt with a few frames:
         event_count = max(0, self.statistics.damage_events_count - self.video_subregion.set_at)
-        elapsed = int(1000.0*(time.time()-damage_time)) + self.video_subregion.non_waited
+        elapsed = int(1000.0*(time.time()-damage_time))
         #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
         delay = max(self.batch_config.delay*4, 50)
         delay = min(delay, self.video_subregion.non_max_wait-elapsed)
         if event_count<100:
             delay = 0
         if delay<=0:
-            #send now, reset delay:
-            self.video_subregion.non_waited = 0
             send_nonvideo(regions=regions, encoding=None)
         else:
             self._damage_delayed = damage_time, window, regions, coding, options or {}
