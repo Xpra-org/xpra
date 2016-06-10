@@ -590,47 +590,50 @@ class WindowVideoSource(WindowSource):
                         actual_vr = same_c[0]
 
         if actual_vr is None:
-            sublog("send_delayed_regions: video region %s not found in: %s (using non video encoding)", vr, regions)
-            return send_nonvideo(encoding=None, exclude_region=vr)
+            sublog("send_delayed_regions: video region %s not found in: %s", vr, regions)
+        else:
+            #found the video region:
+            #send this using the video encoder:
+            video_options = options.copy()
+            video_options["av-sync"] = True
+            self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0)
 
-        #found the video region:
-        #send this using the video encoder:
-        video_options = options.copy()
-        video_options["av-sync"] = True
-        self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0)
-
-        #now substract this region from the rest:
-        trimmed = []
-        for r in regions:
-            trimmed += r.substract_rect(actual_vr)
-        if len(trimmed)==0:
-            sublog("send_delayed_regions: nothing left after removing video region %s", actual_vr)
-            return
-        sublog("send_delayed_regions: substracted %s from %s gives us %s", actual_vr, regions, trimmed)
-
-        #decide if we want to send the rest now or delay some more:
-        event_count = max(0, self.statistics.damage_events_count - self.video_subregion.set_at)
-        #only delay once the video encoder has dealt with a few frames:
-        if event_count>100:
-            elapsed = int(1000.0*(time.time()-damage_time)) + self.video_subregion.non_waited
-            if elapsed>=self.video_subregion.non_max_wait:
-                #send now, reset delay:
-                sublog("send_delayed_regions: non video regions have waited %sms already, sending", elapsed)
-                self.video_subregion.non_waited = 0
-            else:
-                #delay further: just add-to / create delayed region:
-                sublog("send_delayed_regions: delaying non video regions some more")
-                dr = self._damage_delayed
-                if dr:
-                    delayed = dr[2] + trimmed
-                else:
-                    delayed = trimmed
-                self._damage_delayed = time.time(), window, delayed, coding, options or {}
-                delay = self.video_subregion.non_max_wait-elapsed
-                self.cancel_expire_timer()
-                self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
+            #now substract this region from the rest:
+            trimmed = []
+            for r in regions:
+                trimmed += r.substract_rect(actual_vr)
+            if len(trimmed)==0:
+                sublog("send_delayed_regions: nothing left after removing video region %s", actual_vr)
                 return
-        send_nonvideo(regions=trimmed, encoding=None, exclude_region=actual_vr)
+            sublog("send_delayed_regions: substracted %s from %s gives us %s", actual_vr, regions, trimmed)
+            regions = trimmed
+
+        if not regions:
+            return
+        #merge existing damage delayed region if there is one:
+        #(this codepath can fire from a video region refresh callback)
+        dr = self._damage_delayed
+        if dr:
+            regions = dr[2] + regions
+            damage_time = min(damage_time, dr[0])
+        #decide if we want to send the rest now or delay some more,
+        #only delay once the video encoder has dealt with a few frames:
+        event_count = max(0, self.statistics.damage_events_count - self.video_subregion.set_at)
+        elapsed = int(1000.0*(time.time()-damage_time)) + self.video_subregion.non_waited
+        #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
+        delay = max(self.batch_config.delay*4, 50)
+        delay = min(delay, self.video_subregion.non_max_wait-elapsed)
+        if event_count<100:
+            delay = 0
+        if delay<=0:
+            #send now, reset delay:
+            self.video_subregion.non_waited = 0
+            send_nonvideo(regions=regions, encoding=None)
+        else:
+            self._damage_delayed = damage_time, window, regions, coding, options or {}
+            sublog("send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
+            self.cancel_expire_timer()
+            self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options, flush=None):
