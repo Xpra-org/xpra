@@ -676,8 +676,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 #(if we're likely to hit it - if the screen is as big or bigger)
                 w, h = self.get_root_size()
                 l = opengllog.info
+                if w*2<=self.gl_texture_size_limit and h*2<=self.gl_texture_size_limit:
+                    l = opengllog
                 if w>=self.gl_texture_size_limit or h>=self.gl_texture_size_limit:
-                    l = log.warn
+                    l = opengllog.warn
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i", self.gl_texture_size_limit, self.gl_texture_size_limit)
                 l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
             driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
