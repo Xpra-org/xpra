@@ -47,6 +47,8 @@ function XpraClient(container) {
 	// modifier keys
 	this.keyboard_layout = null;
 	this.caps_lock = null;
+	this.num_lock = true;
+	this.num_lock_mod = null;
 	this.alt_modifier = null;
 	this.meta_modifier = null;
 	// audio stuff
@@ -311,8 +313,12 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		keycode = event.which;
 	else
 		keycode = event.keyCode;
+	if (keycode==144 && pressed)
+		this.num_lock = !this.num_lock;
 	if (keycode in CHARCODE_TO_NAME)
 		keyname = CHARCODE_TO_NAME[keycode];
+	if (this.num_lock && keycode>=96 && keycode<106)
+		keyname = "KP_"+(keycode-96);
 	var DOM_KEY_LOCATION_RIGHT = 2;
 	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
 		keyname = keyname.replace("_L", "_R")
@@ -320,6 +326,8 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	var modifiers = this._keyb_get_modifiers(event);
 	if (this.caps_lock)
 		modifiers.push("lock");
+	if (this.num_lock && this.num_lock_mod)
+		modifiers.push(this.num_lock_mod);
 	var keyval = keycode;
 	var str = String.fromCharCode(event.which);
 	var group = 0;
@@ -885,6 +893,25 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		};
 		ctx.protocol.set_cipher_out(ctx.cipher_out_caps, ctx.encryption_key);
 	}
+	// find the modifier to use for Num_Lock
+	var modifier_keycodes = hello['modifier_keycodes']
+    if (modifier_keycodes) {
+        for (var modifier in modifier_keycodes) {
+        	if (modifier_keycodes.hasOwnProperty(modifier)) {
+        		var mappings = modifier_keycodes[modifier];
+        		for (var keycode in mappings) {
+        			var keys = mappings[keycode];
+        			for (var index in keys) {
+        				var key=keys[index];
+        				if (key=="Num_Lock") {
+        					this.num_lock_mod = modifier;
+        				}
+        			}
+        		}
+        	}
+        }
+    }
+    
 	var version = hello["version"];
 	try {
 		var vparts = version.split(".");

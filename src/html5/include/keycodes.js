@@ -88,7 +88,7 @@ for (var i=0; i<26; i++) {
 }
 for (i=0; i<10; i++) {
 	CHARCODE_TO_NAME[48+i] = ""+i;
-	CHARCODE_TO_NAME[96+i] = "KP_"+i;
+	CHARCODE_TO_NAME[96+i] = ""+i;
 }
 for (i=1; i<=24; i++) {
 	CHARCODE_TO_NAME[111+i] = "F"+i;
