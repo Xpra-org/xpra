@@ -364,7 +364,7 @@ class KeyboardConfig(KeyboardConfigBase):
             #keyboard event: ignore the keynames specified
             #(usually the modifier key being pressed/unpressed)
             def is_ignored(modifier, modifier_keynames):
-                m = set(modifier_keynames) & set(ignored_modifier_keynames)
+                m = set(modifier_keynames or []) & set(ignored_modifier_keynames or [])
                 return bool(m)
 
         def filtered_modifiers_set(modifiers):
