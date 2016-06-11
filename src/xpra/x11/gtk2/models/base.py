@@ -647,9 +647,10 @@ class BaseWindowModel(CoreX11WindowModel):
                 log.info("process_client_message_event(%s) unhandled atom=%s", event, atom1)
             return True
         elif event.message_type=="WM_CHANGE_STATE":
-            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%s", ICONIC_STATE_STRING.get(event.data[0], event.data[0]), event.serial, self.last_unmap_serial)
-            if event.data[0]==IconicState and event.serial>self.last_unmap_serial and not self.is_OR() and not self.is_tray():
-                self._updateprop("iconic", True)
+            iconic = event.data[0]
+            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%s", ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
+            if iconic in (IconicState, NormalState) and event.serial>self.last_unmap_serial and not self.is_OR() and not self.is_tray():
+                self._updateprop("iconic", iconic==IconicState)
             return True
         elif event.message_type=="_NET_WM_MOVERESIZE":
             log("_NET_WM_MOVERESIZE: %s", event)
