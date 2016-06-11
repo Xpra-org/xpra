@@ -573,7 +573,7 @@ cdef class Decoder:
             av_frame_unref(self.av_frame)
             raise Exception("output size is zero!")
         if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
-            raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height))
+            raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
         #FIXME: we could lose track of framewrappers if an error occurs before the end:
         framewrapper = AVFrameWrapper()
