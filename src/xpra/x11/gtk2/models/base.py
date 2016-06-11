@@ -46,6 +46,10 @@ STATE_STRING = {
                 }
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
+ICONIC_STATE_STRING = {
+                       IconicState  : "Iconic",
+                       NormalState  : "Normal",
+                       }
 
 #add user friendly workspace logging:
 WORKSPACE_STR = {WORKSPACE_UNSET    : "UNSET",
@@ -643,7 +647,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 log.info("process_client_message_event(%s) unhandled atom=%s", event, atom1)
             return True
         elif event.message_type=="WM_CHANGE_STATE":
-            log("WM_CHANGE_STATE: %s", event.data[0])
+            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%s", ICONIC_STATE_STRING.get(event.data[0], event.data[0]), event.serial, self.last_unmap_serial)
             if event.data[0]==IconicState and event.serial>self.last_unmap_serial and not self.is_OR() and not self.is_tray():
                 self._updateprop("iconic", True)
             return True
