@@ -66,7 +66,7 @@ def parse_env(env):
                 if len(v)!=2:
                     log.warn("Warning: invalid environment option '%s'", ev)
                     continue
-                d[v[0]] = v[1]
+                d[v[0]] = os.path.expandvars(v[1])
             except Exception as e:
                 log.error("Error parsing child environment '%s':", ev)
                 log.error(" %s", e)
