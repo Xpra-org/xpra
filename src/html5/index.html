@@ -276,6 +276,14 @@
 					var text = (e.originalEvent || e).clipboardData.getData('text/plain');
 					client.handle_paste(text);
 				});
+
+			    // try to ensure the browser doesn't fire shortcuts
+			    // (ie: we want control-S to be sent to the application, not trigger the save-page browser action)
+				$(window).bind('keydown', function(event) {
+				    if (event.ctrlKey || event.metaKey) {
+			            event.preventDefault();
+				    }
+				});
 			});
 		</script>
 	</body>
