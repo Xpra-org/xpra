@@ -491,7 +491,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 from PIL import Image, ImageDraw        #@UnresolvedImport
             except:
                 pass
-        if not Image or not ImageDraw:
+        if not Image or not ImageDraw or len(rectangles)<2:
             #scale the rectangles without a bitmap...
             #results aren't so good! (but better than nothing?)
             srect = self._client.srect
