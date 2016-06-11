@@ -70,6 +70,7 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
 
 SAVE_WINDOW_ICONS = os.environ.get("XPRA_SAVE_WINDOW_ICONS", "0")=="1"
 UNDECORATED_TRANSIENT_IS_OR = int(os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "1"))
+LAZY_SHAPE = os.environ.get("XPRA_LAZY_SHAPE", "1")=="1"
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((
@@ -484,10 +485,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.when_realized("shape", do_set_shape)
 
     def scale_shape_rectangles(self, kind_name, rectangles):
-        try:
-            from PIL import Image, ImageDraw        #@UnresolvedImport
-        except:
-            Image, ImageDraw = None, None
+        Image, ImageDraw = None, None
+        if not LAZY_SHAPE:
+            try:
+                from PIL import Image, ImageDraw        #@UnresolvedImport
+            except:
+                pass
         if not Image or not ImageDraw:
             #scale the rectangles without a bitmap...
             #results aren't so good! (but better than nothing?)
