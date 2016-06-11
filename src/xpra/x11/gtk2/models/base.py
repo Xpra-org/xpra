@@ -169,12 +169,12 @@ class BaseWindowModel(CoreX11WindowModel):
         })
     _property_names = CoreX11WindowModel._property_names + [
                       "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
-                      "menu",
+                      "menu", "iconic",
                       #virtual attributes:
                       "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "attention-requested",
-                              "menu", "workspace",
+                              "menu", "iconic", "workspace",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
