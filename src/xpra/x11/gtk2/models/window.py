@@ -128,9 +128,9 @@ class WindowModel(BaseWindowModel):
         })
 
     _property_names         = BaseWindowModel._property_names + [
-                              "size-hints", "icon-title", "icon", "decorations", "modal", "set-initial-position"]
+                              "size-hints", "icon-title", "icon", "decorations", "modal", "set-initial-position", "iconic"]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
-                              "size-hints", "icon-title", "icon", "decorations", "modal"]
+                              "size-hints", "icon-title", "icon", "decorations", "modal", "iconic"]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
                               "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
                               "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
