@@ -548,8 +548,7 @@ class WindowVideoSource(WindowSource):
 
         if options.get("novideo"):
             sublog("video disabled in options")
-            #keep current encoding selection function
-            return send_nonvideo()
+            return send_nonvideo(encoding=None)
 
         vr = self.video_subregion.rectangle
         if not vr or not self.video_subregion.enabled:
