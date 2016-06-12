@@ -1833,6 +1833,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                              })
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
+        info.setdefault("sound", self.sound_properties)
         log("ServerBase.get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
