@@ -12,7 +12,7 @@ from xpra.os_util import SIGNAMES, Queue
 from xpra.util import csv, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_formatter, get_stream_compressor, get_encoder_default_options, normv, get_codecs, get_gst_version, get_queue_time, \
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_gst_version, get_queue_time, \
                                 MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
@@ -41,7 +41,7 @@ class SoundSource(SoundPipeline):
         "new-buffer"    : n_arg_signal(3),
         })
 
-    def __init__(self, src_type=None, src_options={}, codecs=get_codecs(), codec_options={}, volume=1.0):
+    def __init__(self, src_type=None, src_options={}, codecs=get_encoders(), codec_options={}, volume=1.0):
         if not src_type:
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import get_pa_device_options
@@ -65,12 +65,12 @@ class SoundSource(SoundPipeline):
             src_options = default_src_options
         if src_type not in get_source_plugins():
             raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins())))
-        matching = [x for x in CODEC_ORDER if (x in codecs and x in get_codecs())]
+        matching = [x for x in CODEC_ORDER if (x in codecs and x in get_encoders())]
         log("SoundSource(..) found matching codecs %s", matching)
         if not matching:
-            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_encoders().keys())))
         codec = matching[0]
-        encoder, fmt = get_encoder_formatter(codec)
+        encoder, fmt, self.stream_compressor = get_encoder_elements(codec)
         SoundPipeline.__init__(self, codec)
         self.queue = None
         self.caps = None
@@ -83,7 +83,6 @@ class SoundSource(SoundPipeline):
         self.jitter_queue = None
         self.file = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
-        self.stream_compressor = get_stream_compressor(codec)
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
@@ -357,17 +356,17 @@ def main():
             return 1
         codec = None
 
-        codecs = get_codecs()
+        encoders = get_encoders()
         if len(sys.argv)==3:
             codec = sys.argv[2]
-            if codec not in codecs:
-                log.error("invalid codec: %s, codecs supported: %s", codec, codecs)
+            if codec not in encoders:
+                log.error("invalid codec: %s, codecs supported: %s", codec, encoders)
                 return 1
         else:
             parts = filename.split(".")
             if len(parts)>1:
                 extension = parts[-1]
-                if extension.lower() in codecs:
+                if extension.lower() in encoders:
                     codec = extension.lower()
                     log.info("guessed codec %s from file extension %s", codec, extension)
             if codec is None:

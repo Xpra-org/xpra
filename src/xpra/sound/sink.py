@@ -10,7 +10,7 @@ from threading import Lock
 
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, get_stream_compressor, get_queue_time, normv, get_codecs, get_default_sink, get_sink_plugins, \
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_elements, get_queue_time, normv, get_decoders, get_default_sink, get_sink_plugins, \
                                         MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.net.compression import decompress_by_name
@@ -68,20 +68,19 @@ class SoundSink(SoundPipeline):
         "eos"       : one_arg_signal,
         })
 
-    def __init__(self, sink_type=None, sink_options={}, codecs=get_codecs(), codec_options={}, volume=1.0):
+    def __init__(self, sink_type=None, sink_options={}, codecs=get_decoders(), codec_options={}, volume=1.0):
         if not sink_type:
             sink_type = DEFAULT_SINK
         if sink_type not in SINKS:
             raise InitExit(1, "invalid sink: %s" % sink_type)
-        matching = [x for x in CODEC_ORDER if (x in codecs and x in get_codecs())]
+        matching = [x for x in CODEC_ORDER if (x in codecs and x in get_decoders())]
         log("SoundSink(..) found matching codecs %s", matching)
         if not matching:
-            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_codecs().keys())))
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_decoders().keys())))
         codec = matching[0]
-        decoder, parser = get_decoder_parser(codec)
+        decoder, parser, self.stream_compressor = get_decoder_elements(codec)
         SoundPipeline.__init__(self, codec)
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
-        self.stream_compressor = get_stream_compressor(codec)
         self.sink_type = sink_type
         self.levels = deque(maxlen=100)
         self.volume = None
@@ -532,12 +531,12 @@ def main():
         if not os.path.exists(filename):
             print("file %s does not exist" % filename)
             return 2
-        codecs = get_codecs()
+        decoders = get_decoders()
         if len(args)==3:
             codec = args[2]
-            if codec not in codecs:
+            if codec not in decoders:
                 print("invalid codec: %s" % codec)
-                print("only supported: %s" % str(codecs.keys()))
+                print("only supported: %s" % str(decoders.keys()))
                 return 2
             codecs = [codec]
         else:

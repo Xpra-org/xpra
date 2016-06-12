@@ -116,7 +116,7 @@ RAW_GDP_LZ4 = RAW+"+"+GDP+"+"+LZ4
 RAW_GDP_LZO = RAW+"+"+GDP+"+"+LZO
 
 
-#format: encoder, container-formatter, decoder, container-parser
+#format: encoder, container-formatter, decoder, container-parser, stream-compressor
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
@@ -455,68 +455,111 @@ def get_encoder_default_options(encoder):
 
 
 CODECS = None
-def get_codecs():
-    global CODECS, gst_major_version
+ENCODERS = {}       #(encoder, payloader, stream-compressor)
+DECODERS = {}       #(decoder, depayloader, stream-compressor)
+
+def get_encoders():
+    init_codecs()
+    global ENCODERS
+    return ENCODERS
+
+def get_decoders():
+    init_codecs()
+    global DECODERS
+    return DECODERS
+
+def init_codecs():
+    global CODECS, ENCODERS, DECODERS, gst_major_version
     if CODECS is not None or not has_gst:
         return CODECS or {}
     #populate CODECS:
     CODECS = {}
     for elements in CODEC_OPTIONS:
-        encoding = elements[0]
-        if encoding in CODECS:
-            #we already have one for this encoding
+        if not validate_encoding(elements):
             continue
-        if force_enabled(encoding):
-            log.info("sound codec %s force enabled", encoding)
-        elif len([x for x in elements if (x and (x.find("matroska")>=0 or x.find("gdp")>=0))])>0 and get_gst_version()<(0, 10, 36):
-            #outdated versions of gstreamer cause problems with the gdp and matroskademux muxers,
-            #the receiver may not be able to process the data
-            #and we have no way of knowing what version they have at this point, so just disable those:
-            log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
-            continue
-        elif encoding==OPUS_GDP and get_gst_version()>=(1, 8):
-            log("avoiding %s with gstreamer version %s", encoding, get_gst_version())
-            continue
-        elif encoding in (OPUS_GDP, OPUS) and OSX:
-            log("avoiding %s on Mac OS X", encoding)
-            continue
-        elif encoding==FLAC:
-            #flac problems:
-            if WIN32 and gst_major_version==0:
-                #the gstreamer 0.10 builds on win32 use the outdated oss build,
-                #which includes outdated flac libraries with known CVEs,
-                #so avoid using those:
-                log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
-                continue
-            elif gst_major_version==1:
-                log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors I do not have time for")
-                continue
-        elif encoding==OPUS:
-            if gst_major_version<1:
-                log("skipping opus with GStreamer 0.10")
-                continue
-        #verify we have all the elements needed:
-        #ie: FLAC, "flacenc", "oggmux", "flacdec", "oggdemux", None = elements
         try:
-            encoder, muxer, decoder, demuxer, stream_comp = elements[1:]
+            encoding, encoder, payloader, decoder, depayloader, stream_compressor = elements
         except ValueError as e:
             log.error("Error: invalid codec entry: %s", e)
             log.error(" %s", elements)
             continue
-        if stream_comp:
-            assert stream_comp in ("lz4", "lzo")
-            from xpra.net.compression import use_lz4
-            if not use_lz4:
-                log("skipping %s: missing lz4", encoding)
-                continue
-        if has_plugins(encoder, muxer, decoder, demuxer):
-            CODECS[encoding] = (encoder, muxer, decoder, demuxer, stream_comp)
+        add_encoder(encoding, encoder, payloader, stream_compressor)
+        add_decoder(encoding, decoder, depayloader, stream_compressor)
     log("initialized sound codecs:")
-    for k in [x for x in CODEC_ORDER if x in CODECS]:
-        def ci(v):
-            return "%-22s" % (v or "")
-        log("* %-12s : %s", k, csv([ci(v) for v in CODECS[k]]))
+    def ci(v):
+        return "%-22s" % (v or "")
+    log("  - %s", "".join([ci(v) for v in ("encoder/decoder", "(de)payloader", "stream-compressor")]))
+    for k in [x for x in CODEC_ORDER]:
+        if k in ENCODERS or k in DECODERS:
+            CODECS[k] = True
+            log("* %s :", k)
+            if k in ENCODERS:
+                log("  - %s", "".join([ci(v) for v in ENCODERS[k]]))
+            if k in DECODERS:
+                log("  - %s", "".join([ci(v) for v in DECODERS[k]]))
     return CODECS
+
+def add_encoder(encoding, encoder, payloader, stream_compressor):
+    global ENCODERS
+    if encoding in ENCODERS:
+        return
+    if encoding in (OPUS_GDP, OPUS) and OSX:
+        log("avoiding %s on Mac OS X", encoding)
+        return
+    if has_plugins(encoder, payloader):
+        ENCODERS[encoding] = (encoder, payloader, stream_compressor)
+
+def add_decoder(encoding, decoder, depayloader, stream_compressor):
+    global DECODERS
+    if encoding in DECODERS:
+        return
+    if has_plugins(decoder, depayloader):
+        DECODERS[encoding] = (decoder, depayloader, stream_compressor)
+
+def validate_encoding(elements):
+    #generic platform validation of encodings and plugins
+    #full of quirks
+    encoding = elements[0]
+    if force_enabled(encoding):
+        log.info("sound codec %s force enabled", encoding)
+        return True
+    elif len([x for x in elements if (x and (x.find("matroska")>=0 or x.find("gdp")>=0))])>0 and get_gst_version()<(0, 10, 36):
+        #outdated versions of gstreamer cause problems with the gdp and matroskademux muxers,
+        #the receiver may not be able to process the data
+        #and we have no way of knowing what version they have at this point, so just disable those:
+        log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
+        return False
+    elif encoding==FLAC:
+        #flac problems:
+        if WIN32 and gst_major_version==0:
+            #the gstreamer 0.10 builds on win32 use the outdated oss build,
+            #which includes outdated flac libraries with known CVEs,
+            #so avoid using those:
+            log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
+            return False
+        elif gst_major_version==1:
+            log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors I do not have time for")
+            return False
+    elif encoding==OPUS:
+        if gst_major_version<1:
+            log("skipping opus with GStreamer 0.10")
+            return False
+    stream_compressor = elements[5]
+    if stream_compressor and not has_stream_compressor(stream_compressor):
+        log("skipping %s: missing %s", encoding, stream_compressor)
+        return False
+    return True
+
+def has_stream_compressor(stream_compressor):
+    if stream_compressor not in ("lz4", "lzo"):
+        log.warn("Warning: invalid stream compressor '%s'", stream_compressor)
+        return False
+    from xpra.net.compression import use_lz4, use_lzo
+    if stream_compressor=="lz4" and not use_lz4:
+        return False
+    if stream_compressor=="lzo" and not use_lzo:
+        return False
+    return True
 
 def get_muxers():
     muxers = []
@@ -532,41 +575,39 @@ def get_demuxers():
             demuxers.append(name)
     return demuxers
 
+def get_stream_compressors():
+    return [x for x in ["lz4", "lzo"] if has_stream_compressor(x)]
 
-def get_stream_compressor(name):
-    codecs = get_codecs()
-    assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
-    _, _, _, _, stream_comp = codecs.get(name)
-    return stream_comp
-
-def get_encoder_formatter(name):
-    codecs = get_codecs()
-    assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
-    encoder, formatter, _, _, _ = codecs.get(name)
+def get_encoder_elements(name):
+    encoders = get_encoders()
+    assert name in encoders, "invalid codec: %s (should be one of: %s)" % (name, encoders.keys())
+    encoder, formatter, stream_compressor = encoders.get(name)
+    assert stream_compressor is None or has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
     assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
     assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
-    return encoder, formatter
+    return encoder, formatter, stream_compressor
 
-def get_decoder_parser(name):
-    codecs = get_codecs()
-    assert name in codecs, "invalid codec: %s (should be one of: %s)" % (name, codecs.keys())
-    _, _, decoder, parser, _ = codecs.get(name)
+def get_decoder_elements(name):
+    decoders = get_decoders()
+    assert name in decoders, "invalid codec: %s (should be one of: %s)" % (name, decoders.keys())
+    decoder, parser, stream_compressor = decoders.get(name)
+    assert stream_compressor is None or has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
     assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
     assert parser is None or has_plugins(parser), "parser %s not found" % parser
-    return decoder, parser
+    return decoder, parser, stream_compressor
 
 def has_encoder(name):
-    codecs = get_codecs()
-    if name not in codecs:
+    encoders = get_encoders()
+    if name not in encoders:
         return False
-    encoder, fmt, _, _, _ = codecs.get(name)
+    encoder, fmt, _ = encoders.get(name)
     return has_plugins(encoder, fmt)
 
 def has_decoder(name):
-    codecs = get_codecs()
-    if name not in codecs:
+    decoders = get_decoders()
+    if name not in decoders:
         return False
-    _, _, decoder, parser, _ = codecs.get(name)
+    decoder, parser, _ = decoders.get(name)
     return has_plugins(decoder, parser)
 
 def has_codec(name):
@@ -967,10 +1008,11 @@ def main():
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
-        print("encoders supported: %s" % csv(encs))
-        print("decoders supported: %s" % csv(decs))
-        print("muxers supported: %s" % csv(get_muxers()))
-        print("demuxers supported: %s" % csv(get_demuxers()))
+        print("encoders: %s" % csv(encs))
+        print("decoders: %s" % csv(decs))
+        print("muxers: %s" % csv(get_muxers()))
+        print("demuxers: %s" % csv(get_demuxers()))
+        print("stream compressors: %s" % csv(get_stream_compressors()))
         print("source plugins: %s" % csv([x for x in get_source_plugins() if x in apn]))
         print("sink plugins: %s" % csv([x for x in get_sink_plugins() if x in apn]))
         print("default sink: %s" % get_default_sink())
