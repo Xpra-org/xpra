@@ -210,7 +210,7 @@ class SessionInfo(gtk.Window):
         # Features Table:
         vbox = self.vbox_tab("features.png", "Features", self.populate_features)
         #add top table:
-        tb = TableBuilder(rows=1, columns=2)
+        tb = TableBuilder(rows=1, columns=2, row_spacings=15)
         table = tb.get_table()
         al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(table)
@@ -243,47 +243,44 @@ class SessionInfo(gtk.Window):
         tb.new_row("Bell", self.server_bell_icon)
         self.server_cursors_icon = gtk.Image()
         tb.new_row("Cursors", self.server_cursors_icon)
-        #add bottom table:
-        tb = TableBuilder(rows=1, columns=3)
+
+        
+        # Codecs Table:
+        vbox = self.vbox_tab("encoding.png", "Codecs", self.populate_codecs)
+        tb = TableBuilder(rows=1, columns=2, col_spacings=0, row_spacings=10)
         table = tb.get_table()
-        vbox.pack_start(table, expand=True, fill=True, padding=20)
-        #bottom table headings:
+        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al.add(table)
+        vbox.pack_start(al, expand=True, fill=False, padding=10)
+        #table headings:
         tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
         tb.attach(title_box("Client"), 1, xoptions=EXPAND|FILL, xpadding=0)
         tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
         tb.inc()
-        #bottom table contents:
+        #table contents:
         self.client_encodings_label = label()
         self.client_encodings_label.set_line_wrap(True)
-        self.client_encodings_label.set_size_request(250, -1)
         self.server_encodings_label = label()
         self.server_encodings_label.set_line_wrap(True)
-        self.server_encodings_label.set_size_request(250, -1)
-        tb.new_row("Encodings", self.client_encodings_label, self.server_encodings_label)
+        tb.new_row("Picture Encodings", self.client_encodings_label, self.server_encodings_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
         self.client_speaker_codecs_label = label()
         self.client_speaker_codecs_label.set_line_wrap(True)
-        self.client_speaker_codecs_label.set_size_request(250, -1)
         self.server_speaker_codecs_label = label()
         self.server_speaker_codecs_label.set_line_wrap(True)
-        self.server_speaker_codecs_label.set_size_request(250, -1)
-        tb.new_row("Speaker Codecs", self.client_speaker_codecs_label, self.server_speaker_codecs_label)
+        tb.new_row("Speaker Codecs", self.client_speaker_codecs_label, self.server_speaker_codecs_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
         self.client_microphone_codecs_label = label()
         self.client_microphone_codecs_label.set_line_wrap(True)
-        self.client_microphone_codecs_label.set_size_request(250, -1)
         self.server_microphone_codecs_label = label()
         self.server_microphone_codecs_label.set_line_wrap(True)
-        self.server_microphone_codecs_label.set_size_request(250, -1)
-        tb.new_row("Microphone Codecs", self.client_microphone_codecs_label, self.server_microphone_codecs_label)
+        tb.new_row("Microphone Codecs", self.client_microphone_codecs_label, self.server_microphone_codecs_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
         self.client_packet_encoders_label = label()
         self.client_packet_encoders_label.set_line_wrap(True)
-        self.client_packet_encoders_label.set_size_request(250, -1)
         self.server_packet_encoders_label = label()
         self.server_packet_encoders_label.set_line_wrap(True)
-        self.server_packet_encoders_label.set_size_request(250, -1)
-        tb.new_row("Packet Encoders", self.client_packet_encoders_label, self.server_packet_encoders_label)
+        tb.new_row("Packet Encoders", self.client_packet_encoders_label, self.server_packet_encoders_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
         self.client_packet_compressors_label = label()
         self.server_packet_compressors_label = label()
-        tb.new_row("Packet Compressors", self.client_packet_compressors_label, self.server_packet_compressors_label)
+        tb.new_row("Packet Compressors", self.client_packet_compressors_label, self.server_packet_compressors_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
 
         # Connection Table:
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
@@ -687,12 +684,25 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_notifications_icon,  scaps.boolget("notifications", False))
         self.bool_icon(self.server_bell_icon,           scaps.boolget("bell", False))
         self.bool_icon(self.server_cursors_icon,        scaps.boolget("cursors", False))
+
+    def populate_codecs(self):
+        #clamp the large labels so they will overflow vertically:
+        w, _ = get_preferred_size(self.tab_box)
+        lw = max(200, int(w//2.5))
+        self.client_encodings_label.set_size_request(lw, -1)
+        self.server_encodings_label.set_size_request(lw, -1)
+        self.client_speaker_codecs_label.set_size_request(lw, -1)
+        self.server_speaker_codecs_label.set_size_request(lw, -1)
+        self.client_microphone_codecs_label.set_size_request(lw, -1)
+        self.server_microphone_codecs_label.set_size_request(lw, -1)
+        self.client_packet_encoders_label.set_size_request(lw, -1)
+        self.server_packet_encoders_label.set_size_request(lw, -1)
+        #sound/video codec table:
+        scaps = self.client.server_capabilities
         def codec_info(enabled, codecs):
             if not enabled:
                 return "n/a"
             return ", ".join(codecs or [])
-
-        #sound/video codec table:
         self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strlistget("sound.encoders", [])))
         self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
         self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strlistget("sound.decoders", [])))

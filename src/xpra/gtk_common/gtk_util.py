@@ -852,17 +852,17 @@ def ensure_item_selected(submenu, item, recurse=True):
 
 class TableBuilder(object):
 
-    def __init__(self, rows=1, columns=2, homogeneous=False):
+    def __init__(self, rows=1, columns=2, homogeneous=False, col_spacings=0, row_spacings=0):
         self.table = gtk.Table(rows, columns, homogeneous)
-        self.table.set_col_spacings(0)
-        self.table.set_row_spacings(0)
+        self.table.set_col_spacings(col_spacings)
+        self.table.set_row_spacings(row_spacings)
         self.row = 0
         self.widget_xalign = 0.0
 
     def get_table(self):
         return self.table
 
-    def add_row(self, label, *widgets):
+    def add_row(self, label, *widgets, **kwargs):
         if label:
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(label)
@@ -873,19 +873,19 @@ class TableBuilder(object):
                 if w:
                     w_al = gtk.Alignment(xalign=self.widget_xalign, yalign=0.5, xscale=0.0, yscale=0.0)
                     w_al.add(w)
-                    self.attach(w_al, i)
+                    self.attach(w_al, i, **kwargs)
                 i += 1
         self.inc()
 
-    def attach(self, widget, i, count=1, xoptions=FILL, xpadding=10):
-        self.table.attach(widget, i, i+count, self.row, self.row+1, xoptions=xoptions, xpadding=xpadding)
+    def attach(self, widget, i, count=1, xoptions=FILL, yoptions=FILL, xpadding=10, ypadding=0):
+        self.table.attach(widget, i, i+count, self.row, self.row+1, xoptions=xoptions, yoptions=yoptions, xpadding=xpadding, ypadding=ypadding)
 
     def inc(self):
         self.row += 1
 
-    def new_row(self, row_label_str, value1, value2=None, label_tooltip=None):
+    def new_row(self, row_label_str, value1, value2=None, label_tooltip=None, **kwargs):
         row_label = label(row_label_str, label_tooltip)
-        self.add_row(row_label, value1, value2)
+        self.add_row(row_label, value1, value2, **kwargs)
 
 
 def choose_file(parent_window, title, action, action_button, callback, file_filter=None):
