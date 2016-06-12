@@ -63,6 +63,12 @@ try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
     ALL_CLIPBOARDS = []
+try:
+    from xpra.sound.common import LEGACY_CODEC_NAMES, NEW_CODEC_NAMES, add_legacy_names
+except:
+    LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
+    def add_legacy_names(codecs):
+        return codecs
 
 FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
@@ -210,6 +216,7 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_send = False
         self.server_sound_bundle_metadata = False
         self.server_ogg_latency_fix = False
+        self.server_codec_full_names = False
         self.queue_used_sent = None
 
         #rpc / dbus:
@@ -1561,9 +1568,11 @@ class UIXpraClient(XpraClientBase):
         capabilities["encodings.rgb_formats"] = rgb_formats
 
         if self.sound_properties:
-            from xpra.sound.common import add_legacy_names
             sound_caps = self.sound_properties.copy()
+            #we don't know if the server supports new codec names,
+            #so always add legacy names in hello:
             sound_caps.update({
+                               "codec-full-names"  : True,
                                "decoders"   : add_legacy_names(self.speaker_codecs),
                                "encoders"   : add_legacy_names(self.microphone_codecs),
                                "send"       : self.microphone_allowed,
@@ -1910,6 +1919,7 @@ class UIXpraClient(XpraClientBase):
             self.server_sound_encoders = legacy_to_new(c.strlistget("sound.encoders", []))
         except:
             soundlog("cannot parse server sound codecs", exc_info=True)
+        self.server_codec_full_names = c.boolget("codec-full-names")
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
@@ -2302,11 +2312,16 @@ class UIXpraClient(XpraClientBase):
         if self.sound_source!=sound_source:
             soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
+        codec = codec or sound_source.codec
+        if not self.server_codec_full_names:
+            codec = LEGACY_CODEC_NAMES.get(codec, codec)
         sound_source.codec = codec
         #tell the server this is the start:
-        self.send("sound-data", sound_source.codec, "",
-                  {"start-of-stream"    : True,
-                   "codec"              : sound_source.codec})
+        self.send("sound-data", codec, "",
+                  {
+                   "start-of-stream"    : True,
+                   "codec"              : codec,
+                   })
 
     def stop_sending_sound(self):
         """ stop the sound source and emit client signal """
@@ -2421,6 +2436,7 @@ class UIXpraClient(XpraClientBase):
 
     def start_sound_sink(self, codec):
         soundlog("start_sound_sink(%s)", codec)
+        codec = NEW_CODEC_NAMES.get(codec, codec)
         assert self.sound_sink is None, "sound sink already exists!"
         try:
             soundlog("starting %s sound sink", codec)
@@ -2461,7 +2477,10 @@ class UIXpraClient(XpraClientBase):
         self.send_sound_data(sound_source, data, metadata, packet_metadata)
 
     def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):
-        packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
+        codec = sound_source.codec
+        if not self.server_codec_full_names:
+            codec = LEGACY_CODEC_NAMES.get(codec, codec)
+        packet_data = [codec, Compressed(codec, data), metadata]
         if packet_metadata:
             assert self.server_sound_bundle_metadata
             packet_data.append(packet_metadata)
@@ -2470,6 +2489,7 @@ class UIXpraClient(XpraClientBase):
     def _process_sound_data(self, packet):
         codec, data, metadata = packet[1:4]
         codec = bytestostr(codec)
+        codec = NEW_CODEC_NAMES.get(codec, codec)
         metadata = typedict(metadata)
         if data:
             self.sound_in_bytecount += len(data)

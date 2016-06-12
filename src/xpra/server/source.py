@@ -42,7 +42,13 @@ from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, AtomicInteger, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
-
+def no_legacy_names(v):
+    return v
+try:
+    from xpra.sound.common import NEW_CODEC_NAMES, LEGACY_CODEC_NAMES, new_to_legacy
+except:
+    LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
+    new_to_legacy = no_legacy_names
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "20"))
@@ -290,6 +296,7 @@ class ServerSource(object):
         self.sound_source_sequence = 0
         self.sound_source = None
         self.sound_sink = None
+        self.codec_full_names = False
         self.av_sync = av_sync
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
@@ -726,6 +733,7 @@ class ServerSource(object):
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
         self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
+        self.codec_full_names = c.boolget("codec-full-names")
         av_sync = c.boolget("av-sync")
         self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
@@ -916,6 +924,7 @@ class ServerSource(object):
         if not self.sound_receive:
             soundlog.error("Error sending sound: support is not enabled on the client")
             return None
+        codec = NEW_CODEC_NAMES.get(codec, codec)
         if codec is None:
             from xpra.sound.gstreamer_util import CODEC_ORDER
             codecs = [x for x in CODEC_ORDER if x in self.speaker_codecs and x in self.sound_decoders]
@@ -995,12 +1004,17 @@ class ServerSource(object):
         if self.sound_source!=sound_source:
             soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
+        codec = codec or sound_source.codec
+        if not self.codec_full_names:
+            codec = LEGACY_CODEC_NAMES.get(codec, codec)
         sound_source.codec = codec
         #tell the client this is the start:
-        self.send("sound-data", sound_source.codec, "",
-                  {"start-of-stream"    : True,
-                   "codec"              : sound_source.codec,
-                   "sequence"           : sound_source.sequence})
+        self.send("sound-data", codec, "",
+                  {
+                   "start-of-stream"    : True,
+                   "codec"              : codec,
+                   "sequence"           : sound_source.sequence,
+                   })
         self.update_av_sync_delay_total()
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
@@ -1126,6 +1140,7 @@ class ServerSource(object):
         soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, packet_metadata, self.sound_sink)
         if self.is_closed():
             return
+        codec = NEW_CODEC_NAMES.get(codec, codec)
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             soundlog.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.cleanup()
@@ -1140,6 +1155,7 @@ class ServerSource(object):
                     soundlog.warn("stopping sound input because of error")
                     self.stop_receiving_sound()
                 from xpra.sound.wrapper import start_receiving_sound
+                codec = NEW_CODEC_NAMES.get(codec, codec)
                 ss = start_receiving_sound(codec)
                 if not ss:
                     return
@@ -1351,11 +1367,16 @@ class ServerSource(object):
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         if self.wants_sound and self.sound_properties:
-            from xpra.sound.common import add_legacy_names
             sound_props = self.sound_properties.copy()
+            #only translate codec names if the client doesn't understand new full names:
+            if not self.codec_full_names:
+                name_trans = new_to_legacy
+            else:
+                name_trans = no_legacy_names
             sound_props.update({
-                                "encoders"  : add_legacy_names(self.speaker_codecs),
-                                "decoders"  : add_legacy_names(self.microphone_codecs),
+                                "codec-full-names"  : True,
+                                "encoders"  : name_trans(self.speaker_codecs),
+                                "decoders"  : name_trans(self.microphone_codecs),
                                 "send"      : self.supports_speaker and len(self.speaker_codecs)>0,
                                 "receive"   : self.supports_microphone and len(self.microphone_codecs)>0,
                                 })
@@ -1492,7 +1513,7 @@ class ServerSource(object):
                 "speaker"       : sound_info(self.supports_speaker, self.sound_source),
                 "microphone"    : sound_info(self.supports_microphone, self.sound_sink),
                 }
-        for prop in ("pulseaudio_id", "pulseaudio_server"):
+        for prop in ("pulseaudio_id", "pulseaudio_server", "codec_full_names"):
             v = getattr(self, prop)
             if v is not None:
                 info[prop] = v

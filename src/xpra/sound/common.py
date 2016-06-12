@@ -71,6 +71,9 @@ def add_legacy_names(codecs):
             newlist.append(v)
     return newlist
 
+def new_to_legacy(codecs):
+    return [LEGACY_CODEC_NAMES.get(x, x) for x in (codecs or ())]
+
 def legacy_to_new(codecs):
     return [NEW_CODEC_NAMES.get(x, x) for x in (codecs or ())]
 

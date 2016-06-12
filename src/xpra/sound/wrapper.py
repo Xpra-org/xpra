@@ -144,7 +144,8 @@ def run_sound(mode, error_cb, options, args):
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
             from xpra.sound.gstreamer_util import gst_version, pygst_version
-            d = {"encoders"         : can_encode(),
+            d = {
+                 "encoders"         : can_encode(),
                  "decoders"         : can_decode(),
                  "sources"          : sources,
                  "muxers"           : get_muxers(),
