@@ -357,7 +357,7 @@ class UIXpraClient(XpraClientBase):
             return []
         if self.speaker_allowed or self.microphone_allowed:
             try:
-                from xpra.sound.gstreamer_util import sound_option_or_all
+                from xpra.sound.common import sound_option_or_all
                 from xpra.sound.wrapper import query_sound
                 self.sound_properties = query_sound()
                 assert self.sound_properties, "query did not return any data"
@@ -1561,12 +1561,14 @@ class UIXpraClient(XpraClientBase):
         capabilities["encodings.rgb_formats"] = rgb_formats
 
         if self.sound_properties:
+            from xpra.sound.common import add_legacy_names
             sound_caps = self.sound_properties.copy()
-            sound_caps["decoders"] = self.speaker_codecs
-            sound_caps["encoders"] = self.microphone_codecs
-            sound_caps["send"] = self.microphone_allowed
-            sound_caps["receive"] = self.speaker_allowed
-            sound_caps["bundle-metadata"] = self.sound_properties.get("bundle-metadata")
+            sound_caps.update({
+                               "decoders"   : add_legacy_names(self.speaker_codecs),
+                               "encoders"   : add_legacy_names(self.microphone_codecs),
+                               "send"       : self.microphone_allowed,
+                               "receive"    : self.speaker_allowed,
+                               })
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
                 sound_caps.update(get_pa_info())
@@ -1902,8 +1904,12 @@ class UIXpraClient(XpraClientBase):
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.server_sound_decoders = c.strlistget("sound.decoders", [])
-        self.server_sound_encoders = c.strlistget("sound.encoders", [])
+        try:
+            from xpra.sound.common import legacy_to_new
+            self.server_sound_decoders = legacy_to_new(c.strlistget("sound.decoders", []))
+            self.server_sound_encoders = legacy_to_new(c.strlistget("sound.encoders", []))
+        except:
+            soundlog("cannot parse server sound codecs", exc_info=True)
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")

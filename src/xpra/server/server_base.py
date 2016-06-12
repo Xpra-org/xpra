@@ -516,7 +516,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             return []
         if self.supports_speaker or self.supports_microphone:
             try:
-                from xpra.sound.gstreamer_util import sound_option_or_all
+                from xpra.sound.common import sound_option_or_all
                 from xpra.sound.wrapper import query_sound
                 self.sound_properties = query_sound()
                 assert self.sound_properties, "query did not return any data"

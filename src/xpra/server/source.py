@@ -717,8 +717,12 @@ class ServerSource(object):
         #sound stuff:
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.sound_decoders = c.strlistget("sound.decoders", [])
-        self.sound_encoders = c.strlistget("sound.encoders", [])
+        try:
+            from xpra.sound.common import legacy_to_new
+            self.sound_decoders = legacy_to_new(c.strlistget("sound.decoders", []))
+            self.sound_encoders = legacy_to_new(c.strlistget("sound.encoders", []))
+        except:
+            soundlog("cannot parse client sound codecs", exc_info=True)
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
         self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
@@ -1347,11 +1351,14 @@ class ServerSource(object):
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         if self.wants_sound and self.sound_properties:
+            from xpra.sound.common import add_legacy_names
             sound_props = self.sound_properties.copy()
-            sound_props["encoders"] = self.speaker_codecs
-            sound_props["decoders"] = self.microphone_codecs
-            sound_props["send"] = self.supports_speaker and len(self.speaker_codecs)>0
-            sound_props["receive"] = self.supports_microphone and len(self.microphone_codecs)>0
+            sound_props.update({
+                                "encoders"  : add_legacy_names(self.speaker_codecs),
+                                "decoders"  : add_legacy_names(self.microphone_codecs),
+                                "send"      : self.supports_speaker and len(self.speaker_codecs)>0,
+                                "receive"   : self.supports_microphone and len(self.microphone_codecs)>0,
+                                })
             updict(capabilities, "sound", sound_props)
         if self.wants_encodings or self.send_windows:
             assert self.encoding, "cannot send windows/encodings without an encoding!"

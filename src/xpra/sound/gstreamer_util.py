@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
+
+from xpra.sound.common import FLAC_GDP, FLAC_OGG, OPUS_GDP, OPUS_OGG, SPEEX_GDP, SPEEX_OGG, VORBIS_OGG, VORBIS_GDP, VORBIS_MKA, \
+                                AAC_GDP, AAC_MPEG4, RAW_GDP, WAV_LZ4, WAV_LZO, RAW_GDP_LZ4, RAW_GDP_LZO, \
+                                VORBIS, FLAC, MP3, OPUS, SPEEX, WAV, WAVPACK, \
+                                MPEG4, GDP, MKA, OGG
 
 from xpra.util import csv, engs, parse_simple_dict
 from xpra.log import Logger
@@ -80,61 +85,25 @@ NAME_TO_INFO_PLUGIN = {
     }
 
 
-VORBIS = "vorbis"
-AAC = "aac"
-FLAC = "flac"
-MP3 = "mp3"
-WAV = "wav"
-OPUS = "opus"
-SPEEX = "speex"
-WAVPACK = "wavpack"
-
-GDP = "gdp"
-OGG = "ogg"
-MKA = "mka"
-MPEG4 = "mpeg4"
-#RTP = "rtp"
-RAW = "raw"
-
-#stream compression
-LZ4 = "lz4"
-LZO = "lzo"
-
-FLAC_GDP    = FLAC+"+"+GDP
-OPUS_GDP    = OPUS+"+"+GDP
-SPEEX_GDP   = SPEEX+"+"+GDP
-VORBIS_OGG  = VORBIS+"+"+OGG
-#OPUS_WEBM   = OPUS+"+"+WEBM
-#OPUS_RTP    = OPUS+"+"+RTP
-VORBIS_MKA  = VORBIS+"+"+MKA
-AAC_GDP     = AAC+"+"+GDP
-AAC_MPEG4   = AAC+"+"+MPEG4
-RAW_GDP     = RAW+"+"+GDP
-WAV_LZ4     = WAV+"+"+LZ4
-WAV_LZO     = WAV+"+"+LZO
-RAW_GDP_LZ4 = RAW+"+"+GDP+"+"+LZ4
-RAW_GDP_LZO = RAW+"+"+GDP+"+"+LZO
-
-
 #format: encoder, container-formatter, decoder, container-parser, stream-compressor
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-        (VORBIS     , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay",                 None),
+        (VORBIS_GDP , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay",                 None),
         (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux",            None),
         #fails silently - no idea why:
         #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",    "oggdemux"),
         #does not work - no idea why:
         #(FLAC       , "flacenc",        "oggmux",       "flacparse ! flacdec",      "oggdemux"),
         #this only works in gstreamer 0.10 and is filtered out during initialization:
-        (FLAC       , "flacenc",        "oggmux",       "flacdec",      "oggdemux",                 None),
+        (FLAC_OGG   , "flacenc",        "oggmux",       "flacdec",      "oggdemux",                 None),
         (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay",     None),
         (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None,           None),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None,           None),
         (WAV        , "wavenc",         None,           "wavparse",     None,                       None),
         (WAV_LZ4    , "wavenc",         None,           "wavparse",     None,                       "lz4"),
         (WAV_LZO    , "wavenc",         None,           "wavparse",     None,                       "lzo"),
-        (OPUS       , "opusenc",        "oggmux",       "opusdec",      "oggdemux",                 None),
+        (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",      "oggdemux",                 None),
         (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay",                 None),
         #for rtp, we would need to send the caps:
         #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusdec",      "rtpopusdepay"),
@@ -142,7 +111,7 @@ CODEC_OPTIONS = [
         #this causes "could not link opusenc0 to webmmux0"
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusdec",      "matroskademux"),
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusparse ! opusdec",      "matroskademux"),
-        (SPEEX      , "speexenc",       "oggmux",       "speexdec",     "oggdemux",                 None),
+        (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",     "oggdemux",                 None),
         (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay",                 None),
         (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None,        None),
         (AAC_GDP    , "faac",           "gdppay",       "faad",         "gdpdepay",                 None),
@@ -237,7 +206,7 @@ ENCODER_LATENCY = {
         SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [OPUS_GDP, OPUS, VORBIS, VORBIS_MKA, FLAC_GDP, FLAC, MP3, AAC_GDP, AAC_MPEG4, RAW_GDP_LZ4, RAW_GDP_LZO, RAW_GDP, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_GDP, SPEEX]
+CODEC_ORDER = [OPUS_GDP, OPUS_OGG, VORBIS_GDP, VORBIS_MKA, FLAC_GDP, FLAC_OGG, MP3, AAC_GDP, AAC_MPEG4, RAW_GDP_LZ4, RAW_GDP_LZO, RAW_GDP, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_GDP, SPEEX_OGG]
 
 
 gst = None
@@ -957,30 +926,6 @@ def parse_sound_source(all_plugins, sound_source_plugin, device, want_monitor_de
     return gst_sound_source_plugin, options
 
 
-def sound_option_or_all(name, options, all_values):
-    if not options:
-        v = all_values        #not specified on command line: use default
-    else:
-        v = []
-        invalid_options = []
-        for x in options:
-            #options is a list, but it may have csv embedded:
-            for o in x.split(","):
-                o = o.strip()
-                if o not in all_values:
-                    invalid_options.append(o)
-                else:
-                    v.append(o)
-        if len(invalid_options)>0:
-            if all_values:
-                log.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, csv(invalid_options))
-                log.warn(" valid option%s: %s", engs(all_values), csv(all_values))
-            else:
-                log.warn("Warning: no %ss available", name)
-    log("%s=%s", name, csv(v))
-    return v
-
-
 def loop_warning(mode="speaker", machine_id=""):
     log.warn("Warning: cannot start %s forwarding:", mode)
     log.warn(" user and server environment are identical,")
@@ -1008,14 +953,14 @@ def main():
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]
-        print("encoders: %s" % csv(encs))
-        print("decoders: %s" % csv(decs))
-        print("muxers: %s" % csv(get_muxers()))
-        print("demuxers: %s" % csv(get_demuxers()))
+        print("encoders:           %s" % csv(encs))
+        print("decoders:           %s" % csv(decs))
+        print("muxers:             %s" % csv(get_muxers()))
+        print("demuxers:           %s" % csv(get_demuxers()))
         print("stream compressors: %s" % csv(get_stream_compressors()))
-        print("source plugins: %s" % csv([x for x in get_source_plugins() if x in apn]))
-        print("sink plugins: %s" % csv([x for x in get_sink_plugins() if x in apn]))
-        print("default sink: %s" % get_default_sink())
+        print("source plugins:     %s" % csv([x for x in get_source_plugins() if x in apn]))
+        print("sink plugins:       %s" % csv([x for x in get_sink_plugins() if x in apn]))
+        print("default sink:       %s" % get_default_sink())
 
 
 if __name__ == "__main__":
