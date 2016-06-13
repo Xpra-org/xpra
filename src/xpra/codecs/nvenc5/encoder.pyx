@@ -23,7 +23,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless, nvenc_loaded
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -2466,7 +2466,8 @@ def init_module():
             raise Exception("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
         else:
             raise Exception("you may need to provide a license key")
-    log.info("NVENC v5 successfully initialized")
+    log("NVENC v5 successfully initialized")
+    nvenc_loaded()
 
 def cleanup_module():
     log("nvenc.cleanup_module()")

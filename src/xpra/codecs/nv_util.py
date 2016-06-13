@@ -136,6 +136,13 @@ def validate_driver_yuv444lossless():
             return False
     return True
 
+_init_message = False
+def nvenc_loaded():
+    global _init_message
+    if not _init_message:
+        log.info("NVENC successfully initialized")
+        _init_message = True
+
 
 nvenc_license_keys = {}
 def get_nvenc_license_keys(nvenc_version=0):
