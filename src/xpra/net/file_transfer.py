@@ -19,6 +19,40 @@ from xpra.simple_stats import std_unit
 
 DELETE_PRINTER_FILE = os.environ.get("XPRA_DELETE_PRINTER_FILE", "1")=="1"
 
+MIMETYPE_EXTS = {
+                 "application/postscript"   : "ps",
+                 "application/pdf"          : "pdf",
+                 "raw"                      : "raw",
+                 }
+
+
+def safe_open_download_file(basefilename, mimetype):
+    from xpra.platform.paths import get_download_dir
+    #make sure we use a filename that does not exist already:
+    dd = os.path.expanduser(get_download_dir())
+    wanted_filename = os.path.abspath(os.path.join(dd, os.path.basename(basefilename)))
+    ext = MIMETYPE_EXTS.get(mimetype)
+    if ext:
+        #on some platforms (win32),
+        #we want to force an extension
+        #so that the file manager can display them properly when you double-click on them
+        if not wanted_filename.endswith("."+ext):
+            wanted_filename += "."+ext
+    filename = wanted_filename
+    base = 0
+    while os.path.exists(filename):
+        filelog("cannot save file as %s: file already exists", filename)
+        root, ext = os.path.splitext(wanted_filename)
+        base += 1
+        filename = root+("-%s" % base)+ext
+    flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
+    try:
+        flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
+    except:
+        pass
+    fd = os.open(filename, flags)
+    return filename, fd
+
 
 class FileTransferAttributes(object):
     def __init__(self, opts=None):
@@ -89,8 +123,7 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def _process_send_file(self, packet):
-        #send-file basefilename, printit, openit, filesize, 0, data)
-        from xpra.platform.paths import get_download_dir
+        #the remote end is sending us a file
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:11]
         options = typedict(options)
         if printit:
@@ -101,57 +134,30 @@ class FileTransferHandler(FileTransferAttributes):
             assert self.file_transfer
         l("received file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         assert filesize>0, "invalid file size: %s" % filesize
+        if filesize>self.file_size_limit*1024*1024:
+            l.error("Error: file '%s' is too large:", basefilename)
+            l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
+            return
         assert file_data, "no data!"
         if len(file_data)!=filesize:
             l.error("Error: invalid data size for file '%s'", basefilename)
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
-        if filesize>self.file_size_limit*1024*1024:
-            l.error("Error: file '%s' is too large:", basefilename)
-            l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
-            return
         #check digest if present:
         def check_digest(algo="sha1", libfn=hashlib.sha1):
             digest = options.get(algo)
-            if not digest:
-                return
-            u = libfn()
-            u.update(file_data)
-            l("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
-            if digest!=u.hexdigest():
-                l.error("Error: data does not match, invalid %s file digest for %s", algo, basefilename)
-                l.error(" received %s, expected %s", u.hexdigest(), digest)
-                return
+            if digest:
+                u = libfn()
+                u.update(file_data)
+                l("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
+                if digest!=u.hexdigest():
+                    l.error("Error: data does not match, invalid %s file digest for '%s'", algo, basefilename)
+                    l.error(" received %s, expected %s", u.hexdigest(), digest)
+                    raise Exception("invalid %s digest" % algo)
         check_digest("sha1", hashlib.sha1)
         check_digest("md5", hashlib.md5)
 
-        #make sure we use a filename that does not exist already:
-        dd = os.path.expanduser(get_download_dir())
-        wanted_filename = os.path.abspath(os.path.join(dd, os.path.basename(basefilename)))
-        EXTS = {"application/postscript"    : "ps",
-                "application/pdf"           : "pdf",
-                "raw"                       : "raw",
-                }
-        ext = EXTS.get(mimetype)
-        if ext:
-            #on some platforms (win32),
-            #we want to force an extension
-            #so that the file manager can display them properly when you double-click on them
-            if not wanted_filename.endswith("."+ext):
-                wanted_filename += "."+ext
-        filename = wanted_filename
-        base = 0
-        while os.path.exists(filename):
-            l("cannot save file as %s: file already exists", filename)
-            root, ext = os.path.splitext(wanted_filename)
-            base += 1
-            filename = root+("-%s" % base)+ext
-        flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
-        try:
-            flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
-        except:
-            pass
-        fd = os.open(filename, flags)
+        filename, fd = safe_open_download_file(basefilename, mimetype)
         try:
             os.write(fd, file_data)
         finally:
@@ -159,24 +165,24 @@ class FileTransferHandler(FileTransferAttributes):
         l.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         l.info(" '%s'", filename)
         if printit:
-            printer = options.strget("printer")
-            title   = options.strget("title")
-            if title:
-                l.info(" sending '%s' to printer '%s'", title, printer)
-            else:
-                l.info(" sending to printer '%s'", printer)
-            print_options = options.dictget("options")
-            #TODO: how do we print multiple copies?
-            #copies = options.intget("copies")
-            #whitelist of options we can forward:
-            safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
-            l("safe print options(%s) = %s", options, safe_print_options)
-            self._print_file(filename, mimetype, printer, title, safe_print_options)
+            self._print_file(filename, mimetype, options)
             return
         elif openit:
             self._open_file(filename)
 
-    def _print_file(self, filename, mimetype, printer, title, options):
+    def _print_file(self, filename, mimetype, options):
+        printer = options.strget("printer")
+        title   = options.strget("title")
+        if title:
+            printlog.info(" sending '%s' to printer '%s'", title, printer)
+        else:
+            printlog.info(" sending to printer '%s'", printer)
+        print_options = options.dictget("options")
+        #TODO: how do we print multiple copies?
+        #copies = options.intget("copies")
+        #whitelist of options we can forward:
+        safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
+        printlog("safe print options(%s) = %s", options, safe_print_options)
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
         def delfile():
@@ -235,6 +241,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.warn(" '%s %s' returned %s", self.open_command, filename, returncode)
         cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
 
+
     def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}):
         if printit:
             if not self.printing:
@@ -254,26 +261,25 @@ class FileTransferHandler(FileTransferAttributes):
                 return False
             action = "upload"
             l = filelog
-        l("send_file%s", (filename, mimetype, "%s bytes" % len(data), printit, openit, options))
         if not printit and openit and not self.remote_open_files:
             l.warn("Warning: opening the file after transfer is disabled on the remote end")
             openit = False
         assert len(data)>=filesize, "data is smaller then the given file size!"
         data = data[:filesize]          #gio may null terminate it
-        filelog("send_file%s", (filename, "%i bytes" % filesize, openit))
+        l("send_file%s", (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
         absfile = os.path.abspath(filename)
         basefilename = os.path.basename(filename)
         cdata = self.compressed_wrapper("file-data", data)
         assert len(cdata)<=filesize     #compressed wrapper ensures this is true
-        if filesize>self.file_size_limit*1024*1024:
+        def sizewarn(location="local"):
             filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
             filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            filelog.warn(" the file size limit is %iMB", self.file_size_limit)
+            filelog.warn(" the %s file size limit is %iMB", location, self.file_size_limit)
+        if filesize>self.file_size_limit*1024*1024:
+            sizewarn()
             return False
         if filesize>self.remote_file_size_limit*1024*1024:
-            filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
-            filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            filelog.warn(" the remote file size limit is %iMB", self.remote_file_size_limit)
+            sizewarn("remote")
             return False
         mimetype = ""
         u = hashlib.sha1()
