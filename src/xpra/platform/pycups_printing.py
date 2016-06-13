@@ -203,7 +203,6 @@ def validate_setup():
     #very simple check: at least one ppd file exists
     defs = get_printer_definitions()
     if not defs:
-        log.warn("Warning: no printer definitions found, cannot enable printing")
         return False
     #check for SELinux
     try:
@@ -220,7 +219,7 @@ def validate_setup():
     except Exception as e:
         log.error("Error checking for the presence of SELinux:")
         log.error(" %s", e)
-    return True
+    return defs
 
 
 def exec_lpadmin(args, success_cb=None):

@@ -369,7 +369,12 @@ class ServerBase(ServerCore, FileTransferHandler):
                 pycups_printing.add_printer_def("application/postscript", self.postscript_printer)
             if self.pdf_printer:
                 pycups_printing.add_printer_def("application/pdf", self.pdf_printer)
-            self.printing = pycups_printing.validate_setup()
+            printer_definitions = pycups_printing.validate_setup()
+            self.printing = bool(printer_definitions)
+            if self.printing:
+                printlog.info("printer forwarding enabled using %s", " and ".join([x.replace("application/", "") for x in printer_definitions.keys()]))
+            else:
+                printlog.warn("Warning: no printer definitions found, cannot enable printing")
         except ImportError as e:
             printlog("printing module is not installed: %s", e)
             self.printing = False
