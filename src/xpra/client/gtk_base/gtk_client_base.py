@@ -150,9 +150,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return self.start_new_command
 
     def show_file_upload(self, *args):
-        filelog("show_file_upload%s can open=%s", args, self.server_open_files)
+        filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
         buttons = [gtk.STOCK_CANCEL,    gtk.RESPONSE_CANCEL]
-        if self.server_open_files:
+        if self.remote_open_files:
             buttons += [gtk.STOCK_OPEN,      gtk.RESPONSE_ACCEPT]
         buttons += [gtk.STOCK_OK,        gtk.RESPONSE_OK]
         dialog = gtk.FileChooserDialog("File to upload", parent=None, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=tuple(buttons))
@@ -167,7 +167,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         data, filesize, entity = gfile.load_contents()
         filelog("load_contents: filename=%s, %i bytes, entity=%s, response=%s", filename, filesize, entity, v)
         dialog.destroy()
-        self.send_file(filename, data, filesize, openit=(v==gtk.RESPONSE_ACCEPT))
+        self.send_file(filename, "", data, filesize=filesize, openit=(v==gtk.RESPONSE_ACCEPT))
 
 
     def show_about(self, *args):

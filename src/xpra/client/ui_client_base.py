@@ -12,7 +12,6 @@ import time
 import datetime
 import traceback
 import logging
-import hashlib
 from collections import deque
 from threading import RLock
 
@@ -254,9 +253,6 @@ class UIXpraClient(XpraClientBase):
         self.server_is_shadow = False
         self.server_supports_sharing = False
         self.server_supports_window_filters = False
-        self.server_file_transfer = False
-        self.server_file_size_limit = 10
-        self.server_open_files = False
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -1190,36 +1186,6 @@ class UIXpraClient(XpraClientBase):
         log("send_start_command(%s, %s, %s, %s)", name, command, ignore, sharing)
         self.send("start-command", name, command, ignore, sharing)
 
-    def send_file(self, filename, data, filesize, openit):
-        if not self.file_transfer:
-            filelog.warn("Warning: file transfers are not enabled for %s", self)
-            return False
-        assert len(data)>=filesize
-        data = data[:filesize]          #gio may null terminate it
-        filelog("send_file%s", (filename, "%i bytes" % filesize, openit))
-        absfile = os.path.abspath(filename)
-        basefilename = os.path.basename(filename)
-        cdata = self.compressed_wrapper("file-data", data)
-        assert len(cdata)<=filesize     #compressed wrapper ensures this is true
-        if filesize>self.file_size_limit*1024*1024:
-            filelog.warn("Warning: cannot upload the file '%s'", basefilename)
-            filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            filelog.warn(" the file size limit is %iMB", self.file_size_limit)
-            return False
-        if filesize>self.server_file_size_limit*1024*1024:
-            filelog.warn("Warning: cannot upload the file '%s'", basefilename)
-            filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            filelog.warn(" the file size limit for %s is %iMB", self._protocol, self.server_file_size_limit)
-            return False
-        printit = False
-        mimetype = ""
-        u = hashlib.sha1()
-        u.update(data)
-        filelog("sha1 digest(%s)=%s", absfile, u.hexdigest())
-        options = {"sha1"       : u.hexdigest()}
-        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
-        return True
-
 
     def send_focus(self, wid):
         focuslog("send_focus(%s)", wid)
@@ -1775,9 +1741,6 @@ class UIXpraClient(XpraClientBase):
             default_rpc_types = []
         self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
         self.start_new_commands = c.boolget("start-new-commands")
-        self.server_file_transfer = c.boolget("file-transfer")
-        self.server_file_size_limit = c.intget("file-size-limit", 10)
-        self.server_open_files = c.boolget("open-files")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = c.intget("mmap_token")

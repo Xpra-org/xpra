@@ -21,6 +21,7 @@ soundlog = Logger("sound")
 clientlog = Logger("client")
 screenlog = Logger("screen")
 printlog = Logger("printing")
+filelog = Logger("file")
 netlog = Logger("network")
 metalog = Logger("metadata")
 windowlog = Logger("window")
@@ -45,7 +46,7 @@ from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTION
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
-from xpra.net.file_transfer import FileTransferHandler
+from xpra.net.file_transfer import FileTransferAttributes
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
@@ -76,7 +77,7 @@ def parse_env(env):
     return d
 
 
-class ServerBase(ServerCore, FileTransferHandler):
+class ServerBase(ServerCore):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -86,7 +87,6 @@ class ServerBase(ServerCore, FileTransferHandler):
 
     def __init__(self):
         ServerCore.__init__(self)
-        FileTransferHandler.__init__(self)
         log("ServerBase.__init__()")
         self.init_uuid()
 
@@ -132,6 +132,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.dbus_server = None
         self.lpadmin = ""
         self.lpinfo = ""
+        self.file_transfer = FileTransferAttributes()
         #starting child commands:
         self.child_display = None
         self.start_commands = []
@@ -242,13 +243,12 @@ class ServerBase(ServerCore, FileTransferHandler):
         self.env = parse_env(opts.env)
         self.send_pings = opts.pings
         #printing and file transfer:
-        FileTransferHandler.init(self, opts)
+        self.file_transfer.init_opts(opts)
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
         self.av_sync = opts.av_sync
         self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
-        self.printing = os.name=="posix" and opts.printing
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
         self.notifications_forwarder = None
@@ -353,13 +353,14 @@ class ServerBase(ServerCore, FileTransferHandler):
         #verify we have a local socket for printing:
         nontcpsockets = [info for socktype, _, info in sockets if socktype not in ("tcp", "vsock")]
         printlog("local sockets we can use for printing: %s", nontcpsockets)
-        if not nontcpsockets:
+        if not nontcpsockets and self.file_transfer.printing:
             log.warn("Warning: no local sockets defined, cannot enable printing")
-            self.printing = False
+            self.file_transfer.printing = False
 
 
     def init_printing(self):
-        if not self.printing:
+        printing = self.file_transfer.printing
+        if not printing:
             return
         try:
             from xpra.platform import pycups_printing
@@ -370,22 +371,24 @@ class ServerBase(ServerCore, FileTransferHandler):
             if self.pdf_printer:
                 pycups_printing.add_printer_def("application/pdf", self.pdf_printer)
             printer_definitions = pycups_printing.validate_setup()
-            self.printing = bool(printer_definitions)
-            if self.printing:
+            printing = bool(printer_definitions)
+            if printing:
                 printlog.info("printer forwarding enabled using %s", " and ".join([x.replace("application/", "") for x in printer_definitions.keys()]))
             else:
                 printlog.warn("Warning: no printer definitions found, cannot enable printing")
         except ImportError as e:
             printlog("printing module is not installed: %s", e)
-            self.printing = False
+            printing = False
         except Exception:
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
-            self.printing = False
+            printing = False
         #verify that we can talk to the socket:
-        if self.printing and self.auth_class and self.auth_class!="none":
+        if printing and self.auth_class and self.auth_class!="none":
             log.warn("Warning: printing conflicts with socket authentication module '%s'", getattr(self.auth_class, "auth_name", self.auth_class))
-            self.printing = False
-        printlog("init_printing() printing=%s", self.printing)
+            printing = False
+        #update file transfer attributes since printing nay have been disabled here
+        self.file_transfer.printing = printing
+        printlog("init_printing() printing=%s", printing)
 
     def init_webcam(self):
         if not self.webcam_forwarding:
@@ -1054,7 +1057,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.window_filters,
-                          self.printing,
+                          self.file_transfer,
                           self.supports_mmap, self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_properties,
@@ -1066,7 +1069,6 @@ class ServerBase(ServerCore, FileTransferHandler):
         log("process_hello serversource=%s", ss)
         try:
             ss.parse_hello(c, self.min_mmap_size)
-            proto.max_packet_size = max(proto.max_packet_size, int(ss.file_transfer) * (1024 + ss.file_size_limit*1024*1024))
         except:
             #close it already
             ss.close()
@@ -1075,11 +1077,6 @@ class ServerBase(ServerCore, FileTransferHandler):
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
-
-    def accept_client(self, proto, c):
-        ServerCore.accept_client(self, proto, c)
-        #may need to bump file size limit for file transfers:
-        proto.max_packet_size = max(proto.max_packet_size, int(self.file_transfer) * (1024 + self.file_size_limit*1024*1024))
 
 
     def get_server_source_class(self):
@@ -1295,7 +1292,7 @@ class ServerBase(ServerCore, FileTransferHandler):
                  "webcam.encodings"             : self.webcam_encodings,
                  "virtual-video-devices"        : self.virtual_video_devices,
                  })
-            capabilities.update(self.get_file_transfer_features())
+            capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
@@ -1347,7 +1344,7 @@ class ServerBase(ServerCore, FileTransferHandler):
             clientlog.log(level, prefix+x)
 
     def _process_printers(self, proto, packet):
-        if not self.printing:
+        if not self.file_transfer.printing:
             log.error("Error: received printer definitions but this server does not support printing")
             return
         ss = self._server_sources.get(proto)
@@ -1435,53 +1432,50 @@ class ServerBase(ServerCore, FileTransferHandler):
         return sources
 
     def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
-        actual_filename = os.path.abspath(os.path.expanduser(filename))
-        if not os.path.exists(actual_filename):
-            raise ControlError("file '%s' does not exist" % filename)
         openit = str(openit).lower() in ("open", "true", "1")
-        #find the client uuid specified:
-        sources = self._control_get_sources(client_uuids)
-        if not sources:
-            raise ControlError("no clients found matching: %s" % client_uuids)
-        data = load_binary_file(actual_filename)
-        file_size_MB = len(data)//1024//1024
-        if file_size_MB>self.file_size_limit:
-            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_size_limit))
-        for ss in sources:
-            if ss.file_transfer:
-                ss.send_file(filename, "", data, False, openit)
-            else:
-                log.warn("cannot send file, client %s does not support file transfers!", ss)
-        return "file transfer of '%s' to %s initiated" % (filename, client_uuids)
+        return self.do_control_file_command("send file", client_uuids, filename, "file_tranfer", (False, openit))
 
     def control_command_print(self, filename, printer, client_uuids, maxbitrate=0, title="", *options_strs):
-        actual_filename = os.path.abspath(os.path.expanduser(filename))
-        try:
-            stat = os.stat(actual_filename)
-            printlog("os.stat(%s)=%s", actual_filename, stat)
-        except os.error:
-            printlog("os.stat(%s)", actual_filename, exc_info=True)
-        if not os.path.exists(actual_filename):
-            raise ControlError("file '%s' does not exist" % filename)
-        sources = self._control_get_sources(client_uuids)
-        if not sources:
-            raise ControlError("no clients found matching: %s" % client_uuids)
         #parse options into a dict:
         options = {}
         for arg in options_strs:
             argp = arg.split("=", 1)
             if len(argp)==2 and len(argp[0])>0:
                 options[argp[0]] = argp[1]
+        return self.do_control_file_command("print", client_uuids, filename, "printing", (True, True, options))
+
+    def do_control_file_command(self, command_type, client_uuids, filename, source_flag_name, send_file_args):
+        #find the clients:
+        sources = self._control_get_sources(client_uuids)
+        if not sources:
+            raise ControlError("no clients found matching: %s" % client_uuids)
+        #find the file and load it:
+        actual_filename = os.path.abspath(os.path.expanduser(filename))
+        try:
+            stat = os.stat(actual_filename)
+            filelog("os.stat(%s)=%s", actual_filename, stat)
+        except os.error:
+            filelog("os.stat(%s)", actual_filename, exc_info=True)
+        if not os.path.exists(actual_filename):
+            raise ControlError("file '%s' does not exist" % filename)
         data = load_binary_file(actual_filename)
+        #verify size:
         file_size_MB = len(data)//1024//1024
         if file_size_MB>self.file_size_limit:
             raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_size_limit))
+        return sources, data
+        #send it to each client:
         for ss in sources:
-            if ss.printing:
-                ss.send_file(filename, "", data, True, True, options)
+            if not getattr(ss, source_flag_name):       #ie: ServerSource.file_transfer
+                log.warn("Warning: cannot %s '%s'", command_type, filename)
+                log.warn(" client %s does not support this feature", ss)
+            elif file_size_MB>ss.file_size_limit:
+                log.warn("Warning: cannot %s '%s'", command_type, filename)
+                log.warn(" client %s file size limit is %iMB (file is %iMB)", ss, ss.file_size_limit, file_size_MB)
             else:
-                printlog.warn("client %s does not support printing!", ss)
-        return "printing to %s initiated" % client_uuids
+                ss.send_file(filename, "", data, *send_file_args)
+        return "%s of '%s' to %s initiated" % (command_type, client_uuids)
+
 
     def control_command_compression(self, compression):
         c = compression.lower()
@@ -1707,13 +1701,16 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def _process_send_file(self, proto, packet):
-        #superclass does not take the protocol as argument:
-        FileTransferHandler._process_send_file(self, packet)
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for file packet")
+            return
+        ss._process_send_file(packet)
 
     def _process_print(self, proto, packet):
         #ie: from the xpraforwarder we call this command:
         #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
-        assert self.printing
+        assert self.file_transfer.printing
         #printlog("_process_print(%s, %s)", proto, packet)
         if len(packet)<9:
             log.error("Error: invalid print packet, only %i arguments", len(packet))
@@ -1760,8 +1757,8 @@ class ServerBase(ServerCore, FileTransferHandler):
             if printer not in ss.printers:
                 printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
                 continue
-            printlog("sending file to %s for printing on %s", ss, printer)
-            if ss.send_file(filename, mimetype, file_data, True, True, options):
+            printlog("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
+            if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
         #warn if not sent:
         if sent==0:
@@ -1769,7 +1766,7 @@ class ServerBase(ServerCore, FileTransferHandler):
         else:
             l = printlog.info
         unit_str, v = to_std_unit(len(file_data), unit=1024)
-        l("file %s (%i%sB) sent to %i client%s", filename, v, unit_str, sent, engs(sent))
+        l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
 
 
     def _process_start_command(self, proto, packet):
@@ -1844,9 +1841,11 @@ class ServerBase(ServerCore, FileTransferHandler):
 
 
     def get_printing_info(self):
-        d = {"enabled"   : self.printing,
-             "lpadmin"   : self.lpadmin}
-        if self.printing:
+        d = {
+             "lpadmin"  : self.lpadmin,
+             "lpinfo"   : self.lpinfo,
+             }
+        if self.file_transfer.printing:
             from xpra.platform.printing import get_info
             d.update(get_info())
         return d
@@ -1879,7 +1878,6 @@ class ServerBase(ServerCore, FileTransferHandler):
              "rpc-types"        : self.rpc_handlers.keys(),
              "clipboard"        : self.supports_clipboard,
              "idle_timeout"     : self.idle_timeout,
-             "file-size-limit"  : self.file_size_limit,
              }
         i.update(self.get_server_features())
         return i
@@ -1927,8 +1925,8 @@ class ServerBase(ServerCore, FileTransferHandler):
         def up(prefix, d):
             info[prefix] = d
 
+        up("file",      self.file_transfer.get_info())
         up("webcam",    self.get_webcam_info())
-        up("file",      self.get_file_transfer_info())
         up("printing",  self.get_printing_info())
         up("commands",  self.get_commands_info())
         up("features",  self.get_features_info())

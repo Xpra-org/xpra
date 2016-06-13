@@ -38,6 +38,7 @@ from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
+from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
 from xpra.server.background_worker import add_work_item
@@ -200,7 +201,7 @@ class WindowPropertyNotIn(WindowPropertyIn):
         return not(WindowPropertyIn.evaluate(window_value))
 
 
-class ServerSource(object):
+class ServerSource(FileTransferHandler):
     """
     A ServerSource represents a client connection.
     It mediates between the server class (which only knows about actual window objects and display server events)
@@ -226,7 +227,7 @@ class ServerSource(object):
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  window_filters,
-                 printing,
+                 file_transfer,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -241,7 +242,7 @@ class ServerSource(object):
                  get_transient_for, get_focus,
                  get_window_id,
                  window_filters,
-                 printing,
+                 file_transfer,
                  supports_mmap, av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -250,6 +251,7 @@ class ServerSource(object):
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed))
+        FileTransferHandler.__init__(self, file_transfer)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -301,8 +303,6 @@ class ServerSource(object):
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
         self.av_sync_delta = AV_SYNC_DELTA
-
-        self.printing = printing
 
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
@@ -416,8 +416,6 @@ class ServerSource(object):
         self.metadata_supported = []
         self.show_desktop_allowed = False
         self.supports_transparency = False
-        self.file_transfer = False
-        self.file_size_limit = 10
         self.printers = {}
         self.vrefresh = -1
         self.double_click_time  = -1
@@ -680,6 +678,8 @@ class ServerSource(object):
         self.client_revision = c.strget("build.revision")
         self.client_proxy = c.boolget("proxy")
         self.client_wm_name = c.strget("wm_name")
+        #file transfers and printing:
+        self.parse_file_transfer_caps(c)
         #general features:
         self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False) and compression.use_lz4
@@ -698,9 +698,6 @@ class ServerSource(object):
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         self.share = c.boolget("share")
-        self.file_transfer = c.boolget("file-transfer")
-        self.file_size_limit = c.intget("file-size-limit")
-        self.printing = self.printing and c.boolget("printing")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.control_commands = c.strlistget("control_commands")
@@ -794,6 +791,9 @@ class ServerSource(object):
                 self.add_window_filter(object_name, property_name, operator, value)
         except Exception as e:
             log.error("Error parsing window-filters: %s", e)
+        #adjust max packet size if file transfers are enabled:
+        if self.file_transfer:
+            self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
 
 
     def parse_encoding_caps(self, c, min_mmap_size):
@@ -1464,7 +1464,8 @@ class ServerSource(object):
                     finfo[i] = str(f)
                     i += 1
             info["window-filter"] = finfo
-        info.update(self.get_sound_info())
+        info["file-transfers"] = FileTransferHandler.get_info(self)
+        info["sound"] = self.get_sound_info()
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
         return info
@@ -1478,8 +1479,7 @@ class ServerSource(object):
             info[k] = bool(getattr(self, prop))
         for prop in ("share", "randr_notify",
                      "clipboard_notifications", "system_tray",
-                     "lz4", "lzo",
-                     "printing", "file_transfer"):
+                     "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",
@@ -1803,38 +1803,6 @@ class ServerSource(object):
             from xpra.platform.pycups_printing import remove_printer
             remove_printer(k)
 
-
-    def send_file(self, filename, mimetype, data, printit, openit, options={}):
-        if printit:
-            if not self.printing:
-                printlog.warn("Warning: printing is not enabled for %s", self)
-                return False
-            action = "print"
-            l = printlog
-        else:
-            if not self.file_transfer:
-                filelog.warn("Warning: file transfers are not enabled for %s", self)
-                return False
-            action = "transfer"
-            l = filelog
-        l("send_file%s", (filename, mimetype, "%s bytes" % len(data), printit, openit, options))
-        #TODO:
-        # * client ACK
-        # * stream it (don't load the whole file!)
-        # * timeouts
-        # * rate control
-        # * xpra info with queue and progress
-        basefilename = os.path.basename(filename)
-        filesize = len(data)
-        cdata = self.compressed_wrapper("file-data", data)
-        assert len(cdata)<=filesize     #compressed wrapper ensures this is true
-        if filesize>self.file_size_limit*1024*1024:
-            l.warn("Warning: cannot %s the file '%s'", action, basefilename)
-            l.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            l.warn(" the file size limit for %s is %iMB", self, self.file_size_limit)
-            return False
-        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
-        return True
 
     def send_client_command(self, *args):
         self.send("control", *args)

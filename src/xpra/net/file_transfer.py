@@ -1,10 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import time
+import subprocess, shlex
+import hashlib
 
 from xpra.log import Logger
 printlog = Logger("printing")
@@ -12,47 +15,77 @@ filelog = Logger("file")
 
 from xpra.child_reaper import getChildReaper
 from xpra.util import typedict, csv
+from xpra.simple_stats import std_unit
 
 DELETE_PRINTER_FILE = os.environ.get("XPRA_DELETE_PRINTER_FILE", "1")=="1"
 
 
-class FileTransferHandler(object):
-    """ Utility class for receiving files and optionally printing them,
+class FileTransferAttributes(object):
+    def __init__(self, opts=None):
+        if opts:
+            self.init_opts(opts)
+        else:
+            self.init_attributes()
+
+    def init_opts(self, opts):
+        #get the settings from a config object
+        self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_command)
+
+    def init_attributes(self, file_transfer=False, file_size_limit=10, printing=False, open_files=False, open_command=None):
+        #printing and file transfer:
+        self.file_transfer = file_transfer
+        self.file_size_limit = file_size_limit
+        self.printing = printing
+        self.open_files = open_files
+        self.open_command = open_command
+
+    def get_file_transfer_features(self):
+        #used in hello packets
+        return {
+                "file-transfer"     : self.file_transfer,
+                "file-size-limit"   : self.file_size_limit,
+                "open-files"        : self.open_files,
+                "printing"          : self.printing,
+                }
+
+    def get_info(self):
+        #slightly different from above... for legacy reasons
+        #this one is used for get_info() in a proper "file." namespace from server_base.py
+        return {
+                "enabled"           : self.file_transfer,
+                "size-limit"        : self.file_size_limit,
+                "open"              : self.open_files,
+                }
+
+
+class FileTransferHandler(FileTransferAttributes):
+    """
+        Utility class for receiving files and optionally printing them,
         used by both clients and server to share the common code and attributes
     """
 
-    def __init__(self):
-        self.file_transfer = False
-        self.file_size_limit = 10
-        self.printing = False
-        self.open_files = False
-        self.open_command = None
+    def init_attributes(self, *args):
+        FileTransferAttributes.init_attributes(self, *args)
+        self.remote_file_transfer = False
+        self.remote_printing = False
+        self.remote_open_files = False
+        self.remote_file_size_limit = 0
 
-    def init(self, opts):
-        #printing and file transfer:
-        self.file_transfer = opts.file_transfer
-        self.file_size_limit = opts.file_size_limit
-        self.printing = opts.printing
-        self.open_command = opts.open_command
-        self.open_files = opts.open_files
+    def parse_file_transfer_caps(self, c):
+        self.remote_file_transfer = c.boolget("file-transfer")
+        self.remote_printing = c.boolget("printing")
+        self.remote_open_files = c.boolget("open-files")
+        self.remote_file_size_limit = c.boolget("file-size-limit")
 
-
-    def get_file_transfer_features(self):
-        return {
-                 "file-transfer"                : self.file_transfer,
-                 "file-size-limit"              : self.file_size_limit,
-                 "open-files"                   : self.open_files,
-                 "printing"                     : self.printing,
-                 }
-
-    def get_file_transfer_info(self):
-        #slightly different from above... for legacy reasons
-        #this one is used in a proper "file." namespace from server_base.py
-        return {
-                 "transfer"                     : self.file_transfer,
-                 "size-limit"                   : self.file_size_limit,
-                 "open"                         : self.open_files,
-                 }
+    def get_info(self):
+        info = FileTransferAttributes.get_info(self)
+        info["remote"] = {
+                          "file-transfer"   : self.remote_file_transfer,
+                          "printing"        : self.remote_printing,
+                          "open-files"      : self.remote_open_files,
+                          "file-size-limit" : self.remote_file_size_limit,
+                          }
+        return info
 
 
     def _process_send_file(self, packet):
@@ -78,7 +111,6 @@ class FileTransferHandler(object):
             l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
             return
         #check digest if present:
-        import hashlib
         def check_digest(algo="sha1", libfn=hashlib.sha1):
             digest = options.get(algo)
             if not digest:
@@ -124,11 +156,15 @@ class FileTransferHandler(object):
             os.write(fd, file_data)
         finally:
             os.close(fd)
-        l.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "unknown"), ["", " for printing"][int(printit)])
-        l.info(" %s", filename)
+        l.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
+        l.info(" '%s'", filename)
         if printit:
             printer = options.strget("printer")
             title   = options.strget("title")
+            if title:
+                l.info(" sending '%s' to printer '%s'", title, printer)
+            else:
+                l.info(" sending to printer '%s'", printer)
             print_options = options.dictget("options")
             #TODO: how do we print multiple copies?
             #copies = options.intget("copies")
@@ -141,13 +177,8 @@ class FileTransferHandler(object):
             self._open_file(filename)
 
     def _print_file(self, filename, mimetype, printer, title, options):
-        import time
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
-        if printer not in printers:
-            printlog.error("Error: printer '%s' does not exist!", printer)
-            printlog.error(" printers available: %s", csv(printers.keys()) or "none")
-            return
         def delfile():
             if not DELETE_PRINTER_FILE:
                 return
@@ -156,6 +187,16 @@ class FileTransferHandler(object):
             except:
                 printlog("failed to delete print job file '%s'", filename)
             return False
+        if not printer:
+            printlog.error("Error: the printer name is missing")
+            printlog.error(" printers available: %s", csv(printers.keys()) or "none")
+            delfile()
+            return
+        if printer not in printers:
+            printlog.error("Error: printer '%s' does not exist!", printer)
+            printlog.error(" printers available: %s", csv(printers.keys()) or "none")
+            delfile()
+            return
         job = print_files(printer, [filename], title, options)
         printlog("printing %s, job=%s", filename, job)
         if job<=0:
@@ -183,7 +224,6 @@ class FileTransferHandler(object):
             filelog.warn(" ignoring uploaded file:")
             filelog.warn(" '%s'", filename)
             return
-        import subprocess, shlex
         command = shlex.split(self.open_command)+[filename]
         proc = subprocess.Popen(command)
         cr = getChildReaper()
@@ -194,3 +234,51 @@ class FileTransferHandler(object):
                 filelog.warn("Warning: failed to open the downloaded file")
                 filelog.warn(" '%s %s' returned %s", self.open_command, filename, returncode)
         cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
+
+    def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}):
+        if printit:
+            if not self.printing:
+                printlog.warn("Warning: printing is not enabled for %s", self)
+                return False
+            if not self.remote_printing:
+                printlog.warn("Warning: remote end does not support printing")
+                return False
+            action = "print"
+            l = printlog
+        else:
+            if not self.file_transfer:
+                filelog.warn("Warning: file transfers are not enabled for %s", self)
+                return False
+            if not self.remote_file_transfer:
+                printlog.warn("Warning: remote end does not support file transfers")
+                return False
+            action = "upload"
+            l = filelog
+        l("send_file%s", (filename, mimetype, "%s bytes" % len(data), printit, openit, options))
+        if not printit and openit and not self.remote_open_files:
+            l.warn("Warning: opening the file after transfer is disabled on the remote end")
+            openit = False
+        assert len(data)>=filesize, "data is smaller then the given file size!"
+        data = data[:filesize]          #gio may null terminate it
+        filelog("send_file%s", (filename, "%i bytes" % filesize, openit))
+        absfile = os.path.abspath(filename)
+        basefilename = os.path.basename(filename)
+        cdata = self.compressed_wrapper("file-data", data)
+        assert len(cdata)<=filesize     #compressed wrapper ensures this is true
+        if filesize>self.file_size_limit*1024*1024:
+            filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
+            filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
+            filelog.warn(" the file size limit is %iMB", self.file_size_limit)
+            return False
+        if filesize>self.remote_file_size_limit*1024*1024:
+            filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
+            filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
+            filelog.warn(" the remote file size limit is %iMB", self.remote_file_size_limit)
+            return False
+        mimetype = ""
+        u = hashlib.sha1()
+        u.update(data)
+        filelog("sha1 digest(%s)=%s", absfile, u.hexdigest())
+        options["sha1"] = u.hexdigest()
+        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
+        return True

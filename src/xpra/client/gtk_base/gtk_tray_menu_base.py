@@ -1091,9 +1091,9 @@ class GTKTrayMenuBase(object):
     def make_uploadmenuitem(self):
         self.upload = self.menuitem("Upload File", "upload.png", "Send a file to the server", self.client.show_file_upload)
         def enable_upload(*args):
-            log("enable_upload%s server_file_transfer=%s", args, self.client.server_file_transfer)
-            set_sensitive(self.upload, self.client.server_file_transfer)
-            if not self.client.server_file_transfer:
+            log("enable_upload%s server_file_transfer=%s", args, self.client.remote_file_transfer)
+            set_sensitive(self.upload, self.client.remote_file_transfer)
+            if not self.client.remote_file_transfer:
                 self.upload.set_tooltip_text("Not supported by the server")
         self.client.after_handshake(enable_upload)
         return self.upload

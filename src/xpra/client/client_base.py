@@ -135,7 +135,7 @@ class XpraClientBase(FileTransferHandler):
         self.speed = opts.speed
         self.min_speed = opts.min_speed
         #printing and file transfer:
-        FileTransferHandler.init(self, opts)
+        FileTransferHandler.init_opts(self, opts)
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -643,6 +643,10 @@ class XpraClientBase(FileTransferHandler):
             return False
         self.parse_printing_capabilities()
         self.parse_logging_capabilities()
+        self.parse_file_transfer_caps(self.server_capabilities)
+        #raise packet size if required:
+        if self.file_transfer:
+            self._protocol.max_packet_size = max(self._protocol.max_packet_size, self.file_size_limit*1024*1024)
         netlog("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True

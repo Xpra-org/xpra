@@ -444,7 +444,7 @@ class ServerCore(object):
     def print_screen_info(self):
         display = os.environ.get("DISPLAY")
         if display and display.startswith(":"):
-            log.info(" on display %s", display)
+            log.info(" connected to X11 display %s", display)
 
 
     def server_is_ready(self):
