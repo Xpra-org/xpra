@@ -445,6 +445,7 @@ class ServerSource(FileTransferHandler):
 
     def close(self):
         log("%s.close()", self)
+        FileTransferHandler.cleanup(self)
         self.close_event.set()
         for window_source in self.window_sources.values():
             window_source.cleanup()

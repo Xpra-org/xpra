@@ -283,7 +283,11 @@ class XpraClientBase(FileTransferHandler):
             })
 
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._packet_handlers, {"send-file" : self._process_send_file})
+        self.set_packet_handlers(self._packet_handlers, {
+                                                         "send-file"        : self._process_send_file,
+                                                         "ack-file-chunk"   : self._process_ack_file_chunk,
+                                                         "send-file-chunk"  : self._process_send_file_chunk,
+                                                         })
 
 
     def init_aliases(self):
@@ -443,6 +447,7 @@ class XpraClientBase(FileTransferHandler):
 
 
     def cleanup(self):
+        FileTransferHandler.cleanup(self)
         reaper_cleanup()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)

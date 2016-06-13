@@ -534,7 +534,7 @@ def get_defaults():
                     "compression_level" : 1,
                     "dpi"               : 0,
                     "video-scaling"     : 1,
-                    "file-size-limit"   : 10,
+                    "file-size-limit"   : 100,
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
                     "sync-xvfb"         : 0,

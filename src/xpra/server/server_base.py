@@ -660,6 +660,8 @@ class ServerBase(ServerCore):
             "command_request":                      self._process_command_request,
             "printers":                             self._process_printers,
             "send-file":                            self._process_send_file,
+            "ack-file-chunk":                       self._process_ack_file_chunk,
+            "send-file-chunk":                      self._process_send_file_chunk,
             "webcam-start":                         self._process_webcam_start,
             "webcam-stop":                          self._process_webcam_stop,
             "webcam-frame":                         self._process_webcam_frame,
@@ -1703,9 +1705,23 @@ class ServerBase(ServerCore):
     def _process_send_file(self, proto, packet):
         ss = self._server_sources.get(proto)
         if not ss:
-            log.warn("Warning: invalid client source for file packet")
+            log.warn("Warning: invalid client source for send-file packet")
             return
         ss._process_send_file(packet)
+
+    def _process_ack_file_chunk(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for ack-file-chunk packet")
+            return
+        ss._process_ack_file_chunk(packet)
+
+    def _process_send_file_chunk(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for send-file-chunk packet")
+            return
+        ss._process_send_file_chunk(packet)
 
     def _process_print(self, proto, packet):
         #ie: from the xpraforwarder we call this command:

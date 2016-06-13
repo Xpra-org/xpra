@@ -80,7 +80,7 @@ file-transfer = yes
 #download-path = /tmp
 
 # File size limit in MB
-file-size-limit = 10
+file-size-limit = 100
 
 # How to open files:
 #open-command = xdg-open
