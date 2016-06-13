@@ -23,7 +23,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, is_blacklisted
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -2387,24 +2387,9 @@ def init_module():
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
-    #this should log the kernel module version
-    v = get_nvidia_module_version()
-    if not v:
-        log.warn("Warning: unknown NVidia driver version")
-        bl = None
-    else:
-        bl = is_blacklisted()
-    if bl is True:
-        raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
-    elif bl is None:
-        if v:
-            log.warn("Warning: NVidia driver version %s may or may not work", pver(v))
-            log.warn(" recommended driver versions: up to 350 only")
-        if os.environ.get("XPRA_NVENC_YUV444P", "0")!="1":
-            log.warn(" disabling YUV444P and lossless mode")
-            log.warn(" use XPRA_NVENC_YUV444P=1 to force enable it")
-            YUV444_ENABLED = False
-            LOSSLESS_ENABLED = False
+    if not validate_driver_yuv444lossless():
+        YUV444_ENABLED = False
+        LOSSLESS_ENABLED = False
 
     #load the library / DLL:
     init_nvencode_library()

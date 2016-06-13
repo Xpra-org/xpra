@@ -108,6 +108,35 @@ def is_blacklisted():
         log.warn(" %s", e)
     return None     #we don't know: unreleased / untested
 
+
+_version_warning = False
+def validate_driver_yuv444lossless():
+    #this should log the kernel module version
+    v = get_nvidia_module_version()
+    if not v:
+        log.warn("Warning: unknown NVidia driver version")
+        bl = None
+    else:
+        bl = is_blacklisted()
+    if bl is True:
+        raise Exception("NVidia driver version %s is blacklisted, it does not work with NVENC" % pver(v))
+    elif bl is None:
+        global _version_warning
+        if _version_warning:
+            l = log
+        else:
+            l = log.warn
+            _version_warning = True
+        if v:
+            l("Warning: NVidia driver version %s is unsupported with NVENC", pver(v))
+            l(" recommended driver versions: up to 350 only")
+        if os.environ.get("XPRA_NVENC_YUV444P", "0")!="1":
+            l(" disabling YUV444P and lossless mode")
+            l(" use XPRA_NVENC_YUV444P=1 to force enable it")
+            return False
+    return True
+
+
 nvenc_license_keys = {}
 def get_nvenc_license_keys(nvenc_version=0):
     global nvenc_license_keys
