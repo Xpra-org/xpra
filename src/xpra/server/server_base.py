@@ -423,7 +423,7 @@ class ServerBase(ServerCore):
             webcamlog.warn(" webcam forwarding disabled")
             return 0
         devices = get_virtual_video_devices()
-        webcamlog.info("found %i virtual video device%s", len(devices), engs(devices))
+        webcamlog.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
         return len(devices)
 
     def init_uuid(self):
