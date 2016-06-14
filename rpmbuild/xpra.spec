@@ -26,6 +26,7 @@
 %define requires_websockify , python-websockify
 %define requires_lzo , python-lzo
 %define numpy numpy
+%define requires_webcam , python-inotify
 %define requires_shadow shadow-utils
 %define requires_cython Cython
 %define requires_pygobject2 pygobject2
@@ -70,6 +71,8 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %define run_tests 0
 #no python cryptography:
 %define requires_crypto python-crypto
+#no python-inotify:
+%define requires_webcam %{nil}
 #no pycups available in repos:
 %define requires_printing %{nil}
 #only v6.4 onwards have Xdummy support:
@@ -111,6 +114,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %define numpy python-numpy
 %define requires_shadow shadow
 %define requires_xorg xauth, xf86-video-dummy
+%define requires_webcam , python-pyinotify
 %define requires_lzo %{nil}
 %define requires_cython python-Cython
 %define requires_pygobject2 python-gobject2
@@ -144,7 +148,7 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing}
+Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
 Requires: python-lz4
 Requires: %{requires_pygtk2}
 Requires: %{requires_dbus}
