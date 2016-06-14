@@ -194,6 +194,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error("Error: cannot write file chunk")
             filelog.error(" %s", e)
             self.send("ack-file-chunk", chunk_id, False, "write error: %s" % e, chunk)
+            del self.receive_chunks_in_progress[chunk_id]
             try:
                 os.close(fd)
             except:
@@ -208,6 +209,7 @@ class FileTransferHandler(FileTransferAttributes):
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             chunk_state[-2] = timer
             return
+        del self.receive_chunks_in_progress[chunk_id]
         os.close(fd)
         #check file size and digest then process it:
         filename, mimetype, printit, openit, filesize, options = chunk_state[2:8]
@@ -218,7 +220,8 @@ class FileTransferHandler(FileTransferAttributes):
         if expected_digest:
             self.check_digest(filename, digest.hexdigest(), expected_digest)
         start_time = chunk_state[0]
-        filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, (time.time()-start_time)*1000)
+        elapsed = time.time()-start_time
+        filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
         self.do_process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
     def _process_send_file(self, packet):
@@ -445,7 +448,8 @@ class FileTransferHandler(FileTransferAttributes):
         start_time, data, chunk_size, timer, chunk = chunk_state
         if not data:
             #all sent!
-            filelog("%i chunks of %i bytes sent in %ims", chunk, chunk_size, (time.time()-start_time)*1000)
+            elapsed = time.time()-start_time
+            filelog("%i chunks of %i bytes sent in %ims (%sB/s)", chunk, chunk_size, elapsed*1000, std_unit(chunk*chunk_size/elapsed))
             del self.send_chunks_in_progress[chunk_id]
             return
         assert chunk_size>0
