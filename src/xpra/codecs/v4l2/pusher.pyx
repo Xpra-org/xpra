@@ -298,7 +298,7 @@ cdef class Pusher:
         cdef v4l2_format vid_format
         self.device_name = device or os.environ.get("XPRA_VIDEO_DEVICE", "/dev/video1")
         log("v4l2 using device %s", self.device_name)
-        self.device = open(self.device_name, "wb")
+        self.device = open(self.device_name, "wrb", 0)
         r = ioctl(self.device.fileno(), VIDIOC_QUERYCAP, &vid_caps)
         log("ioctl(%s, VIDIOC_QUERYCAP, %#x)=%s", self.device_name, <unsigned long> &vid_caps, r)
         assert r>=0, "VIDIOC_QUERYCAP ioctl failed on %s" % self.device_name
@@ -442,7 +442,7 @@ cdef class Pusher:
         assert buf_len>=Vstride*(image.get_height()//Vhdiv), "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*(image.get_height()//Vhdiv))
         assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
-        cdef int offset = roundup(self.rowstride//2, 32)
+        cdef int offset = 0
         global DEFAULT_OFFSET
         if DEFAULT_OFFSET>=0:
             offset = DEFAULT_OFFSET
