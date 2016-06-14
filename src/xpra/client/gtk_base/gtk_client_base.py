@@ -164,10 +164,20 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             return
         filename = dialog.get_filename()
         gfile = dialog.get_file()
-        data, filesize, entity = gfile.load_contents()
-        filelog("load_contents: filename=%s, %i bytes, entity=%s, response=%s", filename, filesize, entity, v)
         dialog.destroy()
-        self.send_file(filename, "", data, filesize=filesize, openit=(v==gtk.RESPONSE_ACCEPT))
+        filelog("load_contents: filename=%s, response=%s", filename, v)
+        gfile.load_contents_async(self.file_upload_ready, user_data=(filename, v==gtk.RESPONSE_ACCEPT))
+
+    def file_upload_ready(self, gfile, result, user_data):
+        filelog("file_upload_ready%s", (gfile, result, user_data))
+        filename, openit = user_data
+        data, filesize, entity = gfile.load_contents_finish(result)
+        filelog("load_contents_finish(%s)=%s", result, (type(data), filesize, entity))
+        if not data:
+            log.warn("Warning: failed to load file '%s'", filename)
+            return
+        filelog("load_contents: filename=%s, %i bytes, entity=%s, openit=%s", filename, filesize, entity, openit)
+        self.send_file(filename, "", data, filesize=filesize, openit=openit)
 
 
     def show_about(self, *args):
