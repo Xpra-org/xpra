@@ -232,6 +232,30 @@ print_nested_dict({
                    }, print_fn=log.debug)
 
 
+def query_video_device(device="/dev/video0"):
+    cdef v4l2_capability vid_caps
+    try:
+        log("v4l2 using device %s", device)
+        with open(device, "wb") as f:
+            r = ioctl(f.fileno(), VIDIOC_QUERYCAP, &vid_caps)
+            log("ioctl(%s, VIDIOC_QUERYCAP, %#x)=%s", device, <unsigned long> &vid_caps, r)
+            if r<0:
+                return {}
+            info = {
+                    "driver"        : vid_caps.driver,
+                    "card"          : vid_caps.card,
+                    "bus_info"      : vid_caps.bus_info,
+                    "version"       : vid_caps.version,
+                    #"capabilities"  : [],
+                    #"device_caps"   : [],
+                    }
+            return dict((k,v) for k,v in info.items() if v)
+    except Exception as e:
+        log.error("Error: failed to query device '%s':", device)
+        log.error(" %s", e)
+    return {}
+
+
 def get_version():
     return 0
 
@@ -346,6 +370,10 @@ cdef class Pusher:
         self.src_format = ""
         self.frames = 0
         self.framesize = 0
+        d = self.device
+        if d:
+            self.device = None
+            d.close()
 
     def get_info(self):             #@DuplicatedSignature
         info = get_info()

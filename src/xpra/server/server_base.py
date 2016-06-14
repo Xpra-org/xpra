@@ -416,7 +416,7 @@ class ServerBase(ServerCore):
             webcamlog.error(" %s", e)
             return 0
         try:
-            from xpra.platform.xposix.webcam_util import get_virtual_video_devices
+            from xpra.platform.xposix.webcam import get_virtual_video_devices
         except ImportError as e:
             webcamlog.warn("Warning: cannot load webcam components")
             webcamlog.warn(" %s", e)
@@ -2694,7 +2694,9 @@ class ServerBase(ServerCore):
             return
         if self.webcam_forwarding_device:
             self.stop_virtual_webcam()
-        device_str = devices.values()[0]
+        device_info = devices.values()[0]
+        device_str = device_info.get("device")
+        webcamlog.info("using device %s", device_info)
         try:
             from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
             in_cs = get_input_colorspaces()

@@ -2074,17 +2074,16 @@ class UIXpraClient(XpraClientBase):
         assert self.server_supports_webcam
         device = 0
         virt_devices, all_video_devices, non_virtual = {}, {}, {}
-        if os.name=="posix":
-            try:
-                from xpra.platform.xposix.webcam_util import get_virtual_video_devices, get_all_video_devices
-                virt_devices = get_virtual_video_devices()
-                all_video_devices = get_all_video_devices()
-                non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
-                webcamlog("virtual video devices=%s", virt_devices)
-                webcamlog("all_video_devices=%s", all_video_devices)
-                webcamlog("found %s known non-virtual video devices: %s", len(non_virtual), non_virtual)
-            except ImportError as e:
-                webcamlog("no webcam_util: %s", e)
+        try:
+            from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
+            virt_devices = get_virtual_video_devices()
+            all_video_devices = get_all_video_devices()
+            non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
+            webcamlog("virtual video devices=%s", virt_devices)
+            webcamlog("all_video_devices=%s", all_video_devices)
+            webcamlog("found %s known non-virtual video devices: %s", len(non_virtual), non_virtual)
+        except ImportError as e:
+            webcamlog("no webcam_util: %s", e)
         webcamlog("do_start_sending_webcam(%s)", device_str)
         if device_str in ("auto", "on", "yes", "off", "false", "true"):
             if len(non_virtual)>0:

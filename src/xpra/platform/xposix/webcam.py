@@ -6,7 +6,7 @@
 import os
 
 from xpra.log import Logger
-log = Logger("client")
+log = Logger("webcam")
 from xpra.util import engs
 
 
@@ -38,7 +38,10 @@ def get_virtual_video_devices():
         except:
             continue
         dev_file = "/dev/%s" % f
-        devices[no] = dev_file
+        dev_def = {"device" : dev_file}
+        if dev_name:
+            dev_def["name"] = dev_name
+        devices[no] = dev_def
     log("devices: %s", devices)
     log("found %i virtual video device%s", len(devices), engs(devices))
     return devices
@@ -46,16 +49,31 @@ def get_virtual_video_devices():
 def get_all_video_devices():
     contents = os.listdir("/dev")
     devices = {}
+    device_paths = set()
+    try:
+        from xpra.codecs.v4l2.pusher import query_video_device
+    except ImportError:
+        def query_video_device(device):
+            return {}
     for f in contents:
         if not f.startswith("video"):
             continue
         dev_file = "/dev/%s" % f
         try:
+            dev_file = os.readlink(dev_file)
+        except OSError:
+            pass
+        if dev_file in device_paths:
+            continue
+        device_paths.add(dev_file)
+        try:
             no = int(f[len("video"):])
             assert no>=0
         except:
             continue
-        devices[no] = dev_file
+        info = {"device" : dev_file}
+        info.update(query_video_device(dev_file))
+        devices[no] = info
     return devices
 
 
