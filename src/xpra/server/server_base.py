@@ -2695,24 +2695,31 @@ class ServerBase(ServerCore):
         if self.webcam_forwarding_device:
             self.stop_virtual_webcam()
         webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
-        device_info = devices.values()[0]
-        webcamlog("using the first device: %s", device_info)
-        device_str = device_info.get("device")
-        webcamlog.info("using device %s", device_str)
-        try:
-            from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
-            in_cs = get_input_colorspaces()
-            p = Pusher()
-            src_format = in_cs[0]
-            p.init_context(w, h, w, src_format, device_str)
-            self.webcam_forwarding_device = p
-            webcamlog.info("webcam forwarding using %s", device_str)
-            #this tell the client to start sending, and the size to use - which may have changed:
-            ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
-        except Exception as e:
-            webcamlog.error("Error setting up webcam forwarding:")
-            webcamlog.error(" %s", e)
-            ss.send_webcam_stop(device, str(e))
+        errs = {}
+        for device_id, device_info in devices.items():
+            webcamlog("trying device %s: %s", device_id, device_info)
+            device_str = device_info.get("device")
+            try:
+                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
+                in_cs = get_input_colorspaces()
+                p = Pusher()
+                src_format = in_cs[0]
+                p.init_context(w, h, w, src_format, device_str)
+                self.webcam_forwarding_device = p
+                webcamlog.info("webcam forwarding using %s", device_str)
+                #this tell the client to start sending, and the size to use - which may have changed:
+                ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
+                return
+            except Exception as e:
+                errs[device_str] = e
+        #all have failed!
+        #cannot start webcam..
+        ss.send_webcam_stop(device, str(e))
+        webcamlog.error("Error setting up webcam forwarding:")
+        if len(errs)>1:
+            webcamlog.error(" tried %i devices:", len(errs))
+        for device_str, err in errs.items():
+            webcamlog.error(" %s : %s", device_str, err)
 
     def _process_webcam_stop(self, proto, packet):
         if self.readonly:
