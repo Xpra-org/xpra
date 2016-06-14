@@ -2686,7 +2686,7 @@ class ServerBase(ServerCore):
 
     def start_virtual_webcam(self, ss, device, w, h):
         assert w>0 and h>0
-        from xpra.platform.xposix.webcam_util import get_virtual_video_devices
+        from xpra.platform.xposix.webcam import get_virtual_video_devices
         devices = get_virtual_video_devices()
         if len(devices)==0:
             webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
@@ -2694,9 +2694,11 @@ class ServerBase(ServerCore):
             return
         if self.webcam_forwarding_device:
             self.stop_virtual_webcam()
+        webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
         device_info = devices.values()[0]
+        webcamlog("using the first device: %s", device_info)
         device_str = device_info.get("device")
-        webcamlog.info("using device %s", device_info)
+        webcamlog.info("using device %s", device_str)
         try:
             from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
             in_cs = get_input_colorspaces()
