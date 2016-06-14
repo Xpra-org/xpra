@@ -890,55 +890,89 @@ class GTKTrayMenuBase(object):
         return menu
 
     def make_webcammenuitem(self):
+        from xpra.platform.webcam import get_all_video_devices, get_virtual_video_devices, add_video_device_change_callback
+        #TODO: register remove_video_device_change_callback for cleanup
         menu = gtk.Menu()
         #so we can toggle the menu items without causing yet more events and infinite loops:
         menu.ignore_events = False
-        def onoffitem(label, active, cb):
+        def deviceitem(label, cb, device_no=0):
             c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
-            c.set_active(active)
+            c.set_active(False)
+            c.device_no = device_no
             def activate_cb(item, *args):
                 webcamlog("activate_cb(%s, %s) ignore_events=%s", item, menu, menu.ignore_events)
                 if not menu.ignore_events:
                     try:
                         menu.ignore_events = True
                         ensure_item_selected(menu, item)
-                        cb()
+                        cb(device_no)
                     finally:
                         menu.ignore_events = False
             c.connect("toggled", activate_cb, menu)
             return c
-        def start_webcam(*args):
-            webcamlog("start_webcam%s", args)
-            self.client.start_sending_webcam()
-        def stop_webcam(*args):
-            webcamlog("stop_webcam%s", args)
+        def start_webcam(device_no=0):
+            webcamlog("start_webcam(%s)", device_no)
+            self.client.do_start_sending_webcam(device_no)
+        def stop_webcam(device_no=0):
+            webcamlog("stop_webcam(%s)", device_no)
             self.client.stop_sending_webcam()
-        on = onoffitem("On", False, start_webcam)
-        off = onoffitem("Off", True, stop_webcam)
-        menu.append(on)
-        menu.append(off)
+
+        def populate_webcam_menu():
+            menu.ignore_events = True
+            webcamlog("populate_webcam_menu()")
+            for x in menu.get_children():
+                menu.remove(x)
+            all_video_devices = get_all_video_devices()
+            if all_video_devices is None:
+                #None means that this platform cannot give us the device names,
+                #so we just use a single "On" menu item and hope for the best
+                on = deviceitem("On", start_webcam)
+                menu.append(on)
+            else:
+                on = None
+                virt_devices = get_virtual_video_devices()
+                non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
+                for device_no,info in non_virtual.items():
+                    label = info.get("card", info.get("device", str(device_no)))
+                    item = deviceitem(label, start_webcam, device_no)
+                    menu.append(item)
+            off = deviceitem("Off", stop_webcam, -1)
+            menu.append(off)
+            menu.show_all()
+            menu.ignore_events = False
+        populate_webcam_menu()
+
+        def video_devices_changed(added, device):
+            log.info("video device %s: %s", ["removed", "added"][added], device)
+            #this callback runs in another thread,
+            #and we want to wait for the devices to settle
+            #so that the file permissions are correct when we try to access it:
+            glib.timeout_add(1000, populate_webcam_menu)
+        add_video_device_change_callback(video_devices_changed)
 
         webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam pictures to the server", None)
         webcam.set_submenu(menu)
         def webcam_changed(*args):
             webcamlog("webcam_changed%s webcam_device=%s", args, self.client.webcam_device)
             if not self.client.webcam_forwarding:
-                for x in (webcam, on, off):
-                    set_sensitive(x, False)
+                set_sensitive(webcam, False)
                 webcam.set_tooltip_text("Webcam forwarding is disabled")
                 return
             if self.client.server_virtual_video_devices<=0:
-                for x in (webcam, on, off):
-                    set_sensitive(x, False)
+                set_sensitive(webcam, False)
                 webcam.set_tooltip_text("Server does not support webcam forwarding")
                 return
             set_sensitive(webcam, True)
             active = self.client.webcam_device is not None
             webcamlog("webcam_changed%s active=%s", args, active)
             menu.ignore_events = True
-            on.set_active(active)
-            off.set_active(not active)
+            if not active:
+                device_no = -1
+            else:
+                device_no = self.client.webcam_device_no
+            for x in menu.get_children():
+                x.set_active(x.device_no==device_no)
             menu.ignore_events = False
         self.client.connect("webcam-changed", webcam_changed)
         set_sensitive(webcam, False)

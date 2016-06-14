@@ -20,6 +20,11 @@ def get_virtual_video_devices():
         return []
     contents = os.listdir(v4l2_virtual_dir)
     devices = {}
+    try:
+        from xpra.codecs.v4l2.pusher import query_video_device
+    except ImportError:
+        def query_video_device(device):
+            return {}
     for f in contents:
         if not f.startswith("video"):
             continue
@@ -38,10 +43,11 @@ def get_virtual_video_devices():
         except:
             continue
         dev_file = "/dev/%s" % f
-        dev_def = {"device" : dev_file}
-        if dev_name:
-            dev_def["name"] = dev_name
-        devices[no] = dev_def
+        info = {"device" : dev_file}
+        if name:
+            info["card"] = name
+        info.update(query_video_device(dev_file))
+        devices[no] = info
     log("devices: %s", devices)
     log("found %i virtual video device%s", len(devices), engs(devices))
     return devices
@@ -77,18 +83,72 @@ def get_all_video_devices():
     return devices
 
 
-def main():
-    import sys
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        from xpra.log import add_debug_category
-        add_debug_category("webcam")
+_watch_manager = None
+_notifier = None
+_video_device_change_callbacks = []
 
-    from xpra.platform import program_context
-    with program_context("Webcam Info", "Webcam Info"):
-        devices = get_virtual_video_devices()
-        log.info("Found %i virtual video device%s:", len(devices), engs(devices))
-        for no, d in devices.items():
-            log.info("%-2i: %s", no, d)
+def _video_device_file_filter(event):
+    # return True to stop processing of event (to "stop chaining")
+    return not event.pathname.startswith("/dev/video")
 
-if __name__ == "__main__":
-    main()
+def _fire_video_device_change(create, pathname):
+    global _video_device_change_callbacks
+    for x in _video_device_change_callbacks:
+        try:
+            x(create, pathname)
+        except Exception as e:
+            log("error on %s", x, exc_info=True)
+            log.error("Error: video device change callback error")
+            log.error(" %s", e)
+
+def add_video_device_change_callback(callback):
+    global _watch_manager, _notifier, _video_device_change_callbacks
+    try:
+        import pyinotify
+    except ImportError as e:
+        log.error("Error: cannot watch for video device changes without pyinotify:")
+        log.error(" %s", e)
+        return
+    log("add_video_device_change_callback(%s) pyinotify=%s", callback, pyinotify)
+
+    class EventHandler(pyinotify.ProcessEvent):
+        def process_IN_CREATE(self, event):
+            _fire_video_device_change(True, event.pathname)
+
+        def process_IN_DELETE(self, event):
+            _fire_video_device_change(False, event.pathname)
+
+    if not _watch_manager:
+        _watch_manager = pyinotify.WatchManager()
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable
+        handler = EventHandler(pevent=_video_device_file_filter)
+        _notifier = pyinotify.ThreadedNotifier(_watch_manager, handler)
+        _notifier.setDaemon(True)
+        wdd = _watch_manager.add_watch('/dev', mask)
+        log("watching for video device changes in /dev")
+        log("notifier=%s, watch=%s", _notifier, wdd)
+        _notifier.start()
+    _video_device_change_callbacks.append(callback)
+    #for running standalone:
+    #notifier.loop()
+
+def remove_video_device_change_callback(callback):
+    global _watch_manager, _notifier, _video_device_change_callbacks
+    if not _watch_manager:
+        log.error("Error: cannot remove video device change callback, no watch manager!")
+        return
+    if callback not in _video_device_change_callbacks:
+        log.error("Error: video device change callback not found, cannot remove it!")
+        return
+    log("remove_video_device_change_callback(%s)", callback)
+    _video_device_change_callbacks.remove(callback)
+    if len(_video_device_change_callbacks)==0:
+        log("last video device change callback removed, closing the watch manager")
+        #we can close it:
+        _notifier.stop()
+        _notifier = None
+        try:
+            _watch_manager.close()
+        except:
+            pass
+        _watch_manager = None
