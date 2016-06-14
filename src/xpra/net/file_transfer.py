@@ -444,6 +444,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         if chunk_state[-1]!=chunk:
             filelog.error("Error: chunk number mismatch (%i vs %i)", chunk_state, chunk)
+            del self.send_chunks_in_progress[chunk_id]
             return
         start_time, data, chunk_size, timer, chunk = chunk_state
         if not data:
