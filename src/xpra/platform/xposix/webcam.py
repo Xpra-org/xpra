@@ -10,7 +10,18 @@ log = Logger("webcam")
 from xpra.util import engs
 
 
-def get_virtual_video_devices():
+def _can_capture_video(dev_file, dev_info):
+    if not dev_info:
+        return False
+    caps = dev_info.get("capabilities", [])
+    if "DEVICE_CAPS" in caps:
+        caps = dev_info.get("device_caps", [])
+    if not "VIDEO_CAPTURE" in caps:
+        log("device %s does not support video capture, capabilities=%s", dev_file, caps)
+        return False
+    return True
+
+def get_virtual_video_devices(capture_only=True):
     log("get_virtual_video_devices")
     v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
     if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
@@ -33,26 +44,29 @@ def get_virtual_video_devices():
             assert no>=0
         except:
             continue
-        dev_dir = os.path.join(v4l2_virtual_dir, f)
-        if not os.path.isdir(dev_dir):
-            continue
-        dev_name = os.path.join(dev_dir, "name")
-        try:
-            name = open(dev_name).read().replace("\n", "")
-            log("found %s: %s", f, name)
-        except:
-            continue
         dev_file = "/dev/%s" % f
+        dev_info = query_video_device(dev_file)
+        if capture_only and not _can_capture_video(dev_file, dev_info):
+            continue
         info = {"device" : dev_file}
-        if name:
-            info["card"] = name
-        info.update(query_video_device(dev_file))
+        info.update(dev_info)
+        if "card" not in dev_info:
+            #look up the name from the v4l2 virtual dir:
+            dev_dir = os.path.join(v4l2_virtual_dir, f)
+            if not os.path.isdir(dev_dir):
+                continue
+            dev_name = os.path.join(dev_dir, "name")
+            try:
+                name = open(dev_name).read().replace("\n", "")
+                info["card"] = name
+            except:
+                pass
         devices[no] = info
     log("devices: %s", devices)
     log("found %i virtual video device%s", len(devices), engs(devices))
     return devices
 
-def get_all_video_devices():
+def get_all_video_devices(capture_only=True):
     contents = os.listdir("/dev")
     devices = {}
     device_paths = set()
@@ -77,8 +91,11 @@ def get_all_video_devices():
             assert no>=0
         except:
             continue
+        dev_info = query_video_device(dev_file)
+        if capture_only and not _can_capture_video(dev_file, dev_info):
+            continue
         info = {"device" : dev_file}
-        info.update(query_video_device(dev_file))
+        info.update(dev_info)
         devices[no] = info
     return devices
 
