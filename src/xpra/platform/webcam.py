@@ -56,8 +56,11 @@ def main():
         
         if run:
             log.info("add watch for video device changes")
-            def callback(added, device):
-                log.info("video device %s: %s", ["removed", "added"][added], device)
+            def callback(added=None, device=None):
+                if added is not None or device:
+                    log.info("video device %s: %s", ["removed", "added"][added], device)
+                else:
+                    log.info("device change")
             add_video_device_change_callback(callback)
             log.info("starting main loop")
             main_loop = glib.MainLoop()

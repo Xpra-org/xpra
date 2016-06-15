@@ -944,8 +944,11 @@ class GTKTrayMenuBase(object):
             menu.ignore_events = False
         populate_webcam_menu()
 
-        def video_devices_changed(added, device):
-            log.info("video device %s: %s", ["removed", "added"][added], device)
+        def video_devices_changed(added=None, device=None):
+            if added is not None and device:
+                log.info("video device %s: %s", ["removed", "added"][added], device)
+            else:
+                log("video_devices_changed")
             #this callback runs in another thread,
             #and we want to wait for the devices to settle
             #so that the file permissions are correct when we try to access it:
