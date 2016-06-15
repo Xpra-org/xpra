@@ -15,8 +15,6 @@ from xpra.util import nonl, print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
 
-cdef int DEFAULT_OFFSET = int(os.environ.get("XPRA_V4L2_OFFSET", "-1"))
-
 
 from libc.stdint cimport uint32_t, uint8_t
 
@@ -501,19 +499,13 @@ cdef class Pusher:
         assert buf_len>=Vstride*(image.get_height()//Vhdiv), "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*(image.get_height()//Vhdiv))
         assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
-        cdef int offset = 0
-        global DEFAULT_OFFSET
-        if DEFAULT_OFFSET>=0:
-            offset = DEFAULT_OFFSET
-        #log("offset(%s)=%s", self.rowstride, offset)
-        cdef size_t l = self.framesize + offset + self.rowstride*8
+        cdef size_t l = self.framesize + self.rowstride*8
         cdef uint8_t* buf = <uint8_t*> xmemalign(l)
         memset(buf, 0, l)
         assert buf!=NULL, "failed to allocate temporary output buffer"
-        cdef int i = offset
         cdef size_t s = Ystride*(self.height//Yhdiv)
-        memcpy(buf+i, Ybuf, s)
-        i += s + Ystride*6
+        memcpy(buf, Ybuf, s)
+        cdef int i = s + Ystride*6
         s = Ustride*(self.height//Uhdiv)
         memcpy(buf+i, Ubuf, s)
         i += s
