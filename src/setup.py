@@ -1544,6 +1544,7 @@ if WIN32:
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
+            add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
             add_gui_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
         if html5_ENABLED:
             add_console_exe("win32/websockify.py",              "network.ico",      "websockify")
@@ -1572,6 +1573,10 @@ if WIN32:
     if client_ENABLED or server_ENABLED:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
         add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
+
+    if webcam_ENABLED:
+        add_data_files('',      ['win32\\DirectShow.tlb'])
+        add_modules("comtypes.gen.stdole", "comtypes.gen.DirectShowLib")
 
 
     #FIXME: ugly workaround for building the ugly pycairo workaround on win32:

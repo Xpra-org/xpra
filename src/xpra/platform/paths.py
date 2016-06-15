@@ -105,11 +105,16 @@ def default_get_app_dir():
             if valid_dir(adir):
                 return adir
     adir = os.path.dirname(inspect.getfile(sys._getframe(1)))
+    def root_module(d):
+        pos = d.find("xpra%splatform" % os.path.sep)
+        if pos>=0:
+            return d[:pos]
+        return d
     if valid_dir(adir):
-        return adir
+        return root_module(adir)
     adir = os.path.dirname(sys.argv[0])
     if valid_dir(adir):
-        return adir
+        return root_module(adir)
     adir = os.getcwd()
     return adir       #tried our best, hope this works!
 

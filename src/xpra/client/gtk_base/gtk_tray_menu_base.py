@@ -893,6 +893,7 @@ class GTKTrayMenuBase(object):
         from xpra.platform.webcam import get_all_video_devices, get_virtual_video_devices, add_video_device_change_callback
         #TODO: register remove_video_device_change_callback for cleanup
         menu = gtk.Menu()
+        self.popup_menu_workaround(menu)
         #so we can toggle the menu items without causing yet more events and infinite loops:
         menu.ignore_events = False
         def deviceitem(label, cb, device_no=0):
