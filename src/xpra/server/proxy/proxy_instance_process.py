@@ -182,6 +182,7 @@ class ProxyInstanceProcess(Process):
         self.server_protocol.large_packets.append("server-settings")
         if self.caps.boolget("file-transfer"):
             self.server_protocol.large_packets.append("send-file")
+            self.server_protocol.large_packets.append("send-file-chunk")
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
         self.server_protocol.enable_default_encoder()
 
