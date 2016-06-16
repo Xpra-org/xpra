@@ -2134,8 +2134,8 @@ class UIXpraClient(XpraClientBase):
                     webcamlog.warn("Warning: no acknowledgements received from the server, stopping webcam")
                     self.stop_sending_webcam()
             self.timeout_add(10*1000, check_acks)
-            self.send_webcam_frame()
-            self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
+            if self.send_webcam_frame():
+                self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
             #FIXME: add timer to stop if we don't get an ack
         except Exception as e:
             webcamlog.warn("webcam test capture failed: %s", e)
@@ -2191,7 +2191,8 @@ class UIXpraClient(XpraClientBase):
         webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i", latency, not_acked, n)
         if not_acked>0 and not_acked>n:
             return False
-        self.send_webcam_frame()
+        if not self.send_webcam_frame():
+            return False
         return not_acked==0 or not_acked<n
 
     def send_webcam_frame(self):
@@ -2208,7 +2209,7 @@ class UIXpraClient(XpraClientBase):
                 webcamlog.error(" the server supports: %s", csv(self.server_webcam_encodings))
                 webcamlog.error(" the client supports: %s", csv(client_webcam_encodings))
                 self.stop_sending_webcam()
-                return
+                return False
             preferred_order = ["jpeg", "png", "png/L", "png/P", "webp"]
             formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
@@ -2227,10 +2228,12 @@ class UIXpraClient(XpraClientBase):
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
             self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, compression.Compressed(encoding, data))
+            return True
         except Exception as e:
             webcamlog.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
             webcamlog.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()
+            return False
 
 
     def start_sending_sound(self, device=None):
