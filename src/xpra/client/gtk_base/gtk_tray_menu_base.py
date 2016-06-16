@@ -899,7 +899,7 @@ class GTKTrayMenuBase(object):
         def deviceitem(label, cb, device_no=0):
             c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
-            c.set_active(False)
+            c.set_active(get_active_device_no()==device_no)
             c.device_no = device_no
             def activate_cb(item, *args):
                 webcamlog("activate_cb(%s, %s) ignore_events=%s", item, menu, menu.ignore_events)
@@ -947,7 +947,6 @@ class GTKTrayMenuBase(object):
                 if len(non_virtual)==0:
                     off_label = "No devices found"
             off = deviceitem(off_label, stop_webcam, -1)
-            off.set_active(get_active_device_no()==-1)
             set_sensitive(off, off_label=="Off")
             menu.append(off)
             menu.show_all()
