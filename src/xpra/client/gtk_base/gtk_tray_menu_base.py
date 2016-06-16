@@ -919,12 +919,18 @@ class GTKTrayMenuBase(object):
             webcamlog("stop_webcam(%s)", device_no)
             self.client.stop_sending_webcam()
 
+        def get_active_device_no():
+            if self.client.webcam_device is None:
+                return -1
+            return self.client.webcam_device_no
+
         def populate_webcam_menu():
             menu.ignore_events = True
             webcamlog("populate_webcam_menu()")
             for x in menu.get_children():
                 menu.remove(x)
             all_video_devices = get_all_video_devices()
+            off_label = "Off"
             if all_video_devices is None:
                 #None means that this platform cannot give us the device names,
                 #so we just use a single "On" menu item and hope for the best
@@ -938,7 +944,11 @@ class GTKTrayMenuBase(object):
                     label = info.get("card", info.get("device", str(device_no)))
                     item = deviceitem(label, start_webcam, device_no)
                     menu.append(item)
-            off = deviceitem("Off", stop_webcam, -1)
+                if len(non_virtual)==0:
+                    off_label = "No devices found"
+            off = deviceitem(off_label, stop_webcam, -1)
+            off.set_active(get_active_device_no()==-1)
+            set_sensitive(off, off_label=="Off")
             menu.append(off)
             menu.show_all()
             menu.ignore_events = False
@@ -968,15 +978,10 @@ class GTKTrayMenuBase(object):
                 webcam.set_tooltip_text("Server does not support webcam forwarding")
                 return
             set_sensitive(webcam, True)
-            active = self.client.webcam_device is not None
-            webcamlog("webcam_changed%s active=%s", args, active)
+            webcamlog("webcam_changed%s active device no=%s", args, get_active_device_no())
             menu.ignore_events = True
-            if not active:
-                device_no = -1
-            else:
-                device_no = self.client.webcam_device_no
             for x in menu.get_children():
-                x.set_active(x.device_no==device_no)
+                x.set_active(x.device_no==get_active_device_no())
             menu.ignore_events = False
         self.client.connect("webcam-changed", webcam_changed)
         set_sensitive(webcam, False)
