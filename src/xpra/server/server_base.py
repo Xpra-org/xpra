@@ -1931,8 +1931,14 @@ class ServerBase(ServerCore):
         return self._clipboard_helper.get_info()
 
     def get_webcam_info(self):
-        return {""                          : self.webcam_forwarding,
-                "virtual-video-devices"     : self.virtual_video_devices}
+        webcam_info = {
+                       ""                       : self.webcam_forwarding,
+                       "virtual-video-devices"  : self.virtual_video_devices,
+                       }
+        d = self.webcam_forwarding_device
+        if d:
+            webcam_info.update(d.get_info())
+        return webcam_info
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
         start = time.time()
