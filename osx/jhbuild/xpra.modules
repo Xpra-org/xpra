@@ -179,10 +179,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="x264"
-             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
-             autogenargs="--enable-pic --enable-shared --enable-static"
-             autogen-sh="configure">
+  <autotools id="x264" autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s" autogenargs="--enable-pic --enable-shared --enable-static" autogen-sh="configure">
 	<branch module="/pub/x264/snapshots/x264-snapshot-20160428-2245-stable.tar.bz2"
 		version="20160428-2245-stable"
 		hash="sha256:eb92cb165698458113640d41e8354689aa6a63ef251fc407d3082d30c614738d"
@@ -208,7 +205,7 @@
   </autotools>
 
   <autotools id="ffmpeg"
-		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
+		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
 		autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
 					--enable-static --enable-shared --enable-gpl
 					--disable-everything
