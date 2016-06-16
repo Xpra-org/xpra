@@ -2178,6 +2178,8 @@ class UIXpraClient(XpraClientBase):
                     self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
 
     def may_send_webcam_frame(self):
+        if self.webcam_device_no<0 or not self.webcam_device:
+            return False
         not_acked = self.webcam_frame_no-1-self.webcam_last_ack
         #not all frames have been acked
         latency = 100
@@ -2195,7 +2197,8 @@ class UIXpraClient(XpraClientBase):
     def send_webcam_frame(self):
         webcamlog("send_webcam_frame() webcam_device=%s", self.webcam_device)
         try:
-            assert self.webcam_device_no>=0 and self.webcam_device
+            assert self.webcam_device_no>=0, "device number is not set"
+            assert self.webcam_device, "no webcam device to capture from"
             from xpra.codecs.pillow.encode import get_encodings
             client_webcam_encodings = get_encodings()
             common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
