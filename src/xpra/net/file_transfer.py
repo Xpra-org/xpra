@@ -395,7 +395,6 @@ class FileTransferHandler(FileTransferAttributes):
         if filesize>self.remote_file_size_limit*1024*1024:
             sizewarn("remote", self.remote_file_size_limit)
             return False
-        mimetype = ""
         u = hashlib.sha1()
         u.update(data)
         filelog("sha1 digest(%s)=%s", absfile, u.hexdigest())
