@@ -102,24 +102,15 @@ def get_all_video_devices(capture_only=True):
 
 _watch_manager = None
 _notifier = None
-_video_device_change_callbacks = []
 
 def _video_device_file_filter(event):
     # return True to stop processing of event (to "stop chaining")
     return not event.pathname.startswith("/dev/video")
 
-def _fire_video_device_change(create, pathname):
-    global _video_device_change_callbacks
-    for x in _video_device_change_callbacks:
-        try:
-            x(create, pathname)
-        except Exception as e:
-            log("error on %s", x, exc_info=True)
-            log.error("Error: video device change callback error")
-            log.error(" %s", e)
 
 def add_video_device_change_callback(callback):
-    global _watch_manager, _notifier, _video_device_change_callbacks
+    from xpra.platform.webcam import _video_device_change_callbacks, _fire_video_device_change
+    global _watch_manager, _notifier
     try:
         import pyinotify
     except ImportError as e:
@@ -128,14 +119,14 @@ def add_video_device_change_callback(callback):
         return
     log("add_video_device_change_callback(%s) pyinotify=%s", callback, pyinotify)
 
-    class EventHandler(pyinotify.ProcessEvent):
-        def process_IN_CREATE(self, event):
-            _fire_video_device_change(True, event.pathname)
-
-        def process_IN_DELETE(self, event):
-            _fire_video_device_change(False, event.pathname)
-
     if not _watch_manager:
+        class EventHandler(pyinotify.ProcessEvent):
+            def process_IN_CREATE(self, event):
+                _fire_video_device_change(True, event.pathname)
+    
+            def process_IN_DELETE(self, event):
+                _fire_video_device_change(False, event.pathname)
+
         _watch_manager = pyinotify.WatchManager()
         mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable
         handler = EventHandler(pevent=_video_device_file_filter)
@@ -150,7 +141,8 @@ def add_video_device_change_callback(callback):
     #notifier.loop()
 
 def remove_video_device_change_callback(callback):
-    global _watch_manager, _notifier, _video_device_change_callbacks
+    from xpra.platform.webcam import _video_device_change_callbacks
+    global _watch_manager, _notifier
     if not _watch_manager:
         log.error("Error: cannot remove video device change callback, no watch manager!")
         return
@@ -162,7 +154,10 @@ def remove_video_device_change_callback(callback):
     if len(_video_device_change_callbacks)==0:
         log("last video device change callback removed, closing the watch manager")
         #we can close it:
-        _notifier.stop()
+        try:
+            _notifier.stop()
+        except:
+            pass
         _notifier = None
         try:
             _watch_manager.close()

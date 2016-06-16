@@ -24,13 +24,26 @@ def get_all_video_devices(capture_only=True):
         log("get_all_video_devices(%s) cannot import webcam native support: %s", capture_only, e)
     return {}
 
+def _device_change_callback(*args):
+    log("device_change(%s)", args)
+    from xpra.platform.webcam import _fire_video_device_change
+    _fire_video_device_change()            
+
 def add_video_device_change_callback(callback):
-    if get_win32_event_listener:
-        def device_change(*args):
-            log("device_change(%s)", args)
-            callback()
+    if not get_win32_event_listener:
+        return
+    from xpra.platform.webcam import _video_device_change_callbacks
+    if len(_video_device_change_callbacks)==0:
+        #first callback added, register our handler:
         get_win32_event_listener().add_event_callback(WM_DEVICECHANGE, callback)
+    _video_device_change_callbacks.append(_device_change_callback)
 
 def remove_video_device_change_callback(callback):
-    if get_win32_event_listener:
-        get_win32_event_listener().add_event_callback(WM_DEVICECHANGE, callback)
+    if not get_win32_event_listener:
+        return
+    from xpra.platform.webcam import _video_device_change_callbacks
+    if callback in _video_device_change_callbacks:
+        _video_device_change_callbacks.remove(callback)
+    if len(_video_device_change_callbacks)==0:
+        #none left, stop listening
+        get_win32_event_listener().remove_event_callback(WM_DEVICECHANGE, _device_change_callback)

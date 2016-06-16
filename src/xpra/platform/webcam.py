@@ -23,6 +23,17 @@ def remove_video_device_change_callback(callback):
     #not implemented here
     pass
 
+_video_device_change_callbacks = []
+def _fire_video_device_change(create=None, pathname=None):
+    global _video_device_change_callbacks
+    for x in _video_device_change_callbacks:
+        try:
+            x(create, pathname)
+        except Exception as e:
+            log("error on %s", x, exc_info=True)
+            log.error("Error: video device change callback error")
+            log.error(" %s", e)
+
 
 from xpra.platform import platform_import
 platform_import(globals(), "webcam", False,
@@ -53,7 +64,7 @@ def main():
         all_devices = get_all_video_devices() or {}
         log.info("Found %i video device%s in total:", len(all_devices), engs(all_devices))
         print_nested_dict(all_devices)
-        
+
         if run:
             log.info("add watch for video device changes")
             def callback(added=None, device=None):
@@ -61,9 +72,9 @@ def main():
                     log.info("video device %s: %s", ["removed", "added"][added], device)
                 else:
                     log.info("device change")
-            add_video_device_change_callback(callback)
             log.info("starting main loop")
             main_loop = glib.MainLoop()
+            glib.idle_add(add_video_device_change_callback, callback)
             try:
                 main_loop.run()
             except KeyboardInterrupt:
