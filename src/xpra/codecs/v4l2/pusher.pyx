@@ -435,16 +435,19 @@ cdef class Pusher:
 
     def get_info(self):             #@DuplicatedSignature
         info = get_info()
-        info.update({"frames"    : self.frames,
+        info.update({
+                     "frames"    : self.frames,
                      "width"     : self.width,
                      "height"    : self.height,
-                     "src_format": self.src_format})
+                     "src_format": self.src_format,
+                     "device"    : self.device_name,
+                     })
         return info
 
     def __repr__(self):
         if self.src_format is None:
             return "v4l2.Pusher(uninitialized)"
-        return "v4l2.Pusher(%s - %sx%s)" % (self.src_format, self.width, self.height)
+        return "v4l2.Pusher(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
 
     def is_closed(self):
         return not bool(self.src_format)
