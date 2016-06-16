@@ -76,6 +76,10 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if client and SHOW_ABOUT_XPRA:
             self.client.after_handshake(self.add_about)
 
+    def show_menu(self, button, time):
+        #does not mean anything on OSX since the menu is controlled by the OS
+        pass
+
     def build(self):
         log("OSXMenuHelper.build()")
         if self.menu_bar is None:
