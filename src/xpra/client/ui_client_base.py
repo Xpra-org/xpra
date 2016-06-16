@@ -98,6 +98,7 @@ WIN32 = sys.platform.startswith("win")
 RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
 
 WEBCAM_ALLOW_VIRTUAL = os.environ.get("XPRA_WEBCAM_ALLOW_VIRTUAL", "0")=="1"
+WEBCAM_TARGET_FPS = max(1, min(50, int(os.environ.get("XPRA_WEBCAM_FPS", "20"))))
 
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
@@ -2129,10 +2130,12 @@ class UIXpraClient(XpraClientBase):
             webcamlog("webcam started")
             def check_acks():
                 webcamlog("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
-                if self.webcam_last_ack<=0:
+                if self.webcam_last_ack<0:
                     webcamlog.warn("Warning: no acknowledgements received from the server, stopping webcam")
                     self.stop_sending_webcam()
             self.timeout_add(10*1000, check_acks)
+            self.send_webcam_frame()
+            self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
             #FIXME: add timer to stop if we don't get an ack
         except Exception as e:
             webcamlog.warn("webcam test capture failed: %s", e)
@@ -2171,7 +2174,23 @@ class UIXpraClient(XpraClientBase):
             if self.webcam_device:
                 frame_no = packet[2]
                 self.webcam_last_ack = frame_no
-                self.send_webcam_frame()
+                if self.may_send_webcam_frame():
+                    self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
+
+    def may_send_webcam_frame(self):
+        not_acked = self.webcam_frame_no-1-self.webcam_last_ack
+        #not all frames have been acked
+        latency = 100
+        if len(self.server_ping_latency)>0:
+            l = [x for _,x in list(self.server_ping_latency)]
+            latency = int(1000 * sum(l) / len(l))
+        #how many frames should be in flight
+        n = latency // (1000//WEBCAM_TARGET_FPS)       #20fps -> 50ms target between frames
+        webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i", latency, not_acked, n)
+        if not_acked>0 and not_acked>n:
+            return False
+        self.send_webcam_frame()
+        return not_acked==0 or not_acked<n
 
     def send_webcam_frame(self):
         webcamlog("send_webcam_frame() webcam_device=%s", self.webcam_device)

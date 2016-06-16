@@ -2742,6 +2742,7 @@ class ServerBase(ServerCore):
         if self.readonly:
             return
         device, frame_no, encoding, w, h, data = packet[1:7]
+        webcamlog("webcam-frame no %i: %s %ix%i", frame_no, encoding, w, h)
         assert encoding and w and h and data
         ss = self._server_sources.get(proto)
         if not ss:
