@@ -470,8 +470,8 @@ class ServerBase(ServerCore):
             soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
             soundlog.warn(" or use the 'pulseaudio=no' option")
         def pulseaudio_ended(proc):
-            soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s", proc, self.pulseaudio_proc, proc.returncode)
-            if self.pulseaudio_proc is None:
+            soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s", proc, self.pulseaudio_proc, proc.returncode, self._closing)
+            if self.pulseaudio_proc is None or self._closing:
                 #cleared by cleanup already, ignore
                 return
             elapsed = time.time()-started_at
