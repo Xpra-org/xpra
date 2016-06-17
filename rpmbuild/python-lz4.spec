@@ -17,7 +17,7 @@
 
 
 Name:           python-lz4
-Version:        0.8.1
+Version:        0.8.2
 Release:        1%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
@@ -93,6 +93,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Jun 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-1
+- New upstream release
+
 * Fri Apr 29 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.1-1
 - New upstream release
 

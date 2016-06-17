@@ -554,9 +554,9 @@
 
   <distutils id="python-lz4">
 	<branch repo="pypi.python.org"
-	        module="/packages/63/a5/6fe9d19f5ecd3918c48408f6e14e0cbb87a171dc33ed64cfb93e93229ef5/lz4-0.8.1.tar.gz"
-	        hash="md5:44aa59da191cde5f72bc011d7a1a2cbe"
-	        version="0.8.1"/>
+	        module="/packages/b5/f0/e1de2bb7feb54011f3c4dcf35b7cca3536e19526764db051b50ea26b58e7/lz4-0.8.2.tar.gz"
+	        hash="md5:50dc6c2cb99c43ce6ed95cf6ae965f0e"
+	        version="0.8.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
