@@ -14,7 +14,13 @@ if [ -z "${REVISION}" ]; then
 	#fallback to using revision recorded in build info
 	REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 fi
-PKG_FILENAME="Xpra-$VERSION-r$REVISION.pkg"
+#check for 64-bit builds
+BUILD_INFO=""
+AMD64=`python -c "import sys;print(sys.maxsize > 2**32)"`
+if [ "$AMD64" == "True" ]; then
+	BUILD_INFO="-x86_64"
+fi
+PKG_FILENAME="Xpra$BUILD_INFO-$VERSION-r$REVISION.pkg"
 rm -f ./image/$PKG_FILENAME >& /dev/null
 echo "Making $PKG_FILENAME"
 
