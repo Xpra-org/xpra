@@ -216,7 +216,12 @@ class Win32RootWindowModel(RootWindowModel):
             self.memdc.SelectObject(self.bitmap)
             select_time = time.time()
             log("get_image up to SelectObject took %ims", (select_time-start)*1000)
-            self.memdc.BitBlt((0, 0), (width, height), self.cdc, (x, y), win32con.SRCCOPY)
+            try:
+                self.memdc.BitBlt((0, 0), (width, height), self.cdc, (x, y), win32con.SRCCOPY)
+            except win32ui.error as e:
+                log.error("Error: cannot capture screen")
+                log.error(" %s", e)
+                return None
             bitblt_time = time.time()
             log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
             pixels = self.bitmap.GetBitmapBits(True)
