@@ -221,7 +221,7 @@ class Win32RootWindowModel(RootWindowModel):
                 self.memdc.BitBlt((0, 0), (width, height), self.cdc, (x, y), win32con.SRCCOPY)
             except win32ui.error as e:
                 log.error("Error: cannot capture screen")
-                log.error(" %s", e)
+                log("win32ui.error: %s", e)
                 return None
             bitblt_time = time.time()
             log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
@@ -312,7 +312,7 @@ class ShadowServer(GTKShadowServerBase):
             win32api.SetCursorPos(pointer)
         except pywintypes.error as e:
             log.error("Error: failed to move the cursor:")
-            log.error(" %s", e)
+            log("pywintypes.error: %s", e[2])
 
     def get_keyboard_config(self, props):
         return KeyboardConfig()
