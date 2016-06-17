@@ -833,7 +833,7 @@ def verify_gdk_display(display_name):
     display = gtk.gdk.Display(display_name)
     manager = gtk.gdk.display_manager_get()
     default_display = manager.get_default_display()
-    if default_display is not None:
+    if default_display is not None and default_display!=display:
         default_display.close()
     manager.set_default_display(display)
     return display
@@ -1127,11 +1127,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 return 1
             if nested and not verify_display_ready(nested, child_display, False):
                 return 1
-        display = verify_gdk_display(display_name)
-        if not display:
-            return 1
-        import gtk          #@Reimport
-        assert gtk
+            display = verify_gdk_display(display_name)
+            if not display:
+                return 1
+            import gtk          #@Reimport
+            assert gtk
 
     #setup unix domain socket:
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
