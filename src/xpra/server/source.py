@@ -928,8 +928,7 @@ class ServerSource(FileTransferHandler):
             return None
         codec = NEW_CODEC_NAMES.get(codec, codec)
         if codec is None:
-            from xpra.sound.gstreamer_util import CODEC_ORDER
-            codecs = [x for x in CODEC_ORDER if x in self.speaker_codecs and x in self.sound_decoders]
+            codecs = [x for x in self.sound_decoders if x in self.speaker_codecs]
             if not codecs:
                 soundlog.error("Error sending sound: no codecs in common")
                 return None
