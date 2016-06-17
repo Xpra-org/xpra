@@ -223,7 +223,7 @@ class ServerSource(FileTransferHandler):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
-                 socket_dir, unix_socket_paths, dbus_control,
+                 socket_dir, unix_socket_paths, log_disconnect, dbus_control,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
                  window_filters,
@@ -238,7 +238,7 @@ class ServerSource(FileTransferHandler):
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
-                 socket_dir, unix_socket_paths, dbus_control,
+                 socket_dir, unix_socket_paths, log_disconnect, dbus_control,
                  get_transient_for, get_focus,
                  get_window_id,
                  window_filters,
@@ -271,6 +271,7 @@ class ServerSource(FileTransferHandler):
         self.schedule_idle_timeout()
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
+        self.log_disconnect = log_disconnect
         self.dbus_control = dbus_control
         self.dbus_server = None
         #pass it to window source:

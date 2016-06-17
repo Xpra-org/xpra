@@ -950,6 +950,15 @@ class ServerBase(ServerCore):
         source.notify(0, timeout_nid, "xpra", 0, "", "This Xpra session will timeout soon", "Activate one of the windows to avoid this timeout", 10)
         source.go_idle()
 
+    def _log_disconnect(self, proto, *args):
+        #skip logging of disconnection events for server sources
+        #we have tagged during hello ("info_request", "exit_request", etc..) 
+        ss = self._server_sources.get(proto)
+        if ss and not ss.log_disconnect:
+            #log at debug level only:
+            netlog(*args)
+            return
+        ServerCore._log_disconnect(self, proto, *args)
 
     def _disconnect_proto_info(self, proto):
         #only log protocol info if there is more than one client:
@@ -1055,7 +1064,7 @@ class ServerBase(ServerCore):
         ss = ServerSourceClass(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
-                          self._socket_dir, self.unix_socket_paths, self.dbus_control,
+                          self._socket_dir, self.unix_socket_paths, not is_request, self.dbus_control,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
                           self.window_filters,

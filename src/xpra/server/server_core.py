@@ -701,8 +701,8 @@ class ServerCore(object):
             proto_info = " %s" % protocol._conn.get_info().get("endpoint")
         except:
             proto_info = " %s" % protocol
-        netlog.info("Disconnecting client%s:", proto_info)
-        netlog.info(" %s", i)
+        self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
+        self._log_disconnect(protocol, " %s", i)
         protocol.flush_then_close(["disconnect", reason]+list(extra))
 
 
@@ -712,8 +712,11 @@ class ServerCore(object):
             info += " (%s)" % (", ".join(packet[2:]))
         #only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
-        netlog.info("client%s has requested disconnection: %s", proto_info, info)
+        self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)
         self.disconnect_protocol(proto, CLIENT_REQUEST)
+
+    def _log_disconnect(self, proto, *args):
+        netlog.info(*args)
 
     def _disconnect_proto_info(self, proto):
         #overriden in server_base in case there is more than one protocol
@@ -721,8 +724,8 @@ class ServerCore(object):
 
     def _process_connection_lost(self, proto, packet):
         netlog("process_connection_lost(%s, %s)", proto, packet)
-        if proto in self._potential_protocols:
-            netlog.info("Connection lost")
+        if proto in self._potential_protocols and not proto._closed:
+            self._log_disconnect(proto, "Connection lost")
             self._potential_protocols.remove(proto)
 
     def _process_gibberish(self, proto, packet):
