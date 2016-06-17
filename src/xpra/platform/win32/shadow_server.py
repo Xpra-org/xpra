@@ -11,6 +11,7 @@ import win32con         #@UnresolvedImport
 import win32ui          #@UnresolvedImport
 import win32gui         #@UnresolvedImport
 import win32process     #@UnresolvedImport
+import pywintypes       #@UnresolvedImport
 
 from xpra.log import Logger
 from xpra.util import AdHocStruct
@@ -307,7 +308,11 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_process_mouse_common(self, proto, wid, pointer):
         #adjust pointer position for offset in client:
-        win32api.SetCursorPos(pointer)
+        try:
+            win32api.SetCursorPos(pointer)
+        except pywintypes.error as e:
+            log.error("Error: failed to move the cursor:")
+            log.error(" %s", e)
 
     def get_keyboard_config(self, props):
         return KeyboardConfig()
