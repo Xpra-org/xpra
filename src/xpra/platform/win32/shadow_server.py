@@ -45,6 +45,15 @@ BUTTON_EVENTS = {
                  }
 
 SEAMLESS = os.environ.get("XPRA_WIN32_SEAMLESS", "0")=="1"
+DISABLE_DWM_COMPOSITION = 1
+#no composition on XP, don't bother trying:
+try:
+    from sys import getwindowsversion       #@UnresolvedImport
+    if getwindowsversion().major<6:
+        DISABLE_DWM_COMPOSITION = 0
+except:
+    pass    
+DISABLE_DWM_COMPOSITION = os.environ.get("XPRA_DISABLE_DWM_COMPOSITION", str(DISABLE_DWM_COMPOSITION))=="1"
 
 
 class Win32RootWindowModel(RootWindowModel):
@@ -53,11 +62,20 @@ class Win32RootWindowModel(RootWindowModel):
         RootWindowModel.__init__(self, root)
         self.metrics = None
         self.ddc, self.cdc, self.memdc, self.bitmap = None, None, None, None
+        if DISABLE_DWM_COMPOSITION:
+            try:
+                from ctypes import windll
+                DWM_EC_DISABLECOMPOSITION = 0
+                windll.dwmapi.DwmEnableComposition(DWM_EC_DISABLECOMPOSITION)
+            except Exception as e:
+                log.error("Error: cannot disable composition:")
+                log.error(" %s", e)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
             self.rectangles = self.get_shape_rectangles(logit=True)
             self.shape_notify = []
+            
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()
