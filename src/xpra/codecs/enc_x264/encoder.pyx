@@ -418,6 +418,7 @@ cdef class Encoder:
     cdef unsigned long long bytes_out
     cdef object last_frame_times
     cdef object file
+    cdef object frame_types
     cdef uint64_t first_frame_timestamp
 
     cdef object __weakref__
@@ -438,6 +439,7 @@ cdef class Encoder:
         self.colorspace = cs_info[0]
         self.b_frames = options.get("b-frames", False)
         self.frames = 0
+        self.frame_types = {}
         self.last_frame_times = deque(maxlen=200)
         self.time = 0
         self.first_frame_timestamp = 0
@@ -526,7 +528,9 @@ cdef class Encoder:
                      "quality"   : self.quality,
                      "lossless"  : self.quality==100,
                      "src_format": self.src_format,
-                     "version"   : get_version()})
+                     "version"   : get_version(),
+                     "frame-types" : self.frame_types,
+                     })
         if self.bytes_in>0 and self.bytes_out>0:
             info["bytes_in"] = self.bytes_in
             info["bytes_out"] = self.bytes_out
@@ -655,6 +659,7 @@ cdef class Encoder:
                               }
             raise Exception("x264_encoder_encode produced no data!")
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
+        self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
         log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%s, delayed=%i", self.frames, slice_type, i_nals, frame_size, pic_out.b_keyframe, delayed)
         if LOG_NALS:
             for i in range(i_nals):
