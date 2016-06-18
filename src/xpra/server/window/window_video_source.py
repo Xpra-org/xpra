@@ -54,6 +54,7 @@ class WindowVideoSource(WindowSource):
         #this will call init_vars():
         WindowSource.__init__(self, *args)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
+        self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
         self.supports_video_subregion = VIDEO_SUBREGION
 
     def init_encoders(self):
@@ -104,6 +105,7 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = []
         self.non_video_encodings = []
         self.edge_encoding = None
+        self.b_frame_flush_timer = None
 
     def set_auto_refresh_delay(self, d):
         WindowSource.set_auto_refresh_delay(self, d)
@@ -1262,7 +1264,10 @@ class WindowVideoSource(WindowSource):
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
-        ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, self.encoding_options)
+        options = self.encoding_options.copy()
+        if encoder_spec.encoding in self.supports_video_b_frames:
+            options["b-frames"] = True
+        ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
         #record new actual limits:
         self.actual_scaling = scaling
         self.width_mask = width_mask
@@ -1355,6 +1360,18 @@ class WindowVideoSource(WindowSource):
         self.free_image_wrapper(csc_image)
         del csc_image
 
+        if self.b_frame_flush_timer:
+            self.source_remove(self.b_frame_flush_timer)
+            self.b_frame_flush_timer = None
+        delayed = client_options.get("delayed")
+        if delayed is not None:
+            last_frame = client_options.get("frame")
+            flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
+            videolog("schedule video_encoder_flush for last frame=%i, flush delay=%i", last_frame, flush_delay)
+            self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
+            if data is None:
+                return None
+
         #tell the client which colour subsampling we used:
         #(note: see csc_equiv!)
         client_options["csc"] = self.csc_equiv(csc)
@@ -1365,6 +1382,40 @@ class WindowVideoSource(WindowSource):
         videolog("video_encode %s encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                             ve.get_type(), encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         return ve.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
+
+    def flush_video_encoder(self, ve, csc, frame, x, y):
+        #this runs in the UI thread..
+        #but we want to run from the encode thread to access the encoder:
+        self.b_frame_flush_timer = None
+        if self._video_encoder!=ve:
+            return
+        self.call_in_encode_thread(True, self.do_flush_video_encoder, ve, csc, frame, x, y)
+
+    def do_flush_video_encoder(self, ve, csc, frame, x, y):
+        videolog("do_flush_video_encoder%s", (ve, csc, frame, x, y))
+        if self._video_encoder!=ve:
+            return
+        if frame==0:
+            #x264 has problems if we try to re-use a context after flushing the first IDR frame
+            self._video_encoder = None
+            ve.clean()
+            self.idle_add(self.full_quality_refresh, self.window)
+            return            
+        v = ve.flush(frame)
+        if not v:
+            videolog("do_flush_video_encoder%s=%s", (ve, frame, x, y), v)
+            return
+        data, client_options = v
+        client_options["csc"] = self.csc_equiv(csc)
+        videolog("do_flush_video_encoder%s=(%s %s bytes, %s)", (ve, frame, x, y), len(data or ()), type(data), client_options)
+        if data:
+            w = ve.get_width()
+            h = ve.get_height()
+            encoding = ve.get_encoding()
+            packet = self.make_draw_packet(self.wid, x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
+            self.queue_damage_packet(packet)
+        #add check for delayed frames again if we support multiple b-frames
+
 
     def csc_image(self, image, width, height):
         """

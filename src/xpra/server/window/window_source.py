@@ -102,6 +102,7 @@ class WindowSource(object):
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
         self.compressed_wrapper = compressed_wrapper    #callback utility for making compressed wrappers
         self.wid = wid
+        self.window = window                            #only to be used from the UI thread!
         self.global_statistics = statistics             #shared/global statistics from ServerSource
         self.statistics = WindowPerformanceStatistics()
         self.av_sync = av_sync
@@ -1627,7 +1628,7 @@ class WindowSource(object):
                 "quality"       : AUTO_REFRESH_QUALITY,
                 "speed"         : AUTO_REFRESH_SPEED}
 
-    def queue_damage_packet(self, packet, damage_time, process_damage_time):
+    def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0):
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -1653,12 +1654,14 @@ class WindowSource(object):
                 start_bytecount = stats[1]
                 stats[2] = now
                 stats[3] = bytecount
-                damage_out_latency = now-process_damage_time
-                self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
-                self.statistics.damage_send_speed.append((now, bytecount-start_bytecount, now-start_send_time))
-        now = time.time()
-        damage_in_latency = now-process_damage_time
-        self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
+                if damage_time>0:
+                    damage_out_latency = now-process_damage_time
+                    self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
+                    self.statistics.damage_send_speed.append((now, bytecount-start_bytecount, now-start_send_time))
+        if damage_time>0:
+            now = time.time()
+            damage_in_latency = now-process_damage_time
+            self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent)
 
     def damage_packet_acked(self, window, damage_packet_sequence, width, height, decode_time, message):
@@ -1843,18 +1846,21 @@ class WindowSource(object):
         #actual network packet:
         if self.supports_flush and flush is not None:
             client_options["flush"] = flush
-        packet = ("draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
         end = time.time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
                  (end-start)*1000.0, w, h, wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
+        self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
+        return self.make_draw_packet(wid, x, y, outw, outh, coding, data, outstride, client_options)
+
+    def make_draw_packet(self, wid, x, y, outw, outh, coding, data, outstride, client_options={}):
+        packet = ("draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
-        self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
         #record number of frames and pixels:
         totals = self.statistics.encoding_totals.setdefault(coding, [0, 0])
         totals[0] = totals[0] + 1
-        totals[1] = totals[1] + w*h
+        totals[1] = totals[1] + outw*outh
         self.encoding_last_used = coding
         #log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet

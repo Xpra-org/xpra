@@ -87,6 +87,7 @@ cdef extern from "x264.h":
 
     #frame type
     int X264_TYPE_AUTO              # Let x264 choose the right type
+    int X264_TYPE_KEYFRAME
     int X264_TYPE_IDR
     int X264_TYPE_I
     int X264_TYPE_P
@@ -210,7 +211,7 @@ cdef extern from "x264.h":
         x264_sei_t extra_sei#In: arbitrary user SEI (e.g subtitles, AFDs)
         void *opaque        #private user data. copied from input to output frames.
 
-    void x264_picture_init(x264_picture_t *pic)
+    void x264_picture_init(x264_picture_t *pic) nogil
 
     int x264_param_default_preset(x264_param_t *param, const char *preset, const char *tune)
     int x264_param_apply_profile(x264_param_t *param, const char *profile)
@@ -221,6 +222,8 @@ cdef extern from "x264.h":
     void x264_encoder_close(x264_t *context)
 
     int x264_encoder_encode(x264_t *context, x264_nal_t **pp_nal, int *pi_nal, x264_picture_t *pic_in, x264_picture_t *pic_out ) nogil
+    int x264_encoder_delayed_frames(x264_t *)
+    int x264_encoder_maximum_delayed_frames(x264_t *h)
 
 
 cdef set_f_rf(x264_param_t *param, float q):
@@ -255,6 +258,7 @@ SLICE_TYPES = {
     X264_TYPE_P     : "P",
     X264_TYPE_BREF  : "BREF",
     X264_TYPE_B     : "B",
+    X264_TYPE_KEYFRAME  : "KEYFRAME",
     }
 
 NAL_TYPES = {
@@ -409,6 +413,7 @@ cdef class Encoder:
     cdef int preset
     cdef int quality
     cdef int speed
+    cdef int b_frames
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
     cdef object last_frame_times
@@ -417,7 +422,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
@@ -431,6 +436,7 @@ cdef class Encoder:
         self.preset = get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
+        self.b_frames = options.get("b-frames", False)
         self.frames = 0
         self.last_frame_times = deque(maxlen=200)
         self.time = 0
@@ -469,12 +475,15 @@ cdef class Encoder:
         param.b_intra_refresh = 0   #no intra refresh
         param.b_open_gop = 1        #allow open gop
         param.b_opencl = self.opencl
+        param.i_bframe = self.b_frames
+        
         #param.p_log_private =
         x264_param_apply_profile(&param, self.profile)
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
         self.context = x264_encoder_open(&param)
-        log("x264 context=%#x, %7s %4ix%-4i opencl=%s", <unsigned long> self.context, self.src_format, self.width, self.height, bool(self.opencl))
+        cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
+        log("x264 context=%#x, %7s %4ix%-4i opencl=%s, b-frames=%i, max delayed frames=%i", <unsigned long> self.context, self.src_format, self.width, self.height, bool(self.opencl), self.b_frames, maxd)
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     def clean(self):                        #@DuplicatedSignature
@@ -576,36 +585,20 @@ cdef class Encoder:
 
 
     def compress_image(self, image, int quality=-1, int speed=-1, options={}):
-        cdef x264_nal_t *nals = NULL
-        cdef int i_nals = 0
-        cdef x264_picture_t pic_out
         cdef x264_picture_t pic_in
-        cdef int frame_size = 0
-
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
         cdef char *out
 
         cdef int i                        #@DuplicatedSignature
-        start = time.time()
 
         if self.frames==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        if speed>=0:
-            self.set_encoding_speed(speed)
-        else:
-            speed = self.speed
-        if quality>=0:
-            self.set_encoding_quality(quality)
-        else:
-            quality = self.quality
-        assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
         assert pixels, "failed to get pixels from %s" % image
 
-        x264_picture_init(&pic_out)
         x264_picture_init(&pic_in)
 
         if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
@@ -627,17 +620,45 @@ cdef class Encoder:
         pic_in.img.i_csp = self.colorspace
         pic_in.img.i_plane = 3
         pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
+        return self.do_compress_image(&pic_in, quality, speed)
+
+    cdef do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1):
+        cdef x264_nal_t *nals = NULL
+        cdef int i_nals = 0
+        cdef x264_picture_t pic_out
+        cdef int frame_size = 0
+        assert self.context!=NULL
+        start = time.time()
+
+        if speed>=0:
+            self.set_encoding_speed(speed)
+        else:
+            speed = self.speed
+        if quality>=0:
+            self.set_encoding_quality(quality)
+        else:
+            quality = self.quality
 
         with nogil:
-            frame_size = x264_encoder_encode(self.context, &nals, &i_nals, &pic_in, &pic_out)
+            x264_picture_init(&pic_out)
+            frame_size = x264_encoder_encode(self.context, &nals, &i_nals, pic_in, &pic_out)
         if frame_size < 0:
             log.error("x264 encoding error: frame_size is invalid!")
             return None
+        cdef int delayed = x264_encoder_delayed_frames(self.context)
+        if i_nals==0:
+            if self.b_frames and delayed>0:
+                log("x264 encode %i delayed frames after %i", delayed, self.frames)
+                return None, {
+                              "delayed" : delayed,
+                              "frame"   : self.frames,
+                              }
+            raise Exception("x264_encoder_encode produced no data!")
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
-        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes", self.frames, slice_type, i_nals, frame_size)
+        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%s, delayed=%i", self.frames, slice_type, i_nals, frame_size, pic_out.b_keyframe, delayed)
         if LOG_NALS:
             for i in range(i_nals):
-                log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%#x",
+                log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
                          i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <unsigned long> nals[i].p_payload, nals[i].i_payload)
             #log.info("x264 nal %s: %s", i, (<char *>nals[i].p_payload)[:64])
         out = <char *>nals[0].p_payload
@@ -650,6 +671,8 @@ cdef class Encoder:
                 "quality"   : max(0, min(100, quality)),
                 "speed"     : max(0, min(100, speed)),
                 "type"      : slice_type}
+        if delayed>0:
+            client_options["delayed"] = delayed
         #accounting:
         end = time.time()
         self.time += end-start
@@ -659,7 +682,21 @@ cdef class Encoder:
         if self.file and frame_size>0:
             self.file.write(cdata)
             self.file.flush()
-        return  cdata, client_options
+        return cdata, client_options
+
+    def flush(self, int frame_no):
+        if self.frames>frame_no or self.context==NULL:
+            return None, {}
+        cdef int i = x264_encoder_delayed_frames(self.context)
+        log("x264 flush(%i) %i delayed frames", frame_no, i)
+        if i<=0:
+            return None, {}
+        cdef x264_nal_t *nals = NULL
+        cdef int i_nals = 0
+        cdef x264_picture_t pic_out
+        cdef int frame_size = 0
+        x264_picture_init(&pic_out)
+        return self.do_compress_image(NULL)
 
 
     def set_encoding_speed(self, int pct):

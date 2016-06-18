@@ -1457,6 +1457,7 @@ class UIXpraClient(XpraClientBase):
             #TODO: check for csc support (swscale only?)
             "video_reinit"              : True,
             "video_scaling"             : True,
+            "video_b_frames"            : ["h264"],     #only tested with dec_avcodec2
             "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,

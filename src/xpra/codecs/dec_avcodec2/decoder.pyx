@@ -237,7 +237,7 @@ cdef class AVFrameWrapper:
         #we must have freed it!
         assert self.frame==NULL and self.avctx==NULL, "frame was freed by both, but not actually freed!"
 
-    def __str__(self):
+    def __repr__(self):
         if self.frame==NULL:
             return "AVFrameWrapper(NULL)"
         return "AVFrameWrapper(%#x)" % <unsigned long> self.frame
@@ -260,8 +260,8 @@ class AVImageWrapper(ImageWrapper):
         when the image is freed, or once we have made a copy of the pixels.
     """
 
-    def __repr__(self):                          #@DuplicatedSignature
-        return ImageWrapper.__repr__(self)+"-(%s)" % self.av_frame
+    def _cn(self):                          #@DuplicatedSignature
+        return "AVImageWrapper-%s" % self.av_frame
 
     def free(self):                             #@DuplicatedSignature
         log("AVImageWrapper.free()")
@@ -476,6 +476,16 @@ cdef class Decoder:
     def get_type(self):                             #@DuplicatedSignature
         return "avcodec"
 
+    def log_error(self, int buf_len, err, options={}):
+        log.error("avcodec error decoding %i bytes of %s data:", buf_len, self.encoding)
+        log.error(" %s", err)
+        log.error(" frame %i", self.frames)
+        if options:
+            log.error(" options=%s", options)
+        log.error(" decoder state:")
+        for k,v in self.get_info().items():
+            log.error("  %s = %s", k, v)
+
     def decompress_image(self, input, options):
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
@@ -516,23 +526,25 @@ cdef class Decoder:
         if len<0:
             av_frame_unref(self.av_frame)
             log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
-            log.error("avcodec_decode_video2 %s decoding failure:", self.encoding)
-            log.error(" %s", self.av_error_str(len))
+            self.log_error(buf_len, self.av_error_str(len), options)
             return None
         if len==0:
             av_frame_unref(self.av_frame)
             log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
-            log.error("avcodec_decode_video2 %s decoding failure - no stream", self.encoding)
+            self.log_error(buf_len, "no stream", options)
             return None
-
+        if got_picture==0:
+            d = options.get("delayed", 0)
+            if d>0:
+                log("avcodec_decode_video2 %i delayed pictures", d)
+                return None
+            self.log_error(buf_len, "no picture", options)
+            return None
+            
+        log("avcodec_decode_video2 returned %i, got_picture=%i", len, got_picture)
         if self.actual_pix_fmt!=self.av_frame.format:
             if self.av_frame.format==-1:
-                log.error("avcodec error decoding %i bytes of %s data", buf_len, self.encoding)
-                log.error(" frame %i", self.frames)
-                log.error(" options=%s", options)
-                log.error(" decoder state:")
-                for k,v in self.get_info().items():
-                    log.error("  %s = %s", k, v)
+                self.log_error(buf_len, "unknown format returned")
                 return None
             self.actual_pix_fmt = self.av_frame.format
             if self.actual_pix_fmt not in ENUM_TO_FORMAT:
@@ -584,7 +596,8 @@ cdef class Decoder:
         #add to weakref list after cleaning it up:
         self.weakref_images = [x for x in self.weakref_images if x() is not None]
         self.weakref_images.append(weakref.ref(img))
-        log("%s.decompress_image(%s:%s, %s)=%s", self, type(input), buf_len, options, img)
+        log("%s:", self)
+        log("decompress_image(%s:%s, %s)=%s", type(input), buf_len, options, img)
         return img
 
 

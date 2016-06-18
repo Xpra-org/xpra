@@ -187,10 +187,17 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
             try:
-                e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1,1), {})
+                options = {"b-frames" : True}
+                e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1,1), options)
                 image = make_test_image(cs_in, W, H)
                 data, meta = e.compress_image(image)
+                if data is None:
+                    delayed = meta.get("delayed", 0)
+                    assert delayed>0, "data is empty and there are no delayed frames!"
+                    #now we should get one:
+                    data, meta = e.flush(delayed)
                 del image
+                assert data is not None, "None data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 assert len(data)>0, "no compressed data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))

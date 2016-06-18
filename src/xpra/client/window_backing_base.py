@@ -365,14 +365,14 @@ class WindowBackingBase(object):
                 message = "window %s is already gone!" % self.wid
                 log(message)
                 fire_paint_callbacks(callbacks, -1, message)
-                return  False
+                return
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc")
             if not input_colorspace:
                 message = "csc mode is missing from the video options!"
                 log.error(message)
                 fire_paint_callbacks(callbacks, False, message)
-                return  False
+                return
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             assert input_colorspace in decoder_colorspaces, "decoder does not support %s for %s" % (input_colorspace, coding)
@@ -404,15 +404,19 @@ class WindowBackingBase(object):
 
             img = vd.decompress_image(img_data, options)
             if not img:
-                fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (vd.get_type(), len(img_data), coding))
-                log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
-                log.error(" %sx%s pixels using %s", width, height, vd.get_type())
-                log.error(" decoding options=%s", options)
-                return False
+                if options.get("delayed", 0)>0:
+                    #there are further frames queued up,
+                    #and this frame references those, so assume all is well:
+                    fire_paint_callbacks(callbacks, True)
+                else:
+                    fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (vd.get_type(), len(img_data), coding))
+                    log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
+                    log.error(" %sx%s pixels using %s", width, height, vd.get_type())
+                    log.error(" decoding options=%s", options)
+                return
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if self._backing is None:
             self.close_decoder(True)
-        return  False
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #try 24 bit first (paint_rgb24), then 32 bit (paint_rgb32):
