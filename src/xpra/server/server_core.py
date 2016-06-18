@@ -724,8 +724,9 @@ class ServerCore(object):
 
     def _process_connection_lost(self, proto, packet):
         netlog("process_connection_lost(%s, %s)", proto, packet)
-        if proto in self._potential_protocols and not proto._closed:
-            self._log_disconnect(proto, "Connection lost")
+        if proto in self._potential_protocols:
+            if not proto._closed:
+                self._log_disconnect(proto, "Connection lost")
             self._potential_protocols.remove(proto)
 
     def _process_gibberish(self, proto, packet):
