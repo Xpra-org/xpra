@@ -684,7 +684,7 @@ cdef class Encoder:
             self.file.flush()
         return cdata, client_options
 
-    def flush(self, int frame_no):
+    def flush(self, unsigned long frame_no):
         if self.frames>frame_no or self.context==NULL:
             return None, {}
         cdef int i = x264_encoder_delayed_frames(self.context)
