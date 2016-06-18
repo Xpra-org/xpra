@@ -147,6 +147,9 @@ def get_spec(in_colorspace, out_colorspace):
 
 class YUVImageWrapper(ImageWrapper):
 
+    def _cn(self):
+        return "YUVImageWrapper"
+
     def free(self):                             #@DuplicatedSignature
         log("YUVImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
         ImageWrapper.free(self)

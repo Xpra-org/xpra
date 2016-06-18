@@ -190,6 +190,9 @@ class VPXImageWrapper(ImageWrapper):
         ImageWrapper.__init__(self, *args, **kwargs)
         self.buffers = []
 
+    def _cn(self):                          #@DuplicatedSignature
+        return "VPXImageWrapper"
+
     def add_buffer(self, ptr):
         self.buffers.append(ptr)
 

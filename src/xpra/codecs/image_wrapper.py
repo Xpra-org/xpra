@@ -42,8 +42,11 @@ class ImageWrapper(object):
         self.freed = False
         self.timestamp = int(time.time()*1000)
 
+    def _cn(self):
+        return type(self)
+
     def __repr__(self):
-        return "%s(%s:%s:%s)" % (type(self), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
+        return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
 
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth

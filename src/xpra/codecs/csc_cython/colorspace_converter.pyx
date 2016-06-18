@@ -141,8 +141,8 @@ class CythonImageWrapper(ImageWrapper):
             self.cython_buffer = 0
             free(<void *> (<unsigned long> cb))
 
-    def __repr__(self):
-        return "csc_cython.CythonImageWrapper(%s:%s:%s)" % (self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
+    def _cn(self):
+        return "CythonImageWrapper"
 
 
 
