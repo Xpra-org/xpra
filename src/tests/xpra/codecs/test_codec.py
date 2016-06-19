@@ -13,14 +13,15 @@ DEBUG = False
 
 MIN_SIZE = 1024*1024
 SOURCE_DATA = None
-def get_source_data(size):
+def get_source_data(size, seed=0):
     global SOURCE_DATA
-    if SOURCE_DATA is None or len(SOURCE_DATA)<size:
+    if SOURCE_DATA is None or len(SOURCE_DATA)+seed<size:
         print("creating sample data for size %s" % size)
-        SOURCE_DATA = bytearray(max(MIN_SIZE, size))
+        SOURCE_DATA = bytearray(max(MIN_SIZE, size+seed+1024))
         for i in range(size):
-            SOURCE_DATA[i] = (i)%256
-    return SOURCE_DATA[:size]
+            SOURCE_DATA[i] = i%256
+    return SOURCE_DATA[seed:size+seed]
+
 
 def dump_pixels(pixels):
     S = 64
@@ -51,7 +52,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
     assert bpp==3 or bpp==4
     size = w*h*bpp
     if populate:
-        pixels = bytearray(get_source_data(size))
+        pixels = bytearray(get_source_data(size, seed))
     else:
         pixels = bytearray(size)
     end = time.time()
@@ -73,7 +74,7 @@ def make_planar_input(src_format, w, h, use_strings=False, populate=False, seed=
     Vsize = w*h//Vxd//Vyd
     def make_buffer(size):
         if populate:
-            return bytearray(get_source_data(size))
+            return bytearray(get_source_data(size, seed))
         else:
             return bytearray(size)
     Ydata = make_buffer(Ysize)

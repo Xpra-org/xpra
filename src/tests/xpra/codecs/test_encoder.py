@@ -39,15 +39,18 @@ def test_performance(encoder_module, options={}):
 def log_output(args):
     log(args)
 
-def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=2, quality=20, speed=0, after_encode_cb=None):
+def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=4, quality=20, speed=0, after_encode_cb=None):
     encoder_module.init_module()
     log("test_encoder(%s, %s)", encoder_module, dimensions)
     log("version=%s" % str(encoder_module.get_version()))
     log("type=%s" % encoder_module.get_type())
     ec = getattr(encoder_module, "Encoder")
     log("encoder class=%s" % ec)
+    encodings = encoder_module.get_encodings()
+    log("encodings=%s" % (encodings,))
+    options["b-frames"] = True
 
-    for encoding in encoder_module.get_encodings():
+    for encoding in encodings:
         ics = encoder_module.get_input_colorspaces(encoding)
         log("input colorspaces(%s)=%s", encoding, ics)
         for ic in ics:
@@ -90,13 +93,13 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
 def gen_src_images(src_format, w, h, nframes):
     seed = 0
     images = []
-    for _ in range(nframes):
+    for i in range(nframes):
         #create a dummy ImageWrapper to compress:
         if src_format.startswith("YUV"):
-            strides, pixels = make_planar_input(src_format, w, h, use_strings=False, populate=True, seed=seed)
+            strides, pixels = make_planar_input(src_format, w, h, use_strings=False, populate=True, seed=seed+i)
             planes = ImageWrapper._3_PLANES
         else:
-            pixels = make_rgb_input(src_format, w, h, use_strings=False, populate=True)
+            pixels = make_rgb_input(src_format, w, h, use_strings=False, populate=True, seed=seed+i)
             strides = w*3
             planes = ImageWrapper.PACKED
         image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=planes)
