@@ -414,6 +414,7 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef int b_frames
+    cdef int delayed_frames
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
     cdef object last_frame_times
@@ -530,6 +531,7 @@ cdef class Encoder:
                      "src_format": self.src_format,
                      "version"   : get_version(),
                      "frame-types" : self.frame_types,
+                     "delayed"   : self.delayed_frames,
                      })
         if self.bytes_in>0 and self.bytes_out>0:
             info["bytes_in"] = self.bytes_in
@@ -649,18 +651,18 @@ cdef class Encoder:
         if frame_size < 0:
             log.error("x264 encoding error: frame_size is invalid!")
             return None
-        cdef int delayed = x264_encoder_delayed_frames(self.context)
+        self.delayed_frames = x264_encoder_delayed_frames(self.context)
         if i_nals==0:
-            if self.b_frames and delayed>0:
-                log("x264 encode %i delayed frames after %i", delayed, self.frames)
+            if self.b_frames and self.delayed_frames>0:
+                log("x264 encode %i delayed frames after %i", self.delayed_frames, self.frames)
                 return None, {
-                              "delayed" : delayed,
+                              "delayed" : self.delayed_frames,
                               "frame"   : self.frames,
                               }
             raise Exception("x264_encoder_encode produced no data!")
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
-        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%s, delayed=%i", self.frames, slice_type, i_nals, frame_size, pic_out.b_keyframe, delayed)
+        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%s, delayed=%i", self.frames, slice_type, i_nals, frame_size, pic_out.b_keyframe, self.delayed_frames)
         if LOG_NALS:
             for i in range(i_nals):
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
@@ -676,8 +678,8 @@ cdef class Encoder:
                 "quality"   : max(0, min(100, quality)),
                 "speed"     : max(0, min(100, speed)),
                 "type"      : slice_type}
-        if delayed>0:
-            client_options["delayed"] = delayed
+        if self.delayed_frames>0:
+            client_options["delayed"] = self.delayed_frames
         #accounting:
         end = time.time()
         self.time += end-start
@@ -692,9 +694,9 @@ cdef class Encoder:
     def flush(self, unsigned long frame_no):
         if self.frames>frame_no or self.context==NULL:
             return None, {}
-        cdef int i = x264_encoder_delayed_frames(self.context)
-        log("x264 flush(%i) %i delayed frames", frame_no, i)
-        if i<=0:
+        self.delayed_frames = x264_encoder_delayed_frames(self.context)
+        log("x264 flush(%i) %i delayed frames", frame_no, self.delayed_frames)
+        if self.delayed_frames<=0:
             return None, {}
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0

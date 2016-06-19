@@ -24,6 +24,7 @@ scorelog = Logger("score")
 scalinglog = Logger("scaling")
 sublog = Logger("subregion")
 videolog = Logger("video")
+avsynclog = Logger("av-sync")
 
 
 def envint(name, d):
@@ -125,6 +126,15 @@ class WindowVideoSource(WindowSource):
                 pct = (100*r.width*r.height)/(ww*wh)
                 d = 2 * int(max(100, self.auto_refresh_delay * max(50, pct) / 50, bc.delay*4))
                 vsr.set_auto_refresh_delay(d)
+
+    def update_av_sync_frame_delay(self):
+        self.av_sync_frame_delay = self.batch_config.delay
+        ve = self._video_encoder
+        if ve:
+            d = ve.get_info().get("delayed", 0)
+            self.av_sync_frame_delay += 40 * d
+            avsynclog("update_av_sync_frame_delay() video encoder=%s, delayed frames=%i, frame delay=%i", ve, d, self.av_sync_frame_delay)
+        self.set_av_sync_delay()
 
 
     def get_client_info(self):

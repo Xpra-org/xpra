@@ -111,6 +111,8 @@ class WindowSource(object):
         self.av_sync = av_sync
         self.av_sync_delay = av_sync_delay
         self.av_sync_delay_target = av_sync_delay
+        self.av_sync_delay_total = 0
+        self.av_sync_frame_delay = 0
         self.av_sync_timer = None
         self.encode_queue = []
         self.encode_queue_max_size = 10
@@ -625,8 +627,14 @@ class WindowSource(object):
     def set_auto_refresh_delay(self, d):
         self.auto_refresh_delay = d
 
-    def set_av_sync_delay(self, new_delay):
-        self.av_sync_delay_target = new_delay
+    def set_av_sync_delay_total(self, new_delay):
+        self.av_sync_delay_total = new_delay
+        self.set_av_sync_delay()
+
+    def set_av_sync_delay(self):
+        #set the target then schedule a timer to gradually
+        #get the actual value "av_sync_delay" moved towards it
+        self.av_sync_delay_target = max(0, self.av_sync_delay_total - self.av_sync_frame_delay)
         self.schedule_av_sync_update()
 
     def schedule_av_sync_update(self, delay=0):
@@ -881,6 +889,11 @@ class WindowSource(object):
                 statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
         self.statistics.last_recalculate = now
+        self.update_av_sync_frame_delay()
+
+    def update_av_sync_frame_delay(self):
+        self.av_sync_frame_delay = self.batch_config.delay
+        self.set_av_sync_delay()
 
     def update_speed(self):
         if self.suspended or self._mmap:
