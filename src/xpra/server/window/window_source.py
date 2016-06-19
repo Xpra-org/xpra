@@ -892,7 +892,7 @@ class WindowSource(object):
         self.update_av_sync_frame_delay()
 
     def update_av_sync_frame_delay(self):
-        self.av_sync_frame_delay = self.batch_config.delay
+        self.av_sync_frame_delay = 0
         self.set_av_sync_delay()
 
     def update_speed(self):
@@ -1389,7 +1389,6 @@ class WindowSource(object):
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         item = (damage_time, w, h, now, image, coding, sequence, options, flush)
         av_sync = options.get("av-sync", False)
-        av_delay = self.av_sync_delay*int(av_sync)
         if not av_sync:
             self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         else:
@@ -1403,6 +1402,8 @@ class WindowSource(object):
             l = len(self.encode_queue)
             if l>=self.encode_queue_max_size:
                 av_delay = 0        #we must free some space!
+            else:
+                av_delay = self.av_sync_delay*int(av_sync)
             avsynclog("scheduling encode queue iteration in %ims, encode queue size=%i (max=%i)", av_delay, l, self.encode_queue_max_size)
             self.timeout_add(av_delay, self.call_in_encode_thread, True, self.encode_from_queue)
 

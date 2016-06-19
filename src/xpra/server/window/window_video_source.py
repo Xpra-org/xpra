@@ -129,7 +129,7 @@ class WindowVideoSource(WindowSource):
                 vsr.set_auto_refresh_delay(d)
 
     def update_av_sync_frame_delay(self):
-        self.av_sync_frame_delay = self.batch_config.delay
+        self.av_sync_frame_delay = 0
         ve = self._video_encoder
         if ve:
             d = ve.get_info().get("delayed", 0)
