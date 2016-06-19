@@ -1412,7 +1412,7 @@ class WindowVideoSource(WindowSource):
             w = ve.get_width()
             h = ve.get_height()
             encoding = ve.get_encoding()
-            packet = self.make_draw_packet(self.wid, x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
+            packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
             self.queue_damage_packet(packet)
         #add check for delayed frames again if we support multiple b-frames
 

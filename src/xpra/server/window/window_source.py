@@ -1363,7 +1363,7 @@ class WindowSource(object):
         now = time.time()
         log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
-        item = (window, damage_time, w, h, now, self.wid, image, coding, sequence, options, flush)
+        item = (window, damage_time, w, h, now, image, coding, sequence, options, flush)
         av_sync = options.get("av-sync", False)
         av_delay = self.av_sync_delay*int(av_sync)
         if not av_sync:
@@ -1433,13 +1433,13 @@ class WindowSource(object):
         self.timeout_add(first_due, self.call_in_encode_thread, True, self.encode_from_queue)
 
 
-    def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, wid, image, coding, sequence, options, flush):
+    def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
         """ This function is called from the damage data thread!
             Extra care must be taken to prevent access to X11 functions on window.
         """
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
-            packet = self.make_data_packet(damage_time, process_damage_time, wid, image, coding, sequence, options, flush)
+            packet = self.make_data_packet(damage_time, process_damage_time, image, coding, sequence, options, flush)
         finally:
             self.free_image_wrapper(image)
             del image
@@ -1710,7 +1710,7 @@ class WindowSource(object):
             self.timeout_add(250, self.full_quality_refresh, window)
 
 
-    def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options, flush):
+    def make_data_packet(self, damage_time, process_damage_time, image, coding, sequence, options, flush):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -1724,7 +1724,7 @@ class WindowSource(object):
             * 'rgb24' and 'rgb32' use 'rgb_encode'
         """
         if self.is_cancelled(sequence) or self.suspended:
-            log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
             return  None
         x, y, w, h, _ = image.get_geometry()
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
@@ -1733,7 +1733,7 @@ class WindowSource(object):
         #since we generally don't send the padding with it:
         isize = w*h
         psize = isize*4
-        log("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
+        log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
         start = time.time()
         delta, store, bucket, hits = -1, -1, -1, 0
         pixel_format = image.get_pixel_format()
@@ -1754,7 +1754,7 @@ class WindowSource(object):
             dpixels = memoryview_to_bytes(dpixels)
             dlen = len(dpixels)
             store = sequence
-            deltalog("delta available for %s and %i %s pixels on wid=%i", coding, isize, pixel_format, wid)
+            deltalog("delta available for %s and %i %s pixels on wid=%i", coding, isize, pixel_format, self.wid)
             for i, dr in enumerate(list(self.delta_pixel_data)):
                 if dr is None:
                     continue
@@ -1794,7 +1794,7 @@ class WindowSource(object):
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
-            log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
             return  None
         #tell client about delta/store for this pixmap:
         if delta>=0:
@@ -1848,12 +1848,12 @@ class WindowSource(object):
             client_options["flush"] = flush
         end = time.time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
-                 (end-start)*1000.0, w, h, wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
+                 (end-start)*1000.0, w, h, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
-        return self.make_draw_packet(wid, x, y, outw, outh, coding, data, outstride, client_options)
+        return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options)
 
-    def make_draw_packet(self, wid, x, y, outw, outh, coding, data, outstride, client_options={}):
-        packet = ("draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
+    def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options={}):
+        packet = ("draw", self.wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
