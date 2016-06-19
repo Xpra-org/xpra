@@ -2582,8 +2582,7 @@ class ServerBase(ServerCore):
                 message = ""
             ss = self._server_sources.get(proto)
             if ss:
-                window = self._id_to_window.get(wid)
-                ss.client_ack_damage(packet_sequence, wid, window, width, height, decode_time, message)
+                ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
 
 
     def _damage(self, window, x, y, width, height, options=None):

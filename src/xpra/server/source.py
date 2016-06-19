@@ -557,10 +557,10 @@ class ServerSource(FileTransferHandler):
                   ui, wd, self.suspended, self.sound_source)
         if ui:
             self.suspended = False
-        for wid, window in wd.items():
+        for wid in wd.keys():
             ws = self.window_sources.get(wid)
             if ws:
-                ws.resume(window)
+                ws.resume()
         self.send_cursor()
 
 
@@ -1953,7 +1953,7 @@ class ServerSource(FileTransferHandler):
         #we may need to make a new source at this point:
         ws = self.make_window_source(wid, window)
         if ws:
-            ws.send_window_icon(window)
+            ws.send_window_icon()
 
 
     def lost_window(self, wid, window):
@@ -2019,7 +2019,7 @@ class ServerSource(FileTransferHandler):
             return
         self.cancel_damage(wid)
         w, h = window.get_dimensions()
-        self.damage(wid, window, 0, 0, w, h, opts)
+        self.damage(wid, 0, 0, w, h, opts)
 
     def update_batch(self, wid, window, batch_props):
         ws = self.window_sources.get(wid)
@@ -2085,9 +2085,9 @@ class ServerSource(FileTransferHandler):
             damage_options = options.copy()
         self.statistics.damage_last_events.append((wid, time.time(), w*h))
         ws = self.make_window_source(wid, window)
-        ws.damage(window, x, y, w, h, damage_options)
+        ws.damage(x, y, w, h, damage_options)
 
-    def client_ack_damage(self, damage_packet_sequence, wid, window, width, height, decode_time, message):
+    def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time, message):
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (which is provided by the client)
@@ -2101,7 +2101,7 @@ class ServerSource(FileTransferHandler):
             self.statistics.client_decode_time.append((wid, time.time(), width*height, decode_time))
         ws = self.window_sources.get(wid)
         if ws:
-            ws.damage_packet_acked(window, damage_packet_sequence, width, height, decode_time, message)
+            ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
             self.may_recalculate(wid)
 
 #
