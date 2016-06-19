@@ -435,7 +435,7 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
 
-    def full_quality_refresh(self, window, damage_options={}):
+    def full_quality_refresh(self, damage_options={}):
         #override so we can:
         if self.video_subregion.detection:
             #reset the video region on full quality refresh
@@ -445,7 +445,7 @@ class WindowVideoSource(WindowSource):
             self.video_subregion.cancel_refresh_timer()
         #refresh the whole window in one go:
         damage_options["novideo"] = True
-        WindowSource.full_quality_refresh(self, window, damage_options)
+        WindowSource.full_quality_refresh(self, damage_options)
 
 
     def must_batch(self, delay):
@@ -469,25 +469,25 @@ class WindowVideoSource(WindowSource):
         return q
 
 
-    def client_decode_error(self, window, error, message):
+    def client_decode_error(self, error, message):
         #maybe the stream is now corrupted..
         self.cleanup_codecs()
-        WindowSource.client_decode_error(self, window, error, message)
+        WindowSource.client_decode_error(self, error, message)
 
 
     def get_refresh_exclude(self):
         #exclude video region (if any) from lossless refresh:
         return self.video_subregion.rectangle
 
-    def refresh_subregion(self, window, regions):
+    def refresh_subregion(self, regions):
         #callback from video subregion to trigger a refresh of some areas
-        sublog("refresh_subregion(%s, %s)", window, regions)
-        if not regions or not self.can_refresh(window):
+        sublog("refresh_subregion(%s, %s)", regions)
+        if not regions or not self.can_refresh():
             return
         now = time.time()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
-        WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
+        WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
 
     def get_refresh_subregion_encoding(self, *args):
         ww, wh = self.window_dimensions
@@ -503,7 +503,7 @@ class WindowVideoSource(WindowSource):
         WindowSource.remove_refresh_region(self, region)
         self.video_subregion.remove_refresh_region(region)
 
-    def add_refresh_region(self, window, region):
+    def add_refresh_region(self, region):
         #Note: this does not run in the UI thread!
         #returns the number of pixels in the region update
         #don't refresh the video region as part of normal refresh,
@@ -511,33 +511,33 @@ class WindowVideoSource(WindowSource):
         vr = self.video_subregion.rectangle
         if vr is None:
             #no video region, normal code path:
-            return WindowSource.add_refresh_region(self, window, region)
+            return WindowSource.add_refresh_region(self, region)
         if vr.contains_rect(region):
             #all of it is in the video region:
-            self.video_subregion.add_video_refresh(window, region)
+            self.video_subregion.add_video_refresh(region)
             return 0
         ir = vr.intersection_rect(region)
         if ir is None:
             #region is outside video region, normal code path:
-            return WindowSource.add_refresh_region(self, window, region)
+            return WindowSource.add_refresh_region(self, region)
         #add intersection (rectangle in video region) to video refresh:
-        self.video_subregion.add_video_refresh(window, ir)
+        self.video_subregion.add_video_refresh(ir)
         #add any rectangles not in the video region
         #(if any: keep track if we actually added anything)
         pixels_modified = 0
         for r in region.substract_rect(vr):
-            pixels_modified += WindowSource.add_refresh_region(self, window, r)
+            pixels_modified += WindowSource.add_refresh_region(self, r)
         return pixels_modified
 
 
-    def do_send_delayed_regions(self, damage_time, window, regions, coding, options):
+    def do_send_delayed_regions(self, damage_time, regions, coding, options):
         """
             Overriden here so we can try to intercept the video_subregion if one exists.
         """
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
         def send_nonvideo(regions=regions, encoding=coding, exclude_region=None, get_best_encoding=self.get_best_nonvideo_encoding):
-            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
+            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
@@ -555,7 +555,7 @@ class WindowVideoSource(WindowSource):
         vr = self.video_subregion.rectangle
         if not vr or not self.video_subregion.enabled:
             sublog("no video region, we may use the video encoder for something else")
-            WindowSource.do_send_delayed_regions(self, damage_time, window, regions, coding, options)
+            WindowSource.do_send_delayed_regions(self, damage_time, regions, coding, options)
             return
         assert not self.full_frames_only
 
@@ -597,7 +597,7 @@ class WindowVideoSource(WindowSource):
             #send this using the video encoder:
             video_options = options.copy()
             video_options["av-sync"] = True
-            self.process_damage_region(damage_time, window, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0)
+            self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0)
 
             #now substract this region from the rest:
             trimmed = []
@@ -630,12 +630,12 @@ class WindowVideoSource(WindowSource):
         if delay<=25:
             send_nonvideo(regions=regions, encoding=None)
         else:
-            self._damage_delayed = damage_time, window, regions, coding, options or {}
+            self._damage_delayed = damage_time, regions, coding, options or {}
             sublog("send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
             self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
 
-    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options, flush=None):
+    def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=None):
         #now figure out if we need to send edges separately:
         if coding in self.video_encodings:
             dw = w - (w & self.width_mask)
@@ -645,13 +645,13 @@ class WindowVideoSource(WindowSource):
         if self.edge_encoding:
             #we can't send the edges, no big deal
             if dw>0:
-                WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1)
+                WindowSource.process_damage_region(self, damage_time, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1)
             if dh>0:
-                WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, self.edge_encoding, options, flush=1)
-        WindowSource.process_damage_region(self, damage_time, window, x, y, w-dw, h-dh, coding, options, flush=flush)
+                WindowSource.process_damage_region(self, damage_time, x, y+h-dh, x+w, dh, self.edge_encoding, options, flush=1)
+        WindowSource.process_damage_region(self, damage_time, x, y, w-dw, h-dh, coding, options, flush=flush)
 
 
-    def must_encode_full_frame(self, window, encoding):
+    def must_encode_full_frame(self, encoding):
         return self.full_frames_only or (encoding in self.video_encodings) or not self.non_video_encodings
 
 
@@ -1399,7 +1399,7 @@ class WindowVideoSource(WindowSource):
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
             self._video_encoder = None
             ve.clean()
-            self.idle_add(self.full_quality_refresh, self.window)
+            self.idle_add(self.full_quality_refresh)
             return            
         v = ve.flush(frame)
         if not v:

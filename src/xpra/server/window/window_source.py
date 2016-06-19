@@ -9,6 +9,7 @@
 import time
 import os
 import hashlib
+import threading
 from collections import deque
 
 from xpra.log import Logger
@@ -97,6 +98,8 @@ class WindowSource(object):
 
         self.init_vars()
 
+        self.ui_thread = threading.current_thread()
+
         self.queue_size   = queue_size                  #callback to get the size of the damage queue
         self.call_in_encode_thread = call_in_encode_thread  #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
@@ -160,10 +163,10 @@ class WindowSource(object):
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
             sid = window.connect("notify::iconic", self._iconic_changed)
-            self.window_signal_handlers.append((window, sid))
+            self.window_signal_handlers.append(sid)
         if "fullscreen" in window.get_dynamic_property_names():
             sid = window.connect("notify::fullscreen", self._fullscreen_changed)
-            self.window_signal_handlers.append((window, sid))
+            self.window_signal_handlers.append(sid)
 
         #for deciding between small regions and full screen updates:
         self.max_small_regions = 40
@@ -306,9 +309,9 @@ class WindowSource(object):
         self.init_vars()
         self._damage_cancelled = float("inf")
         def window_signal_handlers_cleanup():
-            log("window_signal_handlers_cleanup: will disconnect %s", [int(sid) for _,sid in self.window_signal_handlers])
-            for window, sid in self.window_signal_handlers:
-                window.disconnect(sid)
+            log("window_signal_handlers_cleanup: will disconnect %s", self.window_signal_handlers)
+            for sid in self.window_signal_handlers:
+                self.window.disconnect(sid)
             self.window_signal_handlers = []
         self.idle_add(window_signal_handlers_cleanup)
 
@@ -449,17 +452,19 @@ class WindowSource(object):
         self.statistics.reset()
         self.suspended = True
 
-    def resume(self, window):
+    def resume(self):
+        assert self.ui_thread == threading.current_thread()
         self.cancel_damage()
         self.statistics.reset()
         self.suspended = False
-        self.refresh(window, {"quality" : 100})
+        self.refresh({"quality" : 100})
         if not self.is_OR and not self.is_tray:
-            self.send_window_icon(window)
+            self.send_window_icon()
 
-    def refresh(self, window, options={}):
-        w, h = window.get_dimensions()
-        self.damage(window, 0, 0, w, h, options)
+    def refresh(self, options={}):
+        assert self.ui_thread == threading.current_thread()
+        w, h = self.window.get_dimensions()
+        self.damage(0, 0, w, h, options)
 
 
     fallback_window_icon_surface = False
@@ -479,18 +484,19 @@ class WindowSource(object):
             WindowSource.fallback_window_icon_surface = s
         return WindowSource.fallback_window_icon_surface
 
-    def send_window_icon(self, window):
+    def send_window_icon(self):
+        assert self.ui_thread == threading.current_thread()
         if self.suspended:
             return
         #this runs in the UI thread
-        surf = window.get_property("icon")
-        iconlog("send_window_icon(%s) icon=%s", window, surf)
+        surf = self.window.get_property("icon")
+        iconlog("send_window_icon window %s icon=%s", self.window, surf)
         if not surf:
             #FIXME: this is a bit dirty,
             #we figure out if the client is likely to have an icon for this wmclass already,
             #(assuming the window even has a 'class-instance'), and if not we send the default
             try:
-                c_i = window.get_property("class-instance")
+                c_i = self.window.get_property("class-instance")
             except:
                 c_i = None
             if c_i and len(c_i)==2:
@@ -499,8 +505,8 @@ class WindowSource(object):
                     iconlog("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
                     return
                 #try to load the icon for this class-instance from the theme:
-                surf = window.get_default_window_icon()
-                iconlog("send_window_icon(%s) using default window icon=%s", window, surf)
+                surf = self.window.get_default_window_icon()
+                iconlog("send_window_icon window %s using default window icon=%s", self.window, surf)
         if not surf and self.window_icon_greedy:
             #client does not set a default icon, so we must provide one every time
             #to make sure that the window icon does get set to something
@@ -519,7 +525,7 @@ class WindowSource(object):
                 #call compress_clibboard via the work queue
                 #and delay sending it by a bit to allow basic icon batching:
                 delay = max(50, int(self.batch_config.delay))
-                iconlog("send_window_icon(%s) wid=%s, icon=%s, compression scheduled in %sms", window, self.wid, surf, delay)
+                iconlog("send_window_icon() window=%, wid=%s, icon=%s, compression scheduled in %sms", self.window, self.wid, surf, delay)
                 self.timeout_add(delay, self.call_in_encode_thread, True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
@@ -581,12 +587,12 @@ class WindowSource(object):
         self.reconfigure(True)
 
     def _fullscreen_changed(self, window, *args):
-        self.fullscreen = window.get_property("fullscreen")
+        self.fullscreen = self.window.get_property("fullscreen")
         log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(True)
 
     def _iconic_changed(self, window, *args):
-        self.iconic = window.get_property("iconic")
+        self.iconic = self.window.get_property("iconic")
         if self.iconic:
             self.go_idle()
         else:
@@ -790,7 +796,10 @@ class WindowSource(object):
         if eq:
             self.encode_queue = []
             for item in eq:
-                self.free_image_wrapper(item[6])
+                try:
+                    self.free_image_wrapper(item[6])
+                except Exception as e:
+                    log.error("Error: cannot free image wrapper %s: %s", item[6], e)
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
@@ -952,7 +961,7 @@ class WindowSource(object):
         self.update_encoding_options(force_reload)
 
 
-    def damage(self, window, x, y, w, h, options={}):
+    def damage(self, x, y, w, h, options={}):
         """ decide what to do with the damage area:
             * send it now (if not congested)
             * add it to an existing delayed region
@@ -965,6 +974,7 @@ class WindowSource(object):
             force the current options to override the old ones,
             otherwise they are only merged.
         """
+        assert self.ui_thread == threading.current_thread()
         if self.suspended:
             return
         if w==0 or h==0:
@@ -973,12 +983,12 @@ class WindowSource(object):
             return
         now = time.time()
         if "auto_refresh" not in options:
-            log("damage%s", (window, x, y, w, h, options))
+            log("damage%s", (x, y, w, h, options))
             self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1
         self.statistics.last_damage_event_time = now
-        ww, wh = window.get_dimensions()
+        ww, wh = self.window.get_dimensions()
         if ww==0 or wh==0:
             return
         if self.window_dimensions != (ww, wh):
@@ -992,13 +1002,13 @@ class WindowSource(object):
         if delayed:
             #use existing delayed region:
             if not self.full_frames_only:
-                regions = delayed[2]
+                regions = delayed[1]
                 region = rectangle(x, y, w, h)
                 add_rectangle(regions, region)
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
-                existing_options = delayed[4]
+                existing_options = delayed[3]
                 for k in options.keys():
                     if k=="override_options":
                         continue
@@ -1046,7 +1056,7 @@ class WindowSource(object):
                 q = options.get("quality") or self._current_quality
                 s = options.get("speed") or self._current_speed
                 actual_encoding = self.get_best_encoding(w*h, ww, wh, s, q, self.encoding)
-            if self.must_encode_full_frame(window, actual_encoding):
+            if self.must_encode_full_frame(actual_encoding):
                 x, y = 0, 0
                 w, h = ww, wh
             self.batch_config.last_delays.append((now, delay))
@@ -1054,8 +1064,8 @@ class WindowSource(object):
             def damage_now():
                 if self.is_cancelled():
                     return
-                window.acknowledge_changes()
-                self.process_damage_region(now, window, x, y, w, h, actual_encoding, options)
+                self.window.acknowledge_changes()
+                self.process_damage_region(now, x, y, w, h, actual_encoding, options)
             self.idle_add(damage_now)
             return
 
@@ -1063,7 +1073,7 @@ class WindowSource(object):
         regions = [rectangle(x, y, w, h)]
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
-        self._damage_delayed = now, window, regions, actual_encoding, options or {}
+        self._damage_delayed = now, regions, actual_encoding, options or {}
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
@@ -1121,8 +1131,7 @@ class WindowSource(object):
             #this is a different region
             return False
         #ouch: same region!
-        window      = delayed[1]
-        options     = delayed[4]
+        options     = delayed[3]
         elapsed = int(1000.0 * (time.time() - region_time))
         log.warn("Warning: delayed region timeout")
         log.warn(" region is %i seconds old, will retry - bad connection?", elapsed/1000)
@@ -1132,7 +1141,7 @@ class WindowSource(object):
         self.cancel_refresh_timer()
         self.cancel_soft_timer()
         self._damage_delayed = None
-        self.full_quality_refresh(window, options)
+        self.full_quality_refresh(options)
         return False
 
     def may_send_delayed(self):
@@ -1201,7 +1210,7 @@ class WindowSource(object):
             self.send_delayed_regions(*delayed)
         return False
 
-    def send_delayed_regions(self, damage_time, window, regions, coding, options):
+    def send_delayed_regions(self, damage_time, regions, coding, options):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
@@ -1209,14 +1218,15 @@ class WindowSource(object):
         """
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
-        if not window.is_managed():
+        assert self.ui_thread == threading.current_thread()
+        if not self.window.is_managed():
             return
-        window.acknowledge_changes()
+        self.window.acknowledge_changes()
         if not self.is_cancelled():
-            self.do_send_delayed_regions(damage_time, window, regions, coding, options)
+            self.do_send_delayed_regions(damage_time, regions, coding, options)
 
-    def do_send_delayed_regions(self, damage_time, window, regions, coding, options, exclude_region=None, get_best_encoding=None):
-        ww,wh = window.get_dimensions()
+    def do_send_delayed_regions(self, damage_time, regions, coding, options, exclude_region=None, get_best_encoding=None):
+        ww,wh = self.window.get_dimensions()
         speed = options.get("speed") or self._current_speed
         quality = options.get("quality") or self._current_quality
         get_best_encoding = get_best_encoding or self.get_best_encoding
@@ -1227,7 +1237,7 @@ class WindowSource(object):
             actual_encoding = get_encoding(ww*wh)
             log("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
             assert actual_encoding is not None
-            self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+            self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
 
         if exclude_region is None:
             if self.full_frames_only:
@@ -1281,9 +1291,9 @@ class WindowSource(object):
                 pixel_count = sum(rect.width*rect.height for rect in regions)
                 actual_encoding = get_encoding(pixel_count)
                 log("send_delayed_regions: %s regions with %s pixels (encoding=%s, actual=%s)", len(regions), pixel_count, coding, actual_encoding)
-                if pixel_count>=ww*wh or self.must_encode_full_frame(window, actual_encoding):
+                if pixel_count>=ww*wh or self.must_encode_full_frame(actual_encoding):
                     #use full screen dimensions:
-                    self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+                    self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
                     return
 
         #we're processing a number of regions separately,
@@ -1299,18 +1309,18 @@ class WindowSource(object):
         i_reg_enc = []
         for i,region in enumerate(regions):
             actual_encoding = get_encoding(region.width*region.height)
-            if self.must_encode_full_frame(window, actual_encoding):
-                self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+            if self.must_encode_full_frame(actual_encoding):
+                self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
                 #we can stop here (full screen update will include the other regions)
                 return
             i_reg_enc.append((i, region, actual_encoding))
 
         #reversed so that i=0 is last for flushing
         for i, region, actual_encoding in reversed(i_reg_enc):
-            self.process_damage_region(damage_time, window, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i)
+            self.process_damage_region(damage_time, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i)
 
 
-    def must_encode_full_frame(self, window, encoding):
+    def must_encode_full_frame(self, encoding):
         #WindowVideoSource overrides this method
         return self.full_frames_only
 
@@ -1326,7 +1336,7 @@ class WindowSource(object):
             self.idle_add(image.free)
 
 
-    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options, flush=None):
+    def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=None):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -1338,10 +1348,11 @@ class WindowSource(object):
             The damage thread will call make_data_packet_cb which does the actual compression.
             This runs in the UI thread.
         """
+        assert self.ui_thread == threading.current_thread()
         if w==0 or h==0:
             return
-        if not window.is_managed():
-            log("the window %s is not composited!?", window)
+        if not self.window.is_managed():
+            log("the window %s is not composited!?", self.window)
             return
         self._sequence += 1
         sequence = self._sequence
@@ -1351,9 +1362,9 @@ class WindowSource(object):
 
         assert coding is not None
         rgb_request_time = time.time()
-        image = window.get_image(x, y, w, h, logger=log)
+        image = self.window.get_image(x, y, w, h, logger=log)
         if image is None:
-            log("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
+            log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
             return
         if self.is_cancelled(sequence):
             image.free()
@@ -1363,7 +1374,7 @@ class WindowSource(object):
         now = time.time()
         log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
-        item = (window, damage_time, w, h, now, image, coding, sequence, options, flush)
+        item = (damage_time, w, h, now, image, coding, sequence, options, flush)
         av_sync = options.get("av-sync", False)
         av_delay = self.av_sync_delay*int(av_sync)
         if not av_sync:
@@ -1398,6 +1409,8 @@ class WindowSource(object):
         now = time.time()
         still_due = []
         pop = None
+        index = 0
+        item = None
         try:
             for index,item in enumerate(eq):
                 sequence = item[8]
@@ -1415,8 +1428,9 @@ class WindowSource(object):
                     #we only process only one item per call
                     #and just keep track of extra ones:
                     still_due.append(due)
-        except Exception as e:
-            avsynclog.error("error processing encode queue: %s", e, exc_info=True)
+        except Exception:
+            avsynclog.error("error processing encode queue at index %i", index)
+            avsynclog.error("item=%s", item, exc_info=True)
         if pop is not None:
             eq.pop(pop)
             return
@@ -1433,7 +1447,7 @@ class WindowSource(object):
         self.timeout_add(first_due, self.call_in_encode_thread, True, self.encode_from_queue)
 
 
-    def make_data_packet_cb(self, window, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
+    def make_data_packet_cb(self, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
         """ This function is called from the damage data thread!
             Extra care must be taken to prevent access to X11 functions on window.
         """
@@ -1455,7 +1469,7 @@ class WindowSource(object):
         #queue packet for sending:
         self.queue_damage_packet(packet, damage_time, process_damage_time)
 
-        if not self.can_refresh(window):
+        if not self.can_refresh():
             self.cancel_refresh_timer()
             return
         encoding = packet[6]
@@ -1488,7 +1502,7 @@ class WindowSource(object):
             #so we probably need an auto-refresh (re-schedule it if one was due already)
 
             #try to add the rectangle to the refresh list:
-            pixels_modified = self.add_refresh_region(window, region)
+            pixels_modified = self.add_refresh_region(region)
             #the target time is only set in this function and cleared when the refresh runs,
             #copy it before we modify anything (as the refresh clears it from another thread)
             target_time = self.refresh_target_time
@@ -1502,7 +1516,7 @@ class WindowSource(object):
                 now = time.time()
                 #figure out the proportion of pixels updated:
                 pixels = region.width*region.height
-                ww, wh = window.get_dimensions()
+                ww, wh = self.window.get_dimensions()
                 pct = 100*pixels/(ww*wh)
                 #try to take into account speed and quality:
                 #delay more when quality is low
@@ -1517,7 +1531,7 @@ class WindowSource(object):
                     #more if we have more than 50% of the window pixels to update:
                     sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100))
                     self.refresh_target_time = now + sched_delay/1000.0
-                    self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, window, options)
+                    self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
                     msg = "scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
                 else:
                     #add to the target time, but this will not move it forwards for small updates following big ones:
@@ -1532,7 +1546,7 @@ class WindowSource(object):
         #(also overriden in window video source)
         remove_rectangle(self.refresh_regions, region)
 
-    def add_refresh_region(self, window, region):
+    def add_refresh_region(self, region):
         #adds the given region to the refresh list
         #returns the number of pixels in the region update
         #(overriden in window video source to exclude the video region)
@@ -1540,9 +1554,9 @@ class WindowSource(object):
         add_rectangle(self.refresh_regions, region)
         return region.width*region.height
 
-    def can_refresh(self, window):
+    def can_refresh(self):
         #safe to call from any thread (does not call X11):
-        if not window.is_managed():
+        if not self.window.is_managed():
             #window is gone
             return False
         if self.auto_refresh_delay<=0 or self.is_cancelled() or len(self.auto_refresh_encodings)==0 or self._mmap:
@@ -1550,7 +1564,7 @@ class WindowSource(object):
             return False
         return True
 
-    def refresh_timer_function(self, window, damage_options):
+    def refresh_timer_function(self, damage_options):
         """ Must be called from the UI thread:
             this makes it easier to prevent races and we're allowed to use the window object.
             And for that reason, it may re-schedule itself safely here too.
@@ -1560,7 +1574,7 @@ class WindowSource(object):
         #timer is running now, clear so we don't try to cancel it somewhere else:
         self.refresh_timer = None
         #re-do some checks that may have changed:
-        if not self.can_refresh(window):
+        if not self.can_refresh():
             self.refresh_event_time = 0
             return
         ret = self.refresh_event_time
@@ -1569,23 +1583,23 @@ class WindowSource(object):
         delta = self.refresh_target_time - time.time()
         if delta<0.050:
             #this is about right (due already or due shortly)
-            self.timer_full_refresh(window)
+            self.timer_full_refresh()
             return
         #re-schedule ourselves:
-        self.refresh_timer = self.timeout_add(int(delta*1000), self.refresh_timer_function, window, damage_options)
+        self.refresh_timer = self.timeout_add(int(delta*1000), self.refresh_timer_function, damage_options)
         refreshlog("refresh_timer_function: rescheduling auto refresh timer with extra delay %ims", int(1000*delta))
 
-    def timer_full_refresh(self, window):
+    def timer_full_refresh(self):
         #copy event time and list of regions (which may get modified by another thread)
         ret = self.refresh_event_time
         self.refresh_event_time = 0
         regions = self.refresh_regions
         self.refresh_regions = []
-        if self.can_refresh(window) and regions and ret>0:
+        if self.can_refresh() and regions and ret>0:
             now = time.time()
             refreshlog("timer_full_refresh() after %ims, regions=%s", 1000.0*(time.time()-ret), regions)
             #choose an encoding:
-            ww, wh = window.get_dimensions()
+            ww, wh = self.window.get_dimensions()
             encoding = self.auto_refresh_encodings[0]
             best_encoding = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
             refresh_encodings = self.auto_refresh_encodings
@@ -1594,17 +1608,17 @@ class WindowSource(object):
             options = self.get_refresh_options()
             refreshlog("timer_full_refresh() size=%s, encoding=%s, best=%s, auto_refresh_encodings=%s, refresh_encodings=%s, options=%s",
                             (ww, wh), encoding, best_encoding, self.auto_refresh_encodings, refresh_encodings, options)
-            WindowSource.do_send_delayed_regions(self, now, window, regions, encoding, options, exclude_region=self.get_refresh_exclude())
+            WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, exclude_region=self.get_refresh_exclude())
         return False
 
     def get_refresh_exclude(self):
         #overriden in window video source to exclude the video subregion
         return None
 
-    def full_quality_refresh(self, window, damage_options={}):
+    def full_quality_refresh(self, damage_options={}):
         #called on use request via xpra control,
         #or when we need to resend the window after a send timeout
-        if not window.is_managed():
+        if not self.window.is_managed():
             #this window is no longer managed
             return
         if not self.auto_refresh_encodings or self.is_cancelled():
@@ -1612,15 +1626,15 @@ class WindowSource(object):
             return
         refresh_regions = self.refresh_regions
         self.refresh_regions = []
-        w, h = window.get_dimensions()
+        w, h = self.window.get_dimensions()
         log("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
         new_options.update(self.get_refresh_options())
         log("full_quality_refresh() using %s with options=%s", encoding, new_options)
         damage_time = time.time()
-        self.send_delayed_regions(damage_time, window, refresh_regions, encoding, new_options)
-        self.damage(window, 0, 0, w, h, options=new_options)
+        self.send_delayed_regions(damage_time, refresh_regions, encoding, new_options)
+        self.damage(0, 0, w, h, options=new_options)
 
     def get_refresh_options(self):
         return {"optimize"      : False,
@@ -1664,7 +1678,7 @@ class WindowSource(object):
             self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent)
 
-    def damage_packet_acked(self, window, damage_packet_sequence, width, height, decode_time, message):
+    def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (provided by the client itself)
@@ -1678,7 +1692,7 @@ class WindowSource(object):
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         elif decode_time<0:
-            self.client_decode_error(window, decode_time, message)
+            self.client_decode_error(decode_time, message)
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
         if pending is None:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
@@ -1697,7 +1711,7 @@ class WindowSource(object):
         if not self._damage_delayed:
             self.soft_expired = 0
 
-    def client_decode_error(self, window, error, message):
+    def client_decode_error(self, error, message):
         #don't print error code -1, which is just a generic code for error
         emsg = {-1 : ""}.get(error, error)
         if emsg:
@@ -1706,8 +1720,8 @@ class WindowSource(object):
         self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
-        if window:
-            self.timeout_add(250, self.full_quality_refresh, window)
+        if self.window:
+            self.timeout_add(250, self.full_quality_refresh)
 
 
     def make_data_packet(self, damage_time, process_damage_time, image, coding, sequence, options, flush):
