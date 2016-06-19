@@ -114,7 +114,10 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
         log("calling %s(%s)" % (encoder.compress_image, image))
         c = encoder.compress_image(image)
         assert c is not None, "no image!"
-        data, _ = c
+        data, client_options = c
+        if not data:
+            assert client_options.get("delayed", 0)>0
+            continue
         tsize += len(data)
         log("data size: %s" % len(data))
         log("data head: %s" % binascii.hexlify(data[:2048]))
