@@ -112,13 +112,13 @@ class VideoSubregion(object):
         refreshlog("remove_refresh_region(%s) updated refresh regions=%s", region, self.refresh_regions)
 
 
-    def add_video_refresh(self, window, region):
+    def add_video_refresh(self, region):
         #called by add_refresh_region if the video region got painted on
         #Note: this does not run in the UI thread!
         rect = self.rectangle
         if not rect:
             return
-        refreshlog("add_video_refresh(%s, %s) rectangle=%s", window, region, rect)
+        refreshlog("add_video_refresh(%s) rectangle=%s", region, rect)
         #something in the video region is still refreshing,
         #so we re-schedule the subregion refresh:
         self.cancel_refresh_timer()
@@ -133,7 +133,7 @@ class VideoSubregion(object):
         delay = max(150, self.auto_refresh_delay)
         if non_video:
             #refresh via timeout_add so this will run in the UI thread:
-            self.timeout_add(delay, self.refresh_cb, window, non_video)
+            self.timeout_add(delay, self.refresh_cb, non_video)
             #only keep the regions still in the video region:
             inrect = [rect.intersection_rect(r) for r in self.refresh_regions]
             self.refresh_regions = [r for r in inrect if r is not None]
@@ -150,7 +150,7 @@ class VideoSubregion(object):
                 if len(regions)>=2 and rect:
                     regions = [rect]
                 refreshlog("refresh() calling %s with regions=%s", self.refresh_cb, regions)
-                self.refresh_cb(window, regions)
+                self.refresh_cb(regions)
             self.refresh_timer = self.timeout_add(delay, refresh)
 
 
