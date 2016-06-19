@@ -1413,11 +1413,12 @@ class WindowSource(object):
         item = None
         try:
             for index,item in enumerate(eq):
-                sequence = item[8]
+                #item = (damage_time, w, h, now, image, coding, sequence, options, flush)
+                sequence = item[6]
                 if self.is_cancelled(sequence):
-                    self.free_image_wrapper(item[6])
+                    self.free_image_wrapper(item[4])
                     continue
-                ts = item[4]
+                ts = item[3]
                 due = ts + av_delay
                 if due<now and pop is None:
                     #found an item which is due
