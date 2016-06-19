@@ -44,6 +44,7 @@ SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
 VIDEO_SUBREGION = os.environ.get("XPRA_VIDEO_SUBREGION", "1")=="1"
+B_FRAMES = os.environ.get("XPRA_B_FRAMES", "1")=="1"
 
 
 class WindowVideoSource(WindowSource):
@@ -1276,7 +1277,7 @@ class WindowVideoSource(WindowSource):
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
         if encoder_spec.encoding in self.supports_video_b_frames:
-            options["b-frames"] = True
+            options["b-frames"] = B_FRAMES
         ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
         #record new actual limits:
         self.actual_scaling = scaling
