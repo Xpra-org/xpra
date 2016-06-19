@@ -942,6 +942,16 @@ CAPS_NAMES = {
         NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE     : "SUPPORT_LOSSLESS_ENCODE",
         }
 
+PIC_TYPES = {
+             NV_ENC_PIC_TYPE_P              : "P",
+             NV_ENC_PIC_TYPE_B              : "B",
+             NV_ENC_PIC_TYPE_I              : "I",
+             NV_ENC_PIC_TYPE_IDR            : "IDR",
+             NV_ENC_PIC_TYPE_BI             : "BI",
+             NV_ENC_PIC_TYPE_SKIPPED        : "SKIPPED",
+             NV_ENC_PIC_TYPE_INTRA_REFRESH  : "INTRA_REFRESH",
+             NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
+            }
 
 NvEncodeAPICreateInstance = None
 cuCtxGetCurrent = None
@@ -1294,6 +1304,7 @@ cdef class Encoder:
     cdef unsigned int input_height
     cdef unsigned int encoder_width
     cdef unsigned int encoder_height
+    cdef unsigned int b_frames
     cdef object src_format
     cdef object dst_formats
     cdef object scaling
@@ -2194,10 +2205,11 @@ cdef class Encoder:
         end = time.time()
         self.frames += 1
         self.last_frame_times.append((start, end))
-        self.time += end-start
-        log("compress_image(..) %s %s returning %s bytes (%.1f%%), complete compression for frame %s took %.1fms",
+        elapsed = end-start
+        self.time += elapsed
+        log("compress_image(..) %s %s returning %s bytes (%.1f%%) for %s frame %i took %.1fms",
             get_type(), get_version(),
-            size, 100.0*size/input_size, self.frames, 1000.0*(end-start))
+            size, 100.0*size/input_size, PIC_TYPES.get(picParams.pictureType, picParams.pictureType), self.frames, 1000.0*elapsed)
         return data, client_options
 
 
