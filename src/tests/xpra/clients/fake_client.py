@@ -11,11 +11,19 @@ class FakeClient(object):
     def __init__(self):
         self.supports_mmap = False
         self.mmap = None
+        self.mmap_enabled = False
         self._focused = None
         self.readonly = False
         self.title = "test"
         self._id_to_window = {}
         self._window_to_id = {}
+        self.server_window_decorations = False
+        self.server_window_frame_extents = False
+        self.encoding_defaults = {}
+        self.window_configure_skip_geometry = True
+        self.window_configure_pointer = True
+        self.xscale = 1
+        self.yscale = 1
 
     def send_refresh(self, *args):
         log.info("send_refresh(%s)", args)
@@ -41,5 +49,33 @@ class FakeClient(object):
     def send_mouse_position(self, *args):
         log.info("send_mouse_position(%s)", args)
 
+    def send_configure_event(self, skip_geometry):
+        log.info("send_configure_event(%s)", skip_geometry)
+
     def mask_to_names(self, *args):
         return []
+
+    def get_mouse_position(self):
+        return 0, 0
+
+    def request_frame_extents(self, window):
+        pass
+    def get_window_frame_sizes(self):
+        return None
+
+    def sx(self, v):
+        return v
+    def sy(self, v):
+        return v
+    def srect(self, x, y, w, h):
+        return x, y, w, h
+    def sp(self, x, y):
+        return x, y
+    def cx(self, v):
+        return v
+    def cy(self, v):
+        return v
+    def crect(self, x, y, w, h):
+        return x, y, w, h
+    def cp(self, x, y):
+        return x, y
