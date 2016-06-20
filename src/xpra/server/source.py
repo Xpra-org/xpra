@@ -1331,8 +1331,8 @@ class ServerSource(FileTransferHandler):
             if encoding=="rgb24":
                 encoding = "rgb"
             if encoding not in self.server_encodings:
-                log.error("encoding %s is not supported by this server! " \
-                         "Will use the first commonly supported encoding instead", encoding)
+                log.error("Error: encoding %s is not supported by this server", encoding)
+                log.error(" will use the first commonly supported encoding instead")
                 encoding = None
         else:
             elog("encoding not specified, will use the first match")
