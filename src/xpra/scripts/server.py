@@ -1145,6 +1145,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             if ssh_port and rec not in mdns_recs:
                 mdns_recs.append(rec)
 
+    kill_dbus = None
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
@@ -1313,7 +1314,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         # Upgrading/exiting, so leave X and dbus servers running
         if close_display in _cleanups:
             _cleanups.remove(close_display)
-            _cleanups.remove(kill_dbus)
+            if kill_dbus:
+                _cleanups.remove(kill_dbus)
         from xpra.server.server_core import ServerCore
         if e==ServerCore.EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")
