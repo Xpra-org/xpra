@@ -100,22 +100,20 @@ Make sure you have the dependencies, at least:
   Xvfb
   cython (version 0.14 at least, 0.16 to support video encoding
   check with 'cython --version')
+  there are many optional packages, for details see:
+  http://xpra.org/trac/wiki/Dependencies
 On Debian-based OSes, I think it's:
   # aptitude install libx11-dev libxtst-dev libxcomposite-dev \
-    libxdamage-dev python-gobject-dev python-gtk2-dev xvfb cython
+    libxkbfile-dev libxdamage-dev \
+    python-gobject-dev python-gtk2-dev xvfb cython
   To support video encoding, you also need:
     libx264-dev libswscale-dev libavcodec-dev libvpx-dev
-And a mailing list report suggests the following for Fedora:
+For Fedora:
   # yum install xorg-x11-server-Xvfb Cython libX11-devel \
-    libXtst-devel libXcomposite-devel libXdamage-devel pygobject2-devel \
-    pygtk2-devel gtk2-devel python-imaging python-imaging-devel
-And for MacPorts, apparently you should
-  - Install: python26 py26-cython py26-gtk py26-gobject py26-nose
-    xorg-libXdamage xorg-libXcomposite xorg-libXtst xorg-libXfixes
-    python_select
-  - And then: Use python_select to make sure python26 is selected.
-(If you work out a similar line for another OS, like Gentoo or FreeBSD
-or whatever, please send it in.)
+    libXtst-devel libXcomposite-devel libXdamage-devel libxkbfile-devel \
+    pygobject2-devel pygtk2-devel gtk2-devel libvpx-devel
+And for Mac OSX, CentOS, BSD, and many other platforms, see:
+	http://xpra.org/trac/wiki/Building
 
 Build it:
   tar xvzf xpra-<whatever>.tar.gz
