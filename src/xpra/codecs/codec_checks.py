@@ -190,7 +190,10 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 options = {"b-frames" : True}
                 e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1,1), options)
                 image = make_test_image(cs_in, W, H)
-                data, meta = e.compress_image(image)
+                v = e.compress_image(image)
+                if v is None:
+                    raise Exception("%s compression failed" % encoding)
+                data, meta = v
                 if data is None:
                     delayed = meta.get("delayed", 0)
                     assert delayed>0, "data is empty and there are no delayed frames!"
