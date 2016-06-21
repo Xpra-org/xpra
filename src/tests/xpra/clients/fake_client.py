@@ -52,7 +52,13 @@ class FakeClient(object):
     def send_configure_event(self, skip_geometry):
         log.info("send_configure_event(%s)", skip_geometry)
 
+    def window_close_event(self, *args):
+        log.info("window_close_event%s", args)
+                   
     def mask_to_names(self, *args):
+        return []
+
+    def get_current_modifiers(self, *args):
         return []
 
     def get_mouse_position(self):

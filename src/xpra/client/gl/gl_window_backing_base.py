@@ -90,12 +90,14 @@ from OpenGL.GL import \
     glTexImage2D, \
     glMultiTexCoord2i, \
     glTexCoord2i, glVertex2i, glEnd, \
-    glClear, glClearColor, glLineWidth, glColor4f
+    glClear, glClearColor, glLineWidth, glColor4f, \
+    glDrawBuffer, glReadBuffer
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
-from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, \
+    glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer
 
 from ctypes import c_uint
 
@@ -171,6 +173,7 @@ TEX_U = 1
 TEX_V = 2
 TEX_RGB = 3
 TEX_FBO = 4         #FBO texture (guaranteed up-to-date window contents)
+TEX_TMP_FBO = 5
 
 # Shader number assignment
 YUV2RGB_SHADER = 0
@@ -208,6 +211,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.paint_spinner = False
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
+        self.tmp_fbo = None
         self.pending_fbo_paint = []
         self.last_flush = time.time()
         self.default_paint_box_line_width = OPENGL_PAINT_BOX or 1
@@ -255,6 +259,11 @@ class GLWindowBackingBase(GTKWindowBacking):
                 log.warn("failed to enable transparency on screen %s", screen)
                 self._alpha_enabled = False
         self._backing.set_events(self._backing.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
+
+    def get_encoding_properties(self):
+        props = GTKWindowBacking.get_encoding_properties(self)
+        props["encoding.scrolling"] = True
+        return props
 
 
     def __repr__(self):
@@ -316,14 +325,18 @@ class GLWindowBackingBase(GTKWindowBacking):
     def gl_init_textures(self):
         assert self.offscreen_fbo is None
         assert self.shaders is None
-        self.textures = glGenTextures(5)
+        self.textures = glGenTextures(6)
+        self.offscreen_fbo = self._gen_fbo()
+        self.tmp_fbo = self._gen_fbo()
+        log("%s.gl_init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s", self, self.textures, self.offscreen_fbo, self.tmp_fbo)
+
+    def _gen_fbo(self):
         if hasattr(glGenFramebuffers, "pyConverters") and len(glGenFramebuffers.pyConverters)==1:
             #single argument syntax:
-            self.offscreen_fbo = glGenFramebuffers(1)
-        else:
-            self.offscreen_fbo = c_uint(1)
-            glGenFramebuffers(1, self.offscreen_fbo)
-        log("%s.gl_init_textures() textures: %s, offscreen fbo: %s", self, self.textures, self.offscreen_fbo)
+            return glGenFramebuffers(1)
+        fbo = c_uint(1)
+        glGenFramebuffers(1, fbo)
+        return fbo
 
     def gl_init_shaders(self):
         assert self.shaders is None
@@ -399,19 +412,22 @@ class GLWindowBackingBase(GTKWindowBacking):
             if self.textures is None:
                 self.gl_init_textures()
 
-            # Define empty FBO texture and set rendering to FBO
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
+            # Define empty tmp FBO
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
+            glClear(GL_COLOR_BUFFER_BIT)
+
+            # Define empty FBO texture and set rendering to FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
-            try:
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
-            except Exception as e:
-                log.error("Error: cannot initialize %ix%i %s texture", w, h, CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format))
-                log.error(" %r", e)
-                log("%s", self.gl_init, exc_info=True)
-                raise Exception("cannot initialize %ix%i %s texture: %r" % (w, h, CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, self.texture_pixel_format), e))
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -438,6 +454,53 @@ class GLWindowBackingBase(GTKWindowBacking):
             self._backing = None
             b.destroy()
         self.glconfig = None
+
+    def paint_scroll(self, x, y, w, h, options, callbacks):
+        scrolls = options.listget("scrolls")
+        self.idle_add(self.do_scroll_paints, scrolls)
+        fire_paint_callbacks(callbacks, True)
+
+    def do_scroll_paints(self, scrolls, flush=0):
+        log.warn("do_scroll_paints%s", (scrolls, flush))
+        bw, bh = self.size
+        self.set_rgb_paint_state()
+        #paste from offscreen to tmp with delta offset:
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+        glReadBuffer(GL_COLOR_ATTACHMENT0)
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+
+        for x,y,w,h,ydelta in scrolls:
+            assert ydelta!=0 and abs(ydelta)<bh, "invalid ydelta value: %i" % ydelta
+            assert w>0 and h>0
+            assert x+w<=bw and y+h<=bh, "scroll rectangle overflows the buffer: %s vs %s" % ((x, y, w, h), self.size)
+            assert y+ydelta>=0 and y+h+ydelta<=bh, "invalid vertical scroll value %i for rectangle %s overflows the buffer size %s" % (ydelta, (x, y, w, h), self.size)
+            #invert Y coordinates (bh-?)
+            glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
+                              x, bh-(y+ydelta), x+w, bh-(y+h+ydelta),
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
+
+        #now swap references to tmp and offscreen so tmp becomes the new offscreen:
+        tmp = self.offscreen_fbo
+        self.offscreen_fbo = self.tmp_fbo
+        self.tmp_fbo = tmp
+        tmp = self.textures[TEX_FBO]
+        self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
+        self.textures[TEX_TMP_FBO] = tmp
+        #restore normal paint state:
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+        self.unset_rgb_paint_state()
+        bw, bh = self.size
+        if flush==0:
+            self.present_fbo(0, 0, bw, bh)
 
     def set_rgb_paint_state(self):
         # Set GL state for RGB painting:
