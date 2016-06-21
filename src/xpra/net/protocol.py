@@ -26,7 +26,7 @@ from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding
 from xpra.net.compression import get_compression_caps, decompress, sanity_checks as compression_sanity_checks,\
-        InvalidCompressionException, Compressed, LevelCompressed, Uncompressed
+        InvalidCompressionException, Compressed, LevelCompressed, Uncompressed, LargeStructure
 from xpra.net.packet_encoding import get_packet_encoding_caps, decode, sanity_checks as packet_encoding_sanity_checks, InvalidPacketEncodingException
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER
 from xpra.net.crypto import get_crypto_caps, get_encryptor, get_decryptor, pad, INITIAL_PADDING
@@ -483,7 +483,12 @@ class Protocol(object):
                 l = len(item)
             except TypeError as e:
                 raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e))
-            if ti==Uncompressed:
+            if ti==LargeStructure:
+                item = item.data
+                packet[i] = item
+                ti = type(item)
+                continue
+            elif ti==Uncompressed:
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
                 item = item.compress()

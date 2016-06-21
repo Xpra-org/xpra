@@ -198,12 +198,16 @@ class LevelCompressed(Compressed):
         return  "LevelCompressed(%s: %i bytes as %s/%i)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 
-class Uncompressed(object):
+class LargeStructure(object):
     def __init__(self, datatype, data):
         self.datatype = datatype
         self.data = data
     def __len__(self):
         return len(self.data)
+    def __repr__(self):
+        return  "LargeStructure(%s: %i bytes)" % (self.datatype, len(self.data))
+
+class Uncompressed(LargeStructure):
     def __repr__(self):
         return  "Uncompressed(%s: %i bytes)" % (self.datatype, len(self.data))
     def compress(self):
