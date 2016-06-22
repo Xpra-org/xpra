@@ -136,7 +136,7 @@ class WindowVideoSource(WindowSource):
             d = ve.get_info().get("delayed", 0)
             self.av_sync_frame_delay += 40 * d
             avsynclog("update_av_sync_frame_delay() video encoder=%s, delayed frames=%i, frame delay=%i", ve, d, self.av_sync_frame_delay)
-        self.set_av_sync_delay()
+        self.may_update_av_sync_delay()
 
 
     def get_client_info(self):

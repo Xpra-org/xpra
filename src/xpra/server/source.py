@@ -1207,7 +1207,7 @@ class ServerSource(FileTransferHandler):
             avsynclog("av-sync support is disabled, setting it to 0")
             self.av_sync_delay_total = 0
         for ws in self.window_sources.values():
-            ws.set_av_sync_delay_total(self.av_sync_delay_total)
+            ws.set_av_sync_delay(self.av_sync_delay_total)
 
 
     def set_screen_sizes(self, screen_sizes):
