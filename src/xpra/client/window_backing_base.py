@@ -532,8 +532,8 @@ class WindowBackingBase(object):
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
-            elif coding=="scroll":
-                self.paint_scroll(x, y, width, height, options, callbacks)
+            elif coding == "scroll":
+                self.paint_scroll(x, y, width, height, img_data, options, callbacks)
             else:
                 self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
         except Exception:
