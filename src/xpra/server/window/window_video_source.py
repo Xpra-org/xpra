@@ -45,6 +45,7 @@ SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED",
 
 VIDEO_SUBREGION = os.environ.get("XPRA_VIDEO_SUBREGION", "1")=="1"
 B_FRAMES = os.environ.get("XPRA_B_FRAMES", "1")=="1"
+VIDEO_SKIP_EDGE = os.environ.get("XPRA_VIDEO_SKIP_EDGE", "0")=="1"
 
 
 class WindowVideoSource(WindowSource):
@@ -653,10 +654,9 @@ class WindowVideoSource(WindowSource):
             dh = h - (h & self.height_mask)
         else:
             dw, dh = 0, 0
-        if self.edge_encoding:
-            #we can't send the edges, no big deal
+        if self.edge_encoding and not VIDEO_SKIP_EDGE:
             if dw>0:
-                WindowSource.process_damage_region(self, damage_time, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1)
+                WindowSource.process_damage_region(self, damage_time, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1+int(dh>0))
             if dh>0:
                 WindowSource.process_damage_region(self, damage_time, x, y+h-dh, x+w, dh, self.edge_encoding, options, flush=1)
         WindowSource.process_damage_region(self, damage_time, x, y, w-dw, h-dh, coding, options, flush=flush)
@@ -1276,8 +1276,8 @@ class WindowVideoSource(WindowSource):
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
-        if encoder_spec.encoding in self.supports_video_b_frames:
-            options["b-frames"] = B_FRAMES
+        if encoder_spec.encoding in self.supports_video_b_frames and B_FRAMES:
+            options["b-frames"] = True
         ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
         #record new actual limits:
         self.actual_scaling = scaling
@@ -1294,6 +1294,16 @@ class WindowVideoSource(WindowSource):
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return  True
 
+
+    def video_fallback(self, image, options):
+        #find one that is not video:
+        fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
+        if not fallback_encodings:
+            log.error("no non-video fallback encodings are available!")
+            return None
+        fallback_encoding = fallback_encodings[0]
+        encode_fn = self._encoders[fallback_encoding]
+        return encode_fn(fallback_encoding, image, options)
 
     def video_encode(self, encoding, image, options):
         """
@@ -1312,15 +1322,8 @@ class WindowVideoSource(WindowSource):
             self.pixel_format = src_format
 
         def video_fallback():
-            #find one that is not video:
-            fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
-            if not fallback_encodings:
-                log.error("no non-video fallback encodings are available!")
-                return None
-            fallback_encoding = fallback_encodings[0]
-            encode_fn = self._encoders[fallback_encoding]
-            videolog.warn("using '%s' as non-video fallback using %s", fallback_encoding, encode_fn)
-            return encode_fn(fallback_encoding, image, options)
+            videolog.warn("using non-video fallback encoding")
+            return self.video_fallback(image, options)
 
         vh = self.video_helper
         if vh is None:
@@ -1378,7 +1381,7 @@ class WindowVideoSource(WindowSource):
         if delayed is not None:
             last_frame = client_options.get("frame")
             flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
-            videolog("schedule video_encoder_flush for last frame=%i, flush delay=%i", last_frame, flush_delay)
+            videolog("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
             self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
             if data is None:
                 return None
@@ -1411,7 +1414,7 @@ class WindowVideoSource(WindowSource):
             self._video_encoder = None
             ve.clean()
             self.idle_add(self.full_quality_refresh)
-            return            
+            return
         v = ve.flush(frame)
         if not v:
             videolog("do_flush_video_encoder%s=%s", (ve, frame, x, y), v)
