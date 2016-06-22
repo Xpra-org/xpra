@@ -81,6 +81,7 @@ MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
 PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
 PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
 
+B_FRAMES = os.environ.get("XPRA_B_FRAMES", "1")=="1"
 
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
@@ -1449,6 +1450,10 @@ class UIXpraClient(XpraClientBase):
             "greedy"                    : CLIPBOARD_GREEDY,
             "set_enabled"               : True,
             })
+        if B_FRAMES:
+            video_b_frames = ["h264"]   #only tested with dec_avcodec2
+        else:
+            video_b_frames = []
         updict(capabilities, "encoding", {
             "flush"                     : True,
             "scaling.control"           : self.video_scaling,
@@ -1457,7 +1462,7 @@ class UIXpraClient(XpraClientBase):
             #TODO: check for csc support (swscale only?)
             "video_reinit"              : True,
             "video_scaling"             : True,
-            "video_b_frames"            : ["h264"],     #only tested with dec_avcodec2
+            "video_b_frames"            : video_b_frames,
             "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
