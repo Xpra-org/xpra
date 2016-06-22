@@ -37,7 +37,7 @@ from xpra.simple_stats import get_list_stats, std_unit
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
-from xpra.net.compression import compressed_wrapper, Compressed, Uncompressed
+from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import make_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
@@ -1602,7 +1602,7 @@ class ServerSource(FileTransferHandler):
         packet = list(packet)
         for i in range(len(packet)):
             v = packet[i]
-            if type(v)==Uncompressed:
+            if type(v)==Compressible:
                 packet[i] = self.compressed_wrapper(v.datatype, v.data)
         self.queue_packet(packet)
 

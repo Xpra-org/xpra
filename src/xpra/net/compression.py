@@ -207,9 +207,11 @@ class LargeStructure(object):
     def __repr__(self):
         return  "LargeStructure(%s: %i bytes)" % (self.datatype, len(self.data))
 
-class Uncompressed(LargeStructure):
+class Compressible(LargeStructure):
+    #wrapper for data that should be compressed at some point,
+    #to use this class, you must override compress()
     def __repr__(self):
-        return  "Uncompressed(%s: %i bytes)" % (self.datatype, len(self.data))
+        return  "Compressible(%s: %i bytes)" % (self.datatype, len(self.data))
     def compress(self):
         raise Exception("compress() not defined on %s" % self)
 

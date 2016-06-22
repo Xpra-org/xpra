@@ -20,7 +20,7 @@ from xpra.gtk_common.gtk_util import gtk_main, color_parse
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.client.window_border import WindowBorder
-from xpra.net.compression import Uncompressed
+from xpra.net.compression import Compressible
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
@@ -256,7 +256,7 @@ class XpraClient(GTKXpraClient):
             packet = list(parts)
             for i in range(len(packet)):
                 v = packet[i]
-                if type(v)==Uncompressed:
+                if type(v)==Compressible:
                     #register the compressor which will fire in protocol.encode:
                     def compress_clipboard():
                         clipboardlog("compress_clipboard() compressing %s", v)

@@ -22,7 +22,7 @@ log = Logger("clipboard")
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
-from xpra.net.compression import Uncompressed
+from xpra.net.compression import Compressible
 from xpra.util import csv
 
 
@@ -391,7 +391,7 @@ class ClipboardProtocolHelperBase(object):
                      " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return  None
         if type(wire_data)==str and len(wire_data)>=MIN_CLIPBOARD_COMPRESSION_SIZE:
-            return Uncompressed("clipboard: %s / %s" % (dtype, dformat), wire_data)
+            return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
         return wire_data
 
     def _process_clipboard_contents(self, packet):
