@@ -1387,7 +1387,7 @@ class WindowSource(object):
         now = time.time()
         log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
-        item = (damage_time, w, h, now, image, coding, sequence, options, flush)
+        item = (w, h, damage_time, now, image, coding, sequence, options, flush)
         av_sync = options.get("av-sync", False)
         if not av_sync:
             self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
@@ -1427,7 +1427,7 @@ class WindowSource(object):
         item = None
         try:
             for index,item in enumerate(eq):
-                #item = (damage_time, w, h, now, image, coding, sequence, options, flush)
+                #item = (w, h, damage_time, now, image, coding, sequence, options, flush)
                 sequence = item[6]
                 if self.is_cancelled(sequence):
                     self.free_image_wrapper(item[4])
