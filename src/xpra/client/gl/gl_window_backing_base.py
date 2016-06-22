@@ -475,6 +475,10 @@ class GLWindowBackingBase(GTKWindowBacking):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
+        #clear the buffer?
+        #glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, bw, bh, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+        #glClear(GL_COLOR_BUFFER_BIT)
+
         for x,y,w,h,ydelta in scrolls:
             assert ydelta!=0 and abs(ydelta)<bh, "invalid ydelta value: %i" % ydelta
             assert w>0 and h>0
@@ -492,15 +496,15 @@ class GLWindowBackingBase(GTKWindowBacking):
         tmp = self.textures[TEX_FBO]
         self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
         self.textures[TEX_TMP_FBO] = tmp
+
         #restore normal paint state:
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+
         self.unset_rgb_paint_state()
-        bw, bh = self.size
-        if flush==0:
-            self.present_fbo(0, 0, bw, bh)
+        self.present_fbo(0, 0, bw, bh, flush)
 
     def set_rgb_paint_state(self):
         # Set GL state for RGB painting:
