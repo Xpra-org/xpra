@@ -49,6 +49,9 @@ class FakeClient(object):
     def send_mouse_position(self, *args):
         log.info("send_mouse_position(%s)", args)
 
+    def send_button(self, *args):
+        log.info("send_button%s", args)
+
     def send_configure_event(self, skip_geometry):
         log.info("send_configure_event(%s)", skip_geometry)
 
