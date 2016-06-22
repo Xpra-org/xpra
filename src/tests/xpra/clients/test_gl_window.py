@@ -4,48 +4,23 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import binascii
 import math
 import struct
 from xpra.log import Logger
 log = Logger()
 
 import glib
-import gtk
-from gtk import gdk
 
 from xpra.util import typedict
-from tests.xpra.clients.fake_client import FakeClient
 from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+from tests.xpra.clients.fake_gtk_client import FakeGTKClient, gtk_main
 from xpra.codecs.loader import load_codecs
 
 load_codecs(encoders=False, decoders=True, csc=False)
 
 
-def fake_gtk_client():
-    def get_mouse_position(*args):
-        root = gdk.get_default_root_window()
-        p = root.get_pointer()
-        return p[0], p[1]
-    
-    def get_current_modifiers(*args):
-        #root = gdk.get_default_root_window()
-        #modifiers_mask = root.get_pointer()[-1]
-        #return self.mask_to_names(modifiers_mask)
-        return []
-    def window_close_event(*args):
-        gtk.main_quit()
-    client = FakeClient()
-    client.get_mouse_position = get_mouse_position
-    client.get_current_modifiers = get_current_modifiers
-    client.source_remove = glib.source_remove
-    client.timeout_add = glib.timeout_add
-    client.idle_add = glib.idle_add
-    client.window_close_event = window_close_event
-    return client
-
-
 def paint_window(window):
-    import binascii
     W, H = window.get_size()
     img_data = binascii.unhexlify("89504e470d0a1a0a0000000d494844520000010000000100010300000066bc3a2500000003504c54"
                                   "45b5d0d0630416ea0000001f494441546881edc1010d000000c2a0f74f6d0e37a000000000000000"
@@ -63,14 +38,14 @@ def paint_and_scroll(window, ydelta=10, color=0xA0A0A0A):
     W, H = window.get_size()
     if ydelta>0:
         #scroll down, repaint the top:
-        client_options = {"scrolls" : ((0, 0, W, H-ydelta, ydelta),) }
-        window.draw_region(0, 0, W, H, "scroll", "", W*4, 0, typedict(client_options), [])
-        #paint_rect(window, 0, 0, W, ydelta, color)
+        scrolls = (0, 0, W, H-ydelta, ydelta),
+        window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({"flush" : 1}), [])
+        paint_rect(window, 0, 0, W, ydelta, color)
     else:
         #scroll up, repaint the bottom:
-        client_options = {"scrolls" : ((0, -ydelta, W, H+ydelta, ydelta),) }
-        window.draw_region(0, 0, W, H, "scroll", "", W*4, 0, typedict(client_options), [])
-        #paint_rect(window, 0, H-ydelta, W, -ydelta, color)
+        scrolls = (0, -ydelta, W, H+ydelta, ydelta),
+        window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({"flush" : 1}), [])
+        paint_rect(window, 0, H-ydelta, W, -ydelta, color)
 
 def split_scroll(window, i=1):
     W, H = window.get_size()
@@ -78,13 +53,13 @@ def split_scroll(window, i=1):
                (0,      i,      W,      H//2,       -i),
                (0,      H//2,   W,      H//2-i,     i),
                ]
-    window.draw_region(0, 0, W, H, "scroll", "", W*4, 0, typedict({"scrolls" : scrolls}), [])
+    window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({}), [])
 
 
 def main():
     W = 640
     H = 480
-    client = fake_gtk_client()
+    client = FakeGTKClient()
     window = GLClientWindow(client, None, 1, 10, 10, W, H, W, H, typedict({}), False, typedict({}), 0, None)
     window.show()
     glib.timeout_add(0, paint_rect, window, 0, 0, W, H, 0xFFFFFFFF)
@@ -101,11 +76,10 @@ def main():
         glib.timeout_add(4000+i*20, paint_rect, window, 0, H//2-1, W, 2, i+i*0x100) 
         
     try:
-        gtk.main()
+        gtk_main()
     except KeyboardInterrupt:
         pass
 
 
 if __name__ == "__main__":
-
     main()
