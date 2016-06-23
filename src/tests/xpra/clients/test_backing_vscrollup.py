@@ -22,25 +22,24 @@ class WindowAnim(object):
 
     def __init__(self, window_class, client, wid, W=630, H=480):
         self.wid = wid
-        self.W = W
-        self.H = H
-        self.window = window_class(client, None, 1, 10, 10, W, H, W, H, typedict({}), False, typedict({}), 0, None)
+        self.window = window_class(client, None, wid, 10, 10, W, H, W, H, typedict({}), False, typedict({}), 0, None)
         self.window.show()
         self.paint_rect(0, 0, W, H, chr(255)*4*W*H)
         self.paint_rect(W//2-16, H//2-16, 32, 32, chr(0)*4*32*32)
 
     def scrollup(self, ydelta=1):
         print("scrollup(%s)" % ydelta)
-        scrolls = (0, ydelta, self.W, self.H-ydelta, -ydelta),
-        self.window.draw_region(0, 0, self.W, self.H, "scroll", scrolls, self.W*4, 0, typedict({"flush" : 0}), [])
+        W, H = self.window.get_size()
+        scrolls = (0, ydelta, W, H-ydelta, 0, -ydelta),
+        self.window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({"flush" : 0}), [])
         dots = []
-        for _ in range(self.W*ydelta):
+        for _ in range(W*ydelta):
             CB = 0xFF << ((self.wid % 4) * 8)
             v = int(time.time()*10000)
             c = struct.pack("@I", v & 0xFFFFFFFF & ~CB)
             dots.append(c)
         img_data = b"".join(dots)
-        self.paint_rect(0, self.H-ydelta, self.W, ydelta, img_data)
+        self.paint_rect(0, H-ydelta, W, ydelta, img_data)
         return True
 
     def scrolluponce(self, ydelta):
