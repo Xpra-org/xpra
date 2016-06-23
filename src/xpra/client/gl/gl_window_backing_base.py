@@ -475,9 +475,10 @@ class GLWindowBackingBase(GTKWindowBacking):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-        #clear the buffer?
-        #glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, bw, bh, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
-        #glClear(GL_COLOR_BUFFER_BIT)
+        #copy current fbo:
+        glBlitFramebuffer(0, 0, bw, bh,
+                          0, 0, bw, bh,
+                          GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
         for x,y,w,h,ydelta in scrolls:
             assert ydelta!=0 and abs(ydelta)<bh, "invalid ydelta value: %i" % ydelta

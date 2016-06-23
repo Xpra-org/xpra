@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
+from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import csv
 
@@ -44,6 +45,11 @@ class PixmapBacking(GTK2WindowBacking):
         self.paint_scaling = 1, 1
         GTK2WindowBacking.__init__(self, *args)
 
+    def get_encoding_properties(self):
+        props = GTK2WindowBacking.get_encoding_properties(self)
+        props["encoding.scrolling"] = True
+        return props
+
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
 
@@ -51,8 +57,12 @@ class PixmapBacking(GTK2WindowBacking):
         #use window size as backing size:
         self.render_size = ww, wh
         self.size = bw, bh
-        w, h = bw, bh
         old_backing = self._backing
+        self.do_init_new_backing_instance()
+        self.copy_backing(old_backing)
+
+    def do_init_new_backing_instance(self):
+        w, h = self.size
         self._backing = None
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
         if w==0 or h==0:
@@ -71,6 +81,9 @@ class PixmapBacking(GTK2WindowBacking):
                 self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         else:
             self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
+
+    def copy_backing(self, old_backing):
+        w, h = self.size
         cr = self._backing.cairo_create()
         cr.set_source_rgb(1, 1, 1)
         if old_backing is not None:
@@ -97,6 +110,34 @@ class PixmapBacking(GTK2WindowBacking):
         else:
             cr.rectangle(0, 0, w, h)
             cr.fill()
+
+    def paint_scroll(self, x, y, width, height, img_data, options, callbacks):
+        self.idle_add(self.do_paint_scroll, x, y, width, height, img_data, options, callbacks)
+
+    def do_paint_scroll(self, x, y, w, h, scrolls, options, callbacks):
+        log.warn("paint_scroll%s", (x, y, w, h, scrolls, options, callbacks))
+        old_backing = self._backing
+        assert old_backing
+        self.do_init_new_backing_instance()
+        assert old_backing.get_size()==self.size
+        bw, bh = self.size
+        cr = self._backing.cairo_create()
+        #first copy everything:
+        cr.rectangle(0, 0, bw, bh)
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_pixmap(old_backing, 0, 0)
+        cr.paint()
+        #then the regions that moved:
+        for sx,sy,sw,sh,ydelta in scrolls:
+            #assert y+ydelta>=0 and y+h+ydelta<=h
+            cr.save()
+            #cr = self._backing.cairo_create()
+            cr.translate(0, ydelta)
+            cr.set_source_pixmap(old_backing, 0, 0)
+            cr.rectangle(sx, sy-ydelta, sw, sh)
+            cr.paint()
+            cr.restore()
+        fire_paint_callbacks(callbacks, True)
 
     def bgr_to_rgb(self, img_data, width, height, rowstride, rgb_format, target_format):
         if not rgb_format.startswith("BGR"):

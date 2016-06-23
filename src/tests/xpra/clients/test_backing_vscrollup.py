@@ -12,20 +12,19 @@ log = Logger()
 import glib
 
 from xpra.util import typedict
-from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
 from tests.xpra.clients.fake_gtk_client import FakeGTKClient, gtk_main
 from xpra.codecs.loader import load_codecs
 
 load_codecs(encoders=False, decoders=True, csc=False)
 
 
-class GLWindowAnim(object):
+class WindowAnim(object):
 
-    def __init__(self, client, wid, W=630, H=480):
+    def __init__(self, window_class, client, wid, W=630, H=480):
         self.wid = wid
         self.W = W
         self.H = H
-        self.window = GLClientWindow(client, None, 1, 10, 10, W, H, W, H, typedict({}), False, typedict({}), 0, None)
+        self.window = window_class(client, None, 1, 10, 10, W, H, W, H, typedict({}), False, typedict({}), 0, None)
         self.window.show()
         self.paint_rect(0, 0, W, H, chr(255)*4*W*H)
         self.paint_rect(W//2-16, H//2-16, 32, 32, chr(0)*4*32*32)
@@ -64,8 +63,20 @@ def main():
     ydelta = argint(3, 1)
     client = FakeGTKClient()
     print("%i windows, delay=%ims, ydelta=%i" % (N, delay, ydelta))
+    window_classes = []
+    try:
+        from xpra.client.gtk2.border_client_window import BorderClientWindow
+        window_classes.append(BorderClientWindow)
+    except:
+        pass
+    try:
+        from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+        window_classes.append(GLClientWindow)
+    except:
+        pass
     for wid in range(N):
-        anim = GLWindowAnim(client, wid)
+        window_class = window_classes[wid % len(window_classes)]
+        anim = WindowAnim(window_class, client, wid)
         glib.idle_add(anim.scrolluponce, ydelta)
         glib.timeout_add(delay, anim.scrollup, ydelta)
     try:

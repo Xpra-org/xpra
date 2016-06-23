@@ -32,5 +32,9 @@ class FakeGTKClient(FakeClient):
     def window_close_event(self, *args):
         gtk.main_quit()
 
+    def server_ok(self):
+        return True
+
+
 def gtk_main():
     gtk.main()
