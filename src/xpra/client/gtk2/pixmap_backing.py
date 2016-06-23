@@ -115,27 +115,9 @@ class PixmapBacking(GTK2WindowBacking):
         self.idle_add(self.do_paint_scroll, x, y, width, height, img_data, options, callbacks)
 
     def do_paint_scroll(self, x, y, w, h, scrolls, options, callbacks):
-        log.warn("paint_scroll%s", (x, y, w, h, scrolls, options, callbacks))
-        old_backing = self._backing
-        assert old_backing
-        self.do_init_new_backing_instance()
-        assert old_backing.get_size()==self.size
-        bw, bh = self.size
-        cr = self._backing.cairo_create()
-        #first copy everything:
-        cr.rectangle(0, 0, bw, bh)
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.set_source_pixmap(old_backing, 0, 0)
-        cr.paint()
-        #then the regions that moved:
+        gc = self._backing.new_gc()
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
-            #assert y+ydelta>=0 and y+h+ydelta<=h
-            cr = self._backing.cairo_create()
-            #cr = self._backing.cairo_create()
-            cr.translate(xdelta, ydelta)
-            cr.set_source_pixmap(old_backing, 0, 0)
-            cr.rectangle(sx, sy, sw, sh)
-            cr.paint()
+            self._backing.draw_drawable(gc, self._backing, sx, sy, sx+xdelta, sy+ydelta, sw, sh)
         fire_paint_callbacks(callbacks, True)
 
     def bgr_to_rgb(self, img_data, width, height, rowstride, rgb_format, target_format):
