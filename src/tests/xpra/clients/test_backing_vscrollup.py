@@ -27,28 +27,38 @@ class WindowAnim(object):
         self.paint_rect(0, 0, W, H, chr(255)*4*W*H)
         self.paint_rect(W//2-16, H//2-16, 32, 32, chr(0)*4*32*32)
         self.animate = animate
+        self.damage = False
         client.handle_key_action = self.handle_key_action
 
     def handle_key_action(self, window, event):
         log.warn("handle_key_action(%s, %s)", window, event)
         if not event.pressed:
             self.animate = not self.animate
+            if event.keyname in ("d", "D"):
+                self.damage = not self.damage
 
     def scrollup(self, ydelta=1):
         if not self.animate:
             return True
-        print("scrollup(%s)" % ydelta)
+        print("scrollup(%s) damage=%s" % (ydelta, self.damage))
         W, H = self.window.get_size()
         scrolls = (0, ydelta, W, H-ydelta, 0, -ydelta),
         self.window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({"flush" : 0}), [])
         dots = []
+        v = int(time.time()*10000)
         for _ in range(W*ydelta):
             CB = 0xFF << ((self.wid % 4) * 8)
-            v = int(time.time()*10000)
             c = struct.pack("@I", v & 0xFFFFFFFF & ~CB)
             dots.append(c)
         img_data = b"".join(dots)
         self.paint_rect(0, H-ydelta, W, ydelta, img_data)
+        if self.damage:
+            c = struct.pack("@I", 0xFFFFFFFF)
+            img_data = c*10*16
+            self.paint_rect(W-10, H//2-8-16, 10, 16, img_data)
+            c = struct.pack("@I", 0x000000FF)
+            img_data = c*10*16
+            self.paint_rect(W-10, H//2-8, 10, 16, img_data)
         return True
 
     def scrolluponce(self, ydelta):

@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger()
 
+
 class FakeClient(object):
     def __init__(self):
         self.supports_mmap = False
@@ -24,39 +25,44 @@ class FakeClient(object):
         self.window_configure_pointer = True
         self.xscale = 1
         self.yscale = 1
+        self.log_events = True
+
+    def log(self, *args):
+        if self.log_events:
+            log.info(*args)
 
     def send_refresh(self, *args):
-        log.info("send_refresh(%s)", args)
+        self.log("send_refresh(%s)", args)
 
     def send_refresh_all(self, *args):
-        log.info("send_refresh_all(%s)", args)
+        self.log("send_refresh_all(%s)", args)
 
     def send(self, *args):
-        log.info("send(%s)", args)
+        self.log("send(%s)", args)
 
     def send_positional(self, *args):
-        log.info("send_positional(%s)", args)
+        self.log("send_positional(%s)", args)
 
     def update_focus(self, *args):
-        log.info("update_focus(%s)", args)
+        self.log("update_focus(%s)", args)
 
     def quit(self, *args):
-        log.info("quit(%s)", args)
+        self.log("quit(%s)", args)
 
     def handle_key_action(self, *args):
-        log.info("handle_key_action(%s)", args)
+        self.log("handle_key_action(%s)", args)
 
     def send_mouse_position(self, *args):
-        log.info("send_mouse_position(%s)", args)
+        self.log("send_mouse_position(%s)", args)
 
     def send_button(self, *args):
-        log.info("send_button%s", args)
+        self.log("send_button%s", args)
 
     def send_configure_event(self, skip_geometry):
-        log.info("send_configure_event(%s)", skip_geometry)
+        self.log("send_configure_event(%s)", skip_geometry)
 
     def window_close_event(self, *args):
-        log.info("window_close_event%s", args)
+        self.log("window_close_event%s", args)
                    
     def mask_to_names(self, *args):
         return []
