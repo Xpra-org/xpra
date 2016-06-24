@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,14 +20,23 @@ load_codecs(encoders=False, decoders=True, csc=False)
 
 class WindowAnim(object):
 
-    def __init__(self, window_class, client, wid, W=630, H=480):
+    def __init__(self, window_class, client, wid, W=630, H=480, animate=True):
         self.wid = wid
         self.window = window_class(client, None, wid, 10, 10, W, H, W, H, typedict({}), False, typedict({}), 0, None)
         self.window.show()
         self.paint_rect(0, 0, W, H, chr(255)*4*W*H)
         self.paint_rect(W//2-16, H//2-16, 32, 32, chr(0)*4*32*32)
+        self.animate = animate
+        client.handle_key_action = self.handle_key_action
+
+    def handle_key_action(self, window, event):
+        log.warn("handle_key_action(%s, %s)", window, event)
+        if not event.pressed:
+            self.animate = not self.animate
 
     def scrollup(self, ydelta=1):
+        if not self.animate:
+            return True
         print("scrollup(%s)" % ydelta)
         W, H = self.window.get_size()
         scrolls = (0, ydelta, W, H-ydelta, 0, -ydelta),
@@ -60,6 +69,7 @@ def main():
     N = argint(1, 1)        #number of windows
     delay = argint(2, 20)
     ydelta = argint(3, 1)
+    animate = argint(4, 1)
     client = FakeGTKClient()
     print("%i windows, delay=%ims, ydelta=%i" % (N, delay, ydelta))
     window_classes = []
@@ -75,7 +85,7 @@ def main():
         pass
     for wid in range(N):
         window_class = window_classes[wid % len(window_classes)]
-        anim = WindowAnim(window_class, client, wid)
+        anim = WindowAnim(window_class, client, wid, animate=animate)
         glib.idle_add(anim.scrolluponce, ydelta)
         glib.timeout_add(delay, anim.scrollup, ydelta)
     try:

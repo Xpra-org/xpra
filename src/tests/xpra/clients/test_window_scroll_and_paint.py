@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -43,25 +43,25 @@ class WindowAnim(object):
                                       "00be0d210000019a60e1d50000000049454e44ae426082")
         self.window.draw_region((W-x)//2, (H-x)//2, x, y, "png", img_data, W*4, 0, typedict(), [])
 
-    def paint_and_vscroll(self, ydelta=10, color=0xA0A0A0A):
-        print("paint_and_scroll(%i, %#x)" % (ydelta, color))
+    def paint_and_vscroll(self, ydelta=10):
+        print("paint_and_scroll(%i)" % (ydelta))
         W, H = self.window.get_size()
         if ydelta>0:
             #scroll down, repaint the top:
             scrolls = (0, 0, W, H-ydelta, 0, ydelta),
             self.window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({"flush" : 1}), [])
-            self.paint_crect(0, 0, W, ydelta, color << ydelta)
+            self.paint_crect(0, 0, W, ydelta, 0x80808080)
         else:
             #scroll up, repaint the bottom:
             scrolls = (0, -ydelta, W, H+ydelta, 0, ydelta),
             self.window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({"flush" : 1}), [])
-            self.paint_crect(0, H-ydelta, W, -ydelta, color >> -ydelta)
+            self.paint_crect(0, H-ydelta, W, -ydelta, 0xA0008020)
 
     def split_vscroll(self, i=1):
         W, H = self.window.get_size()
         scrolls = [
-                   (0,      i,      W,      H//2-i,     0,  -i),
                    (0,      H//2,   W,      H//2-i,     0,  i),
+                   (0,      i,      W,      H//2-i,     0,  -i),
                    ]
         self.window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({}), [])
     
@@ -72,7 +72,8 @@ def main():
     try:
         from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
         window_class = GLClientWindow
-    except:
+    except Exception as e:
+        print("no opengl window: %s" % e)
         from xpra.client.gtk2.border_client_window import BorderClientWindow
         window_class = BorderClientWindow
     client = FakeGTKClient()
@@ -81,9 +82,9 @@ def main():
     for i in range(4):
         glib.timeout_add(500, window.paint_crect,               W//4*i + W//8, 100, 32, 32, 0x30*i)
     for i in range(50):
-        glib.timeout_add(1000+i*20, window.paint_crect,         int(W//3+math.sin(i/10.0)*128), int(H//2-32+math.cos(i/10.0)*64))
+        glib.timeout_add(1000+i*20, window.paint_crect,         int(W//3+math.sin(i/10.0)*128), int(H//2-32+math.cos(i/10.0)*64), 32, 32, 0xA0008000+i*5)
         glib.timeout_add(1000+i*20, window.paint_and_vscroll,   -1)
-        glib.timeout_add(2000+i*20, window.paint_crect,         int(W//3*2-math.sin(i/10.0)*128), int(H//2-16-math.cos(i/10.0)*64), 32, 32)
+        glib.timeout_add(2000+i*20, window.paint_crect,         int(W//3*2-math.sin(i/10.0)*128), int(H//2-16-math.cos(i/10.0)*64), 32, 32, 0x00F020FF-i*5)
         glib.timeout_add(2000+i*20, window.paint_and_vscroll,   +1)
     for i in range(200):
         glib.timeout_add(4000+i*20, window.split_vscroll,       max(1, i//50))
