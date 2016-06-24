@@ -29,6 +29,7 @@ _DEFAULT_BOX_COLORS = {
               "h265"    : "khaki",
               "vp9"     : "lavender",
               "mpeg4"   : "black",
+              "scroll"  : "brown",
               }
 
 def get_fcolor(encoding):
@@ -461,7 +462,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         fire_paint_callbacks(callbacks, True)
 
     def do_scroll_paints(self, scrolls, flush=0):
-        log.warn("do_scroll_paints%s", (scrolls, flush))
+        log("do_scroll_paints%s", (scrolls, flush))
         bw, bh = self.size
         self.set_rgb_paint_state()
         #paste from offscreen to tmp with delta offset:
@@ -492,6 +493,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
                               x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
+            glFlush()
 
         #now swap references to tmp and offscreen so tmp becomes the new offscreen:
         tmp = self.offscreen_fbo
@@ -508,6 +510,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
 
         self.unset_rgb_paint_state()
+        self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
         self.present_fbo(0, 0, bw, bh, flush)
 
     def set_rgb_paint_state(self):
@@ -550,6 +553,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.gl_marker("Presenting FBO on screen")
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
         if self._alpha_enabled:
             # transparent background:
