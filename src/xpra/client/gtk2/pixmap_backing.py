@@ -45,11 +45,6 @@ class PixmapBacking(GTK2WindowBacking):
         self.paint_scaling = 1, 1
         GTK2WindowBacking.__init__(self, *args)
 
-    def get_encoding_properties(self):
-        props = GTK2WindowBacking.get_encoding_properties(self)
-        props["encoding.scrolling"] = True
-        return props
-
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
 
@@ -112,6 +107,7 @@ class PixmapBacking(GTK2WindowBacking):
             cr.fill()
 
     def paint_scroll(self, x, y, width, height, img_data, options, callbacks):
+        #Warning: unused as this causes strange visual corruption
         self.idle_add(self.do_paint_scroll, x, y, width, height, img_data, options, callbacks)
 
     def do_paint_scroll(self, x, y, w, h, scrolls, options, callbacks):
