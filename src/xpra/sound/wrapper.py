@@ -144,6 +144,8 @@ def run_sound(mode, error_cb, options, args):
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
             from xpra.sound.gstreamer_util import gst_version, pygst_version
+            import struct
+            bits = struct.calcsize("P")*8
             d = {
                  "encoders"         : can_encode(),
                  "decoders"         : can_decode(),
@@ -154,6 +156,7 @@ def run_sound(mode, error_cb, options, args):
                  "pygst.version"    : pygst_version,
                  "plugins"          : plugins,
                  "python.version"   : sys.version_info[:3],
+                 "python.bits"      : bits,
                 }
             for k,v in d.items():
                 print("%s=%s" % (k, ",".join(str(x) for x in v)))

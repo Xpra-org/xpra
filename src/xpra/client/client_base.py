@@ -336,6 +336,8 @@ class XpraClientBase(FileTransferHandler):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
+        import struct
+        bits = struct.calcsize("P") * 8
         capabilities.update({
                 "version"               : local_version,
                 "encoding.generic"      : True,
@@ -346,6 +348,7 @@ class XpraClientBase(FileTransferHandler):
                 "name"                  : get_name(),
                 "client_type"           : self.client_type(),
                 "python.version"        : sys.version_info[:3],
+                "python.bits"           : bits,
                 "compression_level"     : self.compression_level,
                 "argv"                  : sys.argv,
                 })

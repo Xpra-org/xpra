@@ -432,7 +432,9 @@ class ServerCore(object):
             rev_info = "-r%s" % REVISION
         except:
             rev_info = ""
-        log.info("xpra %s version %s%s", self.get_server_mode(), local_version, rev_info)
+        import struct
+        bits = struct.calcsize("P") * 8
+        log.info("xpra %s version %s%s %i-bit", self.get_server_mode(), local_version, rev_info, bits)
         try:
             pinfo = get_platform_info()
             osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))

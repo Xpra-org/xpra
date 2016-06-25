@@ -747,7 +747,11 @@ class ServerSource(FileTransferHandler):
         revinfo = ""
         if self.client_revision:
             revinfo="-r%s" % self.client_revision
-        log.info("%s%s client version %s%s", std(self.client_type), pinfo, std(self.client_version), std(revinfo))
+        bits = c.intget("python.bits")
+        bitsstr = ""
+        if bits:
+            bitsstr = " %i-bit" % bits
+        log.info("%s%s client version %s%s%s", std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr)
         msg = ""
         if self.hostname:
             msg += " connected from '%s'" % std(self.hostname)

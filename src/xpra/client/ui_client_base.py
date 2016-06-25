@@ -135,7 +135,9 @@ class UIXpraClient(XpraClientBase):
             rev_info = "-r%s" % REVISION
         except:
             rev_info = ""
-        log.info("Xpra %s client version %s%s", self.client_toolkit(), XPRA_VERSION, rev_info)
+        import struct
+        bits = struct.calcsize("P") * 8
+        log.info("Xpra %s client version %s%s %i-bit", self.client_toolkit(), XPRA_VERSION, rev_info, bits)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
@@ -370,7 +372,8 @@ class UIXpraClient(XpraClientBase):
                     val = self.sound_properties.get(k)
                     assert val, "%s not found in sound properties" % k
                     return ".".join(bytestostr(x) for x in val[:2])
-                log.info("GStreamer version %s for Python %s", vinfo(b"gst.version"), vinfo(b"python.version"))
+                bits = self.sound_properties.intget(b"python.bits", 32)
+                log.info("GStreamer version %s for Python %s %s-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
             except Exception as e:
                 soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")
@@ -1800,7 +1803,8 @@ class UIXpraClient(XpraClientBase):
         if self._remote_revision:
             r += "-r%s" % self._remote_revision
         mode = c.strget("server.mode", "server")
-        log.info("Xpra %s server version %s", mode, std(r))
+        bits = c.intget("python.bits", 32)
+        log.info("Xpra %s server version %s %i-bit", mode, std(r), bits)
         if i:
             log.info(" running on %s", std(i))
         if c.boolget("proxy"):

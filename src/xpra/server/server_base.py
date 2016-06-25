@@ -532,7 +532,8 @@ class ServerBase(ServerCore):
                     val = self.sound_properties.get(k)
                     assert val, "%s not found in sound properties" % k
                     return ".".join(val[:2])
-                log.info("GStreamer version %s for Python %s", vinfo(b"gst.version"), vinfo(b"python.version"))
+                bits = self.sound_properties.intget(b"python.bits", 32)
+                log.info("GStreamer version %s for Python %s %i-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
             except Exception as e:
                 soundlog.error("Error: failed to query sound subsystem:")
                 soundlog.error(" %s", e)
