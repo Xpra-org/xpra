@@ -12,6 +12,7 @@ log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
+SCROLL_ENCODING = os.environ.get("XPRA_SCROLL_ENCODING", "0")=="1"
 
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 
@@ -263,7 +264,8 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def get_encoding_properties(self):
         props = GTKWindowBacking.get_encoding_properties(self)
-        props["encoding.scrolling"] = True
+        if SCROLL_ENCODING:
+            props["encoding.scrolling"] = True
         return props
 
 
