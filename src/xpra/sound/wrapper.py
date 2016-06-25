@@ -152,7 +152,7 @@ def run_sound(mode, error_cb, options, args):
                  "sources"          : sources,
                  "muxers"           : get_muxers(),
                  "demuxers"         : get_demuxers(),
-                 "gst.version"      : gst_version,
+                 "gst.version"      : [int(x) for x in gst_version],
                  "pygst.version"    : pygst_version,
                  "plugins"          : plugins,
                  "python.version"   : sys.version_info[:3],
