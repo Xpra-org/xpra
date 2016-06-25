@@ -159,7 +159,9 @@ def run_sound(mode, error_cb, options, args):
                  "python.bits"      : bits,
                 }
             for k,v in d.items():
-                print("%s=%s" % (k, ",".join(str(x) for x in v)))
+                if type(v) in (list, tuple):
+                    v = ",".join(str(x) for x in v)
+                print("%s=%s" % (k, v))
             if BUNDLE_METADATA:
                 print("bundle-metadata=True")
             return 0
