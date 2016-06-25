@@ -499,12 +499,12 @@ def detect_leaks(log, detailed=[]):
 def repr_ellipsized(obj, limit=100):
     if (isinstance(obj, str) or isinstance(obj, unicode)) and len(obj) > limit:
         try:
-            s = repr(obj[:limit])
-            if len(obj)>limit:
-                s += "..."
-            return s
+            s = repr(obj)
         except:
-            return binascii.hexlify(obj[:limit])
+            s = binascii.hexlify(obj)
+        if len(s)<=limit or limit<=6:
+            return s
+        return s[:limit//2-2]+" .. "+s[-limit//2-2:]
     else:
         return repr(obj)
 
