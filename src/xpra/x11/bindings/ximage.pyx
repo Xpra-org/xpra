@@ -30,10 +30,10 @@ cdef inline int MIN(int a, int b):
 ###################################
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "string.h":
-    void * memcpy( void * destination, void * source, size_t num )
+    void *memcpy(void * destination, void * source, size_t num)
 
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
@@ -198,20 +198,12 @@ cdef const char *RGB = "RGB"
 cdef const char *RGBA = "RGBA"
 cdef const char *RGBX = "RGBX"
 
-cdef const char *RGB_FORMATS[8]
-RGB_FORMATS[0] = XRGB
-RGB_FORMATS[1] = BGRX
-RGB_FORMATS[2] = ARGB
-RGB_FORMATS[3] = BGRA
-RGB_FORMATS[4] = RGB
-RGB_FORMATS[5] = RGBA
-RGB_FORMATS[6] = RGBX
-RGB_FORMATS[7] = NULL
+RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX]
 
 
 cdef int ximage_counter = 0
 
-cdef class XImageWrapper:
+cdef class XImageWrapper(object):
     """
         Presents X11 image pixels as in ImageWrapper
     """
@@ -225,22 +217,25 @@ cdef class XImageWrapper:
     cdef int rowstride
     cdef int planes
     cdef int thread_safe
-    cdef const char *pixel_format
-    cdef char *pixels
+    cdef object pixel_format
+    cdef void *pixels
     cdef object del_callback
     cdef uint64_t timestamp
 
-    def __cinit__(self, int x, int y, int width, int height):
+    def __cinit__(self, int x, int y, int width, int height, pixels=0, pixel_format="", depth=24, rowstride=0, planes=0, thread_safe=False):
         self.image = NULL
         self.pixels = NULL
         self.x = x
         self.y = y
         self.width = width
         self.height = height
-        self.pixel_format = ""
-        self.rowstride = 0
-        self.planes = 0
-        self.thread_safe = 0
+        self.depth = depth
+        self.pixel_format = pixel_format
+        self.rowstride = rowstride
+        self.planes = planes
+        self.thread_safe = thread_safe
+        cdef unsigned long pixels_ptr = pixels 
+        self.pixels = <void *> pixels_ptr
         self.timestamp = int(time.time()*1000)
 
     cdef set_image(self, XImage* image):
@@ -329,12 +324,8 @@ cdef class XImageWrapper:
         self.rowstride = rowstride
 
     def set_pixel_format(self, pixel_format):
-        assert pixel_format is not None
-        cdef int i =0
-        while RGB_FORMATS[i]!=NULL and RGB_FORMATS[i]!=pixel_format:
-            i +=1
-        assert RGB_FORMATS[i]!=NULL, "invalid pixel format: %s" % pixel_format
-        self.pixel_format = RGB_FORMATS[i]
+        assert pixel_format is not None and pixel_format in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
+        self.pixel_format = pixel_format
 
     def set_pixels(self, pixels):
         """ overrides the context of the image with the given pixels buffer """
