@@ -1618,10 +1618,8 @@ class WindowSource(object):
         self.refresh_regions = []
         if self.can_refresh() and regions and ret>0:
             now = time.time()
-            refreshlog("timer_full_refresh() after %ims, regions=%s", 1000.0*(time.time()-ret), regions)
-            #choose an encoding:
             options = self.get_refresh_options()
-            refreshlog.error("timer_full_refresh() auto_refresh_encodings=%s, options=%s", self.auto_refresh_encodings, options)
+            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s", 1000.0*(time.time()-ret), self.auto_refresh_encodings, options, regions)
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=self.get_refresh_exclude(), get_best_encoding=self.get_refresh_encoding)
         return False
 
