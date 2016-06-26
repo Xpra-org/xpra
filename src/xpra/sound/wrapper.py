@@ -387,6 +387,11 @@ def query_sound():
         kv = x.split("=", 1)
         if len(kv)==2:
             #ie: kv = ["decoders", "mp3,vorbis"]
-            d[kv[0].encode()] = [x.encode() for x in kv[1].split(",")]     #d["decoders"] = ["mp3", "vorbis"]
+            k,v = kv
+            #fugly warning: all the other values are lists.. but this one is not:
+            if k!=b"python.bits":
+                v = [x.encode() for x in v.split(",")]
+            #d["decoders"] = ["mp3", "vorbis"]
+            d[k.encode()] = v
     log("query_sound()=%s", d)
     return d
