@@ -298,6 +298,26 @@ cdef class XImageWrapper(object):
             return None
         return memory_as_pybuffer(pix_ptr, self.get_size(), False)
 
+    def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
+        assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)
+        if x+w>self.width:
+            raise Exception("invalid sub-image width: %i+%i greater than image width %i" % (x, w, self.width))
+        if y+h>self.height:
+            raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
+        cdef void *src = self.get_pixels_ptr()
+        if src==NULL:
+            raise Exception("source image does not have pixels!")
+        cdef void *dst
+        if posix_memalign(<void **> &dst, 64, h*w*4+64):
+            raise Exception("posix_memalign failed!")
+        #cache into local var:
+        cdef int stride = self.rowstride
+        cdef unsigned int i
+        for i in range(h):
+            memcpy(dst+i*w*4, src + x*4 + (y+i)*stride, w*4)
+        #memset(dst + h*w*4, 0, 64)
+        return XImageWrapper(self.x+x, self.y+y, w, h, <unsigned long> dst, self.pixel_format, self.depth, w*4, 0, True)
+
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
             return self.pixels
@@ -391,6 +411,7 @@ cdef class XImageWrapper(object):
 
     def restride(self, const unsigned int rowstride):
         #NOTE: this must be called from the UI thread!
+        start = time.time()
         cdef unsigned int newsize = rowstride*self.height                #desirable size we could have
         cdef unsigned int size = self.rowstride*self.height
         #is it worth re-striding to save space:
@@ -408,12 +429,13 @@ cdef class XImageWrapper(object):
         #Note: we don't zero the buffer,
         #so if the newstride is bigger than oldstride, you get garbage..
         cdef unsigned int cpy_size = MIN(rowstride, oldstride)
-        for ry in range(self.height):
-            memcpy(to, img_buf, rowstride)
-            to += rowstride
-            img_buf += oldstride
-        log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)",
-            rowstride, self.pixel_format, 100-100*newsize/size, self.rowstride, size, rowstride, newsize)
+        if oldstride==rowstride:
+            memcpy(to, img_buf, size)
+        else:
+            for ry in range(self.height):
+                memcpy(to, img_buf, rowstride)
+                to += rowstride
+                img_buf += oldstride
         #we can now free the pixels buffer if present
         #(but not the ximage - this is not running in the UI thread!)
         self.free_pixels()
@@ -423,6 +445,8 @@ cdef class XImageWrapper(object):
         #without any X11 image to free, this is now thread safe:
         if self.image==NULL:
             self.thread_safe = 1
+        #log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes) took %.1fms",
+        #    rowstride, self.pixel_format, 100-100*newsize/size, oldstride, size, rowstride, newsize, (time.time()-start)*1000)
         return True
 
 

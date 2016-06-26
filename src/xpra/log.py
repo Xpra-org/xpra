@@ -175,6 +175,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("encoding"     , "Server side encoding selection and compression"),
                 ("scaling"      , "Picture scaling"),
                 ("delta"        , "Delta pre-compression"),
+                ("scroll"       , "Scrolling detection and compression"),
                 ("xor"          , "XOR delta pre-compression"),
                 ("subregion"    , "Video subregion processing"),
                 ("regiondetect" , "Video region detection"),

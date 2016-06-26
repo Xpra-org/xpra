@@ -1391,27 +1391,32 @@ class WindowSource(object):
         self.pixel_format = image.get_pixel_format()
 
         now = time.time()
-        log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms",
-                self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
-        av_sync = options.get("av-sync", False)
-        if not av_sync:
-            self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
-        else:
-            #schedule encode via queue, after freezing the pixels:
-            if not image.freeze():
+        if self.must_freeze(coding, options):
+            newstride = image.get_width()*4
+            if not image.restride(newstride):
                 avsynclog("Warning: failed to freeze image pixels for:")
                 avsynclog(" %s", image)
-                self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
-                return
+        av_delay = self.get_frame_encode_delay(options)
+        log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
+                self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
+        if av_delay<0:
+            self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
+        else:
             self.encode_queue.append(item)
-            l = len(self.encode_queue)
-            if l>=self.encode_queue_max_size:
-                av_delay = 0        #we must free some space!
-            else:
-                av_delay = self.av_sync_delay*int(av_sync)
-            avsynclog("scheduling encode queue iteration in %ims, encode queue size=%i (max=%i)", av_delay, l, self.encode_queue_max_size)
             self.timeout_add(av_delay, self.call_in_encode_thread, True, self.encode_from_queue)
+
+    def must_freeze(self, coding, options):
+        return options.get("av-sync", False)
+
+    def get_frame_encode_delay(self, options):
+        if options.get("av-sync", False):
+            return -1
+        l = len(self.encode_queue)
+        if l>=self.encode_queue_max_size:
+            #we must free some space!
+            return 0
+        return self.av_sync_delay
 
     def encode_from_queue(self):
         #note: we use a queue here to ensure we preserve the order
@@ -1882,7 +1887,7 @@ class WindowSource(object):
         if self.supports_flush and flush is not None:
             client_options["flush"] = flush
         end = time.time()
-        compresslog.info("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
+        compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
                  (end-start)*1000.0, outw, outh, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options)

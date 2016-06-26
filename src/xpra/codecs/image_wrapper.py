@@ -143,6 +143,22 @@ class ImageWrapper(object):
             #could be a race since this can run threaded
             self.free()
 
+    def get_sub_image(self, x, y, w, h):
+        #raise NotImplementedError("no sub-images for %s" % type(self))
+        assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)
+        if x+w>self.width:
+            raise Exception("invalid sub-image width: %i+%i greater than image width %i" % (x, w, self.width))
+        if y+h>self.height:
+            raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
+        assert self.planes==0, "cannot sub-divide planar images!"
+        lines = []
+        pixels = self.pixels
+        stride = self.rowstride
+        for i in range(h):
+            pos = (y+i)*stride+x*4
+            lines.append(pixels[pos:pos+w*4])
+        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), w*4)
+
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)
         self.free()

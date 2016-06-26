@@ -8,11 +8,12 @@ import os
 import time
 import operator
 
-from xpra.net.compression import Compressed
+from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import get_subsampling_divs, \
                                         TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
 from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.window.region import merge_all            #@UnresolvedImport
+from xpra.server.window.motion import match_distance, consecutive_lines, calculate_distances, CRC_Image #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs
@@ -25,6 +26,7 @@ scalinglog = Logger("scaling")
 sublog = Logger("subregion")
 videolog = Logger("video")
 avsynclog = Logger("av-sync")
+scrolllog = Logger("scroll")
 
 
 def envint(name, d):
@@ -46,6 +48,7 @@ SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED",
 VIDEO_SUBREGION = os.environ.get("XPRA_VIDEO_SUBREGION", "1")=="1"
 B_FRAMES = os.environ.get("XPRA_B_FRAMES", "1")=="1"
 VIDEO_SKIP_EDGE = os.environ.get("XPRA_VIDEO_SKIP_EDGE", "0")=="1"
+SCROLL_ENCODING = os.environ.get("XPRA_SCROLL_ENCODING", "1")=="1"
 
 
 class WindowVideoSource(WindowSource):
@@ -56,6 +59,8 @@ class WindowVideoSource(WindowSource):
     def __init__(self, *args):
         #this will call init_vars():
         WindowSource.__init__(self, *args)
+        self.scroll_encoding = SCROLL_ENCODING
+        self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling")
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
         self.supports_video_subregion = VIDEO_SUBREGION
@@ -109,6 +114,7 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = []
         self.edge_encoding = None
         self.b_frame_flush_timer = None
+        self.scroll_data = None
 
     def set_auto_refresh_delay(self, d):
         WindowSource.set_auto_refresh_delay(self, d)
@@ -177,7 +183,10 @@ class WindowVideoSource(WindowSource):
                                                  "non-video"    : self.non_video_encodings,
                                                  "edge"         : self.edge_encoding or "",
                                                  })
-        einfo = {"pipeline_param" : self.get_pipeline_info()}
+        einfo = {
+                 "pipeline_param" : self.get_pipeline_info(),
+                 "scrolling"      : self.supports_scrolling,
+                 }
         if self._last_pipeline_check>0:
             einfo["pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
@@ -288,6 +297,7 @@ class WindowVideoSource(WindowSource):
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
+        self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling)
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
         self.scaling_control = max(0, min(100, properties.intget("scaling.control", self.scaling_control)))
@@ -441,6 +451,7 @@ class WindowVideoSource(WindowSource):
 
     def cancel_damage(self):
         self.video_subregion.cancel_refresh_timer()
+        self.scroll_data = None
         WindowSource.cancel_damage(self)
         #we must clean the video encoder to ensure
         #we will resend a key frame because we may be missing a frame
@@ -455,6 +466,7 @@ class WindowVideoSource(WindowSource):
         else:
             #keep the region, but cancel the refresh:
             self.video_subregion.cancel_refresh_timer()
+        self.scroll_data = None
         #refresh the whole window in one go:
         damage_options["novideo"] = True
         WindowSource.full_quality_refresh(self, damage_options)
@@ -659,8 +671,12 @@ class WindowVideoSource(WindowSource):
                 WindowSource.process_damage_region(self, damage_time, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1+int(dh>0))
             if dh>0:
                 WindowSource.process_damage_region(self, damage_time, x, y+h-dh, x+w, dh, self.edge_encoding, options, flush=1)
-        WindowSource.process_damage_region(self, damage_time, x, y, w-dw, h-dh, coding, options, flush=flush)
+        #use the unmasked dimensions to prevent us restriding for nothing:
+        WindowSource.process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=flush)
 
+
+    def must_freeze(self, coding, options):
+        return WindowSource.must_freeze(self, coding, options) or coding in self.video_encodings
 
     def must_encode_full_frame(self, encoding):
         return self.full_frames_only or (encoding in self.video_encodings) or not self.non_video_encodings
@@ -1295,6 +1311,89 @@ class WindowVideoSource(WindowSource):
         return  True
 
 
+    def encode_scrolling(self, last_image, image, distances, old_csums, csums, options):
+        tstart = time.time()
+        scrolllog("encode_scrolling(%s, %s, {..}, [], [], %s)", last_image, image, options)
+        x, y, w, h = image.get_geometry()[:4]
+        yscroll_values = []
+        max_scroll_regions = 50
+        #process distances with the highest score first:
+        for hits in reversed(sorted(distances.values())):
+            for scroll in (d for d,v in distances.items() if v==hits):
+                assert scroll<h
+                yscroll_values.append(scroll)
+            if len(yscroll_values)>=max_scroll_regions:
+                break
+        assert yscroll_values
+        #always add zero=no-change so we can drop those updates!
+        if 0 not in yscroll_values and 0 in distances:
+            #(but do this last so we don't end up cutting too many rectangles)
+            yscroll_values.append(0)
+        scrolllog(" will send scroll packets for yscroll=%s", yscroll_values)
+        #keep track of the lines we have handled already:
+        #(the same line may be available from multiple scroll directions)
+        handled = set()
+        scrolls = []
+        max_scrolls = 1000
+        for s in yscroll_values:
+            #find all the lines that scroll by this much:
+            slines = match_distance(old_csums, csums, s)
+            assert slines, "no lines matching distance %i" % s
+            #remove any lines we have already handled:
+            lines = [v+s for v in slines if ((v+s) not in handled and v not in handled)]
+            if not lines:
+                continue
+            #and them to the handled set so we don't try to paint them again:
+            handled = handled.union(set(lines))
+            if s==0:
+                scrolllog(" %i lines have not changed", len(lines))
+            else:
+                #things have actually moved
+                #aggregate consecutive lines into rectangles:
+                cl = consecutive_lines(lines)
+                scrolllog(" scroll groups for distance=%i : %s=%s", s, lines, cl)
+                for start,count in cl:
+                    #new rectangle
+                    scrolls.append((x, y+start-s, w, count, 0, s))
+                    if len(scrolls)>max_scrolls:
+                        break
+                if len(scrolls)>max_scrolls:
+                    break
+        non_scroll = []
+        remaining = set(range(h))-handled
+        if remaining:
+            damaged_lines = sorted(list(remaining))
+            non_scroll = consecutive_lines(damaged_lines)
+            scrolllog(" non scroll: %i packets: %s", len(non_scroll), non_scroll)
+        flush = len(non_scroll)
+        #send as scroll paints packets:
+        if scrolls:
+            client_options = options.copy()
+            if flush>0:
+                client_options["flush"] = flush
+            packet = self.make_draw_packet(x, y, w, h, "scroll", LargeStructure("scroll data", scrolls), 0, client_options)
+            self.queue_damage_packet(packet)
+        #send the rest as rectangles:
+        if non_scroll:
+            for start, count in non_scroll:
+                sub = image.get_sub_image(0, start, w, count)
+                flush -= 1
+                ret = self.video_fallback(sub, options)
+                if not ret:
+                    #cancelled?
+                    return None
+                coding, data, client_options, outw, outh, outstride, _ = ret
+                assert data
+                client_options = options.copy()
+                if flush>0:
+                    client_options["flush"] = flush
+                packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options)
+                self.queue_damage_packet(packet)
+        assert flush==0
+        tend = time.time()
+        scrolllog("scroll encoding took %ims", (tend-tstart)*1000)
+        return None
+
     def video_fallback(self, image, options):
         #find one that is not video:
         fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
@@ -1354,6 +1453,34 @@ class WindowVideoSource(WindowSource):
         if not ve:
             return video_fallback()
 
+        #check for scrolling:
+        if self.supports_scrolling:
+            try:
+                start = time.time()
+                lsd = self.scroll_data
+                pixels = image.get_pixels()
+                stride = image.get_rowstride()
+                width = image.get_width()
+                height = image.get_height()
+                csums = CRC_Image(pixels, width, height, stride)
+                self.scroll_data = (width, height, csums, image.get_sub_image(0, 0, width, height))
+                if lsd:
+                    lw, lh, lcsums, last_image = lsd
+                    if lw==width and lh==height:
+                        #same size, try to find scrolling value
+                        assert len(csums)==len(lcsums)
+                        distances = calculate_distances(csums, lcsums, 2, 500)
+                        if len(distances)>0:
+                            best = max(distances.values())
+                            scroll = distances.keys()[distances.values().index(best)]
+                            end = time.time()
+                            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, 100*best/height, height, scroll)
+                            #at least 40% of the picture was found as scroll areas:
+                            if best>=40:
+                                return self.encode_scrolling(last_image, image, distances, lcsums, csums, options)
+            except Exception:
+                scrolllog.error("Error during scrolling detection!", exc_info=True)
+
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
         height = h & self.height_mask
@@ -1381,7 +1508,7 @@ class WindowVideoSource(WindowSource):
         if delayed is not None:
             last_frame = client_options.get("frame")
             flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
-            videolog("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
+            videolog.info("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
             self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
             if data is None:
                 return None
@@ -1413,7 +1540,7 @@ class WindowVideoSource(WindowSource):
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
             self._video_encoder = None
             ve.clean()
-            self.idle_add(self.full_quality_refresh)
+            self.idle_add(self.refresh)
             return
         v = ve.flush(frame)
         if not v:
