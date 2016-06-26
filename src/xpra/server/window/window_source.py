@@ -1298,6 +1298,12 @@ class WindowSource(object):
                 if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
                     #better, so replace with merged regions:
                     regions = merged_rects
+            elif len(regions)==1:
+                #if we find one region covering almost the entire window,
+                #refresh the whole window (ie: when the video encoder mask rounded the dimensions down)
+                r = regions[0]
+                if r.x==0 and r.y==0 and abs(ww-r.width)<2 and abs(wh-r.height)<2:
+                    regions = [rectangle(0, 0, ww, wh)]
 
             #check to see if the total amount of pixels makes us use a fullscreen update instead:
             if len(regions)>1 and exclude_region is None:
