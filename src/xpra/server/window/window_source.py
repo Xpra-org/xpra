@@ -1614,17 +1614,19 @@ class WindowSource(object):
             now = time.time()
             refreshlog("timer_full_refresh() after %ims, regions=%s", 1000.0*(time.time()-ret), regions)
             #choose an encoding:
-            ww, wh = self.window.get_dimensions()
-            encoding = self.auto_refresh_encodings[0]
-            best_encoding = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
-            refresh_encodings = self.auto_refresh_encodings
-            if best_encoding in refresh_encodings:
-                encoding = best_encoding
             options = self.get_refresh_options()
-            refreshlog("timer_full_refresh() size=%s, encoding=%s, best=%s, auto_refresh_encodings=%s, refresh_encodings=%s, options=%s",
-                            (ww, wh), encoding, best_encoding, self.auto_refresh_encodings, refresh_encodings, options)
-            WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, exclude_region=self.get_refresh_exclude())
+            refreshlog.error("timer_full_refresh() auto_refresh_encodings=%s, options=%s", self.auto_refresh_encodings, options)
+            WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=self.get_refresh_exclude(), get_best_encoding=self.get_refresh_encoding)
         return False
+
+    def get_refresh_encoding(self, pixel_count, ww, wh, speed, quality, coding):
+        refresh_encodings = self.auto_refresh_encodings
+        encoding = refresh_encodings[0]
+        best_encoding = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
+        if best_encoding not in refresh_encodings:
+            best_encoding = refresh_encodings[0]
+        refreshlog("get_refresh_encoding(%i, %i, %i, %i, %i, %s)=%s", pixel_count, ww, wh, speed, quality, coding, best_encoding)
+        return best_encoding
 
     def get_refresh_exclude(self):
         #overriden in window video source to exclude the video subregion
@@ -1876,8 +1878,8 @@ class WindowSource(object):
         if self.supports_flush and flush is not None:
             client_options["flush"] = flush
         end = time.time()
-        compresslog("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
-                 (end-start)*1000.0, w, h, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
+        compresslog.info("compress: %5.1fms for %4ix%-4i pixels for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
+                 (end-start)*1000.0, outw, outh, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options)
 
