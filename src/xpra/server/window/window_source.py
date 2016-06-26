@@ -1775,7 +1775,7 @@ class WindowSource(object):
         if self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size and \
             pixel_format in self.rgb_formats:
             #this may save space (and lower the cost of xoring):
-            image.restride()
+            image.may_restride()
             #we need to copy the pixels because some encodings
             #may modify the pixel array in-place!
             dpixels = image.get_pixels()

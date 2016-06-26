@@ -96,7 +96,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     options = {"rgb_format" : pixel_format}
 
     #we may want to re-stride:
-    image.restride()
+    image.may_restride()
 
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()

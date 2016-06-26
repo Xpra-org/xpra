@@ -114,6 +114,9 @@ class ImageWrapper(object):
         #only defined for XImage wrappers:
         return 0
 
+    def may_restride(self, *args):
+        return self.restride()
+
     def restride(self, *args):
         assert not self.freed
         #not supported by the generic image wrapper:

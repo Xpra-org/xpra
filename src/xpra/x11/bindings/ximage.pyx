@@ -16,10 +16,10 @@ xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 
 
-cdef inline int roundup(int n, int m):
+cdef inline unsigned int roundup(unsigned int n, unsigned int m):
     return (n + m - 1) & ~(m - 1)
 
-cdef inline int MIN(int a, int b):
+cdef inline unsigned int MIN(unsigned int a, unsigned int b):
     if a<=b:
         return a
     return b
@@ -209,20 +209,20 @@ cdef class XImageWrapper(object):
     """
 
     cdef XImage *image                              #@DuplicatedSignature
-    cdef int x
-    cdef int y
-    cdef int width                                  #@DuplicatedSignature
-    cdef int height                                 #@DuplicatedSignature
-    cdef int depth                                  #@DuplicatedSignature
-    cdef int rowstride
-    cdef int planes
+    cdef unsigned int x
+    cdef unsigned int y
+    cdef unsigned int width                                  #@DuplicatedSignature
+    cdef unsigned int height                                 #@DuplicatedSignature
+    cdef unsigned int depth                                  #@DuplicatedSignature
+    cdef unsigned int rowstride
+    cdef unsigned int planes
     cdef int thread_safe
     cdef object pixel_format
     cdef void *pixels
     cdef object del_callback
     cdef uint64_t timestamp
 
-    def __cinit__(self, int x, int y, int width, int height, pixels=0, pixel_format="", depth=24, rowstride=0, planes=0, thread_safe=False):
+    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, thread_safe=False):
         self.image = NULL
         self.pixels = NULL
         self.x = x
@@ -374,26 +374,27 @@ cdef class XImageWrapper(object):
         #already uses a copy of the pixels
         return False
 
-    def restride(self, const int newstride=0):
+    def may_restride(self):
+        #if not given a newstride, assume it is optional and check if it is worth doing at all:
+        if self.rowstride<=8 or self.height<=2:
+            return False                                    #not worth it
+        #use a reasonable stride: rounded up to 4
+        cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
+        if newstride>=self.rowstride:
+            return False                                    #not worth it
+        cdef unsigned int newsize = newstride*self.height   #desirable size we could have
+        cdef unsigned int size = self.rowstride*self.height
+        if size-newsize<1024 or newsize*110/100>size:
+            log("may_restride() not enough savings with new stride=%i vs %i: new size=%i vs %i", newstride, self.rowstride, newsize, size)
+            return False
+        return self.restride(newstride)
+
+    def restride(self, const unsigned int rowstride):
         #NOTE: this must be called from the UI thread!
-        #passing in a non-zero value must do a restride,
-        #only the default value of 0 may or may not restride
-        cdef int rowstride = newstride
-        if newstride==0:
-            #if not given a newstride, assume it is optional and check if it is worth doing at all:
-            if self.rowstride<=8 or self.height<=2:
-                return False                                    #not worth it
-            #use a reasonable stride: rounded up to 4
-            rowstride = roundup(self.width*len(self.pixel_format), 4)
-            if rowstride>=self.rowstride:
-                return False                                    #not worth it
-        cdef int newsize = rowstride*self.height                #desirable size we could have
-        cdef int size = self.rowstride*self.height
+        cdef unsigned int newsize = rowstride*self.height                #desirable size we could have
+        cdef unsigned int size = self.rowstride*self.height
         #is it worth re-striding to save space:
         #(save at least 1KB and 10%)
-        if newstride==0 and (size-newsize<1024 or newsize*110/100>size):
-            log("restride(%s) not enough savings with stride=%s: size=%s, newsize=%s", newstride, rowstride, size, newsize)
-            return False
         #Note: we could also change the pixel format whilst we're at it
         # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
         cdef void *img_buf = self.get_pixels_ptr()
@@ -401,18 +402,18 @@ cdef class XImageWrapper(object):
         cdef void *new_buf
         if posix_memalign(<void **> &new_buf, 64, (newsize+rowstride)):
             raise Exception("posix_memalign failed!")
-        cdef int ry
+        cdef unsigned int ry
         cdef void *to = new_buf
-        cdef int oldstride = self.rowstride                     #using a local variable is faster
+        cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
         #Note: we don't zero the buffer,
         #so if the newstride is bigger than oldstride, you get garbage..
-        cdef int cpy_size = MIN(rowstride, oldstride)
+        cdef unsigned int cpy_size = MIN(rowstride, oldstride)
         for ry in range(self.height):
             memcpy(to, img_buf, rowstride)
             to += rowstride
             img_buf += oldstride
         log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes)",
-            newstride, self.pixel_format, 100-100*newsize/size, self.rowstride, size, rowstride, newsize)
+            rowstride, self.pixel_format, 100-100*newsize/size, self.rowstride, size, rowstride, newsize)
         #we can now free the pixels buffer if present
         #(but not the ximage - this is not running in the UI thread!)
         self.free_pixels()
@@ -429,16 +430,16 @@ cdef class XShmWrapper(object):
     cdef Display *display                              #@DuplicatedSignature
     cdef Visual *visual
     cdef Window window
-    cdef int width
-    cdef int height
-    cdef int depth
+    cdef unsigned int width
+    cdef unsigned int height
+    cdef unsigned int depth
     cdef XShmSegmentInfo shminfo
     cdef XImage *image
-    cdef int ref_count
+    cdef unsigned int ref_count
     cdef Bool got_image
     cdef Bool closed
 
-    cdef init(self, Display *display, Window xwindow, Visual *visual, int width, int height, int depth):
+    cdef init(self, Display *display, Window xwindow, Visual *visual, unsigned int width, unsigned int height, unsigned int depth):
         self.display = display
         self.window = xwindow
         self.visual = visual
@@ -503,7 +504,7 @@ cdef class XShmWrapper(object):
     def get_size(self):                                     #@DuplicatedSignature
         return self.width, self.height
 
-    def get_image(self, Drawable drawable, int x, int y, int w, int h):
+    def get_image(self, Drawable drawable, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
         assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"
         if self.closed:
             return None
@@ -618,11 +619,11 @@ cdef int xpixmap_counter = 0
 cdef class PixmapWrapper(object):
     cdef Display *display
     cdef Pixmap pixmap
-    cdef int width                          #@DuplicatedSignature
-    cdef int height                         #@DuplicatedSignature
+    cdef unsigned int width                          #@DuplicatedSignature
+    cdef unsigned int height                         #@DuplicatedSignature
 
     "Reference count an X Pixmap that needs explicit cleanup."
-    cdef init(self, Display *display, Pixmap pixmap, int width, int height):     #@DuplicatedSignature
+    cdef init(self, Display *display, Pixmap pixmap, unsigned int width, unsigned int height):     #@DuplicatedSignature
         self.display = display
         self.pixmap = pixmap
         self.width = width
@@ -643,7 +644,7 @@ cdef class PixmapWrapper(object):
     def get_pixmap(self):
         return self.pixmap
 
-    def get_image(self, int x, int y, int width, int height):                #@DuplicatedSignature
+    def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):                #@DuplicatedSignature
         if not self.pixmap:
             log.warn("%s.get_image%s", self, (x, y, width, height))
             return  None
@@ -674,7 +675,7 @@ cdef class PixmapWrapper(object):
 
 
 
-cdef get_image(Display * display, Pixmap pixmap, int x, int y, int width, int height):
+cdef get_image(Display * display, Pixmap pixmap, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
     cdef XImage* ximage
     ximage = XGetImage(display, pixmap, x, y, width, height, AllPlanes, ZPixmap)
     #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
