@@ -1499,9 +1499,10 @@ class WindowVideoSource(WindowSource):
                             best = max(distances.values())
                             scroll = distances.keys()[distances.values().index(best)]
                             end = time.time()
-                            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, 100*best/height, height, scroll)
+                            best_pct = int(100*best/height)
+                            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, best_pct, height, scroll)
                             #at least 40% of the picture was found as scroll areas:
-                            if best>=40:
+                            if best_pct>=40:
                                 return self.encode_scrolling(last_image, image, distances, lcsums, csums, options)
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
