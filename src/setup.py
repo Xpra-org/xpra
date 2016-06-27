@@ -2150,13 +2150,16 @@ if client_ENABLED or server_ENABLED:
                 **pkgconfig(optimize=3)))
 
 if server_ENABLED:
-    add_modules("xpra.server.stats")
+    O3_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
-                **pkgconfig()))
+                **O3_pkgconfig))
     cython_add(Extension("xpra.server.window.region",
                 ["xpra/server/window/region.pyx"],
-                **pkgconfig()))
+                **O3_pkgconfig))
+    cython_add(Extension("xpra.server.window.motion",
+                ["xpra/server/window/motion.pyx"]+membuffers_c,
+                **O3_pkgconfig))
 
 
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
