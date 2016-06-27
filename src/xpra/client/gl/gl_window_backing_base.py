@@ -12,7 +12,7 @@ log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
-SCROLL_ENCODING = os.environ.get("XPRA_SCROLL_ENCODING", "0")=="1"
+SCROLL_ENCODING = os.environ.get("XPRA_SCROLL_ENCODING", "1")=="1"
 
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 
@@ -465,55 +465,60 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def do_scroll_paints(self, scrolls, flush=0):
         log("do_scroll_paints%s", (scrolls, flush))
-        bw, bh = self.size
-        self.set_rgb_paint_state()
-        #paste from offscreen to tmp with delta offset:
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
-        glReadBuffer(GL_COLOR_ATTACHMENT0)
+        context = self.gl_context()
+        if not context:
+            log.warn("Warning: cannot paint scroll, no OpenGL context!")
+            return
+        with context:
+            bw, bh = self.size
+            self.set_rgb_paint_state()
+            #paste from offscreen to tmp with delta offset:
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
 
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
+            glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-        #copy current fbo:
-        glBlitFramebuffer(0, 0, bw, bh,
-                          0, 0, bw, bh,
-                          GL_COLOR_BUFFER_BIT, GL_NEAREST)
-
-        for x,y,w,h,xdelta,ydelta in scrolls:
-            assert abs(xdelta)<bw, "invalid xdelta value: %i" % xdelta
-            assert abs(ydelta)<bh, "invalid ydelta value: %i" % ydelta
-            assert ydelta!=0 or xdelta!=0, "scroll has no delta!"
-            assert w>0 and h>0, "scroll area is empty: %ix%i" % (w, h)
-            assert x+w<=bw and y+h<=bh, "scroll rectangle %s too big for the buffer: %s" % ((x, y, w, h), self.size)
-            assert x+xdelta>=0 and x+w+xdelta<=bw, "horizontal scroll by %i: rectangle %s overflows the backing buffer size %s" % (xdelta, (x, y, w, h), self.size)
-            assert y+ydelta>=0 and y+h+ydelta<=bh, "vertical scroll by %i: rectangle %s overflows the backing buffer size %s" % (ydelta, (x, y, w, h), self.size)
-            #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
-            glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
-                              x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
+            #copy current fbo:
+            glBlitFramebuffer(0, 0, bw, bh,
+                              0, 0, bw, bh,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
-            glFlush()
 
-        #now swap references to tmp and offscreen so tmp becomes the new offscreen:
-        tmp = self.offscreen_fbo
-        self.offscreen_fbo = self.tmp_fbo
-        self.tmp_fbo = tmp
-        tmp = self.textures[TEX_FBO]
-        self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
-        self.textures[TEX_TMP_FBO] = tmp
+            for x,y,w,h,xdelta,ydelta in scrolls:
+                assert abs(xdelta)<bw, "invalid xdelta value: %i" % xdelta
+                assert abs(ydelta)<bh, "invalid ydelta value: %i" % ydelta
+                assert ydelta!=0 or xdelta!=0, "scroll has no delta!"
+                assert w>0 and h>0, "scroll area is empty: %ix%i" % (w, h)
+                assert x+w<=bw and y+h<=bh, "scroll rectangle %s too big for the buffer: %s" % ((x, y, w, h), self.size)
+                assert x+xdelta>=0 and x+w+xdelta<=bw, "horizontal scroll by %i: rectangle %s overflows the backing buffer size %s" % (xdelta, (x, y, w, h), self.size)
+                assert y+ydelta>=0 and y+h+ydelta<=bh, "vertical scroll by %i: rectangle %s overflows the backing buffer size %s" % (ydelta, (x, y, w, h), self.size)
+                #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
+                glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
+                                  x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
+                                  GL_COLOR_BUFFER_BIT, GL_NEAREST)
+                glFlush()
 
-        #restore normal paint state:
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-        glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+            #now swap references to tmp and offscreen so tmp becomes the new offscreen:
+            tmp = self.offscreen_fbo
+            self.offscreen_fbo = self.tmp_fbo
+            self.tmp_fbo = tmp
+            tmp = self.textures[TEX_FBO]
+            self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
+            self.textures[TEX_TMP_FBO] = tmp
 
-        self.unset_rgb_paint_state()
-        self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
-        self.present_fbo(0, 0, bw, bh, flush)
+            #restore normal paint state:
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+            glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+
+            self.unset_rgb_paint_state()
+            self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
+            self.present_fbo(0, 0, bw, bh, flush)
 
     def set_rgb_paint_state(self):
         # Set GL state for RGB painting:
