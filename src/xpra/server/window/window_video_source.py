@@ -638,7 +638,7 @@ class WindowVideoSource(WindowSource):
         #(this codepath can fire from a video region refresh callback)
         dr = self._damage_delayed
         if dr:
-            regions = dr[2] + regions
+            regions = dr[1] + regions
             damage_time = min(damage_time, dr[0])
             self._damage_delayed = None
             self.cancel_expire_timer()
