@@ -50,6 +50,7 @@ B_FRAMES = envint("XPRA_B_FRAMES", 1)==1
 VIDEO_SKIP_EDGE = envint("XPRA_VIDEO_SKIP_EDGE", 0)==1
 SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 0)==1
 SAVE_SCROLL = envint("XPRA_SAVE_SCROLL", 0)==1
+SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 40)))
 
 
 class WindowVideoSource(WindowSource):
@@ -1502,7 +1503,7 @@ class WindowVideoSource(WindowSource):
                             best_pct = int(100*best/height)
                             scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, best_pct, height, scroll)
                             #at least 40% of the picture was found as scroll areas:
-                            if best_pct>=40:
+                            if best_pct>=SCROLL_MIN_PERCENT:
                                 return self.encode_scrolling(last_image, image, distances, lcsums, csums, options)
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
