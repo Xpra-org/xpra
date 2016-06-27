@@ -218,9 +218,9 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.0.2.tar.bz2"
-		version="3.0.2"
-		hash="md5:7db5efb1070872823143e1365fdfcd53"
+	<branch module="/releases/ffmpeg-3.1.tar.bz2"
+		version="3.1"
+		hash="md5:78e11f3d9dfbf1822238c398deba5208"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -499,9 +499,9 @@
 
   <distutils id="python-numpy">
         <branch repo="pypi.python.org"
-	        module="/packages/source/n/numpy/numpy-1.11.0.tar.gz"
-	        version="1.11.0"
-	        hash="md5:bc56fb9fc2895aa4961802ffbdb31d0b"/>
+	        module="/packages/source/n/numpy/numpy-1.11.1.tar.gz"
+	        version="1.11.1"
+	        hash="md5:2f44a895a8104ffac140c3a70edbd450"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
