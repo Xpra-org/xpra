@@ -806,7 +806,7 @@ class WindowSource(object):
             self.encode_queue = []
             for item in eq:
                 try:
-                    self.free_image_wrapper(item[6])
+                    self.free_image_wrapper(item[4])
                 except:
                     log.error("Error: cannot free image wrapper %s: %s", item[4], exc_info=True)
         self._damage_delayed = None
