@@ -1165,15 +1165,15 @@ class WindowVideoSource(WindowSource):
             csc_width = width & self.width_mask
             csc_height = height & self.height_mask
             if csce.get_src_format()!=src_format:
-                videolog("do_check_pipeline csc: switching source format from %s to %s",
+                csclog("do_check_pipeline csc: switching source format from %s to %s",
                                     csce.get_src_format(), src_format)
                 return False
             elif csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
-                videolog("do_check_pipeline csc: window dimensions have changed from %sx%s to %sx%s, csc info=%s",
+                csclog("do_check_pipeline csc: window dimensions have changed from %sx%s to %sx%s, csc info=%s",
                                     csce.get_src_width(), csce.get_src_height(), csc_width, csc_height, csce.get_info())
                 return False
             elif csce.get_dst_format()!=ve.get_src_format():
-                videolog.warn("do_check_pipeline csc: intermediate format mismatch: %s vs %s, csc info=%s",
+                csclog.error("Error: CSC intermediate format mismatch: %s vs %s, csc info=%s",
                                     csce.get_dst_format(), ve.get_src_format(), csce.get_info())
                 return False
 
@@ -1272,7 +1272,7 @@ class WindowVideoSource(WindowSource):
             csce.init_context(csc_width, csc_height, src_format,
                                    enc_width, enc_height, enc_in_format, csc_speed)
             csc_end = time.time()
-            videolog("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
+            csclog("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
                   csce, csce.get_info(), (csc_end-csc_start)*1000.0)
         else:
             csce = None
@@ -1534,7 +1534,7 @@ class WindowVideoSource(WindowSource):
         if delayed is not None:
             last_frame = client_options.get("frame")
             flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
-            videolog.info("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
+            videolog("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
             self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
             if data is None:
                 return None
@@ -1604,7 +1604,7 @@ class WindowVideoSource(WindowSource):
         end = time.time()
         #the image comes from the UI server, free it in the UI thread:
         self.idle_add(image.free)
-        videolog("csc_image(%s, %s, %s) converted to %s in %.1fms (%.1f MPixels/s)",
+        csclog("csc_image(%s, %s, %s) converted to %s in %.1fms (%.1f MPixels/s)",
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
         if not csc_image:

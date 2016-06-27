@@ -16,6 +16,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
 compresslog = Logger("window", "compress")
+damagelog = Logger("window", "damage")
 scalinglog = Logger("scaling")
 iconlog = Logger("icon")
 deltalog = Logger("delta")
@@ -570,7 +571,7 @@ class WindowSource(object):
         elif "premult_argb32" in self.window_icon_encodings:
             wrapper = self.compressed_wrapper("premult_argb32", str(pixel_data))
         else:
-            log("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
+            iconlog("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
             return
         assert wrapper.datatype in ("premult_argb32", "png")
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
@@ -790,7 +791,7 @@ class WindowSource(object):
         damage requests for a window.
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
-        log("cancel_damage() wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s", self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
+        damagelog("cancel_damage() wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s", self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_expire_timer()
@@ -806,8 +807,8 @@ class WindowSource(object):
             for item in eq:
                 try:
                     self.free_image_wrapper(item[6])
-                except Exception as e:
-                    log.error("Error: cannot free image wrapper %s: %s", item[6], e)
+                except:
+                    log.error("Error: cannot free image wrapper %s: %s", item[4], exc_info=True)
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
@@ -991,18 +992,19 @@ class WindowSource(object):
         if self.suspended:
             return
         if w==0 or h==0:
+            damagelog("damage%s ignored zero size", (x, y, w, h, options))
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
         now = time.time()
         if "auto_refresh" not in options:
-            log("damage%s", (x, y, w, h, options))
             self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1
         self.statistics.last_damage_event_time = now
         ww, wh = self.window.get_dimensions()
         if ww==0 or wh==0:
+            damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
@@ -1027,7 +1029,7 @@ class WindowSource(object):
                         continue
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
-            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
+            damagelog("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
                 x, y, w, h, options, self.wid, delayed[3], now-delayed[0])
             if not self.expire_timer and not self.soft_timer and self.soft_expired==0:
                 log.error("Error: bug, found a delayed region without a timer!")
@@ -1063,7 +1065,7 @@ class WindowSource(object):
         # - no more than 10 regions waiting to be encoded
         if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10):
             #send without batching:
-            log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
+            damagelog("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 q = options.get("quality") or self._current_quality
@@ -1087,7 +1089,7 @@ class WindowSource(object):
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = now, regions, actual_encoding, options or {}
-        log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
+        damagelog("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
@@ -1239,7 +1241,7 @@ class WindowSource(object):
             self.do_send_delayed_regions(damage_time, regions, coding, options)
 
     def do_send_delayed_regions(self, damage_time, regions, coding, options, exclude_region=None, get_best_encoding=None):
-        ww,wh = self.window.get_dimensions()
+        ww,wh = self.window_dimensions
         speed = options.get("speed") or self._current_speed
         quality = options.get("quality") or self._current_quality
         get_best_encoding = get_best_encoding or self.get_best_encoding
@@ -1542,7 +1544,7 @@ class WindowSource(object):
                 now = time.time()
                 #figure out the proportion of pixels updated:
                 pixels = region.width*region.height
-                ww, wh = self.window.get_dimensions()
+                ww, wh = self.window_dimensions
                 pct = 100*pixels/(ww*wh)
                 #try to take into account speed and quality:
                 #delay more when quality is low
@@ -1652,12 +1654,12 @@ class WindowSource(object):
             return
         refresh_regions = self.refresh_regions
         self.refresh_regions = []
-        w, h = self.window.get_dimensions()
-        log("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
+        w, h = self.window_dimensions
+        refreshlog("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
         new_options.update(self.get_refresh_options())
-        log("full_quality_refresh() using %s with options=%s", encoding, new_options)
+        refreshlog("full_quality_refresh() using %s with options=%s", encoding, new_options)
         damage_time = time.time()
         self.send_delayed_regions(damage_time, refresh_regions, encoding, new_options)
         self.damage(0, 0, w, h, options=new_options)

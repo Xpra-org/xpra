@@ -158,6 +158,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ])),
     ("Window", OrderedDict([
                 ("window"       , "All window code"),
+                ("damage"       , "Window X11 repaint events"),
                 ("geometry"     , "Window geometry"),
                 ("shape"        , "Window shape forwarding (XShape)"),
                 ("focus"        , "Window focus"),
