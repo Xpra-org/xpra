@@ -992,7 +992,7 @@ class WindowSource(object):
         if self.suspended:
             return
         if w==0 or h==0:
-            damagelog("damage%s ignored zero size", (x, y, w, h, options))
+            damagelog("damage%-24s ignored zero size", (x, y, w, h, options))
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
@@ -1029,8 +1029,8 @@ class WindowSource(object):
                         continue
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
-            damagelog("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s regions created %.1fms ago",
-                x, y, w, h, options, self.wid, delayed[3], now-delayed[0])
+            damagelog("damage%-24s wid=%s, using existing delayed %s regions created %.1fms ago",
+                (x, y, w, h, options), self.wid, delayed[3], now-delayed[0])
             if not self.expire_timer and not self.soft_timer and self.soft_expired==0:
                 log.error("Error: bug, found a delayed region without a timer!")
                 self.expire_timer = self.timeout_add(0, self.expire_delayed_region, 0)
@@ -1065,7 +1065,7 @@ class WindowSource(object):
         # - no more than 10 regions waiting to be encoded
         if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10):
             #send without batching:
-            damagelog("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
+            damagelog("damage%-24s wid=%s, sending now with sequence %s", (x, y, w, h, options), self.wid, self._sequence)
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 q = options.get("quality") or self._current_quality
@@ -1089,7 +1089,7 @@ class WindowSource(object):
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = now, regions, actual_encoding, options or {}
-        damagelog("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
+        damagelog("damage%-24s wid=%s, scheduling batching expiry for sequence %s in %.1f ms", (x, y, w, h, options), self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
@@ -1209,7 +1209,7 @@ class WindowSource(object):
             return
         #no backlog, so ok to send, clear soft-expired counter:
         self.soft_expired = 0
-        log("send_delayed for wid %s, batch delay is %i, elapsed time is %i ms", self.wid, self.batch_config.delay, actual_delay)
+        log("send_delayed for wid %s, batch delay is %ims, elapsed time is %ims", self.wid, self.batch_config.delay, actual_delay)
         self.do_send_delayed()
 
     def do_send_delayed(self):
@@ -1284,7 +1284,6 @@ class WindowSource(object):
                 #and keep those that have damage areas in them:
                 regions = [x for x in non_exclude if len([y for y in regions if x.intersects_rect(y)])>0]
                 #TODO: should verify that is still better than what we had before..
-
             elif len(regions)>1:
                 #try to merge all the regions to see if we save anything:
                 merged = merge_all(regions)
@@ -1325,12 +1324,14 @@ class WindowSource(object):
                 for v in r.substract_rect(exclude_region):
                     e_regions.append(v)
             regions = e_regions
+            log("send_delayed_regions: remaining regions for exclude=%s : %s", exclude_region, len(regions))
         #then figure out which encoding will get used,
         #and shortcut out if this needs to be a full window update:
         i_reg_enc = []
         for i,region in enumerate(regions):
             actual_encoding = get_encoding(region.width*region.height)
             if self.must_encode_full_frame(actual_encoding):
+                log("send_delayed_regions: using full frame for %s encoding of %ix%i", actual_encoding, region.width, region.height)
                 self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
                 #we can stop here (full screen update will include the other regions)
                 return
@@ -1339,6 +1340,7 @@ class WindowSource(object):
         #reversed so that i=0 is last for flushing
         for i, region, actual_encoding in reversed(i_reg_enc):
             self.process_damage_region(damage_time, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i)
+        log("send_delayed_regions: sent %i regions using %s", len(i_reg_enc), [v[2] for v in i_reg_enc])
 
 
     def must_encode_full_frame(self, encoding):
@@ -1350,7 +1352,7 @@ class WindowSource(object):
         """ when not running in the UI thread,
             call this method to free an image wrapper safely
         """
-        log("free_image_wrapper(%s) thread_safe=%s", image, image.is_thread_safe())
+        #log("free_image_wrapper(%s) thread_safe=%s", image, image.is_thread_safe())
         if image.is_thread_safe():
             image.free()
         else:
@@ -1400,7 +1402,7 @@ class WindowSource(object):
                 avsynclog("Warning: failed to freeze image pixels for:")
                 avsynclog(" %s", image)
         av_delay = self.get_frame_encode_delay(options)
-        log("process_damage_regions: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
+        log("process_damage_region: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
                 self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
         if av_delay<0:
             self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
@@ -1716,7 +1718,7 @@ class WindowSource(object):
             (warning: this runs from the non-UI network parse thread,
             don't access the window from here!)
         """
-        log("packet decoding sequence %s for window %s: %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
+        statslog("packet decoding sequence %s for window %s: %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         elif decode_time<0:
