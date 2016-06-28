@@ -107,6 +107,37 @@ cdef extern from "./video.h":
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
+
+#these fields are defined in the v4l2 headers,
+#but they may not all be defined, and probably aren't on some platforms (ie: NetBSD)
+#so we duplicate the definition here:
+V4L2_CAP_VIDEO_CAPTURE          = 0x00000001
+V4L2_CAP_VIDEO_CAPTURE_MPLANE   = 0x00001000
+V4L2_CAP_VIDEO_OUTPUT           = 0x00000002
+V4L2_CAP_VIDEO_OUTPUT_MPLANE    = 0x00002000
+V4L2_CAP_VIDEO_M2M              = 0x00004000
+V4L2_CAP_VIDEO_M2M_MPLANE       = 0x00008000
+V4L2_CAP_VIDEO_OVERLAY          = 0x00000004
+V4L2_CAP_VBI_CAPTURE            = 0x00000010
+V4L2_CAP_VBI_OUTPUT             = 0x00000020
+V4L2_CAP_SLICED_VBI_CAPTURE     = 0x00000040
+V4L2_CAP_SLICED_VBI_OUTPUT      = 0x00000080
+V4L2_CAP_RDS_CAPTURE            = 0x00000100
+V4L2_CAP_VIDEO_OUTPUT_OVERLAY   = 0x00000200
+V4L2_CAP_HW_FREQ_SEEK           = 0x00000400
+V4L2_CAP_RDS_OUTPUT             = 0x00000800
+V4L2_CAP_TUNER                  = 0x00010000
+V4L2_CAP_AUDIO                  = 0x00020000
+V4L2_CAP_RADIO                  = 0x00040000
+V4L2_CAP_MODULATOR              = 0x00080000
+V4L2_CAP_SDR_CAPTURE            = 0x00100000
+V4L2_CAP_EXT_PIX_FORMAT         = 0x00200000
+V4L2_CAP_SDR_OUTPUT             = 0x00400000
+V4L2_CAP_READWRITE              = 0x01000000
+V4L2_CAP_ASYNCIO                = 0x02000000
+V4L2_CAP_STREAMING              = 0x04000000
+V4L2_CAP_DEVICE_CAPS            = 0x80000000
+
 V4L2_CAPS = {
              V4L2_CAP_VIDEO_CAPTURE         : "VIDEO_CAPTURE",
              V4L2_CAP_VIDEO_CAPTURE_MPLANE  : "VIDEO_CAPTURE_MPLANE",
@@ -156,32 +187,7 @@ COLORSPACE_STR = {
     V4L2_COLORSPACE_SMPTE240M       : "SMPTE240M",
     V4L2_COLORSPACE_REC709          : "REC709",
 }
-#QUANTIZATION_STR = {
-#    V4L2_QUANTIZATION_DEFAULT       : "DEFAULT",
-#    V4L2_QUANTIZATION_FULL_RANGE    : "FULL_RANGE",
-#    V4L2_QUANTIZATION_LIM_RANGE     : "LIM_RANGE",
-#}
-#YCBCR_ENC_STR = {
-#    V4L2_YCBCR_ENC_DEFAULT          : "DEFAULT",
-#    V4L2_YCBCR_ENC_601              : "601",
-#    V4L2_YCBCR_ENC_709              : "709",
-#    V4L2_YCBCR_ENC_XV601            : "XV601",
-#    V4L2_YCBCR_ENC_XV709            : "XV709",
-#    V4L2_YCBCR_ENC_SYCC             : "SYCC",
-#    V4L2_YCBCR_ENC_BT2020           : "BT2020",
-#    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
-#    V4L2_YCBCR_ENC_BT2020           : "BT2020",
-#    V4L2_YCBCR_ENC_SMPTE240M        : "SMPTE240M",
-#}
-#XFER_FUNC_STR = {
-#    V4L2_XFER_FUNC_DEFAULT          : "DEFAULT",
-#    V4L2_XFER_FUNC_709              : "709",
-#    V4L2_XFER_FUNC_SRGB             : "SRGB",
-#    V4L2_XFER_FUNC_ADOBERGB         : "ADOBERGB",
-#    V4L2_XFER_FUNC_SMPTE240M        : "SMPTE240M",
-#    V4L2_XFER_FUNC_NONE             : "NONE",
-#}
-#
+
 cdef int V4L2_PIX_FMT_H264 = v4l2_fourcc('H', '2', '6', '4')
 cdef int V4L2_PIX_FMT_MPEG4 = v4l2_fourcc('M', 'P', 'G', '4')
 
