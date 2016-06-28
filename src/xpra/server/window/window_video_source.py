@@ -1371,7 +1371,7 @@ class WindowVideoSource(WindowSource):
         #send as scroll paints packets:
         if scrolls:
             client_options = options.copy()
-            if flush>0:
+            if flush>0 and self.supports_flush:
                 client_options["flush"] = flush
             packet = self.make_draw_packet(x, y, w, h, "scroll", LargeStructure("scroll data", scrolls), 0, client_options)
             self.queue_damage_packet(packet)
@@ -1387,7 +1387,7 @@ class WindowVideoSource(WindowSource):
                 coding, data, client_options, outw, outh, outstride, _ = ret
                 assert data
                 client_options = options.copy()
-                if flush>0:
+                if flush>0 and self.supports_flush:
                     client_options["flush"] = flush
                 packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options)
                 self.queue_damage_packet(packet)
