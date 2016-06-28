@@ -76,7 +76,7 @@ def get_status_output(*args, **kwargs):
         print("error running %s,%s: %s" % (args, kwargs, e))
         return -1, "", ""
     stdout, stderr = p.communicate()
-    return p.returncode, stdout.decode(), stderr.decode()
+    return p.returncode, stdout.decode("utf-8"), stderr.decode("utf-8")
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
 #we don't support building with "pkg-config" on win32 with python2:
