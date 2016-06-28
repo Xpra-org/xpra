@@ -1294,7 +1294,8 @@ class WindowVideoSource(WindowSource):
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
-        if encoder_spec.encoding in self.supports_video_b_frames and B_FRAMES:
+        vr = self.video_subregion
+        if B_FRAMES and vr.enabled and encoder_spec.encoding in self.supports_video_b_frames:
             options["b-frames"] = True
         ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
         #record new actual limits:
