@@ -40,75 +40,31 @@ cdef extern from *:
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
+include "constants.pxi"
+
 cdef extern from "./video.h":
     #define v4l2_fourcc(a,b,c,d)\
     #    (((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
     int v4l2_fourcc(unsigned char a, unsigned char b, unsigned char c, unsigned char d)
-    int VIDIOC_QUERYCAP
-    int VIDIOC_G_FMT
-    int VIDIOC_S_FMT
-    int V4L2_BUF_TYPE_VIDEO_OUTPUT
-    #field
-    int V4L2_FIELD_NONE
-    int V4L2_FIELD_TOP
-    int V4L2_FIELD_BOTTOM
-    int V4L2_FIELD_INTERLACED
-    int V4L2_FIELD_SEQ_TB
-    int V4L2_FIELD_SEQ_BT
-    int V4L2_FIELD_ALTERNATE
-    #int V4L2_FIELD_INTERLACED_TB
-    #int V4L2_FIELD_INTERLACED_BT
-    #formats:
-    int V4L2_PIX_FMT_GREY
-    int V4L2_PIX_FMT_YUV422P
-    int V4L2_PIX_FMT_YUV420
-    int V4L2_PIX_FMT_YVU420
-    int V4L2_PIX_FMT_YUYV
-    int V4L2_PIX_FMT_UYVY
-    int V4L2_PIX_FMT_YUV410
-    int V4L2_PIX_FMT_YUV411P
-    int V4L2_PIX_FMT_BGR24
-    int V4L2_PIX_FMT_RGB24
-    int V4L2_PIX_FMT_BGR32      #BGRX
-    int V4L2_PIX_FMT_RGB32      #XRGB
-    int V4L2_PIX_FMT_NV12
-    int V4L2_PIX_FMT_NV21
-    #colorspace:
-    int V4L2_COLORSPACE_SRGB
-    int V4L2_COLORSPACE_470_SYSTEM_M
-    int V4L2_COLORSPACE_470_SYSTEM_BG
-    int V4L2_COLORSPACE_SMPTE170M
-    int V4L2_COLORSPACE_SMPTE240M
-    int V4L2_COLORSPACE_REC709
-    #color range:
-    #int V4L2_QUANTIZATION_DEFAULT
-    #int V4L2_QUANTIZATION_FULL_RANGE
-    #int V4L2_QUANTIZATION_LIM_RANGE
-    #matrix:
-    #int V4L2_YCBCR_ENC_DEFAULT
-    #int V4L2_YCBCR_ENC_601
-    #int V4L2_YCBCR_ENC_709
-    #int V4L2_YCBCR_ENC_XV601
-    #int V4L2_YCBCR_ENC_XV709
-    #int V4L2_YCBCR_ENC_SYCC
-    #int V4L2_YCBCR_ENC_BT2020
-    #int V4L2_YCBCR_ENC_SMPTE240M
-    #transfer:
-    #int V4L2_XFER_FUNC_DEFAULT
-    #int V4L2_XFER_FUNC_709
-    #int V4L2_XFER_FUNC_SRGB
-    #int V4L2_XFER_FUNC_ADOBERGB
-    #int V4L2_XFER_FUNC_SMPTE240M
-    #int V4L2_XFER_FUNC_NONE
 
-    cdef struct v4l2_capability:
-        uint8_t driver[16]
-        uint8_t card[32]
-        uint8_t bus_info[32]
-        uint32_t version
-        uint32_t capabilities
-        uint32_t device_caps
-        uint32_t reserved[3]
+    IF ENABLE_DEVICE_CAPS:
+        cdef struct v4l2_capability:
+            uint8_t driver[16]
+            uint8_t card[32]
+            uint8_t bus_info[32]
+            uint32_t version
+            uint32_t capabilities
+            uint32_t device_caps
+            uint32_t reserved[3]
+    ELSE:
+        cdef struct v4l2_capability:        #redefined without device_caps!
+            uint8_t driver[16]
+            uint8_t card[32]
+            uint8_t bus_info[32]
+            uint32_t version
+            uint32_t capabilities
+            uint32_t reserved[3]
+    
 
     cdef struct v4l2_pix_format:
         uint32_t width
@@ -150,36 +106,6 @@ cdef extern from "./video.h":
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
-
-#these fields are defined in the v4l2 headers,
-#but they may not all be defined, and probably aren't on some platforms (ie: NetBSD)
-#so we duplicate the definition here:
-V4L2_CAP_VIDEO_CAPTURE          = 0x00000001
-V4L2_CAP_VIDEO_CAPTURE_MPLANE   = 0x00001000
-V4L2_CAP_VIDEO_OUTPUT           = 0x00000002
-V4L2_CAP_VIDEO_OUTPUT_MPLANE    = 0x00002000
-V4L2_CAP_VIDEO_M2M              = 0x00004000
-V4L2_CAP_VIDEO_M2M_MPLANE       = 0x00008000
-V4L2_CAP_VIDEO_OVERLAY          = 0x00000004
-V4L2_CAP_VBI_CAPTURE            = 0x00000010
-V4L2_CAP_VBI_OUTPUT             = 0x00000020
-V4L2_CAP_SLICED_VBI_CAPTURE     = 0x00000040
-V4L2_CAP_SLICED_VBI_OUTPUT      = 0x00000080
-V4L2_CAP_RDS_CAPTURE            = 0x00000100
-V4L2_CAP_VIDEO_OUTPUT_OVERLAY   = 0x00000200
-V4L2_CAP_HW_FREQ_SEEK           = 0x00000400
-V4L2_CAP_RDS_OUTPUT             = 0x00000800
-V4L2_CAP_TUNER                  = 0x00010000
-V4L2_CAP_AUDIO                  = 0x00020000
-V4L2_CAP_RADIO                  = 0x00040000
-V4L2_CAP_MODULATOR              = 0x00080000
-V4L2_CAP_SDR_CAPTURE            = 0x00100000
-V4L2_CAP_EXT_PIX_FORMAT         = 0x00200000
-V4L2_CAP_SDR_OUTPUT             = 0x00400000
-V4L2_CAP_READWRITE              = 0x01000000
-V4L2_CAP_ASYNCIO                = 0x02000000
-V4L2_CAP_STREAMING              = 0x04000000
-V4L2_CAP_DEVICE_CAPS            = 0x80000000
 
 V4L2_CAPS = {
              V4L2_CAP_VIDEO_CAPTURE         : "VIDEO_CAPTURE",
@@ -305,8 +231,9 @@ def query_video_device(device="/dev/video0"):
                     "bus_info"      : vid_caps.bus_info,
                     "version"       : vid_caps.version,
                     "capabilities"  : [v for k,v in V4L2_CAPS.items() if vid_caps.capabilities & k],
-                    "device_caps"   : [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k],
                     }
+            IF ENABLE_DEVICE_CAPS:
+                info["device_caps"] = [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k]
             return dict((k,v) for k,v in info.items() if v)
     except Exception as e:
         log.error("Error: failed to query device '%s':", device)

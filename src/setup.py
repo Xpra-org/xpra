@@ -1007,6 +1007,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/xvid/encoder.c",
                    "xpra/codecs/libav_common/av_log.c",
@@ -2412,8 +2413,18 @@ if vpx_ENABLED:
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 if v4l2_ENABLED:
+    v4l2_pkgconfig = pkgconfig()
+    #fuly warning: cython makes this difficult,
+    #we have to figure out if "device_caps" exists in the headers:
+    ENABLE_DEVICE_CAPS = False
+    if os.path.exists("/usr/include/linux/videodev2.h"):
+        hdata = open("/usr/include/linux/videodev2.h").read()
+        ENABLE_DEVICE_CAPS = hdata.find("device_caps")
+    kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
+    make_constants("xpra", "codecs", "v4l2", "constants", **kwargs)
     cython_add(Extension("xpra.codecs.v4l2.pusher",
-                ["xpra/codecs/v4l2/pusher.pyx"]+membuffers_c))
+                ["xpra/codecs/v4l2/pusher.pyx"]+membuffers_c,
+                **v4l2_pkgconfig))
 
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
