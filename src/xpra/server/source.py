@@ -2023,7 +2023,7 @@ class ServerSource(FileTransferHandler):
             return
         self.cancel_damage(wid)
         w, h = window.get_dimensions()
-        self.damage(wid, 0, 0, w, h, opts)
+        self.damage(wid, window, 0, 0, w, h, opts)
 
     def update_batch(self, wid, window, batch_props):
         ws = self.window_sources.get(wid)
