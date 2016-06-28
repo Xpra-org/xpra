@@ -49,7 +49,6 @@ VIDEO_SUBREGION = envint("XPRA_VIDEO_SUBREGION", 1)==1
 B_FRAMES = envint("XPRA_B_FRAMES", 1)==1
 VIDEO_SKIP_EDGE = envint("XPRA_VIDEO_SKIP_EDGE", 0)==1
 SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 0)==1
-SAVE_SCROLL = envint("XPRA_SAVE_SCROLL", 0)==1
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 40)))
 
 
@@ -1314,24 +1313,9 @@ class WindowVideoSource(WindowSource):
         return  True
 
 
-    def encode_scrolling(self, last_image, image, distances, old_csums, csums, options):
+    def encode_scrolling(self, image, distances, old_csums, csums, options):
         tstart = time.time()
-        scrolllog("encode_scrolling(%s, %s, {..}, [], [], %s)", last_image, image, options)
-        if SAVE_SCROLL:
-            now = time.time()
-            dirname = "scroll-%i" % int(1000*now)
-            os.mkdir(dirname)
-            def save_data(filename, data):
-                path = os.path.join(dirname, filename)
-                with open(path, "wb") as f:
-                    f.write(data)
-            def save_pic(basename, img):
-                coding, data = self.video_fallback(img, options)[:2]
-                filename = "%s.%s" % (basename, coding)
-                save_data(filename, data.data)
-                return filename
-            save_pic("old", last_image)
-            save_pic("new", image)
+        scrolllog("encode_scrolling(%s, {..}, [], [], %s)", image, options)
         x, y, w, h = image.get_geometry()[:4]
         yscroll_values = []
         max_scroll_regions = 50
@@ -1383,20 +1367,16 @@ class WindowVideoSource(WindowSource):
             damaged_lines = sorted(list(remaining))
             non_scroll = consecutive_lines(damaged_lines)
             scrolllog(" non scroll: %i packets: %s", len(non_scroll), non_scroll)
-        nscount = len(non_scroll)
-        flush = nscount
+        flush = len(non_scroll)
         #send as scroll paints packets:
         if scrolls:
             client_options = options.copy()
             if flush>0:
                 client_options["flush"] = flush
             packet = self.make_draw_packet(x, y, w, h, "scroll", LargeStructure("scroll data", scrolls), 0, client_options)
-            if SAVE_SCROLL:
-                save_data("scrolls.txt", "\n".join(repr(v) for v in scrolls))
             self.queue_damage_packet(packet)
         #send the rest as rectangles:
         if non_scroll:
-            replay = []
             for start, count in non_scroll:
                 sub = image.get_sub_image(0, start, w, count)
                 flush -= 1
@@ -1411,11 +1391,6 @@ class WindowVideoSource(WindowSource):
                     client_options["flush"] = flush
                 packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options)
                 self.queue_damage_packet(packet)
-                if SAVE_SCROLL:
-                    filename = save_pic("%s" % (nscount-flush), sub)
-                    replay.append("%s %s" % (filename, (sub.get_x(), sub.get_y(), outw, outh)))
-            if SAVE_SCROLL:
-                save_data("replay.txt", "\n".join(replay))
         assert flush==0
         tend = time.time()
         scrolllog("scroll encoding took %ims", (tend-tstart)*1000)
@@ -1490,9 +1465,9 @@ class WindowVideoSource(WindowSource):
                 width = image.get_width()
                 height = image.get_height()
                 csums = CRC_Image(pixels, width, height, stride)
-                self.scroll_data = (width, height, csums, image.get_sub_image(0, 0, width, height))
+                self.scroll_data = (width, height, csums)
                 if lsd:
-                    lw, lh, lcsums, last_image = lsd
+                    lw, lh, lcsums = lsd
                     if lw==width and lh==height:
                         #same size, try to find scrolling value
                         assert len(csums)==len(lcsums)
@@ -1505,7 +1480,7 @@ class WindowVideoSource(WindowSource):
                             scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, best_pct, height, scroll)
                             #at least 40% of the picture was found as scroll areas:
                             if best_pct>=SCROLL_MIN_PERCENT:
-                                return self.encode_scrolling(last_image, image, distances, lcsums, csums, options)
+                                return self.encode_scrolling(image, distances, lcsums, csums, options)
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
 
