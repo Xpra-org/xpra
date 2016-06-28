@@ -2419,7 +2419,7 @@ if v4l2_ENABLED:
     ENABLE_DEVICE_CAPS = False
     if os.path.exists("/usr/include/linux/videodev2.h"):
         hdata = open("/usr/include/linux/videodev2.h").read()
-        ENABLE_DEVICE_CAPS = hdata.find("device_caps")
+        ENABLE_DEVICE_CAPS = hdata.find("device_caps")>=0
     kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
     make_constants("xpra", "codecs", "v4l2", "constants", **kwargs)
     cython_add(Extension("xpra.codecs.v4l2.pusher",
