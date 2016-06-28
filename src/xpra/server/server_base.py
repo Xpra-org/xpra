@@ -416,12 +416,13 @@ class ServerBase(ServerCore):
             webcamlog.error(" %s", e)
             return 0
         try:
-            from xpra.platform.xposix.webcam import get_virtual_video_devices
+            from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
         except ImportError as e:
             webcamlog.warn("Warning: cannot load webcam components")
             webcamlog.warn(" %s", e)
             webcamlog.warn(" webcam forwarding disabled")
             return 0
+        check_virtual_dir()
         devices = get_virtual_video_devices()
         webcamlog.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
         return len(devices)

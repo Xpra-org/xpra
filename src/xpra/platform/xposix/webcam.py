@@ -21,13 +21,20 @@ def _can_capture_video(dev_file, dev_info):
         return False
     return True
 
+v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
+def check_virtual_dir(warn=True):
+    global v4l2_virtual_dir
+    if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
+        if warn:
+            log.warn("Warning: webcam forwarding is disabled")
+            log.warn(" the virtual video directory '%s' was not found", v4l2_virtual_dir)
+            log.warn(" make sure that the 'v4l2loopback' kernel module is installed and loaded")
+        return False
+    return True
+    
 def get_virtual_video_devices(capture_only=True):
     log("get_virtual_video_devices")
-    v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
-    if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
-        log.warn("Warning: webcam forwarding is disabled")
-        log.warn(" the virtual video directory '%s' was not found", v4l2_virtual_dir)
-        log.warn(" make sure that the 'v4l2loopback' kernel module is installed and loaded")
+    if not check_virtual_dir(False):
         return []
     contents = os.listdir(v4l2_virtual_dir)
     devices = {}
