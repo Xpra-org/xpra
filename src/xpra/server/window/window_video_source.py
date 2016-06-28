@@ -1407,6 +1407,12 @@ class WindowVideoSource(WindowSource):
         return encode_fn(fallback_encoding, image, options)
 
     def video_encode(self, encoding, image, options):
+        try:
+            return self.do_video_encode(encoding, image, options)
+        finally:
+            self.free_image_wrapper(image)
+
+    def do_video_encode(self, encoding, image, options):
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
@@ -1422,8 +1428,9 @@ class WindowVideoSource(WindowSource):
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
-        def video_fallback():
-            videolog.warn("using non-video fallback encoding")
+        def video_fallback(warn):
+            if warn:
+                videolog.warn("using non-video fallback encoding")
             return self.video_fallback(image, options)
 
         vh = self.video_helper
@@ -1501,8 +1508,9 @@ class WindowVideoSource(WindowSource):
         data, client_options = ret
         end = time.time()
 
-        self.free_image_wrapper(csc_image)
-        del csc_image
+        if csc_image!=image:
+            self.free_image_wrapper(csc_image)
+            del csc_image
 
         if self.b_frame_flush_timer:
             self.source_remove(self.b_frame_flush_timer)
@@ -1514,6 +1522,9 @@ class WindowVideoSource(WindowSource):
             videolog("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
             self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
             if data is None:
+                if last_frame==0:
+                    #first frame, just send something:
+                    return video_fallback(False)
                 return None
 
         #tell the client which colour subsampling we used:
@@ -1579,8 +1590,6 @@ class WindowVideoSource(WindowSource):
         start = time.time()
         csc_image = csce.convert_image(image)
         end = time.time()
-        #the image comes from the UI server, free it in the UI thread:
-        self.idle_add(image.free)
         csclog("csc_image(%s, %s, %s) converted to %s in %.1fms (%.1f MPixels/s)",
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
