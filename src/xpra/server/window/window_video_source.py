@@ -51,6 +51,8 @@ VIDEO_SKIP_EDGE = envint("XPRA_VIDEO_SKIP_EDGE", 0)==1
 SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 0)==1
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 40)))
 
+FAST_ORDER = ["jpeg", "rgb32", "rgb24", "png"] + PREFERED_ENCODING_ORDER
+
 
 class WindowVideoSource(WindowSource):
     """
@@ -1396,9 +1398,9 @@ class WindowVideoSource(WindowSource):
         scrolllog("scroll encoding took %ims", (tend-tstart)*1000)
         return None
 
-    def video_fallback(self, image, options):
+    def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
         #find one that is not video:
-        fallback_encodings = [x for x in PREFERED_ENCODING_ORDER if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
+        fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
         if not fallback_encodings:
             log.error("no non-video fallback encodings are available!")
             return None
@@ -1428,9 +1430,8 @@ class WindowVideoSource(WindowSource):
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
-        def video_fallback(warn):
-            if warn:
-                videolog.warn("using non-video fallback encoding")
+        def video_fallback():
+            videolog.warn("using non-video fallback encoding")
             return self.video_fallback(image, options)
 
         vh = self.video_helper
@@ -1524,7 +1525,7 @@ class WindowVideoSource(WindowSource):
             if data is None:
                 if last_frame==0:
                     #first frame, just send something:
-                    return video_fallback(False)
+                    return self.video_fallback(image, options, order=FAST_ORDER)
                 return None
 
         #tell the client which colour subsampling we used:
