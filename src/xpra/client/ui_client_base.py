@@ -82,6 +82,7 @@ PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
 PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
 
 B_FRAMES = os.environ.get("XPRA_B_FRAMES", "1")=="1"
+PAINT_FLUSH = os.environ.get("XPRA_PAINT_FLUSH", "1")=="1"
 
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
@@ -1458,7 +1459,7 @@ class UIXpraClient(XpraClientBase):
         else:
             video_b_frames = []
         updict(capabilities, "encoding", {
-            "flush"                     : True,
+            "flush"                     : PAINT_FLUSH,
             "scaling.control"           : self.video_scaling,
             "client_options"            : True,
             "csc_atoms"                 : True,

@@ -45,6 +45,7 @@ INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
 MAX_SYNC_BUFFER_SIZE = int(os.environ.get("XPRA_MAX_SYNC_BUFFER_SIZE", "256"))*1024*1024        #256MB
 AV_SYNC_RATE_CHANGE = int(os.environ.get("XPRA_AV_SYNC_RATE_CHANGE", "20"))
 AV_SYNC_TIME_CHANGE = int(os.environ.get("XPRA_AV_SYNC_TIME_CHANGE", "500"))
+PAINT_FLUSH = os.environ.get("XPRA_PAINT_FLUSH", "1")=="1"
 
 LOG_THEME_DEFAULT_ICONS = os.environ.get("XPRA_LOG_THEME_DEFAULT_ICONS", "0")=="1"
 SAVE_WINDOW_ICONS = os.environ.get("XPRA_SAVE_WINDOW_ICONS", "0")=="1"
@@ -132,7 +133,7 @@ class WindowSource(object):
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
-        self.supports_flush = encoding_options.get("flush")
+        self.supports_flush = PAINT_FLUSH and encoding_options.get("flush")
         ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg", "webp"))     #default encodings for auto-refresh
         ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
         ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it

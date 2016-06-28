@@ -13,6 +13,7 @@ fpslog = Logger("opengl", "fps")
 OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
 OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
 SCROLL_ENCODING = os.environ.get("XPRA_SCROLL_ENCODING", "1")=="1"
+PAINT_FLUSH = os.environ.get("XPRA_PAINT_FLUSH", "1")=="1"
 
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 
@@ -553,7 +554,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         if not self.paint_screen:
             return
         #flush>0 means we should wait for the final flush=0 paint
-        if flush==0:
+        if flush==0 or not PAINT_FLUSH:
             self.do_present_fbo()
 
     def do_present_fbo(self):
