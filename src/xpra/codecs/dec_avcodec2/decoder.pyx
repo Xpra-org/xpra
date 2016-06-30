@@ -17,6 +17,8 @@ from xpra.util import bytestostr
 ctypedef unsigned long size_t
 ctypedef unsigned char uint8_t
 
+DEF EAGAIN = -11
+
 
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
@@ -109,8 +111,8 @@ cdef extern from "libavcodec/avcodec.h":
     #actual decoding:
     void av_init_packet(AVPacket *pkt) nogil
     void avcodec_get_frame_defaults(AVFrame *frame) nogil
-    int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
-                                int *got_picture_ptr, const AVPacket *avpkt) nogil
+    int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt) nogil
+    int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame) nogil
 
     void av_frame_unref(AVFrame *frame) nogil
 
@@ -476,8 +478,12 @@ cdef class Decoder:
     def get_type(self):                             #@DuplicatedSignature
         return "avcodec"
 
-    def log_error(self, int buf_len, err, options={}):
-        log.error("avcodec error decoding %i bytes of %s data:", buf_len, self.encoding)
+    def log_av_error(self, int buf_len, err_no, options={}):
+        msg = self.av_error_str(err_no)
+        self.log_error(buf_len, msg, options, "error %i" % err_no)
+
+    def log_error(self, int buf_len, err, options={}, error_type="error"):
+        log.error("avcodec %s decoding %i bytes of %s data:", error_type, buf_len, self.encoding)
         log.error(" %s", err)
         log.error(" frame %i", self.frames)
         if options:
@@ -491,9 +497,8 @@ cdef class Decoder:
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef int size
-        cdef int len = 0
+        cdef int ret = 0
         cdef int nplanes
-        cdef int got_picture
         cdef AVPacket avpkt
         cdef unsigned long frame_key                #@DuplicatedSignature
         cdef AVFrameWrapper framewrapper
@@ -521,27 +526,29 @@ cdef class Decoder:
             av_init_packet(&avpkt)
             avpkt.data = <uint8_t *> (padded_buf)
             avpkt.size = buf_len
-            len = avcodec_decode_video2(self.codec_ctx, self.av_frame, &got_picture, &avpkt)
+            ret = avcodec_send_packet(self.codec_ctx, &avpkt)
+        if ret!=0:
+            free(padded_buf)
+            log("%s.decompress_image(%s:%s, %s) avcodec_send_packet failure: %s", self, type(input), buf_len, options, self.av_error_str(ret))
+            self.log_av_error(buf_len, ret, options)
+            return None
+        with nogil:
+            ret = avcodec_receive_frame(self.codec_ctx, self.av_frame)
         free(padded_buf)
-        if len<0:
-            av_frame_unref(self.av_frame)
-            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(len))
-            self.log_error(buf_len, self.av_error_str(len), options)
-            return None
-        if len==0:
-            av_frame_unref(self.av_frame)
-            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failed to decode the stream", self, type(input), buf_len, options)
-            self.log_error(buf_len, "no stream", options)
-            return None
-        if got_picture==0:
+        if ret==EAGAIN:
             d = options.get("delayed", 0)
             if d>0:
                 log("avcodec_decode_video2 %i delayed pictures", d)
                 return None
             self.log_error(buf_len, "no picture", options)
             return None
+        if ret!=0:
+            av_frame_unref(self.av_frame)
+            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(ret))
+            self.log_av_error(buf_len, ret, options)
+            return None
             
-        log("avcodec_decode_video2 returned %i, got_picture=%i", len, got_picture)
+        log("avcodec_decode_video2 returned %i", ret)
         if self.actual_pix_fmt!=self.av_frame.format:
             if self.av_frame.format==-1:
                 self.log_error(buf_len, "unknown format returned")
