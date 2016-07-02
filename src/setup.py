@@ -896,11 +896,7 @@ def build_xpra_conf(install_dir):
             #but this should not be included in the default config for all users!
             #(the buildbot's uid!)
             socket_dirs = [x for x in socket_dirs if x.find(str(os.getuid()))<0]
-        def addtrailingslash(v):
-            if v.endswith("/"):
-                return v
-            return v+"/"
-        bind = addtrailingslash(socket_dirs[0])
+        bind = "auto"
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
     if os.name=="posix" and printing_ENABLED:
