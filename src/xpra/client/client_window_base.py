@@ -183,8 +183,11 @@ class ClientWindowBase(ClientWidgetBase):
                 if title.find("@")>=0:
                     #perform metadata variable substitutions:
                     #full of py3k unicode headaches that don't need to be
-                    default_values = {"title"           : "<untitled window>",
-                                      "client-machine"  : "<unknown machine>"}
+                    default_values = {
+                                      "title"           : "<untitled window>",
+                                      "client-machine"  : "<unknown machine>",
+                                      "windowid"        : str(self._id),
+                                      }
                     def metadata_replace(match):
                         atvar = match.group(0)          #ie: '@title@'
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
