@@ -166,6 +166,15 @@ if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
     CODECS.append("vp9")
 log("avcodec2.init_module: CODECS=%s", CODECS)
 
+cdef av_error_str(int errnum):
+    cdef char[128] err_str
+    cdef int i = 0
+    if av_strerror(errnum, err_str, 128)==0:
+        while i<128 and err_str[i]!=0:
+            i += 1
+        return bytestostr(err_str[:i])
+    return "error %s" % errnum
+
 
 def init_module():
     log("dec_avcodec2.init_module()")
@@ -366,7 +375,7 @@ cdef class Decoder:
         self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         r = avcodec_open2(self.codec_ctx, self.codec, NULL)
         if r<0:
-            log.error("could not open codec: %s", self.av_error_str(r))
+            log.error("could not open codec: %s", av_error_str(r))
             self.clean_decoder()
             return  False
         #up to 3 AVFrame objects used:
@@ -422,19 +431,11 @@ cdef class Decoder:
         if self.codec_ctx!=NULL:
             r = avcodec_close(self.codec_ctx)
             if r!=0:
-                log.warn("error closing decoder context %#x: %s", <unsigned long> self.codec_ctx, self.av_error_str(r))
+                log.error("Error: failed to close decoder context %#x:", <unsigned long> self.codec_ctx)
+                log.error(" %s", av_error_str(r))
             av_free(self.codec_ctx)
             self.codec_ctx = NULL
         log("clean_decoder() done")
-
-    cdef av_error_str(self, errnum):
-        cdef char[128] err_str
-        cdef int i = 0
-        if av_strerror(errnum, err_str, 128)==0:
-            while i<128 and err_str[i]!=0:
-                i += 1
-            return bytestostr(err_str[:i])
-        return str(errnum)
 
     def __repr__(self):                      #@DuplicatedSignature
         if self.is_closed():
@@ -479,12 +480,12 @@ cdef class Decoder:
         return "avcodec"
 
     def log_av_error(self, int buf_len, err_no, options={}):
-        msg = self.av_error_str(err_no)
+        msg = av_error_str(err_no)
         self.log_error(buf_len, msg, options, "error %i" % err_no)
 
     def log_error(self, int buf_len, err, options={}, error_type="error"):
-        log.error("avcodec %s decoding %i bytes of %s data:", error_type, buf_len, self.encoding)
-        log.error(" %s", err)
+        log.error("Error: avcodec %s decoding %i bytes of %s data:", error_type, buf_len, self.encoding)
+        log.error(" '%s'", err)
         log.error(" frame %i", self.frames)
         if options:
             log.error(" options=%s", options)
@@ -529,7 +530,7 @@ cdef class Decoder:
             ret = avcodec_send_packet(self.codec_ctx, &avpkt)
         if ret!=0:
             free(padded_buf)
-            log("%s.decompress_image(%s:%s, %s) avcodec_send_packet failure: %s", self, type(input), buf_len, options, self.av_error_str(ret))
+            log("%s.decompress_image(%s:%s, %s) avcodec_send_packet failure: %s", self, type(input), buf_len, options, av_error_str(ret))
             self.log_av_error(buf_len, ret, options)
             return None
         with nogil:
@@ -544,7 +545,7 @@ cdef class Decoder:
             return None
         if ret!=0:
             av_frame_unref(self.av_frame)
-            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, self.av_error_str(ret))
+            log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, av_error_str(ret))
             self.log_av_error(buf_len, ret, options)
             return None
             
