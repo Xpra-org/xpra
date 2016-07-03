@@ -1112,10 +1112,14 @@ class WindowSource(object):
         """
         self.expire_timer = None
         self._damage_delayed_expired = True
+        delayed = self._damage_delayed
+        if not delayed:
+            #region has been sent
+            return
         self.may_send_delayed()
         delayed = self._damage_delayed
-        if delayed is None:
-            #region has been sent
+        if not delayed:
+            #got sent
             return
         #the region has not been sent yet because we are waiting for damage ACKs from the client
         if self.soft_expired<self.max_soft_expired:
