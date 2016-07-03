@@ -673,7 +673,7 @@ class WindowVideoSource(WindowSource):
             if dw>0:
                 WindowSource.process_damage_region(self, damage_time, x+w-dw, y, dw, h, self.edge_encoding, options, flush=1+int(dh>0))
             if dh>0:
-                WindowSource.process_damage_region(self, damage_time, x, y+h-dh, x+w, dh, self.edge_encoding, options, flush=1)
+                WindowSource.process_damage_region(self, damage_time, x, y+h-dh, w-dw, dh, self.edge_encoding, options, flush=1)
         #use the unmasked dimensions to prevent us restriding for nothing:
         WindowSource.process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=flush)
 
