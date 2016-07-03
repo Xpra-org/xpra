@@ -194,7 +194,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 if v is None:
                     raise Exception("%s compression failed" % encoding)
                 data, meta = v
-                if data is None:
+                if not data:
                     delayed = meta.get("delayed", 0)
                     assert delayed>0, "data is empty and there are no delayed frames!"
                     #now we should get one:

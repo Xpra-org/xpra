@@ -52,22 +52,34 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         return None
     try:
         #module is present
+        classname = "?"
         try:
             log(" %s found, will check for %s in %s", top_module, classnames, class_module)
             for classname in classnames:
                 ic =  __import__(class_module, {}, {}, classname)
-                selftest = getattr(ic, "selftest", None)
-                log("%s.selftest=%s", name, selftest)
-                if SELFTEST and selftest:
-                    if name in CODEC_FAIL_SELFTEST:
-                        raise ImportError("codec found in fail selftest list")
-                    try:
-                        selftest(FULL_SELFTEST)
-                    except Exception as e:
-                        log.warn("Warning: %s failed its self test", name)
-                        log.warn(" %s", e)
-                        log("%s failed", selftest, exc_info=True)
-                        continue
+                try:
+                    #run init_module?
+                    init_module = getattr(ic, "init_module", None)
+                    log("%s: init_module=%s", class_module, init_module)
+                    if init_module:
+                        init_module()
+                    selftest = getattr(ic, "selftest", None)
+                    log("%s.selftest=%s", name, selftest)
+                    if SELFTEST and selftest:
+                        if name in CODEC_FAIL_SELFTEST:
+                            raise ImportError("codec found in fail selftest list")
+                        try:
+                            selftest(FULL_SELFTEST)
+                        except Exception as e:
+                            log.warn("Warning: %s failed its self test", name)
+                            log.warn(" %s", e)
+                            log("%s failed", selftest, exc_info=True)
+                            continue
+                finally:
+                    cleanup_module = getattr(ic, "cleanup_module", None)
+                    log("%s: cleanup_module=%s", class_module, cleanup_module)
+                    if cleanup_module:
+                        cleanup_module()
                 #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 log(" found %s : %s", name, ic)
                 codecs[name] = ic
@@ -156,6 +168,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
 
         codec_import_check("xvid", "xvid encoder", "xpra.codecs.xvid", "xpra.codecs.xvid.encoder", "Encoder")
         add_codec_version("xvid", "xpra.codecs.xvid.encoder")
+
+        codec_import_check("enc_ffmpeg", "ffmpeg encoder", "xpra.codecs.enc_ffmpeg", "xpra.codecs.enc_ffmpeg.encoder", "Encoder")
+        add_codec_version("ffmpeg", "xpra.codecs.enc_ffmpeg.encoder")
 
     if csc:
         show += list(CSC_CODECS)

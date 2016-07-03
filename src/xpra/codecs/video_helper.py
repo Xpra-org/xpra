@@ -18,7 +18,8 @@ NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", 
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
-CODEC_TO_MODULE = {"vpx"        : ["vpx"],
+CODEC_TO_MODULE = {
+                   "vpx"        : ["vpx"],
                    "x264"       : ["enc_x264"],
                    "x265"       : ["enc_x265"],
                    "nvenc"      : NVENC_OPTIONS,
@@ -28,7 +29,9 @@ CODEC_TO_MODULE = {"vpx"        : ["vpx"],
                    "opencl"     : ["csc_opencl"],
                    "opencv"     : ["csc_opencv"],
                    "libyuv"     : ["csc_libyuv"],
-                   "avcodec2"   : ["dec_avcodec2"]}
+                   "avcodec2"   : ["dec_avcodec2"],
+                   "ffmpeg"     : ["enc_ffmpeg"],
+                   }
 
 def has_codec_module(module_name):
     top_module = "xpra.codecs.%s" % module_name
@@ -52,7 +55,7 @@ def try_import_modules(codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "xvid", "x265", "nvenc"])
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "xvid", "x265", "nvenc", "ffmpeg"])
 ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "cython", "opencl", "libyuv", "opencv"])
 NO_GFX_CSC_OPTIONS = [x for x in ALL_CSC_MODULE_OPTIONS if x not in ("opencl", )]
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec2", "vpx"])

@@ -1641,7 +1641,7 @@ class WindowVideoSource(WindowSource):
             flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
             videolog("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
             self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
-            if data is None:
+            if not data:
                 if last_frame==0:
                     #first frame, just send something:
                     return self.video_fallback(image, options, order=FAST_ORDER)
@@ -1668,7 +1668,7 @@ class WindowVideoSource(WindowSource):
 
     def do_flush_video_encoder(self, ve, csc, frame, x, y):
         videolog("do_flush_video_encoder%s", (ve, csc, frame, x, y))
-        if self._video_encoder!=ve:
+        if self._video_encoder!=ve or ve.is_closed():
             return
         if frame==0:
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
@@ -1676,7 +1676,13 @@ class WindowVideoSource(WindowSource):
             ve.clean()
             self.idle_add(self.refresh)
             return
+        w = ve.get_width()
+        h = ve.get_height()
+        encoding = ve.get_encoding()
         v = ve.flush(frame)
+        if ve.is_closed():
+            videolog("do_flush_video_encoder encoder %s is closed following the flush", ve)
+            self.cleanup_codecs()
         if not v:
             videolog("do_flush_video_encoder%s=%s", (ve, frame, x, y), v)
             return
@@ -1684,9 +1690,6 @@ class WindowVideoSource(WindowSource):
         client_options["csc"] = self.csc_equiv(csc)
         videolog("do_flush_video_encoder%s=(%s %s bytes, %s)", (ve, frame, x, y), len(data or ()), type(data), client_options)
         if data:
-            w = ve.get_width()
-            h = ve.get_height()
-            encoding = ve.get_encoding()
             packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
             self.queue_damage_packet(packet)
         #add check for delayed frames again if we support multiple b-frames
