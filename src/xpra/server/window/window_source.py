@@ -259,6 +259,7 @@ class WindowSource(object):
         self.suspended = False
         self.strict = STRICT_MODE
         #
+        self.may_send_timer = None
         self.auto_refresh_delay = 0
         self.video_helper = None
         self.refresh_event_time = 0
@@ -796,6 +797,7 @@ class WindowSource(object):
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_expire_timer()
+        self.cancel_may_send_timer()
         self.cancel_soft_timer()
         self.cancel_refresh_timer()
         self.cancel_timeout_timer()
@@ -824,32 +826,42 @@ class WindowSource(object):
                     pass
 
     def cancel_expire_timer(self):
-        if self.expire_timer:
-            self.source_remove(self.expire_timer)
+        et = self.expire_timer
+        if et:
             self.expire_timer = None
+            self.source_remove(et)
+
+    def cancel_may_send_timer(self):
+        mst = self.may_send_timer
+        if mst:
+            self.may_send_timer = None
+            self.source_remove(mst)
 
     def cancel_soft_timer(self):
-        if self.soft_timer:
-            self.source_remove(self.soft_timer)
+        st = self.soft_timer
+        if st:
             self.soft_timer = None
+            self.source_remove(st)
 
     def cancel_refresh_timer(self):
-        if self.refresh_timer:
-            self.source_remove(self.refresh_timer)
+        rt = self.refresh_timer
+        if rt:
             self.refresh_timer = None
+            self.source_remove(rt)
             self.refresh_event_time = 0
             self.refresh_target_time = 0
 
     def cancel_timeout_timer(self):
-        if self.timeout_timer:
-            self.source_remove(self.timeout_timer)
+        tt = self.timeout_timer
+        if tt:
             self.timeout_timer = None
+            self.source_remove(tt)
 
     def cancel_av_sync_timer(self):
         avst = self.av_sync_timer
         if avst:
-            self.source_remove(avst)
             self.av_sync_timer = None
+            self.source_remove(avst)
 
 
     def is_cancelled(self, sequence=None):
@@ -1166,6 +1178,7 @@ class WindowSource(object):
 
     def may_send_delayed(self):
         """ send the delayed region for processing if the time is right """
+        self.cancel_may_send_timer()
         dd = self._damage_delayed
         if not dd:
             log("window %s delayed region already sent", self.wid)
@@ -1188,7 +1201,7 @@ class WindowSource(object):
         def check_again(delay=actual_delay/10.0):
             #schedules a call to check again:
             delay = int(min(self.batch_config.max_delay, max(10, delay)))
-            self.timeout_add(delay, self.may_send_delayed)
+            self.may_send_timer = self.timeout_add(delay, self.may_send_delayed)
             return
         #locked means a fixed delay we try to honour,
         #this code ensures that we don't fire too early if called from damage_packet_acked
@@ -1666,7 +1679,8 @@ class WindowSource(object):
             if bytecount>0 and end_send_at>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         if self._damage_delayed is not None and self._damage_delayed_expired:
-            self.idle_add(self.may_send_delayed)
+            self.cancel_may_send_timer()
+            self.may_send_timer = self.idle_add(self.may_send_delayed)
         if not self._damage_delayed:
             self.soft_expired = 0
 
