@@ -157,7 +157,7 @@ class ImageWrapper(object):
         for i in range(h):
             pos = (y+i)*stride+x*4
             lines.append(pixels[pos:pos+w*4])
-        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), w*4)
+        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, w*4, planes=self.planes, thread_safe=True)
 
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)
