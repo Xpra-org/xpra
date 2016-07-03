@@ -13,9 +13,7 @@ log = Logger("opengl")
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
-WHITELIST = {
-             "renderer" : ["Skylake"]
-             }
+WHITELIST = {}
 GREYLIST = {
             "vendor"    : ["Intel"]
             }
