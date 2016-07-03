@@ -1373,6 +1373,7 @@ class WindowSource(object):
             This runs in the UI thread.
         """
         assert self.ui_thread == threading.current_thread()
+        assert coding is not None
         if w==0 or h==0:
             return
         if not self.window.is_managed():
@@ -1384,7 +1385,6 @@ class WindowSource(object):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
 
-        assert coding is not None
         rgb_request_time = time.time()
         image = self.window.get_image(x, y, w, h, logger=log)
         if image is None:
@@ -1397,85 +1397,9 @@ class WindowSource(object):
 
         now = time.time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
-        if self.must_freeze(coding, options):
-            newstride = image.get_width()*4
-            if not image.restride(newstride):
-                avsynclog("Warning: failed to freeze image pixels for:")
-                avsynclog(" %s", image)
-        av_delay = self.get_frame_encode_delay(options)
-        log("process_damage_region: wid=%i, adding pixel data to encode queue (%ix%i - %s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
-                self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
-        if av_delay<0:
-            self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
-        else:
-            self.encode_queue.append(item)
-            self.timeout_add(av_delay, self.call_in_encode_thread, True, self.encode_from_queue)
-
-    def must_freeze(self, coding, options):
-        return options.get("av-sync", False)
-
-    def get_frame_encode_delay(self, options):
-        if options.get("av-sync", False):
-            return -1
-        l = len(self.encode_queue)
-        if l>=self.encode_queue_max_size:
-            #we must free some space!
-            return 0
-        return self.av_sync_delay
-
-    def encode_from_queue(self):
-        #note: we use a queue here to ensure we preserve the order
-        #(so we encode frames in the same order they were grabbed)
-        eq = self.encode_queue
-        avsynclog("encode_from_queue: %s items", len(eq))
-        if not eq:
-            return      #nothing to encode, must have been picked off already
-        self.update_av_sync_delay()
-        #find the first item which is due
-        #in seconds, same as time.time():
-        av_delay = self.av_sync_delay/1000.0
-        if len(self.encode_queue)>=self.encode_queue_max_size:
-            av_delay = 0        #we must free some space!
-        now = time.time()
-        still_due = []
-        pop = None
-        index = 0
-        item = None
-        try:
-            for index,item in enumerate(eq):
-                #item = (w, h, damage_time, now, image, coding, sequence, options, flush)
-                sequence = item[6]
-                if self.is_cancelled(sequence):
-                    self.free_image_wrapper(item[4])
-                    continue
-                ts = item[3]
-                due = ts + av_delay
-                if due<now and pop is None:
-                    #found an item which is due
-                    pop = index
-                    avsynclog("encode_from_queue: processing item %s/%s (overdue by %ims)", index+1, len(self.encode_queue), int(1000*(now-due)))
-                    self.make_data_packet_cb(*item)
-                else:
-                    #we only process only one item per call
-                    #and just keep track of extra ones:
-                    still_due.append(due)
-        except Exception:
-            avsynclog.error("error processing encode queue at index %i", index)
-            avsynclog.error("item=%s", item, exc_info=True)
-        if pop is not None:
-            eq.pop(pop)
-            return
-        #README: encode_from_queue is scheduled to run every time we add an item
-        #to the encode_queue, but since the av_delay can change it is possible
-        #for us to not pop() any items from the list sometimes, and therefore we must ensure
-        #we run this method again later when the items are actually due,
-        #so we need to calculate when that is:
-        if len(still_due)==0:
-            avsynclog("encode_from_queue: nothing due")
-            return
-        first_due = int(max(0, min(still_due)-time.time())*1000)
-        avsynclog("encode_from_queue: first due in %ims, due list=%s", first_due, still_due)
-        self.timeout_add(first_due, self.call_in_encode_thread, True, self.encode_from_queue)
+        self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
+        log("process_damage_region: wid=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms",
+                self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
 
 
     def make_data_packet_cb(self, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
