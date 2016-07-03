@@ -230,7 +230,7 @@ class Win32RootWindowModel(RootWindowModel):
         finally:
             pass
         assert pixels, "no pixels returned from GetBitmapBits"
-        v = ImageWrapper(0, 0, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
+        v = ImageWrapper(x, y, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
         if logger==None:
             logger = log
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
