@@ -156,6 +156,7 @@ xvid_ENABLED            = DEFAULT and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = False
 vpx_ENABLED             = DEFAULT and pkg_config_ok("--atleast-version=1.3", "vpx", fallback=WIN32)
+enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_ok("--atleast-version=56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX)
 #ffmpeg 2 onwards:
@@ -206,7 +207,7 @@ tests_ENABLED           = False
 rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ["enc_x264", "enc_x265", "xvid",
+SWITCHES = ["enc_x264", "enc_x265", "xvid", "enc_ffmpeg",
             "nvenc4", "nvenc5", "nvenc6",
             "vpx", "webp", "pillow",
             "dec_avcodec2", "csc_swscale",
@@ -1003,6 +1004,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/enc_ffmpeg/encoder.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/xvid/encoder.c",
@@ -2406,6 +2408,13 @@ if vpx_ENABLED:
     cython_add(Extension("xpra.codecs.vpx.decoder",
                 ["xpra/codecs/vpx/decoder.pyx"]+membuffers_c,
                 **vpx_pkgconfig))
+
+toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
+if enc_ffmpeg_ENABLED:
+    ffmpeg_pkgconfig = pkgconfig("libavcodec")
+    cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
+                ["xpra/codecs/enc_ffmpeg/encoder.pyx"]+membuffers_c,
+                **ffmpeg_pkgconfig))
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 if v4l2_ENABLED:
