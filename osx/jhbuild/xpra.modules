@@ -460,7 +460,7 @@
 
   <distutils id="python-pillow">
         <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-3.3.0.tar.gz"
+	     module="/packages/e0/27/f61098a12f14690689924de93ffdd101463083a80bf8ff3e0c218addf05b/Pillow-3.3.0.tar.gz"
              hash="sha1:b115d02fde8e3df7feb2e17c98b5689cade49a89"
 	     version="3.3.0"/>
         <dependencies>
