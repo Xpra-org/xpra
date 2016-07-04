@@ -41,8 +41,8 @@
 
 
 Name:           python-pillow
-Version:        3.2.0
-Release:        2%{?snap}%{?dist}
+Version:        3.3.0
+Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -294,6 +294,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Mon Jul 04 2016 Antoine Martin <antoine@devloop.org.uk - 3.3.0-1
+- new upstream release
+
 * Fri Apr 08 2016 Antoine Martin <antoine@devloop.org.uk - 3.2.0-2
 - tweak liblcms dependencies (not useful on centos)
 

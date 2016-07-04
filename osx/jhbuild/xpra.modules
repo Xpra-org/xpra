@@ -218,9 +218,9 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.1.tar.bz2"
-		version="3.1"
-		hash="md5:78e11f3d9dfbf1822238c398deba5208"
+	<branch module="/releases/ffmpeg-3.1.1.tar.bz2"
+		version="3.1.1"
+		hash="sha1:542e24c3a50a0ba7d3fb4fc3432459c63e2195ee"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -460,9 +460,9 @@
 
   <distutils id="python-pillow">
         <branch repo="pypi.python.org"
-	     module="/packages/source/P/Pillow/Pillow-3.2.0.tar.gz"
-             hash="md5:7cfd093c11205d9e2ebe3c51dfcad510"
-	     version="3.2.0"/>
+	     module="/packages/source/P/Pillow/Pillow-3.3.0.tar.gz"
+             hash="sha1:b115d02fde8e3df7feb2e17c98b5689cade49a89"
+	     version="3.3.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
