@@ -43,7 +43,10 @@ class ImageWrapper(object):
         self.timestamp = int(time.time()*1000)
 
     def _cn(self):
-        return type(self)
+        try:
+            return type(self).__name__
+        except:
+            return type(self)
 
     def __repr__(self):
         return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
