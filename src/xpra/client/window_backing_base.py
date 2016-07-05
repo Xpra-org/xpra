@@ -543,6 +543,6 @@ class WindowBackingBase(object):
                 raise
 
     def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
-        msg = "invalid encoding: %s" % coding
+        msg = "invalid encoding: '%s'" % coding
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)
