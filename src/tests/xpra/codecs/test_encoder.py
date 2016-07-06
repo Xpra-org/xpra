@@ -110,6 +110,7 @@ def gen_src_images(src_format, w, h, nframes):
 def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None, pause=0, after_encode_cb=None):
     start = time.time()
     tsize = 0
+    client_options = {}
     for i, image in enumerate(images):
         log("image %i of %i, calling %s compress_image(%s)", i+1, len(images), encoder.get_type(), image)
         c = encoder.compress_image(image)
@@ -124,6 +125,9 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
             time.sleep(pause)
         if after_encode_cb:
             after_encode_cb(encoder)
+    delayed = client_options.get("delayed", 0)
+    if delayed>0:
+        encoder.flush(delayed)
     end = time.time()
     #log.info("%s finished encoding %s frames at %sx%s, total encoding time: %.1fms" % (name, len(images), w, h, 1000.0*(end-start)))
     perf = int(len(images)*w*h/(end-start)/1024/1024)
