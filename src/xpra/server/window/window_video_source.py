@@ -1674,7 +1674,7 @@ class WindowVideoSource(WindowSource):
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
             self._video_encoder = None
             ve.clean()
-            self.idle_add(self.refresh)
+            self.idle_add(self.refresh, {"novideo" : True})
             return
         w = ve.get_width()
         h = ve.get_height()
