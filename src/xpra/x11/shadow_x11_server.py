@@ -73,7 +73,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def __init__(self):
         GTKShadowServerBase.__init__(self)
-        X11ServerBase.__init__(self, False)
+        X11ServerBase.__init__(self)
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)

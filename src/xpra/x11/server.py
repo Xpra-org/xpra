@@ -183,10 +183,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         }
 
     def __init__(self, clobber):
+        self.clobber = clobber
         self.root_overlay = None
         self.repaint_root_overlay_due = None
         gobject.GObject.__init__(self)
-        X11ServerBase.__init__(self, clobber)
+        X11ServerBase.__init__(self)
 
     def init(self, opts):
         self.xsettings_enabled = opts.xsettings
@@ -315,29 +316,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         wm = self._wm
         if wm:
             info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
-        info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
-
-    def get_ui_cursor_info(self):
-        #(from UI thread)
-        #now cursor size info:
-        display = gtk.gdk.display_get_default()
-        pos = display.get_default_screen().get_root_window().get_pointer()[:2]
-        cinfo = {"position" : pos}
-        for prop, size in {"default" : display.get_default_cursor_size(),
-                           "max"     : display.get_maximal_cursor_size()}.items():
-            if size is None:
-                continue
-            cinfo["%s_size" % prop] = size
-        return cinfo
-
 
     def get_window_info(self, window):
         info = X11ServerBase.get_window_info(self, window)
         info.update({
                      "focused"  : self._has_focus and self._window_to_id.get(window, -1)==self._has_focus,
                      "grabbed"  : self._has_grab and self._window_to_id.get(window, -1)==self._has_grab,
-                     "geometry" : window.get_property("geometry"),
                      "shown"    : self._desktop_manager.is_shown(window),
                      })
         try:

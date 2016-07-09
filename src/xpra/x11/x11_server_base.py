@@ -68,8 +68,7 @@ class X11ServerBase(GTKServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def __init__(self, clobber):
-        self.clobber = clobber
+    def __init__(self):
         self.screen_number = gtk.gdk.display_get_default().get_default_screen().get_number()
         self.root_window = gtk.gdk.get_default_root_window()
         GTKServerBase.__init__(self)
@@ -253,6 +252,7 @@ class X11ServerBase(GTKServerBase):
     def get_window_info(self, window):
         info = GTKServerBase.get_window_info(self, window)
         info["XShm"] = window.uses_XShm()
+        info["geometry"] = window.get_property("geometry")
         return info
 
 

@@ -88,7 +88,21 @@ class GTKServerBase(ServerBase):
                                               "display"             : gtk.gdk.display_get_default().get_name(),
                                               "root_window_size"    : self.get_root_window_size(),
                                               })
+        info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
+
+    def get_ui_cursor_info(self):
+        #(from UI thread)
+        #now cursor size info:
+        display = gtk.gdk.display_get_default()
+        pos = display.get_default_screen().get_root_window().get_pointer()[:2]
+        cinfo = {"position" : pos}
+        for prop, size in {"default" : display.get_default_cursor_size(),
+                           "max"     : display.get_maximal_cursor_size()}.items():
+            if size is None:
+                continue
+            cinfo["%s_size" % prop] = size
+        return cinfo
 
     def do_get_info(self, proto, *args):
         start = time.time()
