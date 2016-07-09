@@ -1013,12 +1013,24 @@ class Protocol(object):
         try:
             owq = self._write_queue
             self._write_queue = exit_queue
+            #discard all elements in the old queue and push the None marker:
+            try:
+                while owq.qsize()>0:
+                    owq.read(False)
+            except:
+                pass
             owq.put_nowait(None)
         except:
             pass
         try:
             orq = self._read_queue
             self._read_queue = exit_queue
+            #discard all elements in the old queue and push the None marker:
+            try:
+                while orq.qsize()>0:
+                    orq.read(False)
+            except:
+                pass
             orq.put_nowait(None)
         except:
             pass
