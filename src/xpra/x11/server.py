@@ -186,6 +186,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.clobber = clobber
         self.root_overlay = None
         self.repaint_root_overlay_due = None
+        self._tray = None
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
 
@@ -404,15 +405,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if self._has_grab:
                 self.X11_ungrab()
 
-
-    def load_existing_windows(self, system_tray):
+    def add_system_tray(self):
         # Tray handler:
-        self._tray = None
-        if system_tray:
-            try:
-                self._tray = SystemTray()
-            except Exception as e:
-                log.error("cannot setup tray forwarding: %s", e, exc_info=True)
+        try:
+            self._tray = SystemTray()
+        except Exception as e:
+            log.error("cannot setup tray forwarding: %s", e, exc_info=True)
+
+    def load_existing_windows(self):
 
         ### Create our window managing data structures:
         self._desktop_manager = DesktopManager()
@@ -438,13 +438,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.set_default_frame_extents(frame)
 
 
-    def send_windows_and_cursors(self, ss, sharing=False):
+    def send_initial_windows(self, ss, sharing=False):
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
         # which is usually how things work.  (I don't know that anyone cares
         # about this kind of correctness at all, but hey, doesn't hurt.)
-        windowlog("send_windows_and_cursors(%s, %s) will send: %s", ss, sharing, self._id_to_window)
+        windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             if not window.is_managed():
@@ -475,10 +475,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
+
+    def send_initial_cursors(self, ss, sharing=False):
         #cursors: get sizes and send:
         display = gtk.gdk.display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
-        cursorlog("cursor_sizes=%s", self.cursor_sizes)
+        cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
 
 
