@@ -134,10 +134,7 @@ class WindowSource(object):
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
         self.supports_flush = PAINT_FLUSH and encoding_options.get("flush")
-        ropts = set(("png", "webp", "rgb24", "rgb32", "jpeg", "webp"))     #default encodings for auto-refresh
-        ropts = ropts.intersection(set(self.server_core_encodings)) #ensure the server has support for it
-        ropts = ropts.intersection(set(self.core_encodings))        #ensure the client has support for it
-        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", list(ropts))
+        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.supports_delta = []
         if not window.is_tray() and DELTA:
@@ -692,8 +689,7 @@ class WindowSource(object):
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
-        self.auto_refresh_encodings = [x for x in self.client_refresh_encodings if x in self.common_encodings]
-        log("update_encoding_selection(%s) encoding=%s, common encodings=%s, auto_refresh_encodings=%s", encoding, self.encoding, self.common_encodings, self.auto_refresh_encodings)
+        log("update_encoding_selection(%s) encoding=%s, common encodings=%s", encoding, self.encoding, self.common_encodings)
         assert self.encoding is not None
         self.update_quality()
         self.update_speed()
@@ -703,6 +699,18 @@ class WindowSource(object):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         self._lossless_threshold_base = min(90, 60+self._current_speed//5)
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
+        #auto-refresh:
+        if self.client_refresh_encodings:
+            #client supplied list, honour it:
+            are = self.client_refresh_encodings
+        else:
+            #sane defaults:
+            ropts = set(("png", "webp", "rgb24", "rgb32", "webp"))      #default encodings for auto-refresh
+            if AUTO_REFRESH_QUALITY<100:
+                ropts.add("jpeg")
+            are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
+        self.auto_refresh_encodings = [x for x in are if x in self.common_encodings]
+        log("update_encoding_options(%s) auto_refresh_encodings=%s", force_reload, self.auto_refresh_encodings)
         #calculate the threshold for using rgb
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
