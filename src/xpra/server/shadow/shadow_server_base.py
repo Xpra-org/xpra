@@ -145,7 +145,7 @@ class ShadowServerBase(object):
             ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
 
 
-    def _adjust_pointer(self, pointer):
+    def _adjust_pointer(self, wid, pointer):
         #adjust pointer position for window position in client:
         x, y = pointer
         ma = self.mapped_at
