@@ -94,24 +94,27 @@ class X11ServerBase(GTKServerBase):
             log.error("Error: limited keyboard support")
         self.init_x11_atoms()
         if self.randr:
-            self.randr = RandR.has_randr()
-            if self.randr and len(RandR.get_screen_sizes())<=1:
-                #disable randr when we are dealing with a Xvfb
-                #with only one resolution available
-                #since we don't support adding them on the fly yet
-                self.randr = False
-            if self.randr:
-                display = gtk.gdk.display_get_default()
-                i=0
-                while i<display.get_n_screens():
-                    screen = display.get_screen(i)
-                    screen.connect("size-changed", self._screen_size_changed)
-                    i += 1
-            else:
-                log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
-        log("randr enabled: %s", self.randr)
+            self.init_randr()
         self.init_cursor()
         self.query_opengl()
+
+    def init_randr(self):
+        self.randr = RandR.has_randr()
+        if self.randr and len(RandR.get_screen_sizes())<=1:
+            #disable randr when we are dealing with a Xvfb
+            #with only one resolution available
+            #since we don't support adding them on the fly yet
+            self.randr = False
+        if self.randr:
+            display = gtk.gdk.display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self._screen_size_changed)
+                i += 1
+            log("randr enabled: %s", self.randr)
+        else:
+            log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
 
     def init_cursor(self):
         #cursor:
