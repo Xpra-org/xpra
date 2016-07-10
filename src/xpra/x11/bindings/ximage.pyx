@@ -699,12 +699,12 @@ cdef class PixmapWrapper(object):
 
 
 
-cdef get_image(Display * display, Pixmap pixmap, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
+cdef get_image(Display * display, Drawable drawable, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
     cdef XImage* ximage
-    ximage = XGetImage(display, pixmap, x, y, width, height, AllPlanes, ZPixmap)
+    ximage = XGetImage(display, drawable, x, y, width, height, AllPlanes, ZPixmap)
     #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
     if ximage==NULL:
-        log("get_image(..) failed to get XImage for X11 pixmap %#x", pixmap)
+        log("get_image(..) failed to get XImage for X11 drawable %#x", drawable)
         return None
     xi = XImageWrapper(x, y, width, height)
     xi.set_image(ximage)
@@ -733,6 +733,18 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     pw.init(xdisplay, xpixmap, width, height)
     return pw
 
+cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
+    cdef Window root_window
+    cdef int x, y
+    cdef unsigned width, height, border, depth
+    status = XGetGeometry(xdisplay, xwindow, &root_window,
+                        &x, &y, &width, &height, &border, &depth)
+    if status==0:
+        log("failed to get window dimensions for %#x", xwindow)
+        return None
+    cdef PixmapWrapper pw = PixmapWrapper()
+    pw.init(xdisplay, xwindow, width, height)
+    return pw
 
 from core_bindings cimport _X11CoreBindings
 
@@ -758,3 +770,6 @@ cdef class _XImageBindings(_X11CoreBindings):
 
     def get_xcomposite_pixmap(self, xwindow):
         return xcomposite_name_window_pixmap(self.display, xwindow)
+
+    def get_xwindow_pixmap_wrapper(self, xwindow):
+        return window_pixmap_wrapper(self.display, xwindow)
