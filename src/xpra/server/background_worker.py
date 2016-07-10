@@ -35,6 +35,8 @@ class Worker_Thread(Thread):
         if force:
             if self.items.qsize()>0:
                 log.warn("Worker stop: %s items in the queue will not be run!", self.items.qsize())
+                self.items.put(None)
+                self.items = Queue()
             self.exit = True
         else:
             if self.items.qsize()>0:
