@@ -11,12 +11,13 @@ from gtk import gdk
 import signal
 
 from xpra.x11.gtk2.models import Unmanageable
-from xpra.gtk_common.gobject_util import AutoPropGObjectMixin, one_arg_signal
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
 from xpra.x11.gtk2.composite import CompositeHelper
+from xpra.x11.gtk2.models.model_stub import WindowModelStub
 from xpra.x11.gtk2.gdk_bindings import (
                 add_event_receiver,                         #@UnresolvedImport
                 remove_event_receiver,                      #@UnresolvedImport
@@ -33,7 +34,6 @@ geomlog = Logger("x11", "window", "geometry")
 
 X11Window = X11WindowBindings()
 ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK
-USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 FORCE_QUIT = os.environ.get("XPRA_FORCE_QUIT", "1")=="1"
 
 # grab stuff:
@@ -69,7 +69,7 @@ def sanestr(s):
     return (s or "").strip("\0").replace("\0", " ")
 
 
-class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
+class CoreX11WindowModel(WindowModelStub):
     """
         The utility superclass for all GTK2 / X11 window models,
         it wraps an X11 window (the "client-window").
@@ -182,29 +182,16 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         self.xid = client_window.xid
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
-        self._managed = False
-        self._managed_handlers = []
-        self._setup_done = False
         self._composite = None
         self._damage_forward_handle = None
+        self._setup_done = False
         self._kill_count = 0
         self._internal_set_property("client-window", client_window)
-
-
-    def __repr__(self):
-        try:
-            return "%s(%#x)" % (type(self).__name__, self.xid)
-        except:
-            return repr(self)
 
 
     #########################################
     # Setup and teardown
     #########################################
-
-    def is_managed(self):
-        return self._managed
-
 
     def call_setup(self):
         """
@@ -229,7 +216,7 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
         try:
-            self._composite = CompositeHelper(self.client_window, False, USE_XSHM)
+            self._composite = CompositeHelper(self.client_window)
             with xsync:
                 self._composite.setup()
                 if X11Window.displayHasXShape():
@@ -287,6 +274,27 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._scrub_x11()
 
 
+    #########################################
+    # Damage / Composite
+    #########################################
+
+    def acknowledge_changes(self):
+        c = self._composite
+        assert c, "composite window destroyed outside the UI thread?"
+        c.acknowledge_changes()
+
+    def _forward_contents_changed(self, obj, event):
+        if self._managed:
+            self.emit("client-contents-changed", event)
+
+    def uses_XShm(self):
+        c = self._composite
+        return c and c.get_shm_handle() is not None
+
+    def get_image(self, x, y, width, height, logger=log.debug):
+        return self._composite.get_image(x, y, width, height, logger)
+
+
     def _setup_property_sync(self):
         metalog("setup_property_sync()")
         #python properties which trigger an X11 property to be updated:
@@ -342,60 +350,6 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
 
 
     #########################################
-    # Composite
-    #########################################
-
-    def _forward_contents_changed(self, obj, event):
-        if self._managed:
-            self.emit("client-contents-changed", event)
-
-    def acknowledge_changes(self):
-        c = self._composite
-        assert c, "composite window destroyed outside the UI thread?"
-        c.acknowledge_changes()
-
-    def uses_XShm(self):
-        c = self._composite
-        return c and c.get_shm_handle() is not None
-
-    def get_image(self, x, y, width, height, logger=log.debug):
-        handle = self._composite.get_contents_handle()
-        if handle is None:
-            logger("get_image(..) pixmap is None for window %#x", self.xid)
-            return  None
-
-        #try XShm:
-        try:
-            shm = self._composite.get_shm_handle()
-            #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
-            if shm is not None:
-                with xsync:
-                    shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
-                #logger("get_image(..) XShm image: %s", shm_image)
-                if shm_image:
-                    return shm_image
-        except Exception as e:
-            if type(e)==XError and e.msg=="BadMatch":
-                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
-            else:
-                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
-
-        try:
-            w = min(handle.get_width(), width)
-            h = min(handle.get_height(), height)
-            if w!=width or h!=height:
-                logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
-            with xsync:
-                return handle.get_image(x, y, w, h)
-        except Exception as e:
-            if type(e)==XError and e.msg=="BadMatch":
-                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
-            else:
-                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
-            return None
-
-
-    #########################################
     # XShape
     #########################################
 
@@ -427,22 +381,6 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         return v
 
 
-    #########################################
-    # Connect to signals in a "managed" way
-    #########################################
-
-    def managed_connect(self, detailed_signal, handler, *args):
-        """ connects a signal handler and makes sure we will clean it up on unmanage() """
-        handler_id = self.connect(detailed_signal, handler, *args)
-        self._managed_handlers.append(handler_id)
-        return handler_id
-
-    def managed_disconnect(self):
-        for handler_id in self._managed_handlers:
-            self.disconnect(handler_id)
-        self._managed_handlers = []
-
-
     ################################
     # Property reading
     ################################
@@ -451,77 +389,8 @@ class CoreX11WindowModel(AutoPropGObjectMixin, gobject.GObject):
         #just extracts the size from the geometry:
         return self.get_property("geometry")[2:4]
 
-
-    #########################################
-    # Properties we choose to expose
-    #########################################
-
-    def get_property_names(self):
-        """ The properties that should be exposed to clients """
-        return self._property_names
-
-    def get_dynamic_property_names(self):
-        """ The properties that may change over time """
-        return self._dynamic_property_names
-
-    def get_internal_property_names(self):
-        """ The properties that should not be exposed to the client """
-        return self._internal_property_names
-
-    def get_logger(self, property_name):
-        if property_name in PROPERTIES_DEBUG:
-            return metalog.info
-        return metalog.debug
-
-    def _updateprop(self, name, value):
-        """ Updates the property and fires notify(),
-            but only if the value has changed
-            and if the window has finished setting up and it is still managed.
-            Can only be used for AutoPropGObjectMixin properties.
-        """
-        l = self.get_logger(name)
-        cur = self._gproperties.get(name, None)
-        if name not in self._gproperties or cur!=value:
-            l("updateprop(%s, %s) previous value=%s", name, value, cur)
-            self._gproperties[name] = value
-            if self._setup_done and self._managed:
-                self.notify(name)
-            else:
-                l("not sending notify(%s) (setup done=%s, managed=%s)", name, self._setup_done, self._managed)
-            return True
-        l("updateprop(%s, %s) unchanged", name, value)
-        return False
-
-    def get(self, name, default_value=None):
-        """ Allows us the avoid defining all the attributes we may ever query,
-            returns the default value if the property does not exist.
-        """
-        l = self.get_logger(name)
-        if name in self._property_names:
-            v = self.get_property(name)
-            l("get(%s, %s) using get_property=%s", name, default_value, v)
-        else:
-            v = default_value
-            l("get(%s, %s) returning default value=%s", name, default_value, v)
-        return v
-
-
-    #temporary? / convenience access methods:
-    def is_OR(self):
-        """ Is this an override-redirect window? """
-        return self.get("override-redirect", False)
-
-    def is_tray(self):
-        """ Is this a tray window? """
-        return self.get("tray", False)
-
-    def is_shadow(self):
-        """ Is this a shadow instead of a real window? """
-        return False
-
-    def has_alpha(self):
-        """ Does the pixel data have an alpha channel? """
-        return self.get("has-alpha", False)
+    def get_geometry(self):
+        return self.get_property("geometry")[:4]
 
 
     #########################################

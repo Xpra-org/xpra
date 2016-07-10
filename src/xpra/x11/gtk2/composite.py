@@ -4,27 +4,35 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import gobject
+
+from xpra.log import Logger
+log = Logger("x11", "window")
+
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
 from xpra.x11.gtk2.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             get_parent)                     #@UnresolvedImport
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import trap, xsync, XError
 
 from xpra.x11.gtk2.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 XImage = XImageBindings()
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
-X11Window.ensure_XComposite_support()
+try:
+    X11Window.ensure_XComposite_support()
+    has_composite = True
+except Exception as e:
+    log("No XComposite: %s", e)
+    has_composite = False
 X11Window.ensure_XDamage_support()
-
-from xpra.log import Logger
-log = Logger("x11", "window")
 
 
 StructureNotifyMask = constants["StructureNotifyMask"]
+USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 
 
 class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
@@ -41,11 +49,11 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         }
 
     # This may raise XError.
-    def __init__(self, window, already_composited, use_shm=False):
+    def __init__(self, window, skip_compositing=False, use_shm=USE_XSHM):
         super(CompositeHelper, self).__init__()
-        log("CompositeHelper.__init__(%#x, %s, %s)", window.xid, already_composited, use_shm)
+        log("CompositeHelper.__init__(%#x, %s, %s)", window.xid, skip_compositing, use_shm)
         self._window = window
-        self._already_composited = already_composited
+        self._skip_compositing = skip_compositing
         self._listening_to = None
         self._damage_handle = None
         self._use_shm = use_shm
@@ -60,7 +68,8 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
 
     def setup(self):
         xwin = self._window.xid
-        if not self._already_composited:
+        if not self._skip_compositing:
+            assert has_composite, "no compositing support on this display!"
             X11Window.XCompositeRedirectWindow(xwin)
         self._border_width = X11Window.geometry_with_border(xwin)[-1]
         self.invalidate_pixmap()
@@ -79,7 +88,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         self._window = None
         remove_event_receiver(win, self)
         self.invalidate_pixmap()
-        if not self._already_composited:
+        if not self._skip_compositing:
             trap.swallow_synced(X11Window.XCompositeUnredirectWindow, xwin)
         if self._damage_handle:
             trap.swallow_synced(X11Window.XDamageDestroy, self._damage_handle)
@@ -150,6 +159,9 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             log("refreshing named pixmap")
             assert self._listening_to is None
             def set_pixmap():
+                if self._skip_compositing:
+                    self._contents_handle = XImage.get_xwindow_pixmap_wrapper(self._window.xid)
+                    return
                 # The tricky part here is that the pixmap returned by
                 # NameWindowPixmap gets invalidated every time the window's
                 # viewable state changes.  ("viewable" here is the X term that
@@ -205,6 +217,43 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                     self._listening_to = listening
             trap.swallow_synced(set_pixmap)
         return self._contents_handle
+
+
+    def get_image(self, x, y, width, height, logger=log.debug):
+        handle = self.get_contents_handle()
+        if handle is None:
+            logger("get_image(..) pixmap is None for window %#x", self._window.xid)
+            return None
+
+        #try XShm:
+        try:
+            shm = self.get_shm_handle()
+            #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
+            if shm is not None:
+                with xsync:
+                    shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
+                #logger("get_image(..) XShm image: %s", shm_image)
+                if shm_image:
+                    return shm_image
+        except Exception as e:
+            if type(e)==XError and e.msg=="BadMatch":
+                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+            else:
+                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
+
+        try:
+            w = min(handle.get_width(), width)
+            h = min(handle.get_height(), height)
+            if w!=width or h!=height:
+                logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
+            with xsync:
+                return handle.get_image(x, y, w, h)
+        except Exception as e:
+            if type(e)==XError and e.msg=="BadMatch":
+                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+            else:
+                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
+            return None
 
 
     def do_xpra_unmap_event(self, event):
