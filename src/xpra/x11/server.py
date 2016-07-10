@@ -36,7 +36,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
-from xpra.gtk_common.error import trap, xsync, xswallow
+from xpra.gtk_common.error import xsync, xswallow
 
 from xpra.log import Logger
 log = Logger("server")
@@ -44,7 +44,6 @@ focuslog = Logger("server", "focus")
 grablog = Logger("server", "grab")
 windowlog = Logger("server", "window")
 geomlog = Logger("server", "window", "geometry")
-cursorlog = Logger("server", "cursor")
 traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 workspacelog = Logger("x11", "workspace")
@@ -250,17 +249,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.last_client_configure_event = 0
         self.snc_timer = 0
 
-        #cursor:
-        self.default_cursor_data = None
-        self.last_cursor_serial = None
-        self.last_cursor_data = None
-        self.send_cursor_pending = False
-        def get_default_cursor():
-            self.default_cursor_data = X11Keyboard.get_cursor_image()
-            cursorlog("get_default_cursor=%s", self.default_cursor_data)
-        trap.swallow_synced(get_default_cursor)
-        self._wm.enableCursors(True)
-
 
     def get_server_mode(self):
         return "X11"
@@ -289,27 +277,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
-        log("do_get_info: adding cursor=%s", self.last_cursor_data)
         info.setdefault("state", {}).update({
                                              "focused"  : self._has_focus,
                                              "grabbed"  : self._has_grab,
                                              })
-        info.setdefault("cursor", {}).update(self.get_cursor_info())
         return info
-
-    def get_cursor_info(self):
-        #(NOT from UI thread)
-        #copy to prevent race:
-        cd = self.last_cursor_data
-        if cd is None:
-            return {"" : "None"}
-        cinfo = {"is_default"   : bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])}
-        #all but pixels:
-        for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
-            if x:
-                v = cd[i] or ""
-                cinfo[x] = v
-        return cinfo
 
     def get_ui_info(self, proto, wids=None, *args):
         info = X11ServerBase.get_ui_info(self, proto, wids, *args)
@@ -476,13 +448,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
-    def send_initial_cursors(self, ss, sharing=False):
-        #cursors: get sizes and send:
-        display = gtk.gdk.display_get_default()
-        self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
-        cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
-        ss.send_cursor()
-
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
@@ -624,41 +589,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.or_window_geometry(wid, window, x, y, w, h)
-
-
-    def do_xpra_cursor_event(self, event):
-        if not self.cursors:
-            return
-        if self.last_cursor_serial==event.cursor_serial:
-            cursorlog("ignoring cursor event %s with the same serial number %s", event, self.last_cursor_serial)
-            return
-        cursorlog("cursor_event: %s", event)
-        self.last_cursor_serial = event.cursor_serial
-        for ss in self._server_sources.values():
-            ss.send_cursor()
-        return False
-
-
-    def do_xpra_motion_event(self, event):
-        mouselog("motion event: %s", event)
-        wid = self._window_to_id.get(event.subwindow, 0)
-        for ss in self._server_sources.values():
-            ss.update_mouse(wid, event.x_root, event.y_root)
-
-
-    def _bell_signaled(self, wm, event):
-        log("bell signaled on window %#x", get_xwindow(event.window))
-        if not self.bell:
-            return
-        wid = 0
-        if event.window!=gtk.gdk.get_default_root_window() and event.window_model is not None:
-            try:
-                wid = self._window_to_id[event.window_model]
-            except:
-                pass
-        log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
-        for ss in self._server_sources.values():
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
 
     def _show_desktop(self, wm, show):

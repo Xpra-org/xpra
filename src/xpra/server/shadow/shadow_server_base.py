@@ -126,7 +126,7 @@ class ShadowServerBase(object):
         log.info("shadow server: setting default keymap translation")
         self.keyboard_config = server_source.set_default_keymap()
 
-    def load_existing_windows(self, system_tray):
+    def load_existing_windows(self):
         log("loading existing windows")
         self.root_window_model = self.makeRootWindowModel()
         self._add_new_window(self.root_window_model)
@@ -136,8 +136,8 @@ class ShadowServerBase(object):
     def makeRootWindowModel(self):
         return RootWindowModel(self.root)
 
-    def send_windows_and_cursors(self, ss, sharing=False):
-        log("send_windows_and_cursors(%s, %s) will send: %s", ss, sharing, self._id_to_window)
+    def send_initial_windows(self, ss, sharing=False):
+        log("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             assert window == self.root_window_model, "expected window to be %s, but got %s" % (self.root_window_model, window)

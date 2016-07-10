@@ -20,7 +20,8 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
 X11Core = X11CoreBindings()
-from xpra.gtk_common.error import XError, xswallow, xsync
+from xpra.gtk_common.error import XError, xswallow, xsync, trap
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 
@@ -109,7 +110,20 @@ class X11ServerBase(GTKServerBase):
             else:
                 log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
         log("randr enabled: %s", self.randr)
+        self.init_cursor()
         self.query_opengl()
+
+    def init_cursor(self):
+        #cursor:
+        self.default_cursor_data = None
+        self.last_cursor_serial = None
+        self.last_cursor_data = None
+        self.send_cursor_pending = False
+        def get_default_cursor():
+            self.default_cursor_data = X11Keyboard.get_cursor_image()
+            cursorlog("get_default_cursor=%s", self.default_cursor_data)
+        trap.swallow_synced(get_default_cursor)
+        X11Keyboard.selectCursorChange(True)
 
     def query_opengl(self):
         self.opengl_props = {}
@@ -239,6 +253,9 @@ class X11ServerBase(GTKServerBase):
             sinfo["XShm"] = CompositeHelper.XShmEnabled
         except:
             pass
+        #cursor:
+        log("do_get_info: adding cursor=%s", self.last_cursor_data)
+        info.setdefault("cursor", {}).update(self.get_cursor_info())
         #randr:
         try:
             sizes = RandR.get_screen_sizes()
@@ -249,10 +266,24 @@ class X11ServerBase(GTKServerBase):
         log("X11ServerBase.do_get_info took %ims", (time.time()-start)*1000)
         return info
 
+    def get_cursor_info(self):
+        #(NOT from UI thread)
+        #copy to prevent race:
+        cd = self.last_cursor_data
+        if cd is None:
+            return {"" : "None"}
+        cinfo = {"is_default"   : bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])}
+        #all but pixels:
+        for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
+            if x:
+                v = cd[i] or ""
+                cinfo[x] = v
+        return cinfo
+
     def get_window_info(self, window):
         info = GTKServerBase.get_window_info(self, window)
         info["XShm"] = window.uses_XShm()
-        info["geometry"] = window.get_property("geometry")
+        info["geometry"] = window.get_geometry()
         return info
 
 
@@ -527,6 +558,51 @@ class X11ServerBase(GTKServerBase):
         keylog("fake_key(%s, %s)", keycode, press)
         with xsync:
             X11Keyboard.xtest_fake_key(keycode, press)
+
+
+    def do_xpra_cursor_event(self, event):
+        if not self.cursors:
+            return
+        if self.last_cursor_serial==event.cursor_serial:
+            cursorlog("ignoring cursor event %s with the same serial number %s", event, self.last_cursor_serial)
+            return
+        cursorlog("cursor_event: %s", event)
+        self.last_cursor_serial = event.cursor_serial
+        for ss in self._server_sources.values():
+            ss.send_cursor()
+        return False
+
+    def do_xpra_motion_event(self, event):
+        mouselog("motion event: %s", event)
+        wid = self._window_to_id.get(event.subwindow, 0)
+        for ss in self._server_sources.values():
+            ss.update_mouse(wid, event.x_root, event.y_root)
+
+    def do_xpra_xkb_event(self, event):
+        #X11: XKBNotify
+        log("WindowModel.do_xpra_xkb_event(%r)" % event)
+        if event.type!="bell":
+            log.error("do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            return
+        #FIXME: match wid with event xid
+        wid = 0
+        for ss in self._server_sources.values():
+            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
+
+
+    def _bell_signaled(self, wm, event):
+        log("bell signaled on window %#x", get_xwindow(event.window))
+        if not self.bell:
+            return
+        wid = 0
+        if event.window!=gtk.gdk.get_default_root_window() and event.window_model is not None:
+            try:
+                wid = self._window_to_id[event.window_model]
+            except:
+                pass
+        log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
+        for ss in self._server_sources.values():
+            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
 
     def _move_pointer(self, wid, pos):

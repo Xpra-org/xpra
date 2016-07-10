@@ -319,11 +319,6 @@ class Wm(gobject.GObject):
                 win._handle_frame_changed()
 
 
-    def enableCursors(self, on):
-        log("enableCursors(%s)" % on)
-        X11Keyboard.selectCursorChange(on)
-
-
     def do_get_property(self, pspec):
         if pspec.name == "windows":
             return frozenset(self._windows.itervalues())

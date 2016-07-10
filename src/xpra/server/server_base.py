@@ -277,7 +277,9 @@ class ServerBase(ServerCore):
         self.init_dbus_helper()
         self.init_dbus_server()
 
-        self.load_existing_windows(opts.system_tray)
+        if opts.system_tray:
+            self.add_system_tray()
+        self.load_existing_windows()
         thread.start_new_thread(self.threaded_init, ())
 
     def threaded_init(self):
@@ -641,7 +643,10 @@ class ServerBase(ServerCore):
             dbuslog.error(" %s", e)
 
 
-    def load_existing_windows(self, system_tray):
+    def add_system_tray(self):
+        pass
+
+    def load_existing_windows(self):
         pass
 
     def is_shown(self, window):
@@ -1126,8 +1131,8 @@ class ServerBase(ServerCore):
         self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
 
         if send_ui:
-            # now we can set the modifiers to match the client
-            self.send_windows_and_cursors(ss, share_count>0)
+            self.send_initial_windows(ss, share_count>0)
+            self.send_initial_cursors(ss, share_count>0)
         self.client_startup_complete(ss)
 
     def client_startup_complete(self, ss):
@@ -1239,8 +1244,12 @@ class ServerBase(ServerCore):
     def get_transient_for(self, window):
         return  None
 
-    def send_windows_and_cursors(self, ss, sharing=False):
+    def send_initial_windows(self, ss, sharing=False):
+        raise NotImplementedError()
+
+    def send_initial_cursors(self, ss, sharing=False):
         pass
+
 
     def sanity_checks(self, proto, c):
         server_uuid = c.strget("server_uuid")

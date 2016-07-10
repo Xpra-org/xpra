@@ -21,6 +21,7 @@ from xpra.log import Logger
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 clipboardlog = Logger("server", "clipboard")
+cursorlog = Logger("server", "cursor")
 
 from xpra.util import flatten_dict
 from xpra.gtk_common.quit import (gtk_main_quit_really,
@@ -90,6 +91,13 @@ class GTKServerBase(ServerBase):
                                               })
         info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
+
+    def send_initial_cursors(self, ss, sharing=False):
+        #cursors: get sizes and send:
+        display = gtk.gdk.display_get_default()
+        self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
+        ss.send_cursor()
 
     def get_ui_cursor_info(self):
         #(from UI thread)
