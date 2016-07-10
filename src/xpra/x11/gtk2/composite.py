@@ -55,7 +55,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         WindowDamageHandler.setup(self)
 
     def do_destroy(self, window):
-        trap.swallow_synced(X11Window.XCompositeUnredirectWindow, window)
+        trap.swallow_synced(X11Window.XCompositeUnredirectWindow, window.xid)
         WindowDamageHandler.do_destroy(self, window)
 
     def invalidate_pixmap(self):

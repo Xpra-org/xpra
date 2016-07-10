@@ -31,11 +31,11 @@ class WindowDamageHandler(object):
     XShmEnabled = USE_XSHM
 
     __common_gsignals__ = {
-        "xpra-damage-event"     : one_arg_signal,
-        "xpra-unmap-event"      : one_arg_signal,
-        "xpra-configure-event"  : one_arg_signal,
-        "xpra-reparent-event"   : one_arg_signal,
-        }
+                           "xpra-damage-event"     : one_arg_signal,
+                           "xpra-unmap-event"      : one_arg_signal,
+                           "xpra-configure-event"  : one_arg_signal,
+                           "xpra-reparent-event"   : one_arg_signal,
+                           }
 
     # This may raise XError.
     def __init__(self, client_window, use_xshm=USE_XSHM):
@@ -43,7 +43,7 @@ class WindowDamageHandler(object):
         self.client_window = client_window
         self._use_xshm = use_xshm
         self._damage_handle = None
-        self._shm_handle = None
+        self._xshm_handle = None
         self._contents_handle = None
         self._border_width = 0
 
@@ -77,9 +77,9 @@ class WindowDamageHandler(object):
         if dh:
             self._damage_handle = None
             trap.swallow_synced(X11Window.XDamageDestroy, dh)
-        sh = self._shm_handle
+        sh = self._xshm_handle
         if sh:
-            self._shm_handle = None
+            self._xshm_handle = None
             sh.cleanup()
         #note: this should be redundant since we cleared the
         #reference to self.client_window and shortcut out in do_get_property_contents_handle
@@ -87,7 +87,7 @@ class WindowDamageHandler(object):
         self.invalidate_pixmap()
 
     def acknowledge_changes(self):
-        sh = self._shm_handle
+        sh = self._xshm_handle
         if sh:
             sh.discard()
         dh = self._damage_handle
@@ -103,31 +103,31 @@ class WindowDamageHandler(object):
             self._contents_handle = None
             ch.cleanup()
 
-    def get_shm_handle(self):
+    def get_xshm_handle(self):
         if not self._use_xshm or not WindowDamageHandler.XShmEnabled:
             return None
-        if self._shm_handle and self._shm_handle.get_size()!=self.client_window.get_size():
+        if self._xshm_handle and self._xshm_handle.get_size()!=self.client_window.get_size():
             #size has changed!
             #make sure the current wrapper gets garbage collected:
-            self._shm_handle.cleanup()
-            self._shm_handle = None
-        if self._shm_handle is None:
+            self._xshm_handle.cleanup()
+            self._xshm_handle = None
+        if self._xshm_handle is None:
             #make a new one:
-            self._shm_handle = XImage.get_XShmWrapper(self.client_window.xid)
-            if self._shm_handle is None:
+            self._xshm_handle = XImage.get_XShmWrapper(self.client_window.xid)
+            if self._xshm_handle is None:
                 #failed (may retry)
                 return None
-            init_ok, retry_window, xshm_failed = self._shm_handle.setup()
+            init_ok, retry_window, xshm_failed = self._xshm_handle.setup()
             if not init_ok:
                 #this handle is not valid, clear it:
-                self._shm_handle = None
+                self._xshm_handle = None
             if not retry_window:
                 #and it looks like it is not worth re-trying this window:
                 self._use_xshm = False
             if xshm_failed:
                 log.warn("Warning: disabling XShm support following irrecoverable error")
                 WindowDamageHandler.XShmEnabled = False
-        return self._shm_handle
+        return self._xshm_handle
 
     def _set_pixmap(self):
         self._contents_handle = XImage.get_xwindow_pixmap_wrapper(self.client_window.xid)
@@ -138,7 +138,6 @@ class WindowDamageHandler(object):
             return None
         if self._contents_handle is None:
             log("refreshing named pixmap")
-            assert self._listening_to is None
             trap.swallow_synced(self._set_pixmap)
         return self._contents_handle
 
@@ -151,7 +150,7 @@ class WindowDamageHandler(object):
 
         #try XShm:
         try:
-            shm = self.get_shm_handle()
+            shm = self.get_xshm_handle()
             #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
                 with xsync:
