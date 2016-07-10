@@ -111,10 +111,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
         GTKShadowServerBase.last_client_exited(self)
         X11ServerBase.last_client_exited(self)
 
-    def _process_mouse_common(self, proto, wid, pointer):
-        pointer = self._adjust_pointer(pointer)
-        X11ServerBase._process_mouse_common(self, proto, wid, pointer)
-
 
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)

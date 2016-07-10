@@ -323,7 +323,7 @@ class ShadowServer(GTKShadowServerBase):
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         self._update_modifiers(proto, wid, modifiers)
-        self._process_mouse_common(proto, wid, pointer)
+        x, y = self._process_mouse_common(proto, wid, pointer)
         self._server_sources.get(proto).user_event()
         event = BUTTON_EVENTS.get((button, pressed))
         if event is None:
@@ -331,7 +331,6 @@ class ShadowServer(GTKShadowServerBase):
             return
         elif event is NOEVENT:
             return
-        x, y = pointer
         dwFlags, dwData = event
         win32api.mouse_event(dwFlags, x, y, dwData, 0)
 

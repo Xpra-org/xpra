@@ -2563,8 +2563,17 @@ class ServerBase(ServerCore):
     def _move_pointer(self, wid, pos):
         raise NotImplementedError()
 
+    def _adjust_pointer(self, wid, pointer):
+        return pointer
+
     def _process_mouse_common(self, proto, wid, pointer):
+        pointer = self._adjust_pointer(wid, pointer)
+        self.do_process_mouse_common(proto, wid, pointer)
+        return pointer
+
+    def do_process_mouse_common(self, proto, wid, pointer):
         pass
+
 
     def _process_button_action(self, proto, packet):
         pass

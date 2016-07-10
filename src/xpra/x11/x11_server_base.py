@@ -614,7 +614,7 @@ class X11ServerBase(GTKServerBase):
         x, y = pos
         X11Keyboard.xtest_fake_motion(self.screen_number, x, y)
 
-    def _process_mouse_common(self, proto, wid, pointer):
+    def do_process_mouse_common(self, proto, wid, pointer):
         if self.readonly:
             return
         pos = self.root_window.get_pointer()[:2]
