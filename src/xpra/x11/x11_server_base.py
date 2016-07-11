@@ -358,7 +358,7 @@ class X11ServerBase(GTKServerBase):
 
 
     def get_max_screen_size(self):
-        from xpra.x11.gtk2.window import MAX_WINDOW_SIZE
+        from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
         max_w, max_h = self.root_window.get_size()
         sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:
