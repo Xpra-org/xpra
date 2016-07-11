@@ -388,15 +388,9 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
                           help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
-        group.add_option("--xnest", action="store",
-                          dest="xnest",
-                          default=defaults.xnest,
-                          metavar="CMD",
-                          help="How to run the nested X server. Default: '%default'.")
     else:
         ignore({"use-display"   : False,
                 "xvfb"          : '',
-                "xnest"         : '',
                 "fake-xinerama" : defaults.fake_xinerama})
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",

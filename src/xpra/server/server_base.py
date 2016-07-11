@@ -2099,7 +2099,7 @@ class ServerBase(ServerCore):
         screenlog("_screen_size_changed(%s)", screen)
         #randr has resized the screen, tell the client (if it supports it)
         w, h = screen.get_width(), screen.get_height()
-        screenlog("new screen dimensions: %s", (w, h))
+        screenlog("new screen dimensions: %ix%i", w, h)
         self.calculate_workarea(w, h)
         self.idle_add(self.send_updated_screen_size)
 
@@ -2303,7 +2303,14 @@ class ServerBase(ServerCore):
             ss.send(*packet)
 
     def make_screenshot_packet(self):
-        return  None
+        try:
+            return self.do_make_screenshot_packet()
+        except:
+            log.error("make_screenshot_packet()", exc_info=True)
+            return None
+
+    def do_make_screenshot_packet(self):
+        raise NotImplementedError("no screenshot capability in %s" % type(self))
 
 
     def _process_set_notify(self, proto, packet):

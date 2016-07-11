@@ -883,14 +883,12 @@ def build_xpra_conf(install_dir):
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
-    from xpra.scripts.config import get_default_key_shortcuts, get_Xephyr_command
+    from xpra.scripts.config import get_default_key_shortcuts
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
         bind = "Main"
-        xnest_command = ""
     else:
-        xnest_command = get_Xephyr_command()
         if os.getuid()>0:
             #remove any paths containing the uid,
             #osx uses /var/tmp/$UID-Xpra,
@@ -933,7 +931,6 @@ def build_xpra_conf(install_dir):
             lines.append(line+" \\\n")
         return  (" ".join(lines)).rstrip("\\\n")
     SUBS = {'xvfb_command'          : pretty_cmd(xvfb_command),
-            'xnest_command'         : pretty_cmd(xnest_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",

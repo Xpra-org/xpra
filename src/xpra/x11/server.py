@@ -1053,13 +1053,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             menulog.error(" %s", e)
             err_back(str(e))
 
-    def make_screenshot_packet(self):
-        try:
-            return self.do_make_screenshot_packet()
-        except:
-            log.error("make_screenshot_packet()", exc_info=True)
-            return None
-
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")
         regions = []

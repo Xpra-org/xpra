@@ -200,7 +200,8 @@ class ShadowServerBase(object):
         self._process_window_common(wid)
         self.disconnect_client(proto, DONE, "closed the only window")
 
-    def make_screenshot_packet(self):
+
+    def do_make_screenshot_packet(self):
         w, h, encoding, rowstride, data = self.root_window_model.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]

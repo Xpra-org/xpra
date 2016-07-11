@@ -1088,20 +1088,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
 
-    child_display = display_name
-    nested = None
-    if starting_desktop:
-        nested_cmd = opts.xnest
-        try:
-            #will allocate a new display automatically:
-            child_display = 'SN' + str(os.getpid())
-            nested, child_display = start_Xvfb(nested_cmd, child_display, cwd)
-        except OSError as e:
-            log.error("Error starting '%s':", nested_cmd)
-            log.error(" %s", e)
-            log("start_Xvfb error", exc_info=True)
-            return  1
-
     if opts.daemon:
         log_filename1 = select_log_file(log_dir, opts.log_file, display_name)
         if log_filename0 != log_filename1:
@@ -1114,9 +1100,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
         return  1
-    if nested and not check_xvfb_process(nested):
-        #nested display problem: exit now
-        return  1
 
     display = None
     if not proxying:
@@ -1124,8 +1107,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if os.name=="posix" and starting or starting_desktop:
             #check that we can access the X11 display:
             if not verify_display_ready(xvfb, display_name, shadowing):
-                return 1
-            if nested and not verify_display_ready(nested, child_display, False):
                 return 1
             display = verify_gdk_display(display_name)
             if not display:
@@ -1194,16 +1175,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 dbus_env = {}
         os.environ.update(dbus_env)
 
-        #check for an existing window manager:
-        from xpra.x11.gtk2.wm import wm_check
-        if not wm_check(display, opts.wm_name, upgrading):
-            return 1
         try:
             # This import is delayed because the module depends on gtk:
-            from xpra.x11.server import XpraServer
             from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
-            if starting and not clobber and False:
+            if starting or starting_desktop and not clobber:
                 try:
                     from xpra.x11.bindings.randr_bindings import RandRBindings
                     #try to set a reasonable display size:
@@ -1223,12 +1199,24 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
-        if not X11Window.displayHasXComposite():
-            log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
-            return 1
-        log("XShape=%s", X11Window.displayHasXShape())
-        app = XpraServer(clobber)
-        info = "xpra"
+        if starting:
+            if not X11Window.displayHasXComposite():
+                log.error("Xpra 'start' subcommand runs as a compositing manager")
+                log.error(" it cannot use a display which lacks the XComposite extension!")
+                return 1
+            #check for an existing window manager:
+            from xpra.x11.gtk2.wm import wm_check
+            if not wm_check(display, opts.wm_name, upgrading):
+                return 1
+            log("XShape=%s", X11Window.displayHasXShape())
+            from xpra.x11.server import XpraServer
+            app = XpraServer(clobber)
+            info = "xpra"
+        else:
+            assert starting_desktop
+            from xpra.x11.desktop_server import XpraDesktopServer
+            app = XpraDesktopServer()
+            info = "xpra desktop"
 
     #publish mdns records:
     if opts.mdns:
@@ -1244,13 +1232,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     #the server should be able to manage the display
     #from now on, if we exit without upgrading we will also kill the Xvfb
     def close_display():
-        if nested and nested.poll() is None:
-            log.info("killing nested X11 server with pid %s", nested.pid)
-            try:
-                os.kill(nested.pid, signal.SIGTERM)
-            except OSError as e:
-                log.info("failed to kill nested X11 server process with pid %s:", nested.pid)
-                log.info(" %s", e)                
         # Close our display(s) first, so the server dying won't kill us.
         import gtk  #@Reimport
         for d in gtk.gdk.display_manager_get().list_displays():
@@ -1270,9 +1251,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app.exec_cwd = cwd
         app.init(opts)
         app.init_components(opts)
-        if nested:
-            app.add_process(nested, "nested display", nested_cmd, True)
-            app.child_display = child_display
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)

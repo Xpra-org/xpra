@@ -31,6 +31,7 @@ class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
 
     def __init__(self):
         super(WindowModelStub, self).__init__()
+        self._setup_done = False            #so we can ignore notify() events during setup
         self._managed = False
         self._managed_handlers = []
 

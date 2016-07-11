@@ -82,18 +82,6 @@ def get_Xvfb_command():
            ]
     return cmd
 
-def get_Xephyr_command():
-    cmd = ["Xephyr",
-           "+extension", "Composite",
-           "-screen", "1600x1200x24+32",
-           #better than leaving to vfb after a resize?
-           "-dpi", "96",
-           "-nolisten", "tcp",
-           "-noreset",
-           "-auth", "$XAUTHORITY"
-           ]
-    return cmd
-
 
 def OpenGL_safety_check():
     #Ubuntu 12.04 will just crash on you if you try:
@@ -316,7 +304,6 @@ OPTION_TYPES = {
                     "mode"              : str,
                     "ssh"               : str,
                     "xvfb"              : str,
-                    "xnest"             : str,
                     "socket-dir"        : str,
                     "mmap"              : str,
                     "log-dir"           : str,
@@ -460,10 +447,8 @@ def get_defaults():
         username = get_username()
     except:
         username = ""
-    xnest = get_Xephyr_command()
     if WIN32 or PYTHON3:
         xvfb = ""
-        xnest = ""
     elif XDUMMY:
         xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER, log_dir=get_default_log_dir())
     else:
@@ -502,7 +487,6 @@ def get_defaults():
                     "tcp-encryption-keyfile": "",
                     "ssh"               : DEFAULT_SSH_COMMAND,
                     "xvfb"              : " ".join(xvfb),
-                    "xnest"             : " ".join(xnest),
                     "socket-dir"        : "",
                     "log-dir"           : get_default_log_dir(),
                     "log-file"          : "$DISPLAY.log",

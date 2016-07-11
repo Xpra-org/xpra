@@ -13,7 +13,7 @@ from xpra.x11.gtk2.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             )
-from xpra.gtk_common.error import trap, xsync, XError
+from xpra.gtk_common.error import trap, xsync, xswallow, XError
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 XImage = XImageBindings()
@@ -101,7 +101,8 @@ class WindowDamageHandler(object):
         ch = self._contents_handle
         if ch:
             self._contents_handle = None
-            ch.cleanup()
+            with xswallow:
+                ch.cleanup()
 
     def get_xshm_handle(self):
         if not self._use_xshm or not WindowDamageHandler.XShmEnabled:
