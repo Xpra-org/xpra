@@ -1271,6 +1271,10 @@ class UIXpraClient(XpraClientBase):
             #this allows us behave more like VNC:
             window = self._id_to_window.get(wid)
             log("window_close_event(%i) window=%s", wid, window)
+            if self.server_is_desktop:
+                log.info("window-close event on desktop or shadow window, disconnecting")
+                self.quit(0)
+                return True
             if window:
                 metadata = getattr(window, "_metadata", {})
                 log("window_close_event(%i) metadata=%s", wid, metadata)
