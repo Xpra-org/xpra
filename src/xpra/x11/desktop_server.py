@@ -11,7 +11,7 @@ import socket
 
 from xpra.util import updict
 from xpra.platform.gui import get_wm_name
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.error import xswallow
 from xpra.x11.gtk2.models.model_stub import WindowModelStub
 from xpra.x11.gtk2.gdk_bindings import (
@@ -44,6 +44,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     __gsignals__ = {}
     __gsignals__.update(WindowDamageHandler.__common_gsignals__)
     __gsignals__.update({
+                         "resized"                  : no_arg_signal,
                          "client-contents-changed"  : one_arg_signal,
                          })
 
@@ -101,7 +102,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def get_property(self, prop):
         if prop=="xid":
             return self.client_window.xid
-        if prop=="title":
+        elif prop=="title":
             return get_wm_name() or "xpra desktop"
         elif prop=="client-machine":
             return socket.gethostname()
@@ -115,9 +116,12 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return gobject.GObject.get_property(self, prop)
 
     def _screen_size_changed(self, screen):
-        screenlog("screen size changed: %s", screen)
+        w, h = screen.get_width(), screen.get_height()
+        screenlog("screen size changed: new size %ix%i", w, h)
+        screenlog("root window geometry=%s", self.client_window.get_geometry())
         self.invalidate_pixmap()
         self.update_size_hints(screen)
+        self.emit("resized")
 
     def update_size_hints(self, screen):
         w, h = screen.get_width(), screen.get_height()
@@ -194,6 +198,20 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         windowlog("adding root window model %s", model)
         X11ServerBase._add_new_window_common(self, model)
         model.managed_connect("client-contents-changed", self._contents_changed)
+        model.managed_connect("resized", self._window_resized_signaled)
+
+
+    def _window_resized_signaled(self, window, *args):
+        #the vfb has been resized
+        wid = self._window_to_id[window]
+        x, y, w, h = window.get_geometry()
+        if window.mapped_at:
+            x, y = window.mapped_at[:2]
+        window.mapped_at = (x, y, w, h)
+        windowlog.warn("window_resized_signaled(%s) mapped at=%s", window, window.mapped_at)
+        for ss in self._server_sources.values():
+            ss.move_resize_window(wid, window, x, y, w, h)
+            ss.damage(wid, window, 0, 0, w, h)
 
 
     def send_initial_windows(self, ss, sharing=False):

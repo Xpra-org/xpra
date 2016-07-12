@@ -1965,7 +1965,7 @@ class ServerSource(FileTransferHandler):
             return
         self.send("lost-window", wid)
 
-    def move_resize_window(self, wid, window, x, y, ww, wh, resize_counter):
+    def move_resize_window(self, wid, window, x, y, ww, wh, resize_counter=0):
         """
         The server detected that the application window has been moved and/or resized,
         we forward it if the client supports this type of event.
