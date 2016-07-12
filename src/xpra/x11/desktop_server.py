@@ -178,7 +178,10 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
         if source.wants_features:
-            capabilities["pointer.grabs"] = True
+            capabilities.update({
+                                 "pointer.grabs"    : True,
+                                 "desktop"          : True,
+                                 })
             updict(capabilities, "window", {
                 "decorations"            : True,
                 "resize-counter"         : True,

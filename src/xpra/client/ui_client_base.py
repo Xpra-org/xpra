@@ -157,7 +157,7 @@ class UIXpraClient(XpraClientBase):
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling
         self.scale_change_embargo = 0
-        self.shadow_fullscreen = False
+        self.desktop_fullscreen = False
 
         #draw thread:
         self._draw_queue = None
@@ -255,7 +255,7 @@ class UIXpraClient(XpraClientBase):
         self.start_new_commands = False
         self.server_window_decorations = False
         self.server_window_frame_extents = False
-        self.server_is_shadow = False
+        self.server_is_desktop = False
         self.server_supports_sharing = False
         self.server_supports_window_filters = False
         #what we told the server about our encoding defaults:
@@ -334,7 +334,7 @@ class UIXpraClient(XpraClientBase):
                 self.supports_mmap = True
             else:
                 self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
-        self.shadow_fullscreen = opts.shadow_fullscreen
+        self.desktop_fullscreen = opts.desktop_fullscreen
 
         self.webcam_option = opts.webcam
         self.webcam_forwarding = self.webcam_option.lower() not in ("no", "false")
@@ -1036,7 +1036,7 @@ class UIXpraClient(XpraClientBase):
         self.scale_change(xscale/self.xscale, yscale/self.yscale)
 
     def scale_change(self, xchange=1, ychange=1):
-        if self.server_is_shadow and self.shadow_fullscreen:
+        if self.server_is_desktop and self.desktop_fullscreen:
             scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)
             return
         if not self.can_scale:
@@ -1067,7 +1067,7 @@ class UIXpraClient(XpraClientBase):
         sh = int(root_h / yscale)
         scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)
         scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
-        if not self.server_is_shadow and (sw>(maxw+1) or sh>(maxh+1)):
+        if not self.server_is_desktop and (sw>(maxw+1) or sh>(maxh+1)):
             #would overflow..
             scalinglog.warn("Warning: cannot scale by %i%% x %i%% or lower", (100*xscale), (100*yscale))
             scalinglog.warn(" the scaled client screen %i x %i -> %i x %i", root_w, root_h, sw, sh)
@@ -1839,12 +1839,12 @@ class UIXpraClient(XpraClientBase):
         log("server desktop size=%s", server_desktop_size)
         self.server_supports_sharing = c.boolget("sharing")
         self.server_supports_window_filters = c.boolget("window-filters")
-        self.server_is_shadow = c.boolget("shadow")
+        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         skip_vfb_size_check = False           #if we decide not to use scaling, skip warnings
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
             #scaling is used, make sure that we need it and that the server can support it
             #(without rounding support, size-hints can cause resize loops)
-            if self.server_is_shadow and not self.shadow_fullscreen:
+            if self.server_is_desktop and not self.desktop_fullscreen:
                 #don't honour auto mode in this case
                 if self.desktop_scaling=="auto":
                     log.info(" not scaling a shadow server")
@@ -1863,7 +1863,7 @@ class UIXpraClient(XpraClientBase):
                 self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
-        if not self.server_is_shadow and not skip_vfb_size_check:
+        if not self.server_is_desktop and not skip_vfb_size_check:
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
@@ -2682,7 +2682,7 @@ class UIXpraClient(XpraClientBase):
     def cook_metadata(self, new_window, metadata):
         #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
-        if self.server_is_shadow and self.shadow_fullscreen:
+        if self.server_is_desktop and self.desktop_fullscreen:
             #force it fullscreen:
             try:
                 del metadata["size-constraints"]
@@ -3084,7 +3084,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def may_adjust_scaling(self):
-        if self.server_is_shadow and not self.shadow_fullscreen:
+        if self.server_is_desktop and not self.desktop_fullscreen:
             #don't try to make it fit
             return
         assert self.can_scale
@@ -3108,7 +3108,7 @@ class UIXpraClient(XpraClientBase):
                 return int(str(v).rstrip("0").rstrip("."))
             except:
                 return v
-        if self.server_is_shadow:
+        if self.server_is_desktop:
             self.xscale = mint(x)
             self.yscale = mint(y)
         else:

@@ -344,9 +344,9 @@ window-close = auto
 #desktop-scaling = on
 desktop-scaling = auto
 
-# Make shadow servers show up in fullscreen mode:
-#shadow-fullscreen = yes
-shadow-fullscreen = no
+# Make desktop or shadow ervers show up in fullscreen mode:
+#desktop-fullscreen = yes
+desktop-fullscreen = no
 
 
 ########################################################################

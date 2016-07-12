@@ -378,7 +378,7 @@ OPTION_TYPES = {
                     "open-files"        : bool,
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
-                    "shadow-fullscreen" : bool,
+                    "desktop-fullscreen": bool,
                     "global-menus"      : bool,
                     #arrays of strings:
                     "pulseaudio-configure-commands" : list,
@@ -559,7 +559,7 @@ def get_defaults():
                     "printing"          : True,
                     "open-files"        : False,
                     "swap-keys"         : OSX,  #only used on osx
-                    "shadow-fullscreen" : False,
+                    "desktop-fullscreen": False,
                     "global-menus"      : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : [],
