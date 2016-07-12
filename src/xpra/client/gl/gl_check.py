@@ -291,8 +291,8 @@ def do_check_GL_support(force_enable):
                 log("%s '%s' not found in %s: %s", k, v, listname, vlist)
             return None
         blacklisted = match_list(BLACKLIST, "blacklist")
-        whitelisted = match_list(GREYLIST, "greylist")
-        greylisted = match_list(WHITELIST, "whitelist")
+        greylisted = match_list(GREYLIST, "greylist")
+        whitelisted = match_list(WHITELIST, "whitelist")
         if blacklisted:
             if whitelisted:
                 log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
