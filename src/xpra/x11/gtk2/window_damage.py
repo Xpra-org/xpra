@@ -39,7 +39,7 @@ class WindowDamageHandler(object):
 
     # This may raise XError.
     def __init__(self, client_window, use_xshm=USE_XSHM):
-        log("WindowDamageHandler.__init__(%#x, %s, %s)", client_window.xid)
+        log("WindowDamageHandler.__init__(%#x, %s)", client_window.xid, use_xshm)
         self.client_window = client_window
         self._use_xshm = use_xshm
         self._damage_handle = None
@@ -57,9 +57,13 @@ class WindowDamageHandler(object):
         self.invalidate_pixmap()
         xid = self.client_window.xid
         self._border_width = X11Window.geometry_with_border(xid)[-1]
+        self.create_damage_handle()
+        add_event_receiver(self.client_window, self)
+
+    def create_damage_handle(self):
+        xid = self.client_window.xid
         self._damage_handle = X11Window.XDamageCreate(xid)
         log("damage handle(%#x)=%#x", xid, self._damage_handle)
-        add_event_receiver(self.client_window, self)
 
     def destroy(self):
         if self.client_window is None:
@@ -72,6 +76,10 @@ class WindowDamageHandler(object):
 
     def do_destroy(self, win):
         remove_event_receiver(win, self)
+        self.destroy_damage_handle()
+
+    def destroy_damage_handle(self):
+        log("close_damage_handle()")
         self.invalidate_pixmap()
         dh = self._damage_handle
         if dh:
@@ -88,17 +96,18 @@ class WindowDamageHandler(object):
 
     def acknowledge_changes(self):
         sh = self._xshm_handle
+        dh = self._damage_handle
+        log("acknowledge_changes() xshm handle=%s, damage handle=%s", sh, dh)
         if sh:
             sh.discard()
-        dh = self._damage_handle
         if dh and self.client_window:
             #"Synchronously modifies the regions..." so unsynced?
             if not trap.swallow_synced(X11Window.XDamageSubtract, dh):
                 self.invalidate_pixmap()
 
     def invalidate_pixmap(self):
-        log("invalidating named pixmap")
         ch = self._contents_handle
+        log("invalidating named pixmap, contents handle=%s", ch)
         if ch:
             self._contents_handle = None
             with xswallow:
