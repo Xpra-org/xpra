@@ -362,11 +362,22 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 /usr/lib/cups/backend/xpraforwarder
-/usr/lib/tmpfiles.d/xpra.conf
+%config /usr/lib/tmpfiles.d/xpra.conf
+%config %{_sysconfdir}/pam.d/xpra
 %dir %{_sysconfdir}/xpra
-%{_sysconfdir}/pam.d/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
+%config %{_sysconfdir}/xpra/conf.d/05_features.conf
+%config %{_sysconfdir}/xpra/conf.d/10_network.conf
+%config %{_sysconfdir}/xpra/conf.d/15_file_transfers.conf
+%config %{_sysconfdir}/xpra/conf.d/16_printing.conf
+%config %{_sysconfdir}/xpra/conf.d/20_sound.conf
+%config %{_sysconfdir}/xpra/conf.d/30_picture.conf
+%config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
+%config %{_sysconfdir}/xpra/conf.d/40_client.conf
+%config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
+%config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
+%config %{_sysconfdir}/xpra/conf.d/60_server.conf
 
 %files
 %{python2_sitearch}/xpra
