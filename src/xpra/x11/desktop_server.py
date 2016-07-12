@@ -134,6 +134,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def do_xpra_damage_event(self, event):
         self.emit("client-contents-changed", event)
 
+gobject.type_register(DesktopModel)
+
 
 """
     A server class for RFB / VNC-like desktop displays,
@@ -217,7 +219,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         pass
 
     def _contents_changed(self, window, event):
-        log("contents changed: %s", event)
+        log("contents changed on %s: %s", window, event)
         self._damage(window, event.x, event.y, event.width, event.height)
 
 
