@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.18.0
+%define version 1.0
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -419,7 +419,7 @@ fi
 
 
 %changelog
-* Mon Apr 18 2016 Antoine Martin <antoine@devloop.org.uk> 0.18.0-1
+* Tue Jul 12 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
 - TODO
 
 * Mon Apr 18 2016 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1

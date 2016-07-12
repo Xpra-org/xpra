@@ -593,7 +593,7 @@ XpraClient.prototype._make_hello_base = function() {
 	this.capabilities = {};
 	this._update_capabilities({
 		// version and platform
-		"version"					: "0.18.0",
+		"version"					: "1.0",
 		"platform"					: this._guess_platform(),
 		"platform.name"				: this._guess_platform_name(),
 		"platform.processor"		: this._guess_platform_processor(),
