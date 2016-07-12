@@ -235,11 +235,19 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         debug("invalid config directory: %s", cdir)
         return  d
+    #look for conf.d:
+    conf_d_dir = os.path.join(cdir, "conf.d")
+    if os.path.exists(conf_d_dir) and os.path.isdir(conf_d_dir):
+        for f in os.listdir(conf_d_dir):
+            if f.endswith(".conf"):
+                conf_file = os.path.join(conf_d_dir, f)
+                d.update(read_config(conf_file))
     conf_file = os.path.join(cdir, xpra_conf_filename)
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         debug("config file does not exist: %s", conf_file)
         return  d
-    return read_config(conf_file)
+    d.update(read_config(conf_file))
+    return d
 
 def read_xpra_defaults():
     """

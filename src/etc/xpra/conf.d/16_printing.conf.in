@@ -1,0 +1,22 @@
+################################################################################
+# Printer forwarding
+
+# Print support:
+printing = %(printing)s
+
+# To manage printers:
+#lpadmin = lpadmin
+#lpadmin = sudo lpadmin
+lpadmin = /usr/sbin/lpadmin
+
+# To query printer definitions:
+#lpinfo = lpinfo
+#lpinfo = sudo lpinfo
+lpinfo = /usr/sbin/lpinfo
+
+# To save startup time, use pre-defined printers:
+# Postscript:
+# postscript-printer = drv:///sample.drv/generic.ppd
+postscript-printer = %(postscript_printer)s
+# pdf-printer = /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
+pdf-printer = %(pdf_printer)s

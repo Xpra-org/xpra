@@ -1,0 +1,37 @@
+################################################################################
+# General Options
+
+# Enable clipboard forwarding:
+#clipboard = yes
+#clipboard = no
+# Can also be used to specify a different keyboard implementation:
+#clipboard = GDK
+#clipboard = translated
+#clipboard = default
+#clipboard = auto
+clipboard = yes
+
+# Direction of clipboard transfers:
+#clipboard-direction = to-server
+#clipboard-direction = to-client
+clipboard-direction = both
+
+# Forward notifications:
+notifications = yes
+
+# Show Xpra's tray menu
+tray = yes
+
+# Forward system tray icons:
+system-tray = yes
+
+# Debugging:
+#debug =
+#debug = keyboard,clipboard,tray
+
+# Send ping packets more regularly (every second):
+pings = no
+
+# Allow the client to forward its log output to the server:
+#remote-logging = yes
+remote-logging = %(remote_logging)s

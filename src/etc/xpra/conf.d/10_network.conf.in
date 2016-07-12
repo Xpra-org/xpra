@@ -1,0 +1,49 @@
+################################################################################
+# Network Connection
+
+# Enable shared memory transfers:
+mmap = %(mmap)s
+
+# Use server group ownership for mmap file:
+mmap-group = no
+
+# The file permissions set on the server's unix domain socket
+# (ignored when mmap-group is enabled)
+#socket-permissions = 660
+socket-permissions = 600
+
+# Share session with other users:
+sharing = no
+
+# Compressors:
+#compressors = all
+#compressors = none
+#compressors = zlib
+compressors = lz4, lzo, zlib
+
+# Default compression (0 to 9):
+compression_level = 1
+
+# Packet encoders (at least one is required):
+#packet-encoders = bencode
+#packet-encoders = all
+packet-encoders = rencode, bencode, yaml
+
+# Socket directories (may be specified more than once):
+#socket-dirs = /tmp
+#socket-dirs = ~/.xpra
+#socket-dirs = /var/run/xpra
+socket-dirs = %(socket_dirs)s
+
+# Where to create new sockets
+# (otherwise the first "socket-dirs" is used)
+#socket-dir = /tmp
+#socket-dir = ~/.xpra
+
+# Session idle timeout in seconds:
+#idle-timeout = 120
+idle-timeout = 0
+
+# Server idle timeout in seconds:
+#server-idle-timeout = 600
+server-idle-timeout = 0

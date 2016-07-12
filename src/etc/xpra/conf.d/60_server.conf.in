@@ -1,0 +1,61 @@
+########################################################################
+# Server Options:
+
+# Directory for server log files:
+#log-dir = ~/.xpra
+#log-dir = /tmp
+log-dir = %(log_dir)s
+
+# Log file:
+log-file = $DISPLAY.log
+
+# Commands to start by default
+#  (may be specified more than once):
+# examples:
+#start-child = /usr/bin/xterm
+#start-child = /usr/bin/xeyes
+#start=/bin/true
+#
+# Xsession can take care of initializing dbus, keyring-daemon,
+# gpg-agent or whatever else might be usually started together with X
+#start = /etc/X11/Xsession true
+# Or you can specify individual actions:
+#xrdb -merge /etc/X11/Xresources
+#xrdb -merge ~/.Xresources
+#
+# The difference between start and start-child is only relevant
+# when using exit-with-children.
+# This causes the server to terminate when the last child has exited:
+exit-with-children = no
+
+# Commands to start immediately after the first client has connected:
+# (see above for the start vs start-child distinction)
+#start-after-connect = touch ~/.xpra/connect
+#start-child-after-connect = xterm
+
+# Commands to every time a client connects:
+# (see above for the start vs start-child distinction)
+#start-on-connect = touch ~/.xpra/login
+#start-child-on-connect = xterm
+
+# Start a dbus-daemon:
+# dbus-launch =
+# dbus-launch = /usr/bin/dbus-launch --close-stderr
+dbus-launch = dbus-launch --close-stderr
+
+# Start a dbus server which can be used to interact with the server process:
+#dbus-control = no
+dbus-control = %(dbus_control)s
+
+# Forward client dbus rpc requests:
+# (requires client configuration)
+#dbus-proxy = no
+dbus-proxy = %(dbus_proxy)s
+
+# A wrapper for executing all sub-commands:
+# exec-wrapper = vglrun --
+# exec-wrapper = vglrun -d :1 --
+
+# Allows clients to start new commands in the server context:
+#start-new-commands = yes
+start-new-commands = no

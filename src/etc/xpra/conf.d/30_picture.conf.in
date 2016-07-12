@@ -1,0 +1,83 @@
+################################################################################
+# Picture Encoding
+
+# Encodings allowed:
+# (not all encodings may be available in your environment):
+#encodings = h264, vp8, png, png/P, png/L, webp, rgb, jpeg, h265, vp9
+#encodings = all
+#encodings = rgb
+encodings = all
+
+# Default encoding
+# (not all encodings may be available in your environment):
+#encoding = h264
+#encoding = vp8
+#encoding = png
+#encoding = jpeg
+#encoding = rgb
+#encoding = webp
+
+# Used by the server to encode video:
+# video-encoders = x264, vpx, nvenc
+# video-encoders = none
+# video-encoders = all
+video-encoders = all
+
+# Used by both the client and server for colourspace conversion:
+# csc-modules = swscale, cython, opencl
+# csc-modules = none
+# csc-modules = all
+csc-modules = all
+
+# Used by the client for decoding:
+# video-decoders = avcodec2, vpx
+# video-decoders = avcodec, vpx
+# video-decoders = none
+# video-decoders = all
+video-decoders = all
+
+# Automatic video downscaling:
+# video-scaling = 0		#same as off
+# video-scaling = off
+# video-scaling = on
+# video-scaling = 10		#mild automatic downscaling
+# video-scaling = 100		#very aggressive downscaling
+video-scaling = on
+
+# Use fixed quality
+# (value is a percentage or "auto"):
+#quality = 80
+quality = auto
+
+# For auto quality only:
+#min-quality = 50
+min-quality = 30
+
+# Use fixed speed
+# (value is a percentage or "auto"):
+#speed = 90
+speed = auto
+
+# For auto speed only:
+#min-speed = 0
+min-speed = 30
+
+# Idle delay in seconds before doing an automatic lossless refresh:
+auto-refresh-delay = 0.15
+
+# Use a fixed DPI:
+#dpi = 96
+#automatic (which is the default):
+#dpi = 0
+
+# Video encoders loaded by the server
+# (all of them unless specified)
+# examples:
+#video-encoders=x264,vpx,nvenc
+#video-encoders=x264
+
+# Colourspace conversion modules loaded by the server
+# (all of them unless specified)
+# examples:
+#csc-modules=swscale,cython,opencl
+#csc-modules=swscale

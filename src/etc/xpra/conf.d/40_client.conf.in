@@ -1,0 +1,61 @@
+################################################################################
+# Client Options
+
+# OpenGL accelerated rendering:
+#opengl = yes
+#opengl = no
+opengl = auto
+
+# Client window title:
+title = @title@ on @client-machine@
+
+# Icon used by the system tray:
+#tray-icon = /path/to/icon.png
+
+# Keyboard synchronization:
+keyboard-sync = yes
+
+# Client ssh command:
+#ssh = "C:\Program Files\Plink.exe" -ssh -noagent
+#ssh = /usr/bin/ssh
+#ssh = ssh -o ControlMaster=no -o ConnectTimeout=20
+#ssh = ssh -x
+ssh = %(ssh_command)s
+
+# Key Shortcuts:
+%(key_shortcuts)s
+
+# Border:
+#border=auto:off,5
+#border=auto,5
+#border=red,1
+#border=no
+
+# What to do when the user closes the window:
+# - forward the action to the server:
+# window-close = forward
+# window-close = ignore
+# window-close = disconnect
+# window-close = ask
+window-close = auto
+
+# Desktop Scaling:
+# - double the size of all windows:
+#desktop-scaling = 2
+# - increase the size by 50%%:
+#desktop-scaling = 1.5
+#desktop-scaling = 3/2
+# - disable all desktop scaling:
+#desktop-scaling = off
+#desktop-scaling = 0
+# - enable desktop scaling and automatically select
+#   a scaling value if the client display is large:
+#desktop-scaling = auto
+# - enable desktop scaling, but start with no scaling activated:
+#desktop-scaling = 1
+#desktop-scaling = on
+desktop-scaling = auto
+
+# Make desktop or shadow ervers show up in fullscreen mode:
+#desktop-fullscreen = yes
+desktop-fullscreen = no

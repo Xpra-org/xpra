@@ -1,0 +1,19 @@
+################################################################################
+# File transfers
+
+# Receive files
+file-transfer = yes
+
+# Location where files are received:
+#download-path = ~/Downloads
+#download-path = ~/Desktop
+#download-path = /tmp
+
+# File size limit in MB
+file-size-limit = 100
+
+# How to open files:
+#open-command = xdg-open
+
+# Open files
+open-files = no

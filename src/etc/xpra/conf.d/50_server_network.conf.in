@@ -1,0 +1,49 @@
+########################################################################
+# Server Network Options:
+
+# Where to create local sockets:
+# bind=none
+# bind=auto
+# bind=~/.xpra/
+# bind=FILENAME
+# bind=/path/to/socketfilename
+# bind=/run/user/$UID/xpra/
+bind = %(bind)s
+
+# Authentication module to use for local sockets:
+#auth=fail
+#auth=reject
+#auth=allow
+#auth=file
+#auth=multifile
+#auth=sys
+#auth=none
+
+# To listen on TCP sockets:
+# bind-tcp=:10000
+# bind-tcp=0.0.0.0:10000
+# bind-tcp=192.168.0.1:10000
+
+# Authentication module to use for TCP sockets:
+#tcp-auth=none
+
+# To listen on AF_VSOCK sockets:
+# bind-vsock=auto:2000
+# bind-vsock=2:2000
+
+# Authentication to use for VSOCK:
+#vsock-auth=none
+
+# Where to send non xpra clients:
+# (can be used to share the port with a web server)
+#tcp-proxy = 127.0.0.1:80
+
+# Respond to HTTP requests on the TCP ports (requires bind-tcp):
+#html = no
+#html = yes
+#html = /var/www/htdocs/
+html = auto
+
+# Publish sessions:
+#mdns = no
+mdns = %(mdns)s

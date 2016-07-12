@@ -1,0 +1,62 @@
+########################################################################
+# X11 Server Environment:
+
+# Set the _NET_WM_NAME,
+# used by some application that make too many assumptions (ie: Java)
+# To workaround JDK6 window positioning issues, use:
+#wm-name = Sawfish
+wm-name = Xpra
+
+# Input methods
+# To disable input method completely:
+#input-method=none
+# To keep the environment unchanged:
+#input-method=keep
+# Other possible options:
+#input-method=IBus
+#input-method=SCIM
+#input-method=uim
+input-method=none
+
+# Environment variables for children started
+# with 'start-child' or 'start':
+# (can be specified multiple times)
+#env = HOME=/home/alt
+#env = GDK_DEBUG=dnd
+%(env)s
+
+# Start a pulseaudio server with each session:
+pulseaudio = %(pulseaudio)s
+
+# pulseaudio server start command:
+pulseaudio-command = %(pulseaudio_command)s
+
+# commands used to configure the pulseaudio server:
+# pactl set-source-volume SomeSource 20%%
+%(pulseaudio_configure_commands)s
+
+# Paint the windows on the xvfb so that
+# screen grabs and screen recorders will work
+# (repaint delay in milliseconds, 0 to disable)
+# sync-xvfb = 200
+# sync-xvfb = 50
+sync-xvfb = 0
+
+# Virtual display command:
+# - Old Xvfb option (required on Ubuntu where Xorg is broken):
+# xvfb = Xvfb +extension Composite -nolisten tcp -noreset \
+#        -auth $XAUTHORITY \
+#        -screen 0 5760x2560x24+32
+# - With Xorg 1.12 or newer and the dummy driver:
+# xvfb = /usr/bin/Xorg -noreset -nolisten tcp \
+#        +extension GLX +extension RANDR +extension RENDER \
+#        -auth $XAUTHORITY \
+#        -logfile %(log_dir)s/Xorg.${DISPLAY}.log \
+#        -configdir ${HOME}/.xpra/xorg.conf.d
+#        -config %(conf_dir)s/xorg.conf
+#
+# Selecting virtual X server:
+xvfb = %(xvfb_command)s
+
+# Does the xvfb command support the "-displayfd" argument?
+displayfd = %(has_displayfd)s

@@ -874,8 +874,6 @@ def detect_xorg_setup(install_dir=None):
 def build_xpra_conf(install_dir):
     #generates an actual config file from the template
     xvfb_command, has_displayfd, _ = detect_xorg_setup(install_dir)
-    with open("etc/xpra/xpra.conf.in", "r") as f_in:
-        template  = f_in.read()
     from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
         return ["no", "yes"][int(b)]
@@ -952,14 +950,29 @@ def build_xpra_conf(install_dir):
             'dbus_control'          : dbus_ENABLED,
             'mmap'                  : bstr(not OSX and not WIN32),
             }
-    conf = template % SUBS
-    #get conf dir for install, without stripping the build root
-    conf_dir = get_conf_dir(install_dir, stripbuildroot=False)
-    if not os.path.exists(conf_dir):
-        os.makedirs(conf_dir)
-    with open(conf_dir + "/xpra.conf", "w") as f_out:
-        f_out.write(conf)
-
+    def convert_templates(subdirs=[]):
+        dirname = os.path.join(*(["etc", "xpra"] + subdirs))
+        #get conf dir for install, without stripping the build root
+        target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
+        print("convert_templates(%s) dirname=%s, target_dir=%s" % (subdirs, dirname, target_dir))
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+        for f in os.listdir(dirname):
+            filename = os.path.join(dirname, f)
+            if os.path.isdir(filename):
+                convert_templates(subdirs+[f])
+                continue
+            if not f.endswith(".in"):
+                continue
+            with open(filename, "r") as f_in:
+                template  = f_in.read()
+            target_file = os.path.join(target_dir, f[:-len(".in")])
+            print("generating %s from %s" % (target_file, f))
+            with open(target_file, "w") as f_out:
+                config_data = template % SUBS
+                f_out.write(config_data)
+    convert_templates()
+    
 
 #*******************************************************************************
 if 'clean' in sys.argv or 'sdist' in sys.argv:

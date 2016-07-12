@@ -1,0 +1,41 @@
+################################################################################
+# Sound
+
+# Forward sound output to clients:
+#speaker = off
+#speaker = disabled
+speaker = on
+
+# Forward sound input to server:
+# microphone = disabled
+# microphone = on
+# microphone = on: Built-in Audio Analog Stereo
+# microphone = off: Built-in Audio Analog Stereo
+microphone = off
+
+# Sound Encoding
+
+# Sound plugin to use for capturing sound:
+#sound-source = pulse
+#sound-source = alsa
+#sound-source = auto
+
+# Codec(s) to use for forwarding speaker sound:
+#speaker-codec = mp3
+#speaker-codec = flac
+#speaker-codec = wav
+#speaker-codec = wavpack
+#speaker-codec = speex
+#speaker-codec = opus
+
+# Codec(s) to use for forwarding microphone sound:
+#microphone-codec = mp3
+#microphone-codec = flac
+#microphone-codec = wav
+#microphone-codec = wavpack
+#microphone-codec = speex
+#microphone-codec = opus
+
+# Try to synchronize audio and video:
+#av-sync = off
+av-sync = on

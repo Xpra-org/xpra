@@ -308,7 +308,7 @@ the xpra server.
 
 If your \fBxvfb\fP command supports the \fB-displayfd\fP argument,
 you may set the \fBdisplayfd\fP option to \fBtrue\fP in your
-\fB/etc/xpra/xpra.conf\fP file (or your user's \fB~/.xpra/xpra.conf\fP)
+\fBxpra.conf\fP file
 and then you may omit the display number when using \fBxpra start\fP:
 a display will be chosen for you automatically.
 The display number chosen will be shown in the log output, you should
@@ -1249,6 +1249,8 @@ fIXPRA_PASSWORD\fP may be used with \fBxpra attach\fP instead of the
 \fIxpra.conf\fP stores default values for most options.
 There is a global configuration file in \fI/etc\fP or \fI/usr/local/etc\fP,
 and each user may override those defaults by creating the file \fI.xpra/xpra.conf\fP.
+You can also split the options into multiple files by placing them
+in a \fIconf.d\fP directory with the \fI.conf\fP extension.
 Xpra uses the directory \fI~/.xpra\fP to store a number of files.
 (The examples below are given for the display \fI:7\fP.)
 .TP
