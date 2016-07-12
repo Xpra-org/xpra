@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import time
+
 from xpra.log import Logger
 log = Logger("encoder", "pillow")
 
@@ -13,6 +16,8 @@ import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 PIL_VERSION = PIL.PILLOW_VERSION
 PIL_can_optimize = PIL_VERSION and PIL_VERSION>="2.2"
+
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
 def get_version():
@@ -86,7 +91,7 @@ def encode(coding, image, quality, speed, supports_transparency):
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
             client_options["optimize"] = True
-        im.save(buf, coding.upper(), **kwargs)
+        pil_fmt = coding.upper()
     else:
         assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
         if coding in ("png/L", "png/P") and supports_transparency and rgb=="RGBA":
@@ -134,7 +139,12 @@ def encode(coding, image, quality, speed, supports_transparency):
         #default is good enough, no need to override, other options:
         #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
         #kwargs["compress_type"] = PIL.Image.DEFAULT_STRATEGY
-        im.save(buf, "PNG", **kwargs)
+        pil_fmt = "PNG"
+    im.save(buf, pil_fmt, **kwargs)
+    if SAVE_TO_FILE:
+        filename = "./%s.%s" % (time.time(), pil_fmt)
+        im.save(filename, pil_fmt)
+        log.info("saved %s to %s", coding, filename)
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()
     buf.close()
