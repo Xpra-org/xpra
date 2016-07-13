@@ -435,7 +435,7 @@ cdef class Pusher:
         assert buf_len>=Vstride*(image.get_height()//Vhdiv), "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*(image.get_height()//Vhdiv))
         assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
-        cdef size_t l = self.framesize + self.rowstride*8
+        cdef size_t l = self.framesize + self.rowstride
         cdef uint8_t* buf = <uint8_t*> xmemalign(l)
         memset(buf, 0, l)
         assert buf!=NULL, "failed to allocate temporary output buffer"
