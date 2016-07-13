@@ -160,9 +160,9 @@ fi
 
 echo
 echo "*******************************************************************************"
-echo "Ship a default xpra.conf"
-#the build / install step should have placed on there:
-cp ../src/build/etc/xpra/xpra.conf ${RSCDIR}/etc/
+echo "Ship default config files"
+#the build / install step should have placed them here:
+rsync -rplogtv ../src/build/etc/xpra/* ${RSCDIR}/etc/
 
 
 echo
