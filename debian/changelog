@@ -1,7 +1,19 @@
 xpra (1.0-1) UNRELEASED; urgency=low
-  * TODO
+  * split configuration file in /etc/xpra/conf.d/
+  * support keyboard grabbing (mapped to the right control key by default)
+  * html improvements: bell support, num lock, cursors, window icons, osx shadow server, etc.
+  * clipboard direction restrictions: to client, to server, both or disabled
+  * support for B-frames in video encoders
+  * support pam sessions
+  * chunking for file transfers, higher size limitss
+  * try harder to exit cleanly
+  * more picture codecs and sound information shown on session info
+  * more efficient sound subprocess communication channel
+  * new sound stream compression options, including aac and mpeg4 audio container
+  * support for arbitrary mmap file locations
+  * build cleanups
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Jul 2016 18:58:15 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 13 Jul 2016 16:16:15 +0200
 
 
 xpra (0.17.0-1) UNRELEASED; urgency=low

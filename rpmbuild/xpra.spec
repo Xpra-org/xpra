@@ -430,8 +430,20 @@ fi
 
 
 %changelog
-* Tue Jul 12 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
-- TODO
+* Wed Jul 13 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
+- split configuration file in /etc/xpra/conf.d/
+- support keyboard grabbing (mapped to the right control key by default)
+- html improvements: bell support, num lock, cursors, window icons, osx shadow server, etc.
+- clipboard direction restrictions: to client, to server, both or disabled
+- support for B-frames in video encoders
+- support pam sessions
+- chunking for file transfers, higher size limitss
+- try harder to exit cleanly
+- more picture codecs and sound information shown on session info
+- more efficient sound subprocess communication channel
+- new sound stream compression options, including aac and mpeg4 audio container
+- support for arbitrary mmap file locations
+- build cleanups
 
 * Mon Apr 18 2016 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1
 - GStreamer 1.6.x on MS Windows and OSX

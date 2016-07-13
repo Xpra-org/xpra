@@ -1,9 +1,104 @@
-v1.0 (2015-07-12)
+v1.0 (2016-07-13)
 ======================
-	-- TODO
+	-- split configuration file in /etc/xpra/conf.d/
+	-- support keyboard grabbing (mapped to the right control key by default)
+	-- html improvements: bell support, num lock, cursors, window icons, osx shadow server, etc.
+	-- clipboard direction restrictions: to client, to server, both or disabled
+	-- support for B-frames in video encoders
+	-- support pam sessions
+	-- chunking for file transfers, higher size limitss
+	-- try harder to exit cleanly
+	-- more picture codecs and sound information shown on session info
+	-- more efficient sound subprocess communication channel
+	-- new sound stream compression options, including aac and mpeg4 audio container
+	-- support for arbitrary mmap file locations
+	-- build cleanups
 
 
-v0.17.0 (2015-04-18)
+v0.17.5 (2016-07-13)
+======================
+	-- fix webcam skewed picture
+	-- fix size calculations for the 1 pixel bottom edge of video areas
+	-- fix heavy import with side effects for shadow servers
+	-- fix MS Windows shadow servers picture corruption
+	-- fix jpeg wrongly included in auto-refresh encodings
+	-- fix compatibility with ffmpeg 3.1+, warn but don't fail
+	-- fix socket-dir option not being honoured
+	-- fix log dir in commented out Xvfb example
+	-- fix build on some non US locales
+
+
+v0.17.4 (2016-06-27)
+======================
+	-- fix severe regression in damage handling
+	-- fix lossless refresh causing endless loops
+	-- fix path stripping during packaging
+	-- fix password leak in server log file
+	-- fix keyboard layout change handling
+	-- fix openSUSE RPM packaging dependencies
+	-- fix video region API stickyness
+	-- fix application iconification support
+	-- fix XShape performance when scaling
+	-- fix file transfer packet handling and checksum validation
+	-- fix webcam forwarding
+	-- fix spurious pulseaudio exit message on shutdown
+	-- CUDA 8 and Pascal GPU optimization support
+	-- disable webp (black rectangles with some versions)
+
+
+v0.17.3 (2016-06-03)
+======================
+	-- fix logging errors with libyuv module (hiding real errors)
+	-- fix memory handling in error cases with x264 encoder
+	-- fix video encoder and colourspace converter leak
+	-- fix rare delta encoding errors
+	-- fix dbus x11 dependency in RPM packaging
+	-- fix dependencies for RHEL 7.0
+	-- fix DPI option miscalculation when used from the client
+	-- fix window aspect ratio hints handling
+	-- fix stripping of temporary build paths
+	-- fix sound subprocess stuck in paused state after an early error
+	-- fix H264 decoding in HTML5 client (disabled for now)
+	-- fix AES padding errors with HTML5 client
+	-- fix spurious import statements in NVENC codecs
+	-- fix crashes in X11 keyboard handling
+	-- fix compatibility with newer GCC versions
+	-- fix OSX and win32 shadow server key mappings
+	-- fix OSX shadow server disconnections with invalid RGB packet data
+	-- fix OSX shadow server crashes with webp
+	-- fix OSX shadow server errors with opus sound codec (disable it)
+	-- fix RGB compression algorithm reported in logging
+
+
+v0.17.2 (2016-05-14)
+======================
+	-- fix suse leap builds (no python3 because os missing dependencies)
+	-- fix aspect-ratio hint handling
+	-- fix sound queue state not getting updated
+	-- fix socket protocol and family information reported
+	-- fix scratchy sound with GStreamer 0.10 (ie: CentOS 6.x)
+	-- fix handling of DPI command line switch client side
+	-- fix printer requests wrongly honoured when printing is disabled
+	-- fix error in websockify error handler
+	-- fix missing matroska container on OSX
+	-- fix Webcam and GTK info scripts on OSX
+
+
+v0.17.1 (2016-05-02)
+======================
+	-- fix SSH error handler
+	-- fix SSH connections with tcsh
+	-- fix launcher GUI with SSH mode
+	-- fix RPM packaging for automatic system installation
+	-- fix / workaround bug in Xorg server 1.18.1 and later
+	-- fix unhelpful systray GDK warning with some desktop environments
+	-- fix duplicate socket paths listed
+	-- fix clipboard issues: timeouts and re-enabling from systray
+	-- fix frame extents warning message to blame the culprit
+	-- fix installation alert message format on Windows XP
+
+
+v0.17.0 (2016-04-18)
 ======================
 	-- GStreamer 1.6.x on MS Windows and OSX
 	-- opus is now the default sound codec
