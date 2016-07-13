@@ -296,9 +296,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--dbus-launch", action="store",
                       dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
                       help="Start the session within a dbus-launch context, leave empty to turn off. Default: %default.")
-    group.add_option("--env", action="append",
-                      dest="env", default=list(defaults.env or []),
-                      help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
+    group.add_option("--start-env", action="append",
+                      dest="start_env", default=list(defaults.start_env or []),
+                      help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")]))
 
     legacy_bool_parse("html")
     if supports_server or supports_shadow:
@@ -678,6 +678,9 @@ def do_parse_cmdline(cmdline, defaults):
     group = optparse.OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
     parser.add_option_group(group)
+    group.add_option("--env", action="append",
+                      dest="env", default=list(defaults.env or []),
+                      help="Define environment variables which will apply to this process and all subprocesses, can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
     group.add_option("--password-file", action="store",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect (useful to secure TCP mode). Default: '%default'.")
@@ -986,12 +989,21 @@ def configure_network(options):
     if not packet_encoding.get_enabled_encoders():
         raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
 
+def configure_env(options):
+    if options.env:
+        for s in options.env:
+            v = s.split("=", 1)
+            if len(v)!=2:
+                continue
+            os.environ[v[0]] = v[1]
+
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if os.name=="posix" and os.getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
+    configure_env(options)
     configure_logging(options, mode)
     configure_network(options)
 

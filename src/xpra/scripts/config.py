@@ -410,6 +410,7 @@ OPTION_TYPES = {
                     "bind"              : list,
                     "bind-vsock"        : list,
                     "bind-tcp"          : list,
+                    "start-env"         : list,
                     "env"               : list,
                }
 
@@ -590,6 +591,7 @@ def get_defaults():
                     "start-child-after-connect" : [],
                     "start-on-connect"          : [],
                     "start-child-on-connect"    : [],
+                    "start-env"         : [],
                     "env"               : DEFAULT_ENV,
                     }
     return GLOBAL_DEFAULTS

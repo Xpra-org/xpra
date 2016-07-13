@@ -877,7 +877,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
         return ["no", "yes"][int(b)]
-    env = "\n".join("env = %s" % x for x in DEFAULT_ENV)
+    start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs, get_default_log_dir
@@ -932,7 +932,7 @@ def build_xpra_conf(install_dir):
             'ssh_command'           : DEFAULT_SSH_COMMAND,
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
-            'env'                   : env,
+            'start_env'             : start_env,
             'has_displayfd'         : bstr(has_displayfd),
             'pulseaudio_command'    : pretty_cmd(DEFAULT_PULSEAUDIO_COMMAND),
             'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),

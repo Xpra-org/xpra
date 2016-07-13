@@ -12,9 +12,9 @@ log-file = $DISPLAY.log
 # Environment variables for children started
 # with 'start-child' or 'start':
 # (can be specified multiple times)
-#env = HOME=/home/alt
-#env = GDK_DEBUG=dnd
-%(env)s
+#start-env = HOME=/home/alt
+#start-env = GDK_DEBUG=dnd
+%(start_env)s
 
 # Commands to start by default
 #  (may be specified more than once):
