@@ -237,11 +237,18 @@ if HELP:
         else:
             default_str = "auto-detect"
         print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
+    print("  --pkg-config-path=PATH")
     sys.exit(0)
 
 filtered_args = []
 for arg in sys.argv:
     matched = False
+    if arg.startswith("--pkg-config-path="):
+        pcp = arg[len("--pkg-config-path="):]
+        pcps = os.environ.get("PKG_CONFIG_PATH", "").split(os.path.pathsep) + [pcp]
+        os.environ["PKG_CONFIG_PATH"] = os.path.pathsep.join([x for x in pcps if x])
+        print("using PKG_CONFIG_PATH=%s" % (os.environ["PKG_CONFIG_PATH"], ))
+        matched = True
     for x in SWITCHES:
         with_str = "--with-%s" % x
         without_str = "--without-%s" % x

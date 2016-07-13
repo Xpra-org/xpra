@@ -307,10 +307,8 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 %if %{with_python3}
 pushd xpra-%{version}-python3
 rm -rf build install
-# set pkg_config_path for xpra video libs
-PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
-export PKG_CONFIG_PATH
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{dummy} --with-tests
+# set pkg_config_path for xpra video libs:
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{dummy} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
 %{__python3} setup.py build %{dummy} --with-tests
 popd
 %endif
@@ -318,9 +316,7 @@ popd
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
-PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig:$PKG_CONFIG_PATH
-export PKG_CONFIG_PATH
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{dummy} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{dummy} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
 popd
 
 
