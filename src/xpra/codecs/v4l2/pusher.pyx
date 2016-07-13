@@ -441,7 +441,7 @@ cdef class Pusher:
         assert buf!=NULL, "failed to allocate temporary output buffer"
         cdef size_t s = Ystride*(self.height//Yhdiv)
         memcpy(buf, Ybuf, s)
-        cdef int i = s + Ystride*6
+        cdef int i = s
         s = Ustride*(self.height//Uhdiv)
         memcpy(buf+i, Ubuf, s)
         i += s
