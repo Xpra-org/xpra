@@ -9,6 +9,13 @@ log-dir = %(log_dir)s
 # Log file:
 log-file = $DISPLAY.log
 
+# Environment variables for children started
+# with 'start-child' or 'start':
+# (can be specified multiple times)
+#env = HOME=/home/alt
+#env = GDK_DEBUG=dnd
+%(env)s
+
 # Commands to start by default
 #  (may be specified more than once):
 # examples:
@@ -59,3 +66,14 @@ dbus-proxy = %(dbus_proxy)s
 # Allows clients to start new commands in the server context:
 #start-new-commands = yes
 start-new-commands = no
+
+# Start a pulseaudio server with each session:
+pulseaudio = %(pulseaudio)s
+
+# pulseaudio server start command:
+pulseaudio-command = %(pulseaudio_command)s
+
+# commands used to configure the pulseaudio server:
+# pactl set-source-volume SomeSource 20%%
+%(pulseaudio_configure_commands)s
+
