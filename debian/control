@@ -5,8 +5,7 @@ Maintainer: Antoine Martin <antoine@devloop.org.uk>
 Build-Depends: debhelper (>= 8)
               ,quilt
               ,cython (>= 0.16)
-              ,libavcodec-dev
-              ,libswscale-dev
+              ,ffmpeg-xpra
               ,libx11-dev
               ,libvpx-dev
               ,libxcomposite-dev
@@ -40,6 +39,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
+# ffmpeg based codecs:
+        ,ffmpeg-xpra
 # packet encoder:
         ,python-rencode
 #depend on lz4 for those that have it, lzo otherwise:
@@ -53,23 +54,19 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #wily:        ,python-appindicator
 #xenial:        ,python-appindicator
 Recommends:
-#version specific values (sigh), uncomment the one you need:
-#jessie:        ,libswscale3
-#stretch:        ,libswscale-ffmpeg3
-#trusty:        ,libswscale2
-#wily:        ,libswscale-ffmpeg3
-#xenial:        ,libswscale-ffmpeg3
 #x264
 #jessie:        ,libx264-142
 #stretch:        ,libx264-146
 #trusty:        ,libx264-142
 #wily:        ,libx264-148
+#xenial:        ,libx264-148
         ,libxvidcore4
 #webp
 #jessie:        ,libwebp5
 #stretch:        ,libwebp5
 #trusty:        ,libwebp5
 #wily:        ,libwebp5
+#xenial:        ,libwebp5
 #AES encryption:
 #jessie:        ,python-cryptography
 #stretch:        ,python-cryptography
