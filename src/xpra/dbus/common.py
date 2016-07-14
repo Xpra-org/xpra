@@ -8,6 +8,7 @@ def loop_init():
     global _loop
     if not _loop:
         from dbus.mainloop.glib import DBusGMainLoop
+        dbus.mainloop.glib.threads_init()
         _loop = DBusGMainLoop(set_as_default=True)
     return _loop
 
