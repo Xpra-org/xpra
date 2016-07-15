@@ -648,7 +648,7 @@ cdef class Encoder:
 
         cdef int i                        #@DuplicatedSignature
 
-        if self.frames==0:
+        if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
         pixels = image.get_pixels()
