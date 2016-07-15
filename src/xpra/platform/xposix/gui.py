@@ -522,6 +522,7 @@ class ClientExtras(object):
             self.system_bus = bus
             dbuslog("setup_dbus_signals() system bus=%s", bus)
         except Exception as e:
+            dbuslog("setup_dbus_signals()", exc_info=True)
             dbuslog.error("Error setting up dbus signals:")
             dbuslog.error(" %s", e)
             return
