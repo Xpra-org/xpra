@@ -1415,8 +1415,10 @@ class WindowVideoSource(WindowSource):
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
         vr = self.video_subregion
-        if B_FRAMES and vr.enabled and encoder_spec.encoding in self.supports_video_b_frames:
-            options["b-frames"] = True
+        if vr and vr.enabled:
+            options["source"] = "video"
+            if encoder_spec.encoding in self.supports_video_b_frames:
+                options["b-frames"] = True
         ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
         #record new actual limits:
         self.actual_scaling = scaling

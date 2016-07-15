@@ -66,6 +66,13 @@ cdef extern from "x264.h":
     int X264_CSP_BGRA
     int X264_CSP_RGB
 
+    #enum
+    int X264_ME_DIA
+    int X264_ME_HEX
+    int X264_ME_UMH
+    int X264_ME_ESA
+    int X264_ME_TESA
+
     #enum nal_unit_type_e
     int NAL_UNKNOWN
     int NAL_SLICE
@@ -132,6 +139,13 @@ cdef extern from "x264.h":
         int         i_zones             #number of zone_t's
         char        *psz_zones          #alternate method of specifying zones
 
+    ctypedef struct analyse:
+        int         i_me_method         # motion estimation algorithm to use (X264_ME_*)
+        int         i_me_range          # integer pixel motion estimation search range (from predicted mv) */
+        int         i_mv_range          # maximum length of a mv (in pixels). -1 = auto, based on level */
+        int         i_mv_range_thread   # minimum space between threads. -1 = auto, based on number of threads. */
+        int         i_subpel_refine     # subpixel motion estimation quality */
+
     ctypedef struct x264_param_t:
         unsigned int cpu
         int i_threads           #encode multiple frames in parallel
@@ -169,6 +183,7 @@ cdef extern from "x264.h":
         int b_opencl            #use OpenCL when available
 
         rc  rc                  #rate control
+        analyse analyse
 
     ctypedef struct x264_t:
         pass
@@ -259,6 +274,14 @@ SLICE_TYPES = {
     X264_TYPE_BREF  : "BREF",
     X264_TYPE_B     : "B",
     X264_TYPE_KEYFRAME  : "KEYFRAME",
+    }
+
+ME_TYPES = {
+    X264_ME_DIA     : "DIA",
+    X264_ME_HEX     : "HEX",
+    X264_ME_UMH     : "UMH",
+    X264_ME_ESA     : "ESA",
+    X264_ME_TESA    : "TESA",
     }
 
 NAL_TYPES = {
@@ -407,6 +430,7 @@ cdef class Encoder:
     cdef int height
     cdef int opencl
     cdef object src_format
+    cdef object source
     cdef object profile
     cdef double time
     cdef int colorspace
@@ -438,6 +462,7 @@ cdef class Encoder:
         self.preset = get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
+        self.source = options.get("source", "unknown")      #ie: "video"
         self.b_frames = options.get("b-frames", False)
         self.frames = 0
         self.frame_types = {}
@@ -452,25 +477,38 @@ cdef class Encoder:
         if self.profile is None:
             self.profile = cs_info[1]
             log("using default profile=%s", self.profile)
-        self.init_encoder()
+        self.init_encoder(options)
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
             filename = SAVE_TO_FILE+"x264-"+str(gen)+".%s" % encoding
             self.file = open(filename, 'wb')
             log.info("saving %s stream to %s", encoding, filename)
 
-    cdef init_encoder(self):
+    cdef init_encoder(self, options={}):
         cdef x264_param_t param
         cdef const char *preset
         preset = get_preset_names()[self.preset]
         x264_param_default_preset(&param, preset, "zerolatency")
-        param.i_threads = X264_THREADS
-        if X264_THREADS!=1:
-            param.b_sliced_threads = 1
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
         set_f_rf(&param, get_x264_quality(self.quality, self.profile))
+        self.tune_param(&param)
+        x264_param_apply_profile(&param, self.profile)
+        param.pf_log = <void *> X264_log
+        param.i_log_level = LOG_LEVEL
+        self.context = x264_encoder_open(&param)
+        cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
+        log("x264 context=%#x, %7s %4ix%-4i", <unsigned long> self.context, self.src_format, self.width, self.height)
+        #print_nested_dict(options, " ", print_fn=log.error)
+        log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
+                  ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
+        assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
+
+    cdef tune_param(self, x264_param_t *param):
+        param.i_threads = X264_THREADS
+        if X264_THREADS!=1:
+            param.b_sliced_threads = 1
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = 999999
         #we don't want IDR frames either:
@@ -479,15 +517,11 @@ cdef class Encoder:
         param.b_open_gop = 1        #allow open gop
         param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
-        
-        #param.p_log_private =
-        x264_param_apply_profile(&param, self.profile)
-        param.pf_log = <void *> X264_log
-        param.i_log_level = LOG_LEVEL
-        self.context = x264_encoder_open(&param)
-        cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
-        log("x264 context=%#x, %7s %4ix%-4i opencl=%s, b-frames=%i, max delayed frames=%i", <unsigned long> self.context, self.src_format, self.width, self.height, bool(self.opencl), self.b_frames, maxd)
-        assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
+        if self.source!="video":
+            #specifically told this is not video,
+            #so use a simple motion search:
+            param.analyse.i_me_method = X264_ME_DIA
+
 
     def clean(self):                        #@DuplicatedSignature
         cdef x264_t *context = self.context
@@ -498,6 +532,7 @@ cdef class Encoder:
         self.width = 0
         self.height = 0
         self.src_format = ""
+        self.source = None
         self.profile = None
         self.time = 0
         self.colorspace = 0
@@ -529,6 +564,7 @@ cdef class Encoder:
                      "quality"   : self.quality,
                      "lossless"  : self.quality==100,
                      "src_format": self.src_format,
+                     "source"    : self.source,
                      "version"   : get_version(),
                      "frame-types" : self.frame_types,
                      "delayed"   : self.delayed_frames,
@@ -720,6 +756,7 @@ cdef class Encoder:
         x264_param_default_preset(&param, get_preset_names()[new_preset], "zerolatency")
         #ensure quality remains what it was:
         set_f_rf(&param, get_x264_quality(self.quality, self.profile))
+        self.tune_param(&param)
         #apply it:
         x264_param_apply_profile(&param, self.profile)
         if x264_encoder_reconfig(self.context, &param)!=0:
@@ -740,6 +777,7 @@ cdef class Encoder:
         x264_encoder_parameters(self.context, &param)
         #adjust quality:
         set_f_rf(&param, get_x264_quality(self.quality, self.profile))
+        self.tune_param(&param)
         #apply it:
         if x264_encoder_reconfig(self.context, &param)!=0:
             raise Exception("x264_encoder_reconfig failed for quality=%s" % pct)
