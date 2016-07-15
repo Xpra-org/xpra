@@ -162,7 +162,7 @@ echo
 echo "*******************************************************************************"
 echo "Ship default config files"
 #the build / install step should have placed them here:
-rsync -rplogtv ../src/build/etc/xpra/* ${RSCDIR}/etc/
+rsync -rplogtv ../src/build/etc/xpra ${RSCDIR}/etc/
 
 
 echo
