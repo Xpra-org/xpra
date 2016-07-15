@@ -9,6 +9,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
+X264_SLICED_THREADS = os.environ.get("XPRA_X264_SLICED_THREADS", "1")=="1"
 X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
 USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
@@ -484,11 +485,16 @@ cdef class Encoder:
             self.file = open(filename, 'wb')
             log.info("saving %s stream to %s", encoding, filename)
 
+    def get_tune(self):
+        #we could use "film" or "grain" for non-video
+        return "zerolatency"
+
     cdef init_encoder(self, options={}):
         cdef x264_param_t param
         cdef const char *preset
         preset = get_preset_names()[self.preset]
-        x264_param_default_preset(&param, preset, "zerolatency")
+        tune = self.get_tune()
+        x264_param_default_preset(&param, preset, tune)
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
@@ -502,13 +508,14 @@ cdef class Encoder:
         log("x264 context=%#x, %7s %4ix%-4i", <unsigned long> self.context, self.src_format, self.width, self.height)
         #print_nested_dict(options, " ", print_fn=log.error)
         log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
-                  ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
+                    ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
+        log(" threads=%s, sliced-threads=%s",
+                    {0 : "auto"}.get(param.i_threads, param.i_threads), bool(param.b_sliced_threads))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     cdef tune_param(self, x264_param_t *param):
         param.i_threads = X264_THREADS
-        if X264_THREADS!=1:
-            param.b_sliced_threads = 1
+        param.b_sliced_threads = X264_SLICED_THREADS
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = 999999
         #we don't want IDR frames either:
@@ -753,7 +760,8 @@ cdef class Encoder:
         #retrieve current parameters:
         x264_encoder_parameters(self.context, &param)
         #apply new preset:
-        x264_param_default_preset(&param, get_preset_names()[new_preset], "zerolatency")
+        tune = self.get_tune()
+        x264_param_default_preset(&param, get_preset_names()[new_preset], tune)
         #ensure quality remains what it was:
         set_f_rf(&param, get_x264_quality(self.quality, self.profile))
         self.tune_param(&param)
