@@ -8,9 +8,11 @@ import os
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
-X264_THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
-X264_SLICED_THREADS = os.environ.get("XPRA_X264_SLICED_THREADS", "1")=="1"
-X264_LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
+THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
+SLICED_THREADS = os.environ.get("XPRA_X264_SLICED_THREADS", "1")=="1"
+LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
+PROFILE = os.environ.get("XPRA_X264_PROFILE")
+TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
 USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
@@ -185,6 +187,8 @@ cdef extern from "x264.h":
 
         rc  rc                  #rate control
         analyse analyse
+
+        int b_vfr_input         #VFR input. If 1, use timebase and timestamps for ratecontrol purposes. If 0, use fps only
 
     ctypedef struct x264_t:
         pass
@@ -408,7 +412,7 @@ LOG_LEVEL = {
              #getting segfaults with "DEBUG" level logging...
              #so this is currently disabled
              #"DEBUG"    : X264_LOG_DEBUG,
-             }.get(X264_LOGGING.upper(), X264_LOG_WARNING)
+             }.get(LOGGING.upper(), X264_LOG_WARNING)
 
 
 #the static logging function we want x264 to use:
@@ -471,7 +475,6 @@ cdef class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
         self.profile = self._get_profile(options, self.src_format)
-        log("profile(%s)=%s", self.src_format, self.profile)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
             self.profile = None
@@ -486,8 +489,7 @@ cdef class Encoder:
             log.info("saving %s stream to %s", encoding, filename)
 
     def get_tune(self):
-        #we could use "film" or "grain" for non-video
-        return "zerolatency"
+        return TUNE
 
     cdef init_encoder(self, options={}):
         cdef x264_param_t param
@@ -505,7 +507,7 @@ cdef class Encoder:
         param.i_log_level = LOG_LEVEL
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
-        log("x264 context=%#x, %7s %4ix%-4i", <unsigned long> self.context, self.src_format, self.width, self.height)
+        log("x264 context=%#x, %7s %4ix%-4i preset=%s, profile=%s, tune=%s", <unsigned long> self.context, self.src_format, self.width, self.height, preset, self.profile, tune)
         #print_nested_dict(options, " ", print_fn=log.error)
         log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
                     ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
@@ -514,8 +516,8 @@ cdef class Encoder:
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     cdef tune_param(self, x264_param_t *param):
-        param.i_threads = X264_THREADS
-        param.b_sliced_threads = X264_SLICED_THREADS
+        param.i_threads = THREADS
+        param.b_sliced_threads = SLICED_THREADS
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = 999999
         #we don't want IDR frames either:
@@ -524,6 +526,11 @@ cdef class Encoder:
         param.b_open_gop = 1        #allow open gop
         param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
+        if not self.b_frames:
+            param.b_vfr_input = 0
+            param.i_sync_lookahead = 0
+            param.rc.b_mb_tree = 0
+            param.rc.i_lookahead = 0
         if self.source!="video":
             #specifically told this is not video,
             #so use a simple motion search:
@@ -628,7 +635,7 @@ cdef class Encoder:
 
     cdef _get_profile(self, options, csc_mode):
         #use the environment as default if present:
-        profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode)
+        profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
         #now see if the client has requested a different value:
         return options.get("x264.%s.profile" % csc_mode, profile)
 
@@ -705,7 +712,7 @@ cdef class Encoder:
             raise Exception("x264_encoder_encode produced no data!")
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
-        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%s, delayed=%i", self.frames, slice_type, i_nals, frame_size, pic_out.b_keyframe, self.delayed_frames)
+        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%-5s, delayed=%i", self.frames, slice_type, i_nals, frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
         if LOG_NALS:
             for i in range(i_nals):
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
