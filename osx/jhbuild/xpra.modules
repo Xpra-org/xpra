@@ -23,7 +23,6 @@
   <repository type="tarball" name="serf.googlecode.com" href="http://serf.googlecode.com"/>
   <repository type="tarball" name="sqlite.org" href="http://sqlite.org"/>
   <repository type="tarball" name="sourceforge.net" href="http://softlayer-dal.dl.sourceforge.net"/>
-  <repository type="tarball" name="cython.org" href="http://cython.org"/>
   <repository type="tarball" name="osgeo.org" href="http://download.osgeo.org"/>
   <repository type="tarball" name="xpra.org" href="http://xpra.org"/>
   <repository type="tarball" name="sourceforge" href="http://downloads.sourceforge.net/sourceforge/"/>
@@ -486,9 +485,9 @@
   </distutils>
 
   <distutils id="python-cython">
-	<branch repo="cython.org"
-		module="/release/Cython-0.24.1.tar.gz"
-		hash="md5:a837efb73c195585ce6e27cf53e3587285ccd39f"
+	<branch repo="pypi.python.org"
+		module="/packages/c6/fe/97319581905de40f1be7015a0ea1bd336a756f6249914b148a17eefa75dc/Cython-0.24.1.tar.gz"
+		hash="md5:890b494a12951f1d6228c416a5789554"
 		version="0.24.1"/>
         <dependencies>
                 <dep package="python"/>
