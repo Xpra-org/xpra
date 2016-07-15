@@ -69,6 +69,10 @@ cdef extern from "x264.h":
     int X264_CSP_BGRA
     int X264_CSP_RGB
 
+    int X264_B_ADAPT_NONE
+    int X264_B_ADAPT_FAST
+    int X264_B_ADAPT_TRELLIS
+
     #enum
     int X264_ME_DIA
     int X264_ME_HEX
@@ -271,6 +275,12 @@ cdef float get_x264_quality(int pct, char *profile):
             return 0.0
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
 
+ADAPT_TYPES = {
+               X264_B_ADAPT_NONE        : "NONE",
+               X264_B_ADAPT_FAST        : "FAST",
+               X264_B_ADAPT_TRELLIS     : "TRELLIS",
+               }
+
 SLICE_TYPES = {
     X264_TYPE_AUTO  : "auto",
     X264_TYPE_IDR   : "IDR",
@@ -468,7 +478,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.colorspace = cs_info[0]
         self.source = options.get("source", "unknown")      #ie: "video"
-        self.b_frames = options.get("b-frames", False)
+        self.b_frames = options.get("b-frames", 0)
         self.frames = 0
         self.frame_types = {}
         self.last_frame_times = deque(maxlen=200)
@@ -511,6 +521,8 @@ cdef class Encoder:
         #print_nested_dict(options, " ", print_fn=log.error)
         log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
                     ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
+        log(" vfr-input=%s, lookahead=%i, sync-lookahead=%i, mb-tree=%s, bframe-adaptive=%s",
+                    param.b_vfr_input, param.rc.i_lookahead, param.i_sync_lookahead, param.rc.b_mb_tree, ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive))
         log(" threads=%s, sliced-threads=%s",
                     {0 : "auto"}.get(param.i_threads, param.i_threads), bool(param.b_sliced_threads))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
@@ -526,11 +538,14 @@ cdef class Encoder:
         param.b_open_gop = 1        #allow open gop
         param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
+        param.rc.i_lookahead = min(param.rc.i_lookahead, self.b_frames-1)
+        param.b_vfr_input = 0
         if not self.b_frames:
-            param.b_vfr_input = 0
             param.i_sync_lookahead = 0
             param.rc.b_mb_tree = 0
-            param.rc.i_lookahead = 0
+        else:
+            if param.i_bframe_adaptive==X264_B_ADAPT_TRELLIS:
+                param.i_bframe_adaptive = X264_B_ADAPT_FAST
         if self.source!="video":
             #specifically told this is not video,
             #so use a simple motion search:
