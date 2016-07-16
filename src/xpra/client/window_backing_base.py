@@ -55,7 +55,7 @@ def load_video_decoders():
     return VIDEO_DECODERS
 
 
-def fire_paint_callbacks(callbacks, success, message=""):
+def fire_paint_callbacks(callbacks, success=True, message=""):
     for x in callbacks:
         try:
             x(success, message)
@@ -379,7 +379,7 @@ class WindowBackingBase(object):
                 if options.get("delayed", 0)>0:
                     #there are further frames queued up,
                     #and this frame references those, so assume all is well:
-                    fire_paint_callbacks(callbacks, True)
+                    fire_paint_callbacks(callbacks)
                 else:
                     fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (vd.get_type(), len(img_data), coding))
                     log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)

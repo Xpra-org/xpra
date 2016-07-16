@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -717,87 +717,75 @@ class GLWindowBackingBase(GTKWindowBacking):
             return  "copy:str", img_data
 
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        return self._do_paint_rgb(32, img_data, x, y, width, height, rowstride, options)
-
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        return self._do_paint_rgb(24, img_data, x, y, width, height, rowstride, options)
-
-    def _do_paint_rgb(self, bpp, img_data, x, y, width, height, rowstride, options):
-        log("%s._do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)", self, bpp, len(img_data), x, y, width, height, rowstride, options)
+    def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
+        log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)", self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         context = self.gl_context()
         if not context:
             log("%s._do_paint_rgb(..) no context!", self)
-            return False
+            fire_paint_callbacks(callbacks, False, "no opengl context")
+            return
 
-        #TODO: move this code up to the decode thread section
-        upload, img_data = self.pixels_for_upload(img_data)
-
-        with context:
-            self.gl_init()
-            self.set_rgb_paint_state()
-
-            rgb_format = options.get(b"rgb_format")
-            if not rgb_format:
-                #Older servers may not tell us the pixel format, so we must infer it:
-                if bpp==24:
-                    rgb_format = "RGB"
-                else:
-                    assert bpp==32
-                    rgb_format = "RGBA"
-            else:
-                rgb_format = rgb_format.decode()
-            #convert it to a GL constant:
-            pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
-            assert pformat is not None, "could not find pixel format for %s (bpp=%s)" % (rgb_format, bpp)
-
-            bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
-            # Compute alignment and row length
-            row_length = 0
-            alignment = 1
-            for a in [2, 4, 8]:
-                # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
-                if (rowstride & a-1) == 0:
-                    alignment = a
-            # If number of extra bytes is greater than the alignment value,
-            # then we also have to set row_length
-            # Otherwise it remains at 0 (= width implicitely)
-            if (rowstride - width * bytes_per_pixel) >= alignment:
-                row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
-
-            self.gl_marker("%s %sbpp update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s",
-                           rgb_format, bpp, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
-
-            # Upload data as temporary RGB texture
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
-            glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
-
-            # Draw textured RGB quad at the right coordinates
-            glBegin(GL_QUADS)
-            glTexCoord2i(0, 0)
-            glVertex2i(x, y)
-            glTexCoord2i(0, height)
-            glVertex2i(x, y+height)
-            glTexCoord2i(width, height)
-            glVertex2i(x+width, y+height)
-            glTexCoord2i(width, 0)
-            glVertex2i(x+width, y)
-            glEnd()
-
-            self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
-
-            # Present update to screen
-            self.present_fbo(x, y, width, height, options.get("flush", 0))
-            # present_fbo has reset state already
-        return True
+        try:
+            upload, img_data = self.pixels_for_upload(img_data)
+    
+            with context:
+                self.gl_init()
+                self.set_rgb_paint_state()
+    
+                #convert it to a GL constant:
+                pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format.decode())
+                assert pformat is not None, "could not find pixel format for %s" % rgb_format
+    
+                bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
+                # Compute alignment and row length
+                row_length = 0
+                alignment = 1
+                for a in [2, 4, 8]:
+                    # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
+                    if (rowstride & a-1) == 0:
+                        alignment = a
+                # If number of extra bytes is greater than the alignment value,
+                # then we also have to set row_length
+                # Otherwise it remains at 0 (= width implicitely)
+                if (rowstride - width * bytes_per_pixel) >= alignment:
+                    row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
+    
+                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s",
+                               rgb_format, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
+    
+                # Upload data as temporary RGB texture
+                glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
+                glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
+    
+                # Draw textured RGB quad at the right coordinates
+                glBegin(GL_QUADS)
+                glTexCoord2i(0, 0)
+                glVertex2i(x, y)
+                glTexCoord2i(0, height)
+                glVertex2i(x, y+height)
+                glTexCoord2i(width, height)
+                glVertex2i(x+width, y+height)
+                glTexCoord2i(width, 0)
+                glVertex2i(x+width, y)
+                glEnd()
+    
+                self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
+    
+                # Present update to screen
+                self.present_fbo(x, y, width, height, options.get("flush", 0))
+                # present_fbo has reset state already
+            fire_paint_callbacks(callbacks)
+        except Exception as e:
+            log("Error in %s paint of %i bytes, options=%s)", rgb_format, len(img_data), options)
+            fire_paint_callbacks(callbacks, False, "opengl %s paint error: %s" % (rgb_format, e))
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)

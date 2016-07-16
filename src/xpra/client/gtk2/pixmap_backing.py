@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -114,7 +114,7 @@ class PixmapBacking(GTK2WindowBacking):
         gc = self._backing.new_gc()
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
             self._backing.draw_drawable(gc, self._backing, sx, sy, sx+xdelta, sy+ydelta, sw, sh)
-        fire_paint_callbacks(callbacks, True)
+        fire_paint_callbacks(callbacks)
 
     def bgr_to_rgb(self, img_data, width, height, rowstride, rgb_format, target_format):
         if not rgb_format.startswith("BGR"):
