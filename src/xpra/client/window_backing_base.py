@@ -273,6 +273,9 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb[24|32]
         """
         try:
+            if not options.get("paint", True):
+                fire_paint_callbacks(callbacks)
+                return
             if self._backing is None:
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return

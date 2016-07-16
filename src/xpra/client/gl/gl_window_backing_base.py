@@ -724,6 +724,9 @@ class GLWindowBackingBase(GTKWindowBacking):
             log("%s._do_paint_rgb(..) no context!", self)
             fire_paint_callbacks(callbacks, False, "no opengl context")
             return
+        if not options.get("paint", True):
+            fire_paint_callbacks(callbacks)
+            return
 
         try:
             upload, img_data = self.pixels_for_upload(img_data)
