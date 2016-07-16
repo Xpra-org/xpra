@@ -84,7 +84,7 @@ chmod 0755 %{buildroot}%{python3_sitearch}/rencode/_rencode.cpython-*.so
 %check
 pushd tests
 ln -sf %{buildroot}%{python2_sitearch}/rencode rencode
-%if 0%{el5}%{el6}
+%if 0%{?el5}%{?el6}
 #skip tests on centos 6.x because of compatibility issue:
 #https://github.com/aresch/rencode/issues/10
 %else
