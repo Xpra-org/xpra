@@ -11,13 +11,16 @@
 %define with_python3 1
 %endif
 
-Name:           python-rencode
+Name:           python2-rencode
 Version:        1.0.5
 Release:        1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
 Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
+Provides:		python-rencode
+Obsoletes:		python-rencode
+
 
 %if 0%{?suse_version}
 %{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
