@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -230,17 +230,18 @@ class WindowBackingBase(object):
         data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
         raw_data = data_fn("raw", img.mode)
         paint_options = typedict(options)
-        if img.mode=="RGB":
+        rgb_format = img.mode
+        if rgb_format=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
             rowstride = width*3
-            paint_options["rgb_format"] = "RGB"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
-            self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, paint_options, callbacks)
-        elif img.mode=="RGBA":
+        elif rgb_format=="RGBA":
             rowstride = width*4
-            paint_options["rgb_format"] = "RGBA"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
-            self.idle_add(self.do_paint_rgb32, img_data, x, y, width, height, rowstride, paint_options, callbacks)
+        else:
+            raise Exception("invalid image mode: %s" % img.mode)
+        paint_options["rgb_format"] = rgb_format
+        self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
@@ -256,29 +257,29 @@ class WindowBackingBase(object):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
-        if len(rgb_format)==4:
-            return self.paint_rgb32(data, x, y, width, height, stride, options, callbacks)
-        else:
-            return self.paint_rgb24(data, x, y, width, height, stride, options, callbacks)
+        return self.paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
 
-    def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
-        """ called from non-UI thread
-            this method calls process_delta before calling do_paint_rgb24 from the UI thread via idle_add
+    def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):
+        """ can be called from a non-UI thread
+            this method calls process_delta
+            before calling _do_paint_rgb from the UI thread via idle_add
         """
-        rgb24_data = self.process_delta(raw_data, width, height, rowstride, options)
-        self.idle_add(self.do_paint_rgb24, rgb24_data, x, y, width, height, rowstride, options, callbacks)
-        return  False
+        rgb_data = self.process_delta(raw_data, width, height, rowstride, options)
+        self.idle_add(self.do_paint_rgb, rgb_format, rgb_data, x, y, width, height, rowstride, options, callbacks)
 
-    def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        """ must be called from UI thread
+    def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from the UI thread
             this method is only here to ensure that we always fire the callbacks,
-            the actual paint code is in _do_paint_rgb24
+            the actual paint code is in _do_paint_rgb[24|32]
         """
         try:
             if self._backing is None:
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return
-            success = self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options)
+            bpp = len(rgb_format)*8
+            assert bpp in (24, 32), "invalid rgb format %s" % rgb_format
+            paint_fn = getattr(self, "_do_paint_rgb%i" % bpp)
+            success = paint_fn(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
@@ -286,41 +287,12 @@ class WindowBackingBase(object):
             if not self._backing:
                 fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
             else:
-                log.error("do_paint_rgb24 error", exc_info=True)
-                message = "do_paint_rgb24 error: %s" % e
+                log.error("Error painting rgb%s", bpp, exc_info=True)
+                message = "paint rgb%s error: %s" % (bpp, e)
                 fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
-
-
-    def paint_rgb32(self, raw_data, x, y, width, height, rowstride, options, callbacks):
-        """ called from non-UI thread
-            this method calls process_delta before calling do_paint_rgb32 from the UI thread via idle_add
-        """
-        rgb32_data = self.process_delta(raw_data, width, height, rowstride, options)
-        self.idle_add(self.do_paint_rgb32, rgb32_data, x, y, width, height, rowstride, options, callbacks)
-        return  False
-
-    def do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        """ must be called from UI thread
-            this method is only here to ensure that we always fire the callbacks,
-            the actual paint code is in _do_paint_rgb32
-        """
-        try:
-            if self._backing is None:
-                fire_paint_callbacks(callbacks, -1, "no backing")
-                return
-            success = self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options)
-            fire_paint_callbacks(callbacks, success)
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            if not self._backing:
-                fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
-            else:
-                log.error("do_paint_rgb32 error", exc_info=True)
-                fire_paint_callbacks(callbacks, False, "do_paint_rgb32 error: %s" % e)
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         raise Exception("override me!")
@@ -419,7 +391,6 @@ class WindowBackingBase(object):
             self.close_decoder(True)
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        #try 24 bit first (paint_rgb24), then 32 bit (paint_rgb32):
         target_rgb_formats = self.RGB_MODES
         #as some video formats like vpx can forward transparency
         #also we could skip the csc step in some cases:
@@ -462,31 +433,20 @@ class WindowBackingBase(object):
         def paint():
             data = rgb.get_pixels()
             rowstride = rgb.get_rowstride()
-            if len(rgb_format)==3:
-                self.do_paint_rgb24(data, x, y, width, height, rowstride, paint_options, callbacks)
-            else:
-                assert len(rgb_format)==4
-                self.do_paint_rgb32(data, x, y, width, height, rowstride, paint_options, callbacks)
-            rgb.free()
+            try:
+                self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, paint_options, callbacks)
+            finally:
+                rgb.free()
         self.idle_add(paint)
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        """ must be called from UI thread """
-        #we could run just paint_rgb24 from the UI thread,
-        #but this would not make much of a difference
-        #and would complicate the code (add a callback to free mmap area)
-        """ see _mmap_send() in server.py for details """
+        """ must be called from UI thread
+            see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, img_data)
         rgb_format = options.strget("rgb_format", "RGB")
         #Note: BGR(A) is only handled by gl_window_backing
-        if rgb_format in ("RGB", "BGR"):
-            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
-        elif rgb_format in ("RGBA", "BGRA", "BGRX", "RGBX"):
-            self.do_paint_rgb32(data, x, y, width, height, rowstride, options, callbacks)
-        else:
-            raise Exception("invalid rgb format: %s" % rgb_format)
-        return  False
+        self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_scroll(self, *args):
         raise NotImplementedError("no paint scroll on %s" % type(self))
@@ -517,15 +477,14 @@ class WindowBackingBase(object):
                 if rgb_format:
                     Bpp = len(rgb_format)
                 elif coding=="rgb24":
-                    Bpp = 3
+                    #legacy:
+                    rgb_format = "RGB"
                 else:
-                    Bpp = 4
+                    #legacy:
+                    rgb_format = "RGBX"
                 if rowstride==0:
                     rowstride = width * Bpp
-                if Bpp==3:
-                    self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-                else:
-                    self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+                self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
