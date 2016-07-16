@@ -688,10 +688,10 @@
 
   <distutils id="python-rencode">
 	<branch repo="github.com"
-		module="/aresch/rencode/archive/v1.0.4.tar.gz"
-		checkoutdir="rencode-1.0.4"
-		hash="md5:741ee1b994344358517987f1681baf12"
-		version="1.0.4"/>
+		module="/aresch/rencode/archive/v1.0.5.tar.gz"
+		checkoutdir="rencode-1.0.5"
+		hash="md5:3bdbec5c50d845e5367ba53c5b85d1a4"
+		version="1.0.5"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>

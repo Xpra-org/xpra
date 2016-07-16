@@ -12,7 +12,7 @@
 %endif
 
 Name:           python-rencode
-Version:        1.0.4
+Version:        1.0.5
 Release:        1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
@@ -109,6 +109,9 @@ popd
 %endif
 
 %changelog
+* Sat Jul 16 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+- new upstream release
+
 * Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
 - new upstream release
 
