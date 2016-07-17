@@ -40,15 +40,17 @@
 %endif
 
 
-Name:           python-pillow
+Name:           python2-pillow
 Version:        3.3.0
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
-Source:        	https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
+Source:         https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
+Provides:       python-pillow
+Obsoletes:      python-pillow
 
 %if 0%{?suse_version}
 BuildRequires:  python-devel
@@ -294,45 +296,48 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
-* Mon Jul 04 2016 Antoine Martin <antoine@devloop.org.uk - 3.3.0-1
+* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 3.3.0-2
+- rename and obsolete old python package name
+
+* Mon Jul 04 2016 Antoine Martin <antoine@devloop.org.uk> - 3.3.0-1
 - new upstream release
 
-* Fri Apr 08 2016 Antoine Martin <antoine@devloop.org.uk - 3.2.0-2
+* Fri Apr 08 2016 Antoine Martin <antoine@devloop.org.uk> - 3.2.0-2
 - tweak liblcms dependencies (not useful on centos)
 
-* Sat Apr 02 2016 Antoine Martin <antoine@devloop.org.uk - 3.2.0-1
+* Sat Apr 02 2016 Antoine Martin <antoine@devloop.org.uk> - 3.2.0-1
 - new upstream release
 
-* Sat Feb 06 2016 Antoine Martin <antoine@devloop.org.uk - 3.1.1-1
+* Sat Feb 06 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1-1
 - new upstream release
 
-* Mon Jan 04 2016 Antoine Martin <antoine@devloop.org.uk - 3.1.0-1
+* Mon Jan 04 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.0-1
 - new upstream release
 
-* Sun Oct 18 2015 Antoine Martin <antoine@devloop.org.uk - 3.0.0-1
+* Sun Oct 18 2015 Antoine Martin <antoine@devloop.org.uk> - 3.0.0-1
 - new upstream release
 
-* Tue Jul 07 2015 Antoine Martin <antoine@devloop.org.uk - 2.9.0-1
+* Tue Jul 07 2015 Antoine Martin <antoine@devloop.org.uk> - 2.9.0-1
 - new upstream release
 
-* Wed Jun 10 2015 Antoine Martin <antoine@devloop.org.uk - 2.8.2-1
+* Wed Jun 10 2015 Antoine Martin <antoine@devloop.org.uk> - 2.8.2-1
 - new upstream release
 
-* Sun Apr 05 2015 Antoine Martin <antoine@devloop.org.uk - 2.8.1-1
+* Sun Apr 05 2015 Antoine Martin <antoine@devloop.org.uk> - 2.8.1-1
 - new upstream release
 
-* Mon Jan 19 2015 Antoine Martin <antoine@devloop.org.uk - 2.7.0-1
+* Mon Jan 19 2015 Antoine Martin <antoine@devloop.org.uk> - 2.7.0-1
 - new upstream release
 - remove sane packages which are no longer part of the main source distribution
 
-* Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk - 2.6.2-1
+* Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk> - 2.6.2-1
 - new upstream release
 
-* Sat Oct 25 2014 Antoine Martin <antoine@devloop.org.uk - 2.6.1-1
+* Sat Oct 25 2014 Antoine Martin <antoine@devloop.org.uk> - 2.6.1-1
 - new upstream release
 
-* Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk - 2.6.0-1
+* Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk> - 2.6.0-1
 - new upstream release
 
-* Thu Sep 04 2014 Antoine Martin <antoine@devloop.org.uk - 2.5.3-1
+* Thu Sep 04 2014 Antoine Martin <antoine@devloop.org.uk> - 2.5.3-1
 - Initial packaging for xpra

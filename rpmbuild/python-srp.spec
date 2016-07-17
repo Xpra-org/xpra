@@ -16,9 +16,9 @@
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 
-Name:           python-srp
+Name:           python2-srp
 Version:        1.0.5
-Release:        0%{?dist}
+Release:        1%{?dist}
 URL:            http://pythonhosted.org/srp/
 Summary:        Secure Remote Password for python
 License:        MIT
@@ -29,6 +29,8 @@ BuildRequires:  python-devel
 BuildRequires:  openssl-devel
 BuildRequires:  python-setuptools
 Requires:       openssl
+Provides:       python-srp
+Obsoletes:      python-srp
 Patch0:         python-srp-py3k.patch
 
 %description
@@ -85,5 +87,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 1.0.5-1
+- rename and obsolete old python package name
+
 * Thu Jan 07 2016 Antoine Martin <antoine@nagafix.co.uk> - 1.0.5-0
 - Initial packaging

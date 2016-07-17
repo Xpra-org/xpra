@@ -15,9 +15,9 @@
 
 Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
-Name: python-netifaces
+Name: python2-netifaces
 Version: 0.10.4
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: GPL3
 Requires: python
 Group: Networking
@@ -27,7 +27,9 @@ Source: netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python-devel, python-setuptools
 Provides: netifaces
+Provides: python2-netifaces
 Obsoletes: netifaces
+Obsoletes: python-netifaces
 
 %description
 Getting network addresses from Python
@@ -82,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.10.4-4
+- rename and obsolete old python package name
+
 * Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-3
 - Add Python3 package
 

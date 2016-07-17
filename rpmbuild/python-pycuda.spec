@@ -7,15 +7,17 @@
 #so that we can install NVidia drivers without using RPM packages:
 %define __requires_exclude ^libcuda.*$
 
-Name:           python-pycuda
-Version:        2016.1
+Name:           python2-pycuda
+Version:        2016.1.1
 Release:        1
-Url:            http://mathema.tician.de/software/pycuda
+URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source:        	http://pypi.python.org/pypi/cuda/%{version}/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+Provides:       python-pycuda
+Obsoletes:      python-pycuda
 
 Requires:       python-decorator
 Requires:       numpy
@@ -61,23 +63,27 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
-* Fri Apr 01 2016 Antoine Martin <antoine@devloop.org.uk - 2016.1-1
+* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 2016.1.1-1
+- new upstream release
+- rename and obsolete old python package name
+
+* Fri Apr 01 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.1-1
 - new upstream release
 
-* Wed Nov 04 2015 Antoine Martin <antoine@devloop.org.uk - 2015.1.3-1
+* Wed Nov 04 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1.3-1
 - new upstream release
 
-* Wed Jul 01 2015 Antoine Martin <antoine@devloop.org.uk - 2015.1.2-1
+* Wed Jul 01 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1.2-1
 - new upstream release
 
-* Wed Jun 17 2015 Antoine Martin <antoine@devloop.org.uk - 2015.1-1
+* Wed Jun 17 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1-1
 - new upstream release
 
-* Sun Mar 29 2015 Antoine Martin <antoine@devloop.org.uk - 2014.1-3
+* Sun Mar 29 2015 Antoine Martin <antoine@devloop.org.uk> - 2014.1-3
 - remove dependency on libcuda so the package can be installed without using the RPM drivers
 
-* Fri Nov 07 2014 Antoine Martin <antoine@devloop.org.uk - 2014.1-2
+* Fri Nov 07 2014 Antoine Martin <antoine@devloop.org.uk> - 2014.1-2
 - remove curand bindings which require libcurand found in full CUDA SDK
 
-* Wed Sep 03 2014 Antoine Martin <antoine@devloop.org.uk - 2014.1-1
+* Wed Sep 03 2014 Antoine Martin <antoine@devloop.org.uk> - 2014.1-1
 - initial packaging
