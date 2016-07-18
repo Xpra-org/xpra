@@ -19,12 +19,17 @@
 %define CFLAGS -O2 -fno-strict-aliasing
 %endif
 
+%define py2prefix python
+%if 0%{?fedora}
+%define py2prefix python2
+%endif
+
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define dummy --with-Xdummy
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
-%define requires_lzo , python-lzo
+%define requires_lzo , %{py2prefix}-lzo
 %define numpy numpy
 %define requires_webcam , python-inotify
 %define requires_shadow shadow-utils
@@ -32,13 +37,13 @@
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
 %define requires_dbus dbus-python dbus-x11
-%define requires_crypto python-cryptography
+%define requires_crypto %{py2prefix}-cryptography
 %define py3requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, pygtkglext
-%define py3requires_opengl , python3-PyOpenGL, python3-PyOpenGL-accelerate
-%define requires_printing , python-cups, cups-filters, cups-pdf
+%define requires_opengl , %{py2prefix}-pyopengl, pygtkglext
+%define py3requires_opengl , python3-pyopengl
+%define requires_printing , %{py2prefix}-cups, cups-filters, cups-pdf
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly, gstreamer1-plugins-bad-free
@@ -70,7 +75,7 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 #can't run the tests with python 2.6 which is too old:
 %define run_tests 0
 #no python cryptography:
-%define requires_crypto python-crypto
+%define requires_crypto %{py2prefix}-crypto
 #no python-inotify:
 %define requires_webcam %{nil}
 #no pycups available in repos:
@@ -94,10 +99,8 @@ Patch0: centos-ignore-invalid-gcc-warning.patch
 %if 0%{?fedora}
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
-#Fedora now has PyOpenGL... and they include PyOpenGL-accelerate bindings. PITA for us.
-%define requires_opengl , PyOpenGL, pygtkglext
 #note: probably not working since we don't have gtkglext for Python3?
-%define py3requires_opengl , python3-PyOpenGL
+%define py3requires_opengl , python3-pyopengl
 %endif
 %if 0%{?fedora}>=23
 #Fedora 23 has libvpx 1.4, no need for our own libvpx-xpra packages:
@@ -149,7 +152,7 @@ Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
-Requires: python-lz4
+Requires: %{py2prefix}-lz4
 Requires: %{requires_pygtk2}
 Requires: %{requires_dbus}
 Requires: %{requires_crypto}
@@ -158,9 +161,9 @@ Requires: which
 #we cannot depend on 'avahi-ui-tools' which we need for mdns support
 #(it provides the avahi python bindings)
 #because Fedora and CentOS bring in some insane dependencies with it (vnc)
-Requires: python-netifaces
-Requires: python-rencode
-Requires: python-pillow
+Requires: %{py2prefix}-netifaces
+Requires: %{py2prefix}-rencode
+Requires: %{py2prefix}-pillow
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
 Requires: %{requires_xorg}
@@ -184,7 +187,7 @@ Recommends: cups-filters
 BuildRequires: pkgconfig
 BuildRequires: %{requires_cython}
 BuildRequires: %{requires_pygtk2}-devel
-BuildRequires: python, python-setuptools
+BuildRequires: python, %{py2prefix}-setuptools
 BuildRequires: %{requires_pygobject2}-devel
 BuildRequires: libxkbfile-devel
 BuildRequires: libXtst-devel
