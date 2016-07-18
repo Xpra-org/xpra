@@ -18,7 +18,7 @@
 
 Name:           python2-lz4
 Version:        0.8.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -95,6 +95,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jul 18 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-2
+- new package name, obsolete the old one
+
 * Fri Jun 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-1
 - New upstream release
 
