@@ -125,7 +125,6 @@ Summary:        %{srcname} Python 3.x Tk widget
 BuildArch:      noarch
 Requires:       python3-%{shortname} = %{version}-%{release}
 Requires:       python3-tkinter
-%{?python_provide:%python_provide python3-%{shortname}-tk}
 # These can be removed in Fedora 27
 Obsoletes:      python3-PyOpenGL-Tk < 3.1.0-7
 Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
