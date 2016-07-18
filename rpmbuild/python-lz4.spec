@@ -16,7 +16,7 @@
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 
-Name:           python-lz4
+Name:           python2-lz4
 Version:        0.8.2
 Release:        1%{?dist}
 URL:            https://github.com/steeve/python-lz4
@@ -31,6 +31,8 @@ BuildRequires:  python-setuptools
 BuildRequires:  lz4-devel
 %endif
 Requires: 		lz4
+Provides:		python-lz4
+Obsoletes:      python-lz4 < 0.8.2
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
