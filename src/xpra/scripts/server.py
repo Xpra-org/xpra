@@ -168,6 +168,11 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
         # :-separated envvars that people might change while their server is
         # going:
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
+            #prevent those paths from accumulating the same values multiple times,
+            #only keep the first one:
+            pval = value.split(os.pathsep)      #ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
+            seen = set()
+            value = os.pathsep.join(x for x in pval if not (x in seen or seen.add(x)))
             script.append("%s=%s:\"$%s\"; export %s\n"
                           % (var, sh_quotemeta(value), var, var))
         else:
