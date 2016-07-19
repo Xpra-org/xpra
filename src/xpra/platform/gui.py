@@ -114,6 +114,7 @@ def get_icc_info():
                 except Exception as e:
                     log("ICC profile error on %s using %s: %s", k, fn, e)
     except Exception as e:
+        log("get_icc_info()", exc_info=True)
         log.warn("Warning: cannot query ICC profiles:")
         log.warn(" %s", e)
     return info
