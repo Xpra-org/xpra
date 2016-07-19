@@ -86,7 +86,7 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
                     #init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
                     log("initialiazed instance=%s" % e)
                     images = gen_src_images(src_format, actual_w, actual_h, n_images)
-                    log("test images generated - starting compression")
+                    log("%i %s %ix%i test images generated - starting compression", n_images, src_format, actual_w, actual_h)
                     do_test_encoder(e, src_format, actual_w, actual_h, images, log=log, after_encode_cb=after_encode_cb)
                     e.clean()
 
