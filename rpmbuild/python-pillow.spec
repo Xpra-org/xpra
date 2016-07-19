@@ -22,6 +22,7 @@
 %endif
 %if 0%{?fedora}
 	%global with_python3 1
+	%global lcms lcms2
 	%if 0%{?fedora} > 19
 		%global with_filter 1
 	%else
@@ -42,7 +43,7 @@
 
 Name:           python2-pillow
 Version:        3.3.0
-Release:        2%{?snap}%{?dist}
+Release:        3%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -296,6 +297,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Tue Jul 19 2016 Antoine Martin <antoine@nagafix.co.uk> - 3.3.0-3
+- fix lcms2 dependency for Fedora
+
 * Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 3.3.0-2
 - rename and obsolete old python package name
 
