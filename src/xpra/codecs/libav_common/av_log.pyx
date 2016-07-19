@@ -51,6 +51,8 @@ def resume_nonfatal_logging():
     DEBUG_LEVEL    = AV_LOG_DEBUG
 
 
+DEF MAX_LOG_SIZE = 4096
+
 cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
     if level<=ERROR_LEVEL:
         l = log.error
@@ -64,13 +66,16 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
         #don't bother
         return
     #turn it into a string:
-    cdef char buffer[256]
+    cdef char buffer[MAX_LOG_SIZE]
     cdef int r
     try:
-        r = vsnprintf(buffer, 256, fmt, vl)
+        r = vsnprintf(buffer, MAX_LOG_SIZE, fmt, vl)
         if r<0:
             log.error("av_log: vsnprintf returned %i on format string '%s'", r, fmt)
             return
+        if r>MAX_LOG_SIZE:
+            log.error("av_log: vsnprintf returned more than %i characters!", MAX_LOG_SIZE)
+            r = MAX_LOG_SIZE
         s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
         if s.startswith("Warning: data is not aligned!"):
             #silence this crap, since there is nothing we can do about it
