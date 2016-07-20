@@ -523,7 +523,7 @@ cdef class Encoder:
         param.i_log_level = LOG_LEVEL
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
-        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s, b-frames=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
+        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
         log(" preset=%s, profile=%s, tune=%s", preset, self.profile, tune)
         #print_nested_dict(options, " ", print_fn=log.error)
         log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
