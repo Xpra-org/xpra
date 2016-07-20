@@ -137,16 +137,7 @@ def save_dbus_env(env):
 
 
 def sh_quotemeta(s):
-    safe = ("abcdefghijklmnopqrstuvwxyz"
-            + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            + "0123456789"
-            + "/._:,-+")
-    quoted_chars = []
-    for char in s:
-        if char not in safe:
-            quoted_chars.append("\\")
-        quoted_chars.append(char)
-    return "\"%s\"" % ("".join(quoted_chars),)
+    return "'" + s.replace("'", "'\\''") + "'"
 
 def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
     script = []
