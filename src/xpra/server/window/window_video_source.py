@@ -1071,8 +1071,8 @@ class WindowVideoSource(WindowSource):
             Given an optional csc step (csc_format and csc_spec), and
             and a required encoding step (encoder_spec and width/height),
             we calculate a score of how well this matches our requirements:
-            * our quality target (as per get_currend_quality)
-            * our speed target (as per _current_speed)
+            * our quality target "self._currend_quality"
+            * our speed target "self._current_speed"
             * how expensive it would be to switch to this pipeline option
             Note: we know the current pipeline settings, so the "switching
             cost" will be lower for pipelines that share components with the
@@ -1098,14 +1098,15 @@ class WindowVideoSource(WindowSource):
             height_mask = csc_spec.height_mask & encoder_spec.height_mask
             csc_width = width & width_mask
             csc_height = height & height_mask
+            csce = self._csc_encoder
             if enc_in_format=="RGB":
                 #converting to "RGB" is often a waste of CPU
                 #(can only get selected because the csc step will do scaling,
                 # but even then, the YUV subsampling are better options)
                 ecsc_score = 1
-            elif self._csc_encoder is None or self._csc_encoder.get_dst_format()!=enc_in_format or \
-               type(self._csc_encoder)!=csc_spec.codec_class or \
-               self._csc_encoder.get_src_width()!=csc_width or self._csc_encoder.get_src_height()!=csc_height:
+            elif csce is None or csce.get_dst_format()!=enc_in_format or \
+               type(csce)!=csc_spec.codec_class or \
+               csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
                 #if we have to change csc, account for new csc setup cost:
                 ecsc_score = max(0, 80 - csc_spec.setup_cost*80.0/100.0)
             else:
