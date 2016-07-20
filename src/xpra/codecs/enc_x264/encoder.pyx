@@ -500,7 +500,12 @@ cdef class Encoder:
             log.info("saving %s stream to %s", encoding, filename)
 
     def get_tune(self):
-        return TUNE
+        if TUNE:
+            return TUNE
+        if self.source=="video":
+            return "film"
+        #return "animation"
+        return "zerolatency"
 
     cdef init_encoder(self, options={}):
         cdef x264_param_t param
