@@ -96,6 +96,7 @@ class WindowVideoSource(WindowSource):
     def init_vars(self):
         WindowSource.init_vars(self)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
+        self.video_subregion.set_enabled(False)     #disabled until we parse the client props
 
         #these constraints get updated with real values
         #when we construct the video pipeline:
@@ -819,6 +820,7 @@ class WindowVideoSource(WindowSource):
         """
         WindowSource.update_encoding_options(self, force_reload)
         log("update_encoding_options(%s) supports_video_subregion=%s, csc_encoder=%s, video_encoder=%s", force_reload, self.supports_video_subregion, self._csc_encoder, self._video_encoder)
+        self.video_subregion.set_enabled(self.supports_video_subregion)
         if self.supports_video_subregion:
             if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0 and not (self._mmap and self._mmap_size>0):
                 ww, wh = self.window_dimensions
