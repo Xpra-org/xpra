@@ -523,7 +523,8 @@ cdef class Encoder:
         param.i_log_level = LOG_LEVEL
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
-        log("x264 context=%#x, %7s %4ix%-4i preset=%s, profile=%s, tune=%s", <unsigned long> self.context, self.src_format, self.width, self.height, preset, self.profile, tune)
+        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s, b-frames=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
+        log(" preset=%s, profile=%s, tune=%s", preset, self.profile, tune)
         #print_nested_dict(options, " ", print_fn=log.error)
         log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
                     ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
@@ -733,7 +734,7 @@ cdef class Encoder:
             raise Exception("x264_encoder_encode produced no data!")
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
-        log("x264 encode frame %i as %4s slice with %i nals, total %7i bytes, keyframe=%-5s, delayed=%i", self.frames, slice_type, i_nals, frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
+        log("x264 encode frame %5i as %4s slice with %i nals, total %7i bytes, keyframe=%-5s, delayed=%i", self.frames, slice_type, i_nals, frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
         if LOG_NALS:
             for i in range(i_nals):
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
