@@ -448,6 +448,7 @@ cdef class Encoder:
     cdef object src_format
     cdef object source
     cdef object profile
+    cdef object tune
     cdef double time
     cdef int colorspace
     cdef int preset
@@ -511,8 +512,8 @@ cdef class Encoder:
         cdef x264_param_t param
         cdef const char *preset
         preset = get_preset_names()[self.preset]
-        tune = self.get_tune()
-        x264_param_default_preset(&param, preset, tune)
+        self.tune = self.get_tune()
+        x264_param_default_preset(&param, preset, self.tune)
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
@@ -524,7 +525,7 @@ cdef class Encoder:
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
         log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
-        log(" preset=%s, profile=%s, tune=%s", preset, self.profile, tune)
+        log(" preset=%s, profile=%s, tune=%s", preset, self.profile, self.tune)
         #print_nested_dict(options, " ", print_fn=log.error)
         log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
                     ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
@@ -592,6 +593,7 @@ cdef class Encoder:
         info = get_info()
         info.update({"profile"   : self.profile,
                      "preset"    : get_preset_names()[self.preset],
+                     "tune"      : self.tune or "",
                      "frames"    : self.frames,
                      "width"     : self.width,
                      "height"    : self.height,
@@ -789,8 +791,8 @@ cdef class Encoder:
         #retrieve current parameters:
         x264_encoder_parameters(self.context, &param)
         #apply new preset:
-        tune = self.get_tune()
-        x264_param_default_preset(&param, get_preset_names()[new_preset], tune)
+        self.tune = self.get_tune()
+        x264_param_default_preset(&param, get_preset_names()[new_preset], self.tune)
         #ensure quality remains what it was:
         set_f_rf(&param, get_x264_quality(self.quality, self.profile))
         self.tune_param(&param)
