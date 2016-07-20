@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -374,8 +374,8 @@ class WindowVideoSource(WindowSource):
         lde = list(self.statistics.last_damage_events)
         lim = now-2
         pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_2secs<5*cww*cwh:
-            #less than 5 full window pixels in last 2 seconds
+        if pixels_last_2secs<5*min(640*480, cww*cwh):
+            #less than 5 480p frames / full window updates in last 2 seconds
             return nonvideo()
 
         if self._current_quality!=quality or self._current_speed!=speed:
