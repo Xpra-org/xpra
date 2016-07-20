@@ -170,10 +170,6 @@ class VideoSubregion(object):
         sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
 
         def setnewregion(rect, msg="", *args):
-            if rect.x<=0 and rect.y<=0 and rect.width>=ww and rect.height>=wh:
-                #same size as the window, don't use a region!
-                self.novideoregion("region is full window")
-                return
             sslog("setting new region %s: "+msg, rect, *args)
             self.set_at = damage_events_count
             self.counter = damage_events_count
