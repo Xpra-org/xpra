@@ -54,6 +54,7 @@ cdef extern from "../../buffers/buffers.h":
     int get_buffer_api_version()
 
 cdef extern from "x264.h":
+    int X264_KEYINT_MAX_INFINITE
 
     int X264_BUILD
 
@@ -531,9 +532,9 @@ cdef class Encoder:
         param.i_threads = THREADS
         param.b_sliced_threads = SLICED_THREADS
         #we never lose frames or use seeking, so no need for regular I-frames:
-        param.i_keyint_max = 999999
+        param.i_keyint_max = X264_KEYINT_MAX_INFINITE
         #we don't want IDR frames either:
-        param.i_keyint_min = 999999
+        param.i_keyint_min = X264_KEYINT_MAX_INFINITE
         param.b_intra_refresh = 0   #no intra refresh
         param.b_open_gop = 1        #allow open gop
         param.b_opencl = self.opencl
