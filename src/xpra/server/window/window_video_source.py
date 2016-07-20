@@ -118,6 +118,7 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = []
         self.non_video_encodings = []
         self.edge_encoding = None
+        self.start_video_frame = 0
         self.b_frame_flush_timer = None
         self.scroll_data = None
 
@@ -1430,6 +1431,7 @@ class WindowVideoSource(WindowSource):
         self.max_w = max_w
         self.max_h = max_h
         enc_end = time.time()
+        self.start_video_frame = 0
         self._video_encoder = ve
         videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
                 csce, ve, ve.get_info(), (enc_end-enc_start)*1000.0)
@@ -1635,20 +1637,23 @@ class WindowVideoSource(WindowSource):
             self.free_image_wrapper(csc_image)
             del csc_image
 
-        if self.b_frame_flush_timer:
-            self.source_remove(self.b_frame_flush_timer)
-            self.b_frame_flush_timer = None
-        delayed = client_options.get("delayed")
-        if delayed is not None:
-            last_frame = client_options.get("frame")
-            flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
-            videolog("schedule video_encoder_flush for encoder %s, last frame=%i, client_options=%s, flush delay=%i", ve, last_frame, client_options, flush_delay)
-            self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, last_frame, x, y)
+        delayed = client_options.get("delayed", 0)
+        frame = client_options.get("frame", 0)
+        self.cancel_video_encoder_flush()
+        if delayed>0:
+            self.schedule_video_encoder_flush(ve, csc, frame, x, y, client_options)
             if not data:
-                if last_frame==0:
-                    #first frame, just send something:
+                if frame==0:
+                    #first frame has not been sent yet,
+                    #so send something as non-video
+                    #and skip painting this video frame when it does come out:
+                    self.start_video_frame = delayed
                     return self.video_fallback(image, options, order=FAST_ORDER)
                 return None
+        if frame<self.start_video_frame:
+            #tell client not to bother updating the screen,
+            #as it must have received a non-video frame already
+            client_options["paint"] = False
 
         #tell the client which colour subsampling we used:
         #(note: see csc_equiv!)
@@ -1661,11 +1666,22 @@ class WindowVideoSource(WindowSource):
                             ve.get_type(), encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         return ve.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
 
+    def cancel_video_encoder_flush(self):
+        bft = self.b_frame_flush_timer
+        if bft:
+            self.b_frame_flush_timer = None
+            self.source_remove(bft)
+
+    def schedule_video_encoder_flush(self, ve, csc, frame, x , y, client_options):
+        flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
+        videolog("schedule_video_encoder_flush%s flush delay=%i", (ve, csc, frame, x, y, client_options), flush_delay)
+        self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, frame, x, y)
+
     def flush_video_encoder(self, ve, csc, frame, x, y):
         #this runs in the UI thread..
         #but we want to run from the encode thread to access the encoder:
         self.b_frame_flush_timer = None
-        if self._video_encoder!=ve:
+        if self._video_encoder!=ve or ve.is_closed():
             return
         self.call_in_encode_thread(True, self.do_flush_video_encoder, ve, csc, frame, x, y)
 
@@ -1690,12 +1706,17 @@ class WindowVideoSource(WindowSource):
             videolog("do_flush_video_encoder%s=%s", (ve, frame, x, y), v)
             return
         data, client_options = v
+        if not data:
+            videolog("do_flush_video_encoder%s no data", (ve, frame, x, y))
+            return
         client_options["csc"] = self.csc_equiv(csc)
+        if frame<self.start_video_frame:
+            client_options["paint"] = False
         videolog("do_flush_video_encoder%s=(%s %s bytes, %s)", (ve, frame, x, y), len(data or ()), type(data), client_options)
-        if data:
-            packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
-            self.queue_damage_packet(packet)
-        #add check for delayed frames again if we support multiple b-frames
+        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
+        self.queue_damage_packet(packet)
+        #check for more delayed frames since we want to support multiple b-frames:
+        self.flush_video_encoder(ve, csc, frame, x, y)
 
 
     def csc_image(self, image, width, height):

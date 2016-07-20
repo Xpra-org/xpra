@@ -1842,7 +1842,7 @@ class WindowSource(object):
         if self.supports_flush and flush is not None:
             client_options["flush"] = flush
         end = time.time()
-        compresslog.warn("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
+        compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %5s with ratio %5.1f%% (%5iKB to %5iKB), client_options=%s",
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options)
