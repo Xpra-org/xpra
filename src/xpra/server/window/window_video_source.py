@@ -10,12 +10,12 @@ import operator
 import threading
 
 from xpra.net.compression import Compressed, LargeStructure
-from xpra.codecs.codec_constants import get_subsampling_divs, \
-                                        TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, LOSSY_PIXEL_FORMATS
+from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.window.region import merge_all            #@UnresolvedImport
 from xpra.server.window.motion import match_distance, consecutive_lines, calculate_distances, CRC_Image #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion
+from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs
 from xpra.log import Logger
@@ -973,7 +973,10 @@ class WindowVideoSource(WindowSource):
                     scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
                     continue
                 scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
-                score_data = self.get_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling)
+                score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
+                                                self._current_quality, self._fixed_min_quality,
+                                                self._current_speed, self._fixed_min_speed,
+                                                self._csc_encoder, self._video_encoder)
                 if score_data:
                     scores.append(score_data)
         if not FORCE_CSC or src_format==FORCE_CSC_MODE:
@@ -1003,175 +1006,6 @@ class WindowVideoSource(WindowSource):
         return {"NV12" : "YUV420P",
                 "BGRX" : "YUV444P"}.get(csc_mode, csc_mode)
 
-
-    def get_quality_score(self, csc_format, csc_spec, encoder_spec, scaling):
-        quality = encoder_spec.quality
-        if csc_format in ("YUV420P", "YUV422P", "YUV444P"):
-            #account for subsampling: reduces quality
-            y,u,v = get_subsampling_divs(csc_format)
-            div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
-            for div_x, div_y in (y, u, v):
-                div += (div_x+div_y)/2.0/3.0
-            quality = quality / div
-
-        if csc_spec:
-            #csc_spec.quality is the upper limit (up to 100):
-            quality += csc_spec.quality
-            quality /= 2.0
-
-        if scaling==(1, 1) and csc_format not in ("YUV420P", "YUV422P") and self._current_quality==100 and encoder_spec.has_lossless_mode:
-            #we want lossless!
-            qscore = quality + 80
-        else:
-            #how far are we from the current quality heuristics?
-            qscore = 100-abs(self._current_quality - quality)
-            mq = self._fixed_min_quality
-            if mq>=0:
-                #if the encoder quality is lower or close to min_quality
-                #then it isn't very suitable:
-                mqs = max(0, quality - mq)*100/max(1, 100-mq)
-                qscore = (qscore + mqs)//2
-            #when downscaling, YUV420P should always win:
-            if csc_format=="YUV420P" and scaling!=(1, 1):
-                qscore *= 2.0
-        return int(qscore)
-
-    def get_speed_score(self, csc_format, csc_spec, encoder_spec, scaling):
-        #score based on speed:
-        speed = encoder_spec.speed
-        if csc_spec:
-            #when subsampling, add the speed gains to the video encoder
-            #which now has less work to do:
-            mult = 1.0
-            if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
-                #account for subsampling: increases encoding speed
-                y,u,v = get_subsampling_divs(csc_format)
-                mult = 0.0
-                for div_x, div_y in (y, u, v):
-                    mult += (div_x+div_y)/2.0/3.0
-            #average and add 0.25 for the extra cost of doing the csc step:
-            speed = (encoder_spec.speed * mult + csc_spec.speed) / 2.25
-
-        #the lower the current speed
-        #the more we need a fast encoder/csc to cancel it out:
-        sscore = max(0, (100.0-self._current_speed) * speed/100.0)
-        ms = self._fixed_min_speed
-        if ms>=0:
-            #if the encoder speed is lower or close to min_speed
-            #then it isn't very suitable:
-            mss = max(0, speed - ms)*100/max(1, 100-ms)
-            sscore = (sscore + mss)/2.0
-        #then always favour fast encoders:
-        sscore += speed
-        sscore /= 2
-        return int(sscore)
-
-    def get_score(self, enc_in_format, csc_spec, encoder_spec, width, height, scaling):
-        """
-            Given an optional csc step (csc_format and csc_spec), and
-            and a required encoding step (encoder_spec and width/height),
-            we calculate a score of how well this matches our requirements:
-            * our quality target "self._currend_quality"
-            * our speed target "self._current_speed"
-            * how expensive it would be to switch to this pipeline option
-            Note: we know the current pipeline settings, so the "switching
-            cost" will be lower for pipelines that share components with the
-            current one.
-
-            Can be called from any thread.
-        """
-        def clamp(v):
-            return max(0, min(100, v))
-        qscore = clamp(self.get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling))
-        sscore = clamp(self.get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling))
-
-        #runtime codec adjustements:
-        runtime_score = 100
-        #score for "edge resistance" via setup cost:
-        ecsc_score = 100
-
-        csc_width = 0
-        csc_height = 0
-        if csc_spec:
-            #OR the masks so we have a chance of making it work
-            width_mask = csc_spec.width_mask & encoder_spec.width_mask
-            height_mask = csc_spec.height_mask & encoder_spec.height_mask
-            csc_width = width & width_mask
-            csc_height = height & height_mask
-            csce = self._csc_encoder
-            if enc_in_format=="RGB":
-                #converting to "RGB" is often a waste of CPU
-                #(can only get selected because the csc step will do scaling,
-                # but even then, the YUV subsampling are better options)
-                ecsc_score = 1
-            elif csce is None or csce.get_dst_format()!=enc_in_format or \
-               type(csce)!=csc_spec.codec_class or \
-               csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
-                #if we have to change csc, account for new csc setup cost:
-                ecsc_score = max(0, 80 - csc_spec.setup_cost*80.0/100.0)
-            else:
-                ecsc_score = 80
-            ecsc_score += csc_spec.score_boost
-            runtime_score *= csc_spec.get_runtime_factor()
-
-            csc_scaling = scaling
-            encoder_scaling = (1, 1)
-            if scaling!=(1,1) and not csc_spec.can_scale:
-                #csc cannot take care of scaling, so encoder will have to:
-                encoder_scaling = scaling
-                csc_scaling = (1, 1)
-            if scaling!=(1, 1):
-                #if we are (down)scaling, we should prefer lossy pixel formats:
-                v = LOSSY_PIXEL_FORMATS.get(enc_in_format, 1)
-                qscore *= (v/2)
-            enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
-        else:
-            #not using csc at all!
-            ecsc_score = 100
-            width_mask = encoder_spec.width_mask
-            height_mask = encoder_spec.height_mask
-            enc_width = width & width_mask
-            enc_height = height & height_mask
-            csc_scaling = None
-            encoder_scaling = scaling
-
-        if encoder_scaling!=(1,1) and not encoder_spec.can_scale:
-            #we need the encoder to scale but it cannot do it, fail it:
-            scorelog("scaling (%s) not supported by %s", encoder_scaling, encoder_spec)
-            return None
-
-        ee_score = 100
-        ve = self._video_encoder
-        if ve is None or ve.get_type()!=encoder_spec.codec_type or \
-           ve.get_src_format()!=enc_in_format or \
-           ve.get_width()!=enc_width or ve.get_height()!=enc_height:
-            #account for new encoder setup cost:
-            ee_score = 100 - encoder_spec.setup_cost
-            ee_score += encoder_spec.score_boost
-        #edge resistance score: average of csc and encoder score:
-        er_score = (ecsc_score + ee_score) / 2.0
-        score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)
-        scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, score=%2i",
-                 enc_in_format, csc_spec, encoder_spec, width, height,
-                 qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, score)
-        return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
-
-    def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height, scaling=(1,1)):
-        """
-            Given a csc and encoder specs and dimensions, we calculate
-            the dimensions that we would use as output.
-            Taking into account:
-            * applications can require scaling (see "scaling" attribute)
-            * we scale fullscreen and maximize windows when at high speed
-              and low quality.
-            * we do not bother scaling small dimensions
-            * the encoder may not support all dimensions
-              (see width and height masks)
-        """
-        v, u = scaling
-        enc_width = int(width * v / u) & encoder_spec.width_mask
-        enc_height = int(height * v / u) & encoder_spec.height_mask
-        return enc_width, enc_height
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):
         q = self._current_quality
