@@ -527,7 +527,7 @@ class WindowSource(object):
                 #call compress_clibboard via the work queue
                 #and delay sending it by a bit to allow basic icon batching:
                 delay = max(50, int(self.batch_config.delay))
-                iconlog("send_window_icon() window=%, wid=%s, icon=%s, compression scheduled in %sms", self.window, self.wid, surf, delay)
+                iconlog("send_window_icon() window=%s, wid=%s, icon=%s, compression scheduled in %sms", self.window, self.wid, surf, delay)
                 self.timeout_add(delay, self.call_in_encode_thread, True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
