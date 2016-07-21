@@ -726,6 +726,7 @@ def do_parse_cmdline(cmdline, defaults):
                          help="The authentication module to use for vsock sockets (default: '%default')")
     else:
         ignore({"vsock-auth" : ""})
+    ignore({"password"           : defaults.password})
     if os.name=="posix":
         group.add_option("--mmap-group", action="store_true",
                           dest="mmap_group", default=defaults.mmap_group,
@@ -1087,6 +1088,61 @@ def parse_vsock(vsock_str):
 
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
+    def parse_host_string(host):
+        """
+            Parses [username[:password]@]host[:port]
+            and returns username, password, host, port
+            missing arguments will be empty (username and password) or 0 (port)
+        """
+        upos = host.find("@")
+        username = None
+        password = None
+        port = 0
+        if upos>=0:
+            #HOST=username@host
+            username = host[:upos]
+            host = host[upos+1:]
+            ppos = username.find(":")
+            if ppos>=0:
+                password = username[ppos+1:]
+                username = username[:ppos]
+                desc["password"] = password
+                opts.password = password
+            if username:
+                desc["username"] = username
+                #fugly: we override the command line option after parsing the string:
+                opts.username = username
+        port_str = None
+        if host.count(":")>=2:
+            #more than 2 ":", assume this is IPv6:
+            if host.startswith("["):
+                #if we have brackets, we can support: "[HOST]:SSHPORT"
+                epos = host.find("]")
+                if epos<0:
+                    error_cb("invalid host format, expected IPv6 [..]")
+                port_str = host[epos+1:]        #ie: ":22"
+                if port_str.startswith(":"):
+                    port_str = port_str[1:]     #ie: "22"
+                host = host[1:epos]                 #ie: "HOST"
+            else:
+                #otherwise, we have to assume they are all part of IPv6
+                #we could count them at split at 8, but that would be just too fugly
+                pass
+        elif host.find(":")>0:
+            host, port_str = host.split(":", 1)
+        if port_str:
+            try:
+                port = int(port_str)
+                desc["port"] = int(port_str)
+            except:
+                error_cb("invalid port specified: %s" % port_str)
+            if port<=0 or port>=65536:
+                error_cb("invalid port number: %s" % port)
+        if host=="":
+            host = "127.0.0.1"
+        desc["host"] = host
+        return username, password, host, port
+    
     if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
         desc.update({
@@ -1119,48 +1175,13 @@ def parse_display_name(error_cb, opts, display_name):
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         desc["is_putty"] = is_putty
 
-        upos = host.find("@")
-        if upos>=0:
-            #HOST=username@host
-            username = host[:upos]
-            host = host[upos+1:]
-            ppos = username.find(":")
-            if ppos>=0:
-                password = username[ppos+1:]
-                username = username[:ppos]
-                desc["password"] = password
-                if password and is_putty:
-                    full_ssh += ["-pw", password]
-            if username:
-                desc["username"] = username
-                opts.username = username
-                full_ssh += ["-l", username]
-        upos = host.rfind(":")
-        ssh_port = ""
-        if host.count(":")>=2:
-            #more than 2 ":", assume this is IPv6:
-            if host.startswith("["):
-                #if we have brackets, we can support: "[HOST]:SSHPORT"
-                epos = host.find("]")
-                if epos<0:
-                    error_cb("invalid host format, expected IPv6 [..]")
-                ssh_port = host[epos+1:]            #ie: ":SSHPORT"
-                if ssh_port.startswith(":"):
-                    ssh_port = ssh_port[1:]         #ie: "SSHPORT"
-                host = host[1:epos]                 #ie: "HOST"
-            else:
-                #otherwise, we have to assume they are all part of IPv6
-                #we could count them at split at 8, but that would be just too fugly
-                pass
-        elif upos>0:
-            #assume HOST:SSHPORT
-            ssh_port = host[upos+1:]
-            host = host[:upos]
+        username, password, host, ssh_port = parse_host_string(host)
+        if password and is_putty:
+            full_ssh += ["-pw", password]
+        if username:
+            opts.username = username
+            full_ssh += ["-l", username]
         if ssh_port:
-            try:
-                desc["port"] = int(ssh_port)
-            except:
-                error_cb("invalid ssh port specified: %s" % ssh_port)
             #grr why bother doing it different?
             if is_putty:
                 #special env used by plink:
@@ -1186,6 +1207,7 @@ def parse_display_name(error_cb, opts, display_name):
             except Exception as e:
                 sys.stderr.write("Error: failed to read the password file '%s':\n", opts.password_file)
                 sys.stderr.write(" %s\n", e)
+        print("desc=%s" % desc)
         return desc
     elif display_name.startswith("socket:"):
         #use the socketfile specified:
@@ -1216,11 +1238,11 @@ def parse_display_name(error_cb, opts, display_name):
                      "local"    : False,
                      })
         parts = display_name.split(separator)
-        if len(parts) not in (3, 4):
-            error_cb("invalid tcp connection string, use tcp/[username@]host/port[/display] or tcp:[username@]host:port[:display]")
+        if len(parts) not in (2, 3, 4):
+            error_cb("invalid tcp connection string, use tcp/[username[:password]@]host:port[/display] or tcp:[username[:password]@]host:port")
         #display (optional):
-        if len(parts)==4:
-            display = parts[3]
+        if separator=="/" and len(parts)==3:
+            display = parts[2]
             if display:
                 try:
                     v = int(display)
@@ -1229,25 +1251,11 @@ def parse_display_name(error_cb, opts, display_name):
                     pass
                 desc["display"] = display
                 opts.display = display
-        #port:
-        port = parts[2]
-        try:
-            port = int(port)
-        except:
-            error_cb("invalid port, not a number: %s" % port)
-        if port<=0 or port>=65536:
-            error_cb("invalid port number: %s" % port)
-        desc["port"] = port
-        #host:
-        host = parts[1]
-        if host.find("@")>0:
-            username, host = host.split("@", 1)
-            if username:
-                desc["username"] = username
-                opts.username = username
-        if host == "":
-            host = "127.0.0.1"
-        desc["host"] = host
+            parts = parts[:-1]
+        host = ":".join(parts[1:])
+        username, password, host, port = parse_host_string(host)
+        print("desc=%s" % desc)
+        assert port>0, "no port specified in %s" % host
         return desc
     elif display_name.startswith("vsock:"):
         #use the vsock specified:
@@ -1589,8 +1597,9 @@ def run_client(error_cb, opts, extra_args, mode):
         try:
             conn = connect()
             #UGLY warning: connect will parse the display string,
-            #which may change the username..
+            #which may change the username and password..
             app.username = opts.username
+            app.password = opts.password
             app.setup_connection(conn)
         except Exception as e:
             app.cleanup()

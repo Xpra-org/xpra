@@ -90,6 +90,7 @@ class XpraClientBase(FileTransferHandler):
         self.compression_level = 0
         self.display = None
         self.username = None
+        self.password = None
         self.password_file = None
         self.password_sent = False
         self.encryption = None
@@ -127,6 +128,7 @@ class XpraClientBase(FileTransferHandler):
         self.compression_level = opts.compression_level
         self.display = opts.display
         self.username = opts.username
+        self.password = opts.password
         self.password_file = opts.password_file
         self.encryption = opts.encryption or opts.tcp_encryption
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
@@ -300,7 +302,7 @@ class XpraClientBase(FileTransferHandler):
             i += 1
 
     def has_password(self):
-        return self.password_file or os.environ.get('XPRA_PASSWORD')
+        return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
 
     def send_hello(self, challenge_response=None, client_salt=None):
         try:
@@ -609,6 +611,8 @@ class XpraClientBase(FileTransferHandler):
         return key.strip("\n\r")
 
     def load_password(self):
+        if self.password:
+            return self.password
         if not self.password_file:
             return os.environ.get('XPRA_PASSWORD')
         filename = os.path.expanduser(self.password_file)
