@@ -1687,22 +1687,26 @@ class UIXpraClient(XpraClientBase):
 
     def send_quality(self):
         q = self.quality
+        log("send_quality() quality=%s", q)
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
         self.send("quality", q)
 
     def send_min_quality(self):
         q = self.min_quality
-        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
+        log("send_min_quality() min-quality=%s", q)
+        assert q==-1 or (q>=0 and q<=100), "invalid min-quality: %s" % q
         self.send("min-quality", q)
 
     def send_speed(self):
         s = self.speed
+        log("send_speed() min-speed=%s", s)
         assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
         self.send("speed", s)
 
     def send_min_speed(self):
         s = self.min_speed
-        assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
+        log("send_min_speed() min-speed=%s", s)
+        assert s==-1 or (s>=0 and s<=100), "invalid min-speed: %s" % s
         self.send("min-speed", s)
 
 
