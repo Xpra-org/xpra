@@ -689,6 +689,7 @@ class WindowVideoSource(WindowSource):
         if not self.window.is_managed():
             log("the window %s is not composited!?", self.window)
             return
+        self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
