@@ -20,7 +20,7 @@ log = Logger("proxy")
 
 
 from xpra.scripts.config import InitException
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -188,7 +188,11 @@ class ProxyServer(ServerCore):
         try:
             server_conn = connect_to(disp_desc)
         except Exception as e:
-            log.error("cannot start proxy connection to %s: %s", disp_desc, e, exc_info=True)
+            log("cannot connect", exc_info=True)
+            log.error("Error: cannot start proxy connection:")
+            log.error(" %s", e)
+            log.error(" connection definition:")
+            print_nested_dict(disp_desc, prefix=" ", lchar="*", pad=20, print_fn=log.error)
             disconnect(SESSION_NOT_FOUND, "failed to connect to display")
             return
         log("server connection=%s", server_conn)
