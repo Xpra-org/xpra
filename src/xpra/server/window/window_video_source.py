@@ -254,6 +254,7 @@ class WindowVideoSource(WindowSource):
             We have to do this from the encode thread to be safe.
             (the encoder and csc module may be in use by that thread)
         """
+        self.cancel_video_encoder_flush()
         if self._csc_encoder:
             self.csc_encoder_clean()
         if self._video_encoder:
