@@ -459,7 +459,8 @@ def get_defaults():
     if WIN32 or PYTHON3:
         xvfb = ""
     elif XDUMMY:
-        xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER, log_dir=get_default_log_dir())
+        log_dir = get_default_log_dir().replace("~/", "${HOME}/")
+        xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER, log_dir=log_dir)
     else:
         xvfb = get_Xvfb_command()
     def addtrailingslash(v):
