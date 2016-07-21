@@ -98,7 +98,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         return entry[0]
 
-    def authenticate(self, challenge_response, client_salt):
+    def authenticate_hmac(self, challenge_response, client_salt):
         self.sessions = None
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
