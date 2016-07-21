@@ -450,7 +450,7 @@ def get_defaults():
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV, CAN_DAEMONIZE
-    from xpra.platform.paths import get_download_dir, get_default_log_dir, get_socket_dirs, get_remote_run_xpra_scripts
+    from xpra.platform.paths import get_download_dir, get_default_log_dir, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -470,7 +470,7 @@ def get_defaults():
     if WIN32:
         bind_dirs = []
     else:
-        bind_dirs = [addtrailingslash(get_socket_dirs()[0])]
+        bind_dirs = ["auto"]
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
