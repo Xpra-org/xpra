@@ -33,7 +33,7 @@ packet-encoders = rencode, bencode, yaml
 #socket-dirs = /tmp
 #socket-dirs = ~/.xpra
 #socket-dirs = /var/run/xpra
-socket-dirs = %(socket_dirs)s
+%(socket_dirs)s
 
 # Where to create new sockets
 # (otherwise the first "socket-dirs" is used)
