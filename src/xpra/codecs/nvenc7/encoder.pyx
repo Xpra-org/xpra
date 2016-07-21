@@ -73,6 +73,8 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef void* NV_ENC_OUTPUT_PTR
     ctypedef void* NV_ENC_REGISTERED_PTR
 
+    NVENCSTATUS NvEncodeAPIGetMaxSupportedVersion(uint32_t* version)
+
     ctypedef enum NV_ENC_CAPS:
         NV_ENC_CAPS_NUM_MAX_BFRAMES
         NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES
@@ -110,6 +112,9 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE
         NV_ENC_CAPS_SUPPORT_SAO
         NV_ENC_CAPS_SUPPORT_MEONLY_MODE
+        NV_ENC_CAPS_SUPPORT_LOOKAHEAD
+        NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ
+        NV_ENC_CAPS_SUPPORT_10BIT_ENCODE
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
@@ -163,13 +168,17 @@ cdef extern from "nvEncodeAPI.h":
 
     ctypedef enum NV_ENC_BUFFER_FORMAT:
         NV_ENC_BUFFER_FORMAT_UNDEFINED
-        NV_ENC_BUFFER_FORMAT_NV12_PL
-        NV_ENC_BUFFER_FORMAT_YV12_PL
-        NV_ENC_BUFFER_FORMAT_IYUV_PL
-        NV_ENC_BUFFER_FORMAT_YUV444_PL
+        NV_ENC_BUFFER_FORMAT_NV12
+        NV_ENC_BUFFER_FORMAT_YV12
+        NV_ENC_BUFFER_FORMAT_IYUV
+        NV_ENC_BUFFER_FORMAT_YUV444
+        NV_ENC_BUFFER_FORMAT_YUV420_10BIT
+        NV_ENC_BUFFER_FORMAT_YUV444_10BIT
         NV_ENC_BUFFER_FORMAT_ARGB
         NV_ENC_BUFFER_FORMAT_ARGB10
         NV_ENC_BUFFER_FORMAT_AYUV
+        NV_ENC_BUFFER_FORMAT_ABGR
+        NV_ENC_BUFFER_FORMAT_ABGR10
 
     ctypedef enum NV_ENC_PIC_FLAGS:
         NV_ENC_PIC_FLAG_FORCEINTRA
@@ -348,6 +357,8 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
 
     GUID NV_ENC_HEVC_PROFILE_MAIN_GUID
+    GUID NV_ENC_HEVC_PROFILE_MAIN10_GUID
+    GUID NV_ENC_HEVC_PROFILE_FREXT_GUID
 
     #Presets:
     GUID NV_ENC_PRESET_DEFAULT_GUID
@@ -940,6 +951,11 @@ CAPS_NAMES = {
         NV_ENC_CAPS_EXPOSED_COUNT               : "EXPOSED_COUNT",
         NV_ENC_CAPS_SUPPORT_YUV444_ENCODE       : "SUPPORT_YUV444_ENCODE",
         NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE     : "SUPPORT_LOSSLESS_ENCODE",
+        NV_ENC_CAPS_SUPPORT_SAO                 : "SUPPORT_SAO",
+        NV_ENC_CAPS_SUPPORT_MEONLY_MODE         : "SUPPORT_MEONLY_MODE",
+        NV_ENC_CAPS_SUPPORT_LOOKAHEAD           : "SUPPORT_LOOKAHEAD",
+        NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ         : "SUPPORT_TEMPORAL_AQ",
+        NV_ENC_CAPS_SUPPORT_10BIT_ENCODE        : "SUPPORT_10BIT_ENCODE",
         }
 
 PIC_TYPES = {
@@ -1090,6 +1106,8 @@ CODEC_PROFILES_GUIDS = {
         },
     guidstr(NV_ENC_CODEC_HEVC_GUID) : {
         guidstr(NV_ENC_HEVC_PROFILE_MAIN_GUID)              : "main",
+        guidstr(NV_ENC_HEVC_PROFILE_MAIN10_GUID)            : "main10",
+        guidstr(NV_ENC_HEVC_PROFILE_FREXT_GUID)             : "frext",
         },
     }
 
@@ -1149,13 +1167,17 @@ PRESET_QUALITY = {
 
 BUFFER_FORMAT = {
         NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
-        NV_ENC_BUFFER_FORMAT_NV12_PL                : "NV12_PL",
-        NV_ENC_BUFFER_FORMAT_YV12_PL                : "YV12_PL",
-        NV_ENC_BUFFER_FORMAT_IYUV_PL                : "IYUV_PL",
-        NV_ENC_BUFFER_FORMAT_YUV444_PL              : "YUV444_PL",
+        NV_ENC_BUFFER_FORMAT_NV12                   : "NV12_PL",
+        NV_ENC_BUFFER_FORMAT_YV12                   : "YV12_PL",
+        NV_ENC_BUFFER_FORMAT_IYUV                   : "IYUV_PL",
+        NV_ENC_BUFFER_FORMAT_YUV444                 : "YUV444_PL",
+        NV_ENC_BUFFER_FORMAT_YUV420_10BIT           : "YUV420_10BIT",
+        NV_ENC_BUFFER_FORMAT_YUV444_10BIT           : "YUV444_10BIT",
         NV_ENC_BUFFER_FORMAT_ARGB                   : "ARGB",
         NV_ENC_BUFFER_FORMAT_ARGB10                 : "ARGB10",
         NV_ENC_BUFFER_FORMAT_AYUV                   : "AYUV",
+        NV_ENC_BUFFER_FORMAT_ABGR                   : "ABGR",
+        NV_ENC_BUFFER_FORMAT_ABGR10                 : "ABGR10",
         }
 
 
@@ -1500,12 +1522,12 @@ cdef class Encoder:
             #if supported (separate plane flag), use YUV444P:
             if self.pixel_format=="YUV444P":
                 kernel_gen = get_BGRA2YUV444
-                self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444_PL
+                self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444
                 #3 full planes:
                 plane_size_div = 1
             elif self.pixel_format=="NV12":
                 kernel_gen = get_BGRA2NV12
-                self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL
+                self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
                 #1 full Y plane and 2 U+V planes subsampled by 4:
                 plane_size_div = 2
             else:
@@ -2473,6 +2495,11 @@ def init_module():
     if NVENCAPI_VERSION!=0x7:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
+
+    cdef uint32_t max_version
+    cdef NVENCSTATUS r = NvEncodeAPIGetMaxSupportedVersion(&max_version)
+    raiseNVENC(r, "querying max version")
+    log(" maximum supported version: %s", max_version)
 
     if not validate_driver_yuv444lossless():
         YUV444_ENABLED = False
