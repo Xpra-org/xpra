@@ -178,6 +178,7 @@ if WIN32:
     nvenc4_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_4.0.0_sdk"
     nvenc5_sdk = WIN32_BUILD_LIB_PREFIX + "nvenc_5.0.1_sdk"
     nvenc6_sdk = WIN32_BUILD_LIB_PREFIX + "nvidia_video_sdk_6.0.1"
+    nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
     nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
     try:
         import pycuda
@@ -186,10 +187,12 @@ if WIN32:
     nvenc4_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc4_sdk) and is_msvc()
     nvenc5_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc5_sdk) and is_msvc()
     nvenc6_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc6_sdk) and is_msvc()
+    nvenc7_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc7_sdk) and is_msvc()
 else:
     nvenc4_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc4")
     nvenc5_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc5")
     nvenc6_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc6")
+    nvenc7_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc7")
 
 memoryview_ENABLED      = sys.version>='2.7'
 csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
@@ -1014,6 +1017,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc4/encoder.c",
                    "xpra/codecs/nvenc5/encoder.c",
                    "xpra/codecs/nvenc6/encoder.c",
+                   "xpra/codecs/nvenc7/encoder.c",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
@@ -2183,14 +2187,15 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvenc4_ENABLED, "xpra.codecs.nvenc4")
 toggle_packages(nvenc5_ENABLED, "xpra.codecs.nvenc5")
 toggle_packages(nvenc6_ENABLED, "xpra.codecs.nvenc6")
-toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
+toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
+toggle_packages(nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED or nvenc7_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
 if (nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED) and WIN32:
     cython_add(Extension("xpra.codecs.nvapi_version",
                 ["xpra/codecs/nvapi_version.pyx"],
                 **pkgconfig("nvapi")
                 ))
 
-if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
+if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED or nvenc7_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
@@ -2304,7 +2309,9 @@ if nvenc4_ENABLED or nvenc5_ENABLED or nvenc6_ENABLED:
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
     for nvenc_version, _nvenc_version_enabled in {4 : nvenc4_ENABLED,
                                                   5 : nvenc5_ENABLED,
-                                                  6 : nvenc6_ENABLED}.items():
+                                                  6 : nvenc6_ENABLED,
+                                                  7 : nvenc7_ENABLED,
+                                                  }.items():
         if not _nvenc_version_enabled:
             continue
         nvencmodule = "nvenc%s" % nvenc_version
