@@ -512,7 +512,7 @@ class WindowVideoSource(WindowSource):
 
     def refresh_subregion(self, regions):
         #callback from video subregion to trigger a refresh of some areas
-        sublog("refresh_subregion(%s, %s)", regions)
+        sublog("refresh_subregion(%s)", regions)
         if not regions or not self.can_refresh():
             return
         now = time.time()
