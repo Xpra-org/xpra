@@ -1823,7 +1823,7 @@ class UIXpraClient(XpraClientBase):
             proxy_version = c.strget("proxy.version")
             proxy_version = c.strget("proxy.build.version", proxy_version)
             proxy_distro = c.strget("linux_distribution")
-            msg = "via: %s proxy version %s" % (platform_name(proxy_platform, proxy_distro or proxy_release), std(proxy_version))
+            msg = "via: %s proxy version %s" % (platform_name(proxy_platform, proxy_distro or proxy_release), std(proxy_version or "unknown"))
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
             log.info(msg)
