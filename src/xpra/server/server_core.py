@@ -518,7 +518,7 @@ class ServerCore(object):
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
-        netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s", args, sock, self._socket_timeout, sockname, address, peername)
+        netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s. timeout=%s", args, sock, self._socket_timeout, sockname, address, peername, self._socket_timeout)
         conn = SocketConnection(sock, sockname, address, target, socktype)
         netlog("socket connection: %s", conn)
         if peername:
@@ -534,7 +534,7 @@ class ServerCore(object):
         if socktype=="tcp" and self._html or self._tcp_proxy:
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy or the websockify adapter:
-            conn._socket.settimeout(25)
+            sock.settimeout(25)
             v = conn.peek(128)
             netlog("peek()=%s", nonl(v))
             if v and v[0] not in ("P", ord("P")):
@@ -574,6 +574,7 @@ class ServerCore(object):
                 netlog("error sending '%s': %s", nonl(msg), e)
             return True
         netlog.info(info_msg)
+        sock.settimeout(self._socket_timeout)
         return self.make_protocol(socktype, conn, frominfo)
 
     def make_protocol(self, socktype, conn, frominfo=""):
