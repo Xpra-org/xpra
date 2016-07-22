@@ -91,6 +91,7 @@ class ProxyInstanceProcess(Process):
         self.video_helper = None
         self.lost_windows = None
         #for handling the local unix domain socket:
+        self.control_socket_cleanup = None
         self.control_socket = None
         self.control_socket_thread = None
         self.control_socket_path = None
@@ -260,7 +261,7 @@ class ProxyInstanceProcess(Process):
             log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)
             return False
         try:
-            sock = create_unix_domain_socket(sockpath, None, 0o600)
+            sock, self.control_socket_cleanup = create_unix_domain_socket(sockpath, None, 0o600)
             sock.listen(5)
         except Exception as e:
             log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)
@@ -453,16 +454,12 @@ class ProxyInstanceProcess(Process):
     def stop(self, reason="proxy terminating", skip_proto=None):
         log.info("stop(%s, %s)", reason, skip_proto)
         self.exit = True
-        if self.control_socket_path:
-            try:
-                os.unlink(self.control_socket_path)
-            except:
-                pass
-            self.control_socket_path = None
         try:
             self.control_socket.close()
         except:
             pass
+        if self.control_socket_cleanup:
+            self.control_socket_cleanup()
         self.main_queue.put(None)
         #empty the main queue:
         q = Queue()
