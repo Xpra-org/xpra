@@ -173,9 +173,10 @@ class Protocol(object):
             if t and t.isAlive():
                 t.join(timeout)
         exited = True
+        cinfo = self._conn or "cleared connection"
         for t in (self._read_thread, self._write_thread):
             if t and t.isAlive():
-                log.warn("%s thread of %s has not yet exited (timeout=%s)", t.name, self._conn, timeout)
+                log.warn("%s thread of %s has not yet exited (timeout=%s)", t.name, cinfo, timeout)
                 exited = False
                 break
         return exited
