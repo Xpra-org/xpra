@@ -905,7 +905,7 @@ class ServerSource(FileTransferHandler):
             for colorspace, spec_props in colorspace_specs.items():
                 for spec_prop in spec_props:
                     #make a new spec based on spec_props:
-                    spec = video_spec(Encoder)
+                    spec = video_spec(codec_class=Encoder, codec_type="proxy", encoding=encoding)
                     for k,v in spec_prop.items():
                         setattr(spec, k, v)
                     proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
