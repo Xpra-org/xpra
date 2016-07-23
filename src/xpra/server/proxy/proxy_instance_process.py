@@ -591,8 +591,16 @@ class ProxyInstanceProcess(Process):
         elif packet_type=="cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
+            #packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
+            #or:
             #packet = ["cursor", ""]
-            self._packet_recompress(packet, 8, "cursor")
+            if len(packet)>=8:
+                #hard to distinguish png cursors from normal cursors...
+                try:
+                    int(packet[1])
+                    self._packet_recompress(packet, 8, "cursor")
+                except:
+                    self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
         self.queue_client_packet(packet)
