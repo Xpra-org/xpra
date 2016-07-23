@@ -609,6 +609,7 @@ class UIXpraClient(XpraClientBase):
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
+        self.stop_sending_webcam()
         XpraClientBase.cleanup(self)
         #tell the draw thread to exit:
         dq = self._draw_queue
@@ -625,7 +626,6 @@ class UIXpraClient(XpraClientBase):
                 log.error("error on %s cleanup", type(x), exc_info=True)
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
-        self.stop_sending_webcam()
         self.destroy_all_windows()
         self.clean_mmap()
         reaper_cleanup()
