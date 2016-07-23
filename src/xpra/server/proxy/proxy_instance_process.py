@@ -23,8 +23,8 @@ from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, \
+from xpra.os_util import Queue, SIGNAMES, get_hex_uuid, strtobytes
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
 from xpra.make_thread import make_thread
@@ -34,6 +34,12 @@ from xpra.scripts.main import SOCKET_TIMEOUT
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection
 from multiprocessing import Process
+
+try:
+    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+    xor = xor_str
+except:
+    pass
 
 
 PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
@@ -63,7 +69,7 @@ class ProxyInstanceProcess(Process):
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
-        self.session_options = self.sanitize_session_options(session_options)
+        self.session_options = session_options
         self.socket_dir = socket_dir
         self.video_encoder_modules = video_encoder_modules
         self.csc_modules = csc_modules
@@ -196,9 +202,7 @@ class ProxyInstanceProcess(Process):
         self.server_protocol.start()
         self.client_protocol.start()
 
-        #forward the hello packet:
-        hello_packet = ("hello", self.filter_client_caps(self.caps))
-        self.queue_server_packet(hello_packet)
+        self.send_hello()
         self.timeout_add(VIDEO_TIMEOUT*1000, self.timeout_video_encoders)
 
         try:
@@ -364,6 +368,15 @@ class ProxyInstanceProcess(Process):
                 "window" : self.get_window_info(),
                 }
 
+    def send_hello(self, challenge_response=None, client_salt=None):
+        hello = self.filter_client_caps(self.caps)
+        if challenge_response:
+            hello.update({
+                          "challenge_response"      : challenge_response,
+                          "challenge_client_salt"   : client_salt,
+                          })
+        self.queue_server_packet(("hello", hello))
+
 
     def sanitize_session_options(self, options):
         d = {}
@@ -387,9 +400,9 @@ class ProxyInstanceProcess(Process):
         return d
 
     def filter_client_caps(self, caps):
-        fc = self.filter_caps(caps, ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib"))
+        fc = self.filter_caps(caps, ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib"))
         #update with options provided via config if any:
-        fc.update(self.session_options)
+        fc.update(self.sanitize_session_options(self.session_options))
         #add video proxies if any:
         fc["encoding.proxy.video"] = len(self.video_encoding_defs)>0
         if self.video_encoding_defs:
@@ -603,6 +616,27 @@ class ProxyInstanceProcess(Process):
                     self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
+        elif packet_type=="challenge":
+            #client may have already responded to the challenge,
+            #so we have to handle authentication from this end
+            salt = packet[1]
+            digest = packet[3]
+            client_salt = get_hex_uuid()+get_hex_uuid()
+            salt = xor_str(salt, client_salt)
+            if digest!=b"hmac":
+                self.stop("digest mode '%s' not supported", std(digest))
+                return
+            password = self.session_options.get("password")
+            if not password:
+                self.stop("authentication requested by the server, but no password available for this session")
+                return
+            import hmac, hashlib
+            password = strtobytes(password)
+            salt = strtobytes(salt)
+            challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+            log.info("sending %s challenge response", digest)
+            self.send_hello(challenge_response, client_salt)
+            return
         self.queue_client_packet(packet)
 
 
