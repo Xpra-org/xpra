@@ -1207,7 +1207,6 @@ def parse_display_name(error_cb, opts, display_name):
             except Exception as e:
                 sys.stderr.write("Error: failed to read the password file '%s':\n", opts.password_file)
                 sys.stderr.write(" %s\n", e)
-        print("desc=%s" % desc)
         return desc
     elif display_name.startswith("socket:"):
         #use the socketfile specified:
@@ -1254,7 +1253,6 @@ def parse_display_name(error_cb, opts, display_name):
             parts = parts[:-1]
         host = ":".join(parts[1:])
         username, password, host, port = parse_host_string(host)
-        print("desc=%s" % desc)
         assert port>0, "no port specified in %s" % host
         return desc
     elif display_name.startswith("vsock:"):
