@@ -37,6 +37,12 @@ from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR)
 
+try:
+    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+    xor = xor_str
+except:
+    pass
+
 
 EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = os.environ.get("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", "0")=="1"
@@ -540,11 +546,7 @@ class XpraClientBase(FileTransferHandler):
         digest = packet[3]
         client_salt = get_hex_uuid()+get_hex_uuid()
         #TODO: use some key stretching algorigthm? (meh)
-        try:
-            from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-            salt = xor_str(salt, client_salt)
-        except:
-            salt = xor(salt, client_salt)
+        salt = xor(salt, client_salt)
         if digest==b"hmac":
             import hmac, hashlib
             password = strtobytes(password)
