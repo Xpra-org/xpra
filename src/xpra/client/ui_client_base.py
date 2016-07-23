@@ -39,7 +39,8 @@ webcamlog = Logger("webcam")
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
+from xpra.client.client_base import XpraClientBase
+from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE)
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
@@ -68,6 +69,7 @@ except:
     LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
     def add_legacy_names(codecs):
         return codecs
+
 
 FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))

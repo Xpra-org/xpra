@@ -15,8 +15,8 @@ import os
 import sys
 from xpra.util import nonl, sorted_nicely, print_nested_dict, DONE
 from xpra.os_util import bytestostr
-from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT, \
-    EXIT_TIMEOUT, EXIT_OK, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG
+from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
+from xpra.exit_codes import (EXIT_OK, EXIT_TIMEOUT, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
 FLATTEN_INFO = int(os.environ.get("XPRA_FLATTEN_INFO", "1"))
 
