@@ -165,13 +165,13 @@
     </dependencies>
   </autotools>
 
-  <autotools id="libvpx-15"
+  <autotools id="libvpx-16"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
              autogen-sh="configure">
-    <branch module="/downloads.webmproject.org/releases/webm/libvpx-1.5.0.tar.bz2"
-		version="1.5.0"
-		hash="md5:49e59dd184caa255886683facea56fca"
+    <branch module="/downloads.webmproject.org/releases/webm/libvpx-1.6.0.tar.bz2"
+		version="1.6.0"
+		hash="sha256:d0afbb5eb1ecae68f8d578abace160a97e2e8a230e3028cf4db115d59a695aad"
 		repo="storage.googleapis.com"/>
     <dependencies>
                 <dep package="yasm"/>
@@ -192,9 +192,9 @@
   </autotools>
 
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-	<branch module="/releases/webp/libwebp-0.5.0.tar.gz"
-		version="0.5.0"
-		hash="md5:ba81eb9bf23e3c69a2f5cc8dcdb5938f"
+	<branch module="/releases/webp/libwebp-0.5.1.tar.gz"
+		version="0.5.1"
+		hash="sha256:6ad66c6fcd60a023de20b6856b03da8c7d347269d76b1fd9c3287e8b5e8813df"
 		repo="downloads.webmproject.org"/>
 	<dependencies>
 		<dep package="libjpeg"/>
@@ -839,7 +839,7 @@
       <dep package="opus"/>
       <dep package="lzo"/>
       <!--  dep package="libvpx-13"/-->
-      <!--  dep package="libvpx-15"/-->
+      <!--  dep package="libvpx-16"/-->
       <dep package="x264"/>
       <dep package="libwebp"/>
       <dep package="ffmpeg"/>
