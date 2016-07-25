@@ -536,7 +536,7 @@ class ServerCore(object):
             #that we need to handle via a tcp proxy or the websockify adapter:
             sock.settimeout(25)
             v = conn.peek(128)
-            netlog("peek()=%s", nonl(v))
+            netlog("peek(128)=%s", binascii.hexlify(v or ""))
             if v and v[0] not in ("P", ord("P")):
                 if self._html:
                     line1 = v.splitlines()[0]
@@ -560,7 +560,7 @@ class ServerCore(object):
                     return True
         else:
             v = conn.peek(128)
-        netlog("%s.peek(128)=%s", conn, v)
+        netlog("%s.peek(128)=%s", conn, binascii.hexlify(v or ""))
         if v and v[0] not in ("P", ord("P")):
             #not an xpra client
             netlog("new %s connection is not an xpra client, disconnecting it", socktype)
