@@ -1,13 +1,19 @@
 ########################################################################
 # Server Network Options:
 
-# Where to create local sockets:
-# bind=none
-# bind=auto
-# bind=~/.xpra/
-# bind=FILENAME
-# bind=/path/to/socketfilename
-# bind=/run/user/$UID/xpra/
+
+########################################################################
+# local unix domain sockets:
+
+# Where to create the sockets:
+# (can be specified multiple times to create multiple sockets,
+#  either a directory or a socket filename)
+#bind=none
+#bind=auto
+#bind=~/.xpra/
+#bind=FILENAME
+#bind=/path/to/socketfilename
+#bind=/run/user/$UID/xpra/
 bind = %(bind)s
 
 # Authentication module to use for local sockets:
@@ -19,20 +25,51 @@ bind = %(bind)s
 #auth=sys
 #auth=none
 
-# To listen on TCP sockets:
-# bind-tcp=:10000
-# bind-tcp=0.0.0.0:10000
-# bind-tcp=192.168.0.1:10000
 
-# Authentication module to use for TCP sockets:
+########################################################################
+# TCP:
+
+# To listen on TCP sockets:
+#bind-tcp=:10000
+#bind-tcp=0.0.0.0:10000
+#bind-tcp=192.168.0.1:10000
+
+# Authentication module to use for TCP sockets (see 'auth'):
 #tcp-auth=none
 
+
+########################################################################
+# SSL:
+# (see also 12_ssl.conf)
+
+# To listen on an SSL socket:
+#bind-ssl=:10001
+#bind-ssl=:443
+#bind-ssl=192.168.0.1:10001
+
+# To secure SSL sockets (see 'auth'):
+#ssl-auth=none
+
+# To support SSL on TCP sockets:
+# (requires a certificate)
+#ssl = no
+#ssl = yes
+ssl = auto
+
+
+########################################################################
+# VSOCK:
+
 # To listen on AF_VSOCK sockets:
-# bind-vsock=auto:2000
-# bind-vsock=2:2000
+#bind-vsock=auto:2000
+#bind-vsock=2:2000
 
 # Authentication to use for VSOCK:
 #vsock-auth=none
+
+
+########################################################################
+# html / tcp-proxy and mdns:
 
 # Where to send non xpra clients:
 # (can be used to share the port with a web server)

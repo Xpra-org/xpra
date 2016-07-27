@@ -279,7 +279,7 @@ class ServerCore(object):
     def init_auth(self, opts):
         self.auth_class = self.get_auth_module("unix-domain", opts.auth, opts)
         self.tcp_auth_class = self.get_auth_module("tcp", opts.tcp_auth or opts.auth, opts)
-        self.ssl_auth_class = self.get_auth_module("ssl", opts.ssl_auth, opts)
+        self.ssl_auth_class = self.get_auth_module("ssl", opts.ssl_auth or opts.tcp_auth or opts.auth, opts)
         self.vsock_auth_class = self.get_auth_module("vsock", opts.vsock_auth, opts)
         authlog("init_auth(..) auth class=%s, tcp auth class=%s, ssl auth class=%s, vsock auth class=%s", self.auth_class, self.tcp_auth_class, self.ssl_auth_class, self.vsock_auth_class)
 

@@ -3,11 +3,6 @@
 #
 # Please refer to the python ssl module for details
 
-# Handle SSL automatically over TCP sockets:
-# (requires a certificate)
-#ssl = no
-#ssl = yes
-ssl = auto
 
 # Key file to use:
 #ssl-key = /path/to/keyfile
