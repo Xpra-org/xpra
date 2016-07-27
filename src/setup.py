@@ -211,7 +211,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "xvid", "enc_ffmpeg",
-            "nvenc4", "nvenc5", "nvenc6",
+            "nvenc4", "nvenc5", "nvenc6", "nvenc7",
             "vpx", "webp", "pillow",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython", "csc_opencv", "csc_libyuv",
