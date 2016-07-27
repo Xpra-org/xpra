@@ -73,7 +73,8 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef void* NV_ENC_OUTPUT_PTR
     ctypedef void* NV_ENC_REGISTERED_PTR
 
-    NVENCSTATUS NvEncodeAPIGetMaxSupportedVersion(uint32_t* version)
+    #not available with driver version 367.35
+    #NVENCSTATUS NvEncodeAPIGetMaxSupportedVersion(uint32_t* version)
 
     ctypedef enum NV_ENC_CAPS:
         NV_ENC_CAPS_NUM_MAX_BFRAMES
@@ -2497,9 +2498,9 @@ def init_module():
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     cdef uint32_t max_version
-    cdef NVENCSTATUS r = NvEncodeAPIGetMaxSupportedVersion(&max_version)
-    raiseNVENC(r, "querying max version")
-    log(" maximum supported version: %s", max_version)
+    #cdef NVENCSTATUS r = NvEncodeAPIGetMaxSupportedVersion(&max_version)
+    #raiseNVENC(r, "querying max version")
+    #log(" maximum supported version: %s", max_version)
 
     if not validate_driver_yuv444lossless():
         YUV444_ENABLED = False
