@@ -40,7 +40,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, \
+from xpra.util import engs, csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -135,6 +135,7 @@ class ServerCore(object):
         self.start_time = time.time()
         self.auth_class = None
         self.tcp_auth_class = None
+        self.ssl_auth_class = None
         self.vsock_auth_class = None
         self._when_ready = []
         self.child_reaper = None
@@ -147,6 +148,7 @@ class ServerCore(object):
         self._potential_protocols = []
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
+        self._ssl_wrap_socket = None
         self._html = False
         self._www_dir = None
         self._aliases = {}
@@ -202,8 +204,33 @@ class ServerCore(object):
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
 
+        self.init_ssl(opts)
         self.init_html_proxy(opts)
         self.init_auth(opts)
+
+    def init_ssl(self, opts):
+        v = parse_bool("ssl", opts.ssl)
+        if v is False or not opts.bind_tcp:
+            netlog("init_ssl() disabled: ssl=%s, bind-tcp=%s", v, opts.bind_tcp)
+            return
+        try:
+            from xpra.net.bytestreams import init_ssl
+            init_ssl()
+            from xpra.scripts.server import do_setup_ssl_socket
+            def ssl_wrap_socket(tcp_socket):
+                netlog("ssl_wrap_socket(%s)", tcp_socket)
+                return do_setup_ssl_socket(opts, tcp_socket)
+            self._ssl_wrap_socket = ssl_wrap_socket
+            netlog.info("SSL available on %i TCP socket%s", len(opts.bind_tcp), engs(opts.bind_tcp))
+        except Exception as e:
+            netlog("init_ssl() failed", exc_info=True)
+            if v is None:
+                #auto mode: just log it
+                netlog.info("SSL disabled: %s", e)
+            else:
+                #we wanted to have it, log this as an error:
+                netlog.error("Error: cannot enable SSL sockets:")
+                netlog.error(" %s", e)
 
     def init_html_proxy(self, opts):
         self._tcp_proxy = opts.tcp_proxy
@@ -252,8 +279,9 @@ class ServerCore(object):
     def init_auth(self, opts):
         self.auth_class = self.get_auth_module("unix-domain", opts.auth, opts)
         self.tcp_auth_class = self.get_auth_module("tcp", opts.tcp_auth or opts.auth, opts)
+        self.ssl_auth_class = self.get_auth_module("ssl", opts.ssl_auth, opts)
         self.vsock_auth_class = self.get_auth_module("vsock", opts.vsock_auth, opts)
-        authlog("init_auth(..) auth class=%s, tcp auth class=%s, vsock auth class=%s", self.auth_class, self.tcp_auth_class, self.vsock_auth_class)
+        authlog("init_auth(..) auth class=%s, tcp auth class=%s, ssl auth class=%s, vsock auth class=%s", self.auth_class, self.tcp_auth_class, self.ssl_auth_class, self.vsock_auth_class)
 
     def get_auth_module(self, socket_type, auth_str, opts):
         authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
@@ -504,6 +532,7 @@ class ServerCore(object):
         try:
             sock, address = listener.accept()
         except socket.error as e:
+            netlog("rejecting new connection on %s", listener, exc_info=True)
             netlog.error("Error: cannot accept new connection:")
             netlog.error(" %s", e)
             return True
@@ -531,12 +560,24 @@ class ServerCore(object):
             frominfo = ""
             info_msg = "New %s connection received"
 
-        if socktype=="tcp" and self._html or self._tcp_proxy:
+        def conn_err(msg="invalid packet format, not an xpra client?"):
+            #not an xpra client
+            netlog.error("Error: %s connection failed:", socktype)
+            netlog.error(" %s", msg)
+            try:
+                sock.settimeout(1)
+                conn.write("disconnect: %s?\n" % msg)
+                conn.close()
+            except Exception as e:
+                netlog("error sending '%s': %s", nonl(msg), e)
+
+        PEEK_SIZE = 128
+        if socktype=="tcp" and self._html or self._tcp_proxy or self._ssl_wrap_socket:
             #see if the packet data is actually xpra or something else
-            #that we need to handle via a tcp proxy or the websockify adapter:
+            #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             sock.settimeout(25)
-            v = conn.peek(128)
-            netlog("peek(128)=%s", binascii.hexlify(v or ""))
+            v = conn.peek(PEEK_SIZE)
+            netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
             if v and v[0] not in ("P", ord("P")):
                 if self._html:
                     line1 = v.splitlines()[0]
@@ -552,6 +593,15 @@ class ServerCore(object):
                             self.start_websockify(conn, frominfo)
                         make_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True).start()
                         return True
+                if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
+                    socktype = "SSL"
+                    try:
+                        sock = self._ssl_wrap_socket(sock)
+                    except IOError as e:
+                        conn_err(str(e))
+                        return True
+                    conn = SocketConnection(sock, sockname, address, target, socktype)
+                    v = conn.peek(PEEK_SIZE)
                 elif self._tcp_proxy:
                     netlog.info("New tcp proxy connection received from %s", frominfo)
                     def run_proxy():
@@ -559,22 +609,38 @@ class ServerCore(object):
                     make_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True).start()
                     return True
         else:
-            v = conn.peek(128)
-        netlog("%s.peek(128)=%s", conn, binascii.hexlify(v or ""))
+            v = conn.peek(PEEK_SIZE)
+        netlog("%s.peek(%i)=%s", conn, PEEK_SIZE, binascii.hexlify(v or ""))
         if v and v[0] not in ("P", ord("P")):
-            #not an xpra client
-            netlog("new %s connection is not an xpra client, disconnecting it", socktype)
-            msg = "disconnect: invalid packet format, not an xpra client?\n"
-            try:
-                from xpra.net.bytestreams import set_socket_timeout
-                set_socket_timeout(conn, 1)
-                conn.write(msg)
-                conn.close()
-            except Exception as e:
-                netlog("error sending '%s': %s", nonl(msg), e)
+            conn_err()
             return True
         netlog.info(info_msg)
         sock.settimeout(self._socket_timeout)
+        #add ssl socket info without force loading ssh module:
+        ssl = sys.modules.get("ssl")
+        log("ssl=%s, socket class=%s", ssl, type(sock))
+        if ssl and isinstance(sock, ssl.SSLSocket):
+            #inject extra ssl info into the socket class:
+            def get_ssl_socket_info(sock):
+                d = sock.do_get_socket_info()
+                d["ssl"] = True
+                s = sock._socket
+                if not s:
+                    return d
+                for k,fn in {
+                             "cipher"           : "cipher",
+                             "compression"      : "compression",
+                             "alpn-protocol"    : "selected_alpn_protocol",
+                             "npn-protocol"     : "selected_npn_protocol",
+                             "version"          : "version",
+                             }.items():
+                    sfn = getattr(s, fn, None)
+                    if sfn:
+                        v = sfn()
+                        if v is not None:
+                            d[k] = v
+                return d
+            conn.get_socket_info = types.MethodType(get_ssl_socket_info, conn)
         return self.make_protocol(socktype, conn, frominfo)
 
     def make_protocol(self, socktype, conn, frominfo=""):
@@ -583,14 +649,16 @@ class ServerCore(object):
         protocol.large_packets.append("info-response")
         protocol.challenge_sent = False
         protocol.authenticator = None
+        protocol.encryption = None
+        protocol.keyfile = None
         if socktype=="tcp":
             protocol.auth_class = self.tcp_auth_class
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
+        elif socktype=="SSL":
+            protocol.auth_class = self.ssl_auth_class
         elif socktype=="vsock":
             protocol.auth_class = self.vsock_auth_class
-            protocol.encryption = None
-            protocol.keyfile = None
         else:
             protocol.auth_class = self.auth_class
             protocol.encryption = self.encryption
@@ -1101,6 +1169,7 @@ class ServerCore(object):
                 si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
         for socktype, auth_class in {
                                      "tcp"          : self.tcp_auth_class,
+                                     "ssl"          : self.ssl_auth_class,
                                      "unix-domain"  : self.auth_class,
                                      "vsock"        : self.vsock_auth_class,
                                      }.items():

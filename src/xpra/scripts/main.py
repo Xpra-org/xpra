@@ -147,7 +147,6 @@ def main(script_file, cmdline):
         platform_clean()
 
 
-
 def do_replace_option(cmdline, oldoption, newoption):
     if oldoption in cmdline:
         cmdline.remove(oldoption)
@@ -405,8 +404,15 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (use --tcp-auth to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
+        group.add_option("--bind-ssl", action="append",
+                          dest="bind_ssl", default=list(defaults.bind_ssl or []),
+                          metavar="[HOST]:PORT",
+                          help="Listen for connections over SSL (use --ssl-auth to secure it)."
+                            + " You may specify this option multiple times with different host and port combinations")
     else:
+        ignore({"bind" : []})
         ignore({"bind-tcp" : []})
+        ignore({"bind-ssl" : []})
     try:
         from xpra.net import vsock
     except:
@@ -675,6 +681,40 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="keyboard_sync", default=defaults.keyboard_sync,
                       help="Synchronize keyboard state. Default: %s." % enabled_str(defaults.keyboard_sync))
 
+    group = optparse.OptionGroup(parser, "SSL Options",
+                "These options apply to both client and server. Please refer to the man page for details.")
+    parser.add_option_group(group)
+    group.add_option("--ssl", action="store",
+                      dest="ssl", default=defaults.ssl,
+                      help="Wether to enable SSL on TCP sockets (requires 'ssl-cert'). Default: '%s'."  % enabled_str(defaults.ssl))
+    group.add_option("--ssl-key", action="store",
+                      dest="ssl_key", default=defaults.ssl_key,
+                      help="Key file to use. Default: '%default'.")
+    group.add_option("--ssl-cert", action="store",
+                      dest="ssl_cert", default=defaults.ssl_cert,
+                      help="Certifcate file to use. Default: '%default'.")
+    group.add_option("--ssl-version", action="store",
+                      dest="ssl_version", default=defaults.ssl_version,
+                      help="Specifies which version of the SSL protocol to use. Default: '%default'.")
+    group.add_option("--ssl-ca-certs", action="store",
+                      dest="ssl_ca_certs", default=defaults.ssl_ca_certs,
+                      help="The ca_certs file contains a set of concatenated 'certification authority' certificates. Default: '%default'.")
+    group.add_option("--ssl-ciphers", action="store",
+                      dest="ssl_ciphers", default=defaults.ssl_ciphers,
+                      help="Sets the available ciphers for this SSL object. It should be a string in the OpenSSL cipher list format. Default: '%default'.")
+    group.add_option("--ssl-client-verify-mode", action="store",
+                      dest="ssl_client_verify_mode", default=defaults.ssl_client_verify_mode,
+                      help="Whether to try to verify the client's certificates and how to behave if verification fails. Default: '%default'.")
+    group.add_option("--ssl-server-verify-mode", action="store",
+                      dest="ssl_server_verify_mode", default=defaults.ssl_server_verify_mode,
+                      help="Whether to try to verify the server's certificates and how to behave if verification fails. Default: '%default'.")
+    group.add_option("--ssl-verify-flags", action="store",
+                      dest="ssl_verify_flags", default=defaults.ssl_verify_flags,
+                      help="The flags for certificate verification operations. Default: '%default'.")
+    group.add_option("--ssl-check-hostname", action="store", metavar="yes|no",
+                      dest="ssl_check_hostname", default=defaults.ssl_check_hostname,
+                      help="Wether to match the peer cert's hostname. Default: '%s'." % enabled_str(defaults.windows))
+
     group = optparse.OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
     parser.add_option_group(group)
@@ -720,6 +760,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tcp-auth", action="store",
                       dest="tcp_auth", default=defaults.tcp_auth,
                       help="The authentication module to use for TCP sockets (default: '%default')")
+    group.add_option("--ssl-auth", action="store",
+                      dest="ssl_auth", default=defaults.ssl_auth,
+                      help="The authentication module to use for SSL sockets (default: '%default')")
     if vsock:
         group.add_option("--vsock-auth", action="store",
                          dest="vsock_auth", default=defaults.vsock_auth,
@@ -1142,7 +1185,7 @@ def parse_display_name(error_cb, opts, display_name):
             host = "127.0.0.1"
         desc["host"] = host
         return username, password, host, port
-    
+
     if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
         desc.update({
@@ -1230,15 +1273,17 @@ def parse_display_name(error_cb, opts, display_name):
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
+    elif display_name.startswith("tcp:") or display_name.startswith("tcp/") or \
+            display_name.startswith("ssl:") or display_name.startswith("ssl/"):
+        ctype = display_name[:3]        #ie: "ssl" or "tcp"
         separator = display_name[3] # ":" or "/"
         desc.update({
-                     "type"     : "tcp",
+                     "type"     : ctype,
                      "local"    : False,
                      })
         parts = display_name.split(separator)
         if len(parts) not in (2, 3, 4):
-            error_cb("invalid tcp connection string, use tcp/[username[:password]@]host:port[/display] or tcp:[username[:password]@]host:port")
+            error_cb("invalid %s connection string, use %s/[username[:password]@]host:port[/display] or %s:[username[:password]@]host:port" % (ctype * 3))
         #display (optional):
         if separator=="/" and len(parts)==3:
             display = parts[2]
@@ -1336,9 +1381,9 @@ def _socket_connect(sock, endpoint, description, dtype):
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
 
-def connect_or_fail(display_desc):
+def connect_or_fail(display_desc, opts):
     try:
-        return connect_to(display_desc)
+        return connect_to(display_desc, opts)
     except InitException:
         raise
     except Exception as e:
@@ -1354,7 +1399,7 @@ def setsid():
     #run in a new session
     os.setsid()
 
-def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
+def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None
@@ -1494,17 +1539,41 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         from xpra.net.bytestreams import SocketConnection
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
-    elif dtype == "tcp":
+    elif dtype in ("tcp", "ssl"):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
+        if dtype == "ssl":
+            from xpra.net.bytestreams import init_ssl
+            ssl = init_ssl()
+            cert_reqs, ssl_version, ssl_ca_certs = parse_ssl_attributes(opts.ssl_server_verify_mode, opts.ssl_version, opts.ssl_cert)
+            sock = ssl.wrap_socket(sock, keyfile=opts.ssl_key, certfile=opts.ssl_cert,
+                                   server_side=False, cert_reqs=cert_reqs,
+                                   ssl_version=ssl_version, ca_certs=ssl_ca_certs,
+                                   do_handshake_on_connect=True, suppress_ragged_eofs=True, ciphers=opts.ssl_ciphers)
+
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
-
     else:
         assert False, "unsupported display type in connect: %s" % dtype
     return conn
+
+def parse_ssl_attributes(verify_mode, ssl_version_str, ca_certs):
+    import ssl
+    cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
+    if cert_reqs is None:
+        values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
+        raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
+    ssl_version = getattr(ssl, "PROTOCOL_%s" % ssl_version_str, None)
+    if ssl_version is None:
+        values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
+        raise InitException("invalid ssl-version '%s', must be one of: %s" % (ssl_version_str, csv(values)))
+    ssl_ca_certs = ca_certs
+    if ssl_ca_certs=="default":
+        ssl_ca_certs = None
+    return cert_reqs, ssl_version, ssl_ca_certs
+
 
 def get_sockpath(display_desc, error_cb):
     #if the path was specified, use that:
@@ -1531,7 +1600,7 @@ def run_client(error_cb, opts, extra_args, mode):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     def connect():
-        return connect_or_fail(pick_display(error_cb, opts, extra_args))
+        return connect_or_fail(pick_display(error_cb, opts, extra_args), opts)
 
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
@@ -1675,7 +1744,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     app = make_client(error_cb, opts)
     app.init(opts)
     app.init_ui(opts)
-    conn = connect_or_fail(params)
+    conn = connect_or_fail(params, opts)
     app.setup_connection(conn)
     do_run_client(app)
 
@@ -1877,7 +1946,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     else:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)
-    server_conn = connect_or_fail(display)
+    server_conn = connect_or_fail(display, opts)
     from xpra.net.bytestreams import TwoFileConnection
     app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
@@ -1922,7 +1991,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             return 1
 
     display_desc = pick_display(error_cb, opts, extra_args)
-    conn = connect_or_fail(display_desc)
+    conn = connect_or_fail(display_desc, opts)
     app = None
     e = 1
     try:

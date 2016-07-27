@@ -346,21 +346,40 @@ def create_tcp_socket(host, iport):
     listener.bind(sockaddr)
     return listener
 
-def setup_tcp_socket(host, iport):
+def setup_tcp_socket(host, iport, socktype="TCP"):
     from xpra.log import Logger
     log = Logger("network")
     try:
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
-        raise InitException("failed to setup TCP socket on %s:%s %s" % (host, iport, e))
+        raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
     def cleanup_tcp_socket():
-        log.info("closing tcp socket %s:%s", host, iport)
+        log.info("closing %s socket %s:%s", socktype, host, iport)
         try:
             tcp_socket.close()
         except:
             pass
     _cleanups.append(cleanup_tcp_socket)
     return "tcp", tcp_socket, (host, iport)
+
+def setup_ssl_socket(opts, host, iport):
+    _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
+    ssl_sock = do_setup_ssl_socket(opts, tcp_socket)
+    return "SSL", ssl_sock, host_port
+
+def do_setup_ssl_socket(opts, tcp_socket):
+    if not opts.ssl_cert:
+        raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
+    import ssl
+    from xpra.scripts.main import parse_ssl_attributes
+    cert_reqs, ssl_version, ssl_ca_certs = parse_ssl_attributes(opts.ssl_client_verify_mode, opts.ssl_version, opts.ssl_cert)
+    kwargs = {}
+    if sys.version_info[:2]>=(2, 7):
+        kwargs["ciphers"] = opts.ssl_ciphers
+    return ssl.wrap_socket(tcp_socket, keyfile=opts.ssl_key, certfile=opts.ssl_cert,
+                                   server_side=True, cert_reqs=cert_reqs,
+                                   ssl_version=ssl_version, ca_certs=ssl_ca_certs,
+                                   do_handshake_on_connect=True, suppress_ragged_eofs=True, **kwargs)
 
 def parse_bind_tcp(bind_tcp):
     tcp_sockets = set()
@@ -911,6 +930,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return show_encoding_help(opts)
 
     bind_tcp = parse_bind_tcp(opts.bind_tcp)
+    bind_ssl = parse_bind_tcp(opts.bind_ssl)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
@@ -1048,6 +1068,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         sockets.append(socket)
         if opts.mdns:
             rec = "tcp", [(host, iport)]
+            mdns_recs.append(rec)
+
+    for host, iport in bind_ssl:
+        socket = setup_ssl_socket(opts, host, iport)
+        sockets.append(socket)
+        if opts.mdns:
+            rec = "ssl", [(host, iport)]
             mdns_recs.append(rec)
 
     for cid, iport in bind_vsock:
@@ -1238,7 +1265,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 os.kill(xvfb_pid, signal.SIGTERM)
             except OSError as e:
                 log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
-                log.info(" %s", e)                
+                log.info(" %s", e)
     if not proxying:
         _cleanups.append(close_display)
 

@@ -186,7 +186,7 @@ class ProxyServer(ServerCore):
         disp_desc = parse_display_name(parse_error, opts, display)
         log("display description(%s) = %s", display, disp_desc)
         try:
-            server_conn = connect_to(disp_desc)
+            server_conn = connect_to(disp_desc, opts)
         except Exception as e:
             log("cannot connect", exc_info=True)
             log.error("Error: cannot start proxy connection:")

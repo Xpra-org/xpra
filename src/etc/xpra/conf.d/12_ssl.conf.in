@@ -1,0 +1,51 @@
+################################################################################
+# SSL Options
+#
+# Please refer to the python ssl module for details
+
+# Handle SSL automatically over TCP sockets:
+# (requires a certificate)
+#ssl = no
+#ssl = yes
+ssl = auto
+
+# Key file to use:
+#ssl-key = /path/to/keyfile
+
+# Certifcate file to use:
+#ssl-cert = /path/to/cert
+
+# Specifies which version of the SSL protocol to use:
+#ssl-version = SSLv23
+#ssl-version = TLSv1_2
+
+# The ca_certs file contains a set of concatenated 'certification authority' certificates:
+#ssl-ca-certs = /path/to/cacerts
+
+# Sets the available ciphers for this SSL object:
+#ssl-ciphers = ALL
+#ssl-ciphers = HIGH
+ssl-ciphers = DEFAULT
+
+# Whether to try to verify the client's certificates
+# and how to behave if verification fails:
+#ssl-client-verify-mode = none
+#ssl-client-verify-mode = optional
+#ssl-client-verify-mode = required
+ssl-client-verify-mode = optional
+
+# Whether to try to verify the server's certificates
+# and how to behave if verification fails:
+#ssl-server-verify-mode = none
+#ssl-server-verify-mode = optional
+#ssl-server-verify-mode = required
+ssl-server-verify-mode = required
+
+# The flags for certificate verification operations:
+#ssl-verify-flags = DEFAULT
+#ssl-verify-flags = CRL_CHECK_LEAF
+#ssl-verify-flags = CHECK_CHAIN
+ssl-verify-flags = CHECK_CHAIN,X509_STRICT
+
+# Wether to match the peer cert's hostname:
+ssl-check-hostname = on

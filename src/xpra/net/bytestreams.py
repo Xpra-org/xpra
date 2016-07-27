@@ -93,6 +93,17 @@ if sys.platform.startswith("win"):
         TTY_WRITE = win32ttywrite
 
 
+#so we can inject ssl.SSLError:
+CONTINUE_EXCEPTIONS = {}
+
+def init_ssl():
+    import ssl
+    assert ssl
+    global CONTINUE_EXCEPTIONS
+    CONTINUE_EXCEPTIONS[ssl.SSLError] = "SSLError"
+    return ssl
+
+
 def untilConcludes(is_active_cb, f, *a, **kw):
     wait = 0
     while is_active_cb():
@@ -101,12 +112,10 @@ def untilConcludes(is_active_cb, f, *a, **kw):
         except socket.timeout as e:
             log("untilConcludes(%s, %s, %s, %s) %s", is_active_cb, f, a, kw, e)
             continue
-        except TypeError:
-            log.warn("untilConcludes error calling %s with %s", f, a)
-            raise
         except (IOError, OSError) as e:
+            global CONTINUE, CONTINUE_EXCEPTIONS
             code = e.args[0]
-            can_continue = CONTINUE.get(code)
+            can_continue = CONTINUE.get(code) or CONTINUE_EXCEPTIONS.get(type(e))
             if can_continue:
                 log("untilConcludes(%s, %s, %s, %s) %s / %s (continue)", is_active_cb, f, a, kw, can_continue, e)
                 time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
@@ -115,9 +124,14 @@ def untilConcludes(is_active_cb, f, *a, **kw):
                 continue
             abort = ABORT.get(code, code)
             if abort is not None:
+                log("untilConcludes: %s, args=%s, code=%s, abort=%s", type(e), e.args, code, abort)
                 raise ConnectionClosedException(e)
             log("untilConcludes(%s, %s, %s, %s) %s / %s (raised)", is_active_cb, f, a, kw, abort, e)
             raise
+        except TypeError:
+            log.error("Error: calling %s(%s, %s) via untilConcludes", f, a, kw)
+            raise
+
 
 def pretty_socket(s):
     try:
@@ -283,17 +297,30 @@ class SocketConnection(Connection):
         d = Connection.get_info(self)
         try:
             d["type"] = self.socket_type
-            s = self._socket
-            if s:
-                d["socket"] = {
-                        "fileno"        : s.fileno(),
-                        "timeout"       : int(1000*(s.gettimeout() or 0)),
-                        "family"        : FAMILY_STR.get(s.family, s.family),
-                        "proto"         : s.proto,
-                        "type"          : PROTOCOL_STR.get(s.type, s.type)}
+            si = self.get_socket_info()
+            if si:
+                d["socket"] = si
         except:
-            log.warn("failed to get socket information", exc_info=True)
+            log.error("Error accessing socket information", exc_info=True)
         return d
+
+    def get_socket_info(self):
+        return self.do_get_socket_info()
+
+    def do_get_socket_info(self):
+        s = self._socket
+        if not s:
+            return None
+        return {
+                #"class"         : str(type(s)),
+                "fileno"        : s.fileno(),
+                "timeout"       : int(1000*(s.gettimeout() or 0)),
+                "family"        : FAMILY_STR.get(s.family, s.family),
+                "proto"         : s.proto,
+                "type"          : PROTOCOL_STR.get(s.type, s.type),
+                }
+
+
 
 def set_socket_timeout(conn, timeout=None):
     #FIXME: this is ugly, but less intrusive than the alternative?

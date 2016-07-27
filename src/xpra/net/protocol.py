@@ -560,6 +560,7 @@ class Protocol(object):
                 callback()
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except ConnectionClosedException as e:
+            log("%s closed", self._conn, exc_info=True)
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already
                 self._connection_lost("%s connection %s closed" % (name, self._conn))

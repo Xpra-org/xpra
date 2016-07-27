@@ -253,6 +253,40 @@ def get_net_config():
 	except:
 		return {}
 
+def get_ssl_info():
+	try:
+		import ssl
+	except ImportError as e:
+		log("no ssl: %s", e)
+		return {}
+	protocols = dict((k,getattr(ssl, k)) for k in dir(ssl) if k.startswith("PROTOCOL_"))
+	ops = dict((k,getattr(ssl, k)) for k in dir(ssl) if k.startswith("OP_"))
+	vers = dict((k,getattr(ssl, k)) for k in dir(ssl) if k.startswith("VERIFY_"))
+	info = {
+			"protocols"	: protocols,
+			"options"	: ops,
+			"verify"	: vers,
+			}
+	for k,name in {
+					"HAS_ALPN"				: "alpn",
+					"HAS_ECDH"				: "ecdh",
+					"HAS_SNI"				: "sni",
+					"HAS_NPN"				: "npn",
+					"CHANNEL_BINDING_TYPES"	: "channel-binding-types",
+					}.items():
+		v = getattr(ssl, k, None)
+		if v is not None:
+			info[name] = v
+	for k,name in {
+					"OPENSSL_VERSION"		: "version",
+					"OPENSSL_VERSION_INFO"	: "version-info",
+					"OPENSSL_VERSION_NUMBER": "version-number",
+					}.items():
+		v = getattr(ssl, k, None)
+		if v is not None:
+			info.setdefault("openssl", {})[name] = v
+	return info
+
 def get_info():
 	from xpra.net.protocol import get_network_caps
 	i = get_network_caps()
