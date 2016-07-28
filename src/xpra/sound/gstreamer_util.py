@@ -509,8 +509,8 @@ def validate_encoding(elements):
         elif encoding==FLAC and gst_major_version==1:
             log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors")
             return False
-        elif WIN32 and encoding==FLAC_OGG:
-            log("skipping %s on win32 to avoid obscure 'not-negotiated' errors", encoding)
+        elif encoding==FLAC_OGG:
+            log("skipping %s to avoid obscure 'not-negotiated' errors", encoding)
             return False
     elif encoding==OPUS:
         if gst_major_version<1:
