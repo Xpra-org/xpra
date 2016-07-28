@@ -874,11 +874,13 @@ def do_parse_cmdline(cmdline, defaults):
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
-    if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://"):
+    if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://") or args[1].startswith("xpras://"):
         url = args[1]
         address, params = parse_URL(url)
         for k,v in params.items():
             setattr(options, k, v)
+        if url.startswith("xpras://tcp"):
+            address = "ssl" + address[3:]
         args[1] = address
 
     try:

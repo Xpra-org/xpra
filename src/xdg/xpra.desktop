@@ -8,4 +8,4 @@ NoDisplay=true
 Type=Application
 StartupNotify=false
 Categories=Network;
-MimeType=x-scheme-handler/xpra;
+MimeType=x-scheme-handler/xpra;x-scheme-handler/xpras;

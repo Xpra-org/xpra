@@ -65,6 +65,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
             <string>xpra</string>
+            <string>xpras</string>
         </array>
         <key>CFBundleURLName</key>
         <string>Xpra Session</string>
