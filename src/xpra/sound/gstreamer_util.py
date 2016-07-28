@@ -498,7 +498,7 @@ def validate_encoding(elements):
         #and we have no way of knowing what version they have at this point, so just disable those:
         log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
         return False
-    elif encoding==FLAC:
+    elif encoding.startswith(FLAC):
         #flac problems:
         if WIN32 and gst_major_version==0:
             #the gstreamer 0.10 builds on win32 use the outdated oss build,
@@ -506,8 +506,11 @@ def validate_encoding(elements):
             #so avoid using those:
             log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
             return False
-        elif gst_major_version==1:
-            log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors I do not have time for")
+        elif encoding==FLAC and gst_major_version==1:
+            log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors")
+            return False
+        elif WIN32 and encoding==FLAC_OGG:
+            log("skipping %s on win32 to avoid obscure 'not-negotiated' errors", encoding)
             return False
     elif encoding==OPUS:
         if gst_major_version<1:
