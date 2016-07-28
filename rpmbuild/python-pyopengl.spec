@@ -24,7 +24,7 @@
 
 Name:           python-%{shortname}
 Version:        3.1.1a1
-Release:        r2.1%{?dist}
+Release:        4.xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -209,6 +209,9 @@ popd
 
 
 %changelog
+* Thu Jul 28 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.xpra1
+- Try to ensure this updates the Fedora upstream package
+
 * Mon Jul 18 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1r2-1
 - Fix upgrade path for PyOpenGL_accelerate
 
