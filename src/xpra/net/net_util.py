@@ -293,6 +293,10 @@ def get_info():
 	if has_netifaces:
 		i["interfaces"] = get_interfaces()
 		i["gateways"] = get_gateways()
+	if "ssl" in sys.modules:
+		ssli = get_ssl_info()
+		ssli[""] = True
+		i["ssl"] = ssli
 	s = get_net_sys_config()
 	if s:
 		i["system"] = s
@@ -358,6 +362,10 @@ def main():
 			print("")
 			print("Network System Config:")
 			print_nested_dict(net_sys)
+
+		print("")
+		print("SSL:")
+		print_nested_dict(get_ssl_info())
 
 		from xpra.net.crypto import crypto_backend_init, get_crypto_caps
 		crypto_backend_init()
