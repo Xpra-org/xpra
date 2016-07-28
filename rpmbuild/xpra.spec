@@ -370,6 +370,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
 %config %{_sysconfdir}/xpra/conf.d/05_features.conf
 %config %{_sysconfdir}/xpra/conf.d/10_network.conf
+%config %{_sysconfdir}/xpra/conf.d/12_ssl.conf
 %config %{_sysconfdir}/xpra/conf.d/15_file_transfers.conf
 %config %{_sysconfdir}/xpra/conf.d/16_printing.conf
 %config %{_sysconfdir}/xpra/conf.d/20_sound.conf
