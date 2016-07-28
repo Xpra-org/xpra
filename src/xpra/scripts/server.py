@@ -19,7 +19,7 @@ import time
 import traceback
 
 from xpra.scripts.main import TCP_NODELAY, warn, no_gtk, validate_encryption
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, parse_bool
 from xpra.os_util import SIGNAMES
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
@@ -362,24 +362,6 @@ def setup_tcp_socket(host, iport, socktype="TCP"):
     _cleanups.append(cleanup_tcp_socket)
     return "tcp", tcp_socket, (host, iport)
 
-def setup_ssl_socket(opts, host, iport):
-    _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
-    ssl_sock = do_setup_ssl_socket(opts, tcp_socket)
-    return "SSL", ssl_sock, host_port
-
-def do_setup_ssl_socket(opts, tcp_socket):
-    if not opts.ssl_cert:
-        raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
-    import ssl
-    from xpra.scripts.main import parse_ssl_attributes
-    cert_reqs, ssl_version, ssl_ca_certs = parse_ssl_attributes(opts.ssl_client_verify_mode, opts.ssl_version, opts.ssl_cert)
-    kwargs = {}
-    if sys.version_info[:2]>=(2, 7):
-        kwargs["ciphers"] = opts.ssl_ciphers
-    return ssl.wrap_socket(tcp_socket, keyfile=opts.ssl_key, certfile=opts.ssl_cert,
-                                   server_side=True, cert_reqs=cert_reqs,
-                                   ssl_version=ssl_version, ca_certs=ssl_ca_certs,
-                                   do_handshake_on_connect=True, suppress_ragged_eofs=True, **kwargs)
 
 def parse_bind_tcp(bind_tcp):
     tcp_sockets = set()
@@ -1060,6 +1042,21 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     mdns_recs = []
     sockets = []
+
+    #SSL sockets:
+    wrap_socket_fn = None
+    ssl_opt = parse_bool("ssl", opts.ssl)
+    if ssl_opt is True or bind_ssl or (ssl_opt is None and opts.bind_tcp and opts.ssl_cert):
+        from xpra.scripts.main import ssl_wrap_socket_fn
+        wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
+    for host, iport in bind_ssl:
+        _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
+        socket = ("SSL", wrap_socket_fn(tcp_socket), host_port)
+        sockets.append(socket)
+        if opts.mdns:
+            rec = "ssl", [(host, iport)]
+            mdns_recs.append(rec)
+
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
@@ -1070,13 +1067,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             rec = "tcp", [(host, iport)]
             mdns_recs.append(rec)
 
-    for host, iport in bind_ssl:
-        socket = setup_ssl_socket(opts, host, iport)
-        sockets.append(socket)
-        if opts.mdns:
-            rec = "ssl", [(host, iport)]
-            mdns_recs.append(rec)
-
+    # VSOCK:
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
@@ -1270,6 +1261,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _cleanups.append(close_display)
 
     try:
+        app._ssl_wrap_socket = wrap_socket_fn
         app.original_desktop_display = desktop_display
         app.exec_cwd = cwd
         app.init(opts)
@@ -1295,6 +1287,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app.start_on_connect            = opts.start_on_connect
         app.start_child_on_connect      = opts.start_child_on_connect
         app.exec_start_commands()
+    del opts
 
     log("%s(%s)", app.init_sockets, sockets)
     app.init_sockets(sockets)

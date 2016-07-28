@@ -693,8 +693,8 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--ssl-cert", action="store",
                       dest="ssl_cert", default=defaults.ssl_cert,
                       help="Certifcate file to use. Default: '%default'.")
-    group.add_option("--ssl-version", action="store",
-                      dest="ssl_version", default=defaults.ssl_version,
+    group.add_option("--ssl-protocol", action="store",
+                      dest="ssl_protocol", default=defaults.ssl_protocol,
                       help="Specifies which version of the SSL protocol to use. Default: '%default'.")
     group.add_option("--ssl-ca-certs", action="store",
                       dest="ssl_ca_certs", default=defaults.ssl_ca_certs,
@@ -713,7 +713,13 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The flags for certificate verification operations. Default: '%default'.")
     group.add_option("--ssl-check-hostname", action="store", metavar="yes|no",
                       dest="ssl_check_hostname", default=defaults.ssl_check_hostname,
-                      help="Wether to match the peer cert's hostname. Default: '%s'." % enabled_str(defaults.windows))
+                      help="Wether to match the peer cert's hostname. Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
+    group.add_option("--ssl-server-hostname", action="store", metavar="hostname",
+                      dest="ssl_server_hostname", default=defaults.ssl_server_hostname,
+                      help="The server hostname to match. Default: '%default'.")
+    group.add_option("--ssl-options", action="store", metavar="options",
+                      dest="ssl_options", default=defaults.ssl_options,
+                      help="Set of SSL options enabled on this context. Default: '%default'.")
 
     group = optparse.OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
@@ -1541,14 +1547,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         sock.settimeout(SOCKET_TIMEOUT)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         if dtype == "ssl":
-            from xpra.net.bytestreams import init_ssl
-            ssl = init_ssl()
-            cert_reqs, ssl_version, ssl_ca_certs = parse_ssl_attributes(opts.ssl_server_verify_mode, opts.ssl_version, opts.ssl_cert)
-            sock = ssl.wrap_socket(sock, keyfile=opts.ssl_key, certfile=opts.ssl_cert,
-                                   server_side=False, cert_reqs=cert_reqs,
-                                   ssl_version=ssl_version, ca_certs=ssl_ca_certs,
-                                   do_handshake_on_connect=True, suppress_ragged_eofs=True, ciphers=opts.ssl_ciphers)
-
+            wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
+            sock = wrap_socket(sock)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
@@ -1556,20 +1556,101 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         assert False, "unsupported display type in connect: %s" % dtype
     return conn
 
-def parse_ssl_attributes(verify_mode, ssl_version_str, ca_certs):
+
+def ssl_wrap_socket_fn(opts, server_side=True):
+    #deal with older versions of python without SSLContext:
+    if server_side and not opts.ssl_cert:
+        raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
     import ssl
-    cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
-    if cert_reqs is None:
+    if server_side:
+        verify_mode = opts.ssl_client_verify_mode
+    else:
+        verify_mode = opts.ssl_server_verify_mode
+    ssl_protocol, ssl_cert_reqs, ssl_verify_flags, ssl_options, ssl_ca_certs = parse_ssl_attributes(opts.ssl_protocol, verify_mode, opts.ssl_verify_flags, opts.ssl_options, opts.ssl_ca_certs)
+    kwargs = {
+              "server_side"             : server_side,
+              "do_handshake_on_connect" : True,
+              "suppress_ragged_eofs"    : True,
+              }
+    SSLContext = getattr(ssl, "SSLContext", None)
+    if SSLContext:
+        context = SSLContext(ssl_protocol)
+        context.set_ciphers(opts.ssl_ciphers)
+        context.verify_mode = ssl_cert_reqs
+        context.verify_flags = ssl_verify_flags
+        context.options = ssl_options
+        if opts.ssl_cert or opts.ssl_key:
+            context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
+        #SSLContext.wrap_socket(sock, server_side=False, do_handshake_on_connect=True, suppress_ragged_eofs=True, server_hostname=None)
+        if ssl_cert_reqs!=ssl.CERT_NONE:
+            if not server_side:
+                context.check_hostname = opts.ssl_check_hostname
+                if context.check_hostname:
+                    if not opts.ssl_server_hostname:
+                        raise InitException("ssl error: check-hostname is set but server-hostname is not")
+                    kwargs["server_hostname"] = opts.ssl_server_hostname
+            #we will need ca data to verify the client:
+            context.load_default_certs()
+            if not opts.ssl_ca_certs or opts.ssl_ca_certs.lower()=="default":
+                #raise InitException("ssl-ca-certs is required for client verify mode %s" % opts.ssl_client_verify_mode)
+                context.set_default_verify_paths()
+            elif not os.path.exists(opts.ssl_ca_certs):
+                raise InitException("invalid ssl-ca-certs file or directory: %s" % opts.ssl_ca_certs)
+            elif os.path.isdir(opts.ssl_ca_certs):
+                context.load_verify_locations(capath=opts.ssl_ca_certs)
+            else:
+                context.load_verify_locations(cafile=opts.ssl_ca_certs)
+        elif opts.ssl_check_hostname and not server_side:
+            raise InitException("cannot check hostname with verify mode %s" % verify_mode)
+        wrap_socket = context.wrap_socket
+    else:
+        if sys.version_info[:2]>=(2, 7):
+            kwargs["ciphers"] = opts.ssl_ciphers
+        kwargs.update({
+                       "cert_reqs"      : ssl_cert_reqs,
+                       "ssl_version"    : ssl_protocol,
+                       "ca_certs"       : ssl_ca_certs,
+                       "keyfile"        : opts.ssl_key,
+                       "certfile"       : opts.ssl_cert,
+                       })
+        #ssl.wrap_socket(sock, keyfile=None, certfile=None, server_side=False, cert_reqs=CERT_NONE, ssl_version={see docs}, ca_certs=None, do_handshake_on_connect=True, suppress_ragged_eofs=True, ciphers=None)¶
+        wrap_socket = ssl.wrap_socket
+    del opts
+    #ensure we handle ssl exceptions as we should from now on:
+    from xpra.net.bytestreams import init_ssl
+    init_ssl()
+    def do_wrap_socket(tcp_socket):
+        return wrap_socket(tcp_socket, **kwargs)
+    return do_wrap_socket
+
+def parse_ssl_attributes(protocol, verify_mode, verify_flags, options, ca_certs):
+    import ssl
+    ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
+    if ssl_cert_reqs is None:
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
         raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
-    ssl_version = getattr(ssl, "PROTOCOL_%s" % ssl_version_str, None)
-    if ssl_version is None:
+    ssl_protocol = getattr(ssl, "PROTOCOL_%s" % protocol, None)
+    if ssl_protocol is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
-        raise InitException("invalid ssl-version '%s', must be one of: %s" % (ssl_version_str, csv(values)))
+        raise InitException("invalid ssl-version '%s', must be one of: %s" % (protocol, csv(values)))
+    ssl_verify_flags = 0
+    for x in verify_flags.split(","):
+        x = x.strip()
+        v = getattr(ssl, "VERIFY_"+x.upper(), None)
+        if v is None:
+            raise InitException("invalid ssl verify-flag: %s" % x)
+        ssl_verify_flags |= v
+    ssl_options = 0
+    for x in options.split(","):
+        x = x.strip()
+        v = getattr(ssl, "OP_"+x.upper(), None)
+        if v is None:
+            raise InitException("invalid ssl option: %s" % x)
+        ssl_options |= v
     ssl_ca_certs = ca_certs
     if ssl_ca_certs=="default":
         ssl_ca_certs = None
-    return cert_reqs, ssl_version, ssl_ca_certs
+    return ssl_protocol, ssl_cert_reqs, ssl_verify_flags, ssl_options, ssl_ca_certs
 
 
 def get_sockpath(display_desc, error_cb):

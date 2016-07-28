@@ -204,33 +204,9 @@ class ServerCore(object):
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
 
-        self.init_ssl(opts)
         self.init_html_proxy(opts)
         self.init_auth(opts)
 
-    def init_ssl(self, opts):
-        v = parse_bool("ssl", opts.ssl)
-        if v is False or not opts.bind_tcp:
-            netlog("init_ssl() disabled: ssl=%s, bind-tcp=%s", v, opts.bind_tcp)
-            return
-        try:
-            from xpra.net.bytestreams import init_ssl
-            init_ssl()
-            from xpra.scripts.server import do_setup_ssl_socket
-            def ssl_wrap_socket(tcp_socket):
-                netlog("ssl_wrap_socket(%s)", tcp_socket)
-                return do_setup_ssl_socket(opts, tcp_socket)
-            self._ssl_wrap_socket = ssl_wrap_socket
-            netlog.info("SSL available on %i TCP socket%s", len(opts.bind_tcp), engs(opts.bind_tcp))
-        except Exception as e:
-            netlog("init_ssl() failed", exc_info=True)
-            if v is None:
-                #auto mode: just log it
-                netlog.info("SSL disabled: %s", e)
-            else:
-                #we wanted to have it, log this as an error:
-                netlog.error("Error: cannot enable SSL sockets:")
-                netlog.error(" %s", e)
 
     def init_html_proxy(self, opts):
         self._tcp_proxy = opts.tcp_proxy
@@ -598,6 +574,7 @@ class ServerCore(object):
                     try:
                         sock = self._ssl_wrap_socket(sock)
                     except IOError as e:
+                        netlog("ssl wrap socket failed", exc_info=True)
                         conn_err(str(e))
                         return True
                     conn = SocketConnection(sock, sockname, address, target, socktype)

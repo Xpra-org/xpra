@@ -11,11 +11,13 @@
 #ssl-cert = /path/to/cert
 
 # Specifies which version of the SSL protocol to use:
-#ssl-version = SSLv23
-#ssl-version = TLSv1_2
+#ssl-protocol = SSLv23
+#ssl-protocol = TLSv1_2
 
 # The ca_certs file contains a set of concatenated 'certification authority' certificates:
-#ssl-ca-certs = /path/to/cacerts
+#ssl-ca-certs = default
+#ssl-ca-certs = /path/to/cacertfile
+#ssl-ca-certs = /path/to/cacertsdir/
 
 # Sets the available ciphers for this SSL object:
 #ssl-ciphers = ALL
@@ -40,7 +42,15 @@ ssl-server-verify-mode = required
 #ssl-verify-flags = DEFAULT
 #ssl-verify-flags = CRL_CHECK_LEAF
 #ssl-verify-flags = CHECK_CHAIN
-ssl-verify-flags = CHECK_CHAIN,X509_STRICT
+ssl-verify-flags = CRL_CHECK_CHAIN,X509_STRICT
 
 # Wether to match the peer cert's hostname:
-ssl-check-hostname = on
+ssl-check-hostname = off
+
+# Server hostname to check for:
+ssl-server-hostname = localhost
+
+# Set of SSL options enabled on this context:
+#ssl-options = ALL
+#ssl-options = OP_NO_TLSv1,NO_COMPRESSION
+ssl-options = ALL,NO_COMPRESSION

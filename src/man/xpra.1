@@ -67,7 +67,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
 [\fB\-\-ssl-key\fP=\fIKEYFILE\fP]
 [\fB\-\-ssl-cert\fP=\fCERTFILE\fP]
-[\fB\-\-ssl-version\fP=PROTOCOLVERSION\fP]
+[\fB\-\-ssl-protocol\fP=PROTOCOLVERSION\fP]
 [\fB\-\-ssl-ca-certs\fP=CACERTSFILE\fP]
 [\fB\-\-ssl-ciphers\fP=CIPHERS\fP]
 [\fB\-\-ssl-client-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP]
@@ -168,7 +168,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
 [\fB\-\-ssl-key\fP=\fIKEYFILE\fP]
 [\fB\-\-ssl-cert\fP=\fCERTFILE\fP]
-[\fB\-\-ssl-version\fP=PROTOCOLVERSION\fP]
+[\fB\-\-ssl-protocol\fP=PROTOCOLVERSION\fP]
 [\fB\-\-ssl-ca-certs\fP=CACERTSFILE\fP]
 [\fB\-\-ssl-ciphers\fP=CIPHERS\fP]
 [\fB\-\-ssl-client-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP]
@@ -1283,7 +1283,7 @@ Summary:
 The key file to use.
 \fB\-\-ssl-cert\fP=\fCERTFILE\fP
 Certifcate file to use, required for server SSL support.
-\fB\-\-ssl-version\fP=PROTOCOLVERSION\fP
+\fB\-\-ssl-protocol\fP=PROTOCOLVERSION\fP
 Specifies which version of the SSL protocol to use.
 \fB\-\-ssl-ca-certs\fP=CACERTSFILE\fP
 The ca_certs file contains a set of concatenated 'certification
@@ -1298,6 +1298,8 @@ Whether to try to verify the server's certificates and how to behave if verifica
 The flags for certificate verification operations.
 \fB\-\-ssl-check-hostname\fP=\fIyes\fP|\fIno\fP
 Wether to match the peer cert's hostname.
+\fB\-\-ssl-options\fP=\fIoptions\fP
+Set of SSL options enabled on this context.
 
 .\" --------------------------------------------------------------------
 .SH ENVIRONMENT
