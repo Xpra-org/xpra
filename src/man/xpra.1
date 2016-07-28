@@ -54,6 +54,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bind\fP=\fIBIND_LOCATION\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-tcp\-encryption\fP=\fICIPHER\fP]
@@ -61,7 +62,18 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tcp\-encryption\-keyfile\fP=\fIKEYFILE\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
+[\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
 [\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
+[\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
+[\fB\-\-ssl-key\fP=\fIKEYFILE\fP]
+[\fB\-\-ssl-cert\fP=\fCERTFILE\fP]
+[\fB\-\-ssl-version\fP=PROTOCOLVERSION\fP]
+[\fB\-\-ssl-ca-certs\fP=CACERTSFILE\fP]
+[\fB\-\-ssl-ciphers\fP=CIPHERS\fP]
+[\fB\-\-ssl-client-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP]
+[\fB\-\-ssl-server-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP]
+[\fB\-\-ssl-verify-flags\fP=\fIFLAGS\fP]
+[\fB\-\-ssl-check-hostname\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
@@ -147,10 +159,22 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\fP=\fISOCKET|DIRECTORY\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
+[\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
 [\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
+[\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
+[\fB\-\-ssl-key\fP=\fIKEYFILE\fP]
+[\fB\-\-ssl-cert\fP=\fCERTFILE\fP]
+[\fB\-\-ssl-version\fP=PROTOCOLVERSION\fP]
+[\fB\-\-ssl-ca-certs\fP=CACERTSFILE\fP]
+[\fB\-\-ssl-ciphers\fP=CIPHERS\fP]
+[\fB\-\-ssl-client-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP]
+[\fB\-\-ssl-server-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP]
+[\fB\-\-ssl-verify-flags\fP=\fIFLAGS\fP]
+[\fB\-\-ssl-check-hostname\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -350,11 +374,12 @@ the client can find at least one of the directories used by
 the unix domain sockets (see \fIbind\fP, \fIsocket\-dir\fP and
 \fIsocket\-dirs\fP).
 
-If the xpra server was given the \fB\-\-bind\-tcp\fP option when
-started then you can also connect to it using a display of
-the form \fBtcp:HOST:PORT\fP.  (Notice that \fBssh:\fP takes an optional
-\fIdisplay\fP number, while \fBtcp:\fP takes a required \fIport\fP
-number.)
+If the xpra server was given the \fB\-\-bind\-tcp\fP, \fB\-\-bind\-ssl\fP
+or \fB\-\-bind\-vsock\fP option when started then you can also connect
+to it using a display of the form \fBtcp:HOST:PORT\fP, \fBssl:HOST:PORT\fP
+or \fBvsock:HOST:PORT\fP.
+(Notice that \fBssh:\fP takes an optional \fIdisplay\fP number,
+while those take a required \fIport\fP number.)
 .\" --------------------------------------------------------------------
 .SH SUBCOMMANDS
 .SS xpra start
@@ -624,12 +649,13 @@ If the host portion is omitted, then 127.0.0.1 (localhost) will be
 used.  If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
 
-Using this switch without using the \fIauth\fP option is not recommended,
+Using this switch without using the \fItcp\-auth\fP option is not recommended,
 and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
-Use it only if you have special needs, and understand the consequences
-of your actions.
 .TP
+\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP
+Just like \-\-bind-\-tcp\fP but for SSL sockets.
+See \fIssl\-auth\fP and the other SSL options.
 \fB\-\-bind\-vsock\fP=\fICID:PORT\fP
 Create a VSOCK socket for each \fB\-\-bind\-vsock\fP option specified.
 .TP
@@ -689,6 +715,10 @@ automatically (either \fBpam\fP or \fBwin32\fP)
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 .TP
+\fB\-\-ssl\-auth\fP=\fIMODULE\fP
+Just like the \fBauth\fP switch, except this one only applies
+to SSL sockets: sockets defined using the \fBbind\-ssl\fP switch,
+or TCP sockets upgraded by \fBssl=auto\fP or \fBssl=on\fP.
 \fB\-\-vsock\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind\-vsock\fP switch).
@@ -772,7 +802,7 @@ server.
 \fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
 Respond to HTTP requests on the TCP port(s).
 This requires \fBwebsockify\fP to be installed and at least one
-TCP port to be configured using \fBbind-tcp\fP.
+TCP port to be configured using \fBbind\-tcp\fP.
 The \fBauto\fP mode will enable support if all the components
 are available.
 By default the server will provide access to the HTML5 client.
@@ -923,8 +953,8 @@ heuristics or specified using the dbus interface.
 .TP
 \fB\-\-password\-file\fP=\fIFILENAME\fP
 Supply the password to be used for connecting to a server that
-uses authentication. See \fIauth\fP, \fItcp\-auth\fP and \fIvsock\-auth\fP
-for details.
+uses authentication. See \fIauth\fP, \fItcp\-auth\fP, \fIssl\-auth\fP
+and \fIvsock\-auth\fP for details.
 Alternatively, you may use the \fP=\fIXPRA_PASSWORD\fP environment variable.
 .TP
 \fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
@@ -1231,6 +1261,44 @@ That said, this option should not be needed in normal usage, as xpra
 tries quite hard to work around the above problems.  If you find
 yourself needing it often, then that may indicate a bug that we would
 appreciate hearing about.
+
+.SS SSL Options
+.TP
+\fB\-\-ssl\fP\=\fIon\fP|\fIauto\fP|\fIoff\fP
+Wether TCP server sockets can be upgraded to SSL.
+This requires an \fBssl-cert\fP to be specified.
+Authentication, if required, will use the \fBssl-auth\fP module specified,
+and fallback to \fBtcp-auth\fP or \fBauth\fP unless the value
+\fInone\fP is specified.
+
+The remaining options mirror the Python ssl module attributes.
+Please refer to that documentation and bear in mind that configuring
+SSL for security is not trivial, and definitely not just a matter of
+\fIenabling SSL\fP. See:
+https://docs.python.org/2/library/ssl.html
+Some options may not be available with older versions of Python.
+
+Summary:
+\fB\-\-ssl-key\fP=\fIKEYFILE\fP
+The key file to use.
+\fB\-\-ssl-cert\fP=\fCERTFILE\fP
+Certifcate file to use, required for server SSL support.
+\fB\-\-ssl-version\fP=PROTOCOLVERSION\fP
+Specifies which version of the SSL protocol to use.
+\fB\-\-ssl-ca-certs\fP=CACERTSFILE\fP
+The ca_certs file contains a set of concatenated 'certification
+authority' certificates.
+\fB\-\-ssl-ciphers\fP=CIPHERS\fP
+Sets the available ciphers, it should be a string in the OpenSSL cipher list format.
+\fB\-\-ssl-client-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP
+Whether to try to verify the client's certificates and how to behave if verification fails.
+\fB\-\-ssl-server-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP
+Whether to try to verify the server's certificates and how to behave if verification fails.
+\fB\-\-ssl-verify-flags\fP=\fIFLAGS\fP
+The flags for certificate verification operations.
+\fB\-\-ssl-check-hostname\fP=\fIyes\fP|\fIno\fP
+Wether to match the peer cert's hostname.
+
 .\" --------------------------------------------------------------------
 .SH ENVIRONMENT
 .TP

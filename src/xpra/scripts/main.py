@@ -701,7 +701,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The ca_certs file contains a set of concatenated 'certification authority' certificates. Default: '%default'.")
     group.add_option("--ssl-ciphers", action="store",
                       dest="ssl_ciphers", default=defaults.ssl_ciphers,
-                      help="Sets the available ciphers for this SSL object. It should be a string in the OpenSSL cipher list format. Default: '%default'.")
+                      help="Sets the available ciphers, it should be a string in the OpenSSL cipher list format. Default: '%default'.")
     group.add_option("--ssl-client-verify-mode", action="store",
                       dest="ssl_client_verify_mode", default=defaults.ssl_client_verify_mode,
                       help="Whether to try to verify the client's certificates and how to behave if verification fails. Default: '%default'.")
