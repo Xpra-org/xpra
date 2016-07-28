@@ -819,11 +819,6 @@ def do_parse_cmdline(cmdline, defaults):
 
     options, args = parser.parse_args(cmdline[1:])
 
-    #remote-xpra is meant to be a list, but the user can specify a string using the command line,
-    #in which case we replace all the default values with this single entry:
-    if not isinstance(options.remote_xpra, (list, tuple)):
-        options.remote_xpra = [options.remote_xpra]
-
     #ensure all the option fields are set even though
     #some options are not shown to the user:
     for k,v in hidden_options.items():
@@ -868,20 +863,20 @@ def do_parse_cmdline(cmdline, defaults):
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No sound source plugins found!")
 
-    #special case for things stored as lists, but command line option is a CSV string:
-    #and may have "none" or "all" special values
-    fixup_options(options)
-
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
     if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://") or args[1].startswith("xpras://"):
         url = args[1]
         address, params = parse_URL(url)
-        for k,v in params.items():
-            setattr(options, k, v)
+        for k,v in validate_config(params).items():
+            setattr(options, k.replace("-", "_"), v)
         if url.startswith("xpras://tcp"):
             address = "ssl" + address[3:]
         args[1] = address
+
+    #special case for things stored as lists, but command line option is a CSV string:
+    #and may have "none" or "all" special values
+    fixup_options(options)
 
     try:
         options.dpi = int(options.dpi)

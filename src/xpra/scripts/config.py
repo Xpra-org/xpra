@@ -882,6 +882,10 @@ def fixup_options(options):
     fixup_video_all_or_none(options)
     fixup_socketdirs(options)
     fixup_clipboard(options)
+    #remote-xpra is meant to be a list, but the user can specify a string using the command line,
+    #in which case we replace all the default values with this single entry:
+    if not isinstance(options.remote_xpra, (list, tuple)):
+        options.remote_xpra = [options.remote_xpra]
 
 
 def main():
