@@ -1613,7 +1613,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                        "keyfile"        : opts.ssl_key,
                        "certfile"       : opts.ssl_cert,
                        })
-        #ssl.wrap_socket(sock, keyfile=None, certfile=None, server_side=False, cert_reqs=CERT_NONE, ssl_version={see docs}, ca_certs=None, do_handshake_on_connect=True, suppress_ragged_eofs=True, ciphers=None)¶
         wrap_socket = ssl.wrap_socket
     del opts
     #ensure we handle ssl exceptions as we should from now on:
