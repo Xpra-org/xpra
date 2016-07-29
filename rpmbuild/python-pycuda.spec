@@ -8,7 +8,7 @@
 %define __requires_exclude ^libcuda.*$
 
 Name:           python2-pycuda
-Version:        2016.1.1
+Version:        2016.1.2
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
@@ -63,6 +63,9 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
+* Fri Jul 29 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.1.2-1
+- new upstream release
+
 * Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 2016.1.1-1
 - new upstream release
 - rename and obsolete old python package name
