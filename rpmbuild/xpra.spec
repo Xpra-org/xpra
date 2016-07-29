@@ -74,7 +74,6 @@
 
 %if 0%{?el6}
 Patch0: centos-ignore-invalid-gcc-warning.patch
-Patch1: centos7-buffer-fill-fix.patch
 #can't run the tests with python 2.6 which is too old:
 %define run_tests 0
 #no python cryptography:
@@ -96,10 +95,14 @@ Patch1: centos7-buffer-fill-fix.patch
 %if "%{?dist}"==".el7_0"
 #no python cryptography:
 %define requires_crypto python-crypto
+#sound fix:
+Patch1: centos7-buffer-fill-fix.patch
 %endif
 %if "%{?dist}"==".el7_1"
 #no python cryptography:
 %define requires_crypto python-crypto
+#sound fix:
+Patch1: centos7-buffer-fill-fix.patch
 %endif
 
 
