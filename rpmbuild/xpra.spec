@@ -74,6 +74,7 @@
 
 %if 0%{?el6}
 Patch0: centos-ignore-invalid-gcc-warning.patch
+Patch1: centos7-buffer-fill-fix.patch
 #can't run the tests with python 2.6 which is too old:
 %define run_tests 0
 #no python cryptography:
@@ -296,6 +297,13 @@ bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 %if 0%{?el6}
 cd $RPM_BUILD_DIR/xpra-%{version}
 %patch0 -p1
+%endif
+#workaround old gstreamer gi bindings on centos < 7.2:
+%if "%{?dist}"==".el7_0"
+%patch1 -p1
+%endif
+%if "%{?dist}"==".el7_1"
+%patch1 -p1
 %endif
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
 %if %{with_python3}

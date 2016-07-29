@@ -1,0 +1,14 @@
+Index: xpra/sound/gstreamer_util.py
+===================================================================
+--- a/xpra/sound/gstreamer_util.py	(revision 13108)
++++ b/xpra/sound/gstreamer_util.py	(working copy)
+@@ -238,7 +238,8 @@
+     Gst.get_gst_version = lambda: Gst.version()
+     def new_buffer(data):
+         buf = Gst.Buffer.new_allocate(None, len(data), None)
+-        buf.fill(0, data)
++        #some out of date versions (ie: centos 7.1) require the length argument:
++        buf.fill(0, data, len(data))
+         return buf
+     Gst.new_buffer = new_buffer
+     Gst.element_state_get_name = Gst.Element.state_get_name
