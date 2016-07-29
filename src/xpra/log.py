@@ -52,6 +52,14 @@ def remove_debug_category(*cat):
         if c in debug_enabled_categories:
             debug_enabled_categories.remove(c)
 
+def is_debug_enabled(category):
+    if "all" in debug_enabled_categories:
+        return True
+    if category in debug_enabled_categories:
+        return True
+    return isenvdebug(category) or isenvdebug("ALL")
+
+
 def add_disabled_category(*cat):
     remove_debug_category(*cat)
     for c in cat:
@@ -306,7 +314,7 @@ class Logger(object):
         for cat in self.categories:
             if cat in debug_disabled_categories:
                 disabled = True
-            if "all" in debug_enabled_categories or cat in debug_enabled_categories or isenvdebug(cat) or isenvdebug("ALL"):
+            if is_debug_enabled(category):
                 enabled = True
         self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
