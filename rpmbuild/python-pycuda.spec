@@ -25,7 +25,11 @@ Requires:       python-pytools
 
 BuildRequires:  gcc-c++
 BuildRequires:  python-devel
+%if 0%{?fedora}
+BuildRequires:  python-setuptools
+%else
 BuildRequires:  python-distribute
+%endif
 BuildRequires:  boost-devel
 BuildRequires:  numpy
 BuildRequires:  cuda
