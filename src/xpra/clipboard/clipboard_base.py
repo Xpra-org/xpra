@@ -19,7 +19,7 @@ gdk = import_gdk()
 from xpra.log import Logger
 log = Logger("clipboard")
 
-from xpra.gtk_common.gobject_util import n_arg_signal
+from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
@@ -433,7 +433,7 @@ class DefaultClipboardProtocolHelper(ClipboardProtocolHelperBase):
 class ClipboardProxy(gtk.Invisible):
     __gsignals__ = {
         # arguments: (selection, target)
-        "get-clipboard-from-remote": (gobject.SIGNAL_RUN_LAST,
+        "get-clipboard-from-remote": (SIGNAL_RUN_LAST,
                                       gobject.TYPE_PYOBJECT,
                                       (gobject.TYPE_PYOBJECT,) * 2,
                                       ),

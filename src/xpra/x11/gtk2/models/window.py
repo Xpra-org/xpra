@@ -8,7 +8,7 @@
 import gtk
 import cairo
 
-from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator
+from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, MotifWMHints
@@ -121,7 +121,7 @@ class WindowModel(BaseWindowModel):
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__.update({
-        "ownership-election"            : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_PYOBJECT, (), non_none_list_accumulator),
+        "ownership-election"            : (SIGNAL_RUN_LAST, gobject.TYPE_PYOBJECT, (), non_none_list_accumulator),
         "child-map-request-event"       : one_arg_signal,
         "child-configure-request-event" : one_arg_signal,
         "xpra-destroy-event"            : one_arg_signal,

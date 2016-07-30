@@ -6,7 +6,7 @@
 
 import gtk
 import gobject
-from xpra.gtk_common.gobject_util import n_arg_signal
+from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
 from xpra.x11.gtk2.gdk_bindings import (add_event_receiver, remove_event_receiver,  #@UnresolvedImport
                                         cleanup_all_event_receivers,                #@UnresolvedImport
                                         init_x11_filter, cleanup_x11_filter)        #@UnresolvedImport
@@ -18,7 +18,7 @@ log = Logger("x11", "util")
 
 class XRootPropWatcher(gobject.GObject):
     __gsignals__ = {
-        "root-prop-changed": (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, )),
+        "root-prop-changed": (SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, )),
         "xpra-property-notify-event": n_arg_signal(1),
         }
 
