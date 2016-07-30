@@ -1,7 +1,7 @@
 Name:	     x264-xpra
-Version:     20160704
-%if 0%{?beta} < 1
+Version:     20160729
 %define SNAPSHOTTYPE -stable
+%if 0%{?beta} < 1
 Release:     1%{?dist}
 %else
 Release:     0%{?dist}
@@ -76,6 +76,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Sat Jul 30 2016 Antoine Martin <antoine@devloop.org.uk> 20160729
+- new upstream release
+
 * Tue Jul 05 2016 Antoine Martin <antoine@devloop.org.uk> 20160704
 - new upstream release
 
