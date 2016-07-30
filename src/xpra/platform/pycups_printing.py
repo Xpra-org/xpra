@@ -8,6 +8,7 @@
 import sys
 import os
 import cups
+import time
 import subprocess
 import shlex
 import getpass
@@ -120,6 +121,16 @@ def get_lpinfo_drv(make_and_model):
     from xpra.util import nonl
     cr = getChildReaper()
     cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
+    from xpra.make_thread import make_thread
+    def watch_lpinfo():
+        #give it 15 seconds to run:
+        for _ in range(15):
+            if proc.poll() is not None:
+                return      #finished already
+            time.sleep(1)
+        log.warn("Warning: lpinfo command is taking too long")
+        proc.terminate()
+    make_thread(watch_lpinfo, "lpinfo watcher", daemon=True).start()
     out, err = proc.communicate()
     if proc.wait()!=0:
         log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
