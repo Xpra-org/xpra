@@ -36,11 +36,16 @@ for module in ${MODULE_DIRS}; do
 	sed -i -e "s+unknown+${SVN_REVISION}+" "${file}"
 done
 
-tar -jcf ${DIR}.tar.bz2 ${DIR}
-tar -Jcf ${DIR}.tar.xz ${DIR}
+rm -f ${DIR}.tar*
+tar -cf ${DIR}.tar ${DIR}
+echo "tar file: "
+ls -la ${DIR}.tar
+xz -k ${DIR}.tar
+bzip2 ${DIR}.tar
 for a in ${DIR}.tar.bz2 ${DIR}.tar.xz; do
 	md5sum ${a} > ${a}.md5
 	sha1sum ${a} > ${a}.sha
 done
+echo "xz / bz2 with checksums:"
 ls -al ${DIR}.tar.*
 rm -fr "${DIR}"
