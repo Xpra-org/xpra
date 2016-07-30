@@ -2,7 +2,7 @@ Index: setup.py
 ===================================================================
 --- a/setup.py	(revision 10205)
 +++ b/setup.py	(working copy)
-@@ -611,7 +611,7 @@
+@@ -679,7 +679,7 @@
              elif get_gcc_version()>=[4, 4]:
                  eifd = ["-Werror",
                          #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
