@@ -1566,7 +1566,21 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         verify_mode = opts.ssl_client_verify_mode
     else:
         verify_mode = opts.ssl_server_verify_mode
-    ssl_protocol, ssl_cert_reqs, ssl_verify_flags, ssl_options, ssl_ca_certs = parse_ssl_attributes(opts.ssl_protocol, verify_mode, opts.ssl_verify_flags, opts.ssl_options, opts.ssl_ca_certs)
+    #ca-certs:
+    ssl_ca_certs = opts.ssl_ca_certs
+    if ssl_ca_certs=="default":
+        ssl_ca_certs = None
+    #parse verify-mode:
+    ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
+    if ssl_cert_reqs is None:
+        values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
+        raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
+    #parse protocol:
+    ssl_protocol = getattr(ssl, "PROTOCOL_%s" % opts.ssl_protocol, None)
+    if ssl_protocol is None:
+        values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
+        raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (opts.ssl_protocol, csv(values)))
+
     kwargs = {
               "server_side"             : server_side,
               "do_handshake_on_connect" : True,
@@ -1574,6 +1588,27 @@ def ssl_wrap_socket_fn(opts, server_side=True):
               }
     SSLContext = getattr(ssl, "SSLContext", None)
     if SSLContext:
+        #parse ssl-verify-flags as CSV:
+        ssl_verify_flags = 0
+        for x in opts.ssl_verify_flags.split(","):
+            x = x.strip()
+            if not x:
+                continue
+            v = getattr(ssl, "VERIFY_"+x.upper(), None)
+            if v is None:
+                raise InitException("invalid ssl verify-flag: %s" % x)
+            ssl_verify_flags |= v
+        #parse ssl-options as CSV:
+        ssl_options = 0
+        for x in opts.ssl_options.split(","):
+            x = x.strip()
+            if not x:
+                continue
+            v = getattr(ssl, "OP_"+x.upper(), None)
+            if v is None:
+                raise InitException("invalid ssl option: %s" % x)
+            ssl_options |= v
+
         context = SSLContext(ssl_protocol)
         context.set_ciphers(opts.ssl_ciphers)
         context.verify_mode = ssl_cert_reqs
@@ -1581,7 +1616,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         context.options = ssl_options
         if opts.ssl_cert or opts.ssl_key:
             context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
-        #SSLContext.wrap_socket(sock, server_side=False, do_handshake_on_connect=True, suppress_ragged_eofs=True, server_hostname=None)
         if ssl_cert_reqs!=ssl.CERT_NONE:
             if not server_side:
                 context.check_hostname = opts.ssl_check_hostname
@@ -1604,8 +1638,16 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             raise InitException("cannot check hostname with verify mode %s" % verify_mode)
         wrap_socket = context.wrap_socket
     else:
-        if sys.version_info[:2]>=(2, 7):
+        ignored = ["ssl-verify-flags", "ssl-options"]
+        if sys.version_info[:2]<(2, 7):
+            ignored.append("ciphers")
+        else:
             kwargs["ciphers"] = opts.ssl_ciphers
+        from xpra.log import Logger
+        netlog = Logger("network")
+        netlog.warn("Warning: weak SSL settings for outdated Python version %i.%i.%i", *sys.version_info[:3])
+        netlog.warn(" the following options will be ignored:")
+        netlog.warn(" %s", csv("'ssl-%s'" % x for x in ignored))
         kwargs.update({
                        "cert_reqs"      : ssl_cert_reqs,
                        "ssl_version"    : ssl_protocol,
@@ -1621,45 +1663,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     def do_wrap_socket(tcp_socket):
         return wrap_socket(tcp_socket, **kwargs)
     return do_wrap_socket
-
-def parse_ssl_attributes(protocol, verify_mode, verify_flags, options, ca_certs):
-    import ssl
-    ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
-    if ssl_cert_reqs is None:
-        values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
-        raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
-    ssl_protocol = getattr(ssl, "PROTOCOL_%s" % protocol, None)
-    if ssl_protocol is None:
-        values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
-        raise InitException("invalid ssl-version '%s', must be one of: %s" % (protocol, csv(values)))
-    ssl_verify_flags = 0
-    ssl_options = 0
-    if sys.version_info<(2, 7, 9):
-        from xpra.log import Logger
-        netlog = Logger("network")
-        netlog.warn("Warning: weak SSL settings for Python %i.%i.%i", *sys.version_info[:3])
-        netlog.warn(" the 'ssl-verify-flags' and 'ssl-options' will be ignored")
-    else:
-        for x in verify_flags.split(","):
-            x = x.strip()
-            if not x:
-                continue
-            v = getattr(ssl, "VERIFY_"+x.upper(), None)
-            if v is None:
-                raise InitException("invalid ssl verify-flag: %s" % x)
-            ssl_verify_flags |= v
-        for x in options.split(","):
-            x = x.strip()
-            if not x:
-                continue
-            v = getattr(ssl, "OP_"+x.upper(), None)
-            if v is None:
-                raise InitException("invalid ssl option: %s" % x)
-            ssl_options |= v
-    ssl_ca_certs = ca_certs
-    if ssl_ca_certs=="default":
-        ssl_ca_certs = None
-    return ssl_protocol, ssl_cert_reqs, ssl_verify_flags, ssl_options, ssl_ca_certs
 
 
 def get_sockpath(display_desc, error_cb):
