@@ -38,11 +38,13 @@ BuildRequires:  python-devel
 BuildRequires:  python-setuptools-devel
 Requires:       numpy
 Requires:       freeglut
-Obsoletes:      PyOpenGL < 3.1.1a2
+Obsoletes:      PyOpenGL < 3.1.2
+Conflicts:		PyOpenGL
 #Fedora broke our xpra repository :(
-Obsoletes:      PyOpenGL-accelerate < 3.1.1a2
+Obsoletes:      PyOpenGL-accelerate < 3.1.2
 Provides:       PyOpenGL = %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
+Conflicts:		PyOpenGL-accelerate
 %endif
 
 %description
@@ -62,9 +64,9 @@ BuildRequires:  %{py2prefix}-setuptools
 BuildRequires:  %{py2prefix}-devel
 Requires:       %{py2prefix}-numpy
 
-Obsoletes:      PyOpenGL < 3.1.1a2
+Obsoletes:      PyOpenGL < 3.1.2
 #Fedora broke our xpra repository :(
-Obsoletes:      PyOpenGL-accelerate < 3.1.1a2
+Obsoletes:      PyOpenGL-accelerate < 3.1.2
 Provides:       PyOpenGL = %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
 %if 0%{?fedora}
@@ -91,8 +93,8 @@ BuildRequires:  python3-setuptools
 BuildRequires:  python3-numpy
 Requires:       freeglut
 Requires:       python3-numpy
-Obsoletes:      python3-PyOpenGL < 3.1.0-7
-Obsoletes:      python3-PyOpenGL_accelerate < 3.1.0-7
+Obsoletes:      python3-PyOpenGL < 3.1.2
+Obsoletes:      python3-PyOpenGL_accelerate < 3.1.2
 Provides:       python3-PyOpenGL = %{version}-%{release}
 Provides:       python3-PyOpenGL_accelerate = %{version}-%{release}
 
@@ -112,7 +114,7 @@ Summary:        %{srcname} Python 2.x Tk widget
 BuildArch:      noarch
 Requires:       %{py2prefix}-%{shortname} = %{version}-%{release}
 Requires:       tkinter
-Obsoletes:      PyOpenGL-Tk < 3.1.0-7
+Obsoletes:      PyOpenGL-Tk < 3.1.2
 Provides:       PyOpenGL-Tk = %{version}-%{release}
 
 %description -n %{py2prefix}-%{shortname}-tk
@@ -126,7 +128,7 @@ BuildArch:      noarch
 Requires:       python3-%{shortname} = %{version}-%{release}
 Requires:       python3-tkinter
 # These can be removed in Fedora 27
-Obsoletes:      python3-PyOpenGL-Tk < 3.1.0-7
+Obsoletes:      python3-PyOpenGL-Tk < 3.1.2
 Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 
 %description -n python3-%{shortname}-tk
@@ -209,6 +211,9 @@ popd
 
 
 %changelog
+* Mon Aug 01 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.xpra2
+- Try harder to force centos to behave, override more versions too
+
 * Thu Jul 28 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.xpra1
 - Try to ensure this updates the Fedora upstream package
 
