@@ -548,8 +548,8 @@ def get_defaults():
                     "ssl-ciphers"       : "DEFAULT",
                     "ssl-client-verify-mode"   : "optional",
                     "ssl-server-verify-mode"   : "required",
-                    "ssl-verify-flags"  : "CHECK_CHAIN,X509_STRICT",
-                    "ssl-check-hostname": True,
+                    "ssl-verify-flags"  : "CRL_CHECK_CHAIN,X509_STRICT",
+                    "ssl-check-hostname": False,
                     "ssl-server-hostname": "localhost",
                     "ssl-options"       : "ALL,NO_COMPRESSION",
                     "quality"           : 0,
@@ -624,8 +624,8 @@ def get_defaults():
                     "start-child-after-connect" : [],
                     "start-on-connect"          : [],
                     "start-child-on-connect"    : [],
-                    "start-env"         : [],
-                    "env"               : DEFAULT_ENV,
+                    "start-env"         : DEFAULT_ENV,
+                    "env"               : [],
                     }
     return GLOBAL_DEFAULTS
 #fields that got renamed:
