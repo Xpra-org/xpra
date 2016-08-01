@@ -24,7 +24,7 @@
 
 Name:           python-%{shortname}
 Version:        3.1.1a1
-Release:        4.xpra2%{?dist}
+Release:        4.1xpra2%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -211,6 +211,9 @@ popd
 
 
 %changelog
+* Mon Aug 01 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra2
+- and again
+
 * Mon Aug 01 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.xpra2
 - Try harder to force centos to behave, override more versions too
 
