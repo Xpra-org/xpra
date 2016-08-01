@@ -1633,23 +1633,29 @@ def parse_ssl_attributes(protocol, verify_mode, verify_flags, options, ca_certs)
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
         raise InitException("invalid ssl-version '%s', must be one of: %s" % (protocol, csv(values)))
     ssl_verify_flags = 0
-    for x in verify_flags.split(","):
-        x = x.strip()
-        if not x:
-            continue
-        v = getattr(ssl, "VERIFY_"+x.upper(), None)
-        if v is None:
-            raise InitException("invalid ssl verify-flag: %s" % x)
-        ssl_verify_flags |= v
     ssl_options = 0
-    for x in options.split(","):
-        x = x.strip()
-        if not x:
-            continue
-        v = getattr(ssl, "OP_"+x.upper(), None)
-        if v is None:
-            raise InitException("invalid ssl option: %s" % x)
-        ssl_options |= v
+    if sys.version_info<(2, 7, 9):
+        from xpra.log import Logger
+        netlog = Logger("network")
+        netlog.warn("Warning: weak SSL settings for Python %i.%i.%i", *sys.version_info[:3])
+        netlog.warn(" the 'ssl-verify-flags' and 'ssl-options' will be ignored")
+    else:
+        for x in verify_flags.split(","):
+            x = x.strip()
+            if not x:
+                continue
+            v = getattr(ssl, "VERIFY_"+x.upper(), None)
+            if v is None:
+                raise InitException("invalid ssl verify-flag: %s" % x)
+            ssl_verify_flags |= v
+        for x in options.split(","):
+            x = x.strip()
+            if not x:
+                continue
+            v = getattr(ssl, "OP_"+x.upper(), None)
+            if v is None:
+                raise InitException("invalid ssl option: %s" % x)
+            ssl_options |= v
     ssl_ca_certs = ca_certs
     if ssl_ca_certs=="default":
         ssl_ca_certs = None

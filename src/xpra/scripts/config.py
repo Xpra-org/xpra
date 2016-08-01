@@ -489,6 +489,10 @@ def get_defaults():
     else:
         bind_dirs = ["auto"]
 
+    ssl_protocol = "TLSv1_2"
+    if sys.version_info<(2, 7):
+        ssl_protocol = "SSLv23"
+
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
@@ -544,7 +548,7 @@ def get_defaults():
                     "ssl"               : "auto",
                     "ssl-key"           : "",
                     "ssl-cert"          : "",
-                    "ssl-protocol"      : "TLSv1_2",
+                    "ssl-protocol"      : ssl_protocol,
                     "ssl-ca-certs"      : "default",
                     "ssl-ciphers"       : "DEFAULT",
                     "ssl-client-verify-mode"   : "optional",

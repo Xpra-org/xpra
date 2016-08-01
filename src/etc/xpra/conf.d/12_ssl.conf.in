@@ -19,11 +19,6 @@
 #ssl-ca-certs = /path/to/cacertfile
 #ssl-ca-certs = /path/to/cacertsdir/
 
-# Sets the available ciphers for this SSL object:
-#ssl-ciphers = ALL
-#ssl-ciphers = HIGH
-ssl-ciphers = DEFAULT
-
 # Whether to try to verify the client's certificates
 # and how to behave if verification fails:
 #ssl-client-verify-mode = none
@@ -38,17 +33,25 @@ ssl-client-verify-mode = optional
 #ssl-server-verify-mode = required
 ssl-server-verify-mode = required
 
+# Wether to match the peer cert's hostname:
+ssl-check-hostname = off
+
+# Server hostname to check for:
+ssl-server-hostname = localhost
+
+
+# The following options require Python 2.7.9 or later:
+
 # The flags for certificate verification operations:
 #ssl-verify-flags = DEFAULT
 #ssl-verify-flags = CRL_CHECK_LEAF
 #ssl-verify-flags = CHECK_CHAIN
 ssl-verify-flags = CRL_CHECK_CHAIN,X509_STRICT
 
-# Wether to match the peer cert's hostname:
-ssl-check-hostname = off
-
-# Server hostname to check for:
-ssl-server-hostname = localhost
+# Sets the available ciphers for this SSL object:
+#ssl-ciphers = ALL
+#ssl-ciphers = HIGH
+ssl-ciphers = DEFAULT
 
 # Set of SSL options enabled on this context:
 #ssl-options = ALL
