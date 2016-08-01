@@ -1652,8 +1652,8 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                        "cert_reqs"      : ssl_cert_reqs,
                        "ssl_version"    : ssl_protocol,
                        "ca_certs"       : ssl_ca_certs,
-                       "keyfile"        : opts.ssl_key,
-                       "certfile"       : opts.ssl_cert,
+                       "keyfile"        : opts.ssl_key or None,
+                       "certfile"       : opts.ssl_cert or None,
                        })
         wrap_socket = ssl.wrap_socket
     del opts
