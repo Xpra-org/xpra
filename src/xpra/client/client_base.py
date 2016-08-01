@@ -73,7 +73,6 @@ class XpraClientBase(FileTransferHandler):
         from xpra import child_reaper
         child_reaper.POLL_WARNING = False
         getChildReaper()
-        crypto_backend_init()
         log("XpraClientBase.defaults_init() os.environ:")
         for k,v in os.environ.items():
             log(" %s=%s", k, nonl(v))
@@ -125,6 +124,8 @@ class XpraClientBase(FileTransferHandler):
         self.password = opts.password
         self.password_file = opts.password_file
         self.encryption = opts.encryption or opts.tcp_encryption
+        if self.encryption:
+            crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.quality = opts.quality
         self.min_quality = opts.min_quality
