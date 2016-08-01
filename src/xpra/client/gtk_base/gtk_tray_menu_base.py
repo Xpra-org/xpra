@@ -890,6 +890,11 @@ class GTKTrayMenuBase(object):
         return menu
 
     def make_webcammenuitem(self):
+        webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam pictures to the server", None)
+        if not self.client.webcam_forwarding:
+            webcam.set_tooltip_text("Webcam forwarding is disabled")
+            set_sensitive(webcam, False)
+            return webcam
         from xpra.platform.webcam import get_all_video_devices, get_virtual_video_devices, add_video_device_change_callback
         #TODO: register remove_video_device_change_callback for cleanup
         menu = gtk.Menu()
@@ -964,7 +969,6 @@ class GTKTrayMenuBase(object):
             glib.timeout_add(1000, populate_webcam_menu)
         add_video_device_change_callback(video_devices_changed)
 
-        webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam pictures to the server", None)
         webcam.set_submenu(menu)
         def webcam_changed(*args):
             webcamlog("webcam_changed%s webcam_device=%s", args, self.client.webcam_device)
