@@ -798,6 +798,29 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         else:
             self.keyboard_grab()
 
+    def pointer_grab(self, *args):
+        self._client.pointer_grabbed = True
+        r = gdk.pointer_grab(self.get_window(), True, confine_to=self.get_window())
+        self._client.pointer_grabbed = r==GRAB_SUCCESS
+        grablog("pointer_grab%s gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s", args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
+
+    def pointer_ungrab(self, *args):
+        grablog("pointer_ungrab%s", args)
+        self._client.pointer_grabbed = False
+        gdkwin = self.get_window()
+        if gdkwin:
+            d = gdkwin.get_display()
+            if d:
+                d.pointer_ungrab()
+        return True
+
+    def toggle_pointer_grab(self):
+        grablog("toggle_pointer_grab()")
+        if self._client.pointer_grabbed:
+            self.pointer_ungrab()
+        else:
+            self.pointer_grab()
+
 
     def set_menu(self, menu):
         menulog("set_menu(%s)", menu)
