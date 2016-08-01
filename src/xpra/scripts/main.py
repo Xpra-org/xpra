@@ -1635,6 +1635,8 @@ def parse_ssl_attributes(protocol, verify_mode, verify_flags, options, ca_certs)
     ssl_verify_flags = 0
     for x in verify_flags.split(","):
         x = x.strip()
+        if not x:
+            continue
         v = getattr(ssl, "VERIFY_"+x.upper(), None)
         if v is None:
             raise InitException("invalid ssl verify-flag: %s" % x)
@@ -1642,6 +1644,8 @@ def parse_ssl_attributes(protocol, verify_mode, verify_flags, options, ca_certs)
     ssl_options = 0
     for x in options.split(","):
         x = x.strip()
+        if not x:
+            continue
         v = getattr(ssl, "OP_"+x.upper(), None)
         if v is None:
             raise InitException("invalid ssl option: %s" % x)
