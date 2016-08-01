@@ -24,7 +24,7 @@
 
 Name:           python-%{shortname}
 Version:        3.1.1a1
-Release:        4.xpra1%{?dist}
+Release:        4.xpra2%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -39,10 +39,10 @@ BuildRequires:  python-setuptools-devel
 Requires:       numpy
 Requires:       freeglut
 Obsoletes:      PyOpenGL < 3.1.2
+Provides:       PyOpenGL = %{version}-%{release}
 Conflicts:		PyOpenGL
 #Fedora broke our xpra repository :(
 Obsoletes:      PyOpenGL-accelerate < 3.1.2
-Provides:       PyOpenGL = %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
 Conflicts:		PyOpenGL-accelerate
 %endif
