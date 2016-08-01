@@ -40,7 +40,7 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import make_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import engs, csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, \
+from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
@@ -605,7 +605,6 @@ class ServerCore(object):
                 if not s:
                     return d
                 for k,fn in {
-                             "cipher"           : "cipher",
                              "compression"      : "compression",
                              "alpn-protocol"    : "selected_alpn_protocol",
                              "npn-protocol"     : "selected_npn_protocol",
@@ -616,6 +615,15 @@ class ServerCore(object):
                         v = sfn()
                         if v is not None:
                             d[k] = v
+                cipher_fn = getattr(s, "cipher", None)
+                if cipher_fn:
+                    cipher = cipher_fn()
+                    if cipher:
+                        d["cipher"] = {
+                                       "name"       : cipher[0],
+                                       "protocol"   : cipher[1],
+                                       "bits"       : cipher[2],
+                                       }
                 return d
             conn.get_socket_info = types.MethodType(get_ssl_socket_info, conn)
         return self.make_protocol(socktype, conn, frominfo)
