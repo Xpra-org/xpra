@@ -314,7 +314,7 @@ class Logger(object):
         for cat in self.categories:
             if cat in debug_disabled_categories:
                 disabled = True
-            if is_debug_enabled(category):
+            if is_debug_enabled(cat):
                 enabled = True
         self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
