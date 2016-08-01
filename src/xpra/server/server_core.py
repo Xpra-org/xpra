@@ -130,7 +130,6 @@ class ServerCore(object):
     EXITING_CODE = 2
 
     def __init__(self):
-        crypto_backend_init()
         log("ServerCore.__init__()")
         self.start_time = time.time()
         self.auth_class = None
@@ -198,6 +197,8 @@ class ServerCore(object):
         self.encryption_keyfile = opts.encryption_keyfile
         self.tcp_encryption = opts.tcp_encryption
         self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile
+        if self.encryption or self.tcp_encryption:
+            crypto_backend_init()
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
