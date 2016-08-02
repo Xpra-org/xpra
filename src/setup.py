@@ -928,17 +928,7 @@ def build_xpra_conf(install_dir):
         except Exception as e:
             print("could not probe for pdf/postscript printers: %s" % e)
     def pretty_cmd(cmd):
-        lines = []
-        line = ""
-        for c in cmd:
-            if len(line+c)>=72:
-                lines.append(line+" \\\n")
-                line = "        "+c
-            else:
-                line += " "+c
-        if line:
-            lines.append(line+" \\\n")
-        return  (" ".join(lines)).rstrip("\\\n")
+        return " ".join(cmd)
     SUBS = {'xvfb_command'          : pretty_cmd(xvfb_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
@@ -969,6 +959,8 @@ def build_xpra_conf(install_dir):
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
         for f in os.listdir(dirname):
+            if f.endswith("osx.conf.in") and not sys.platform.startswith("darwin"):
+                continue
             filename = os.path.join(dirname, f)
             if os.path.isdir(filename):
                 convert_templates(subdirs+[f])

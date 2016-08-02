@@ -1,0 +1,8 @@
+################################################################################
+# OSX Client Specific Options
+
+# Swap the command and control keys:
+swap-keys = on
+
+# Use a specific icon for the dock:
+#dock-icon = /path/to/icon.png
