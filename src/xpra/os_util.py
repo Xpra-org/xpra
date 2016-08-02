@@ -154,6 +154,8 @@ def is_Ubuntu():
 def is_Fedora():
     try:
         assert os.name=="posix"
+        if os.path.exists("/etc/fedora-release"):
+            return True
         v = load_binary_file("/etc/issue")
         return v.find("Fedora")>=0
     except:
