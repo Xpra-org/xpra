@@ -266,8 +266,8 @@ def get_input_colorspaces(encoding):
 
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
-    csdict = COLORSPACES[encoding]
-    assert input_colorspace in csdict, "invalid input colorspace: %s" % input_colorspace
+    csoptions = COLORSPACES[encoding]
+    assert input_colorspace in csoptions, "invalid input colorspace: %s, %s only supports %s" % (input_colorspace, encoding, csoptions)
     #always unchanged in output:
     return [input_colorspace]
 
@@ -325,21 +325,12 @@ def get_spec(encoding, colorspace):
         has_lossless_mode = colorspace=="YUV444P"
         speed = 20
         quality = 50 + 50*int(has_lossless_mode)
-        v = get_version()
-        if v and v.startswith("v"):
-            v = v[1:]   #strip "v"
-            def intor0(s):
-                try:
-                    return int(s)
-                except:
-                    return 0
-            vnum = [intor0(x) for x in v.split(".")]
-            if vnum>=[1,5]:
-                #libvpx 1.5 made some significant performance improvements with vp9:
-                speed = 50
+        if VPX_ENCODER_ABI_VERSION>=11:
+            #libvpx 1.5 made some significant performance improvements with vp9:
+            speed = 60
     return video_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
-                            quality=50+50*int(has_lossless_mode), speed=speed,
+                            quality=quality, speed=speed,
                             setup_cost=20, max_w=max_w, max_h=max_h)
 
 
@@ -689,10 +680,14 @@ cdef class Encoder:
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
         #But we only use positive values, negative values are just too slow
-        cdef int range = 8*(1+int(self.encoding=="vp8"))
-        #note: we don't use the full range since the percentages are mapped to -30 to +70
-        cdef int value = (speed-30)*2*range//100
-        value = MIN(range, MAX(0, value))
+        cdef int minv = 0
+        cdef int range = 16
+        if self.encoding=="vp9":
+            minv = 4
+            range = 4
+        #note: we don't use the full range since the percentages are mapped to -20% to +120%
+        cdef int value = (speed-20)*3*range//200
+        value = minv + MIN(range, MAX(0, value))
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):
