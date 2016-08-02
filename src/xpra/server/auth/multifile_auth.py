@@ -21,7 +21,7 @@ socket_dir = None
 socket_dirs = None
 def init(opts):
     file_init(opts)
-    global password_file, socket_dir, socket_dirs
+    global socket_dir, socket_dirs
     socket_dir = opts.socket_dir
     socket_dirs = opts.socket_dirs
 
@@ -74,12 +74,12 @@ class Authenticator(FileAuthenticatorBase):
                 if v:
                     username, password, uid, gid, displays, env_options, session_options = v
                     if username in auth_data:
-                        log.error("Error: duplicate entry for username '%s' in %s", username, password_file)
+                        log.error("Error: duplicate entry for username '%s' in '%s'", username, self.password_filename)
                     else:
                         auth_data[username] = password, uid, gid, displays, env_options, session_options
             except Exception as e:
                 log("parsing error", exc_info=True)
-                log.error("Error parsing password file line %i:", i)
+                log.error("Error parsing password file '%s' at line %i:", self.password_filename, i)
                 log.error(" '%s'", line)
                 log.error(" %s", e)
                 continue
@@ -113,7 +113,7 @@ class Authenticator(FileAuthenticatorBase):
         log("authenticate(%s) auth-info=%s", self.username, entry)
         if entry is None:
             log.error("Error: authentication failed")
-            log.error(" no password for '%s' in %s", self.username, password_file)
+            log.error(" no password for '%s' in '%s'", self.username, self.password_filename)
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
