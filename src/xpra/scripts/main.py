@@ -1234,9 +1234,9 @@ def parse_display_name(error_cb, opts, display_name):
                 env = os.environ.copy()
                 env["PLINK_PROTOCOL"] = "ssh"
                 desc["env"] = env
-                full_ssh += ["-P", ssh_port]
+                full_ssh += ["-P", str(ssh_port)]
             else:
-                full_ssh += ["-p", ssh_port]
+                full_ssh += ["-p", str(ssh_port)]
 
         full_ssh += ["-T", host]
         desc.update({
