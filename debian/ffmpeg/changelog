@@ -1,3 +1,9 @@
+ffmpeg-xpra (3.1.1-2) UNRELEASED; urgency=low
+
+  * Add swscale support
+
+ -- Antoine Martin <antoine@devloop.org.uk>  Tue, 02 Aug 2016 23:01:53 +0200
+
 ffmpeg-xpra (3.1.1-1) UNRELEASED; urgency=low
 
   * Initial release

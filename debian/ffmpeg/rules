@@ -36,6 +36,7 @@ override_dh_auto_configure:
 				--disable-doc \
 				--disable-programs \
 				--disable-libxcb \
+				--enable-swscale \
 				--enable-libx264 \
 				--enable-libvpx \
 				--enable-gpl \
