@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.util import nonl, csv
+from xpra.util import nonl, csv, print_nested_dict
 
 
 class KeyboardHelper(object):
@@ -144,29 +144,60 @@ class KeyboardHelper(object):
                     continue
             #TODO: validate keyname
             keyname = keyspec[len(keyspec)-1]
-            shortcuts[keyname] = (modifiers, action, args)
+            shortcuts.setdefault(keyname, []).append((modifiers, action, args))
             log("shortcut(%s)=%s", keyname, (modifiers, action, args))
         log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        print_nested_dict(shortcuts, print_fn=log)
         return  shortcuts
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
-        shortcut = self.key_shortcuts.get(key_name)
-        if not shortcut:
-            return  False
+        #find the shortcuts that may match this key:
+        shortcuts = self.key_shortcuts.get(key_name)
+        if not shortcuts:
+            return False
+        if len(shortcuts)>1:
+            #sort shortcuts based on how many modifiers are required,
+            #so that if multiple shortcuts use the same key,
+            #we will try to match the one with the most modifiers first.
+            #ie: Num_Lock+Menu will be tested before Menu
+            #(this is needed because Num_Lock is then discarded when comparing the list of required modifiers!) 
+            shortcuts = sorted(shortcuts, key=lambda x : len(x[0]), reverse=True)
+        for shortcut in shortcuts:
+            if self._check_shortcut(window, key_name, modifiers, depressed, shortcut):
+                return True
+        return False
+    
+    def _check_shortcut(self, window, key_name, modifiers, depressed, shortcut):
         (req_mods, action, args) = shortcut
+        extra_modifiers = list(modifiers)
         for rm in req_mods:
             if rm not in modifiers:
                 #modifier is missing, bail out
                 return False
+            try:
+                extra_modifiers.remove(rm)
+            except:
+                pass        #same modifier listed twice?
+        kmod = self.keyboard.get_keymap_modifiers()[0]  #ie: {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', ...}
+        log("keymap modifiers: %s", kmod)
+        ignoremod = ("Caps_Lock", "Num_Lock")
+        for x in ignoremod:
+            mod = kmod.get(x)
+            if mod in extra_modifiers:
+                extra_modifiers.remove(mod)
+        if extra_modifiers:
+            log("skipping partial shortcut match %s, modifiers unmatched: %s", shortcut, extra_modifiers)
+            return False
+        log("matched shortcut %s", shortcut)
         if not depressed:
             """ when the key is released, just ignore it - do NOT send it to the server! """
-            return  True
+            return True
         try:
             method = getattr(window, action)
             log("key_handled_as_shortcut(%s,%s,%s,%s) found shortcut=%s, will call %s%s", window, key_name, modifiers, depressed, shortcut, method, args)
         except AttributeError as e:
             log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
-            return  True
+            return True
         try:
             method(*args)
             log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled: %s", window, key_name, modifiers, depressed, method)

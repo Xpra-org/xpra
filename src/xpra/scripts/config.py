@@ -432,8 +432,8 @@ OPTION_TYPES = {
 
 def get_default_key_shortcuts():
     return [shortcut for e,shortcut in [
-               (True,   "Control_R:toggle_keyboard_grab"),
-               (True,   "Menu:toggle_pointer_grab"),
+               (True,   "Control+Menu:toggle_keyboard_grab"),
+               (True,   "Shift+Menu:toggle_pointer_grab"),
                (True,   "Meta+Shift+F1:show_menu"),
                (True,   "Meta+Shift+F2:show_start_new_command"),
                (True,   "Meta+Shift+F3:show_bug_report"),
