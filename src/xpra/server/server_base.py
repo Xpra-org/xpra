@@ -386,7 +386,12 @@ class ServerBase(ServerCore):
             printing = False
         #verify that we can talk to the socket:
         if printing and self.auth_class and self.auth_class!="none":
-            log.warn("Warning: printing conflicts with socket authentication module '%s'", getattr(self.auth_class, "auth_name", self.auth_class))
+            try:
+                #this should be the name of the auth module:
+                auth_name = self.auth_class[0]
+            except:
+                auth_name = str(self.auth_class)
+            log.warn("Warning: printing conflicts with socket authentication module '%s'", auth_name)
             printing = False
         #update file transfer attributes since printing nay have been disabled here
         self.file_transfer.printing = printing
