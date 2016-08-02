@@ -14,7 +14,7 @@ LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
 TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
-USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
+#USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 from xpra.util import nonl, AtomicInteger
@@ -188,7 +188,7 @@ cdef extern from "x264.h":
         int b_open_gop
         int b_bluray_compat
         #older x264 builds do not support this:
-        int b_opencl            #use OpenCL when available
+        #int b_opencl            #use OpenCL when available
 
         rc  rc                  #rate control
         analyse analyse
@@ -444,7 +444,7 @@ cdef class Encoder:
     cdef x264_t *context
     cdef int width
     cdef int height
-    cdef int opencl
+    #cdef int opencl
     cdef object src_format
     cdef object source
     cdef object profile
@@ -475,7 +475,7 @@ cdef class Encoder:
         self.height = height
         self.quality = quality
         self.speed = speed
-        self.opencl = USE_OPENCL and width>=32 and height>=32
+        #self.opencl = USE_OPENCL and width>=32 and height>=32
         self.preset = get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
@@ -527,8 +527,8 @@ cdef class Encoder:
         log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
         log(" preset=%s, profile=%s, tune=%s", preset, self.profile, self.tune)
         #print_nested_dict(options, " ", print_fn=log.error)
-        log(" me=%s, me_range=%s, mv_range=%s, opencl=%s, b-frames=%i, max delayed frames=%i",
-                    ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, bool(self.opencl), self.b_frames, maxd)
+        log(" me=%s, me_range=%s, mv_range=%s, b-frames=%i, max delayed frames=%i",
+                    ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, self.b_frames, maxd)
         log(" vfr-input=%s, lookahead=%i, sync-lookahead=%i, mb-tree=%s, bframe-adaptive=%s",
                     param.b_vfr_input, param.rc.i_lookahead, param.i_sync_lookahead, param.rc.b_mb_tree, ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive))
         log(" threads=%s, sliced-threads=%s",
@@ -544,7 +544,7 @@ cdef class Encoder:
         param.i_keyint_min = X264_KEYINT_MAX_INFINITE
         param.b_intra_refresh = 0   #no intra refresh
         param.b_open_gop = 1        #allow open gop
-        param.b_opencl = self.opencl
+        #param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
         param.rc.i_lookahead = min(param.rc.i_lookahead, self.b_frames-1)
         param.b_vfr_input = 0
@@ -598,7 +598,7 @@ cdef class Encoder:
                      "frames"    : self.frames,
                      "width"     : self.width,
                      "height"    : self.height,
-                     "opencl"    : bool(self.opencl),
+                     #"opencl"    : bool(self.opencl),
                      "speed"     : self.speed,
                      "quality"   : self.quality,
                      "lossless"  : self.quality==100,
