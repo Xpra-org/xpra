@@ -147,12 +147,29 @@ class ProxyInstanceProcess(Process):
 
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
-        #change uid and gid:
-        if os.getgid()!=self.gid:
-            os.setgid(self.gid)
-        if os.getuid()!=self.uid:
-            os.setuid(self.uid)
-        log("ProxyProcess.run() new uid=%s, gid=%s", os.getuid(), os.getgid())
+        if os.name=="posix":
+            #change uid and gid:
+            try:
+                if os.getgid()!=self.gid:
+                    os.setgid(self.gid)
+            except OSError as e:
+                log.error("Error: cannot change gid to %i:", self.gid)
+                if os.getgid()==0:
+                    #don't run as root!
+                    raise
+                log.error(" %s", e)
+                log.error(" continuing with gid=%i", os.getgid())
+            try:
+                if os.getuid()!=self.uid:
+                    os.setuid(self.uid)
+            except OSError as e:
+                log.error("Error: cannot change uid to %i:", self.uid)
+                if os.getuid()==0:
+                    #don't run as root!
+                    raise
+                log.error(" %s", e)
+                log.error(" continuing with gid=%i", os.getuid())
+            log("ProxyProcess.run() new uid=%s, gid=%s", os.getuid(), os.getgid())
 
         if self.env_options:
             #TODO: whitelist env update?
