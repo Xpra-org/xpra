@@ -2191,19 +2191,22 @@ def run_showconfig(options, args):
     for opt in sorted(OPTION_TYPES.keys()):
         if opt in VIRTUAL:
             continue
+        i = log.info
+        w = log.warn
         if args:
             if ("all" not in args) and (opt not in args):
                 continue
         elif opt in HIDDEN:
-            continue
+            i = log.debug
+            w = log.debug
         k = name_to_field(opt)
         dv = getattr(d, k)
         cv = getattr(options, k, dv)
         if cv!=dv:
-            log.warn("%-20s  (used)   = %-32s  %s", opt, vstr(cv), type(cv))
-            log.warn("%-20s (default) = %-32s  %s", opt, vstr(dv), type(dv))
+            w("%-20s  (used)   = %-32s  %s", opt, vstr(cv), type(cv))
+            w("%-20s (default) = %-32s  %s", opt, vstr(dv), type(dv))
         else:
-            log.info("%-20s           = %s", opt, vstr(cv))
+            i("%-20s           = %s", opt, vstr(cv))
 
 
 if __name__ == "__main__":
