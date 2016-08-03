@@ -490,7 +490,7 @@ def get_defaults():
         bind_dirs = ["auto"]
 
     ssl_protocol = "TLSv1_2"
-    if sys.version_info<(2, 7):
+    if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
 
     GLOBAL_DEFAULTS = {
