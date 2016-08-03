@@ -30,6 +30,9 @@ def do_get_encodings():
     log("PIL.Image.SAVE=%s", Image.SAVE)
     encodings = []
     for encoding in ["png", "png/L", "png/P", "jpeg"]:
+        if encoding=="jpeg" and PIL_VERSION<"2":
+            #jpeg does not support BytesIO in older versions
+            continue
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in Image.SAVE:
