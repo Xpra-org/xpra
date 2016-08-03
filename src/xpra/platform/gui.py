@@ -83,33 +83,37 @@ def get_icc_info():
     log = Logger("platform")
     info = {}
     try:
-        from PIL.ImageCms import get_display_profile, \
-            getProfileName, getProfileInfo, getProfileCopyright, getProfileManufacturer, getProfileModel, getProfileDescription, getDefaultIntent, \
-            INTENT_PERCEPTUAL, INTENT_RELATIVE_COLORIMETRIC, INTENT_SATURATION, INTENT_ABSOLUTE_COLORIMETRIC
-        INTENT_STR = {
-                      INTENT_PERCEPTUAL             : "perceptual",
-                      INTENT_RELATIVE_COLORIMETRIC  : "relative-colorimetric",
-                      INTENT_SATURATION             : "saturation",
-                      INTENT_ABSOLUTE_COLORIMETRIC  : "absolute-colorimetric",
-                      }
+        from PIL import ImageCms
+        from PIL.ImageCms import get_display_profile, getDefaultIntent
+        INTENT_STR = {}
+        for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
+            v = getattr(ImageCms, "INTENT_%s" % x, None)
+            if v:
+                INTENT_STR[v] = x.lower().replace("_", "-")
+        log("get_icc_info() intents=%s", INTENT_STR)
         def getDefaultIntentStr(_p):
             return INTENT_STR.get(getDefaultIntent(_p), "unknown")
         def getData(_p):
             return _p.tobytes()
         p = get_display_profile()
+        log("get_icc_info() display_profile=%s", p)
         if p:
             for (k, fn) in {
-                            "name"          : getProfileName,
-                            "info"          : getProfileInfo,
-                            "copyright"     : getProfileCopyright,
-                            "manufacturer"  : getProfileManufacturer,
-                            "model"         : getProfileModel,
-                            "description"   : getProfileDescription,
-                            "default-intent": getDefaultIntentStr,
-                            "data"          : getData,
+                            "name"          : "getProfileName",
+                            "info"          : "getProfileInfo",
+                            "copyright"     : "getProfileCopyright",
+                            "manufacturer"  : "getProfileManufacturer",
+                            "model"         : "getProfileModel",
+                            "description"   : "getProfileDescription",
+                            "default-intent": "getDefaultIntentStr",
+                            "data"          : "getData",
                             }.items():
+                m = getattr(ImageCms, fn, None)
+                if not m:
+                    log("%s lacks %s", ImageCms, fn)
+                    continue
                 try:
-                    v = fn(p)
+                    v = m(p)
                     info[k] = v
                 except Exception as e:
                     log("ICC profile error on %s using %s: %s", k, fn, e)
