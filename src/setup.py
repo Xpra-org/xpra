@@ -958,7 +958,7 @@ def build_xpra_conf(install_dir):
         print("convert_templates(%s) dirname=%s, target_dir=%s" % (subdirs, dirname, target_dir))
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
-        for f in os.listdir(dirname):
+        for f in sorted(os.listdir(dirname)):
             if f.endswith("osx.conf.in") and not sys.platform.startswith("darwin"):
                 continue
             filename = os.path.join(dirname, f)
