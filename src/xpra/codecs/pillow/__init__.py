@@ -5,9 +5,10 @@
 
 import os
 import logging
+from xpra.log import Logger
+
 PIL_DEBUG = os.environ.get("XPRA_PIL_DEBUG", "0")=="1"
 if PIL_DEBUG:
-    from xpra.log import Logger
     log = Logger("encoder", "pillow")
     log.info("enabling PIL.DEBUG")
     level = logging.DEBUG
@@ -23,8 +24,15 @@ for x in ("Image", "PngImagePlugin", "WebPImagePlugin", "JpegImagePlugin"):
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 assert PIL is not None and Image is not None, "failed to load Pillow"
-PIL_VERSION = PIL.PILLOW_VERSION
+try:
+    PIL_VERSION = PIL.PILLOW_VERSION
+except:
+    PIL_VERSION = Image.VERSION
 if hasattr(Image, "DEBUG"):
     #for older versions (pre 3.0), use Image.DEBUG flag:
     Image.DEBUG = int(PIL_DEBUG)
+if PIL_VERSION<'2':
+    log = Logger("encoder", "pillow")
+    log.warn("Warning: your version of Python Imaging Library is well out of date")
+    log.warn(" version %s is not supported, your mileage may vary", PIL_VERSION)
 Image.init()

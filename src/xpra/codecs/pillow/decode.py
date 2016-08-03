@@ -8,10 +8,11 @@ log = Logger("encoder", "pillow")
 
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
+from xpra.codecs.pillow import PIL_VERSION
 
 
 def get_version():
-    return PIL.PILLOW_VERSION
+    return PIL_VERSION
 
 def get_type():
     return "pillow"

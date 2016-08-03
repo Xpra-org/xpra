@@ -14,14 +14,14 @@ from xpra.net import compression
 
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
-PIL_VERSION = PIL.PILLOW_VERSION
+from xpra.codecs.pillow import PIL_VERSION
 PIL_can_optimize = PIL_VERSION and PIL_VERSION>="2.2"
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
 def get_version():
-    return PIL.PILLOW_VERSION
+    return PIL_VERSION
 
 def get_type():
     return "pillow"
