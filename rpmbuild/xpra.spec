@@ -156,6 +156,7 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 Patch0: centos-ignore-invalid-gcc-warning.patch
 Patch1: centos7-buffer-fill-fix.patch
+Patch2: gstreamer010.patch.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
@@ -301,9 +302,11 @@ cd $RPM_BUILD_DIR/xpra-%{version}
 #workaround old gstreamer gi bindings on centos < 7.2:
 %if "%{?dist}"==".el7_0"
 %patch1 -p1
+%patch2 -p1
 %endif
 %if "%{?dist}"==".el7_1"
 %patch1 -p1
+%patch2 -p1
 %endif
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
 %if %{with_python3}

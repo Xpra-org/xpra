@@ -1,0 +1,13 @@
+Index: xpra/sound/gstreamer_util.py
+===================================================================
+--- a/xpra/sound/gstreamer_util.py	(revision 13108)
++++ b/xpra/sound/gstreamer_util.py	(working copy)
+@@ -45,7 +45,7 @@
+ OSX = sys.platform.startswith("darwin")
+ 
+ ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
+-GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "1")=="1"
++GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "0")=="1"
+ PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
+ USE_DEFAULT_DEVICE = os.environ.get("XPRA_USE_DEFAULT_DEVICE", "1")=="1"
+ def force_enabled(codec_name):
