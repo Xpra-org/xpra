@@ -156,7 +156,7 @@ Vendor: http://xpra.org/
 Source: xpra-%{version}.tar.bz2
 Patch0: centos-ignore-invalid-gcc-warning.patch
 Patch1: centos7-buffer-fill-fix.patch
-Patch2: gstreamer010.patch.patch
+Patch2: gstreamer010.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
