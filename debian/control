@@ -82,6 +82,7 @@ Recommends:
 #                  ^^ mp3 ^^
         ,python-gst-1.0
 #for webcam support:
+        ,python-pyinotify
         ,python-opencv
         ,v4l2loopback-dkms
         ,openssh-client
