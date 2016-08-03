@@ -27,8 +27,10 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
 #we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
+#wheezy:        ,xserver-xorg-video-dummy
 #jessie:        ,xserver-xorg-video-dummy
 #stretch:        ,xserver-xorg-video-dummy
+#precise:        ,xvfb
 #trusty:        ,xvfb
 #xenial:        ,xvfb
 #yakkety:        ,xvfb
@@ -44,17 +46,21 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # packet encoder:
         ,python-rencode
 #depend on lz4 for those that have it, lzo otherwise:
+#wheezy:        ,python-lzo
 #jessie:        ,python-lz4
 #stretch:        ,python-lz4
 #trusty:        ,python-lzo
 #xenial:        ,python-lz4
 #yakkety:        ,python-lz4
 #if you use Ubuntu, you will "want" this mess:
+#precise:		,python-appindicator
 #trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
 #yakkety:        ,python-appindicator
 Recommends:
 #x264
+#precise:        ,libx264-120
+#wheezy:        ,libx264-123
 #jessie:        ,libx264-142
 #stretch:        ,libx264-146
 #trusty:        ,libx264-142
@@ -68,6 +74,8 @@ Recommends:
 #xenial:        ,libwebp5
 #yakkety:        ,libwebp5
 #AES encryption:
+#precise:        ,python-crypto
+#wheezy:        ,python-crypto
 #jessie:        ,python-cryptography
 #stretch:        ,python-cryptography
 #trusty:        ,python-crypto
@@ -88,6 +96,9 @@ Recommends:
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):
+#precise:        ,python-lzo
+#precise:        ,python-lz4
+#wheezy:        ,python-lz4
 #jessie:        ,python-lzo
 #stretch:        ,python-lzo
 #trusty:        ,python-lz4
