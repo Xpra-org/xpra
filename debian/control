@@ -82,13 +82,37 @@ Recommends:
 #xenial:        ,python-cryptography
 #yakkety:        ,python-cryptography
 # audio-related:
-        ,gstreamer1.0-plugins-base
+#precise:        ,gstreamer0.10-plugins-base
+#wheezy:        ,gstreamer0.10-plugins-base
+#jessie:        ,gstreamer1.0-plugins-base
+#stretch:        ,gstreamer1.0-plugins-base
+#trusty:        ,gstreamer1.0-plugins-base
+#xenial:        ,gstreamer1.0-plugins-base
+#yakkety:        ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
-        ,gstreamer1.0-plugins-good
+#precise:        ,gstreamer0.10-plugins-good
+#wheezy:        ,gstreamer0.10-plugins-good
+#jessie:        ,gstreamer1.0-plugins-good
+#stretch:        ,gstreamer1.0-plugins-good
+#trusty:        ,gstreamer1.0-plugins-good
+#xenial:        ,gstreamer1.0-plugins-good
+#yakkety:        ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
-        ,gstreamer1.0-plugins-ugly
+#precise:        ,gstreamer0.10-plugins-ugly
+#wheezy:        ,gstreamer0.10-plugins-ugly
+#jessie:        ,gstreamer1.0-plugins-ugly
+#stretch:        ,gstreamer1.0-plugins-ugly
+#trusty:        ,gstreamer1.0-plugins-ugly
+#xenial:        ,gstreamer1.0-plugins-ugly
+#yakkety:        ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-        ,python-gst-1.0
+#precise:        ,python-gst-0.10
+#wheezy:        ,python-gst-0.10
+#jessie:        ,python-gst-1.0
+#stretch:        ,python-gst-1.0
+#trusty:        ,python-gst-1.0
+#xenial:        ,python-gst-1.0
+#yakkety:        ,python-gst-1.0
 #for webcam support:
         ,python-pyinotify
         ,python-opencv
