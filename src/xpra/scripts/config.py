@@ -485,7 +485,7 @@ def get_defaults():
             return v
         return v+"/"
     if WIN32:
-        bind_dirs = []
+        bind_dirs = ["Main"]
     else:
         bind_dirs = ["auto"]
 
