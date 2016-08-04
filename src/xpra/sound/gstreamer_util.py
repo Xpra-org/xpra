@@ -472,7 +472,10 @@ def add_encoder(encoding, encoder, payloader, stream_compressor):
     global ENCODERS
     if encoding in ENCODERS:
         return
-    if encoding in (OPUS_GDP, OPUS) and OSX:
+    if WIN32 and encoding in (OPUS_GDP, ):
+        log("avoiding %s on win32", encoding)
+        return
+    if OSX and encoding in (OPUS_GDP, OPUS_OGG):
         log("avoiding %s on Mac OS X", encoding)
         return
     if has_plugins(encoder, payloader):
@@ -512,9 +515,12 @@ def validate_encoding(elements):
         elif encoding==FLAC_OGG:
             log("skipping %s to avoid obscure 'not-negotiated' errors", encoding)
             return False
-    elif encoding==OPUS:
+    elif WIN32 and encoding in (AAC_GDP, SPEEX_GDP, SPEEX_OGG):
+        log("skipping %s on win32", encoding)
+        return False
+    elif encoding.startswith(OPUS):
         if gst_major_version<1:
-            log("skipping opus with GStreamer 0.10")
+            log("skipping %s with GStreamer 0.10", encoding)
             return False
     stream_compressor = elements[5]
     if stream_compressor and not has_stream_compressor(stream_compressor):
