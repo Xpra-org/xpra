@@ -1037,9 +1037,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/server/window/region.c",
                    "xpra/server/pam.c",
                    "etc/xpra/xpra.conf",
-                   #special case for the generated xpra.conf in build (see #891):
-                   "build/etc/xpra/xpra.conf"]
-    for x in list(CLEAN_FILES):
+                   #special case for the generated xpra conf files in build (see #891):
+                   "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
+    for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
         if ext in (".c", ".cpp", ".pxi"):
             #clean the Cython annotated html files:
@@ -1582,6 +1582,10 @@ if WIN32:
             add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
             add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
 
+        #FIXME: how do we figure out what target directory to use?
+        #(can't use install data override with py2exe?)
+        print("calling build_xpra_conf")
+        build_xpra_conf("./dist")
 
     if client_ENABLED or server_ENABLED:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
