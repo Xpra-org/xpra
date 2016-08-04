@@ -786,9 +786,8 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
 
 def get_conf_dir(install_dir, stripbuildroot=True):
     dirs = get_base_conf_dir(install_dir, stripbuildroot)
-    if not WIN32:
-        dirs.append("etc")
-        dirs.append("xpra")
+    dirs.append("etc")
+    dirs.append("xpra")
     return os.path.join(*dirs)
 
 def detect_xorg_setup(install_dir=None):
@@ -957,7 +956,10 @@ def build_xpra_conf(install_dir):
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
         print("convert_templates(%s) dirname=%s, target_dir=%s" % (subdirs, dirname, target_dir))
         if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
+            try:
+                os.makedirs(target_dir)
+            except Exception as e:
+                print("cannot create target dir '%s': %s" % (target_dir, e))
         for f in sorted(os.listdir(dirname)):
             if f.endswith("osx.conf.in") and not sys.platform.startswith("darwin"):
                 continue
@@ -1584,8 +1586,11 @@ if WIN32:
 
         #FIXME: how do we figure out what target directory to use?
         #(can't use install data override with py2exe?)
-        print("calling build_xpra_conf")
-        build_xpra_conf("./dist")
+        print("calling build_xpra_conf in-place")
+        #building etc files in-place:
+        build_xpra_conf(".")
+        add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
+        add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
 
     if client_ENABLED or server_ENABLED:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
