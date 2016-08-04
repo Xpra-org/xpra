@@ -862,8 +862,16 @@ def main():
                         log("open_URL(%s)", url)
                         glib.idle_add(do_open_URL, url)                        
                     from xpra.platform.darwin.gui import get_OSXApplication
-                    get_OSXApplication().connect("NSApplicationOpenURL", open_URL)
-                    get_OSXApplication().connect("NSApplicationOpenFile", open_file)
+                    try:
+                        get_OSXApplication().connect("NSApplicationOpenURL", open_URL)
+                    except Exception as e:
+                        log.error("Error: cannot handle URLs:")
+                        log.error(" %s", e)
+                    try:
+                        get_OSXApplication().connect("NSApplicationOpenFile", open_file)
+                    except Exception as e:
+                        log.error("Error: cannot handle file associations:")
+                        log.error(" %s", e)
                     def may_show():
                         log("may_show() osx open file=%s", app.__osx_open_signal)
                         if not app.__osx_open_signal:
