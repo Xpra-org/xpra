@@ -53,7 +53,7 @@ def do_get_system_conf_dirs():
 def do_get_default_conf_dirs():
     #ie: C:\Program Files\Xpra\
     from xpra.platform.paths import get_app_dir
-    return [get_app_dir()]
+    return [os.path.join(get_app_dir(), "etc", "xpra")]
 
 def do_get_user_conf_dirs():
     #ie: "C:\Documents and Settings\<user name>\Application Data\Xpra" with XP
