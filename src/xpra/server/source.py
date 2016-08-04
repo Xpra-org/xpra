@@ -1636,7 +1636,7 @@ class ServerSource(FileTransferHandler):
         def do_send_cursor():
             self.send_cursor_pending = False
             cd = self.get_cursor_data_cb()
-            if cd:
+            if cd and cd[0]:
                 cursor_data, cursor_sizes = cd
                 if self.last_cursor_sent and self.last_cursor_sent==cursor_data[:8]:
                     cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
