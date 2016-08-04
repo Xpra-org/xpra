@@ -123,7 +123,7 @@ def run_sound(mode, error_cb, options, args):
         which in turn just feeds them into the sound pipeline class (sink.py or src.py)
     """
     #we have to import gstreamer before init() on OSX,
-    #because init will end up import gobject,
+    #because init will end up importing gobject,
     #which means choosing between gi and gtk2 bindings
     from xpra.sound.gstreamer_util import import_gst, get_pygst_version
     gst = import_gst()
