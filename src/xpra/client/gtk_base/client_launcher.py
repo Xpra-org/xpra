@@ -400,9 +400,17 @@ class ApplicationWindow:
             self.username_label.hide()
             if self.config.port>0:
                 self.port_entry.set_text("%s" % self.config.port)
-        if not ssh or sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            #password cannot be used with ssh
-            #(except on win32 with plink, and on osx via the SSH_ASKPASS hack)
+        can_use_password = not ssh
+        if ssh:
+            if sys.platform.startswith("win"):
+                #plink can use password
+                pass
+            else:
+                #can use password if sshpass is installed:
+                from xpra.platform.paths import get_sshpass_command
+                sshpass = get_sshpass_command()
+                can_use_password = bool(sshpass)
+        if can_use_password:
             self.password_label.show()
             self.password_entry.show()
         else:

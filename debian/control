@@ -132,6 +132,8 @@ Recommends:
         ,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
+#for using SSH passwords from the GUI launcher:
+        ,sshpass
 Suggests: openssh-server
 # optional - only really useful with GPU opencl implementations:
         ,python-pyopencl

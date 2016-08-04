@@ -119,6 +119,9 @@
 	<binary dest="${bundle}/Contents/Helpers/gst-inspect-1.0">
 		${prefix}/bin/gst-inspect-1.0
 	</binary>
+	<binary dest="${bundle}/Contents/Helpers/sshpass">
+		${prefix}/bin/sshpass
+	</binary>
 
 	<data dest="${bundle}/Contents/Resources/">
 		${project}/dist/Xpra.app/Contents/Resources/

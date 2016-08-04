@@ -89,6 +89,20 @@ def do_get_remote_run_xpra_scripts():
     return ["~/.xpra/run-xpra", "$XDG_RUNTIME_DIR/xpra/run-xpra", "xpra"]
 
 
+def get_sshpass_command():
+    return env_or_delegate("XPRA_SSHPASS", do_get_sshpass_command)
+def do_get_sshpass_command():
+    import os.path
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+    for path in os.environ["PATH"].split(os.pathsep):
+        path = path.strip('"')
+        exe_file = os.path.join(path, "sshpass")
+        if is_exe(exe_file):
+            return exe_file
+    return None
+
+
 #overriden in platform code:
 def get_app_dir():
     return env_or_delegate("XPRA_APP_DIR", do_get_app_dir)
@@ -199,6 +213,7 @@ platform_import(globals(), "paths", True,
                 "do_get_app_dir",
                 "do_get_icon_dir")
 platform_import(globals(), "paths", False,
+                "do_get_ssh_askpass_script",
                 "do_get_sound_command",
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
@@ -224,6 +239,7 @@ def get_info():
             "icons"             : get_icon_dir(),
             "home"              : os.path.expanduser("~"),
             "sound_command"     : get_sound_command(),
+            "sshpass_command"   : get_sshpass_command(),
             }
 
 

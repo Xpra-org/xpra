@@ -125,6 +125,15 @@ def do_get_download_dir():
     return d
 
 
+def do_get_ssh_askpass_script():
+    from xpra.platform.paths import get_app_dir
+    base = get_app_dir()
+    p = os.path.join(base, "Resources", "bin", "sshpass")
+    if os.path.exists(p):
+        return p
+    return None
+
+
 def do_get_sound_command():
     #try to use the subapp:
     from xpra.platform.paths import get_app_dir

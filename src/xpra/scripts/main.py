@@ -1436,8 +1436,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 cmd += [INITENV_COMMAND+";"+remote_cmd]
             else:
                 cmd += [remote_cmd]
-            if env:
-                kwargs["env"] = env
             if debug_cb:
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
@@ -1446,6 +1444,19 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             for x in cmd:
                 if type(x)!=str:
                     raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
+            password = display_desc.get("password")
+            if password:
+                from xpra.platform.paths import get_sshpass_command
+                sshpass = get_sshpass_command()
+                if sshpass:
+                    #sshpass -e ssh ...
+                    cmd.insert(0, sshpass)
+                    cmd.insert(1, "-e")
+                    if env is None:
+                        env = os.environ.copy()
+                    env["SSHPASS"] = password
+            if env:
+                kwargs["env"] = env
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError as e:
             raise InitException("Error running ssh program '%s': %s" % (cmd, e))
