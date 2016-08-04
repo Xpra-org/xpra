@@ -213,7 +213,7 @@ platform_import(globals(), "paths", True,
                 "do_get_app_dir",
                 "do_get_icon_dir")
 platform_import(globals(), "paths", False,
-                "do_get_ssh_askpass_script",
+                "do_get_sshpass_command",
                 "do_get_sound_command",
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
