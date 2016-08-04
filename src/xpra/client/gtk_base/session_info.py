@@ -765,7 +765,10 @@ class SessionInfo(gtk.Window):
             codec_descr = d.strget("codec") or d.strget("codec_description")
             container_descr = d.strget("container_description")
             if state=="active" and codec_descr:
-                descr = " + ".join(x for x in (codec_descr, container_descr) if x)
+                if codec_descr.find(container_descr)>=0:
+                    descr = codec_descr
+                else:
+                    descr = csv(x for x in (codec_descr, container_descr) if x)
                 state = "%s: %s" % (state, descr)
             label.set_text(state)
             if details:
