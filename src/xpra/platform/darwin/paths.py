@@ -128,7 +128,7 @@ def do_get_download_dir():
 def do_get_sshpass_command():
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
-    p = os.path.join(base, "Resources", "bin", "sshpass")
+    p = os.path.join(base, "Helpers", "sshpass")
     if os.path.exists(p):
         return p
     return None
