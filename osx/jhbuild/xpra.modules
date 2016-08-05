@@ -52,7 +52,7 @@
 
 
   <autotools id="sshpass" autogen-sh="configure">
-	<branch module="/projects/sshpass/files/sshpass/1.05/sshpass-1.05.tar.gz"
+	<branch module="/project/sshpass/files/sshpass/1.05/sshpass-1.05.tar.gz"
 		version="1.05"
 		hash="sha256:8db5acc8b7ca844d5715b611b469b6cb2c9f00e37319c0051ac6607399e57a3e"
 		repo="sourceforge.net"/>
