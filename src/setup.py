@@ -92,6 +92,16 @@ def pkg_config_ok(*args, **kwargs):
     cmd = [PKG_CONFIG]  + [str(x) for x in args]
     return get_status_output(cmd)[0]==0
 
+def pkg_config_version(req_version, pkgname, **kwargs):
+    if not has_pkg_config:
+        return kwargs.get("fallback", False)
+    cmd = [PKG_CONFIG, "--modversion", pkgname]
+    r, out, _ = get_status_output(cmd)
+    if r!=0 or not out:
+        return False
+    from distutils.version import LooseVersion
+    return LooseVersion(out)>=LooseVersion(req_version)
+
 def check_pyopencl_AMD():
     try:
         import pyopencl
@@ -155,12 +165,12 @@ enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 xvid_ENABLED            = DEFAULT and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = False
-vpx_ENABLED             = DEFAULT and pkg_config_ok("--atleast-version=1.3", "vpx", fallback=WIN32)
-enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_ok("--atleast-version=56", "libavcodec")
+vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
+enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX)
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = DEFAULT and pkg_config_ok("--atleast-version=56", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fallback=WIN32)
 # some version strings I found:
 # Fedora:
 # * 19: 54.92.100
@@ -2422,9 +2432,9 @@ toggle_packages(csc_opencv_ENABLED, "xpra.codecs.csc_opencv")
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     #try both vpx and libvpx as package names:
-    kwargs = {"LIBVPX14"    : pkg_config_ok("--atleast-version=1.4", "vpx") or pkg_config_ok("--atleast-version=1.4", "libvpx"),
+    kwargs = {"LIBVPX14"    : pkg_config_version("1.4", "vpx") or pkg_config_version("1.4", "libvpx"),
               "ENABLE_VP8"  : True,
-              "ENABLE_VP9"  : pkg_config_ok("--atleast-version=1.3", "vpx") or pkg_config_ok("--atleast-version=1.3", "libvpx"),
+              "ENABLE_VP9"  : pkg_config_version("1.3", "vpx") or pkg_config_version("1.3", "libvpx"),
               }
     make_constants("xpra", "codecs", "vpx", "constants", **kwargs)
     vpx_pkgconfig = pkgconfig("vpx")
