@@ -9,9 +9,19 @@
 #only Fedora has Python3 at present:
 %define with_python3 0
 %define py2prefix python
+%define refpy2prefix python
+%define python2_numpy numpy
+%if 0%{?suse_version}
+%define python2_numpy python-numpy
+%endif
 %if 0%{?fedora}
 %define with_python3 1
+#create a package named "python2-pyopengl"
 %define py2prefix python2
+%if 0%{?fedora}>=24
+#Fedora 23, we must reference packages named "python-XYZ" and not "python2-XYZ"..
+%define refpy2prefix python2
+%endif
 %endif
 
 
@@ -24,7 +34,7 @@
 
 Name:           python-%{shortname}
 Version:        3.1.1a1
-Release:        4.1xpra2%{?dist}
+Release:        4.1xpra3%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -36,7 +46,7 @@ Source1:        https://pypi.python.org/packages/source/P/%{srcname}-accelerate/
 %else
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools-devel
-Requires:       numpy
+Requires:       %{python2_numpy}
 Requires:       freeglut
 Obsoletes:      PyOpenGL < 3.1.2
 Provides:       PyOpenGL = %{version}-%{release}
@@ -60,15 +70,16 @@ for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 %if 0%{?fedora}0%{?suse_version}
 %package -n     %{py2prefix}-%{shortname}
 Summary:        Python 2 bindings for OpenGL
-BuildRequires:  %{py2prefix}-setuptools
-BuildRequires:  %{py2prefix}-devel
-Requires:       %{py2prefix}-numpy
+BuildRequires:  %{refpy2prefix}-setuptools
+BuildRequires:  %{refpy2prefix}-devel
+Requires:       %{python2_numpy}
 
 Obsoletes:      PyOpenGL < 3.1.2
 #Fedora broke our xpra repository :(
 Obsoletes:      PyOpenGL-accelerate < 3.1.2
 Provides:       PyOpenGL = %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
+Provides:       python-pyopengl = %{version}-%{release}
 %if 0%{?fedora}
 #does not exist in suse?
 Requires:       freeglut
@@ -94,9 +105,9 @@ BuildRequires:  python3-numpy
 Requires:       freeglut
 Requires:       python3-numpy
 Obsoletes:      python3-PyOpenGL < 3.1.2
-Obsoletes:      python3-PyOpenGL_accelerate < 3.1.2
+Obsoletes:      python3-PyOpenGL-accelerate < 3.1.2
 Provides:       python3-PyOpenGL = %{version}-%{release}
-Provides:       python3-PyOpenGL_accelerate = %{version}-%{release}
+Provides:       python3-PyOpenGL-accelerate = %{version}-%{release}
 
 %description -n python3-%{shortname}
 PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It
@@ -211,6 +222,10 @@ popd
 
 
 %changelog
+* Fri Aug 05 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra3
+- Fedora 23 does not have the python2 renamed packages yet
+- only opensuse calls numpy python-numpy
+
 * Mon Aug 01 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra2
 - and again
 
