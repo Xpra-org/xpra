@@ -94,7 +94,7 @@ def init_all_devices():
             device = driver.Device(i)
             devinfo = device_info(device)
             if CUDA_DEVICE_BLACKLIST:
-                blacklisted = [x for x in CUDA_DEVICE_BLACKLIST if devinfo.find(x)>=0]
+                blacklisted = [x for x in CUDA_DEVICE_BLACKLIST if x and devinfo.find(x)>=0]
                 log("blacklisted(%s / %s)=%s", devinfo, CUDA_DEVICE_BLACKLIST, blacklisted)
                 if blacklisted:
                     log.warn("Warning: device '%s' is blacklisted and will not be used", devinfo)
