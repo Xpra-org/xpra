@@ -86,6 +86,14 @@ if PKG_CONFIG and (PYTHON3 or not WIN32):
     if has_pkg_config:
         print("found pkg-config version: %s" % pkg_config_version[1].strip("\n\r"))
 
+for arg in list(sys.argv):
+    if arg.startswith("--pkg-config-path="):
+        pcp = arg[len("--pkg-config-path="):]
+        pcps = os.environ.get("PKG_CONFIG_PATH", "").split(os.path.pathsep) + [pcp]
+        os.environ["PKG_CONFIG_PATH"] = os.path.pathsep.join([x for x in pcps if x])
+        print("using PKG_CONFIG_PATH=%s" % (os.environ["PKG_CONFIG_PATH"], ))
+        sys.argv.remove(arg)
+
 def pkg_config_ok(*args, **kwargs):
     if not has_pkg_config:
         return kwargs.get("fallback", False)
@@ -257,12 +265,6 @@ if HELP:
 filtered_args = []
 for arg in sys.argv:
     matched = False
-    if arg.startswith("--pkg-config-path="):
-        pcp = arg[len("--pkg-config-path="):]
-        pcps = os.environ.get("PKG_CONFIG_PATH", "").split(os.path.pathsep) + [pcp]
-        os.environ["PKG_CONFIG_PATH"] = os.path.pathsep.join([x for x in pcps if x])
-        print("using PKG_CONFIG_PATH=%s" % (os.environ["PKG_CONFIG_PATH"], ))
-        matched = True
     for x in SWITCHES:
         with_str = "--with-%s" % x
         without_str = "--without-%s" % x
