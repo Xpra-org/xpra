@@ -1,7 +1,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     3.1.1
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra	
 
 Group:       Applications/Multimedia
@@ -35,33 +35,35 @@ This package contains the development files for %{name}.
 %build
 # set pkg_config_path for xpra video libs
 ./configure \
-    --prefix="%{_prefix}" \
-    --libdir="%{_libdir}/xpra" \
-    --shlibdir="%{_libdir}/xpra" \
-    --mandir="%{_mandir}" \
-    --incdir="%{_includedir}/xpra" \
-    --extra-cflags="-I%{_includedir}/xpra" \
-    --extra-ldflags="-L%{_libdir}/xpra" \
-    --enable-runtime-cpudetect \
-    --disable-avdevice \
-    --enable-pic \
-    --disable-zlib \
-    --disable-filters \
-    --disable-everything \
-    --disable-doc \
-    --disable-programs \
-    --enable-libx264 \
-    --enable-libvpx \
-    --enable-gpl \
-    --enable-decoder=h264 \
-    --enable-decoder=hevc \
-    --enable-decoder=vp8 \
-    --enable-decoder=vp9 \
-    --enable-decoder=mpeg4 \
-    --enable-encoder=libvpx_vp8 \
-    --enable-encoder=libvpx_vp9 \
-    --enable-encoder=mpeg4 \
-    --enable-encoder=libx264 \
+	--prefix="%{_prefix}" \
+	--libdir="%{_libdir}/xpra" \
+	--shlibdir="%{_libdir}/xpra" \
+	--mandir="%{_mandir}/xpra" \
+	--incdir="%{_includedir}/xpra" \
+	--extra-cflags="-I%{_includedir}/xpra" \
+	--extra-ldflags="-L%{_libdir}/xpra" \
+	--enable-runtime-cpudetect \
+	--disable-avdevice \
+	--enable-pic \
+	--disable-zlib \
+	--disable-filters \
+	--disable-everything \
+	--disable-doc \
+	--disable-programs \
+	--disable-libxcb \
+	--enable-libx264 \
+	--enable-libvpx \
+	--enable-gpl \
+	--enable-protocol=file \
+	--enable-decoder=h264 \
+	--enable-decoder=hevc \
+	--enable-decoder=vp8 \
+	--enable-decoder=vp9 \
+	--enable-decoder=mpeg4 \
+	--enable-encoder=libvpx_vp8 \
+	--enable-encoder=libvpx_vp9 \
+	--enable-encoder=mpeg4 \
+	--enable-encoder=libx264 \
 	--enable-muxer=mp4 \
 	--enable-muxer=webm \
 	--enable-muxer=matroska \
@@ -71,11 +73,11 @@ This package contains the development files for %{name}.
 	--enable-demuxer=m4v \
 	--enable-demuxer=matroska \
 	--enable-demuxer=ogg \
-    --enable-shared \
+	--enable-shared \
 	--enable-debug \
 	--disable-stripping \
-    --disable-symver
-    #--enable-static \
+	--disable-symver
+	#--enable-static \
 
 make %{?_smp_mflags}
 
@@ -137,6 +139,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Aug 05 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.1-2
+- add file protocol for testing muxer
+
 * Mon Jul 04 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.1-1
 - new upstream release
 
