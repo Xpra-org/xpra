@@ -47,15 +47,15 @@
 		hash="md5:ff2a1d31444049ccdc1deeec1d868585"
 		repo="www.nasm.us">
     	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
-    </branch>
+        </branch>
   </autotools>
 
 
   <autotools id="sshpass" autogen-sh="configure">
-	<branch repo="sourceforge.net" module="/projects/sshpass/files/sshpass/1.05/sshpass-1.05.tar.gz">
+	<branch module="/projects/sshpass/files/sshpass/1.05/sshpass-1.05.tar.gz"
 		version="1.05"
 		hash="sha256:c6324fcee608b99a58f9870157dfa754837f8c48be3df0f5e2f3accf145dee60"
-		repo="ftp.gnu.org"/>
+		repo="sourceforge.net"/>
   </autotools>
 
 
