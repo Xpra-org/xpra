@@ -23,7 +23,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless, nvenc_loaded
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless, nvenc_loaded, get_cards
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -1238,7 +1238,16 @@ def get_type():
     return "nvenc"
 
 def get_info():
-    info = {"version"          : PRETTY_VERSION}
+    global last_context_failure, context_counter, context_gen_counter
+    info = {
+            "version"           : PRETTY_VERSION,
+            "device_count"      : len(get_devices() or []),
+            "context_count"     : context_counter.get(),
+            "generation"        : context_gen_counter.get(),
+            }
+    cards = get_cards()
+    if cards:
+        info["cards"] = cards
     #only show the version if we have it already (don't probe now)
     v = get_nvidia_module_version(False)
     if v:
@@ -1246,10 +1255,6 @@ def get_info():
     if sys.platform.startswith("linux"):
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
-    global last_context_failure, context_counter, context_gen_counter
-    info["device_count"] = len(get_devices() or [])
-    info["context_count"] = context_counter.get()
-    info["generation"] = context_gen_counter.get()
     if last_context_failure>0:
         info["last_failure"] = int(time.time()-last_context_failure)
     return info
