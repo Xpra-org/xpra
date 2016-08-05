@@ -8,7 +8,7 @@ import sys
 import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
-from xpra.util import pver
+from xpra.util import pver, print_nested_dict, engs
 
 IGNORE_NVIDIA_DRIVER_BLACKLIST = os.environ.get("XPRA_IGNORE_NVIDIA_DRIVER_BLACKLIST", "0")=="1"
 
@@ -22,6 +22,7 @@ def get_nvml_driver_version():
             log("nvmlSystemGetDriverVersion=%s", v)
             return v.split(".")
         except Exception as e:
+            log("get_nvml_driver_version() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia kernel module version via NVML:")
             log.warn(" %s", e)
         finally:
@@ -87,6 +88,78 @@ def get_nvidia_module_version(probe=True):
     if nvidia_module_version is None and probe:
         nvidia_module_version = identify_nvidia_module_version()
     return nvidia_module_version
+
+
+def identify_cards():
+    devices = {}
+    try:
+        import pynvml
+        from pynvml import nvmlInit, nvmlShutdown, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex
+        try:
+            nvmlInit()
+            deviceCount = nvmlDeviceGetCount()
+            for i in range(deviceCount):
+                handle = nvmlDeviceGetHandleByIndex(i)
+                props = {}
+                def meminfo(memory):
+                    return {
+                            "total"  : memory.total,
+                            "free"   : memory.free,
+                            "used"   : memory.used,
+                            }
+                def pciinfo(pci):
+                    return dict((p,getattr(pci, p)) for p in ("busId", "domain", "bus", "device", "pciDeviceId", "pciSubSystemId") if hasattr(pci, p))
+                for prop, fn_name, args, conv in (
+                       ("name",                     "nvmlDeviceGetName",                    (),     None),
+                       ("serial",                   "nvmlDeviceGetSerial",                  (),     None),
+                       ("uuid",                     "nvmlDeviceGetUUID",                    (),     None),
+                       ("pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
+                       ("memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
+                       ("pcie-link-generation-max", "nvmlDeviceGetMaxPcieLinkGeneration",   (),     None),
+                       ("pcie-link-width-max",      "nvmlDeviceGetMaxPcieLinkWidth",        (),     None),
+                       ("pcie-link-generation",     "nvmlDeviceGetCurrPcieLinkGeneration",  (),     None),
+                       ("pcie-link-width",          "nvmlDeviceGetCurrPcieLinkWidth",       (),     None),
+                       ("clock-info-graphics",      "nvmlDeviceGetClockInfo",               (0,),   None),
+                       ("clock-info-sm",            "nvmlDeviceGetClockInfo",               (1,),   None),
+                       ("clock-info-mem",           "nvmlDeviceGetClockInfo",               (2,),   None),
+                       ("clock-info-graphics-max",  "nvmlDeviceGetMaxClockInfo",            (0,),   None),
+                       ("clock-info-sm-max",        "nvmlDeviceGetMaxClockInfo",            (1,),   None),
+                       ("clock-info-mem-max",       "nvmlDeviceGetMaxClockInfo",            (2,),   None),
+                       ("fan-speed",                "nvmlDeviceGetFanSpeed",                (),     None),
+                       ("temperature",              "nvmlDeviceGetTemperature",             (0,),   None),
+                       ("power-state",              "nvmlDeviceGetPowerState",              (),     None),
+                       ("vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     None),
+                       ):
+                    try:
+                        fn = getattr(pynvml, fn_name)
+                        v = fn(handle, *args)
+                        if conv:
+                            v = conv(v)
+                        props[prop] = v
+                    except Exception as e:
+                        log("identify_cards() cannot query %s using %s on device %i with handle %s: %s", prop, fn, i, handle, e)
+                        continue
+                devices[i] = props
+            #unitCount = nvmlUnitGetCount()
+            #log.info("unitCount=%s", unitCount)
+        except Exception as e:
+            log("identify_cards() pynvml error", exc_info=True)
+            log.warn("Warning: failed to query the NVidia cards via NVML:")
+            log.warn(" %s", e)
+        finally:
+            nvmlShutdown()
+    except ImportError as e:
+        log("cannot use nvml to query the kernel module version:")
+        log(" %s", e)
+    return devices
+
+
+cards = None
+def get_cards(probe=True):
+    global cards
+    if cards is None and probe:
+        cards = identify_cards()
+    return cards
 
 
 def is_blacklisted():
@@ -204,6 +277,11 @@ def main():
             log.info("* version %s: %s key(s)", v or "common", len(keys))
             for k in keys:
                 log.info("  %s", k)
+        cards = get_cards()
+        if cards:
+            log.info("")
+            log.info("%i card%s:", len(cards), engs(cards))
+            print_nested_dict(cards, print_fn=log.info)
 
 
 if __name__ == "__main__":
