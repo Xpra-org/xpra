@@ -1,7 +1,5 @@
-%if 0%{?rhel} && 0%{?rhel} <= 6
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
 
 #we don't want to depend on libcuda via RPM dependencies
 #so that we can install NVidia drivers without using RPM packages:
@@ -42,7 +40,7 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 %setup -q -n pycuda-%{version}
 
 %build
-%{__python} ./configure.py \
+%{__python2} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=/usr/local/cuda \
 	--cudadrv-lib-dir=/usr/local/lib64 \
@@ -52,11 +50,11 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python-mt \
 #	--boost-thread-libname=boost_thread
-python setup.py build
+%{__python2} setup.py build
 make
 
 %install
-python setup.py install --prefix=%{_prefix} --root=%{buildroot}
+%{__python2} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
 %clean
 rm -rf %{buildroot}
