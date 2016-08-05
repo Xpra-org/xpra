@@ -54,8 +54,9 @@ class FileAuthenticatorBase(SysAuthenticator):
     def load_password_file(self):
         if not self.password_filename:
             return None
+        full_path = os.path.abspath(self.password_filename)
         if not os.path.exists(self.password_filename):
-            log.error("Error: password file '%s' is missing", self.password_filename)
+            log.error("Error: password file '%s' is missing", full_path)
             self.password_filedata = None
         else:
             ptime = self.stat_password_filetime()
@@ -76,8 +77,11 @@ class FileAuthenticatorBase(SysAuthenticator):
 
     def stat_password_filetime(self):
         try:
-            return os.stat(self.password_filename).st_mtime
+            full_path = os.path.abspath(self.password_filename)
+            v = os.stat(full_path).st_mtime
+            log("mtime(%s)=%s", full_path, v)
+            return v
         except Exception as e:
-            log.error("Error accessing time of password file '%s'", self.password_filename)
+            log.error("Error accessing time of password file '%s'", full_path)
             log.error(" %s", e)
             return 0
