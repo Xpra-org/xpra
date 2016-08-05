@@ -16,11 +16,11 @@ import time
 import pycuda
 from pycuda import driver
 
-from xpra.util import engs
+from xpra.util import engs, print_nested_dict
 
 CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "-1"))
 CUDA_DEVICE_NAME = os.environ.get("XPRA_CUDA_DEVICE_NAME", "")
-
+CUDA_DEVICE_BLACKLIST = os.environ.get("XPRA_CUDA_DEVICE_BLACKLIST", "").split(",")
 
 #record when we get failures/success:
 DEVICE_STATE = {}
@@ -93,6 +93,12 @@ def init_all_devices():
         try:
             device = driver.Device(i)
             devinfo = device_info(device)
+            if CUDA_DEVICE_BLACKLIST:
+                blacklisted = [x for x in CUDA_DEVICE_BLACKLIST if devinfo.find(x)>=0]
+                log("blacklisted(%s / %s)=%s", devinfo, CUDA_DEVICE_BLACKLIST, blacklisted)
+                if blacklisted:
+                    log.warn("Warning: device '%s' is blacklisted and will not be used", devinfo)
+                    continue
             log(" + testing device %s: %s", i, devinfo)
             DEVICE_INFO[i] = devinfo
             host_mem = device.get_attribute(da.CAN_MAP_HOST_MEMORY)
@@ -300,8 +306,10 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
-    log.info("pycuda_info: %s" % get_pycuda_info())
-    log.info("cuda_info: %s" % get_cuda_info())
+    log.info("pycuda_info")
+    print_nested_dict(get_pycuda_info(), print_fn=log.info)
+    log.info("cuda_info")
+    print_nested_dict(get_cuda_info(), print_fn=log.info)
 
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
