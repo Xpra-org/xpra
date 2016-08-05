@@ -301,7 +301,7 @@ So basically it's screen for remote X apps.
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
-cd $RPM_BUILD_DIR/xpra-%{version}
+pushd $RPM_BUILD_DIR/xpra-%{version}
 %if 0%{?el6}
 %patch0 -p1
 %endif
@@ -314,6 +314,7 @@ cd $RPM_BUILD_DIR/xpra-%{version}
 %patch1 -p1
 %patch2 -p1
 %endif
+popd
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
 %if %{with_python3}
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python3 $RPM_BUILD_DIR/xpra-%{version}
