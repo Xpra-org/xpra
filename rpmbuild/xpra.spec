@@ -20,7 +20,7 @@
 %endif
 
 %define py2prefix python
-%if 0%{?fedora}
+%if 0%{?fedora}>=24
 %define py2prefix python2
 %endif
 
