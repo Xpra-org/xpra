@@ -166,8 +166,8 @@ def load_codecs(encoders=True, decoders=True, csc=True):
             codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
             add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
 
-        codec_import_check("xvid", "xvid encoder", "xpra.codecs.xvid", "xpra.codecs.xvid.encoder", "Encoder")
-        add_codec_version("xvid", "xpra.codecs.xvid.encoder")
+        codec_import_check("enc_xvid", "xvid encoder", "xpra.codecs.enc_xvid", "xpra.codecs.enc_xvid.encoder", "Encoder")
+        add_codec_version("xvid", "xpra.codecs.enc_xvid.encoder")
 
         codec_import_check("enc_ffmpeg", "ffmpeg encoder", "xpra.codecs.enc_ffmpeg", "xpra.codecs.enc_ffmpeg.encoder", "Encoder")
         add_codec_version("ffmpeg", "xpra.codecs.enc_ffmpeg.encoder")
@@ -239,7 +239,7 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl", "csc_libyuv", "csc_opencv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5", "nvenc6", "nvenc7", "xvid"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5", "nvenc6", "nvenc7", "enc_xvid"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))

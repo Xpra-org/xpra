@@ -170,7 +170,7 @@ crypto_ENABLED          = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
-xvid_ENABLED            = DEFAULT and pkg_config_ok("--exists", "xvid")
+enc_xvid_ENABLED        = DEFAULT and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = False
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
@@ -228,7 +228,7 @@ tests_ENABLED           = False
 rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ["enc_x264", "enc_x265", "xvid", "enc_ffmpeg",
+SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
             "nvenc4", "nvenc5", "nvenc6", "nvenc7",
             "vpx", "webp", "pillow",
             "v4l2",
@@ -1041,9 +1041,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
+                   "xpra/codecs/enc_xvid/encoder.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
-                   "xpra/codecs/xvid/encoder.c",
                    "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encode.c",
                    "xpra/codecs/webp/decode.c",
@@ -2362,11 +2362,11 @@ if enc_x265_ENABLED:
                 ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
                 **x265_pkgconfig))
 
-toggle_packages(xvid_ENABLED, "xpra.codecs.xvid")
-if xvid_ENABLED:
+toggle_packages(enc_xvid_ENABLED, "xpra.codecs.enc_xvid")
+if enc_xvid_ENABLED:
     xvid_pkgconfig = pkgconfig("xvid")
-    cython_add(Extension("xpra.codecs.xvid.encoder",
-                ["xpra/codecs/xvid/encoder.pyx", buffers_c],
+    cython_add(Extension("xpra.codecs.enc_xvid.encoder",
+                ["xpra/codecs/enc_xvid/encoder.pyx", buffers_c],
                 **xvid_pkgconfig))
 
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
