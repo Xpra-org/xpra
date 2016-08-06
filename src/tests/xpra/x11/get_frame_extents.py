@@ -72,8 +72,9 @@ def main(args):
                     label.set_text(str(v))
                     log.info("_NET_FRAME_EXTENTS=%s", v)
                     return True
+                window.realize()
+                request_frame_extents()
                 glib.timeout_add(5000, window.show_all)
-                #glib.timeout_add(2500, request_frame_extents)
                 glib.timeout_add(1000, refresh_label)
                 gtk.main()
 
