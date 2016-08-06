@@ -260,10 +260,16 @@ if HELP:
             default_str = "auto-detect"
         print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
     print("  --pkg-config-path=PATH")
+    print("  --rpath=PATH")
     sys.exit(0)
 
+rpath = None
 filtered_args = []
 for arg in sys.argv:
+    if arg.startswith("--rpath="):
+        rpath = arg[len("--rpath="):]
+        print("rpath=%s" % rpath)
+        continue
     matched = False
     for x in SWITCHES:
         with_str = "--with-%s" % x
@@ -716,6 +722,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             if get_gcc_version()>=[4, 8]:
                 add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
                 add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
+    if rpath:
+        add_to_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
