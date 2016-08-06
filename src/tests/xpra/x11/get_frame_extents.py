@@ -30,36 +30,47 @@ def main(args):
             log.error("usage:")
             log.error(" %s WINDOWID", sys.argv[0])
         else:
+            import gtk
             from gtk import gdk
-            def show_value(window):
+            def get_frame_extents(window):
                 from xpra.x11.gtk_x11.prop import prop_get, log as x11log
                 x11log.enable_debug()
                 def pget(key, etype):
                     return prop_get(window, key, etype, ignore_errors=False, raise_xerrors=True)
-                log.info("_NET_FRAME_EXTENTS=%s", pget("_NET_FRAME_EXTENTS", ["u32"]))
+                return pget("_NET_FRAME_EXTENTS", ["u32"])
             if xid>0:
                 #show for an existing window:
                 w = gdk.window_foreign_new(xid)
-                show_value(w)
+                log.info("_NET_FRAME_EXTENTS=%s", get_frame_extents(w))
             else:
                 #create a window an send the request:
-                import gtk
+                root = gdk.get_default_root_window()
                 from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL, get_xwindow
                 #code ripped from gtk_client_base:
                 from xpra.gtk_common.error import xsync
                 from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
-                frame_request_window = gtk.Window(WINDOW_TOPLEVEL)
-                frame_request_window.set_title("Xpra-FRAME_EXTENTS")
-                root = gdk.get_default_root_window()
-                frame_request_window.realize()
-                with xsync:
-                    win = frame_request_window.get_window()
-                    log("setup_frame_request_windows() window=%#x", get_xwindow(win))
-                    send_wm_request_frame_extents(root, win)
+                window = gtk.Window(WINDOW_TOPLEVEL)
+                window.set_title("Xpra-FRAME_EXTENTS")
+                window.connect("destroy", gtk.main_quit)
+                window.realize()
+                win = window.get_window()
+                vbox = gtk.VBox(False, 0)
+                btn = gtk.Button("request frame extents")
+                def request_frame_extents(*args):
+                    with xsync:
+                        log("setup_frame_request_windows() window=%#x", get_xwindow(win))
+                        send_wm_request_frame_extents(root, win)
+                btn.connect("clicked", request_frame_extents)
+                vbox.pack_start(btn, expand=False, fill=False, padding=10)
+                label = gtk.Label()
+                vbox.add(label)
+                window.add(vbox)
+                window.show_all()
+                label.set_text(str(get_frame_extents(win)))
                 import glib
-                glib.threads_init()
-                glib.timeout_add(1000, show_value, win)
-                glib.timeout_add(2000, gtk.main_quit)
+                def refresh_label():
+                    label.set_text(str(get_frame_extents(win)))
+                glib.timeout_add(1000, refresh_label)
                 gtk.main()
 
 
