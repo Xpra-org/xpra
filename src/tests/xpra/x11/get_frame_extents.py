@@ -65,11 +65,15 @@ def main(args):
                 label = gtk.Label()
                 vbox.add(label)
                 window.add(vbox)
-                window.show_all()
                 label.set_text(str(get_frame_extents(win)))
                 import glib
                 def refresh_label():
-                    label.set_text(str(get_frame_extents(win)))
+                    v = get_frame_extents(win)
+                    label.set_text(str(v))
+                    log.info("_NET_FRAME_EXTENTS=%s", v)
+                    return True
+                glib.timeout_add(5000, window.show_all)
+                #glib.timeout_add(2500, request_frame_extents)
                 glib.timeout_add(1000, refresh_label)
                 gtk.main()
 
