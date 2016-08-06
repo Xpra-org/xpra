@@ -279,15 +279,23 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             v = self.get_frame_extents(self.frame_request_window)
             if v:
                 try:
+                    wm_name = get_wm_name()
+                except:
+                    wm_name = None
+                try:
+                    if len(v)==8:
+                        framelog.warn("Warning: invalid frame extents value '%s'", v)
+                        if wm_name:
+                            framelog.warn(" this is probably a bug in '%s'", wm_name)
+                        v = v[4:]
+                        framelog.warn(" using '%s' instead", v)
                     l, r, t, b = v
                     wfs["frame"] = (l, r, t, b)
                     wfs["offset"] = (l, t)
                 except Exception as e:
                     framelog.warn("Warning: invalid frame extents value '%s'", v)
                     framelog.warn(" %s", e)
-                    wm_name = get_wm_name()
-                    if wm_name:
-                        framelog.warn(" this is probably a bug in '%s'", wm_name)
+                    framelog.warn(" this is probably a bug in '%s'", wm_name)
         framelog("get_window_frame_sizes()=%s", wfs)
         return wfs
 
