@@ -6,7 +6,7 @@
 import time
 import os
 
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 log = Logger("encoder", "xvid")
 
 from xpra.util import AtomicInteger
@@ -28,7 +28,7 @@ cdef extern from *:
     ctypedef unsigned long size_t
 
 cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int get_buffer_api_version()
 
 cdef extern from "xvid.h":
@@ -474,8 +474,10 @@ cdef class Encoder:
             frame.type = XVID_TYPE_PVOP
         else:
             frame.type = XVID_TYPE_AUTO
-        frame.vop_flags = XVID_VOP_HALFPEL | XVID_VOP_HQACPRED | XVID_VOP_DEBUG
+        frame.vop_flags = XVID_VOP_HALFPEL | XVID_VOP_HQACPRED
         frame.vop_flags |= XVID_VOP_MODEDECISION_RD
+        if is_debug_enabled("xvid"):
+            frame.vop_flags |= XVID_VOP_DEBUG
         frame.motion = 0
         #fast:
         frame.motion = XVID_ME_FASTREFINE16 | XVID_ME_FASTREFINE8 | XVID_ME_SKIP_DELTASEARCH | XVID_ME_FAST_MODEINTERPOLATE | XVID_ME_BFRAME_EARLYSTOP
