@@ -58,7 +58,7 @@ def main(args):
                 btn = gtk.Button("request frame extents")
                 def request_frame_extents(*args):
                     with xsync:
-                        log("setup_frame_request_windows() window=%#x", get_xwindow(win))
+                        log("request_frame_extents() window=%#x", get_xwindow(win))
                         send_wm_request_frame_extents(root, win)
                 btn.connect("clicked", request_frame_extents)
                 vbox.pack_start(btn, expand=False, fill=False, padding=10)
