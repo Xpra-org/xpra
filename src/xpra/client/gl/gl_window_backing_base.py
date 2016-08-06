@@ -168,6 +168,16 @@ except:
     buffer_type = None
 
 
+def set_texture_level():
+    #only really needed with some drivers (NVidia)
+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
+    #may cause errors with older drivers:
+    try:
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
+    except:
+        pass
+
+
 # Texture number assignment
 # The first four are used to update the FBO,
 # the FBO is what is painted on screen.
@@ -419,11 +429,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             # Define empty tmp FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
-            try:
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
-            except:
-                pass
+            set_texture_level()
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
@@ -432,11 +438,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             # Define empty FBO texture and set rendering to FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
-            try:
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
-            except:
-                pass
+            set_texture_level()
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
@@ -768,11 +770,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
-                try:
-                    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
-                except:
-                    pass
+                set_texture_level()
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
@@ -861,11 +859,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                     mag_filter = GL_LINEAR
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
-                try:
-                    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
-                except:
-                    pass
+                set_texture_level()
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
