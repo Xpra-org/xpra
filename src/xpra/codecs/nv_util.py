@@ -103,32 +103,42 @@ def identify_cards():
                 props = {}
                 def meminfo(memory):
                     return {
-                            "total"  : memory.total,
-                            "free"   : memory.free,
-                            "used"   : memory.used,
+                            "total"  : int(memory.total),
+                            "free"   : int(memory.free),
+                            "used"   : int(memory.used),
                             }
                 def pciinfo(pci):
-                    return dict((p,getattr(pci, p)) for p in ("busId", "domain", "bus", "device", "pciDeviceId", "pciSubSystemId") if hasattr(pci, p))
+                    i = {}
+                    for x in ("domain", "bus", "device", "pciDeviceId", "pciSubSystemId"):
+                        try:
+                            i[x] = int(getattr(pci, x))
+                        except:
+                            pass
+                    try:
+                        i["busId"] = str(pci.busId)
+                    except:
+                        pass
+                    return i
                 for prop, fn_name, args, conv in (
-                       ("name",                     "nvmlDeviceGetName",                    (),     None),
-                       ("serial",                   "nvmlDeviceGetSerial",                  (),     None),
-                       ("uuid",                     "nvmlDeviceGetUUID",                    (),     None),
+                       ("name",                     "nvmlDeviceGetName",                    (),     str),
+                       ("serial",                   "nvmlDeviceGetSerial",                  (),     str),
+                       ("uuid",                     "nvmlDeviceGetUUID",                    (),     str),
                        ("pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
                        ("memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
-                       ("pcie-link-generation-max", "nvmlDeviceGetMaxPcieLinkGeneration",   (),     None),
-                       ("pcie-link-width-max",      "nvmlDeviceGetMaxPcieLinkWidth",        (),     None),
-                       ("pcie-link-generation",     "nvmlDeviceGetCurrPcieLinkGeneration",  (),     None),
-                       ("pcie-link-width",          "nvmlDeviceGetCurrPcieLinkWidth",       (),     None),
-                       ("clock-info-graphics",      "nvmlDeviceGetClockInfo",               (0,),   None),
-                       ("clock-info-sm",            "nvmlDeviceGetClockInfo",               (1,),   None),
-                       ("clock-info-mem",           "nvmlDeviceGetClockInfo",               (2,),   None),
-                       ("clock-info-graphics-max",  "nvmlDeviceGetMaxClockInfo",            (0,),   None),
-                       ("clock-info-sm-max",        "nvmlDeviceGetMaxClockInfo",            (1,),   None),
-                       ("clock-info-mem-max",       "nvmlDeviceGetMaxClockInfo",            (2,),   None),
-                       ("fan-speed",                "nvmlDeviceGetFanSpeed",                (),     None),
-                       ("temperature",              "nvmlDeviceGetTemperature",             (0,),   None),
-                       ("power-state",              "nvmlDeviceGetPowerState",              (),     None),
-                       ("vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     None),
+                       ("pcie-link-generation-max", "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
+                       ("pcie-link-width-max",      "nvmlDeviceGetMaxPcieLinkWidth",        (),     int),
+                       ("pcie-link-generation",     "nvmlDeviceGetCurrPcieLinkGeneration",  (),     int),
+                       ("pcie-link-width",          "nvmlDeviceGetCurrPcieLinkWidth",       (),     int),
+                       ("clock-info-graphics",      "nvmlDeviceGetClockInfo",               (0,),   int),
+                       ("clock-info-sm",            "nvmlDeviceGetClockInfo",               (1,),   int),
+                       ("clock-info-mem",           "nvmlDeviceGetClockInfo",               (2,),   int),
+                       ("clock-info-graphics-max",  "nvmlDeviceGetMaxClockInfo",            (0,),   int),
+                       ("clock-info-sm-max",        "nvmlDeviceGetMaxClockInfo",            (1,),   int),
+                       ("clock-info-mem-max",       "nvmlDeviceGetMaxClockInfo",            (2,),   int),
+                       ("fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
+                       ("temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
+                       ("power-state",              "nvmlDeviceGetPowerState",              (),     int),
+                       ("vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     str),
                        ):
                     try:
                         fn = getattr(pynvml, fn_name)
