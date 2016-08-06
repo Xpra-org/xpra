@@ -653,21 +653,24 @@ def get_sink_plugins():
     return SINKS
 
 def get_default_sink():
-    DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK")
-    if DEFAULT_SINK:
-        SINKS = get_sink_plugins()
-        if DEFAULT_SINK not in SINKS:
-            log.error("invalid default sound sink: '%s' is not in %s", DEFAULT_SINK, csv(SINKS))
+    sink = os.environ.get("XPRA_SOUND_SINK")
+    sinks = get_sink_plugins()
+    if sink:
+        if sink not in sinks:
+            log.error("invalid default sound sink: '%s' is not in %s", sink, csv(sinks))
         else:
-            return DEFAULT_SINK
+            return sink
     try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
         if has_pa():
-            return "pulsesink"
+            s = get_pactl_server()
+            if not s:
+                log("cannot connect to pulseaudio server?")
+            else:
+                return "pulsesink"
     except ImportError as e:
         log("get_default_sink() no pulsesink: %s", e)
-    SINKS = get_sink_plugins()
-    return SINKS[0]
+    return sinks[0]
 
 
 def get_test_defaults(*args):

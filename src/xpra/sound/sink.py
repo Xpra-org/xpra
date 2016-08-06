@@ -25,9 +25,6 @@ gstlog = Logger("gstreamer")
 glib = import_glib()
 
 
-SINKS = get_sink_plugins()
-DEFAULT_SINK = get_default_sink()
-
 SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync"    : False,
                                   "async"   : True,
                                   "qos"     : True
@@ -70,8 +67,8 @@ class SoundSink(SoundPipeline):
 
     def __init__(self, sink_type=None, sink_options={}, codecs=get_decoders(), codec_options={}, volume=1.0):
         if not sink_type:
-            sink_type = DEFAULT_SINK
-        if sink_type not in SINKS:
+            sink_type = get_default_sink()
+        if sink_type not in get_sink_plugins():
             raise InitExit(1, "invalid sink: %s" % sink_type)
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_decoders())]
         log("SoundSink(..) found matching codecs %s", matching)

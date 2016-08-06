@@ -92,10 +92,10 @@ def set_sink_mute(device, mute=False):
     log("set_sink_mute: output=%s, err=%s", out, err)
     return code==0
 
-def get_pactl_stat_line(prefix):
+def get_pactl_info_line(prefix):
     if not has_pa():
         return ""
-    code, out, err = pactl_output(False, "stat")
+    code, out, err = pactl_output(False, "info")
     if code!=0:
         log.warn("Warning: failed to query pulseaudio using 'pactl list'")
         if err:
@@ -106,14 +106,14 @@ def get_pactl_stat_line(prefix):
         if line.startswith(prefix):
             stat = line[len(prefix):].strip()
             break
-    log("get_pactl_stat_line(%s)=%s", prefix, stat)
+    log("get_pactl_info_line(%s)=%s", prefix, stat)
     return stat
 
 def get_default_sink():
-    return get_pactl_stat_line("Default Sink:")
+    return get_pactl_info_line("Default Sink:")
 
 def get_pactl_server():
-    return get_pactl_stat_line("Server String:")
+    return get_pactl_info_line("Server String:")
 
 
 def get_pulse_server(may_start_it=True):
