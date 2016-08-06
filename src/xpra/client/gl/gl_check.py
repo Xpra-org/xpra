@@ -410,9 +410,10 @@ def do_check_GL_support(force_enable):
             msg = x.getMessage().replace("No OpenGL_accelerate module loaded: ", "")
             if msg=="No module named OpenGL_accelerate":
                 msg = "missing accelerate module"
-            if msg!="OpenGL_accelerate module loaded":
-                msg = "PyOpenGL warning: %s" % msg
-            log.info(msg)
+            if msg=="OpenGL_accelerate module loaded":
+                log.info(msg)
+            else:
+                log.warn("PyOpenGL warning: %s", msg)
 
         #format handler messages:
         STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
