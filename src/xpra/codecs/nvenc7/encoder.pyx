@@ -1386,9 +1386,9 @@ cdef class Encoder:
 
     cdef GUID init_codec(self) except *:
         codecs = self.query_codecs()
-        #codecs={'H264': '6BC82762-4E63-4CA4-AA85-1E50F321F6BF'}
+        #codecs={'H264': {"guid" : '6BC82762-4E63-4CA4-AA85-1E50F321F6BF', .. }
         internal_name = {"H265" : "HEVC"}.get(self.codec_name.upper(), self.codec_name.upper())
-        guid_str = codecs.get(internal_name)
+        guid_str = codecs.get(internal_name, {}).get("guid")
         assert guid_str, "%s not supported! (only available: %s)" % (self.codec_name, csv(codecs.keys()))
         self.codec = c_parseguid(guid_str)
         return self.codec
@@ -1456,8 +1456,9 @@ cdef class Encoder:
 
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
-        self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
-        log("using %s %s compression at %s%% quality with pixel format %s on device %s", ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format, device_info(self.cuda_device))
+
+        self.select_cuda_device(options)
+        log("using %s %s compression at %s%% quality with pixel format %s", ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
         try:
             self.init_cuda()
 
@@ -1473,6 +1474,11 @@ cdef class Encoder:
 
         end = time.time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
+
+    def select_cuda_device(self, options={}):
+        self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
+        log("selected device %s", device_info(self.cuda_device))
+
 
     def get_target_pixel_format(self, quality):
         global YUV444_ENABLED, LOSSLESS_ENABLED
@@ -1573,17 +1579,14 @@ cdef class Encoder:
         finally:
             self.cuda_context.pop()
 
-    cdef init_nvenc(self):
+    def init_nvenc(self):
+        self.open_encode_session()
+        self.init_encoder()
+
+    def init_encoder(self):
+        cdef GUID codec = self.init_codec()
         cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         cdef NVENCSTATUS r
-
-        self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> cmalloc(sizeof(NV_ENCODE_API_FUNCTION_LIST), "function list")
-        assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
-        log("init_nvenc() functionList=%#x", <unsigned long> self.functionList)
-
-        self.open_encode_session()
-
-        cdef GUID codec = self.init_codec()
         params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         try:
@@ -2424,24 +2427,28 @@ cdef class Encoder:
                     log("[%s] unknown codec GUID: %s", x, guidstr(encode_GUID))
                 else:
                     log("[%s] %s", x, codec_name)
-                codecs[codec_name] = guidstr(encode_GUID)
 
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
                 maxh = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
                 async = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
-                log(" max dimensions: %sx%s (async=%s)", maxw, maxh, async)
-                rate_countrol = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
-                log(" rate control:   %s", rate_countrol)
-
+                rate_control = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES)
+                codec = {
+                         "guid"         : guidstr(encode_GUID),
+                         "name"         : codec_name,
+                         "max-size"     : (maxw, maxh),
+                         "async"        : async,
+                         "rate-control" : rate_control
+                         }
                 if full_query:
                     presets = self.query_presets(encode_GUID)
-                    log("  presets=%s", presets)
-
                     profiles = self.query_profiles(encode_GUID)
-                    log("  profiles=%s", profiles)
-
                     input_formats = self.query_input_formats(encode_GUID)
-                    log("  input formats=%s", input_formats)
+                    codec.update({
+                                  "presets"         : presets,
+                                  "profiles"        : profiles,
+                                  "input-formats"   : input_formats,
+                                  })
+                codecs[codec_name] = codec
         finally:
             free(encode_GUIDs)
         log("codecs=%s", csv(codecs.keys()))
@@ -2455,6 +2462,10 @@ cdef class Encoder:
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
         #params = <NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS*> malloc(sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
         log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_context, <unsigned long> self.cuda_context_ptr)
+
+        self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> cmalloc(sizeof(NV_ENCODE_API_FUNCTION_LIST), "function list")
+        assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
+        log("open_encode_session() functionList=%#x", <unsigned long> self.functionList)
 
         #get NVENC function pointers:
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
@@ -2494,7 +2505,7 @@ cdef class Encoder:
 
 
 def init_module():
-    global YUV444_ENABLED, LOSSLESS_ENABLED
+    global YUV444_ENABLED, LOSSLESS_ENABLED, ENCODINGS
     YUV444_ENABLED, LOSSLESS_ENABLED = True, True
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
@@ -2523,20 +2534,22 @@ def init_module():
         if client_key:
             #this will set the global key object used by all encoder contexts:
             log("init_module() testing with key '%s'", client_key)
+            global CLIENT_KEY_GUID
             CLIENT_KEY_GUID = c_parseguid(client_key)
 
         devices = init_all_devices()
         for device_id in devices:
             log("testing encoder with device %s", device_id)
+            options = {"cuda_device" : device_id}
             test_encoder = Encoder()
-            for encoding in get_encodings():
+            for encoding in ENCODINGS:
                 colorspaces = get_input_colorspaces(encoding)
                 assert colorspaces, "cannot use NVENC: no colorspaces available"
                 src_format = colorspaces[0]
                 dst_formats = get_output_colorspaces(encoding, src_format)
                 try:
                     try:
-                        test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), {"cuda_device" : device_id})
+                        test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), options)
                         success = True
                         if client_key:
                             log("the license key '%s' is valid", client_key)
