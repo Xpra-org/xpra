@@ -1610,6 +1610,7 @@ if WIN32:
         #building etc files in-place:
         build_xpra_conf(".")
         add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
+        add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
 
     if client_ENABLED or server_ENABLED:
@@ -1909,10 +1910,11 @@ else:
                     dummy_script = os.path.join(bin_dir, "xpra_Xdummy")
                     shutil.copyfile("scripts/xpra_Xdummy", dummy_script)
                     os.chmod(dummy_script, 0o755)
-                #install xorg.conf:
+                #install xorg.conf, cuda.conf and nvenc.keys:
                 etc_xpra = os.path.join(etc_prefix, "etc", "xpra")
                 self.mkpath(etc_xpra)
-                shutil.copyfile("etc/xpra/xorg.conf", os.path.join(etc_xpra, "xorg.conf"))
+                for x in ("xorg.conf", "cuda.conf", "nvenc.keys"):
+                    shutil.copyfile("etc/xpra/%s" % x, os.path.join(etc_xpra, x))
 
             if pam_ENABLED:
                 etc_pam_d = os.path.join(etc_prefix, "etc", "pam.d")

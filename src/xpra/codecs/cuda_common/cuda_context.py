@@ -18,10 +18,6 @@ from pycuda import driver
 
 from xpra.util import engs, print_nested_dict
 
-CUDA_DEVICE_ID = int(os.environ.get("XPRA_CUDA_DEVICE", "-1"))
-CUDA_DEVICE_NAME = os.environ.get("XPRA_CUDA_DEVICE_NAME", "")
-CUDA_DEVICE_BLACKLIST = os.environ.get("XPRA_CUDA_DEVICE_BLACKLIST", "").split(",")
-
 #record when we get failures/success:
 DEVICE_STATE = {}
 
@@ -70,6 +66,51 @@ def get_device_info(i):
     global DEVICE_INFO
     return DEVICE_INFO.get(i, None)
 
+
+PREFS = None
+def get_prefs():
+    global PREFS
+    if PREFS is None:
+        PREFS = {}
+        from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
+        dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
+        log("get_prefs() will try to load cuda.conf from: %s", dirs)
+        for d in dirs:
+            conf_file = os.path.join(os.path.expanduser(d), "cuda.conf")
+            if not os.path.exists(conf_file):
+                log("get_prefs() '%s' does not exist!", conf_file)
+                continue
+            if not os.path.isfile(conf_file):
+                log("get_prefs() '%s' is not a file!", conf_file)
+                continue
+            try:
+                with open(conf_file, "rU") as f:
+                    for line in f:
+                        sline = line.strip().rstrip('\r\n').strip()
+                        props = sline.split("=", 1)
+                        if len(props)!=2:
+                            continue
+                        name = props[0].strip()
+                        value = props[1].strip()
+                        if name in ("blacklist", ):
+                            PREFS.setdefault(name, []).append(value)
+                        elif name in ("device-id", "device-name"):
+                            PREFS[name] = value
+            except Exception as e:
+                log.error("Error: cannot read cuda configuration file '%s':", conf_file)
+                log.error(" %s", e)
+    return PREFS
+
+def get_pref(name):
+    assert name in ("blacklist", "device-id", "device-name")
+    #ie: env_name("device-id")="XPRA_CUDA_DEVICE_ID"
+    env_name = "XPRA_CUDA_%s" % str(name).upper().replace("-", "_")
+    env_value = os.environ.get(env_name)
+    if env_value is not None:
+        return env_value
+    return get_prefs().get(name)
+
+
 DEVICES = None
 def init_all_devices():
     global DEVICES, DEVICE_INFO
@@ -84,6 +125,7 @@ def init_all_devices():
     if ngpus==0:
         log.info("CUDA %s / PyCUDA %s, no devices found", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT)
         return DEVICES
+    cuda_device_blacklist = get_pref("blacklist")
     da = driver.device_attribute
     cf = driver.ctx_flags
     for i in range(ngpus):
@@ -93,9 +135,9 @@ def init_all_devices():
         try:
             device = driver.Device(i)
             devinfo = device_info(device)
-            if CUDA_DEVICE_BLACKLIST:
-                blacklisted = [x for x in CUDA_DEVICE_BLACKLIST if x and devinfo.find(x)>=0]
-                log("blacklisted(%s / %s)=%s", devinfo, CUDA_DEVICE_BLACKLIST, blacklisted)
+            if cuda_device_blacklist:
+                blacklisted = [x for x in cuda_device_blacklist if x and devinfo.find(x)>=0]
+                log("blacklisted(%s / %s)=%s", devinfo, cuda_device_blacklist, blacklisted)
                 if blacklisted:
                     log.warn("Warning: device '%s' is blacklisted and will not be used", devinfo)
                     continue
@@ -149,9 +191,13 @@ def reset_state():
     DEVICES = None
 
 
-def select_device(preferred_device_id=-1, preferred_device_name=CUDA_DEVICE_NAME, min_compute=0):
-    if preferred_device_id<0 and CUDA_DEVICE_ID>=0:
-        preferred_device_id = CUDA_DEVICE_ID
+def select_device(preferred_device_id=-1, preferred_device_name=None, min_compute=0):
+    if preferred_device_name is None:
+        preferred_device_name = get_pref("device-name")
+    if preferred_device_id<0:
+        device_id = get_pref("device-id")
+        if device_id>=0:
+            preferred_device_id = device_id
     devices = init_all_devices()
     global DEVICE_STATE
     free_pct = 0
@@ -306,15 +352,14 @@ def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
-    log.info("pycuda_info")
-    print_nested_dict(get_pycuda_info(), print_fn=log.info)
-    log.info("cuda_info")
-    print_nested_dict(get_cuda_info(), print_fn=log.info)
-
-    if sys.platform.startswith("win"):
-        print("\nPress Enter to close")
-        sys.stdin.readline()
-
+    from xpra.platform import program_context
+    with program_context("CUDA-Info", "CUDA Info"):
+        log.info("pycuda_info")
+        print_nested_dict(get_pycuda_info(), print_fn=log.info)
+        log.info("cuda_info")
+        print_nested_dict(get_cuda_info(), print_fn=log.info)
+        log.info("preferences:")
+        print_nested_dict(get_prefs())
 
 if __name__ == "__main__":
     main()

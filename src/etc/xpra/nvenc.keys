@@ -1,0 +1,5 @@
+# List of license keys to use with the NVENC codec
+#
+# One key per line in the following format:
+# 01234567-89AB-CDEF-0123-456789ABCDEF
+#
