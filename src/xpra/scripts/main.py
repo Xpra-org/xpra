@@ -29,9 +29,6 @@ from xpra.scripts.config import OPTION_TYPES, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
-VSOCK_TIMEOUT = int(os.environ.get("XPRA_VSOCK_TIMEOUT", 5))
-SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
-TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
 NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
@@ -1403,6 +1400,7 @@ def setsid():
     os.setsid()
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
+    from xpra.net.bytestreams import TCP_NODELAY, SOCKET_TIMEOUT, VSOCK_TIMEOUT
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None

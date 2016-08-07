@@ -26,10 +26,10 @@ timeoutlog = Logger("timeout")
 
 import xpra
 from xpra.server import ClientException
-from xpra.scripts.main import SOCKET_TIMEOUT, _socket_connect
+from xpra.scripts.main import _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool
-from xpra.net.bytestreams import SocketConnection, pretty_socket
+from xpra.net.bytestreams import SocketConnection, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version

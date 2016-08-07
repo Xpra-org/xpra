@@ -244,7 +244,7 @@ def get_net_sys_config():
 
 def get_net_config():
 	try:
-		from xpra.scripts.main import VSOCK_TIMEOUT, SOCKET_TIMEOUT, TCP_NODELAY
+		from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, TCP_NODELAY
 		return {
 				"vsocket.timeout"	: VSOCK_TIMEOUT,
 				"socket.timeout"	: SOCKET_TIMEOUT,

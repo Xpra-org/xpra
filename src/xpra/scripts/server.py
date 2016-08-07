@@ -18,7 +18,7 @@ import select
 import time
 import traceback
 
-from xpra.scripts.main import TCP_NODELAY, warn, no_gtk, validate_encryption
+from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, parse_bool
 from xpra.os_util import SIGNAMES
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
@@ -333,6 +333,7 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
     return listener, cleanup_socket
 
 def create_tcp_socket(host, iport):
+    from xpra.net.bytestreams import TCP_NODELAY
     if host.find(":")<0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sockaddr = (host, iport)

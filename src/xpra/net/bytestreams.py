@@ -14,6 +14,12 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net import ConnectionClosedException
 
+
+TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
+VSOCK_TIMEOUT = int(os.environ.get("XPRA_VSOCK_TIMEOUT", 5))
+SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
+
+
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
