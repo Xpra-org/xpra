@@ -1048,7 +1048,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     ssl_opt = parse_bool("ssl", opts.ssl)
     if ssl_opt is True or bind_ssl or (ssl_opt is None and opts.bind_tcp and opts.ssl_cert):
         from xpra.scripts.main import ssl_wrap_socket_fn
-        wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
+        try:
+            wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
+        except Exception as e:
+            raise InitException("cannot create SSL socket (check your certificate paths): %s" % e)
     for host, iport in bind_ssl:
         _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
         socket = ("SSL", wrap_socket_fn(tcp_socket), host_port)
