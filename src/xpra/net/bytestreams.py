@@ -165,7 +165,9 @@ class Connection(object):
         self.target = target
         self.info = info
         self.input_bytecount = 0
+        self.input_readcount = 0
         self.output_bytecount = 0
+        self.output_writecount = 0
         self.filename = None            #only used for unix domain sockets!
         self.active = True
         self.timeout = 0
@@ -187,13 +189,17 @@ class Connection(object):
         return None
 
     def _write(self, *args):
+        """ wraps do_write with packet accounting """
         w = self.untilConcludes(*args)
         self.output_bytecount += w or 0
+        self.output_writecount += 1
         return w
 
     def _read(self, *args):
+        """ wraps do_read with packet accounting """
         r = self.untilConcludes(*args)
         self.input_bytecount += len(r or "")
+        self.input_readcount += 1
         return r
 
     def get_info(self):
@@ -202,8 +208,14 @@ class Connection(object):
                 "endpoint"          : self.target or "",
                 "info"              : self.info or "",
                 "active"            : self.active,
-                "input.bytecount"   : self.input_bytecount,
-                "output.bytecount"  : self.output_bytecount,
+                "input"             : {
+                                       "bytecount"      : self.input_bytecount,
+                                       "readcount"      : self.input_readcount,
+                                       },
+                "output"            : {
+                                       "bytecount"      : self.output_bytecount,
+                                       "writecount"     : self.output_writecount,
+                                       },
                 }
 
 
@@ -267,8 +279,10 @@ class TwoFileConnection(Connection):
         d = Connection.get_info(self)
         try:
             d["type"] = "pipe"
-            d["pipe"] = {"read"     : {"fd" : self._read_fd},
-                         "write"    : {"fd" : self._write_fd}}
+            d["pipe"] = {
+                         "read"     : {"fd" : self._read_fd},
+                         "write"    : {"fd" : self._write_fd},
+                         }
         except:
             pass
         return d
