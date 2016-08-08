@@ -45,6 +45,7 @@ def main():
 	def undecorate():
 		window.set_decorated(False)
 	add_buttons("decorate", decorate, "undecorate", undecorate)
+	add_buttons("iconify", window.iconify, "deiconify", window.deiconify)
 	def above():
 		window.set_keep_above(True)
 	def notabove():
