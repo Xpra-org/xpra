@@ -256,6 +256,10 @@ class ShadowServer(GTKShadowServerBase):
         GTKShadowServerBase.__init__(self)
         self.keycodes = {}
         el = get_win32_event_listener()
+        from xpra.net.bytestreams import set_continue_wait
+        #on win32, we want to wait just a little while,
+        #to prevent servers spinning wildly on non-blocking sockets:
+        set_continue_wait(5)
         #TODO: deal with those messages?
         #el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
         #el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
