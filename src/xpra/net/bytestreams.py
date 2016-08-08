@@ -24,13 +24,15 @@ SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
 #EWOULDBLOCK can also be hit with the proxy server when we handover the socket
-CONTINUE = {errno.EINTR         : "EINTR",
+CONTINUE = {
+            errno.EINTR         : "EINTR",
             errno.EWOULDBLOCK   : "EWOULDBLOCK"
             }
 ABORT = {
-    errno.ENXIO         : "ENXIO",
-    errno.ECONNRESET    : "ECONNRESET",
-    errno.EPIPE         : "EPIPE"}
+         errno.ENXIO            : "ENXIO",
+         errno.ECONNRESET       : "ECONNRESET",
+         errno.EPIPE            : "EPIPE",
+         }
 continue_wait = 0
 
 #default to using os.read and os.write for both tty devices and regular streams
@@ -101,7 +103,9 @@ def set_continue_wait(v):
 
 
 #so we can inject ssl.SSLError:
-CONTINUE_EXCEPTIONS = {}
+CONTINUE_EXCEPTIONS = {
+                       socket.timeout   : "socket.timeout",
+                       }
 
 def init_ssl():
     import ssl
@@ -111,32 +115,38 @@ def init_ssl():
     return ssl
 
 
+def can_retry(e):
+    continue_exception = CONTINUE_EXCEPTIONS.get(type(e))
+    if continue_exception:
+        return continue_exception
+    if isinstance(e, (IOError, OSError)):
+        global CONTINUE
+        code = e.args[0]
+        can_continue = CONTINUE.get(code)
+        if can_continue:
+            return can_continue
+
+        abort = ABORT.get(code, code)
+        if abort is not None:
+            log("untilConcludes: %s, args=%s, code=%s, abort=%s", type(e), e.args, code, abort)
+            raise ConnectionClosedException(e)
+    return False
+
 def untilConcludes(is_active_cb, f, *a, **kw):
+    global continue_wait
     wait = 0
     while is_active_cb():
         try:
             return f(*a, **kw)
-        except socket.timeout as e:
-            log("untilConcludes(%s, %s, %s, %s) %s", is_active_cb, f, a, kw, e)
-            continue
-        except (IOError, OSError) as e:
-            global CONTINUE, CONTINUE_EXCEPTIONS
-            code = e.args[0]
-            can_continue = CONTINUE.get(code) or CONTINUE_EXCEPTIONS.get(type(e))
-            if can_continue:
-                log("untilConcludes(%s, %s, %s, %s) %s / %s (continue)", is_active_cb, f, a, kw, can_continue, e)
-                time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
+        except Exception as e:
+            retry = can_retry(e)
+            log("untilConcludes(%s, %s, %s, %s) %s, retry=%s", is_active_cb, f, a, kw, e, retry)
+            if retry:
+                if wait>0:
+                    time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
                 if wait<continue_wait:
                     wait += 1
                 continue
-            abort = ABORT.get(code, code)
-            if abort is not None:
-                log("untilConcludes: %s, args=%s, code=%s, abort=%s", type(e), e.args, code, abort)
-                raise ConnectionClosedException(e)
-            log("untilConcludes(%s, %s, %s, %s) %s / %s (raised)", is_active_cb, f, a, kw, abort, e)
-            raise
-        except TypeError:
-            log.error("Error: calling %s(%s, %s) via untilConcludes", f, a, kw)
             raise
 
 
