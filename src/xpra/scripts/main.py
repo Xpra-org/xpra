@@ -695,7 +695,10 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Specifies which version of the SSL protocol to use. Default: '%default'.")
     group.add_option("--ssl-ca-certs", action="store",
                       dest="ssl_ca_certs", default=defaults.ssl_ca_certs,
-                      help="The ca_certs file contains a set of concatenated 'certification authority' certificates. Default: '%default'.")
+                      help="The ca_certs file contains a set of concatenated 'certification authority' certificates, or you can set this to a directory containing CAs files. Default: '%default'.")
+    group.add_option("--ssl-ca-data", action="store",
+                      dest="ssl_ca_data", default=defaults.ssl_ca_data,
+                      help="PEM or DER encoded certificate data, optionally converted to hex. Default: '%default'.")
     group.add_option("--ssl-ciphers", action="store",
                       dest="ssl_ciphers", default=defaults.ssl_ciphers,
                       help="Sets the available ciphers, it should be a string in the OpenSSL cipher list format. Default: '%default'.")
@@ -1636,15 +1639,34 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                         raise InitException("ssl error: check-hostname is set but server-hostname is not")
                     kwargs["server_hostname"] = opts.ssl_server_hostname
             context.load_default_certs(purpose)
-            if not opts.ssl_ca_certs or opts.ssl_ca_certs.lower()=="default":
-                #raise InitException("ssl-ca-certs is required for client verify mode %s" % opts.ssl_client_verify_mode)
+
+            ssl_ca_certs = opts.ssl_ca_certs
+            if not ssl_ca_certs or ssl_ca_certs.lower()=="default":
                 context.set_default_verify_paths()
-            elif not os.path.exists(opts.ssl_ca_certs):
-                raise InitException("invalid ssl-ca-certs file or directory: %s" % opts.ssl_ca_certs)
-            elif os.path.isdir(opts.ssl_ca_certs):
-                context.load_verify_locations(capath=opts.ssl_ca_certs)
+            elif not os.path.exists(ssl_ca_certs):
+                raise InitException("invalid ssl-ca-certs file or directory: %s" % ssl_ca_certs)
+            elif os.path.isdir(ssl_ca_certs):
+                context.load_verify_locations(capath=ssl_ca_certs)
             else:
-                context.load_verify_locations(cafile=opts.ssl_ca_certs)
+                assert os.path.isfile(ssl_ca_certs), "'%s' is not a valid ca file" % ssl_ca_certs
+                context.load_verify_locations(cafile=ssl_ca_certs)
+            #handle cadata:
+            cadata = opts.ssl_ca_data
+            try:
+                import binascii
+                cadata = binascii.unhexlify(cadata)
+            except:
+                pass
+            if cadata:
+                #PITA: because of a bug in the ssl module, we can't pass cadata,
+                #so we use a temporary file instead:
+                import tempfile
+                f = tempfile.NamedTemporaryFile(prefix='cadata')
+                f.file.write(cadata)
+                f.file.flush()
+                context.load_verify_locations(cafile=f.name)
+                f.close()
+
         elif opts.ssl_check_hostname and not server_side:
             raise InitException("cannot check hostname with verify mode %s" % verify_mode)
         wrap_socket = context.wrap_socket
