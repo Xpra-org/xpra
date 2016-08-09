@@ -46,7 +46,7 @@ ssl-server-hostname = localhost
 #ssl-verify-flags = DEFAULT
 #ssl-verify-flags = CRL_CHECK_LEAF
 #ssl-verify-flags = CHECK_CHAIN
-ssl-verify-flags = CRL_CHECK_CHAIN,X509_STRICT
+ssl-verify-flags = X509_STRICT
 
 # Sets the available ciphers for this SSL object:
 #ssl-ciphers = ALL

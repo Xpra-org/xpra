@@ -1626,14 +1626,16 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         if opts.ssl_cert or opts.ssl_key:
             context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
         if ssl_cert_reqs!=ssl.CERT_NONE:
-            if not server_side:
+            if server_side:
+                purpose = ssl.Purpose.CLIENT_AUTH   #@UndefinedVariable
+            else:
+                purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
                 context.check_hostname = opts.ssl_check_hostname
                 if context.check_hostname:
                     if not opts.ssl_server_hostname:
                         raise InitException("ssl error: check-hostname is set but server-hostname is not")
                     kwargs["server_hostname"] = opts.ssl_server_hostname
-            #we will need ca data to verify the client:
-            context.load_default_certs()
+            context.load_default_certs(purpose)
             if not opts.ssl_ca_certs or opts.ssl_ca_certs.lower()=="default":
                 #raise InitException("ssl-ca-certs is required for client verify mode %s" % opts.ssl_client_verify_mode)
                 context.set_default_verify_paths()
