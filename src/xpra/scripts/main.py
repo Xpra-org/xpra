@@ -30,6 +30,7 @@ from xpra.scripts.config import OPTION_TYPES, \
 
 
 NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
+USE_SSL_CONTEXT = os.environ.get("XPRA_USE_SSL_CONTEXT", "1")=="1"
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 
@@ -1599,7 +1600,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
               "suppress_ragged_eofs"    : True,
               }
     SSLContext = getattr(ssl, "SSLContext", None)
-    if SSLContext:
+    if USE_SSL_CONTEXT and SSLContext:
         #parse ssl-verify-flags as CSV:
         ssl_verify_flags = 0
         for x in opts.ssl_verify_flags.split(","):
