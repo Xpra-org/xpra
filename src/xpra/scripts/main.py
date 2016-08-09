@@ -1593,6 +1593,15 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     if ssl_protocol is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
         raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (opts.ssl_protocol, csv(values)))
+    #cadata may be hex encoded:
+    cadata = opts.ssl_ca_data
+    if cadata:
+        import tempfile
+        try:
+            import binascii
+            cadata = binascii.unhexlify(cadata)
+        except:
+            pass
 
     kwargs = {
               "server_side"             : server_side,
@@ -1652,16 +1661,9 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 assert os.path.isfile(ssl_ca_certs), "'%s' is not a valid ca file" % ssl_ca_certs
                 context.load_verify_locations(cafile=ssl_ca_certs)
             #handle cadata:
-            cadata = opts.ssl_ca_data
-            try:
-                import binascii
-                cadata = binascii.unhexlify(cadata)
-            except:
-                pass
             if cadata:
                 #PITA: because of a bug in the ssl module, we can't pass cadata,
                 #so we use a temporary file instead:
-                import tempfile
                 f = tempfile.NamedTemporaryFile(prefix='cadata')
                 f.file.write(cadata)
                 f.file.flush()
@@ -1682,6 +1684,20 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         netlog.warn("Warning: weak SSL settings for outdated Python version %i.%i.%i", *sys.version_info[:3])
         netlog.warn(" the following options will be ignored:")
         netlog.warn(" %s", csv("'ssl-%s'" % x for x in ignored))
+        if cadata:
+            f = tempfile.NamedTemporaryFile(prefix='cadata', delete=False)
+            f.file.write(cadata)
+            f.file.flush()
+            f.close()
+            ssl_ca_certs = f.name
+            del f
+            def delcadatafile():
+                try:
+                    os.unlink(ssl_ca_certs)
+                except:
+                    print("Error: failed to delete temporary cadata file '%s'", ssl_ca_certs)
+            import atexit
+            atexit.register(delcadatafile)
         kwargs.update({
                        "cert_reqs"      : ssl_cert_reqs,
                        "ssl_version"    : ssl_protocol,
