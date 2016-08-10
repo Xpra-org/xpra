@@ -115,9 +115,16 @@ class ApplicationWindow:
         crypto_backend_init()
         #TODO: since "mode" is not part of global options
         #this validation should be injected from the launcher instead
-        MODES = ["tcp", "ssh"]
+        MODES = ["tcp"]
+        try:
+            import ssl
+            assert ssl
+            MODES.append("ssl")
+        except:
+            pass
         if "AES" in ENCRYPTION_CIPHERS:
-            MODES = ["tcp", "tcp + aes", "ssh"]
+            MODES.append("tcp + aes")
+        MODES.append("ssh")
         def validate_in_list(x, options):
             if x in options:
                 return None
@@ -532,10 +539,10 @@ class ApplicationWindow:
             params["display"] = ":%s" % self.config.port
             params["display_name"] = "unix-domain:%s" % self.config.port
         else:
-            #tcp:
+            assert self.config.mode in ("tcp", "ssl"), "invalid / unsupported mode %s" % self.config.mode
             params["host"] = self.config.host
             params["port"] = int(self.config.port)
-            params["display_name"] = "tcp:%s:%s" % (self.config.host, self.config.port)
+            params["display_name"] = "%s:%s:%s" % (self.config.mode, self.config.host, self.config.port)
 
         #print("connect_to(%s)" % params)
         #UGLY warning: the username may have been updated during display parsing,
@@ -555,7 +562,7 @@ class ApplicationWindow:
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         try:
-            conn = connect_to(params, self.set_info_text, ssh_fail_cb=self.ssh_failed)
+            conn = connect_to(params, opts=self.config, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
             log.error("failed to connect", exc_info=True)
             self.handle_exception(e)
