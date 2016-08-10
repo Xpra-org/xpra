@@ -8,7 +8,7 @@ from tests.xpra.codecs.test_encoder import test_encoder, test_performance
 
 def test_enc_xvid():
     print("test_enc_xvid()")
-    from xpra.codecs.xvid import encoder #@UnresolvedImport
+    from xpra.codecs.enc_xvid import encoder #@UnresolvedImport
     test_encoder(encoder)
     test_performance(encoder)
 

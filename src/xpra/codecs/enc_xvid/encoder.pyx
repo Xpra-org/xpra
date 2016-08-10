@@ -523,7 +523,7 @@ cdef class Encoder:
 def selftest(full=False):
     global SAVE_TO_FILE
     from xpra.codecs.codec_checks import testencoder, get_encoder_max_sizes
-    from xpra.codecs.xvid import encoder
+    from xpra.codecs.enc_xvid import encoder
     temp = SAVE_TO_FILE
     try:
         SAVE_TO_FILE = None
