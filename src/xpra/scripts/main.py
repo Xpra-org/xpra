@@ -740,10 +740,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--sync-xvfb", action="store",
                       dest="sync_xvfb", default=defaults.sync_xvfb,
                       help="How often to synchronize the virtual framebuffer used for X11 seamless servers (0 to disable). Default: %s." % defaults.sync_xvfb)
-    from xpra.platform.paths import get_socket_dirs
     group.add_option("--socket-dirs", action="append",
                       dest="socket_dirs", default=[],
-                      help="Directories to look for the socket files in. Default: %s." % os.path.pathsep.join("'%s'" % x for x in get_socket_dirs()))
+                      help="Directories to look for the socket files in. Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or the first valid directory in socket-dirs"
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
@@ -883,7 +882,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     #special case for things stored as lists, but command line option is a CSV string:
     #and may have "none" or "all" special values
-    fixup_options(options)
+    fixup_options(options, defaults)
 
     try:
         options.dpi = int(options.dpi)
