@@ -69,28 +69,31 @@ class GLClientWindow(GTK2WindowBase):
         self._backing.paint_screen = True
 
     def destroy(self):
-        b = self._backing
-        if b:
-            b.paint_screen = False
-            b.close()
-            self._backing = None
+        self.remove_backing()
         GTK2WindowBase.destroy(self)
 
+    def remove_backing(self):
+        b = self._backing
+        if b:
+            self._backing = None
+            b.paint_screen = False
+            b.close()
+            glarea = b._backing
+            if glarea:
+                try:
+                    self.remove(glarea)
+                except:
+                    pass
 
     def new_backing(self, bw, bh):
+        self.remove_backing()
         widget = GTK2WindowBase.new_backing(self, bw, bh)
         log("new_backing(%s, %s)=%s", bw, bh, widget)
         self.add(widget)
 
 
     def freeze(self):
-        b = self._backing
-        if b:
-            glarea = b._backing
-            if glarea:
-                self.remove(glarea)
-            b.close()
-            self._backing = None
+        self.remove_backing()
         GTK2WindowBase.freeze(self)
 
 
