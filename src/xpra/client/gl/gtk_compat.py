@@ -87,13 +87,17 @@ else:
 
         def __init__(self, widget):
             self.widget = widget
+            self.gldrawable = gtkgl.widget_get_gl_drawable(widget)
+            assert self.gldrawable, "failed to get the GL drawable for %s" % widget
+            self.glcontext = gtkgl.widget_get_gl_context(widget)
+            assert self.glcontext, "failed to get a GL context from %s" % widget
+            
         def __enter__(self):
-            gldrawable = gtkgl.widget_get_gl_drawable(self.widget)
-            glcontext = gtkgl.widget_get_gl_context(self.widget)
-            assert gldrawable.gl_begin(glcontext)
+            assert self.gldrawable.gl_begin(self.glcontext)
+
         def __exit__(self, exc_type, exc_val, exc_tb):
-            gldrawable = gtkgl.widget_get_gl_drawable(self.widget)
-            gldrawable.gl_end()
+            self.gldrawable.gl_end()
+
         def __repr__(self):
             return "gtk2.GLContextManager(%s)" % self.widget
 

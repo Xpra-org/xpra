@@ -370,17 +370,22 @@ class GLWindowBackingBase(GTKWindowBacking):
                 log("%s shader initialized", name)
 
     def gl_context(self):
-        if not self._backing:
+        b = self._backing
+        if not b:
             log("Error: no OpenGL backing")
             return None
-        if not is_realized(self._backing):
+        if not is_realized(b):
             log.error("Error: OpenGL backing is not realized")
             return None
         w, h = self.size
         if w<=0 or h<=0:
             log.error("Error: invalid OpenGL backing size: %ix%i", w, h)
             return None
-        context = GLContextManager(self._backing)
+        try:
+            context = GLContextManager(b)
+        except Exception as e:
+            log.error("Error: %s", e)
+            return None
         log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
         return context
 
