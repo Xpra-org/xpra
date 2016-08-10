@@ -111,25 +111,29 @@ class ApplicationWindow:
         self.client.init(self.config)
         self.exit_code = None
 
+    def get_connection_modes(self):
+        modes = ["tcp"]
+        try:
+            import ssl
+            assert ssl
+            modes.append("ssl")
+        except:
+            pass
+        if "AES" in ENCRYPTION_CIPHERS:
+            modes.append("tcp + aes")
+        modes.append("ssh")
+        return modes
+
     def get_launcher_validation(self):
         crypto_backend_init()
         #TODO: since "mode" is not part of global options
         #this validation should be injected from the launcher instead
-        MODES = ["tcp"]
-        try:
-            import ssl
-            assert ssl
-            MODES.append("ssl")
-        except:
-            pass
-        if "AES" in ENCRYPTION_CIPHERS:
-            MODES.append("tcp + aes")
-        MODES.append("ssh")
         def validate_in_list(x, options):
             if x in options:
                 return None
             return "must be in %s" % (", ".join(options))
-        return {"mode"              : lambda x : validate_in_list(x, MODES)}
+        modes = self.get_connection_modes()
+        return {"mode"              : lambda x : validate_in_list(x, modes)}
 
 
     def create_window(self):
@@ -188,11 +192,8 @@ class ApplicationWindow:
         hbox.set_spacing(20)
         hbox.pack_start(gtk.Label("Mode: "))
         self.mode_combo = gtk.combo_box_new_text()
-        #self.mode_combo.get_model().clear()
-        self.mode_combo.append_text("TCP")
-        if "AES" in ENCRYPTION_CIPHERS:
-            self.mode_combo.append_text("TCP + AES")
-        self.mode_combo.append_text("SSH")
+        for x in self.get_connection_modes():
+            self.mode_combo.append_text(x.upper())
         self.mode_combo.connect("changed", self.mode_changed)
         hbox.pack_start(self.mode_combo)
         vbox.pack_start(hbox)
