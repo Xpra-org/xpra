@@ -261,6 +261,19 @@ class ServerBase(ServerCore):
         self.pulseaudio_command = opts.pulseaudio_command
         self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
 
+        #verify we have enough memory:
+        if os.name=="posix":
+            try:
+                mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
+                LOW_MEM_LIMIT = 512*1024*1024
+                if mem_bytes<=LOW_MEM_LIMIT:
+                    log.warn("Warning: only %iMB total system memory available", mem_bytes//(1024**2))
+                    log.warn(" this may not be enough to run a server")
+                else:
+                    log.info("%.1fGB of system memory", mem_bytes/(1024.0**3))
+            except:
+                pass
+
         #video init: default to ALL if not specified
         video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
         csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
