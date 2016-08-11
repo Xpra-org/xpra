@@ -311,6 +311,18 @@ class ApplicationWindow:
         hbox.pack_start(self.password_entry)
         vbox.pack_start(hbox)
 
+        if os.name=="posix":
+            hbox = gtk.HBox(False, 0)
+            hbox.set_spacing(20)
+            self.ssh_nostrict = gtk.CheckButton("Disable SSH Strict Host Check")
+            self.ssh_nostrict.set_active(False)
+            al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+            al.add(self.ssh_nostrict)
+            hbox.pack_start(al)
+            vbox.pack_start(hbox)
+        else:
+            self.ssh_nostrict = None
+
         # Info Label
         self.info = gtk.Label()
         self.info.set_line_wrap(True)
@@ -532,6 +544,8 @@ class ApplicationWindow:
                 params["username"] = username
                 full_ssh += ["-l", username]
             full_ssh += ["-T", host]
+            if self.ssh_nostrict and self.ssh_nostrict.get_active():
+                full_ssh += ["-o", "StrictHostKeyChecking=no"]
             if str(self.config.ssh_port)!="22":
                 if sys.platform.startswith("win"):
                     full_ssh += ["-P", str(self.config.ssh_port)]
