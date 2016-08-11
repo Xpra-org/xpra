@@ -1198,18 +1198,19 @@ def parse_display_name(error_cb, opts, display_name):
                 "exit_ssh"         : opts.exit_ssh,
                  })
         parts = display_name.split(separator)
+        desc["display"] = None
+        desc["display_as_args"] = []
         if len(parts)>2:
             #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
             host = separator.join(parts[1:-1])
-            display = ":" + parts[-1]
-            desc["display"] = display
-            opts.display = display
-            desc["display_as_args"] = [display]
+            if parts[-1]:
+                display = ":" + parts[-1]
+                desc["display"] = display
+                opts.display = display
+                desc["display_as_args"] = [display]
         else:
             #ssh:HOST or ssh/HOST
             host = parts[1]
-            desc["display"] = None
-            desc["display_as_args"] = []
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = shlex.split(opts.ssh)
         desc["ssh"] = ssh
