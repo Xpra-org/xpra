@@ -684,12 +684,10 @@ class ApplicationWindow:
 
     def update_gui_from_config(self):
         #mode:
-        if self.config.mode == "tcp":
-            self.mode_combo.set_active(0)
-        elif self.config.mode == "tcp + aes" and "AES" in ENCRYPTION_CIPHERS:
-            self.mode_combo.set_active(1)
-        else:
-            self.mode_combo.set_active(2)
+        mode = (self.config.mode or "").lower()
+        for i,e in enumerate(self.get_connection_modes()):
+            if e.lower()==mode:
+                self.mode_combo.set_active(i)
         if self.config.encoding and self.encoding_combo:
             index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
             log("setting encoding combo to %s / %s", self.config.encoding, index)
