@@ -1410,6 +1410,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
     conn = None
     if dtype == "ssh":
         from xpra.net import ConnectionClosedException
+        sshpass_command = None
         try:
             cmd = display_desc["full_ssh"]
             kwargs = {}
@@ -1449,10 +1450,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             password = display_desc.get("password")
             if password:
                 from xpra.platform.paths import get_sshpass_command
-                sshpass = get_sshpass_command()
-                if sshpass:
+                sshpass_command = get_sshpass_command()
+                if sshpass_command:
                     #sshpass -e ssh ...
-                    cmd.insert(0, sshpass)
+                    cmd.insert(0, sshpass_command)
                     cmd.insert(1, "-e")
                     if env is None:
                         env = os.environ.copy()
@@ -1466,7 +1467,23 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             """ if ssh dies, we don't need to try to read/write from its sockets """
             e = child.poll()
             if e is not None:
-                error_message = "cannot %s using SSH" % action
+                had_connected = conn.input_bytecount>0 or conn.output_bytecount>0
+                if had_connected:
+                    error_message = "cannot %s using SSH" % action
+                else:
+                    error_message = "SSH connection failure"
+                sshpass_error = None
+                if sshpass_command:
+                    sshpass_error = {
+                                     1  : "Invalid command line argument",
+                                     2  : "Conflicting arguments given",
+                                     3  : "General runtime error",
+                                     4  : "Unrecognized response from ssh (parse error)",
+                                     5  : "Invalid/incorrect password",
+                                     6  : "Host public key is unknown. sshpass exits without confirming the new key.",
+                                     }.get(e)
+                    if sshpass_error:
+                        error_message += ": %s" % sshpass_error
                 if debug_cb:
                     debug_cb(error_message)
                 if ssh_fail_cb:
@@ -1475,9 +1492,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     display_desc["ssh_abort"] = True
                     from xpra.log import Logger
                     log = Logger()
-                    if conn.input_bytecount==0 and conn.output_bytecount==0:
-                        log.error("Connection to the xpra server via SSH failed for: %s", display_name)
-                        log.error(" check your username, hostname, display number, firewall, etc")
+                    if not had_connected:
+                        log.error("Error: SSH connection to the xpra server failed")
+                        if sshpass_error:
+                            log.error(" %s", sshpass_error)
+                        else:
+                            log.error(" check your username, hostname, display number, firewall, etc")
+                        log.error(" for server: %s", display_name)
                     else:
                         log.error("The SSH process has terminated with exit code %s", e)
                     cmd_info = " ".join(display_desc["full_ssh"])
