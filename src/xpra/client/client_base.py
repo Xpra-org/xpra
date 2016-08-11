@@ -512,10 +512,10 @@ class XpraClientBase(FileTransferHandler):
             props = p.get_info()
             c = props.get("compression", "unknown")
             e = props.get("encoder", "unknown")
-            netlog.warn("failed to receive anything, not an xpra server?")
-            netlog.warn("  could also be the wrong username, password or port")
+            netlog.error("Error: failed to receive anything, not an xpra server?")
+            netlog.error("  could also be the wrong protocol, username, password or port")
             if c!="unknown" or e!="unknown":
-                netlog.warn("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
+                netlog.error("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
         if self.exit_code!=0:
             self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
