@@ -28,10 +28,10 @@ def gtk_main_quit_really():
         # that on every user of this function.
         from xpra.gtk_common.gobject_compat import import_gtk
         gtk = import_gtk()
-        gtk.main_quit()
         # So long as there are more nested main loops, re-register ourselves
         # to be called again:
         if gtk.main_level() > 1:
+            gtk.main_quit()
             return True
         else:
             # But when we've just quit the outermost main loop, then

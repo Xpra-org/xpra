@@ -1395,8 +1395,9 @@ def connect_or_fail(display_desc, opts):
 def ssh_connect_failed(message):
     #by the time ssh fails, we may have entered the gtk main loop
     #(and more than once thanks to the clipboard code..)
-    from xpra.gtk_common.quit import gtk_main_quit_really
-    gtk_main_quit_really()
+    if "gtk" in sys.modules or "gi.repository.Gtk" in sys.modules:
+        from xpra.gtk_common.quit import gtk_main_quit_really
+        gtk_main_quit_really()
 
 def setsid():
     #run in a new session
