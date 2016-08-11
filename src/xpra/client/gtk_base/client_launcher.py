@@ -110,6 +110,7 @@ class ApplicationWindow:
         self.client = make_client(raise_exception, self.config)
         self.client.init(self.config)
         self.exit_code = None
+        self.current_error = None
 
     def get_connection_modes(self):
         modes = ["tcp"]
@@ -476,6 +477,7 @@ class ApplicationWindow:
 
 
     def handle_exception(self, e):
+        log("handle_exception(%s)", e)
         t = str(e)
         if self.config.debug:
             #in debug mode, include the full stacktrace:
@@ -483,8 +485,10 @@ class ApplicationWindow:
         def ui_handle_exception():
             self.reset_client()
             self.set_sensitive(True)
-            self.set_info_color(True)
-            self.set_info_text(t)
+            if not self.current_error:
+                self.current_error = t
+                self.set_info_color(True)
+                self.set_info_text(t)
             self.window.show()
             self.window.present()
         glib.idle_add(ui_handle_exception)
@@ -555,11 +559,15 @@ class ApplicationWindow:
         thread.start_new_thread(self.do_connect_builtin, (params,))
 
     def ssh_failed(self, message):
-        self.set_info_text(message)
-        self.set_info_color(True)
+        log("ssh_failed(%s)", message)
+        if not self.current_error:
+            self.current_error = message
+            self.set_info_text(message)
+            self.set_info_color(True)
 
     def do_connect_builtin(self, params):
         self.exit_code = None
+        self.current_error = None
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         try:
@@ -608,8 +616,10 @@ class ApplicationWindow:
             if password_warning:
                 self.password_warning()
             err = exit_code!=0 or password_warning
-            self.set_info_color(err)
-            self.set_info_text(warning)
+            if not self.current_error:
+                self.current_error = warning
+                self.set_info_color(err)
+                self.set_info_text(warning)
             if err:
                 def ignore_further_quit_events(*args):
                     pass
