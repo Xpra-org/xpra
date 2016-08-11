@@ -510,7 +510,7 @@
         <branch repo="pypi.python.org"
 	        module="/packages/e0/4c/515d7c4ac424ff38cc919f7099bf293dd064ba9a600e1e3835b3edefdb18/numpy-1.11.1.tar.gz"
 	        version="1.11.1"
-	        hash="md5:2f44a895a8104ffac140c3a70edbd450"/>
+	        hash="md5:372d2f9e36550867dbdce38f0cbbe1f1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
