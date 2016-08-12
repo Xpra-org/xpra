@@ -1459,6 +1459,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     if env is None:
                         env = os.environ.copy()
                     env["SSHPASS"] = password
+                    #the password will be used by ssh via sshpass,
+                    #don't try to authenticate again over the ssh-proxy connection,
+                    #which would trigger warnings if the server does not require
+                    #authentication over unix-domain-sockets:
+                    del display_desc["password"]
             if env:
                 kwargs["env"] = env
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
