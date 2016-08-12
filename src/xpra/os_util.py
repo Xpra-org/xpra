@@ -80,23 +80,32 @@ def memoryview_to_bytes(v):
     return v
 
 
+def platform_release(release):
+    if sys.platform.startswith("darwin"):
+        try:
+            import plistlib
+            pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
+            return pl['ProductUserVisibleVersion']
+        except:
+            pass
+    return release
+
 def platform_name(sys_platform, release):
     if not sys_platform:
         return "unknown"
     PLATFORMS = {"win32"    : "Microsoft Windows",
                  "cygwin"   : "Windows/Cygwin",
                  "linux.*"  : "Linux",
-                 "darwin"   : "Mac OSX",
+                 "darwin"   : "Mac OS X",
                  "freebsd.*": "FreeBSD",
                  "os2"      : "OS/2",
                  }
     def rel(v):
         values = [v]
-        if sys_platform=="win32" or sys_platform.startswith("linux"):
-            if type(release) in (tuple, list):
-                values += list(release)
-            else:
-                values.append(release)
+        if type(release) in (tuple, list):
+            values += list(release)
+        else:
+            values.append(release)
         return " ".join([str(x) for x in values if x])
     for k,v in PLATFORMS.items():
         regexp = re.compile(k)

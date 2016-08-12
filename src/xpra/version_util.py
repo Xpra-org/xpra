@@ -107,7 +107,7 @@ def get_version_info_full():
     return props
 
 def do_get_platform_info():
-    from xpra.os_util import platform_name
+    from xpra.os_util import platform_name, platform_release
     pp = sys.modules.get("platform", python_platform)
     def get_processor_name():
         if pp.system() == "Windows":
@@ -129,10 +129,12 @@ def do_get_platform_info():
     ld = get_linux_distribution()
     if ld:
         info["linux_distribution"] = ld
+    release = platform_release(pp.release())
     info.update({
             ""          : sys.platform,
-            "name"      : platform_name(sys.platform, info.get("linux_distribution") or pp.release()),
+            "name"      : platform_name(sys.platform, info.get("linux_distribution") or release),
             "release"   : pp.release(),
+            "sysrelease": release,
             "platform"  : pp.platform(),
             "machine"   : pp.machine(),
             "processor" : pp.processor(),

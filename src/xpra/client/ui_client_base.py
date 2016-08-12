@@ -143,7 +143,7 @@ class UIXpraClient(XpraClientBase):
         log.info("Xpra %s client version %s%s %i-bit", self.client_toolkit(), XPRA_VERSION, rev_info, bits)
         try:
             pinfo = get_platform_info()
-            osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
+            osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
             log.info(" running on %s", osinfo)
         except:
             log("platform name error:", exc_info=True)
