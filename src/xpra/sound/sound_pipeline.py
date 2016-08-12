@@ -256,7 +256,7 @@ class SoundPipeline(gobject.GObject):
         if not desc:
             return
         cdl = self.container_description.lower()
-        dl = desc.lower()
+        dl = {"mka" : "matroska"}.get(desc.lower(), desc.lower())
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
             self.gstloginfo("using container format %s", dl)
         self.container_description = dl
