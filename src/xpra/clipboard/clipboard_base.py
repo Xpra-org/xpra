@@ -357,11 +357,11 @@ class ClipboardProtocolHelperBase(object):
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
             #err, we were asked about a clipboard we don't handle..
-            log.warn("ignoring clipboard request for '%s' (no proxy)", name)
+            log.error("Error: clipboard request for '%s' (no proxy, ignored)", name)
             no_contents()
             return
         if not proxy.is_enabled():
-            log.warn("ignoring clipboard request for '%s' (disabled)", name)
+            log.warn("Warning: ignoring clipboard request for '%s' (disabled)", name)
             no_contents()
             return
         if TEST_DROP_CLIPBOARD_REQUESTS>0 and (request_id % TEST_DROP_CLIPBOARD_REQUESTS)==0:
@@ -387,8 +387,8 @@ class ClipboardProtocolHelperBase(object):
 
     def _may_compress(self, dtype, dformat, wire_data):
         if len(wire_data)>self.max_clipboard_packet_size:
-            log.warn("clipboard contents are too big and have not been sent:"
-                     " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
+            log.warn("Warning: clipboard contents are too big and have not been sent")
+            log.warn(" %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return  None
         if type(wire_data)==str and len(wire_data)>=MIN_CLIPBOARD_COMPRESSION_SIZE:
             return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
@@ -477,18 +477,20 @@ class ClipboardProxy(gtk.Invisible):
         self._can_receive = can_receive
 
     def get_info(self):
-        info = {"have_token"    : self._have_token,
-                "enabled"       : self._enabled,
-                "greedy_client" : self._greedy_client,
-                "blocked_owner_change" : self._block_owner_change,
+        info = {
+                "have_token"            : self._have_token,
+                "enabled"               : self._enabled,
+                "greedy_client"         : self._greedy_client,
+                "blocked_owner_change"  : self._block_owner_change,
                 "event"         : {
-                                "selection_request"     : self._selection_request_events,
-                                "selection_get"         : self._selection_get_events,
-                                "selection_clear"       : self._selection_clear_events,
-                                "got_token"             : self._got_token_events,
-                                "sent_token"            : self._sent_token_events,
-                                "get_contents"          : self._get_contents_events,
-                                "request_contents"      : self._request_contents_events},
+                                   "selection_request"     : self._selection_request_events,
+                                   "selection_get"         : self._selection_get_events,
+                                   "selection_clear"       : self._selection_clear_events,
+                                   "got_token"             : self._got_token_events,
+                                   "sent_token"            : self._sent_token_events,
+                                   "get_contents"          : self._get_contents_events,
+                                   "request_contents"      : self._request_contents_events,
+                                   },
                 }
         return info
 
@@ -514,7 +516,6 @@ class ClipboardProxy(gtk.Invisible):
     def do_owner_changed(self, *args):
         #an application on our side owns the clipboard selection
         #(they are ready to provide something via the clipboard)
-        #log("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
         log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
         if self._enabled and self._can_send and not self._block_owner_change and (self._greedy_client or not self._can_receive):
             self._block_owner_change = True
