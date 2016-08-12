@@ -103,7 +103,9 @@ class Keyboard(KeyboardBase):
         variant = None
         variants = None
         try:
-            kbid = win32api.GetKeyboardLayout(0) & 0xffff
+            hkl = win32api.GetKeyboardLayout(0)
+            log("win32api.GetKeyboardLayout(0)=%#x", hkl)
+            kbid = hkl & 0xffff
             if kbid in WIN32_LAYOUTS:
                 code, _, _, _, layout, variants = WIN32_LAYOUTS.get(kbid)
                 log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%s", layout, variants, code, kbid)
