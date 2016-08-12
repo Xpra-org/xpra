@@ -1,0 +1,35 @@
+## <summary>Common UNIX printing system.</summary>
+
+########################################
+## <summary>
+##      Create a domain which can be
+##      started by cupsd.
+## </summary>
+## <param name="domain">
+##      <summary>
+##      Domain allowed to transition.
+##      </summary>
+## </param>
+## <param name="entry_point">
+##      <summary>
+##      Type of the program to be used as an entry point to this domain.
+##      </summary>
+## </param>
+#
+interface(`cups_backend',`
+        gen_require(`
+                type cupsd_t;
+        ')
+
+        domain_type($1)
+        domain_entry_file($1, $2)
+        role system_r types $1;
+
+        domtrans_pattern(cupsd_t, $2, $1)
+        allow cupsd_t $1:process signal;
+        allow $1 cupsd_t:unix_stream_socket connected_stream_socket_perms;
+
+        cups_read_config($1)
+        cups_append_log($1)
+')
+
