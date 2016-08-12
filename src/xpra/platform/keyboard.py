@@ -17,7 +17,12 @@ def main():
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color
     with program_context("Keyboard-Tool", "Keyboard Tool"):
-        log = Logger("keyboard")
+        #use the logger for the platform module we import from
+        global log
+        log = None
+        platform_import(globals(), "keyboard", True, "log")
+        if log is None:
+            log = Logger("keyboard")
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
