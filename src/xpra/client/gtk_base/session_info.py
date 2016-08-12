@@ -763,7 +763,7 @@ class SessionInfo(gtk.Window):
             d = typedict(get_sound_info(supported, prop))
             state = d.strget("state", "")
             codec_descr = d.strget("codec") or d.strget("codec_description")
-            container_descr = d.strget("container_description")
+            container_descr = d.strget("container_description", "")
             if state=="active" and codec_descr:
                 if codec_descr.find(container_descr)>=0:
                     descr = codec_descr
