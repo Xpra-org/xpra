@@ -972,7 +972,7 @@ class WindowVideoSource(WindowSource):
             if mw==0 and mh==0:
                 if target_q<100:
                     #dealing with the video region at less than 100% quality,
-                    #lower quality a bit more since this is definitely video: 
+                    #lower quality a bit more since this is definitely video:
                     target_q = max(min_q, int(target_q*0.75))
                     scorelog("lowering quality for video encoding of video region")
             else:

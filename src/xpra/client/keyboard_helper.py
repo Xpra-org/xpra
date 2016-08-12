@@ -160,13 +160,13 @@ class KeyboardHelper(object):
             #so that if multiple shortcuts use the same key,
             #we will try to match the one with the most modifiers first.
             #ie: Num_Lock+Menu will be tested before Menu
-            #(this is needed because Num_Lock is then discarded when comparing the list of required modifiers!) 
+            #(this is needed because Num_Lock is then discarded when comparing the list of required modifiers!)
             shortcuts = sorted(shortcuts, key=lambda x : len(x[0]), reverse=True)
         for shortcut in shortcuts:
             if self._check_shortcut(window, key_name, modifiers, depressed, shortcut):
                 return True
         return False
-    
+
     def _check_shortcut(self, window, key_name, modifiers, depressed, shortcut):
         (req_mods, action, args) = shortcut
         extra_modifiers = list(modifiers)

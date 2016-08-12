@@ -108,7 +108,7 @@ def pam_close():
         log.error("Error: failed to close the pam session:")
         log.error(" %s", pam_strerror(pam_handle, r))
         return False
-    
+
     r = pam_end(pam_handle, r)
     log("pam_end: %s", PAM_ERR_STR.get(r, r))
     if r!=PAM_SUCCESS:

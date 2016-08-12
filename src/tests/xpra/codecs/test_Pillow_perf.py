@@ -63,7 +63,7 @@ def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
             img.load()
             has_alpha = img.mode=="RGBA"
             img = img.convert("RGBA")
-            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))            
+            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
             rgb_data = data_fn("raw", img.mode)
             w, h = img.size
             assert len(rgb_data)==w*h*len(img.mode)

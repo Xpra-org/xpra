@@ -157,7 +157,7 @@ def main():
     windows = []
     for window_class in window_classes:
         windows.append(WindowAnim(window_class, client, 1, W, H))
-    
+
     actions = []
     all_dirs = sorted(os.listdir(dirname))[skip:skip+count]
     print("all dirs=%s", (all_dirs,))
@@ -172,7 +172,7 @@ def main():
             #print("handle_key_action: action=%s" % (a[0], ))
             a[0](*a[1:])
 
-    #print("actions=%s" % ([x[0] for x in actions], ))    
+    #print("actions=%s" % ([x[0] for x in actions], ))
     client.handle_key_action = handle_key_action
     try:
         gtk_main()

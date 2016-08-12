@@ -91,7 +91,7 @@ else:
             assert self.gldrawable, "failed to get the GL drawable for %s" % widget
             self.glcontext = gtkgl.widget_get_gl_context(widget)
             assert self.glcontext, "failed to get a GL context from %s" % widget
-            
+
         def __enter__(self):
             assert self.gldrawable.gl_begin(self.glcontext)
 

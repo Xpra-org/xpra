@@ -25,7 +25,7 @@ class TestForm(object):
 		self.label = gtk.Label("Ready")
 		vbox.pack_start(self.label, False, False, 0)
 
-		self.eventbox = gtk.EventBox()		
+		self.eventbox = gtk.EventBox()
 		self.eventbox.connect('button-press-event', self.button_press_event)
 		self.eventbox.add_events(gtk.gdk.BUTTON_PRESS_MASK)
 		self.eventbox.add_events(gtk.gdk.BUTTON_RELEASE_MASK)

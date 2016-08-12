@@ -548,7 +548,7 @@ cdef class Decoder:
             log("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, av_error_str(ret))
             self.log_av_error(buf_len, ret, options)
             return None
-            
+
         log("avcodec_decode_video2 returned %i", ret)
         if self.actual_pix_fmt!=self.av_frame.format:
             if self.av_frame.format==-1:

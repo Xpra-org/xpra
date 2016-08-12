@@ -743,15 +743,15 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         try:
             upload, img_data = self.pixels_for_upload(img_data)
-    
+
             with context:
                 self.gl_init()
                 self.set_rgb_paint_state()
-    
+
                 #convert it to a GL constant:
                 pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format.decode())
                 assert pformat is not None, "could not find pixel format for %s" % rgb_format
-    
+
                 bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
                 # Compute alignment and row length
                 row_length = 0
@@ -765,10 +765,10 @@ class GLWindowBackingBase(GTKWindowBacking):
                 # Otherwise it remains at 0 (= width implicitely)
                 if (rowstride - width * bytes_per_pixel) >= alignment:
                     row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
-    
+
                 self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s",
                                rgb_format, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
-    
+
                 # Upload data as temporary RGB texture
                 glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
@@ -779,7 +779,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
-    
+
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
                 glTexCoord2i(0, 0)
@@ -791,9 +791,9 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glTexCoord2i(width, 0)
                 glVertex2i(x+width, y)
                 glEnd()
-    
+
                 self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
-    
+
                 # Present update to screen
                 self.present_fbo(x, y, width, height, options.get("flush", 0))
                 # present_fbo has reset state already

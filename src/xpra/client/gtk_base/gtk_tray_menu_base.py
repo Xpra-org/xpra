@@ -75,7 +75,7 @@ CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
                                      "Both directions"          : "both",
                                      "Disabled"                 : "disabled",
                                      }
-CLIPBOARD_DIRECTION_NAME_TO_LABEL = dict((v,k) for k,v in CLIPBOARD_DIRECTION_LABEL_TO_NAME.items()) 
+CLIPBOARD_DIRECTION_NAME_TO_LABEL = dict((v,k) for k,v in CLIPBOARD_DIRECTION_LABEL_TO_NAME.items())
 
 
 def ll(m):

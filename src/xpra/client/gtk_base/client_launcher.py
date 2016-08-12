@@ -898,7 +898,7 @@ def main():
                             glib.idle_add(app.do_connect)
                     def open_URL(_, url):
                         log("open_URL(%s)", url)
-                        glib.idle_add(do_open_URL, url)                        
+                        glib.idle_add(do_open_URL, url)
                     from xpra.platform.darwin.gui import get_OSXApplication
                     try:
                         get_OSXApplication().connect("NSApplicationOpenURL", open_URL)

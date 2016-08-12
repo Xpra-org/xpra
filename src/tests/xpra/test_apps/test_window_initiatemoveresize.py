@@ -62,7 +62,7 @@ def main():
 	table = gtk.Table(3, 3, True)
 	table.set_col_spacings(0)
 	table.set_row_spacings(0)
-	
+
 	btn = gtk.Button("initiate move")
 	table.attach(btn, 1, 2, 1, 2, xoptions=gtk.FILL, yoptions=gtk.FILL)
 	def initiate_move(*args):

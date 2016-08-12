@@ -16,7 +16,7 @@
     On X11, it is also known as 'screen for X11': it allows you to run programs,
     usually on a remote host, direct their display to your local machine, and
     then to disconnect from these programs and reconnect from the same
-    or another machine, without losing any state. 
+    or another machine, without losing any state.
     It can also be used to forward full desktops, from X11 servers,
     MS Windows, or Mac OS X.
     Xpra also allows forwarding of sound, clipboard and printing services.

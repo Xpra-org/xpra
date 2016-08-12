@@ -977,7 +977,7 @@ class ServerBase(ServerCore):
 
     def _log_disconnect(self, proto, *args):
         #skip logging of disconnection events for server sources
-        #we have tagged during hello ("info_request", "exit_request", etc..) 
+        #we have tagged during hello ("info_request", "exit_request", etc..)
         ss = self._server_sources.get(proto)
         if ss and not ss.log_disconnect:
             #log at debug level only:

@@ -12,7 +12,7 @@ def main():
     from xpra.x11.gtk2 import gdk_display_source
     assert gdk_display_source
     from xpra.platform.xposix.gui import system_bell
-    
+
     def default_bell(*args):
         system_bell(window.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
 

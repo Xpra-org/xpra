@@ -88,7 +88,7 @@ class TestCystats(unittest.TestCase):
 		self.assertLess(ra, max_v)
 		self.assertGreater(a, min_v)
 		self.assertGreater(ra, min_v)
-	
+
 	def test_calculate_time_weighted_average(self):
 		now = time.time()
 		sample_size = 100
@@ -100,7 +100,7 @@ class TestCystats(unittest.TestCase):
 			t += 1
 		a, ra = cystats.calculate_time_weighted_average(data)
 		assert 0<a<1 and 0<ra<1
-	
+
 	def test_logp(self):
 		for _ in range(1000):
 			x = random.random()

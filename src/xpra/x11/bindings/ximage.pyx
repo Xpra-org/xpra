@@ -234,7 +234,7 @@ cdef class XImageWrapper(object):
         self.rowstride = rowstride
         self.planes = planes
         self.thread_safe = thread_safe
-        cdef unsigned long pixels_ptr = pixels 
+        cdef unsigned long pixels_ptr = pixels
         self.pixels = <void *> pixels_ptr
         self.timestamp = int(time.time()*1000)
 

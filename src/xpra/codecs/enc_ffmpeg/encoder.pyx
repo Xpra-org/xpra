@@ -220,7 +220,7 @@ cdef extern from "libavutil/opt.h":
         int flags
         const char *unit
 
-    const AVOption* av_opt_next(void *obj, const AVOption *prev)        
+    const AVOption* av_opt_next(void *obj, const AVOption *prev)
     void *av_opt_child_next(void *obj, void *prev)
     int av_opt_set_int(void *obj, const char *name, int64_t val, int search_flags)
     int av_opt_get_int(void *obj, const char *name, int search_flags, int64_t *out_val)
@@ -228,15 +228,15 @@ cdef extern from "libavutil/opt.h":
 
 cdef extern from "libavutil/log.h":
     ctypedef struct AVClass:
-        const char  *class_name                 #The name of the class; usually it is the same name as the context structure type to which the AVClass is associated. 
-        const char  *(*item_name)(void *ctx)    #A pointer to a function which returns the name of a context instance ctx associated with the class. 
+        const char  *class_name                 #The name of the class; usually it is the same name as the context structure type to which the AVClass is associated.
+        const char  *(*item_name)(void *ctx)    #A pointer to a function which returns the name of a context instance ctx associated with the class.
         AVOption    *option                     #a pointer to the first option specified in the class if any or NULL
         int         version                     #LIBAVUTIL_VERSION with which this structure was created
         int         log_level_offset_offset     #Offset in the structure where log_level_offset is stored
         int         parent_log_context_offset   #Offset in the structure where a pointer to the parent context for logging is stored
         void        *(*child_next)(void *obj, void *prev)  #Return next AVOptions-enabled child or NULL
-        AVClass     *(*child_class_next)(const AVClass *prev) #Return an AVClass corresponding to the next potential AVOptions-enabled child. 
-        #AVClassCategory category                #Category used for visualization (like color) This is only set if the category is equal for all objects using this class. 
+        AVClass     *(*child_class_next)(const AVClass *prev) #Return an AVClass corresponding to the next potential AVOptions-enabled child.
+        #AVClassCategory category                #Category used for visualization (like color) This is only set if the category is equal for all objects using this class.
         #AVClassCategory (*get_category)(void *ctx)
 
 

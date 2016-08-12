@@ -27,7 +27,7 @@ def get_all_video_devices(capture_only=True):
 def _device_change_callback(*args):
     log("device_change(%s)", args)
     from xpra.platform.webcam import _fire_video_device_change
-    _fire_video_device_change()            
+    _fire_video_device_change()
 
 def add_video_device_change_callback(callback):
     if not get_win32_event_listener:

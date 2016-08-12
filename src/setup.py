@@ -997,7 +997,7 @@ def build_xpra_conf(install_dir):
                 config_data = template % SUBS
                 f_out.write(config_data)
     convert_templates()
-    
+
 
 #*******************************************************************************
 if 'clean' in sys.argv or 'sdist' in sys.argv:

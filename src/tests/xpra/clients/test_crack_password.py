@@ -84,7 +84,7 @@ def main():
         glib.idle_add(start_try)
     glib_mainloop = glib.MainLoop()
     glib_mainloop.run()
-        
+
 
 if __name__ == "__main__":
     main()

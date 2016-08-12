@@ -22,7 +22,7 @@ def main():
 	X11WindowBindings().setSizeHints(window.get_window().xid, hints)
 	window.show_all()
 	gtk.main()
-		
+
 
 if __name__ == "__main__":
 	main()

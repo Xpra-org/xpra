@@ -244,7 +244,6 @@ class SessionInfo(gtk.Window):
         self.server_cursors_icon = gtk.Image()
         tb.new_row("Cursors", self.server_cursors_icon)
 
-        
         # Codecs Table:
         vbox = self.vbox_tab("encoding.png", "Codecs", self.populate_codecs)
         tb = TableBuilder(rows=1, columns=2, col_spacings=0, row_spacings=10)

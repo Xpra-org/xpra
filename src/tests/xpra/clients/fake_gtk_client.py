@@ -23,7 +23,7 @@ class FakeGTKClient(FakeClient):
         root = gdk.get_default_root_window()
         p = root.get_pointer()
         return p[0], p[1]
-    
+
     def get_current_modifiers(self, *args):
         #root = gdk.get_default_root_window()
         #modifiers_mask = root.get_pointer()[-1]

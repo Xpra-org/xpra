@@ -53,7 +53,7 @@ try:
     if getwindowsversion().major<6:
         DISABLE_DWM_COMPOSITION = 0
 except:
-    pass    
+    pass
 DISABLE_DWM_COMPOSITION = os.environ.get("XPRA_DISABLE_DWM_COMPOSITION", str(DISABLE_DWM_COMPOSITION))=="1"
 
 
@@ -76,7 +76,7 @@ class Win32RootWindowModel(RootWindowModel):
             self.dynamic_property_names.append("shape")
             self.rectangles = self.get_shape_rectangles(logit=True)
             self.shape_notify = []
-            
+
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()

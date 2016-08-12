@@ -374,7 +374,7 @@ def main():
 			print("")
 			print("Crypto Capabilities:")
 			print_nested_dict(ccaps)
-			
+
 
 if __name__ == "__main__":
 	main()

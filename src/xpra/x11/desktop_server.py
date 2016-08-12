@@ -74,7 +74,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def __repr__(self):
         return "DesktopModel(%#x)" % (self.client_window.xid)
 
-    
+
     def setup(self):
         WindowDamageHandler.setup(self)
         screen = self.client_window.get_screen()

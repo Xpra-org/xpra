@@ -63,7 +63,7 @@ class FakeClient(object):
 
     def window_close_event(self, *args):
         self.log("window_close_event%s", args)
-                   
+
     def mask_to_names(self, *args):
         return []
 

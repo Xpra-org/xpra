@@ -64,7 +64,7 @@ class WindowAnim(object):
                    (0,      i,      W,      H//2-i,     0,  -i),
                    ]
         self.window.draw_region(0, 0, W, H, "scroll", scrolls, W*4, 0, typedict({}), [])
-    
+
 
 def main():
     W = 640

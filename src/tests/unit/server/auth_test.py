@@ -141,7 +141,7 @@ class TestAuth(unittest.TestCase):
 		a = self._init_auth(module)
 		assert a.requires_challenge()
 		p = a.get_password()
-		assert not p, "got a password from %s: %s" % (a, p) 
+		assert not p, "got a password from %s: %s" % (a, p)
 		#challenge twice is a fail
 		assert a.get_challenge()
 		assert not a.get_challenge()

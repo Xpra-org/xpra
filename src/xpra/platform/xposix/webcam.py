@@ -31,7 +31,7 @@ def check_virtual_dir(warn=True):
             log.warn(" make sure that the 'v4l2loopback' kernel module is installed and loaded")
         return False
     return True
-    
+
 def get_virtual_video_devices(capture_only=True):
     log("get_virtual_video_devices")
     if not check_virtual_dir(False):
@@ -130,7 +130,7 @@ def add_video_device_change_callback(callback):
         class EventHandler(pyinotify.ProcessEvent):
             def process_IN_CREATE(self, event):
                 _fire_video_device_change(True, event.pathname)
-    
+
             def process_IN_DELETE(self, event):
                 _fire_video_device_change(False, event.pathname)
 

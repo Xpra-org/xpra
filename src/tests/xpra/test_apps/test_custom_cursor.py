@@ -12,7 +12,7 @@ class CursorWindow(gtk.Window):
 		self.show()
 		self.get_window().set_cursor(cursor)
 
-def colored_cursor():		
+def colored_cursor():
 	#create a custom cursor:
 	#first get a colormap and then allocate the colors
 	#black and white for drawing on the bitmaps:

@@ -64,7 +64,6 @@ cdef extern from "./video.h":
             uint32_t version
             uint32_t capabilities
             uint32_t reserved[3]
-    
 
     cdef struct v4l2_pix_format:
         uint32_t width
