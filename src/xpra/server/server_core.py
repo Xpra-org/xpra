@@ -442,7 +442,7 @@ class ServerCore(object):
         log.info("xpra %s version %s%s %i-bit", self.get_server_mode(), local_version, rev_info, bits)
         try:
             pinfo = get_platform_info()
-            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("release", ""))
+            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
         except:
             log("platform name error:", exc_info=True)
             osinfo = ""

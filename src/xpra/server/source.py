@@ -675,7 +675,7 @@ class ServerSource(FileTransferHandler):
         self.client_platform = c.strget("platform")
         self.client_machine = c.strget("platform.machine")
         self.client_processor = c.strget("platform.processor")
-        self.client_release = c.strget("platform.release")
+        self.client_release = c.strget("platform.sysrelease")
         self.client_version = c.strget("version")
         self.client_revision = c.strget("build.revision")
         self.client_proxy = c.boolget("proxy")
@@ -763,7 +763,7 @@ class ServerSource(FileTransferHandler):
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
-            proxy_release = c.strget("proxy.platform.release")
+            proxy_release = c.strget("proxy.platform.sysrelease")
             proxy_version = c.strget("proxy.version")
             proxy_version = c.strget("proxy.build.version", proxy_version)
             msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version or "unknown"))
