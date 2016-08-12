@@ -1562,6 +1562,7 @@ if WIN32:
         if gtk2_ENABLED or gtk3_ENABLED:
             add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
             add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
+            add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
         if client_ENABLED or server_ENABLED:
             add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
