@@ -13,6 +13,7 @@ import win32gui         #@UnresolvedImport
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
+from xpra.util import csv
 from xpra.log import Logger
 log = Logger("keyboard")
 
@@ -103,18 +104,30 @@ class Keyboard(KeyboardBase):
         variant = None
         variants = None
         try:
+            l = win32api.GetKeyboardLayoutList()
+            log("win32api.GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
+            for hkl in l:
+                kbid = hkl & 0xffff
+                if kbid in WIN32_LAYOUTS:
+                    code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
+                    log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", _layout, _variants, code, kbid, hkl)
+                    if _layout not in layouts:
+                        layouts.append(_layout)
+        except Exception as e:
+            log.error("Error: failed to detect keyboard layouts: %s", e)
+        try:
             hkl = win32api.GetKeyboardLayout(0)
             log("win32api.GetKeyboardLayout(0)=%#x", hkl)
             kbid = hkl & 0xffff
             if kbid in WIN32_LAYOUTS:
                 code, _, _, _, layout, variants = WIN32_LAYOUTS.get(kbid)
-                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", layout, variants, code, kbid, kbid)
+                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", layout, variants, code, kbid, hkl)
             if not layout:
-                log("unknown keyboard layout for kbid: %s", kbid)
+                log("unknown keyboard layout for kbid: %i (%#x)", kbid, hkl)
             else:
                 layouts.append(layout)
         except Exception as e:
-            log.error("failed to detect keyboard layout: %s", e)
+            log.error("Error: failed to detect keyboard layout: %s", e)
         return layout,layouts,variant,variants
 
     def get_keyboard_repeat(self):
