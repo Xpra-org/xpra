@@ -24,7 +24,8 @@ def main():
         if log is None:
             log = Logger("keyboard")
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
+        if "-v" in sys.argv or "--verbose" in sys.argv or \
+            (sys.platform.startswith("win") and not ("-q" in sys.argv or "--quiet")):
             log.enable_debug()
 
         #naughty, but how else can I hook this up?
