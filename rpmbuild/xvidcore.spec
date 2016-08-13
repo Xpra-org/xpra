@@ -45,7 +45,7 @@ f=AUTHORS ; iconv -f iso-8859-1 -t utf-8 -o $f.utf8 $f && touch -r $f $f.utf8 &&
 cd build/generic
 export CFLAGS="$RPM_OPT_FLAGS -ffast-math"
 %configure
-make %{?_smp_mflags} 
+make %{?_smp_mflags}
 cd -
 
 

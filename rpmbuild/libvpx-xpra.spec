@@ -1,4 +1,4 @@
-Name:	     libvpx-xpra	
+Name:	     libvpx-xpra
 Version:     1.6.0
 Release:     1%{?dist}
 Summary:     vpx library for xpra
@@ -10,7 +10,7 @@ Source0:     http://downloads.webmproject.org/releases/webm/libvpx-%{version}.ta
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
-#Requires:	
+#Requires:
 
 %description
 vpx library for xpra

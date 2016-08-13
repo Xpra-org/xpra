@@ -2,7 +2,7 @@
 Name:	     ffmpeg-xpra
 Version:     3.1.1
 Release:     2%{?dist}
-Summary:     ffmpeg libraries for xpra	
+Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
 License:     GPL

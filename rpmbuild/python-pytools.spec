@@ -17,16 +17,16 @@ BuildArch:      noarch
 BuildRequires:  python-devel python-setuptools
 
 %description
-Pytools are a few interesting things that are missing from the Python Standard 
-Library. 
+Pytools are a few interesting things that are missing from the Python Standard
+Library.
 
 Small tool functions such as ::
-* len_iterable, 
-* argmin, 
-* tuple generation, 
-* permutation generation, 
-* ASCII table pretty printing, 
-* GvR's mokeypatch_xxx() hack, 
+* len_iterable,
+* argmin,
+* tuple generation,
+* permutation generation,
+* ASCII table pretty printing,
+* GvR's mokeypatch_xxx() hack,
 * The elusive flatten, and much more.
 * Michele Simionato's decorator module
 * A time-series logging module, pytools.log.
