@@ -270,7 +270,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef char *locale = setlocale(LC_ALL, NULL)
         log("setxkbmap: using locale=%s", locale)
 
-        rdefs.model = model
+        rdefs.model = model or b""
         rdefs.layout = layout
         if variant:
             rdefs.variant = variant
