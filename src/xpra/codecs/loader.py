@@ -20,7 +20,7 @@ if sys.version > '3':
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc4", "nvenc5", "nvenc6", "nvenc7", "opencl", "opencv"]
+NOWARN = ["nvenc7", "opencl", "opencv"]
 
 SELFTEST = os.environ.get("XPRA_CODEC_SELFTEST", "1")=="1"
 FULL_SELFTEST = os.environ.get("XPRA_CODEC_FULL_SELFTEST", "0")=="1"
@@ -162,7 +162,7 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
         add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
 
-        for v in (4, 5, 6, 7):
+        for v in (7, ):
             codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
             add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
 
@@ -239,7 +239,7 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl", "csc_libyuv", "csc_opencv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc4", "nvenc5", "nvenc6", "nvenc7", "enc_xvid"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc7", "enc_xvid"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))

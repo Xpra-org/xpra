@@ -14,15 +14,13 @@ from xpra.codecs.loader import get_codec, get_codec_error
 from xpra.util import csv, engs
 
 
-NVENC_OPTIONS = [("nvenc%s" % v) for v in os.environ.get("XPRA_NVENC_VERSIONS", "7,6,5,4").split(",")]
-
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
 CODEC_TO_MODULE = {
                    "vpx"        : ["vpx"],
                    "x264"       : ["enc_x264"],
                    "x265"       : ["enc_x265"],
-                   "nvenc"      : NVENC_OPTIONS,
+                   "nvenc"      : ["nvenc7"],
                    "xvid"       : ["enc_xvid"],
                    "swscale"    : ["csc_swscale"],
                    "cython"     : ["csc_cython"],
@@ -73,7 +71,7 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 
 def get_encoder_module_names(x):
     if x=="nvenc":
-        return NVENC_OPTIONS
+        return ["nvenc7"]
     elif x.find("enc")>=0:
         return [x]              #ie: "nvenc" or "enc_vpx"
     return ["enc_"+x]           #ie: "enc_x264"
