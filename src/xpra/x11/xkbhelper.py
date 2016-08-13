@@ -84,14 +84,16 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v]))
         try:
             X11Keyboard.setxkbmap(rules, model, layout, variant, options)
+            return
         except:
             log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
-            #try again with no options:
-            try:
-                X11Keyboard.setxkbmap(rules, model, layout, variant, "")
-            except:
-                log.error("failed to set exact keymap even without applying options")
-    elif xkbmap_print:
+        #try again with no options:
+        try:
+            X11Keyboard.setxkbmap(rules, model, layout, variant, "")
+            return
+        except:
+            log.error("failed to set exact keymap even without applying options")
+    if xkbmap_print:
         log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
         try:
@@ -102,12 +104,13 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                     layout = std(m.group(1))
                     log.info("guessing keyboard layout='%s'" % layout)
                     X11Keyboard.setxkbmap("", "pc104", layout, "", "")
+                    return
         except Exception as e:
             log.info("error setting keymap: %s" % e)
-    else:
-        layout = xkbmap_layout or "us"
-        log.info("setting keyboard layout to '%s'", std(layout))
-        X11Keyboard.setxkbmap("", "", layout, xkbmap_variant, "")
+    #fallback:
+    layout = xkbmap_layout or "us"
+    log.info("setting keyboard layout to '%s'", std(layout))
+    X11Keyboard.setxkbmap("", "", layout, xkbmap_variant, "")
 
 
 ################################################################################
