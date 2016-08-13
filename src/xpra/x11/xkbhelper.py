@@ -51,7 +51,7 @@ def clean_keyboard_state():
 # keyboard layouts
 
 def do_set_keymap(xkbmap_layout, xkbmap_variant,
-                  xkbmap_print, xkbmap_query):
+                  xkbmap_print, xkbmap_query, xkbmap_query_struct):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
         xkbmap_variant is the layout variant (may not be set)
         xkbmap_print is the output of "setxkbmap -print" on the client
@@ -59,28 +59,32 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         Use those to try to setup the correct keyboard map for the client
         so that all the keycodes sent will be mapped
     """
-    #First we try to use data from setxkbmap -query
-    if xkbmap_query:
-        log("do_set_keymap using xkbmap_query")
+    #First we try to use data from setxkbmap -query,
+    #preferably as structured data: 
+    if xkbmap_query and not xkbmap_query_struct:
+        xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
+    if xkbmap_query_struct:
+        log("do_set_keymap using xkbmap_query struct")
         """ The xkbmap_query data will look something like this:
-        rules:      evdev
-        model:      evdev
-        layout:     gb
-        options:    grp:shift_caps_toggle
+            {
+            "rules"       : "evdev",
+            "model"       : "evdev",
+            "layout"      : "gb",
+            "options"     : "grp:shift_caps_toggle",
+            }
         (we execute the options separately in case that fails..)
         """
         #parse the data into a dict:
-        settings = parse_xkbmap_query(xkbmap_query)
-        rules = settings.get("rules")
-        model = settings.get("model")
-        layout = settings.get("layout")
-        variant = settings.get("variant")
-        options = settings.get("options")
-        log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in settings.items() if k in ["rules", "model", "layout"] and v]))
+        rules = xkbmap_query_struct.get("rules")
+        model = xkbmap_query_struct.get("model")
+        layout = xkbmap_query_struct.get("layout")
+        variant = xkbmap_query_struct.get("variant")
+        options = xkbmap_query_struct.get("options")
+        log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v]))
         try:
             X11Keyboard.setxkbmap(rules, model, layout, variant, options)
         except:
-            log.warn("failed to set exact keymap using %s", settings)
+            log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
             #try again with no options:
             try:
                 X11Keyboard.setxkbmap(rules, model, layout, variant, "")

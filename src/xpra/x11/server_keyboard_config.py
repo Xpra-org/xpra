@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-from xpra.util import csv
+from xpra.util import csv, nonl
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
@@ -41,6 +41,7 @@ class KeyboardConfig(KeyboardConfigBase):
         KeyboardConfigBase.__init__(self)
         self.xkbmap_print = None
         self.xkbmap_query = None
+        self.xkbmap_query_struct = None
         self.xkbmap_mod_meanings = {}
         self.xkbmap_mod_managed = []
         self.xkbmap_mod_pointermissing = []
@@ -128,7 +129,7 @@ class KeyboardConfig(KeyboardConfigBase):
         #lists:
         parse_option("keycodes", props.listget)
         #dicts:
-        for x in ("mod_meanings", "x11_keycodes"):
+        for x in ("mod_meanings", "x11_keycodes", "query_struct"):
             parse_option(x, props.dictget)
         #lists of strings:
         for x in ("mod_managed", "mod_pointermissing"):
@@ -143,11 +144,17 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         import hashlib
         m = hashlib.sha1()
+        def hashadd(v):
+            m.update(("/%s" % str(v)).encode("utf8"))
         m.update(KeyboardConfigBase.get_hash(self))
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
-            m.update("/%s" % str(x))
+            hashadd(x)
+        if self.xkbmap_query_struct:
+            #flatten the dict in a predicatable order:
+            for k in sorted(self.xkbmap_query_struct.keys()):
+                hashadd(self.xkbmap_query_struct.get(k))
         return "%s/%s/%s" % (self.xkbmap_layout, self.xkbmap_variant, m.hexdigest())
 
     def compute_modifier_keynames(self):
@@ -218,13 +225,13 @@ class KeyboardConfig(KeyboardConfigBase):
         if not self.enabled:
             return
         clean_keyboard_state()
+        log("set_keymap() layout=%s, variant=%s, print=%s, query=%s", self.xkbmap_layout, self.xkbmap_variant, nonl(self.xkbmap_print), nonl(self.xkbmap_query))
         try:
             do_set_keymap(self.xkbmap_layout, self.xkbmap_variant,
-                          self.xkbmap_print, self.xkbmap_query)
+                          self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
         except:
             log.error("error setting new keymap", exc_info=True)
         self.is_native_keymap = bool(self.xkbmap_print) or bool(self.xkbmap_query)
-        log("set_keymap() is_native_keymap=%s, print=%s, query=%s", self.is_native_keymap, self.xkbmap_print, self.xkbmap_query)
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
