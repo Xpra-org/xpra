@@ -2466,6 +2466,7 @@ class ServerBase(ServerCore):
         if self.readonly:
             return
         wid, keyname, pressed, modifiers, keyval, _, client_keycode = packet[1:8]
+        #group = packet[8] #unused!
         ss = self._server_sources.get(proto)
         if ss is None:
             return

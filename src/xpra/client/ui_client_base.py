@@ -284,6 +284,7 @@ class UIXpraClient(XpraClientBase):
 
         #helpers and associated flags:
         self.client_extras = None
+        self.keyboard_helper_class = KeyboardHelper
         self.keyboard_helper = None
         self.keyboard_grabbed = False
         self.pointer_grabbed = False
@@ -427,7 +428,14 @@ class UIXpraClient(XpraClientBase):
         self.init_opengl(opts.opengl)
 
         if not self.readonly:
-            self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
+            def noauto(v):
+                if not v:
+                    return None
+                if str(v).lower()=="auto":
+                    return None
+                return v
+            overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
+            self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.key_shortcut, opts.keyboard_raw, *overrides)
 
         tray_icon_filename = opts.tray_icon
         if opts.tray:
@@ -779,9 +787,6 @@ class UIXpraClient(XpraClientBase):
         log("do_get_core_encodings()=%s", core_encodings)
         return core_encodings
 
-
-    def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
-        return KeyboardHelper(self.send, keyboard_sync, key_shortcuts)
 
     def get_clipboard_helper_classes(self):
         return []
@@ -1310,27 +1315,9 @@ class UIXpraClient(XpraClientBase):
             #don't bother sending keyboard info, as it won't be used
             capabilities["keyboard"] = False
         else:
-            for k,v in self.get_keymap_properties().items():
-                capabilities[k] = v
+            capabilities.update(self.get_keymap_properties())
             #show the user a summary of what we have detected:
-            kb_info = {}
-            xkbq = capabilities.get("xkbmap_query")
-            xkbqs = capabilities.get("xkbmap_query_struct")
-            if xkbqs or xkbq:
-                if not xkbqs:
-                    #parse query into a dict
-                    from xpra.keyboard.layouts import parse_xkbmap_query
-                    xkbqs = parse_xkbmap_query(xkbq)
-                for x in ["rules", "model", "layout"]:
-                    v = xkbqs.get(x)
-                    if v:
-                        kb_info[x] = v
-            if self.keyboard_helper.xkbmap_layout:
-                kb_info["layout"] = self.keyboard_helper.xkbmap_layout
-            if len(kb_info)==0:
-                log.info(" using default keyboard settings")
-            else:
-                log.info(" detected keyboard: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))
+            self.keyboard_helper.log_keyboard_info()
 
         capabilities["modifiers"] = self.get_current_modifiers()
         u_root_w, u_root_h = self.get_root_size()

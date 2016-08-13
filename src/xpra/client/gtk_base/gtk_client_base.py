@@ -57,6 +57,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.session_info = None
         self.bug_report = None
         self.start_new_command = None
+        self.keyboard_helper_class = GTKKeyboardHelper
         #opengl bits:
         self.client_supports_opengl = False
         self.opengl_enabled = False
@@ -298,10 +299,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     framelog.warn(" this is probably a bug in '%s'", wm_name)
         framelog("get_window_frame_sizes()=%s", wfs)
         return wfs
-
-
-    def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
-        return GTKKeyboardHelper(self.send, keyboard_sync, key_shortcuts)
 
 
     def _add_statusicon_tray(self, tray_list):

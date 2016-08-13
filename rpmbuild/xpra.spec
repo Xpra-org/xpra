@@ -113,7 +113,7 @@
 %endif
 
 %if 0%{?suse_version}
-#SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there 
+#SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there
 %if 0%{?suse_version} == 1315
 %define with_python3 0
 %endif
@@ -192,7 +192,7 @@ Requires: xpra-common = %{version}-%{build_no}%{dist}
 Requires: sshpass
 %endif
 %if 0%{?suse_version}
-#only use recommends because these are not in the standard repos: 
+#only use recommends because these are not in the standard repos:
 Recommends: python-gstreamer
 Recommends: cups-pdf
 Recommends: cups-filters
@@ -401,6 +401,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
+%config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
 %config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf

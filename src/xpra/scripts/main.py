@@ -678,6 +678,24 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--keyboard-sync", action="store", metavar="yes|no",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
                       help="Synchronize keyboard state. Default: %s." % enabled_str(defaults.keyboard_sync))
+    group.add_option("--keyboard-raw", action="store", metavar="yes|no",
+                      dest="keyboard_raw", default=defaults.keyboard_raw,
+                      help="Send raw keyboard keycodes. Default: %s." % enabled_str(defaults.keyboard_raw))
+    group.add_option("--keyboard-layout", action="store", metavar="LAYOUT",
+                      dest="keyboard_layout", default=defaults.keyboard_layout,
+                      help="The keyboard layout to use. Default: %default.")
+    group.add_option("--keyboard-layouts", action="store", metavar="LAYOUTS",
+                      dest="keyboard_layouts", default=defaults.keyboard_layouts,
+                      help="The keyboard layouts to enable. Default: %s." % csv(defaults.keyboard_layouts))
+    group.add_option("--keyboard-variant", action="store", metavar="VARIANT",
+                      dest="keyboard_variant", default=defaults.keyboard_variant,
+                      help="The keyboard layout variant to use. Default: %default.")
+    group.add_option("--keyboard-variants", action="store", metavar="VARIANTS",
+                      dest="keyboard_variants", default=defaults.keyboard_variant,
+                      help="The keyboard layout variants to enable. Default: %s." % csv(defaults.keyboard_variants))
+    group.add_option("--keyboard-options", action="store", metavar="OPTIONS",
+                      dest="keyboard_options", default=defaults.keyboard_options,
+                      help="The keyboard layout options to use. Default: %default.")
 
     group = optparse.OptionGroup(parser, "SSL Options",
                 "These options apply to both client and server. Please refer to the man page for details.")

@@ -1,0 +1,27 @@
+################################################################################
+# Client Keyboard Options
+
+# Keyboard synchronization:
+keyboard-sync = yes
+
+
+# Raw mode
+# (unsafe: can only be used when both the client and server use the same keycodes)
+# keyboard-raw = no
+
+
+# The options below use X11 names and semantics, on all platforms
+
+# Layout
+# (will be detected automatically, this can be used to override)
+# keyboard-layout = us
+# keyboard-layout = us,gb,fr
+
+# Layouts: the different types of keyboard layouts that may be used
+# (will be detected automatically, this can be used to override)
+# keyboard-layouts = us,fr
+# keyboard-layouts = us,gb,fr
+
+# Variant:
+# variant = ,dvorak
+# variant = altgr-intl

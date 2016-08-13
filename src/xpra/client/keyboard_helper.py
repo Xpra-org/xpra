@@ -8,21 +8,30 @@
 from xpra.log import Logger
 log = Logger("keyboard")
 
+from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.util import nonl, csv, print_nested_dict
+from xpra.util import nonl, csv, std, print_nested_dict
 
 
 class KeyboardHelper(object):
 
-    def __init__(self, net_send, keyboard_sync, key_shortcuts):
+    def __init__(self, net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options):
         self.reset_state()
         self.send = net_send
         self.locked = False
         self.keyboard_sync = keyboard_sync
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
+        #command line overrides:
+        self.xkbmap_raw = raw
+        self.layout_option = layout
+        self.variant_option = variant
+        self.layouts_option = layouts
+        self.variants_option = variants
+        self.options = options
+        #the platform class which allows us to map the keys:
         from xpra.platform.keyboard import Keyboard
         self.keyboard = Keyboard()
-        log("KeyboardHelper.__init__(%s, %s, %s) keyboard=%s", net_send, keyboard_sync, key_shortcuts, self.keyboard)
+        log("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
 
     def mask_to_names(self, mask):
         return self.keyboard.mask_to_names(mask)
@@ -37,6 +46,7 @@ class KeyboardHelper(object):
         self.xkbmap_mod_managed = []
         self.xkbmap_mod_pointermissing = []
         self.xkbmap_layout = ""
+        self.xkbmap_layouts = []
         self.xkbmap_variant = ""
         self.xkbmap_variants = []
         self.xkbmap_print = ""
@@ -284,14 +294,50 @@ class KeyboardHelper(object):
         self.keys_pressed = {}
 
 
+    def get_layout_spec(self):
+        """ add / honour overrides """
+        layout, layouts, variant, variants = self.keyboard.get_layout_spec()
+        log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants))
+        def inl(v, l):
+            try:
+                if v in l:
+                    return l
+                return [v]+list(l)
+            except:
+                return [v]
+        layout   = self.layout_option or layout
+        layouts  = inl(layout, self.layouts_option or layouts)
+        variant  = self.variant_option or variant
+        variants = inl(variant, self.variants_option or variants)
+        return layout, layouts, self.variant_option or variant, self.variants_option or variants
+
+    def get_keymap_spec(self):
+        _print, query, query_struct = self.keyboard.get_keymap_spec()
+        if self.layout_option:
+            query_struct["layout"] = self.layout_option
+        if self.layouts_option:
+            query_struct["layouts"] = csv(self.layouts_option)
+        if self.variant_option:
+            query_struct["variant"] = self.variant_option
+        if self.variants_option:
+            query_struct["variants"] = csv(self.variants_option)
+        if self.options:
+            if self.options.lower()=="none":
+                query_struct["options"] = ""
+            else:
+                query_struct["options"] = self.options
+        if self.layout_option or self.layouts_option or self.variant_option or self.variants_option or self.options:
+            query = xkbmap_query_tostring(query_struct)
+        return _print, query, query_struct
+
     def query_xkbmap(self):
-        self.xkbmap_layout, _, self.xkbmap_variant, self.xkbmap_variants = self.keyboard.get_layout_spec()
-        self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = self.keyboard.get_keymap_spec()
+        self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants = self.get_layout_spec()
+        self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = self.get_keymap_spec()
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
         self.update_hash()
-        log("layout=%s, variant=%s, variants=%s", self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants)
+        log("layout=%s, layouts=%s, variant=%s, variants=%s", self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
         log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), nonl(self.xkbmap_query_struct))
         log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
@@ -305,12 +351,12 @@ class KeyboardHelper(object):
             self.query_xkbmap()
 
     def layout_str(self):
-        return " / ".join([x for x in (self.xkbmap_layout, self.xkbmap_variant) if bool(x)])
+        return " / ".join([x for x in (self.layout_option or self.xkbmap_layout, self.variant_option or self.xkbmap_variant) if bool(x)])
 
 
     def send_layout(self):
         log("send_layout()")
-        self.send("layout-changed", self.xkbmap_layout or "", self.xkbmap_variant or "")
+        self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "")
 
     def send_keymap(self):
         log("send_keymap()")
@@ -338,7 +384,9 @@ class KeyboardHelper(object):
 
     def get_keymap_properties(self):
         props = {}
-        for x in ("layout", "variant", "print", "query", "query_struct", "mod_meanings",
+        for x in ("layout", "layouts", "variant", "variants",
+                  "raw",
+                  "print", "query", "query_struct", "mod_meanings",
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x
             v = getattr(self, p)
@@ -347,3 +395,24 @@ class KeyboardHelper(object):
                 v = ""
             props[p] = v
         return  props
+
+
+    def log_keyboard_info(self):
+        #show the user a summary of what we have detected:
+        kb_info = {}
+        if self.xkbmap_query_struct or self.xkbmap_query:
+            xkbqs = self.xkbmap_query_struct
+            if xkbqs:
+                #parse query into a dict
+                from xpra.keyboard.layouts import parse_xkbmap_query
+                xkbqs = parse_xkbmap_query(self.xkbmap_query)
+            for x in ["rules", "model", "layout"]:
+                v = xkbqs.get(x)
+                if v:
+                    kb_info[x] = v
+        if self.xkbmap_layout:
+            kb_info["layout"] = self.xkbmap_layout
+        if len(kb_info)==0:
+            log.info(" using default keyboard settings")
+        else:
+            log.info(" keyboard settings: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))

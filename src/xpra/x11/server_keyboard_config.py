@@ -39,6 +39,7 @@ ALL_X11_MODIFIERS = {
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         KeyboardConfigBase.__init__(self)
+        self.xkbmap_raw = False
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xkbmap_query_struct = None
@@ -100,7 +101,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for mod, mod_name in self.xkbmap_mod_meanings.items():
                 modinfo[mod] = mod_name
         info["x11_keycode"] = self.xkbmap_x11_keycodes
-        for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing"):
+        for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing", "raw"):
             v = getattr(self, "xkbmap_"+x)
             if v:
                 info[x] = v
@@ -134,6 +135,7 @@ class KeyboardConfig(KeyboardConfigBase):
         #lists of strings:
         for x in ("mod_managed", "mod_pointermissing"):
             parse_option(x, props.strlistget)
+        parse_option("raw", props.boolget)
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
@@ -147,7 +149,7 @@ class KeyboardConfig(KeyboardConfigBase):
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
         m.update(KeyboardConfigBase.get_hash(self))
-        for x in (self.xkbmap_print, self.xkbmap_query, \
+        for x in (self.xkbmap_print, self.xkbmap_query, self.xkbmap_raw, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
             hashadd(x)
@@ -170,7 +172,9 @@ class KeyboardConfig(KeyboardConfigBase):
                     entries = keymap.get_entries_for_keyval(keyval)
                     if entries:
                         for keycode, _, _ in entries:
-                            self.keycodes_for_modifier_keynames.setdefault(keyname, set()).add(keycode)
+                            l = self.keycodes_for_modifier_keynames.setdefault(keyname, [])
+                            if keycode not in l:
+                                l.append(keycode)
         log("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
 
     def compute_client_modifier_keycodes(self):
@@ -235,41 +239,63 @@ class KeyboardConfig(KeyboardConfigBase):
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
-            clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
 
-            #now set all the keycodes:
-            clean_keyboard_state()
-            self.keycode_translation = {}
+            if not self.xkbmap_raw:
+                clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
 
-            has_keycodes = (self.xkbmap_x11_keycodes and len(self.xkbmap_x11_keycodes)>0) or \
-                            (self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0)
-            assert has_keycodes, "client failed to provide any keycodes!"
-            #first compute the modifier maps as this may have an influence
-            #on the keycode mappings (at least for the from_keycodes case):
-            if self.xkbmap_mod_meanings:
-                #Unix-like OS provides modifier meanings:
-                self.keynames_for_mod = get_modifiers_from_meanings(self.xkbmap_mod_meanings)
-            elif self.xkbmap_keycodes:
-                #non-Unix-like OS provides just keycodes for now:
-                self.keynames_for_mod = get_modifiers_from_keycodes(self.xkbmap_keycodes)
+                #now set all the keycodes:
+                clean_keyboard_state()
+
+                has_keycodes = (self.xkbmap_x11_keycodes and len(self.xkbmap_x11_keycodes)>0) or \
+                                (self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0)
+                assert has_keycodes, "client failed to provide any keycodes!"
+                #first compute the modifier maps as this may have an influence
+                #on the keycode mappings (at least for the from_keycodes case):
+                if self.xkbmap_mod_meanings:
+                    #Unix-like OS provides modifier meanings:
+                    self.keynames_for_mod = get_modifiers_from_meanings(self.xkbmap_mod_meanings)
+                elif self.xkbmap_keycodes:
+                    #non-Unix-like OS provides just keycodes for now:
+                    self.keynames_for_mod = get_modifiers_from_keycodes(self.xkbmap_keycodes)
+                else:
+                    log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
+                    self.keynames_for_mod = {}
+                #if the client does not provide a full keymap,
+                #try to preserve the initial server keycodes
+                #(used by non X11 clients like osx,win32 or Android)
+                preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
+                self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, self.keynames_for_mod)
+                self.add_gtk_keynames()
+
+                #now set the new modifier mappings:
+                clean_keyboard_state()
+                log.warn("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+                if self.keynames_for_mod:
+                    set_modifiers(self.keynames_for_mod)
+                log.warn("keynames_for_mod=%s", self.keynames_for_mod)
+                self.compute_modifier_keynames()
             else:
-                log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
-                self.keynames_for_mod = {}
-            #if the client does not provide a full keymap,
-            #try to preserve the initial server keycodes
-            #(used by non X11 clients like osx,win32 or Android)
-            preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
-            self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, self.keynames_for_mod)
-            self.add_gtk_keynames()
-
-            #now set the new modifier mappings:
-            clean_keyboard_state()
-            log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
-            if self.keynames_for_mod:
-                set_modifiers(self.keynames_for_mod)
-            self.compute_modifier_keynames()
+                self.keycode_translation = {}
+                log("keyboard raw mode, keycode translation left empty")
+                log("keycode mappings=%s", X11Keyboard.get_keycode_mappings())
+                mod_mappings = X11Keyboard.get_modifier_mappings()
+                self.xkbmap_mod_meanings = {}
+                for mod, mod_defs in mod_mappings.items():
+                    for mod_def in mod_defs:
+                        for v in mod_def:
+                            if type(v)==int:
+                                l = self.keycodes_for_modifier_keynames.setdefault(mod, [])
+                            else:
+                                self.xkbmap_mod_meanings[v] = mod
+                                l = self.keynames_for_mod.setdefault(mod, [])
+                            if v not in l:
+                                l.append(v)
+                log("keynames_for_mod=%s", self.keynames_for_mod)
+                log("keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
+                log("mod_meanings=%s", self.xkbmap_mod_meanings)
             self.compute_client_modifier_keycodes()
             log("keyname_for_mod=%s", self.keynames_for_mod)
+            clean_keyboard_state()
         except:
             log.error("error setting xmodmap", exc_info=True)
 

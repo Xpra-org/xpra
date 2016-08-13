@@ -301,6 +301,12 @@ OPTION_TYPES = {
                     "tray-icon"         : str,
                     "window-icon"       : str,
                     "password-file"     : str,
+                    "keyboard-raw"      : bool,
+                    "keyboard-layout"   : str,
+                    "keyboard-layouts"  : list,
+                    "keyboard-variant"  : str,
+                    "keyboard-variants" : list,
+                    "keyboard-options"  : str,
                     "clipboard"         : str,
                     "clipboard-direction" : str,
                     "clipboard-filter-file" : str,
@@ -509,6 +515,12 @@ def get_defaults():
                     "tray-icon"         : "",
                     "window-icon"       : "",
                     "password-file"     : "",
+                    "keyboard-raw"      : False,
+                    "keyboard-layout"   : "auto",
+                    "keyboard-layouts"  : [],
+                    "keyboard-variant"  : "auto",
+                    "keyboard-variants" : [],
+                    "keyboard-options"  : "",
                     "clipboard"         : "yes",
                     "clipboard-direction" : "both",
                     "clipboard-filter-file" : "",
@@ -873,6 +885,18 @@ def fixup_packetencoding(options):
             warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
     options.packet_encoders = packet_encoders
 
+def fixup_keyboard(options):
+    #variants and layouts can be specified as CSV, convert them to lists:
+    def p(v):
+        try:
+            from xpra.util import remove_dupes
+            return remove_dupes([x.strip() for x in v.split(",")])
+        except:
+            return None
+    options.keyboard_layouts = p(options.keyboard_layouts)
+    options.keyboard_variants = p(options.keyboard_variants)
+    options.keyboard_raw = parse_bool("keyboard-raw", options.keyboard_raw)
+
 def fixup_clipboard(options):
     cd = options.clipboard_direction.lower().replace("-", "")
     if cd=="toserver":
@@ -893,6 +917,7 @@ def fixup_options(options, defaults={}):
     fixup_video_all_or_none(options)
     fixup_socketdirs(options, defaults)
     fixup_clipboard(options)
+    fixup_keyboard(options)
     #remote-xpra is meant to be a list, but the user can specify a string using the command line,
     #in which case we replace all the default values with this single entry:
     if not isinstance(options.remote_xpra, (list, tuple)):

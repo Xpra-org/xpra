@@ -15,8 +15,8 @@ glib = import_glib()
 
 class GTKKeyboardHelper(KeyboardHelper):
 
-    def __init__(self, net_send, keyboard_sync, key_shortcuts):
-        KeyboardHelper.__init__(self, net_send, keyboard_sync, key_shortcuts)
+    def __init__(self, *args):
+        KeyboardHelper.__init__(self, *args)
         #used for delaying the sending of keymap changes
         #(as we may be getting dozens of such events at a time)
         self._keymap_changing = False

@@ -105,6 +105,12 @@ xpra \- viewer for remote, persistent X applications
 \fIDEVICEID\fP]
 [\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP]
 [\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-keyboard\-raw\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-keyboard\-layout\fP=\fILAYOUTSTRING\fP]
+[\fB\-\-keyboard\-layouts\fP=\fILAYOUTS\fP]
+[\fB\-\-keyboard\-variant\fP=\fIVARIANT\fP]
+[\fB\-\-keyboard\-variants\fP=\fIVARIANTS\fP]
+[\fB\-\-keyboard\-options\fP=\fIOPTIONS\fP]
 [\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
@@ -1080,6 +1086,21 @@ Disabling synchronization can prevent keys from repeating unexpectedly on
 high latency links but it may also disrupt applications which access
 the keyboard directly (games, etc.).
 .TP
+\fB\-\-keyboard\-raw\fP=\fIyes\fP|\fIno\fP
+Tells the server to process all keyboard input untranslated.
+Both the client and the server must be using the same type of keyboard
+interface. (ie: both using X11)
+\fB\-\-keyboard\-layout\fP=\fILAYOUTSTRING\fP
+The keyboard layout is normally detected automatically.
+This option overrides it.
+\fB\-\-keyboard\-layouts\fP=\fILAYOUTS\fP
+The list of keyboard layouts to enable.
+\fB\-\-keyboard\-variant\fP=\fIVARIANT\fP
+Override for the keyboard layout variant.
+\fB\-\-keyboard\-variants\fP=\fIVARIANTS\fP
+Override for the keyboard layout variants.
+\fB\-\-keyboard\-options\fP=\fIOPTIONS\fP
+Override for the keyboard options sent to the server.
 \fB\-\-sound\-source\fP=\fIPLUGIN\fP
 Specifies the GStreamer sound plugin used for capturing the sound stream.
 This affects "speaker forwarding" on the server, and "microphone" forwarding

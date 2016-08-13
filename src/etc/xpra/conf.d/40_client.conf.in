@@ -12,9 +12,6 @@ title = @title@ on @client-machine@
 # Icon used by the system tray:
 #tray-icon = /path/to/icon.png
 
-# Keyboard synchronization:
-keyboard-sync = yes
-
 # Client ssh command:
 #ssh = "C:\Program Files\Plink.exe" -ssh -noagent
 #ssh = /usr/bin/ssh

@@ -1005,19 +1005,19 @@ class GTKTrayMenuBase(object):
                 variant = item.keyboard_variant
                 kh = self.client.keyboard_helper
                 kh.locked = layout!="Auto"
-                if layout!=kh.xkbmap_layout or variant!=kh.xkbmap_variant:
+                if layout!=kh.layout_option or variant!=kh.variant_option:
                     if layout=="Auto":
                         #re-detect everything:
-                        kh.update()
-                        log.info("keyboard automatic mode: %s", kh.layout_str())
-                        kh.send_layout()
-                        kh.send_keymap()
+                        msg = "keyboard automatic mode"
                     else:
                         #use layout specified and send it:
-                        kh.xkbmap_layout = layout
-                        kh.xkbmap_variant = variant
-                        log.info("new keyboard layout selected: %s", kh.layout_str())
-                        kh.send_layout()
+                        kh.layout_option = layout
+                        kh.variant_option = variant
+                        msg = "new keyboard layout selected"
+                    kh.update()
+                    kh.send_layout()
+                    kh.send_keymap()
+                    log.info("%s: %s", msg, kh.layout_str())
             l = self.checkitem(title, set_layout, active)
             l.set_draw_as_radio(True)
             l.keyboard_layout = layout
@@ -1026,7 +1026,7 @@ class GTKTrayMenuBase(object):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout,layouts,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
+        layout,layouts,variant,variants = self.client.keyboard_helper.get_layout_spec()
         full_layout_list = False
         if len(layouts)>1:
             log("keyboard layouts: %s", u",".join(bytestostr(x) for x in layouts))
