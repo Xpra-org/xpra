@@ -269,10 +269,10 @@ class KeyboardConfig(KeyboardConfigBase):
 
                 #now set the new modifier mappings:
                 clean_keyboard_state()
-                log.warn("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+                log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
                 if self.keynames_for_mod:
                     set_modifiers(self.keynames_for_mod)
-                log.warn("keynames_for_mod=%s", self.keynames_for_mod)
+                log("keynames_for_mod=%s", self.keynames_for_mod)
                 self.compute_modifier_keynames()
             else:
                 self.keycode_translation = {}

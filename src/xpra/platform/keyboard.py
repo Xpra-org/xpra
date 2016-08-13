@@ -47,7 +47,7 @@ def main():
         layout,layouts,variant,variants = keyboard.get_layout_spec()
         print("Layout:     '%s'" % (layout))
         print("Layouts:    %s" % (layouts, ))
-        print("Variant:    '%s'" % (variant))
+        print("Variant:    '%s'" % (variant or ""))
         print("Variants:   %s" % (variants, ))
         print("")
         print("Repeat:     %s" % csv(keyboard.get_keyboard_repeat()))

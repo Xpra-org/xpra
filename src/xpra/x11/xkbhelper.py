@@ -81,18 +81,19 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         layout = xkbmap_query_struct.get("layout")
         variant = xkbmap_query_struct.get("variant")
         options = xkbmap_query_struct.get("options")
-        log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v]))
-        try:
-            X11Keyboard.setxkbmap(rules, model, layout, variant, options)
-            return
-        except:
-            log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
-        #try again with no options:
-        try:
-            X11Keyboard.setxkbmap(rules, model, layout, variant, "")
-            return
-        except:
-            log.error("failed to set exact keymap even without applying options")
+        if layout:
+            log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v]))
+            try:
+                X11Keyboard.setxkbmap(rules, model, layout, variant, options)
+                return
+            except:
+                log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
+            #try again with no options:
+            try:
+                X11Keyboard.setxkbmap(rules, model, layout, variant, "")
+                return
+            except:
+                log.error("failed to set exact keymap even without applying options")
     if xkbmap_print:
         log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
