@@ -457,39 +457,60 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         log("setup_local_sockets: bind=%s", bind)
         for b in bind:
             sockpath = b
-            try:
-                if b=="none" or b=="":
-                    continue
-                elif b=="auto":
-                    sockpath = dotxpra.socket_path(display_name)
+            if b=="none" or b=="":
+                continue
+            elif b=="auto":
+                if socket_dirs:
+                    try_sockpaths = [norm_makepath(socket_dir, display_name) for socket_dir in socket_dirs]
                 else:
-                    sockpath = osexpand(b)
-                    if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
-                        sockpath = os.path.abspath(sockpath)
-                        if not os.path.exists(sockpath):
-                            os.makedirs(sockpath)
-                        sockpath = norm_makepath(sockpath, display_name)
-                    else:
-                        sockpath = dotxpra.socket_path(b)
+                    try_sockpaths = [dotxpra.socket_path(display_name)]
+                log("sockpaths(%s)=%s", display_name, try_sockpaths)
+            else:
+                sockpath = osexpand(b)
+                if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                    sockpath = os.path.abspath(sockpath)
+                    if not os.path.exists(sockpath):
+                        os.makedirs(sockpath)
+                    sockpath = norm_makepath(sockpath, display_name)
+                else:
+                    sockpath = dotxpra.socket_path(b)
+                try_sockpaths = [sockpath]
+            assert try_sockpaths, "no socket paths to try for %s" % b
+            for tsp in try_sockpaths:
+                sockpath = os.path.expanduser(tsp)
+                subs = {
+                        "USER"          : os.environ.get("USER", "unknown-user"),
+                        "UID"           : os.getuid(),
+                        "GID"           : os.getgid(),
+                        "HOME"          : os.environ.get("HOME", os.getcwd()),
+                        "DISPLAY"       : display_name,
+                        }
+                sockpath = shellsub(sockpath, subs)
                 if sockpath in sockpaths:
                     log.warn("Warning: skipping duplicate bind path %s", sockpath)
                     continue
-                if sys.platform.startswith("win"):
-                    from xpra.platform.win32.namedpipes.listener import NamedPipeListener
-                    npl = NamedPipeListener(sockpath)
-                    log.info("created named pipe: %s", sockpath)
-                    defs.append((("named-pipe", npl, sockpath), npl.stop))
-                else:
-                    setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=WAIT_FOR_UNKNOWN)
-                    sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
-                    log.info("created unix domain socket: %s", sockpath)
-                    defs.append((("unix-domain", sock, sockpath), cleanup_socket))
-                sockpaths.add(sockpath)
-            except Exception as e:
-                log("socket creation error", exc_info=True)
-                log.error("Error: failed to create socket '%s':" % sockpath)
-                log.error(" %s", e)
-                raise InitException("failed to create socket %s" % sockpath)
+                try:
+                    if sys.platform.startswith("win"):
+                        from xpra.platform.win32.namedpipes.listener import NamedPipeListener
+                        npl = NamedPipeListener(sockpath)
+                        log.info("created named pipe: %s", sockpath)
+                        defs.append((("named-pipe", npl, sockpath), npl.stop))
+                    else:
+                        setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=WAIT_FOR_UNKNOWN)
+                        sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
+                        log.info("created unix domain socket: %s", sockpath)
+                        defs.append((("unix-domain", sock, sockpath), cleanup_socket))
+                    sockpaths.add(sockpath)
+                except Exception as e:
+                    log("socket creation error", exc_info=True)
+                    if sockpath.startswith("/var/run/xpra"):
+                        log.warn("Warning: cannot create socket '%s'", sockpath)
+                        log.warn(" %s (missing group membership?)", e)
+                        continue
+                    else:
+                        log.error("Error: failed to create socket '%s':", sockpath)
+                        log.error(" %s", e)
+                        raise InitException("failed to create socket %s" % sockpath)
     except:
         for sock, cleanup_socket in defs:
             try:
