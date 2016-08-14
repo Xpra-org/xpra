@@ -1001,6 +1001,10 @@ def configure_logging(options, mode):
     to = sys.stderr
     if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl"):
         to = sys.stdout
+    #a bit naughty here, but it's easier to let xpra.log initialize
+    #the logging system every time, and just undo things here..
+    from xpra.log import setloghandler
+    setloghandler(logging.StreamHandler(to))
     if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
@@ -1011,11 +1015,6 @@ def configure_logging(options, mode):
             if mode in ("stop", "showconfig"):
                 fmt = NOPREFIX_FORMAT
             enable_color(to, fmt)
-    else:
-        #a bit naughty here, but it's easier to let xpra.log initialize
-        #the logging system every time, and just undo things here..
-        from xpra.log import setloghandler
-        setloghandler(logging.StreamHandler(to))
 
     from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
     if options.debug:
