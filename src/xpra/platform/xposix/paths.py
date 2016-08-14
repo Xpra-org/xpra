@@ -8,7 +8,9 @@ import sys
 import site
 
 
-USE_RUNTIME_DIR = os.environ.get("XPRA_USE_RUNTIME_DIR", "0")=="1"
+USE_RUNTIME_LOG_DIR = os.environ.get("XPRA_USE_RUNTIME_LOG_DIR", "0")=="1"
+USE_RUNTIME_BIN_DIR = os.environ.get("XPRA_USE_RUNTIME_BIN_DIR", "0")=="1"
+USE_RUNTIME_SOCKET_DIR = os.environ.get("XPRA_USE_RUNTIME_SOCKET_DIR", "1")=="1"
 
 
 def do_get_install_prefix():
@@ -53,39 +55,43 @@ def do_get_icon_dir():
 def do_get_script_bin_dirs():
     #versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
-    script_bin_dirs.append("~/.xpra")
     runtime_dir = _get_xpra_runtime_dir()
-    if runtime_dir:
+    if USE_RUNTIME_BIN_DIR and runtime_dir:
         script_bin_dirs.append(runtime_dir)
+    script_bin_dirs.append("~/.xpra")
     return script_bin_dirs
 
 
 def _get_xpra_runtime_dir():
-    if not USE_RUNTIME_DIR:
-        return None
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     if runtime_dir:
         #replace uid with the string "$UID"
         head, tail = list(os.path.split(runtime_dir))
         try:
-            int(tail)
+            assert int(tail)
             runtime_dir = os.path.join(head, "$UID")
-        except ValueError:
+        except (ValueError, AssertionError):
             pass
     elif os.path.exists("/var/run/user") and os.path.isdir("/var/run/user"):
         runtime_dir = "/var/run/user/$UID"
+    #print("_get_xpra_runtime_dir()=%s" % runtime_dir)
     return runtime_dir
 
 def do_get_socket_dirs():
-    SOCKET_DIRS = ["~/.xpra"]   #the old default
-    #added in 0.16, support for /run:
+    SOCKET_DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
-    if runtime_dir:
+    if USE_RUNTIME_SOCKET_DIR and runtime_dir:
         #private, per user: /run/user/1000/xpra
         SOCKET_DIRS.append(os.path.join(runtime_dir, "xpra"))
-        #for shared sockets:
+    SOCKET_DIRS.append("~/.xpra")   #the old default path
+    #for shared sockets (the 'xpra' group should own this directory):
+    if os.path.exists("/var/run/xpra") and os.access('/var/run/xpra', os.W_OK):
+        print("CAN")
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
 
 def do_get_default_log_dir():
-    return _get_xpra_runtime_dir() or "~/.xpra"
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
+    if USE_RUNTIME_LOG_DIR and runtime_dir:
+        return runtime_dir
+    return "~/.xpra"
