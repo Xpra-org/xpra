@@ -1481,6 +1481,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     #don't try to authenticate again over the ssh-proxy connection,
                     #which would trigger warnings if the server does not require
                     #authentication over unix-domain-sockets:
+                    opts.password = None
                     del display_desc["password"]
             if env:
                 kwargs["env"] = env
