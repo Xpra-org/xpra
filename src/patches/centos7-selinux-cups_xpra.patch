@@ -1,7 +1,7 @@
 Index: selinux/cups_xpra/cups_xpra.te
 ===================================================================
---- selinux/cups_xpra/cups_xpra.te	(revision 13327)
-+++ selinux/cups_xpra/cups_xpra.te	(working copy)
+--- a/selinux/cups_xpra/cups_xpra.te	(revision 13327)
++++ b/selinux/cups_xpra/cups_xpra.te	(working copy)
 @@ -11,7 +11,7 @@
  	type udev_var_run_t;
  	role system_r;

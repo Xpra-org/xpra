@@ -53,6 +53,8 @@
 %define py3requires_sound %{gstreamer1}, python3-gstreamer1, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
 %define with_python3 1
+%define with_selinux 1
+%global selinux_variants mls targeted
 
 %define libvpx libvpx-xpra
 %define run_tests 1
@@ -73,6 +75,8 @@
 %endif
 
 %if 0%{?el6}
+#needs fixing:
+%define with_selinux 0
 #can't run the tests with python 2.6 which is too old:
 %define run_tests 0
 #no python cryptography:
@@ -113,6 +117,8 @@
 %endif
 
 %if 0%{?suse_version}
+#untested:
+%define with_selinux 0
 #SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there
 %if 0%{?suse_version} == 1315
 %define with_python3 0
@@ -157,6 +163,7 @@ Source: xpra-%{version}.tar.bz2
 Patch0: centos-ignore-invalid-gcc-warning.patch
 Patch1: centos7-buffer-fill-fix.patch
 Patch2: gstreamer010.patch
+Patch3: centos7-selinux-cups_xpra.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
@@ -212,6 +219,12 @@ BuildRequires: libXrandr-devel
 BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
 BuildRequires: pam-devel
+%if 0%{?with_selinux}
+BuildRequires: checkpolicy, selinux-policy-devel
+Requires: selinux-policy
+Requires(post):   /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
+Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
+%endif
 %if 0%{?fedora}
 BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
@@ -314,6 +327,9 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 %patch1 -p1
 %patch2 -p1
 %endif
+%if 0%{?el7}
+%patch3 -p1
+%endif
 popd
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
 %if %{with_python3}
@@ -344,8 +360,17 @@ pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{dummy} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
+%if 0%{?with_selinux}
+pushd selinux/cups_xpra
+for selinuxvariant in %{selinux_variants}
+do
+  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile
+  mv cups_xpra.pp cups_xpra.pp.${selinuxvariant}
+  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile clean
+done
 popd
-
+%endif
+popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -356,6 +381,14 @@ popd
 %endif
 pushd xpra-%{version}-python2
 %{__python2} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
+%if 0%{?with_selinux}
+for selinuxvariant in %{selinux_variants}
+do
+  install -d %{buildroot}%{_datadir}/selinux/${selinuxvariant}
+  install -p -m 644 selinux/cups_xpra/cups_xpra.pp.${selinuxvariant} \
+    %{buildroot}%{_datadir}/selinux/${selinuxvariant}/cups_xpra.pp
+done
+%endif
 popd
 
 #fix permissions on shared objects
@@ -405,6 +438,9 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf
+%if 0%{?with_selinux}
+%{_datadir}/selinux/*/cups_xpra.pp
+%endif
 
 %files
 %{python2_sitearch}/xpra
@@ -441,16 +477,33 @@ popd
 
 %post common
 /bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
-
+%if 0%{?with_selinux}
+for selinuxvariant in %{selinux_variants}
+do
+  /usr/sbin/semodule -s ${selinuxvariant} -i \
+    %{_datadir}/selinux/${selinuxvariant}/cups_xpra.pp &> /dev/null || :
+done
+/sbin/fixfiles -R cups_xpra restore || :
+%endif
 
 %postun
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
-    /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
-    /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
+	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
 
+%postun common
+%if 0%{?with_selinux}
+if [ $1 -eq 0 ] ; then
+	for selinuxvariant in %{selinux_variants}
+	do
+		/usr/sbin/semodule -s ${selinuxvariant} -r cups_xpra &> /dev/null || :
+	done
+	/sbin/fixfiles -R cups_xpra restore || :
+fi
+%endif
 
 %posttrans
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
