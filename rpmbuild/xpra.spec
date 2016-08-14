@@ -483,7 +483,7 @@ do
   /usr/sbin/semodule -s ${selinuxvariant} -i \
     %{_datadir}/selinux/${selinuxvariant}/cups_xpra.pp &> /dev/null || :
 done
-/sbin/fixfiles -R cups_xpra restore || :
+restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
 
 %postun
@@ -501,7 +501,6 @@ if [ $1 -eq 0 ] ; then
 	do
 		/usr/sbin/semodule -s ${selinuxvariant} -r cups_xpra &> /dev/null || :
 	done
-	/sbin/fixfiles -R cups_xpra restore || :
 fi
 %endif
 
