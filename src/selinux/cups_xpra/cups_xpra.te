@@ -11,7 +11,7 @@ require {
 	type udev_var_run_t;
 	role system_r;
 	class capability dac_override;
-	class process { signal transition sigchld execmem };
+	class process { signal transition sigchld };
 	class fd { use };
 	class dir { getattr search open read lock ioctl };
 	class fifo_file { getattr read write append ioctl lock };
@@ -41,8 +41,6 @@ dev_read_sysfs(cups_xpra_t)
 
 #logging_send_audit_msgs(cupsd_t)
 logging_send_syslog_msg(cups_xpra_t)
-
-allow cups_xpra_t self:process execmem;
 
 allow cups_xpra_t self:capability dac_override;
 allow cups_xpra_t self:netlink_kobject_uevent_socket create_socket_perms;
