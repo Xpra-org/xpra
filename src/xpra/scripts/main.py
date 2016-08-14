@@ -1380,13 +1380,19 @@ def single_display_match(dir_servers, error_cb):
     #aggregate all the different locations:
     allservers = []
     for sockdir, servers in dir_servers.items():
-        for state, name, path in servers:
+        for state, display, path in servers:
             if state==DotXpra.LIVE:
-                allservers.append((sockdir, name, path))
+                allservers.append((sockdir, display, path))
     if len(allservers) == 0:
         error_cb("cannot find any live servers to connect to")
     if len(allservers) > 1:
-        error_cb("there are multiple servers running, please specify")
+        #maybe the same server is available under multiple paths
+        displays = set([v[1] for v in allservers])
+        if len(displays)==1:
+            #they all point to the same display, use the first one:
+            allservers = allservers[:1]
+        else:
+            error_cb("there are multiple servers running, please specify")
     assert len(allservers)==1, "len(dir_servers)=%s" % len(dir_servers)
     sockdir, name, path = allservers[0]
     #ie: ("/tmp", "desktop-10", "/tmp/desktop-10")
