@@ -290,7 +290,11 @@ class SocketConnection(Connection):
         return self._write(self._socket.send, buf)
 
     def close(self):
-        log("%s.close() for socket=%s", self, self._socket)
+        try:
+            i = self.get_socket_info()
+        except:
+            i = self._socket
+        log("%s.close() for socket=%s", self, i)
         Connection.close(self)
         self._socket.settimeout(0)
         self._socket.close()

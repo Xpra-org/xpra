@@ -876,6 +876,7 @@ class Protocol(object):
             we wait again for the queue to flush,
             then no matter what, we close the connection and stop the threads.
         """
+        log("flush_then_close(%s, %s) closed=%s", last_packet, done_callback, self._closed)
         def done():
             log("flush_then_close: done, callback=%s", done_callback)
             if done_callback:
