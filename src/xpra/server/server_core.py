@@ -549,11 +549,16 @@ class ServerCore(object):
                 netlog("error sending '%s': %s", nonl(msg), e)
 
         PEEK_SIZE = 128
-        if socktype=="tcp" and self._html or self._tcp_proxy or self._ssl_wrap_socket:
+        if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
-            sock.settimeout(25)
+            sock.settimeout(10)
             v = conn.peek(PEEK_SIZE)
+            #ugly win32 workaround (should be done in a thread or with untilConcludes?):
+            start = time.time()
+            while not v and sys.platform.startswith("win") and time.time()-start<10:
+                time.sleep(0.1)
+                v = conn.peek(128)
             netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
             if v and v[0] not in ("P", ord("P")):
                 if self._html:
@@ -670,11 +675,12 @@ class ServerCore(object):
         netlog("start_websockify(%s, %s) www dir=%s", conn, frominfo, self._www_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
+            sock = conn._socket
             def new_websocket_client(wsh):
-                netlog("new_websocket_client(%s)", wsh)
-                wsc = WebSocketConnection(conn._socket, conn.local, conn.remote, conn.target, conn.info, wsh)
+                netlog("new_websocket_client(%s) socket=%s", wsh, sock)
+                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.info, wsh)
                 self.make_protocol("tcp", wsc, frominfo)
-            WSRequestHandler(conn._socket, frominfo, new_websocket_client, self._www_dir)
+            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir)
             return
         except IOError as e:
             netlog.error("Error: http failure responding to %s:", frominfo)
