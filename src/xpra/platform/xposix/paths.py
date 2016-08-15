@@ -91,7 +91,6 @@ def do_get_socket_dirs():
     SOCKET_DIRS.append("~/.xpra")   #the old default path
     #for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/var/run/xpra") and os.access('/var/run/xpra', os.W_OK):
-        print("CAN")
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
 
