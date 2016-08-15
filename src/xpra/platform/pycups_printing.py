@@ -215,21 +215,6 @@ def validate_setup():
     defs = get_printer_definitions()
     if not defs:
         return False
-    #check for SELinux
-    try:
-        if os.path.exists("/sys/fs/selinux"):
-            log("SELinux is present")
-            from xpra.os_util import load_binary_file
-            enforce = load_binary_file("/sys/fs/selinux/enforce")
-            log("SELinux enforce=%s", enforce)
-            if enforce=="1":
-                log.warn("SELinux is running in enforcing mode")
-                log.warn(" printer forwarding is unlikely to work without a policy")
-            else:
-                log("SELinux is present but not in enforcing mode")
-    except Exception as e:
-        log.error("Error checking for the presence of SELinux:")
-        log.error(" %s", e)
     return defs
 
 
