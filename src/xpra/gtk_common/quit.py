@@ -30,7 +30,7 @@ def gtk_main_quit_really():
         gtk = import_gtk()
         # So long as there are more nested main loops, re-register ourselves
         # to be called again:
-        if gtk.main_level() > 1:
+        if gtk.main_level() > 0:
             gtk.main_quit()
             return True
         else:
