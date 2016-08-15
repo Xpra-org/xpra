@@ -501,6 +501,11 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def _new_connection(self, listener, *args):
+        """
+            Accept the new connection,
+            verify that there aren't too many,
+            start a thread to dispatch it to the correct handler.
+        """
         if self._closing:
             netlog.warn("ignoring new connection during shutdown")
             return False
@@ -537,10 +542,23 @@ class ServerCore(object):
             frominfo = ""
             info_msg = "New %s connection received"
 
+        #from here on, we run in a thread, so we can poll (peek does)
+        def handle_new_connection():
+            self.handle_new_connection(conn, sock, socktype, sockname, address, target, info_msg, frominfo)
+        make_thread(handle_new_connection, "new-%s-connection" % socktype, True).start()
+        return True
+
+    def handle_new_connection(self, conn, sock, socktype, sockname, address, target, info_msg, frominfo):
+        """
+            Use peek to decide what sort of connection this is,
+            and start the appropriate handler for it.
+        """
         def conn_err(msg="invalid packet format, not an xpra client?"):
             #not an xpra client
             netlog.error("Error: %s connection failed:", socktype)
             netlog.error(" %s", msg)
+            if frominfo:
+                netlog.error(" %s", frominfo)
             try:
                 sock.settimeout(1)
                 conn.write("disconnect: %s?\n" % msg)
@@ -548,18 +566,16 @@ class ServerCore(object):
             except Exception as e:
                 netlog("error sending '%s': %s", nonl(msg), e)
 
-        PEEK_SIZE = 128
+        def peek():
+            PEEK_SIZE = 128
+            v = conn.peek(PEEK_SIZE)
+            netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
+            return v
+
         if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
-            sock.settimeout(10)
-            v = conn.peek(PEEK_SIZE)
-            #ugly win32 workaround (should be done in a thread or with untilConcludes?):
-            start = time.time()
-            while not v and sys.platform.startswith("win") and time.time()-start<10:
-                time.sleep(0.1)
-                v = conn.peek(128)
-            netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
+            v = peek()
             if v and v[0] not in ("P", ord("P")):
                 if self._html:
                     line1 = v.splitlines()[0]
@@ -584,7 +600,8 @@ class ServerCore(object):
                         conn_err(str(e))
                         return True
                     conn = SocketConnection(sock, sockname, address, target, socktype)
-                    v = conn.peek(PEEK_SIZE)
+                    #peek so we can detect invalid clients early:
+                    v = peek()
                 elif self._tcp_proxy:
                     netlog.info("New tcp proxy connection received from %s", frominfo)
                     def run_proxy():
@@ -592,10 +609,14 @@ class ServerCore(object):
                     make_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True).start()
                     return True
         else:
-            v = conn.peek(PEEK_SIZE)
-        netlog("%s.peek(%i)=%s", conn, PEEK_SIZE, binascii.hexlify(v or ""))
+            #peek so we can detect invalid clients early:
+            v = peek()
         if v and v[0] not in ("P", ord("P")):
-            conn_err()
+            try:
+                c = ord(v[0])
+            except:
+                c = int(v[0])
+            conn_err("invalid packet header character '%s', not an xpra client?" % hex(c))
             return True
         netlog.info(info_msg)
         sock.settimeout(self._socket_timeout)
@@ -676,6 +697,20 @@ class ServerCore(object):
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
+            sock.setblocking(1)
+            if sys.platform.startswith("win"):
+                from xpra.net.bytestreams import untilConcludes
+                #workaround for win32 servers (this should not be needed on any other platform)
+                #which don't seem to honour our request to use blocking sockets
+                #maybe this should go in websockify somewhere?
+                saved_recv = sock.recv
+                saved_send = sock.send
+                def recv(*args):
+                    return untilConcludes(conn.is_active, saved_recv, *args)
+                def send(*args):
+                    return untilConcludes(conn.is_active, saved_send, *args)
+                sock.recv = recv
+                sock.send = send
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.info, wsh)

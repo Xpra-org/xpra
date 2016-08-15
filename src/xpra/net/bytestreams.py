@@ -299,12 +299,7 @@ class SocketConnection(Connection):
             self.filename = remote
 
     def peek(self, n):
-        try:
-            self._socket.settimeout(None)
-            return self._socket.recv(n, socket.MSG_PEEK)
-        except:
-            #this fails on win32!
-            pass
+        return self.untilConcludes(self._socket.recv, n, socket.MSG_PEEK)
 
     def read(self, n):
         return self._read(self._socket.recv, n)

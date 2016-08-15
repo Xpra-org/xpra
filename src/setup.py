@@ -152,7 +152,7 @@ gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
-html5_ENABLED = not WIN32           #websockify is broken on win32, see https://github.com/kanaka/websockify/issues/28
+html5_ENABLED = DEFAULT
 pam_ENABLED = DEFAULT and server_ENABLED and os.name=="posix" and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
