@@ -477,15 +477,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 try_sockpaths = [sockpath]
             assert try_sockpaths, "no socket paths to try for %s" % b
             for tsp in try_sockpaths:
-                sockpath = os.path.expanduser(tsp)
-                subs = {
-                        "USER"          : os.environ.get("USER", "unknown-user"),
-                        "UID"           : os.getuid(),
-                        "GID"           : os.getgid(),
-                        "HOME"          : os.environ.get("HOME", os.getcwd()),
-                        "DISPLAY"       : display_name,
-                        }
-                sockpath = shellsub(sockpath, subs)
+                sockpath = osexpand(tsp)
                 if sockpath in sockpaths:
                     log.warn("Warning: skipping duplicate bind path %s", sockpath)
                     continue
