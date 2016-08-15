@@ -154,6 +154,7 @@ class Keyboard(KeyboardBase):
             with each keypress to let the server set them for us when needed.
         """
         if key_event.keyval==2**24-1 and key_event.keyname=="VoidSymbol":
+            log("process_key_event: ignoring %s", key_event)
             return
         #self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
         #self.modifier_keys = {}             #{"Control_L" : "control", ...}
@@ -162,23 +163,23 @@ class Keyboard(KeyboardBase):
         #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         #if we have modifier_mappings
         if EMULATE_ALTGR and self.altgr_modifier and len(self.modifier_mappings)>0:
-            altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
+            rmenu = win32api.GetKeyState(win32con.VK_RMENU)
             if key_event.keyname=="Control_L":
-                log("process_key_event: Control_L pressed=%s, with altgr=%s", key_event.pressed, altgr)
+                log("process_key_event: %s pressed=%s, with GetKeyState(VK_RMENU)=%s", key_event.keyname, key_event.pressed, rmenu)
                 #AltGr is often preceded by a spurious "Control_L" event
                 #delay this one a little bit so we can skip it if an "AltGr" does come through next:
                 if key_event.pressed:
-                    if not altgr:
+                    if rmenu in (0, 1):
                         self.delayed_event = (send_key_action_cb, wid, key_event)
                         glib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
                     return
-                if not key_event.pressed and altgr:
+                if not key_event.pressed and rmenu not in (0, 1):
                     #unpressed: could just skip it?
                     #(but maybe the real one got pressed.. and this would get it stuck)
                     pass
             if key_event.keyname=="Alt_R":
-                log("process_key_event: Alt_R pressed=%s, with altgr=%s", key_event.pressed, altgr)
-                if altgr and key_event.pressed:
+                log("process_key_event: Alt_R pressed=%s, with GetKeyState(VK_RMENU)=%s", key_event.pressed, rmenu)
+                if rmenu in (0, 1) and key_event.pressed:
                     #cancel "Control_L" if one was due:
                     self.delayed_event = None
                 #modify the key event so that it will only trigger the modifier update,
@@ -198,6 +199,7 @@ class Keyboard(KeyboardBase):
         log("send_delayed_key() delayed_event=%s", dk)
         if dk:
             self.delayed_event = None
-            altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
-            if altgr:
+            rmenu = win32api.GetKeyState(win32con.VK_RMENU)
+            log("send_delayed_key() GetKeyState(VK_RMENU)=%s", rmenu)
+            if rmenu not in (0, 1):
                 KeyboardBase.process_key_event(self, *dk)
