@@ -1570,8 +1570,6 @@ if WIN32:
         if webcam_ENABLED:
             add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
             add_gui_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
-        if html5_ENABLED:
-            add_console_exe("win32/websockify.py",              "network.ico",      "websockify")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             if os.path.exists("C:\\Program Files (x86)\\Ghostgum\\gsview"):
