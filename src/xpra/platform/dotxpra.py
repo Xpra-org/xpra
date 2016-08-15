@@ -84,7 +84,11 @@ class DotXpra(object):
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
     def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
-        sd = {}
+        try:
+            import collections
+            sd = collections.OrderedDict()
+        except:
+            sd = {}
         dirs = [self._sockdir]+[x for x in self._sockdirs if x!=self._sockdir]
         seen = set()
         for d in dirs:
