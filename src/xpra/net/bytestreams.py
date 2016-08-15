@@ -58,34 +58,16 @@ for x in ("STREAM", "DGRAM", "RAW", "RDM", "SEQPACKET"):
 
 
 if sys.platform.startswith("win"):
-    import winerror     #@UnresolvedImport
     #on win32, we have to deal with a few more odd error codes:
-    #(it would be nicer if those were wrapped using errno instead..)
-    WSAEWOULDBLOCK = 10035
-    CONTINUE[WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"
+    CONTINUE[errno.WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"       #@UndefinedVariable
 
     #some of these may be redundant or impossible to hit? (does not hurt I think)
-    WSAENETDOWN     = 10050
-    WSAENETUNREACH  = 10051
-    WSAECONNABORTED = 10053         #this one has been seen, see ticket #492
-    WSAECONNRESET   = 10054
-    WSAENOTCONN     = 10057
-    WSAESHUTDOWN    = 10058
-    WSAETIMEDOUT    = 10060
-    WSAEHOSTUNREACH = 10065
-    WSAEDISCON      = 10101
-    ABORT.update({
-        WSAECONNABORTED     : "WSAECONNABORTED",
-        WSAECONNRESET       : "WSAECONNRESET",
-        WSAENETDOWN         : "WSAENETDOWN",
-        WSAENETUNREACH      : "WSAENETUNREACH",
-        WSAENOTCONN         : "WSAENOTCONN",
-        WSAESHUTDOWN        : "WSAESHUTDOWN",
-        WSAETIMEDOUT        : "WSAETIMEDOUT",
-        WSAEHOSTUNREACH     : "WSAEHOSTUNREACH",
-        WSAEDISCON          : "WSAEDISCON",
-        winerror.ERROR_BROKEN_PIPE : "BROKENPIPE",
-        })
+    for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
+              "WSAENOTCONN", "WSAESHUTDOWN", "WSAETIMEDOUT", "WSAETIMEDOUT",
+              "WSAEHOSTUNREACH", "WSAEDISCON"):
+        ABORT[getattr(errno, x)] = x
+    import winerror     #@UnresolvedImport
+    ABORT[winerror.ERROR_BROKEN_PIPE] = "BROKENPIPE"
     if sys.version[0]<"3":
         #win32 has problems writing more than 32767 characters to stdout!
         #see: http://bugs.python.org/issue11395
