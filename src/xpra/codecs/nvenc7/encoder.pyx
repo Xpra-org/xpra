@@ -11,10 +11,7 @@ import numpy
 import array
 from collections import deque
 
-import pycuda
 from pycuda import driver
-from pycuda.driver import memcpy_htod
-from pycuda.compiler import compile
 
 from xpra.util import AtomicInteger, engs, csv, pver
 from xpra.os_util import _memoryview
@@ -1283,7 +1280,7 @@ def get_info():
     return info
 
 
-ENCODINGS = ["h264"]
+ENCODINGS = []
 def get_encodings():
     global ENCODINGS
     return ENCODINGS
@@ -1461,6 +1458,10 @@ cdef class Encoder:
         log("using %s %s compression at %s%% quality with pixel format %s", ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
         try:
             self.init_cuda()
+            try:
+                self.init_cuda_kernel()
+            finally:
+                self.cuda_context.pop()
 
             #the example code accesses the cuda context after a context.pop()
             #(which is weird)
@@ -1477,6 +1478,7 @@ cdef class Encoder:
 
     def select_cuda_device(self, options={}):
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
+        assert self.cuda_device_id>=0 and self.cuda_device, "failed to select a cuda device"
         log("selected device %s", device_info(self.cuda_device))
 
 
@@ -1498,7 +1500,7 @@ cdef class Encoder:
             return True
         return False
 
-    cdef init_cuda(self):
+    def init_cuda(self):
         cdef unsigned int plane_size_div
         cdef unsigned int max_input_stride
         cdef int result
@@ -1511,6 +1513,7 @@ cdef class Encoder:
         try:
             log("init_cuda cuda_device=%s (%s)", d, device_info(d))
             self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
+            assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
             log("init_cuda cuda_context=%s", self.cuda_context)
             self.cuda_info = get_cuda_info()
             log("init_cuda cuda info=%s", self.cuda_info)
@@ -1524,50 +1527,6 @@ cdef class Encoder:
                                                  },
                                      "api_version" : self.cuda_context.get_api_version(),
                                      }
-        except driver.MemoryError as e:
-            last_context_failure = time.time()
-            log("init_cuda %s", e)
-            raise TransientCodecException("could not initialize cuda: %s" % e)
-        #use alias to make code easier to read:
-        da = driver.device_attribute
-        try:
-            #if supported (separate plane flag), use YUV444P:
-            if self.pixel_format=="YUV444P":
-                kernel_gen = get_BGRA2YUV444
-                self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444
-                #3 full planes:
-                plane_size_div = 1
-            elif self.pixel_format=="NV12":
-                kernel_gen = get_BGRA2NV12
-                self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
-                #1 full Y plane and 2 U+V planes subsampled by 4:
-                plane_size_div = 2
-            else:
-                raise Exception("BUG: invalid dst format: %s" % self.pixel_format)
-
-            #load the kernel:
-            self.kernel_name, self.kernel = kernel_gen(self.cuda_device_id)
-            assert self.kernel, "failed to load %s for device %i" % (self.kernel_name, self.cuda_device_id)
-
-            #allocate CUDA input buffer (on device) 32-bit RGB
-            #(and make it bigger just in case - subregions from XShm can have a huge rowstride):
-            max_input_stride = MAX(2560, self.input_width)*4
-            self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
-            log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
-            #allocate CUDA output buffer (on device):
-            self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3//plane_size_div, 16)
-            log("CUDA Output Buffer=%#x, pitch=%s", int(self.cudaOutputBuffer), self.outputPitch)
-            #allocate input buffer on host:
-            self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
-            log("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.input_height)
-
-            self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
-            self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
-            log("max_block_sizes=%s", self.max_block_sizes)
-            log("max_grid_sizes=%s", self.max_grid_sizes)
-
-            self.max_threads_per_block = self.kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
-            log("max_threads_per_block=%s", self.max_threads_per_block)
 
             #get the CUDA context (C pointer):
             #a bit of magic to pass a cython pointer to ctypes:
@@ -1576,12 +1535,58 @@ cdef class Encoder:
             if DEBUG_API:
                 log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <unsigned long> self.cuda_context_ptr)
             assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
-        finally:
-            self.cuda_context.pop()
+        except driver.MemoryError as e:
+            last_context_failure = time.time()
+            log("init_cuda %s", e)
+            raise TransientCodecException("could not initialize cuda: %s" % e)
+
+    def init_cuda_kernel(self):
+        assert self.cuda_device_id>=0 and self.cuda_device, "cuda device not set!"
+        d = self.cuda_device
+        #use alias to make code easier to read:
+        da = driver.device_attribute
+        #if supported (separate plane flag), use YUV444P:
+        if self.pixel_format=="YUV444P":
+            kernel_gen = get_BGRA2YUV444
+            self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444
+            #3 full planes:
+            plane_size_div = 1
+        elif self.pixel_format=="NV12":
+            kernel_gen = get_BGRA2NV12
+            self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
+            #1 full Y plane and 2 U+V planes subsampled by 4:
+            plane_size_div = 2
+        else:
+            raise Exception("BUG: invalid dst format: %s" % self.pixel_format)
+
+        #load the kernel:
+        self.kernel_name, self.kernel = kernel_gen(self.cuda_device_id)
+        assert self.kernel, "failed to load %s for device %i" % (self.kernel_name, self.cuda_device_id)
+
+        #allocate CUDA input buffer (on device) 32-bit RGB
+        #(and make it bigger just in case - subregions from XShm can have a huge rowstride):
+        max_input_stride = MAX(2560, self.input_width)*4
+        self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
+        log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
+        #allocate CUDA output buffer (on device):
+        self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height*3//plane_size_div, 16)
+        log("CUDA Output Buffer=%#x, pitch=%s", int(self.cudaOutputBuffer), self.outputPitch)
+        #allocate input buffer on host:
+        self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
+        log("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.input_height)
+
+        self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
+        self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
+        log("max_block_sizes=%s", self.max_block_sizes)
+        log("max_grid_sizes=%s", self.max_grid_sizes)
+
+        self.max_threads_per_block = self.kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
+        log("max_threads_per_block=%s", self.max_threads_per_block)
 
     def init_nvenc(self):
         self.open_encode_session()
         self.init_encoder()
+        self.init_buffers()
 
     def init_encoder(self):
         cdef GUID codec = self.init_codec()
@@ -1599,7 +1604,6 @@ cdef class Encoder:
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
             self.dump_caps(self.codec_name, codec)
-            self.init_buffers()
         finally:
             if params.encodeConfig!=NULL:
                 free(params.encodeConfig)
@@ -1619,7 +1623,7 @@ cdef class Encoder:
         cdef GUID preset
         cdef NV_ENC_CONFIG *config = NULL
         cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
-
+        assert self.context, "context is not initialized"
         preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
         log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
@@ -1713,6 +1717,7 @@ cdef class Encoder:
         cdef Py_ssize_t size
         cdef unsigned char* cptr = NULL
         cdef NVENCSTATUS r                  #
+        assert self.context, "context is not initialized"
         #register CUDA input buffer:
         memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
         registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
@@ -1943,6 +1948,7 @@ cdef class Encoder:
     def set_encoding_quality(self, quality):
         cdef NVENCSTATUS r                          #@DuplicatedSignature
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
+        assert self.context, "context is not initialized"
         if self.quality==quality:
             return
         log("set_encoding_quality(%s) current quality=%s", quality, self.quality)
@@ -2004,6 +2010,7 @@ cdef class Encoder:
     cdef flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
         cdef NVENCSTATUS r                          #@DuplicatedSignature
+        assert self.context, "context is not initialized"
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
@@ -2040,7 +2047,7 @@ cdef class Encoder:
         cdef unsigned int x, y, stride
         cdef unsigned int i
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-
+        assert self.context, "context is not initialized"
         start = time.time()
         log("compress_image(%s, %s)", image, options)
         cdef unsigned int w = image.get_width()
@@ -2084,7 +2091,7 @@ cdef class Encoder:
                 buf[x:x+stride] = pixels[y:y+stride]
 
         #copy input buffer to CUDA buffer:
-        memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
+        driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
         self.bytes_in += input_size
         log("compress_image(..) %i bytes of input buffer copied to device", input_size)
 
@@ -2248,12 +2255,13 @@ cdef class Encoder:
         """ you must free it after use! """
         cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
         cdef NVENCSTATUS r                          #@DuplicatedSignature
+        assert self.context, "context is not initialized"
         presetConfig = <NV_ENC_PRESET_CONFIG*> cmalloc(sizeof(NV_ENC_PRESET_CONFIG), "preset config")
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         if DEBUG_API:
-            log.info("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
+            log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
         r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
@@ -2268,10 +2276,10 @@ cdef class Encoder:
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NV_ENC_CONFIG *encConfig
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-
+        assert self.context, "context is not initialized"
         presets = {}
         if DEBUG_API:
-            log.info("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
+            log("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
         with nogil:
             r = self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount)
         raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
@@ -2319,7 +2327,7 @@ cdef class Encoder:
         cdef GUID* profile_GUIDs
         cdef GUID profile_GUID
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-
+        assert self.context, "context is not initialized"
         profiles = {}
         if DEBUG_API:
             log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &profileCount)
@@ -2353,7 +2361,7 @@ cdef class Encoder:
         cdef uint32_t inputFmtsRetCount
         cdef NV_ENC_BUFFER_FORMAT inputFmt
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-
+        assert self.context, "context is not initialized"
         input_formats = {}
         if DEBUG_API:
             log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &inputFmtCount)
@@ -2386,10 +2394,10 @@ cdef class Encoder:
         cdef int val
         cdef NV_ENC_CAPS_PARAM encCaps
         cdef NVENCSTATUS r                          #@DuplicatedSignature
+        assert self.context, "context is not initialized"
         memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
         encCaps.version = NV_ENC_CAPS_PARAM_VER
         encCaps.capsToQuery = caps_type
-
         with nogil:
             r = self.functionList.nvEncGetEncodeCaps(self.context, encode_GUID, &encCaps, &val)
         raiseNVENC(r, "getting encode caps for %s" % CAPS_NAMES.get(caps_type, caps_type))
@@ -2397,13 +2405,13 @@ cdef class Encoder:
             log("query_encoder_caps(%s, %s) %s=%s", codecstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
-    cdef query_codecs(self, full_query=False):
+    def query_codecs(self, full_query=False):
         cdef uint32_t GUIDCount
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs
         cdef GUID encode_GUID
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-
+        assert self.context, "context is not initialized"
         if DEBUG_API:
             log("nvEncGetEncodeGUIDCount(%#x, %#x)", <unsigned long> self.context, <unsigned long> &GUIDCount)
         with nogil:
@@ -2455,11 +2463,15 @@ cdef class Encoder:
         return codecs
 
 
-    cdef open_encode_session(self):
+    def open_encode_session(self):
         global context_counter, context_gen_counter, last_context_failure
         cdef NVENCSTATUS r                          #@DuplicatedSignature
         cdef int t
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
+
+        assert self.functionList is NULL, "session already active"
+        assert self.context is NULL, "context already set"
+        assert self.cuda_context and self.cuda_context_ptr!=NULL, "cuda context is not set"
         #params = <NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS*> malloc(sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
         log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_context, <unsigned long> self.cuda_context_ptr)
 
@@ -2505,8 +2517,6 @@ cdef class Encoder:
 
 
 def init_module():
-    global YUV444_ENABLED, LOSSLESS_ENABLED, ENCODINGS
-    YUV444_ENABLED, LOSSLESS_ENABLED = True, True
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
     if NVENCAPI_VERSION!=0x7:
@@ -2518,17 +2528,26 @@ def init_module():
     #raiseNVENC(r, "querying max version")
     #log(" maximum supported version: %s", max_version)
 
-    if not validate_driver_yuv444lossless():
-        YUV444_ENABLED = False
-        LOSSLESS_ENABLED = False
-
     #load the library / DLL:
     init_nvencode_library()
+
+    #make sure we have devices we can use:
+    devices = init_all_devices()
+    if len(devices)==0:
+        log("nvenc: no compatible devices found")
+        return
 
     success = False
     valid_keys = []
     failed_keys = []
     try_keys = CLIENT_KEYS_STR or [None]
+    TEST_ENCODINGS = ["h264", "h265"]
+    FAILED_ENCODINGS = set()
+    global YUV444_ENABLED, LOSSLESS_ENABLED, ENCODINGS
+    if not validate_driver_yuv444lossless():
+        YUV444_ENABLED, LOSSLESS_ENABLED = False, False
+    else:
+        YUV444_ENABLED, LOSSLESS_ENABLED = True, True
     #check NVENC availibility by creating a context:
     for client_key in try_keys:
         if client_key:
@@ -2537,18 +2556,45 @@ def init_module():
             global CLIENT_KEY_GUID
             CLIENT_KEY_GUID = c_parseguid(client_key)
 
-        devices = init_all_devices()
         for device_id in devices:
             log("testing encoder with device %s", device_id)
             options = {"cuda_device" : device_id}
-            test_encoder = Encoder()
-            for encoding in ENCODINGS:
+            try:
+                test_encoder = Encoder()
+                test_encoder.select_cuda_device(options)
+                test_encoder.init_cuda()
+                log("test encoder=%s", test_encoder)
+                test_encoder.open_encode_session()
+                log("init_encoder() %s", test_encoder)
+                codecs = test_encoder.query_codecs()
+                log("device %i supports: %s", device_id, codecs)
+            finally:
+                test_encoder.clean()
+                test_encoder = None
+
+            test_encodings = []
+            for e in TEST_ENCODINGS:
+                if e in FAILED_ENCODINGS:
+                    continue
+                nvenc_encoding_name = {
+                                       "h264"   : "H264",
+                                       "h265"   : "HEVC",
+                                       }.get(e, e)
+                if nvenc_encoding_name not in codecs:
+                    log("%s is not supported on this device", e)
+                    FAILED_ENCODINGS.add(e)
+                    continue
+                test_encodings.append(e)
+
+            log("will test: %s", test_encodings)
+            for encoding in test_encodings:
                 colorspaces = get_input_colorspaces(encoding)
                 assert colorspaces, "cannot use NVENC: no colorspaces available"
                 src_format = colorspaces[0]
                 dst_formats = get_output_colorspaces(encoding, src_format)
                 try:
                     try:
+                        test_encoder = Encoder()
                         test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), options)
                         success = True
                         if client_key:
@@ -2580,14 +2626,15 @@ def init_module():
                         else:
                             #it seems that newer version will fail with
                             #seemingly random errors when we supply the wrong key
-                            log.warn("error during NVENC v4 encoder test: %s", e)
+                            log.warn("error during NVENC encoder test: %s", e)
                             if client_key:
                                 log(" license key '%s' may not be valid (skipped)", client_key)
                                 failed_keys.append(client_key)
                             else:
                                 log(" a license key may be required")
                 finally:
-                    test_encoder.clean()
+                    if test_encoder:
+                        test_encoder.clean()
     if success:
         #pick the first valid license key:
         if len(valid_keys)>0:
@@ -2596,14 +2643,16 @@ def init_module():
             CLIENT_KEY_GUID = c_parseguid(x)
         else:
             log("no license keys are required")
+        ENCODINGS[:] = [x for x in TEST_ENCODINGS if x not in FAILED_ENCODINGS]
     else:
         #we got license key error(s)
         if len(failed_keys)>0:
             raise Exception("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
         else:
             raise Exception("you may need to provide a license key")
-    log("NVENC v6 successfully initialized")
-    nvenc_loaded()
+    if ENCODINGS:
+        log("NVENC v7 successfully initialized: %s", csv(ENCODINGS))
+        nvenc_loaded()
 
 def cleanup_module():
     log("nvenc.cleanup_module()")
