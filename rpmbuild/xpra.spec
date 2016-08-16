@@ -163,7 +163,6 @@ Source: xpra-%{version}.tar.bz2
 Patch0: centos-ignore-invalid-gcc-warning.patch
 Patch1: centos7-buffer-fill-fix.patch
 Patch2: gstreamer010.patch
-Patch3: centos7-selinux-cups_xpra.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
@@ -326,9 +325,6 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 %if "%{?dist}"==".el7_1"
 %patch1 -p1
 %patch2 -p1
-%endif
-%if 0%{?el7}
-%patch3 -p1
 %endif
 popd
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
