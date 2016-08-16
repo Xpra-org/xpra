@@ -87,5 +87,5 @@ if test -f "$bundle_res/environment.sh"; then
   source "$bundle_res/environment.sh"
 fi
 
-#'exec -a "$APPNAME" was used here before - see note above' 
+#'exec -a "$APPNAME" was used here before - see note above'
 exec "$PYTHON" "$@"
