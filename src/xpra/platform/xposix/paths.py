@@ -7,10 +7,12 @@ import os.path
 import sys
 import site
 
+USE_RUNTIME_DIR = os.environ.get("XPRA_USE_RUNTIME_DIR", "1")
 
-USE_RUNTIME_LOG_DIR = os.environ.get("XPRA_USE_RUNTIME_LOG_DIR", "1")=="1"
-USE_RUNTIME_BIN_DIR = os.environ.get("XPRA_USE_RUNTIME_BIN_DIR", "1")=="1"
-USE_RUNTIME_SOCKET_DIR = os.environ.get("XPRA_USE_RUNTIME_SOCKET_DIR", "1")=="1"
+
+USE_RUNTIME_LOG_DIR = os.environ.get("XPRA_USE_RUNTIME_LOG_DIR", USE_RUNTIME_DIR)=="1"
+USE_RUNTIME_BIN_DIR = os.environ.get("XPRA_USE_RUNTIME_BIN_DIR", USE_RUNTIME_DIR)=="1"
+USE_RUNTIME_SOCKET_DIR = os.environ.get("XPRA_USE_RUNTIME_SOCKET_DIR", USE_RUNTIME_DIR)=="1"
 
 
 def do_get_install_prefix():
