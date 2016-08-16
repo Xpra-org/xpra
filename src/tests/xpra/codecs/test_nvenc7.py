@@ -12,10 +12,10 @@ def main():
     test_nvenc.test_encode_one()
     #test_nvenc.test_context_leak()
     #test_nvenc.test_memleak()
-    #test_nvenc.test_dimensions()
+    test_nvenc.test_dimensions()
     #test_nvenc.test_perf()
     #test_nvenc.test_encode_all_GPUs()
-    test_nvenc.test_context_limits()
+    #test_nvenc.test_context_limits()
     #test_nvenc.test_parallel_encode()
 
 

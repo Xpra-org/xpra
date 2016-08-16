@@ -254,6 +254,7 @@ def get_nvenc_license_keys(nvenc_version=0):
                     continue
                 log("loading nvenc%s keys from %s", nvenc_version, keys_file)
                 with open(keys_file, "rU") as f:
+                    fkeys = []
                     for line in f:
                         sline = line.strip().rstrip('\r\n').strip()
                         if len(sline) == 0:
@@ -262,8 +263,10 @@ def get_nvenc_license_keys(nvenc_version=0):
                         if sline[0] in ( '!', '#' ):
                             log("skipping comments")
                             continue
-                        keys.append(sline)
+                        fkeys.append(sline)
                         log("added key: %s", sline)
+                    log("added %i key%s from %s", len(fkeys), engs(fkeys), keys_file)
+                    keys += fkeys
         except Exception as e:
             log.error("error loading nvenc license keys: %s", e, exc_info=True)
     nvenc_license_keys[nvenc_version] = keys

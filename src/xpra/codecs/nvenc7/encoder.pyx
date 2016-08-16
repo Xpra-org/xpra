@@ -1227,13 +1227,17 @@ def get_runtime_factor():
     log("nvenc.get_runtime_factor()=%s", f)
     return f
 
+
+MAX_SIZE = {}
+
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     min_w, min_h = 32, 32
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
-    max_w, max_h = 4096, 4096
+    global MAX_SIZE
+    max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
     if encoding=="h265":
         #undocumented and found the hard way!
         min_w, min_h = 72, 72
@@ -2543,7 +2547,7 @@ def init_module():
     try_keys = CLIENT_KEYS_STR or [None]
     TEST_ENCODINGS = ["h264", "h265"]
     FAILED_ENCODINGS = set()
-    global YUV444_ENABLED, LOSSLESS_ENABLED, ENCODINGS
+    global YUV444_ENABLED, LOSSLESS_ENABLED, ENCODINGS, MAX_SIZE
     if not validate_driver_yuv444lossless():
         YUV444_ENABLED, LOSSLESS_ENABLED = False, False
     else:
@@ -2580,10 +2584,21 @@ def init_module():
                                        "h264"   : "H264",
                                        "h265"   : "HEVC",
                                        }.get(e, e)
-                if nvenc_encoding_name not in codecs:
+                codec_query = codecs.get(nvenc_encoding_name)
+                if not codec_query:
                     log("%s is not supported on this device", e)
                     FAILED_ENCODINGS.add(e)
                     continue
+                #ensure MAX_SIZE is set:
+                cmax = MAX_SIZE.get(e)
+                qmax = codec_query.get("max-size")
+                if qmax:
+                    #minimum of current value and value for this device:
+                    qmx, qmy = qmax
+                    cmx, cmy = cmax or qmax
+                    v = min(qmx, cmx), min(qmy, cmy)
+                    log("max-size(%s)=%s", e, v)
+                    MAX_SIZE[e] = v
                 test_encodings.append(e)
 
             log("will test: %s", test_encodings)
