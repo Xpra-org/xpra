@@ -1,0 +1,17 @@
+Description: XDG_RUNTIME_DIR is unreliable on CentOS 7.x:
+	it is created on login (even SSH logins),
+	but not when using su.
+
+Index: xpra/platform/xposix/paths.py
+===================================================================
+--- a/xpra/platform/xposix/paths.py	(revision 13366)
++++ b/xpra/platform/xposix/paths.py	(working copy)
+@@ -7,7 +7,7 @@
+ import sys
+ import site
+ 
+-USE_RUNTIME_DIR = os.environ.get("XPRA_USE_RUNTIME_DIR", "1")
++USE_RUNTIME_DIR = os.environ.get("XPRA_USE_RUNTIME_DIR", "0")
+ 
+ 
+ USE_RUNTIME_LOG_DIR = os.environ.get("XPRA_USE_RUNTIME_LOG_DIR", USE_RUNTIME_DIR)=="1"
