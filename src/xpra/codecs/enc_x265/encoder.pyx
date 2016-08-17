@@ -496,7 +496,7 @@ cdef class Encoder:
         cdef int speed_override = options.get("speed", -1)
         cdef int saved_quality = self.quality
         cdef int saved_speed = self.speed
-        cdef int i                        #@DuplicatedSignature
+        cdef unsigned int i                        #@DuplicatedSignature
 
         assert self.context!=NULL
         start = time.time()
