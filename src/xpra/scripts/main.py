@@ -1086,7 +1086,7 @@ def systemd_run_wrap(mode, args, systemd_run_args):
     try:
         p = subprocess.Popen(cmd, shell=False, env=env)
         p.wait()
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         return 128+signal.SIGINT
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):

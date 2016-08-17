@@ -779,12 +779,13 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         xvfb_cmd.append(display_name)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=setsid)
-    xauth_add(display_name)
-    return xvfb, display_name
+    xauth_data = xauth_add(display_name)
+    return xvfb, display_name, xauth_data
 
 def xauth_add(display_name):
     from xpra.os_util import get_hex_uuid
-    xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
+    xauth_data = get_hex_uuid()
+    xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         code = subprocess.call(xauth_cmd)
         if code != 0:
@@ -792,6 +793,7 @@ def xauth_add(display_name):
     except OSError as e:
         #trying to continue anyway!
         sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
+    return xauth_data
 
 def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb is None:
@@ -1097,9 +1099,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # Start the Xvfb server first to get the display_name if needed
     xvfb = None
     xvfb_pid = None
+    xauth_data = None
     if start_vfb:
         try:
-            xvfb, display_name = start_Xvfb(opts.xvfb, display_name, cwd)
+            xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, display_name, cwd)
         except OSError as e:
             log.error("Error starting Xvfb:")
             log.error(" %s", e)
@@ -1109,14 +1112,26 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
 
-    # if pam is present, create a new session:
+    # if pam is present, try to create a new session:
     if os.name=="posix":
         try:
             from xpra.server.pam import pam_open, pam_close
         except ImportError as e:
             sys.stderr.write("No pam support: %s\n" % e)
         else:
-            if pam_open():
+            items = {
+                   "XDISPLAY" : display_name
+                   }
+            if xauth_data:
+                items["XAUTHDATA"] = xauth_data
+            env = {
+                   #"XDG_SEAT"               : "seat1",
+                   #"XDG_VTNR"               : "0",
+                   "XDG_SESSION_TYPE"       : "x11",
+                   #"XDG_SESSION_CLASS"      : "user",
+                   "XDG_SESSION_DESKTOP"    : "xpra",
+                   }
+            if pam_open(env=env, items=items):
                 _cleanups.append(pam_close)
 
     if opts.daemon:
