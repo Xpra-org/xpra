@@ -117,7 +117,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
+        log("authenticate(%s) password='%s', hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
         if hasattr(hmac, "compare_digest"):
             eq = hmac.compare_digest(verify, challenge_response)
         else:
