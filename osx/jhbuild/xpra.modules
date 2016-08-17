@@ -22,7 +22,7 @@
   <repository type="tarball" name="www.eu.apache.org" href="http://www.eu.apache.org"/>
   <repository type="tarball" name="serf.googlecode.com" href="http://serf.googlecode.com"/>
   <repository type="tarball" name="sqlite.org" href="http://sqlite.org"/>
-  <repository type="tarball" name="sourceforge.net" href="http://pilotfiber.dl.sourceforge.net"/>
+  <repository type="tarball" name="sourceforge.net" href="http://downloads.sourceforge.net"/>
   <repository type="tarball" name="osgeo.org" href="http://download.osgeo.org"/>
   <repository type="tarball" name="xpra.org" href="http://xpra.org"/>
   <repository type="tarball" name="sourceforge" href="http://downloads.sourceforge.net/sourceforge/"/>
