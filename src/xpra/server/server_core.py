@@ -37,7 +37,7 @@ from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, \
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
-from xpra.make_thread import make_thread
+from xpra.make_thread import start_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
 from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, \
@@ -545,7 +545,7 @@ class ServerCore(object):
         #from here on, we run in a thread, so we can poll (peek does)
         def handle_new_connection():
             self.handle_new_connection(conn, sock, socktype, sockname, address, target, info_msg, frominfo)
-        make_thread(handle_new_connection, "new-%s-connection" % socktype, True).start()
+        start_thread(handle_new_connection, "new-%s-connection" % socktype, True)
         return True
 
     def handle_new_connection(self, conn, sock, socktype, sockname, address, target, info_msg, frominfo):
@@ -589,8 +589,8 @@ class ServerCore(object):
                             tname = "websockify-proxy"
                         def run_websockify():
                             self.start_websockify(conn, frominfo)
-                        make_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True).start()
-                        return True
+                        start_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True)
+                        return
                 if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
                     socktype = "SSL"
                     try:
@@ -598,7 +598,7 @@ class ServerCore(object):
                     except IOError as e:
                         netlog("ssl wrap socket failed", exc_info=True)
                         conn_err(str(e))
-                        return True
+                        return
                     conn = SocketConnection(sock, sockname, address, target, socktype)
                     #peek so we can detect invalid clients early:
                     v = peek()
@@ -606,8 +606,8 @@ class ServerCore(object):
                     netlog.info("New tcp proxy connection received from %s", frominfo)
                     def run_proxy():
                         self.start_tcp_proxy(conn, frominfo)
-                    make_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True).start()
-                    return True
+                    start_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True)
+                    return
         else:
             #peek so we can detect invalid clients early:
             v = peek()
@@ -653,7 +653,7 @@ class ServerCore(object):
                                        }
                 return d
             conn.get_socket_info = types.MethodType(get_ssl_socket_info, conn)
-        return self.make_protocol(socktype, conn, frominfo)
+        self.make_protocol(socktype, conn, frominfo)
 
     def make_protocol(self, socktype, conn, frominfo=""):
         protocol = Protocol(self, conn, self.process_packet)
@@ -684,7 +684,7 @@ class ServerCore(object):
             protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
-        return True
+
 
     def invalid_header(self, proto, data):
         netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s, html=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html)
@@ -1136,7 +1136,7 @@ class ServerCore(object):
             end = time.time()
             log("get_all_info: non ui info collected in %ims", (end-start)*1000)
             callback(proto, ui_info)
-        make_thread(in_thread, "Info", daemon=True).start()
+        start_thread(in_thread, "Info", daemon=True)
 
     def get_ui_info(self, proto, *args):
         #this function is for info which MUST be collected from the UI thread

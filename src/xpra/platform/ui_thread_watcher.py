@@ -7,7 +7,7 @@ import os
 import time
 import threading
 from threading import Event
-from xpra.make_thread import make_thread
+from xpra.make_thread import start_thread
 from xpra.log import Logger
 log = Logger("util")
 
@@ -52,7 +52,7 @@ class UI_thread_watcher(object):
         #run once to initialize:
         self.UI_thread_wakeup()
         if self.polling_timeout>0:
-            make_thread(self.poll_UI_loop, "UI thread polling").start()
+            start_thread(self.poll_UI_loop, "UI thread polling")
         else:
             log("not starting an IO polling thread")
         if FAKE_UI_LOCKUPS>0:

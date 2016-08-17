@@ -27,7 +27,7 @@ from xpra.os_util import Queue, SIGNAMES, get_hex_uuid, strtobytes
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
-from xpra.make_thread import make_thread
+from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
@@ -183,13 +183,12 @@ class ProxyInstanceProcess(Process):
         signal.signal(signal.SIGINT, self.signal_quit)
         log("registered signal handler %s", self.signal_quit)
 
-        make_thread(self.server_message_queue, "server message queue").start()
+        start_thread(self.server_message_queue, "server message queue")
 
         if not self.create_control_socket():
             #TODO: should send a message to the client
             return
-        self.control_socket_thread = make_thread(self.control_socket_loop, "control")
-        self.control_socket_thread.start()
+        self.control_socket_thread = start_thread(self.control_socket_loop, "control")
 
         self.main_queue = Queue()
         #setup protocol wrappers:
@@ -211,8 +210,7 @@ class ProxyInstanceProcess(Process):
 
         self.lost_windows = set()
         self.encode_queue = Queue()
-        self.encode_thread = make_thread(self.encode_loop, "encode")
-        self.encode_thread.start()
+        self.encode_thread = start_thread(self.encode_loop, "encode")
 
         log("starting network threads")
         self.server_protocol.start()

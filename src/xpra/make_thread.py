@@ -17,3 +17,8 @@ def make_thread(target, name, daemon=False):
     t = Thread(target=target, name=name)
     t.daemon = daemon
     return t
+
+def start_thread(target, name, daemon=False):
+    t = make_thread(target, name, daemon)
+    t.start()
+    return t

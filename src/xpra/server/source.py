@@ -39,7 +39,7 @@ from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
-from xpra.make_thread import make_thread
+from xpra.make_thread import start_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, AtomicInteger, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -343,8 +343,7 @@ class ServerSource(FileTransferHandler):
 
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
-        self.encode_thread = make_thread(self.encode_loop, "encode")
-        self.encode_thread.start()
+        self.encode_thread = start_thread(self.encode_loop, "encode")
         #for managing the recalculate_delays work:
         self.calculate_window_ids = set()
         self.calculate_due = False

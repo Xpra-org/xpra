@@ -2133,8 +2133,8 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             #(as the server process will exit as it daemonizes)
             def reaper():
                 proc.wait()
-            from xpra.make_thread import make_thread
-            make_thread(reaper, "server-startup-reaper").start()
+            from xpra.make_thread import start_thread
+            start_thread(reaper, "server-startup-reaper")
     else:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)
