@@ -333,6 +333,11 @@ def find_lib(libname):
             return libname_so
     return None
 
+def is_systemd_pid1():
+    if not os.name=="posix":
+        return False
+    d = load_binary_file("/proc/1/cmdline")
+    return d.find("/systemd")>=0
 
 def main():
     from xpra.log import Logger
@@ -342,6 +347,7 @@ def main():
     log.info("get_machine_id()=%s", get_machine_id())
     log.info("get_hex_uuid()=%s", get_hex_uuid())
     log.info("get_int_uuid()=%s", get_int_uuid())
+    log.info("systemd=%s", is_systemd_pid1())
     ld = get_linux_distribution()
     if ld:
         log.info("get_linux_distribution()=%s", ld)

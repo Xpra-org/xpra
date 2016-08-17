@@ -977,16 +977,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     atexit.register(run_cleanups)
 
-    # if pam is present, create a new session:
-    if os.name=="posix":
-        try:
-            from xpra.server.pam import pam_open, pam_close
-        except ImportError as e:
-            sys.stderr.write("No pam support: %s\n" % e)
-        else:
-            if pam_open():
-                _cleanups.append(pam_close)
-
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
@@ -1118,6 +1108,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
+
+    # if pam is present, create a new session:
+    if os.name=="posix":
+        try:
+            from xpra.server.pam import pam_open, pam_close
+        except ImportError as e:
+            sys.stderr.write("No pam support: %s\n" % e)
+        else:
+            if pam_open():
+                _cleanups.append(pam_close)
 
     if opts.daemon:
         log_filename1 = select_log_file(log_dir, opts.log_file, display_name)

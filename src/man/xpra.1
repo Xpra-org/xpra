@@ -26,6 +26,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
+[\fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
+[\fB\-\-systemd\-run-args\fP=\fARGS\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
 [\fB\-\-sync\-xvfb\fP=\fIDELAY\fP]
 [\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
@@ -772,6 +774,12 @@ automatically terminate itself when the last of them has exited.
 \fB\-\-env\fP=\fIKEY=VALUE\fP
 Extra environment variables which will only affect commands started using
 fB\-\-start\fP or fB\-\-start\-child\fP.
+.TP
+\fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+Wrap server start commands with systemd-run.
+.TP
+\fB\-\-systemd\-run-args\fP=\fARGS\fP
+Command line arguments passed to systemd-run.
 .TP
 \fB\-\-use\-display\fP
 Use an existing display rather than starting one with xvfb.

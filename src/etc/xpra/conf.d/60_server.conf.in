@@ -77,3 +77,12 @@ pulseaudio-command = %(pulseaudio_command)s
 # pactl set-source-volume SomeSource 20%%
 %(pulseaudio_configure_commands)s
 
+
+# Systemd specific options:
+# Wrap server start commands with systemd-run:
+#systemd-run = no
+systemd-run = auto
+
+# Command line arguments passed to systemd-run:
+#systemd-run-args = -p MemoryAccounting=true -p MemoryHigh=384M -p MemoryLimit=512M
+#systemd-run-args = -p CPUAccounting=true -p CPUQuota=25%%

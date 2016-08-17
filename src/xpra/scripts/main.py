@@ -296,6 +296,17 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-env", action="append",
                       dest="start_env", default=list(defaults.start_env or []),
                       help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")]))
+    if os.name=="posix":
+        legacy_bool_parse("systemd-run")
+        group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
+                          dest="systemd_run", default=defaults.systemd_run,
+                          help="Wrap server start commands with systemd-run. Default: %default.")
+        group.add_option("--systemd-run-args", action="store", metavar="ARGS",
+                          dest="systemd_run_args", default=defaults.systemd_run_args,
+                          help="Command line arguments passed to systemd-run. Default: '%default'.")
+    else:
+        ignore({"systemd_run"       : "no",
+                "systemd_run_args"  : ""})
 
     legacy_bool_parse("html")
     if supports_server or supports_shadow:
@@ -1062,10 +1073,38 @@ def configure_env(options):
             os.environ[v[0]] = v[1]
 
 
+def systemd_run_wrap(mode, args, systemd_run_args):
+    cmd = ["systemd-run", "--scope", "--user"]
+    if systemd_run_args:
+        cmd += shlex.split(systemd_run_args)
+    cmd += args
+    print("using systemd-run to wrap '%s' server command" % mode)
+    print("%s" % " ".join(["'%s'" % x for x in cmd]))
+    env = os.environ.copy()
+    env["XPRA_SYSTEMD_RUN"] = "0"
+    import subprocess
+    try:
+        p = subprocess.Popen(cmd, shell=False, env=env)
+        p.wait()
+    except KeyboardInterrupt as e:
+        return 128+signal.SIGINT
+
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if os.name=="posix" and os.getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
+
+    if mode in ("start", "start_desktop", "shadow"):
+        systemd_run = parse_bool("systemd-run", options.systemd_run)
+        if systemd_run is None:
+            #detect:
+            from xpra.os_util import is_systemd_pid1
+            systemd_run = is_systemd_pid1()
+        if systemd_run:
+            #check if we have wrapped it already (or if disabled via env var)
+            wrapit = os.environ.get("XPRA_SYSTEMD_RUN", "1")=="1"
+            if wrapit:
+                return systemd_run_wrap(mode, sys.argv, options.systemd_run_args)
 
     configure_env(options)
     configure_logging(options, mode)
