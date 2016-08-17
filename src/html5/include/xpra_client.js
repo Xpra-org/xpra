@@ -956,7 +956,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	if(ctx.audio_enabled) {
 		ctx._sound_start_receiving();
 	}
-	if (hello["printing"]) {
+	if (hello["printing"]!=0) {
 		// send our printer definition
 		var printers = {
 			"HTML5 client": {
