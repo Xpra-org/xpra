@@ -26,6 +26,7 @@ proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
 mmaplog = Logger("mmap")
 dbuslog = Logger("dbus")
+statslog = Logger("stats")
 
 
 from xpra.server import ClientException
@@ -63,6 +64,7 @@ AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
+MIN_PIXEL_RECALCULATE = int(os.environ.get("XPRA_MIN_PIXEL_RECALCULATE", 2000))
 
 counter = AtomicInteger()
 
@@ -344,10 +346,6 @@ class ServerSource(FileTransferHandler):
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
         self.encode_thread = start_thread(self.encode_loop, "encode")
-        #for managing the recalculate_delays work:
-        self.calculate_window_ids = set()
-        self.calculate_due = False
-        self.calculate_last_time = 0
         #dbus:
         if self.dbus_control:
             try:
@@ -439,6 +437,12 @@ class ServerSource(FileTransferHandler):
         self.send_cursor_pending = False
         self.last_cursor_sent = None
 
+        #for managing the recalculate_delays work:
+        self.calculate_window_pixels = {}
+        self.calculate_window_ids = set()
+        self.calculate_due = False
+        self.calculate_last_time = 0
+
 
     def is_closed(self):
         return self.close_event.isSet()
@@ -485,6 +489,10 @@ class ServerSource(FileTransferHandler):
         for wid in wids:
             #this is safe because we only add to this set from other threads:
             self.calculate_window_ids.remove(wid)
+            try:
+                del self.calculate_window_pixels[wid]
+            except:
+                pass
             ws = self.window_sources.get(wid)
             if ws is None:
                 continue
@@ -523,7 +531,14 @@ class ServerSource(FileTransferHandler):
             self.global_batch_config.last_delays.append((now, delay))
             self.global_batch_config.delay = delay
 
-    def may_recalculate(self, wid):
+    def may_recalculate(self, wid, pixel_count):
+        if wid in self.calculate_window_ids:
+            return  #already scheduled
+        v = self.calculate_window_pixels.get(wid, 0)+pixel_count
+        self.calculate_window_pixels[wid] = v
+        if v<MIN_PIXEL_RECALCULATE:
+            return  #not enough pixel updates
+        statslog("may_recalculate(%i, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
         self.calculate_window_ids.add(wid)
         if self.calculate_due:
             #already due
@@ -1999,6 +2014,10 @@ class ServerSource(FileTransferHandler):
         if ws:
             del self.window_sources[wid]
             ws.cleanup()
+        try:
+            del self.calculate_window_pixels[wid]
+        except:
+            pass
 
 
     def set_min_quality(self, min_quality):
@@ -2081,8 +2100,6 @@ class ServerSource(FileTransferHandler):
         """
         if not self.can_send_window(window):
             return
-        if options is None or options.get("calculate", True):
-            self.may_recalculate(wid)
         assert window is not None
         damage_options = {}
         if options:
@@ -2106,7 +2123,7 @@ class ServerSource(FileTransferHandler):
         ws = self.window_sources.get(wid)
         if ws:
             ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
-            self.may_recalculate(wid)
+            self.may_recalculate(wid, width*height)
 
 #
 # Methods used by WindowSource:
