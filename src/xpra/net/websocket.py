@@ -16,7 +16,7 @@ from websockify.websocket import WebSocketRequestHandler
 
 WEBSOCKET_TCP_NODELAY = int(os.environ.get("WEBSOCKET_TCP_NODELAY", "1"))
 WEBSOCKET_TCP_KEEPALIVE = int(os.environ.get("WEBSOCKET_TCP_KEEPALIVE", "1"))
-
+WEBSOCKET_DEBUG = os.environ.get("XPRA_WEBSOCKET_DEBUG", "0")=="1"
 
 
 class WSRequestHandler(WebSocketRequestHandler):
@@ -30,6 +30,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         server = AdHocStruct()
         server.logger = log
         server.run_once = True
+        server.verbose = WEBSOCKET_DEBUG
         WebSocketRequestHandler.__init__(self, sock, addr, server)
 
     def new_websocket_client(self):
