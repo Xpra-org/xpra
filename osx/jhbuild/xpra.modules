@@ -54,7 +54,7 @@
   <autotools id="sshpass" autogen-sh="configure">
 	<branch module="/project/sshpass/sshpass/1.05/sshpass-1.05.tar.gz"
 		version="1.05"
-		hash="sha256:8cf5ce27d21490c24eedf91e0ac2bc4a748ba8f4eb20cb7c1fc9442d2d580008"
+		hash="sha256:c3f78752a68a0c3f62efb3332cceea0c8a1f04f7cf6b46e00ec0c3000bc8483e"
 		repo="sourceforge.net"/>
   </autotools>
 
