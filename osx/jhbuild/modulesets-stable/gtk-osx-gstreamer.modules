@@ -45,8 +45,8 @@
 
   <autotools id="gstreamer-1.0" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gstreamer/gstreamer-1.6.4.tar.xz" version="1.6.4" repo="gstreamer"
-            hash="sha256:4ccba88a286b13d6f2d8c1180f78a13dcd49f2fc3cb2b3b3f502b3a23f7c01b5">
+    <branch module="gstreamer/gstreamer-1.8.2.tar.xz" version="1.8.2" repo="gstreamer"
+            hash="sha256:9dbebe079c2ab2004ef7f2649fa317cabea1feb4fb5605c24d40744b90918341">
     </branch>
     <after>
       <dep package="glib"/>
