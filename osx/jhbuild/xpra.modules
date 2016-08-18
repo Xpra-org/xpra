@@ -67,11 +67,11 @@
 		repo="ftp.gnu.org"/>
   </autotools>
 
-  <autotools id="bomutils" autogen-sh="configure">
-	<branch module="/hogliux/bomutils/legacy.tar.gz/master"
-		version="0.2"
-                checkoutdir="hogliux-bomutils-3f7dc2d"
-		repo="codeload.github.com"/>
+  <autotools id="bomutils" autogen-sh="" skip-autogen="true">
+	<branch module="/hogliux/bomutils/archive/debian/0.2-1.tar.gz"
+		version="0.2-1"
+                checkoutdir="bomutils-debian-0.2-1"
+		repo="github.com"/>
   </autotools>
 
   <autotools id="xar" autogen-sh="configure">
