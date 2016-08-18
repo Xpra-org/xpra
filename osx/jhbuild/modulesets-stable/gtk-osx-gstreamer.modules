@@ -93,7 +93,7 @@
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-good/gst-plugins-good-1.8.2.tar.xz" version="1.8.2" repo="gstreamer"
             hash="sha256:8d7549118a3b7a009ece6bb38a05b66709c551d32d2adfd89eded4d1d7a23944">
-    <!--patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gst-plugins-good-1.6.4-osx-10.5-fixdefs.patch" strip="1"/-->
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gst-plugins-good-1.6.4-osx-10.5-fixdefs.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gstreamer-1.0"/>
