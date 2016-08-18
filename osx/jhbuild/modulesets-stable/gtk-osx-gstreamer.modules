@@ -140,8 +140,8 @@
   <autotools id="gst-plugins-bad-1.0" supports-non-srcdir-builds="no"
              autogenargs="--disable-xvid --disable-gl --disable-cocoa"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-bad/gst-plugins-bad-1.6.4.tar.xz" version="1.6.4" repo="gstreamer"
-            hash="sha256:2b98df8d4d7784d5186baf2e19f565a6d8f8924119f8470e23c96889aaa603fe"/>
+    <branch module="gst-plugins-bad/gst-plugins-bad-1.8.2.tar.xz" version="1.8.2" repo="gstreamer"
+            hash="sha256:d7995317530c8773ec088f94d9320909d41da61996b801ebacce9a56af493f97"/>
     <dependencies>
       <dep package="gstreamer-1.0"/>
       <dep package="gst-plugins-base-1.0"/>
