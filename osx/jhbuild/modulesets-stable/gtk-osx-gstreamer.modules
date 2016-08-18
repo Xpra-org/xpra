@@ -138,7 +138,7 @@
   </autotools>
 
   <autotools id="gst-plugins-bad-1.0" supports-non-srcdir-builds="no"
-             autogenargs="--disable-xvid --disable-gl --disable-cocoa --disable-libde265 --disable-mpegdemux --disable-mpegtsdemux --disable-mpegtsmux --disable-mpegpsmux --disable-mpeg2enc"
+             autogenargs="--disable-xvid --disable-gl --disable-cocoa --disable-libde265 --disable-mpegdemux --disable-mpegtsdemux --disable-mpegtsmux --disable-mpegpsmux --disable-mpeg2enc --disable-gtk3"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-bad/gst-plugins-bad-1.8.2.tar.xz" version="1.8.2" repo="gstreamer"
             hash="sha256:d7995317530c8773ec088f94d9320909d41da61996b801ebacce9a56af493f97"/>
