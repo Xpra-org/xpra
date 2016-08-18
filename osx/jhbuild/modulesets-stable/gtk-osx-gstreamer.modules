@@ -68,8 +68,8 @@
 
   <autotools id="gst-plugins-base-1.0" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-base/gst-plugins-base-1.6.4.tar.xz" version="1.6.4" repo="gstreamer"
-            hash="sha256:7a193e2a66b0d7411160ef2a373184c8aa3cdeaa576fa270be346716220d9606"/>
+    <branch module="gst-plugins-base/gst-plugins-base-1.8.2.tar.xz" version="1.8.2" repo="gstreamer"
+            hash="sha256:9d7109c8fb0a5dec8edb17b0053c59a46aba7ddf48dc48ea822ebbbd4339d38d"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="liborc"/>
