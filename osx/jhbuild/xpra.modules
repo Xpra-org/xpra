@@ -912,4 +912,12 @@
     </dependencies>
   </metamodule>
 
+  <metamodule id="meta-osx-xpra-pkgtools">
+    <dependencies>
+      <dep package="xar"/>
+      <dep package="cpio"/>
+      <dep package="bomutils"/>
+    </dependencies>
+  </metamodule>
+
 </moduleset>
