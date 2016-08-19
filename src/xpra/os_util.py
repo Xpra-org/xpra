@@ -337,7 +337,7 @@ def is_systemd_pid1():
     if not os.name=="posix":
         return False
     d = load_binary_file("/proc/1/cmdline")
-    return d.find("/systemd")>=0
+    return d and d.find("/systemd")>=0
 
 def main():
     from xpra.log import Logger
