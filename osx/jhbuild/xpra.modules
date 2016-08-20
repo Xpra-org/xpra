@@ -228,9 +228,9 @@
 					--disable-programs --disable-avfilter --disable-doc
 					--disable-audiotoolbox --disable-videotoolbox"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.1.1.tar.bz2"
-		version="3.1.1"
-		hash="sha1:542e24c3a50a0ba7d3fb4fc3432459c63e2195ee"
+	<branch module="/releases/ffmpeg-3.1.2.tar.bz2"
+		version="3.1.2"
+		hash="sha1:dce05dedce6332867c996a33c596385ae6934a37"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -477,9 +477,9 @@
 
   <distutils id="python-pillow">
         <branch repo="pypi.python.org"
-	     module="/packages/e0/27/f61098a12f14690689924de93ffdd101463083a80bf8ff3e0c218addf05b/Pillow-3.3.0.tar.gz"
-             hash="sha1:b115d02fde8e3df7feb2e17c98b5689cade49a89"
-	     version="3.3.0"/>
+	     module="/packages/7b/32/e6978aed8fba6398c00eec25f12798fb57647a6cef4f85db1567e3d086ef/Pillow-3.3.1.tar.gz"
+             hash="sha1:dac6cb79b951ad31dd419ea858d0de8c12bdaca5"
+	     version="3.3.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>

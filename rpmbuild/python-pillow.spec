@@ -42,8 +42,8 @@
 
 
 Name:           python2-pillow
-Version:        3.3.0
-Release:        3%{?snap}%{?dist}
+Version:        3.3.1
+Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -297,6 +297,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Sat Aug 20 2016 Antoine Martin <antoine@devloop.org.uk> - 3.3.1-1
+- new upstream release
+
 * Tue Jul 19 2016 Antoine Martin <antoine@nagafix.co.uk> - 3.3.0-3
 - fix lcms2 dependency for Fedora
 
