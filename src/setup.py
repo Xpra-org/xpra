@@ -2178,9 +2178,13 @@ if server_ENABLED:
     cython_add(Extension("xpra.server.window.region",
                 ["xpra/server/window/region.pyx"],
                 **O3_pkgconfig))
-    cython_add(Extension("xpra.server.window.motion",
-                ["xpra/server/window/motion.pyx"]+membuffers_c,
-                **O3_pkgconfig))
+    #no pthreads on win32:
+    if not WIN32:
+        motion_pkgconfig = O3_pkgconfig.copy()
+        add_to_keywords(motion_pkgconfig, 'extra_link_args', "-lpthread")
+        cython_add(Extension("xpra.server.window.motion",
+                    ["xpra/server/window/motion.pyx"]+membuffers_c+["xpra/buffers/crc32c.c"],
+                    **O3_pkgconfig))
 
 
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")

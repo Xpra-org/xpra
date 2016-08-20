@@ -8,12 +8,11 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
 import time
-from zlib import crc32
 
 cdef extern from "math.h":
     double log(double x)
 
-from libc.stdint cimport int32_t, uint8_t
+from libc.stdint cimport int32_t, uint8_t, uint32_t
 
 cdef extern from "stdlib.h":
     int abs(int number)
@@ -29,6 +28,9 @@ cdef extern from "../../buffers/memalign.h":
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
+cdef extern from "../../buffers/crc32c.h":
+    uint32_t crc32c(uint32_t crc, const void *buf, size_t len)
+
 
 def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rowstride, unsigned char bpp=4):
     cdef uint8_t *buf = NULL
@@ -37,7 +39,7 @@ def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rows
     crcs = []
     cdef unsigned int i
     for i in range(height):
-        crcs.append(crc32(buf[:width*bpp]))
+        crcs.append(crc32c(0, buf, width*bpp))
         buf += rowstride
     return crcs
 
