@@ -376,7 +376,7 @@ class UIXpraClient(XpraClientBase):
                 def vinfo(k):
                     val = self.sound_properties.get(k)
                     assert val, "%s not found in sound properties" % k
-                    return ".".join(bytestostr(x) for x in val[:2])
+                    return ".".join(bytestostr(x) for x in val[:3])
                 bits = self.sound_properties.intget(b"python.bits", 32)
                 log.info("GStreamer version %s for Python %s %s-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
             except Exception as e:

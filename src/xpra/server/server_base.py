@@ -552,7 +552,7 @@ class ServerBase(ServerCore):
                 def vinfo(k):
                     val = self.sound_properties.get(k)
                     assert val, "%s not found in sound properties" % k
-                    return ".".join(val[:2])
+                    return ".".join(val[:3])
                 bits = self.sound_properties.intget(b"python.bits", 32)
                 log.info("GStreamer version %s for Python %s %i-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
             except Exception as e:
