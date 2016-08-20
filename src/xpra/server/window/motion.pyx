@@ -36,10 +36,12 @@ def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rows
     cdef uint8_t *buf = NULL
     cdef Py_ssize_t buf_len = 0
     assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
+    assert buf_len>=rowstride*height, "buffer is too small for %ix%i" % (rowstride, height)
     crcs = []
     cdef unsigned int i
+    cdef size_t row_len = width*bpp
     for i in range(height):
-        crcs.append(crc32c(0, buf, width*bpp))
+        crcs.append(crc32c(0, buf, row_len))
         buf += rowstride
     return crcs
 
