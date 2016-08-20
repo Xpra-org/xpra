@@ -11,7 +11,6 @@ from xpra.server.window.motion import CRC_Image
 
 
 def test_CRC_Image():
-    start = time.time()
     N = 100
     W = 1920
     H = 1080
@@ -19,12 +18,13 @@ def test_CRC_Image():
     LEN = W * H * BPP
     buf = np.random.randint(256, size=LEN).tobytes()
     ov = CRC_Image(buf, W//4, H, W, 4)
+    assert len(ov)==H
     #print("CRC_Image(..)=%s" % (ov, ))
+    start = time.time()
     for _ in range(N):
         v = CRC_Image(buf, W//4, H, W, 4)
-        assert v==ov
-        assert len(v)==H
     end = time.time()
+    assert v==ov
     elapsed = end-start
     print("crc32c: %i times %ix%i (%.1fMB) in %.3fs, %.1fGB/s" % (N, W, H, LEN//(1024.0*1024.0), elapsed, ((N*LEN) / (end-start) / (1024*1024*1024))))
     #just for comparing:
