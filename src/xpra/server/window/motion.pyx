@@ -9,10 +9,21 @@
 
 import time
 
+try:
+    import xxhash
+    def hashfn(x):
+        return xxhash.xxh64(x).intdigest()
+except ImportError as e:
+    log.warn("Warning: xxhash python bindings not found,")
+    log.warn(" using the slow zlib.crc32 fallback")
+    import zlib
+    hashfn = zlib.crc32
+
+
 cdef extern from "math.h":
     double log(double x)
 
-from libc.stdint cimport int32_t, uint8_t, uint32_t
+from libc.stdint cimport int32_t, uint8_t, uint32_t, int64_t
 
 cdef extern from "stdlib.h":
     int abs(int number)
@@ -28,23 +39,31 @@ cdef extern from "../../buffers/memalign.h":
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
-cdef extern from "../../buffers/crc32c.h":
-    uint32_t crc32c(uint32_t crc, const void *buf, size_t len)
-
 
 def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rowstride, unsigned char bpp=4):
     cdef uint8_t *buf = NULL
     cdef Py_ssize_t buf_len = 0
     assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
     assert buf_len>=rowstride*height, "buffer is too small for %ix%i" % (rowstride, height)
-    crcs = []
     cdef unsigned int i
     cdef size_t row_len = width*bpp
+    global hashfn
+    f = hashfn
+    crcs = []
     for i in range(height):
-        crcs.append(crc32c(0, buf, row_len))
+        crcs.append(f(buf[:row_len]))
         buf += rowstride
     return crcs
 
+
+DEF MAXINT64 = 2**63
+DEF MAXUINT64 = 2**64
+DEF MASK64 = 2**64-1
+cdef castint64(v):
+    if v>=MAXINT64:
+        return v-MAXUINT64
+    #assert v>=0, "invalid int to cast: %s" % v
+    return v
 
 def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
     #print("calculate_distances(..)")
@@ -53,21 +72,21 @@ def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
     cdef int i, y1, y2, miny, maxy, d
     #we want fast array access,
     #so cache both arrays in C arrays:
-    assert sizeof(int32_t)==32//8, "uint64_t is not 64-bit: %i!" % sizeof(int32_t)
-    cdef size_t asize = l*(sizeof(int32_t))
-    cdef int32_t *a1 = NULL
-    cdef int32_t *a2 = NULL
+    assert sizeof(int64_t)==64//8, "uint64_t is not 64-bit: %i!" % sizeof(int64_t)
+    cdef size_t asize = l*(sizeof(int64_t))
+    cdef int64_t *a1 = NULL
+    cdef int64_t *a2 = NULL
     cdef int32_t *distances = NULL
     #print("calculate_distances(%s, %s, %i, %i)" % (array1, array2, elen, min_score))
     try:
-        a1 = <int32_t*> xmemalign(asize)
-        a2 = <int32_t*> xmemalign(asize)
+        a1 = <int64_t*> xmemalign(asize)
+        a2 = <int64_t*> xmemalign(asize)
         distances = <int32_t*> xmemalign(2*l*sizeof(int32_t))
         memset(<void*> distances, 0, 2*l*sizeof(int32_t))
         assert a1!=NULL and a2!=NULL and distances!=NULL
         for i in range(l):
-            a1[i] = array1[i]
-            a2[i] = array2[i]
+            a1[i] = castint64(array1[i])
+            a2[i] = castint64(array2[i])
         #now compare all the values
         for y1 in range(l):
             miny = max(0, y1-max_distance)

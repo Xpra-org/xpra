@@ -17,12 +17,12 @@ def test_CRC_Image():
     BPP = 4
     LEN = W * H * BPP
     buf = np.random.randint(256, size=LEN).tobytes()
-    ov = CRC_Image(buf, W//4, H, W, 4)
+    ov = CRC_Image(buf, W, H, W*BPP, BPP)
     assert len(ov)==H
     #print("CRC_Image(..)=%s" % (ov, ))
     start = time.time()
     for _ in range(N):
-        v = CRC_Image(buf, W//4, H, W, 4)
+        v = CRC_Image(buf, W, H, W*BPP, BPP)
     end = time.time()
     assert v==ov
     elapsed = end-start

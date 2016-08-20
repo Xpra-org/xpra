@@ -95,6 +95,34 @@ class TestMotion(unittest.TestCase):
 		end = time.time()
 		print("distances for %ix%i took %.1fms" % (N, N, (end-start)*1000))
 
+	def test_detect_motion(self):
+		W, H, BPP = 1920, 1080, 4
+		#W, H, BPP = 2, 4, 4
+		LEN = W * H * BPP
+		import numpy as np
+		na1 = np.random.randint(2**63-1, size=LEN//8)
+		buf1 = na1.tobytes()
+		ov1 = motion.CRC_Image(buf1, W, H, W*BPP, BPP)
+		assert len(ov1)==H
+		#make a new "image" shifted N lines:
+		for N in (1, 20, 100):
+			na2 = np.roll(na1, -N*W*BPP//8)
+			buf2 = na2.tobytes()
+			ov2 = motion.CRC_Image(buf2, W, H, W*BPP, BPP)
+			assert len(ov2)==H
+			distances = motion.calculate_distances(ov1, ov2, min_score=1)
+			linecount = distances.get(N, 0)
+			assert linecount>0, "could not find distance %i" % N
+			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
+		if False:
+			import binascii
+			print("na1:\n%s" % binascii.hexlify(na1.tobytes()))
+			print("na2:\n%s" % binascii.hexlify(na2.tobytes()))
+			np.set_printoptions(threshold=np.inf)
+			print("na1:\n%s" % (na1, ))
+			print("na2:\n%s" % (na2, ))
+			print("ov1:\n%s" % (ov1, ))
+			print("ov2:\n%s" % (ov2, ))
 
 def main():
 	if motion:
