@@ -785,6 +785,10 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             #assume "/usr" or "/usr/local" is the build root
             while "usr" in dirs and dirs.index("usr")>0:
                 dirs = dirs[dirs.index("usr"):]
+        elif "image" in dirs:
+            # Gentoo's "${PORTAGE_TMPDIR}/portage/${CATEGORY}/${PF}/image/_python2.7" -> ""
+            while "image" in dirs:
+                dirs = dirs[dirs.index("image")+2:]
     #now deal with the fact that "/etc" is used for the "/usr" prefix
     #but "/usr/local/etc" is used for the "/usr/local" prefix..
     if dirs and dirs[-1]=="usr":
