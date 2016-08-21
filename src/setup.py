@@ -153,7 +153,7 @@ gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT
-pam_ENABLED = DEFAULT and server_ENABLED and os.name=="posix" and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
+pam_ENABLED = DEFAULT and server_ENABLED and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
