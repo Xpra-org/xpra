@@ -1,7 +1,7 @@
 #!/bin/bash
 # this script will:
 # * fix cups backend permissions which are not preserved:
-# * add scripts in /usr/bin to launch the xpra commands
+# * add scripts in /usr/local/bin to launch the xpra commands
 
 chown root:wheel /usr/libexec/cups/backend/xpraforwarder
 chmod 700 /usr/libexec/cups/backend/xpraforwarder
@@ -9,16 +9,20 @@ chmod 700 /usr/libexec/cups/backend/xpraforwarder
 #FIXME: figure out where we were installed if using a custom location..
 APP_ROOT="/Applications/Xpra.app"
 if [ -d "$APP_ROOT" ]; then
+	if [ ! -e "/usr/local/bin" ]; then
+		mkdir /usr/local/bin
+	fi
+
 	for x in Xpra Xpra_Launcher; do
-		echo '#!/bin/sh' > /usr/bin/$x
-		echo exec $APP_ROOT/Contents/MacOS/$x \"\$@\" >> /usr/bin/$x
-		chown root:wheel /usr/bin/$x
-		chmod 755 /usr/bin/$x
+		echo '#!/bin/sh' > /usr/local/bin/$x
+		echo exec $APP_ROOT/Contents/MacOS/$x \"\$@\" >> /usr/local/bin/$x
+		chown root:wheel /usr/local/bin/$x
+		chmod 755 /usr/local/bin/$x
 	done
 	for x in Bug_Report Config_info Encoding_info GStreamer_info GTK_info Keyboard_Tool Keymap_info Network_info OpenGL_check Path_info PowerMonitor Print Python Version_info Webcam_Test;do
-		echo '#!/bin/sh' > /usr/bin/Xpra_$x
-		echo exec $APP_ROOT/Contents/Helpers/$x \"\$@\" >> /usr/bin/Xpra_$x
-		chown root:wheel /usr/bin/Xpra_$x
-		chmod 755 /usr/bin/Xpra_$x
+		echo '#!/bin/sh' > /usr/local/bin/Xpra_$x
+		echo exec $APP_ROOT/Contents/Helpers/$x \"\$@\" >> /usr/local/bin/Xpra_$x
+		chown root:wheel /usr/local/bin/Xpra_$x
+		chmod 755 /usr/local/bin/Xpra_$x
 	done
 fi
