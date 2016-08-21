@@ -13,6 +13,11 @@ if [ -d "$APP_ROOT" ]; then
 		mkdir /usr/local/bin
 	fi
 
+	csrutil status 2> /dev/null | grep "enabled"
+	if [ $? != "0" ]; then
+		cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
+	fi
+
 	for x in Xpra Xpra_Launcher; do
 		echo '#!/bin/sh' > /usr/local/bin/$x
 		echo exec $APP_ROOT/Contents/MacOS/$x \"\$@\" >> /usr/local/bin/$x
