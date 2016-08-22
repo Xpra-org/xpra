@@ -7,19 +7,21 @@
 #!python
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
+import os
 import time
 
-try:
-    import xxhash
-    def hashfn(x):
-        return xxhash.xxh64(x).intdigest()
-except ImportError as e:
-    from xpra.log import Logger
-    log = Logger("encoding")
-    log.warn("Warning: xxhash python bindings not found,")
-    log.warn(" using the slow zlib.crc32 fallback")
-    import zlib
-    hashfn = zlib.crc32
+import zlib
+hashfn = zlib.crc32
+if os.environ.get("XPRA_XXHASH", "1")=="1":
+    try:
+        import xxhash
+        def hashfn(x):
+            return xxhash.xxh64(x).intdigest()
+    except ImportError as e:
+        from xpra.log import Logger
+        logger = Logger("encoding")
+        logger.warn("Warning: xxhash python bindings not found,")
+        logger.warn(" using the slow zlib.crc32 fallback")
 
 
 cdef extern from "math.h":
