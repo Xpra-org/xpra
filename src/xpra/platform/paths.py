@@ -197,6 +197,20 @@ def get_license_text(self):
     return LICENSE_TEXT
 
 
+
+def get_xpra_command():
+    envvalue = os.environ.get("XPRA_COMMAND")
+    if envvalue:
+        import shlex
+        return shlex.split(envvalue)
+    return do_get_xpra_command()
+def do_get_xpra_command():
+    #try to use the same "xpra" executable that launched this server:
+    if sys.argv and sys.argv[0].endswith("/xpra"):
+        return [sys.argv[0]]
+    return ["xpra"]
+
+
 def get_sound_command():
     envvalue = os.environ.get("XPRA_SOUND_COMMAND")
     if envvalue:
@@ -204,7 +218,7 @@ def get_sound_command():
         return shlex.split(envvalue)
     return do_get_sound_command()
 def do_get_sound_command():
-    return ["xpra"]
+    return get_xpra_command()
 
 
 from xpra.platform import platform_import
@@ -214,6 +228,7 @@ platform_import(globals(), "paths", True,
                 "do_get_icon_dir")
 platform_import(globals(), "paths", False,
                 "do_get_sshpass_command",
+                "do_get_xpra_command",
                 "do_get_sound_command",
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
