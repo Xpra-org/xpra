@@ -696,6 +696,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 if sys.platform.startswith("netbsd"):
                     #see: http://trac.cython.org/ticket/395
                     eifd += ["-fno-strict-aliasing"]
+                elif sys.platform.startswith("freebsd"):
+                    eifd += ["-Wno-error=unused-function"]
             else:
                 #older versions of OSX ship an old gcc,
                 #not much we can do with this:
