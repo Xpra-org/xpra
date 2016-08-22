@@ -14,6 +14,8 @@ try:
     def hashfn(x):
         return xxhash.xxh64(x).intdigest()
 except ImportError as e:
+    from xpra.log import Logger
+    log = Logger("encoding")
     log.warn("Warning: xxhash python bindings not found,")
     log.warn(" using the slow zlib.crc32 fallback")
     import zlib
