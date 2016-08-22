@@ -34,8 +34,8 @@ def get_interfaces():
 def get_gateways():
 	if not has_netifaces:
 		return	{}
-	#no idea why, but this causes crashes on OSX:
-	if sys.platform.startswith("darwin"):
+	#no idea why, but this causes crashes on OSX and FreeBSD:
+	if sys.platform.startswith("darwin") or sys.platform.startswith("freebsd"):
 		return {}
 	try:
 		d =	netifaces.gateways()
