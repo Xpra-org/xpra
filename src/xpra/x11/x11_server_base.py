@@ -7,6 +7,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import time
 import gtk.gdk
 
@@ -132,7 +133,12 @@ class X11ServerBase(GTKServerBase):
         self.opengl_props = {}
         try:
             import subprocess
-            cmd = self.get_full_child_command(["xpra", "opengl"])
+            #try to use the same "xpra" executable that launched this server:
+            if sys.argv and sys.argv[0].endswith("/xpra"):
+                xpra_cmd = sys.argv[0]
+            else:
+                xpra_cmd = "xpra"
+            cmd = self.get_full_child_command([xpra_cmd, "opengl"])
             env = self.get_child_env()
             proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=False, close_fds=True)
             out,err = proc.communicate()
