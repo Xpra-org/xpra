@@ -1161,6 +1161,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             assert gtk
 
     #setup unix domain socket:
+    if not opts.socket_dir and not opts.socket_dirs:
+        #we always need at least one valid socket dir
+        from xpra.platform.paths import get_socket_dirs
+        opts.socket_dirs = get_socket_dirs()
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
     for socket, cleanup_socket in local_sockets:
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
