@@ -108,7 +108,10 @@ class TestMotion(unittest.TestCase):
 		for N in (1, 20, 100):
 			na2 = np.roll(na1, -N*W*BPP//8)
 			buf2 = na2.tobytes()
+			start = time.time()
 			ov2 = motion.CRC_Image(buf2, W, H, W*BPP, BPP)
+			end = time.time()
+			print("CRC_Image %ix%i (%.1fMB) in %.1fms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
 			assert len(ov2)==H
 			distances = motion.calculate_distances(ov1, ov2, min_score=1)
 			linecount = distances.get(N, 0)

@@ -63,7 +63,7 @@ def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rows
 DEF MAXINT64 = 2**63
 DEF MAXUINT64 = 2**64
 DEF MASK64 = 2**64-1
-cdef castint64(v):
+cdef inline castint64(v):
     if v>=MAXINT64:
         return v-MAXUINT64
     #assert v>=0, "invalid int to cast: %s" % v
@@ -97,8 +97,8 @@ def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
             maxy = min(l, y1+max_distance)
             for y2 in range(miny, maxy):
                 if a1[y1]==a2[y2]:
-                    d = y1-y2
-                    distances[l+d] += 1
+                    #distance = y1-y2
+                    distances[l+y1-y2] += 1
         r = {}
         for i in range(2*l):
             d = distances[i]
