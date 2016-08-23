@@ -7,7 +7,7 @@
 import time
 import numpy as np
 
-from xpra.server.window.motion import CRC_Image
+from xpra.server.window.motion import CRC_Image     #@UnresolvedImport
 
 
 def test_CRC_Image():
