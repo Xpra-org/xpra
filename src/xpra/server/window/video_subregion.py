@@ -271,7 +271,8 @@ class VideoSubregion(object):
             inwindow = float(width*height) / (ww*wh)
             ratio = inregion / inwindow
             sizeboost = 1+inwindow
-            return int(100 * ratio**sizeboost)
+            sslog("scoreinout(%s, %i, %i) inregion=%.3f, inwindow=%.3f, ratio=%.3f, sizeboost=%.3f", region, incount, outcount, inregion, inwindow, ratio, sizeboost)
+            return int(sizeboost*5 + 100 * ratio**sizeboost)
 
         def score_region(info, region, ignore_size=0):
             #check if the region given is a good candidate, and if so we use it
