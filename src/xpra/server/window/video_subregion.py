@@ -286,6 +286,14 @@ class VideoSubregion(object):
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, score)
             return score
 
+        def updateregion(rect):
+            self.rectangle = rect
+            self.time = time.time()
+            self.inout = inoutcount(rect)
+            self.score = scoreinout(rect, *self.inout)
+            self.fps = self.inout[0]/(rect.width*rect.height) / (time.time()-from_time)
+            sslog("score(%s)=%s", self.inout, self.score)
+
         def setnewregion(rect, msg="", *args):
             sslog("setting new region %s: "+msg, rect, *args)
             self.set_at = damage_events_count
@@ -295,13 +303,7 @@ class VideoSubregion(object):
                 self.novideoregion("disabled")
             if not self.detection:
                 return
-            self.rectangle = rect
-            self.time = time.time()
-            self.inout = inoutcount(rect)
-            self.score = scoreinout(rect, *self.inout)
-            self.fps = self.inout[0]/(rect.width*rect.height) / (time.time()-from_time)
-            sslog("score(%s)=%s", self.inout, self.score)
-
+            updateregion(rect)
 
         update_markers()
 
@@ -375,6 +377,7 @@ class VideoSubregion(object):
         #retry existing region, tolerate lower score:
         if cur_score>=90:
             sslog("keeping existing video region %s with score %s", rect, cur_score)
+            updateregion(self.rectangle)
             return
 
         if highscore>=100:
