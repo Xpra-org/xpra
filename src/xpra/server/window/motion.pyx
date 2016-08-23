@@ -10,18 +10,22 @@
 import os
 import time
 
+from xpra.log import Logger
+logger = Logger("encoding")
+
 import zlib
-hashfn = zlib.crc32
+hashfn = None
 if os.environ.get("XPRA_XXHASH", "1")=="1":
     try:
         import xxhash
         def hashfn(x):
             return xxhash.xxh64(x).intdigest()
     except ImportError as e:
-        from xpra.log import Logger
-        logger = Logger("encoding")
-        logger.warn("Warning: xxhash python bindings not found,")
-        logger.warn(" using the slow zlib.crc32 fallback")
+        logger.warn("Warning: xxhash python bindings not found")
+else:
+    logger.warn("Warning: xxhash disabled")
+if hashfn is None:
+    logger.warn(" no scrolling detection")
 
 
 cdef extern from "math.h":
@@ -45,13 +49,15 @@ cdef extern from "../../buffers/buffers.h":
 
 
 def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rowstride, unsigned char bpp=4):
+    global hashfn
+    if not hashfn:
+        return None
     cdef uint8_t *buf = NULL
     cdef Py_ssize_t buf_len = 0
     assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
     assert buf_len>=0 and (<unsigned int> buf_len)>=rowstride*height, "buffer is too small for %ix%i" % (rowstride, height)
     cdef unsigned int i
     cdef size_t row_len = width*bpp
-    global hashfn
     f = hashfn
     crcs = []
     for i in range(height):

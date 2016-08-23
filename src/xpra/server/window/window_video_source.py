@@ -1459,9 +1459,10 @@ class WindowVideoSource(WindowSource):
                 width = image.get_width()
                 height = image.get_height()
                 csums = CRC_Image(pixels, width, height, stride)
-                self.scroll_data = (width, height, csums)
-                scrolllog("updated scroll data")
-                if lsd:
+                if csums:
+                    self.scroll_data = (width, height, csums)
+                    scrolllog("updated scroll data")
+                if lsd and csums:
                     lw, lh, lcsums = lsd
                     if lw!=width or lh!=height:
                         scrolllog("scroll data size mismatch: %ix%i vs %ix%i", lw, lh, width, height)
