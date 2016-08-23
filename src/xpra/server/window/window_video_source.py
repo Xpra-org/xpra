@@ -38,6 +38,8 @@ def envint(name, d):
         return d
 
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
+MIN_VIDEO_FPS = envint("XPRA_MIN_VIDEO_FPS", 10)
+MIN_VIDEO_EVENTS = envint("XPRA_MIN_VIDEO_EVENTS", 20)
 
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
@@ -581,9 +583,9 @@ class WindowVideoSource(WindowSource):
         if not vr:
             return None
         events_count = self.statistics.damage_events_count - self.video_subregion.set_at
-        if events_count<20:
+        if events_count<MIN_VIDEO_EVENTS:
             return False
-        return self.video_subregion.fps>=10
+        return self.video_subregion.fps>=MIN_VIDEO_FPS
 
 
     def do_send_delayed_regions(self, damage_time, regions, coding, options):
