@@ -34,12 +34,13 @@ class VideoSubregion(object):
         self.enabled = True
         self.detection = True
         self.rectangle = None
-        self.counter = 0
-        self.inout = 0, 0
+        self.inout = 0, 0       #number of damage pixels within / outside the region
         self.score = 0
         self.fps = 0
-        self.set_at = 0
-        self.time = 0
+        self.damaged = 0        #proportion of the rectangle that got damaged (percentage)
+        self.set_at = 0         #value of the "damage event count" when the region was set
+        self.counter = 0        #value of the "damage event count" recorded at "time"
+        self.time = 0           #see above
         self.refresh_timer = None
         self.refresh_regions = []
         #keep track of how much extra we batch non-video regions (milliseconds):
@@ -107,6 +108,7 @@ class VideoSubregion(object):
                      "in-out"       : self.inout,
                      "score"        : self.score,
                      "fps"          : self.fps,
+                     "damaged"      : self.damaged,
                      })
         rr = list(self.refresh_regions)
         if rr:
@@ -171,6 +173,7 @@ class VideoSubregion(object):
         self.inout = 0, 0
         self.score = 0
         self.fps = 0
+        self.damaged = 0
 
     def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0):
         if not self.detection:
@@ -292,7 +295,17 @@ class VideoSubregion(object):
             self.inout = inoutcount(rect)
             self.score = scoreinout(rect, *self.inout)
             self.fps = self.inout[0]/(rect.width*rect.height) / (time.time()-from_time)
-            sslog("score(%s)=%s", self.inout, self.score)
+            rects = [self.rectangle]
+            for _,x,y,w,h in lde:
+                r = rectangle(x,y,w,h)
+                new_rects = []
+                for x in rects:
+                    new_rects += x.substract_rect(r)
+                rects = new_rects
+                if not rects:
+                    break
+            self.damaged = 100-100*sum((r.width*r.height) for r in rects)//(rect.width*rect.height)
+            sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
         def setnewregion(rect, msg="", *args):
             sslog("setting new region %s: "+msg, rect, *args)
