@@ -246,18 +246,23 @@ class VideoSubregion(object):
         def scoreinout(region, incount, outcount):
             total = incount+outcount
             assert total>0
-            inpct = 100*incount/total
-            #outpct = 100*outcount/total
+            #proportion of damage events that are within this region:
+            inregion = float(incount)/total
             #devaluate by taking into account the number of pixels in the area
             #so that a large video region only wins if it really
             #has a larger proportion of the pixels
-            #(offset the "insize" to even things out a bit:
+            #(but also offset this value to even things out a bit:
             # if we have a series of vertical or horizontal bands that we merge,
             # we would otherwise end up excluding the ones on the edge
             # if they ever happen to have a slightly lower hit count)
+            #summary: bigger is better, as long as we still have more pixels in than out
             width = min(ww, region.width)
             height = min(wh, region.height)
-            return inpct * ww*wh*2 / (ww*wh + width*height)
+            #proportion of pixels in this region relative to the whole window:
+            inwindow = float(width*height) / (ww*wh)
+            ratio = inregion / inwindow
+            sizeboost = 1+inwindow
+            return int(100 * ratio**sizeboost)
 
         def score_region(info, region, ignore_size=0):
             #check if the region given is a good candidate, and if so we use it
@@ -269,9 +274,10 @@ class VideoSubregion(object):
             if ww*wh<(region.width*region.height):
                 return 0
             incount, outcount = inoutcount(region, ignore_size)
+            total = incount+outcount
             score = scoreinout(region, incount, outcount)
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, score=%2i",
-                  info, region, incount, outcount, 100*region.width*region.height/ww/wh, score)
+                  info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, score)
             return score
 
         def setnewregion(rect, msg="", *args):
