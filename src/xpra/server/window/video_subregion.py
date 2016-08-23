@@ -389,7 +389,7 @@ class VideoSubregion(object):
             return setnewregion(region, "very high score: %s", highscore)
 
         #retry existing region, tolerate lower score:
-        if cur_score>=90:
+        if cur_score>=90 and (highscore<100 or cur_score>=highscore):
             sslog("keeping existing video region %s with score %s", rect, cur_score)
             updateregion(self.rectangle)
             return
