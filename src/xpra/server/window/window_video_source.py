@@ -562,6 +562,29 @@ class WindowVideoSource(WindowSource):
             pixels_modified += WindowSource.add_refresh_region(self, r)
         return pixels_modified
 
+    def matches_video_subregion(self, width, height):
+        if not self.video_subregion.enabled:
+            return None
+        vr = self.video_subregion.rectangle
+        if not vr:
+            return None
+        mw = abs(width - vr.width) & self.width_mask
+        mh = abs(height - vr.height) & self.height_mask
+        if mw!=0 or mh!=0:
+            return None
+        return vr
+
+    def subregion_is_video(self):
+        if not self.video_subregion.enabled:
+            return None
+        vr = self.video_subregion.rectangle
+        if not vr:
+            return None
+        events_count = self.statistics.damage_events_count - self.video_subregion.set_at
+        if events_count<20:
+            return False
+        return self.video_subregion.fps>=10
+
 
     def do_send_delayed_regions(self, damage_time, regions, coding, options):
         """
@@ -966,19 +989,14 @@ class WindowVideoSource(WindowSource):
         target_s = int(self._current_speed)
         min_s = self._fixed_min_speed
         #tune quality target for (non-)video region:
-        vr = self.video_subregion.rectangle
-        if self.video_subregion.enabled and vr and target_q<100:
-            mw = abs(width - vr.width) & self.width_mask
-            mh = abs(height - vr.height) & self.height_mask
-            fps = self.video_subregion.fps
-            if mw==0 and mh==0 and fps>=10:
-                events_count = self.statistics.damage_events_count - self.video_subregion.set_at 
-                if events_count>=20:
-                    #this is at least 10fps, with more than 20 video frames seen,
-                    #lower quality a bit more:
-                    f = min(90, 2*fps)
-                    target_q = max(min_q, int(target_q*(100-f)//100))
-                    scorelog("lowering quality target %i by %i%% for video %s (fps=%i, events count=%i)", target_q, f, vr, fps, events_count)
+        vr = self.matches_video_subregion(width, height)
+        if vr and target_q<100:
+            if self.subregion_is_video():
+                #lower quality a bit more:
+                fps = self.video_subregion.fps
+                f = min(90, 2*fps)
+                target_q = max(min_q, int(target_q*(100-f)//100))
+                scorelog("lowering quality target %i by %i%% for video %s (fps=%i)", target_q, f, vr, fps)
             else:
                 #not the video region, or not really video content, raise quality a bit:
                 target_q = int(sqrt(target_q/100.0)*100)
@@ -1061,24 +1079,34 @@ class WindowVideoSource(WindowSource):
             actual_scaling = get_min_required_scaling()
         elif actual_scaling is None and not self.is_shadow and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
             #no scaling window attribute defined, so use heuristics to enable:
-            #full frames per second (measured in pixels vs window size):
-            ffps = 0
-            stime = time.time()-5           #only look at the last 5 seconds max
-            lde = [x for x in list(self.statistics.last_damage_events) if x[0]>stime]
-            if len(lde)>10:
-                #the first event's first element is the oldest event time:
-                otime = lde[0][0]
-                pixels = sum(w*h for _,_,_,w,h in lde)
-                ffps = int(pixels/(width*height)/(time.time() - otime))
+            if self.matches_video_subregion(width, height):
+                ffps = self.video_subregion.fps
+                if self.subregion_is_video():
+                    #enable scaling more aggressively
+                    sc = (self.scaling_control+50)*2
+                else:
+                    sc = (self.scaling_control+25)
+            else:
+                #no the video region, so much less aggressive scaling:
+                sc = max(0, (self.scaling_control-50)//2)
+                #calculate full frames per second (measured in pixels vs window size):
+                ffps = 0
+                stime = time.time()-5           #only look at the last 5 seconds max
+                lde = [x for x in list(self.statistics.last_damage_events) if x[0]>stime]
+                if len(lde)>10:
+                    #the first event's first element is the oldest event time:
+                    otime = lde[0][0]
+                    pixels = sum(w*h for _,_,_,w,h in lde)
+                    ffps = int(pixels/(width*height)/(time.time() - otime))
 
-            #edge resistance for changing the current scaling value:
-            er = 0
+            #if scaling_control is high (scaling_control=100 -> er=2)
+            #then we will match the heuristics more quickly:
+            er = sc/50.0
             if self.actual_scaling!=(1, 1):
-                #if we are currently downscaling, stick with it a bit longer:
+                #if we are already downscaling, boost so we will stick with it a bit longer:
                 #more so if we are downscaling a lot (1/3 -> er=1.5 + ..)
-                #and yet even more if scaling_control is high (scaling_control=100 -> er= .. + 1)
-                er = (0.5 * self.actual_scaling[1] / self.actual_scaling[0]) + self.scaling_control/100.0
-            qs = s>(q-er*10) and q<(70+er*15)
+                er += (0.5 * self.actual_scaling[1] / self.actual_scaling[0]) 
+            qs = s>(q-er*10) and q<(50+er*15)
             #scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
 
             if self.fullscreen and (qs or ffps>=max(2, 10-er*3)):
@@ -1092,7 +1120,7 @@ class WindowVideoSource(WindowSource):
             elif width*height>=(1200-er*256)*1024 and (qs or ffps>=max(10, 50-er*15)):
                 actual_scaling = 2,3
             if actual_scaling:
-                scalinglog("calculate_scaling enabled by heuristics er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
+                scalinglog("calculate_scaling value %s enabled by heuristics for %ix%i q=%i, s=%i, er=%.1f, qs=%s, ffps=%i, scaling-control(%i)=%i", actual_scaling, width, height, q, s, er, qs, ffps, self.scaling_control, sc)
         if actual_scaling is None:
             actual_scaling = 1, 1
         v, u = actual_scaling
@@ -1276,9 +1304,8 @@ class WindowVideoSource(WindowSource):
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
-        vr = self.video_subregion
-        events_count = self.statistics.damage_events_count - vr.set_at
-        if vr and vr.enabled and vr.fps>=10 and events_count>=20:
+        #tweaks for "real" video:
+        if self.matches_video_subregion(width, height) and self.subregion_is_video():
             options["source"] = "video"
             if encoder_spec.encoding in self.supports_video_b_frames:
                 #could take av-sync into account here to choose the number of b-frames:
