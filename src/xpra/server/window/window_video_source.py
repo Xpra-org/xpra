@@ -8,6 +8,7 @@ import os
 import time
 import operator
 import threading
+from math import sqrt
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -50,7 +51,7 @@ VIDEO_SUBREGION = envint("XPRA_VIDEO_SUBREGION", 1)==1
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envint("XPRA_B_FRAMES", 1)==1
 VIDEO_SKIP_EDGE = envint("XPRA_VIDEO_SKIP_EDGE", 0)==1
-SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 0)==1
+SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 1)==1
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 40)))
 
 FAST_ORDER = ["jpeg", "rgb32", "rgb24", "png"] + PREFERED_ENCODING_ORDER
@@ -966,20 +967,22 @@ class WindowVideoSource(WindowSource):
         min_s = self._fixed_min_speed
         #tune quality target for (non-)video region:
         vr = self.video_subregion.rectangle
-        if self.video_subregion.enabled and vr:
+        if self.video_subregion.enabled and vr and target_q<100:
             mw = abs(width - vr.width) & self.width_mask
             mh = abs(height - vr.height) & self.height_mask
-            if mw==0 and mh==0:
-                if target_q<100:
-                    #dealing with the video region at less than 100% quality,
-                    #lower quality a bit more since this is definitely video:
-                    target_q = max(min_q, int(target_q*0.75))
-                    scorelog("lowering quality for video encoding of video region")
+            fps = self.video_subregion.fps
+            if mw==0 and mh==0 and fps>=10:
+                events_count = self.statistics.damage_events_count - self.video_subregion.set_at 
+                if events_count>=20:
+                    #this is at least 10fps, with more than 20 video frames seen,
+                    #lower quality a bit more:
+                    f = min(90, 2*fps)
+                    target_q = max(min_q, int(target_q*(100-f)//100))
+                    scorelog("lowering quality target %i by %i%% for video %s (fps=%i, events count=%i)", target_q, f, vr, fps, events_count)
             else:
-                if target_q<100:
-                    #not the video region, raise quality a bit:
-                    target_q = min(100, int(target_q*1.33))
-                    scorelog("raising quality for video encoding of non-video region")
+                #not the video region, or not really video content, raise quality a bit:
+                target_q = int(sqrt(target_q/100.0)*100)
+                scorelog("raising quality for video encoding of non-video region")
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), target_s, min_s, target_q, min_q)
         scores = []
         def add_scores(info, csc_spec, enc_in_format):
@@ -1456,13 +1459,18 @@ class WindowVideoSource(WindowSource):
                 height = image.get_height()
                 csums = CRC_Image(pixels, width, height, stride)
                 self.scroll_data = (width, height, csums)
+                scrolllog("updated scroll data")
                 if lsd:
                     lw, lh, lcsums = lsd
-                    if lw==width and lh==height:
+                    if lw!=width or lh!=height:
+                        scrolllog("scroll data size mismatch: %ix%i vs %ix%i", lw, lh, width, height)
+                    else:
                         #same size, try to find scrolling value
-                        assert len(csums)==len(lcsums)
-                        distances = calculate_distances(csums, lcsums, 2, 500)
-                        if len(distances)>0:
+                        assert len(csums)==len(lcsums), "mismatch between checksums lists: %i vs %i items!" % (len(csums), len(lcsums))
+                        distances = calculate_distances(csums, lcsums, 2, 1000)
+                        if len(distances)==0:
+                            scrolllog("no scroll distances found")
+                        else:
                             best = max(distances.values())
                             scroll = distances.keys()[distances.values().index(best)]
                             end = time.time()

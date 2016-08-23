@@ -18,7 +18,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
         div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
         for div_x, div_y in (y, u, v):
             div += (div_x+div_y)/2.0/3.0
-        quality = quality / div
+        quality /= div
 
     if csc_spec:
         #csc_spec.quality is the upper limit (up to 100):

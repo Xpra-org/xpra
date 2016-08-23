@@ -37,6 +37,7 @@ class VideoSubregion(object):
         self.counter = 0
         self.inout = 0, 0
         self.score = 0
+        self.fps = 0
         self.set_at = 0
         self.time = 0
         self.refresh_timer = None
@@ -100,11 +101,12 @@ class VideoSubregion(object):
                      "width"        : r.width,
                      "height"       : r.height,
                      "rectangle"    : (r.x, r.y, r.width, r.height),
-                     "set_at"       : self.set_at,
+                     "set-at"       : self.set_at,
                      "time"         : int(self.time),
-                     "non_max_wait" : self.non_max_wait,
+                     "non-max-wait" : self.non_max_wait,
                      "in-out"       : self.inout,
                      "score"        : self.score,
+                     "fps"          : self.fps,
                      })
         rr = list(self.refresh_regions)
         if rr:
@@ -163,8 +165,12 @@ class VideoSubregion(object):
     def novideoregion(self, msg="", *args):
         sslog("novideoregion: "+msg, *args)
         self.rectangle = None
+        self.time = 0
         self.set_at = 0
         self.counter = 0
+        self.inout = 0, 0
+        self.score = 0
+        self.fps = 0
 
     def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0):
         if not self.detection:
@@ -177,7 +183,7 @@ class VideoSubregion(object):
 
         if damage_events_count < self.set_at:
             #stats got reset
-            self.video_subregion_set_at = 0
+            self.set_at = 0
         #validate against window dimensions:
         rect = self.rectangle
         if rect and (rect.width>ww or rect.height>wh):
@@ -290,8 +296,10 @@ class VideoSubregion(object):
             if not self.detection:
                 return
             self.rectangle = rect
+            self.time = time.time()
             self.inout = inoutcount(rect)
             self.score = scoreinout(rect, *self.inout)
+            self.fps = self.inout[0]/(rect.width*rect.height) / (time.time()-from_time)
             sslog("score(%s)=%s", self.inout, self.score)
 
 
