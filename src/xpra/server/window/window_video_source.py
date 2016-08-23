@@ -1277,7 +1277,8 @@ class WindowVideoSource(WindowSource):
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
         vr = self.video_subregion
-        if vr and vr.enabled:
+        events_count = self.statistics.damage_events_count - vr.set_at
+        if vr and vr.enabled and vr.fps>=10 and events_count>=20:
             options["source"] = "video"
             if encoder_spec.encoding in self.supports_video_b_frames:
                 #could take av-sync into account here to choose the number of b-frames:
