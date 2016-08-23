@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,6 +35,8 @@ class VideoSubregion(object):
         self.detection = True
         self.rectangle = None
         self.counter = 0
+        self.inout = 0, 0
+        self.score = 0
         self.set_at = 0
         self.time = 0
         self.refresh_timer = None
@@ -86,7 +88,8 @@ class VideoSubregion(object):
 
     def get_info(self):
         r = self.rectangle
-        info = {"enabled"   : self.enabled,
+        info = {
+                "enabled"   : self.enabled,
                 "detection" : self.detection,
                 "counter"   : self.counter,
                 }
@@ -99,7 +102,10 @@ class VideoSubregion(object):
                      "rectangle"    : (r.x, r.y, r.width, r.height),
                      "set_at"       : self.set_at,
                      "time"         : int(self.time),
-                     "non_max_wait" : self.non_max_wait})
+                     "non_max_wait" : self.non_max_wait,
+                     "in-out"       : self.inout,
+                     "score"        : self.score,
+                     })
         rr = list(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):
@@ -169,17 +175,6 @@ class VideoSubregion(object):
         sslog("%s.identify_video_subregion(..)", self)
         sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
 
-        def setnewregion(rect, msg="", *args):
-            sslog("setting new region %s: "+msg, rect, *args)
-            self.set_at = damage_events_count
-            self.counter = damage_events_count
-            if not self.enabled:
-                #could have been disabled since we started this method!
-                self.novideoregion("disabled")
-            if not self.detection:
-                return
-            self.rectangle = rect
-
         if damage_events_count < self.set_at:
             #stats got reset
             self.video_subregion_set_at = 0
@@ -233,18 +228,7 @@ class VideoSubregion(object):
             if h>=MIN_H:
                 hc.setdefault(h, dict()).setdefault(y, set()).add(r)
 
-        def score_region(info, region, ignore_size=0):
-            #check if the region given is a good candidate, and if so we use it
-            #clamp it:
-            width = min(ww, region.width)
-            height = min(wh, region.height)
-            if width<MIN_W or height<MIN_H:
-                #too small, ignore it:
-                return 0
-            #and make sure this does not end up much bigger than needed:
-            insize = width*height
-            if ww*wh<insize:
-                return 0
+        def inoutcount(region, ignore_size=0):
             #count how many pixels are in or out if this region
             incount, outcount = 0, 0
             for r, count in dec.items():
@@ -257,10 +241,13 @@ class VideoSubregion(object):
                         #skip small region outside rectangle
                         continue
                     outcount += x.width*x.height*int(count)
+            return incount, outcount
+
+        def scoreinout(region, incount, outcount):
             total = incount+outcount
             assert total>0
             inpct = 100*incount/total
-            outpct = 100*outcount/total
+            #outpct = 100*outcount/total
             #devaluate by taking into account the number of pixels in the area
             #so that a large video region only wins if it really
             #has a larger proportion of the pixels
@@ -268,10 +255,39 @@ class VideoSubregion(object):
             # if we have a series of vertical or horizontal bands that we merge,
             # we would otherwise end up excluding the ones on the edge
             # if they ever happen to have a slightly lower hit count)
-            score = inpct * ww*wh*2 / (ww*wh + insize)
+            width = min(ww, region.width)
+            height = min(wh, region.height)
+            return inpct * ww*wh*2 / (ww*wh + width*height)
+
+        def score_region(info, region, ignore_size=0):
+            #check if the region given is a good candidate, and if so we use it
+            #clamp it:
+            if region.width<MIN_W or region.height<MIN_H:
+                #too small, ignore it:
+                return 0
+            #and make sure this does not end up much bigger than needed:
+            if ww*wh<(region.width*region.height):
+                return 0
+            incount, outcount = inoutcount(region, ignore_size)
+            score = scoreinout(region, incount, outcount)
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, score=%2i",
-                  info, region, inpct, outpct, 100*width*height/ww/wh, score)
+                  info, region, incount, outcount, 100*region.width*region.height/ww/wh, score)
             return score
+
+        def setnewregion(rect, msg="", *args):
+            sslog("setting new region %s: "+msg, rect, *args)
+            self.set_at = damage_events_count
+            self.counter = damage_events_count
+            if not self.enabled:
+                #could have been disabled since we started this method!
+                self.novideoregion("disabled")
+            if not self.detection:
+                return
+            self.rectangle = rect
+            self.inout = inoutcount(rect)
+            self.score = scoreinout(rect, *self.inout)
+            sslog("score(%s)=%s", self.inout, self.score)
+
 
         update_markers()
 
