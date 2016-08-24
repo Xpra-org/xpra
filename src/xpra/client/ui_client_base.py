@@ -216,6 +216,7 @@ class UIXpraClient(XpraClientBase):
         self.sound_out_bytecount = 0
         self.server_pulseaudio_id = None
         self.server_pulseaudio_server = None
+        self.server_gstreamer_version = None
         self.server_sound_decoders = []
         self.server_sound_encoders = []
         self.server_sound_receive = False
@@ -1890,6 +1891,7 @@ class UIXpraClient(XpraClientBase):
             from xpra.sound.common import legacy_to_new
             self.server_sound_decoders = legacy_to_new(c.strlistget("sound.decoders", []))
             self.server_sound_encoders = legacy_to_new(c.strlistget("sound.encoders", []))
+            self.server_gstreamer_version = c.strlistget("sound.gst.version")
         except:
             soundlog("cannot parse server sound codecs", exc_info=True)
         self.server_codec_full_names = c.boolget("codec-full-names")
@@ -2251,6 +2253,19 @@ class UIXpraClient(XpraClientBase):
             return False
 
 
+    def get_matching_codecs(self, local_codecs, server_codecs):
+        matching_codecs = [x for x in local_codecs if x in server_codecs]
+        #gdp has compatibility issues from one version to another..
+        gstreamer_version = self.sound_properties.get("gst.version")
+        soundlog("local gstreamer version=%s, server version=%s", gstreamer_version, self.server_gstreamer_version)
+        try:
+            assert gstreamer_version[:2]==self.server_gstreamer_version[:2]
+        except Exception as e:
+            soundlog("incompatible gstreamer versions: %s", e)
+            matching_codecs = [x for x in matching_codecs if x.lower().find("gdp")<0]
+        soundlog("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
+        return matching_codecs
+
     def start_sending_sound(self, device=None):
         """ (re)start a sound source and emit client signal """
         soundlog("start_sending_sound(%s)", device)
@@ -2285,7 +2300,7 @@ class UIXpraClient(XpraClientBase):
         def sound_source_state_changed(*args):
             self.emit("microphone-changed")
         #find the matching codecs:
-        matching_codecs = [x for x in self.microphone_codecs if x in self.server_sound_decoders]
+        matching_codecs = self.get_matching_codecs(self.microphone_codecs, self.server_sound_decoders)
         soundlog("start_sound_source(%s) matching codecs: %s", device, csv(matching_codecs))
         if len(matching_codecs)==0:
             log.error("Error: no matching codecs between client and server")
@@ -2353,7 +2368,7 @@ class UIXpraClient(XpraClientBase):
                 log.error("Error receiving sound: support not enabled on the server")
                 return
             #choose a codec:
-            matching_codecs = [x for x in self.speaker_codecs if x in self.server_sound_encoders]
+            matching_codecs = self.get_matching_codecs(self.speaker_codecs, self.server_sound_encoders)
             soundlog("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
             if len(matching_codecs)==0:
                 log.error("Error: no matching codecs between client and server")
