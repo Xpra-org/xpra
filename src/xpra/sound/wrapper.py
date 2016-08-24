@@ -89,11 +89,12 @@ class sound_subprocess(subprocess_callee):
 
     def cleanup(self):
         wo = self.wrapped_object
-        log("stop() wrapped object=%s", wo)
+        log("cleanup() wrapped object=%s", wo)
         if wo:
             #this will stop the sound pipeline:
             self.wrapped_object = None
             wo.cleanup()
+        self.timeout_add(1000, self.do_stop)
 
     def export_info(self):
         wo = self.wrapped_object
