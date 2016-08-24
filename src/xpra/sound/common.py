@@ -19,7 +19,6 @@ OPUS = "opus"
 SPEEX = "speex"
 WAVPACK = "wavpack"
 
-GDP = "gdp"
 OGG = "ogg"
 MKA = "mka"
 MPEG4 = "mpeg4"
@@ -30,31 +29,22 @@ RAW = "raw"
 LZ4 = "lz4"
 LZO = "lzo"
 
-FLAC_GDP    = FLAC+"+"+GDP
 FLAC_OGG    = FLAC+"+"+OGG
-OPUS_GDP    = OPUS+"+"+GDP
 OPUS_OGG    = OPUS+"+"+OGG
-SPEEX_GDP   = SPEEX+"+"+GDP
 SPEEX_OGG   = SPEEX+"+"+OGG
 VORBIS_OGG  = VORBIS+"+"+OGG
-VORBIS_GDP  = VORBIS+"+"+GDP
 #OPUS_WEBM   = OPUS+"+"+WEBM
 #OPUS_RTP    = OPUS+"+"+RTP
 VORBIS_MKA  = VORBIS+"+"+MKA
-AAC_GDP     = AAC+"+"+GDP
 AAC_MPEG4   = AAC+"+"+MPEG4
-RAW_GDP     = RAW+"+"+GDP
 WAV_LZ4     = WAV+"+"+LZ4
 WAV_LZO     = WAV+"+"+LZO
-RAW_GDP_LZ4 = RAW+"+"+GDP+"+"+LZ4
-RAW_GDP_LZO = RAW+"+"+GDP+"+"+LZO
 
 #when codecs were first added, there was no support for multiple muxers,
 #but now there is...
 #since it makes sense to use the full specification including the muxer in the codec name,
 #this maps it back to the original names
 LEGACY_CODEC_NAMES = {
-                      VORBIS_GDP    : VORBIS,
                       FLAC_OGG      : FLAC,
                       OPUS_OGG      : OPUS,
                       SPEEX_OGG     : SPEEX,

@@ -7,10 +7,10 @@
 import sys
 import os
 
-from xpra.sound.common import FLAC_GDP, FLAC_OGG, OPUS_GDP, OPUS_OGG, SPEEX_GDP, SPEEX_OGG, VORBIS_OGG, VORBIS_GDP, VORBIS_MKA, \
-                                AAC_GDP, AAC_MPEG4, RAW_GDP, WAV_LZ4, WAV_LZO, RAW_GDP_LZ4, RAW_GDP_LZO, \
+from xpra.sound.common import FLAC_OGG, OPUS_OGG, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
+                                AAC_MPEG4, WAV_LZ4, WAV_LZO, \
                                 VORBIS, FLAC, MP3, OPUS, SPEEX, WAV, WAVPACK, \
-                                MPEG4, GDP, MKA, OGG
+                                MPEG4, MKA, OGG
 
 from xpra.util import csv, engs, parse_simple_dict
 from xpra.log import Logger
@@ -89,7 +89,6 @@ NAME_TO_INFO_PLUGIN = {
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-        (VORBIS_GDP , "vorbisenc",      "gdppay",       "vorbisdec",    "gdpdepay",                 None),
         (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux",            None),
         #fails silently - no idea why:
         #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",    "oggdemux"),
@@ -97,14 +96,12 @@ CODEC_OPTIONS = [
         #(FLAC       , "flacenc",        "oggmux",       "flacparse ! flacdec",      "oggdemux"),
         #this only works in gstreamer 0.10 and is filtered out during initialization:
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacdec",      "oggdemux",                 None),
-        (FLAC_GDP   , "flacenc",        "gdppay",       "flacparse ! flacdec",      "gdpdepay",     None),
         (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None,           None),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None,           None),
         (WAV        , "wavenc",         None,           "wavparse",     None,                       None),
         (WAV_LZ4    , "wavenc",         None,           "wavparse",     None,                       "lz4"),
         (WAV_LZO    , "wavenc",         None,           "wavparse",     None,                       "lzo"),
         (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",      "oggdemux",                 None),
-        (OPUS_GDP   , "opusenc",        "gdppay",       "opusdec",      "gdpdepay",                 None),
         #for rtp, we would need to send the caps:
         #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusdec",      "rtpopusdepay"),
         #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusparse ! opusdec",      "rtpopusdepay"),
@@ -112,19 +109,12 @@ CODEC_OPTIONS = [
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusdec",      "matroskademux"),
         #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusparse ! opusdec",      "matroskademux"),
         (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",     "oggdemux",                 None),
-        (SPEEX_GDP  , "speexenc",       "gdppay",       "speexdec",     "gdpdepay",                 None),
         (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None,        None),
-        (AAC_GDP    , "faac",           "gdppay",       "faad",         "gdpdepay",                 None),
-        (AAC_GDP    , "avenc_aac",      "gdppay",       "avdec_aac",    "gdpdepay",                 None),
         (AAC_MPEG4  , "faac",           "mp4mux",       "faad",         "qtdemux",                  None),
         (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",    "qtdemux",                  None),
-        (RAW_GDP    , None,             "gdppay",       None,           "gdpdepay",                 None),
-        (RAW_GDP_LZ4, None,             "gdppay",       None,           "gdpdepay",                 "lz4"),
-        (RAW_GDP_LZO, None,             "gdppay",       None,           "gdpdepay",                 "lzo"),
             ]
 
 MUX_OPTIONS = [
-               (GDP,    "gdppay",   "gdpdepay"),
                (OGG,    "oggmux",   "oggdemux"),
                (MKA,    "webmmux",  "matroskademux"),
                (MPEG4,  "mp4mux",   "qtdemux"),
@@ -173,13 +163,9 @@ ENCODER_DEFAULT_OPTIONS = {
                                         },
                            }
 #we may want to review this if/when we implement UDP transport:
-GDPPAY_CRC = False
 MUXER_DEFAULT_OPTIONS = {
             "oggmux"        : {"max-delay"      : OGG_DELAY,
                                "max-page-delay" : OGG_DELAY,
-                               },
-            "gdppay"        : {"crc-header"    : int(GDPPAY_CRC),
-                               "crc-payload"   : int(GDPPAY_CRC),
                                },
             "webmmux"       : {"writing-app"    : "Xpra"},
             "mp4mux"        : {
@@ -197,16 +183,13 @@ ENCODER_LATENCY = {
         VORBIS_MKA  : 0,
         MP3         : 250,
         FLAC        : 50,
-        FLAC_GDP    : 50,
         WAV         : 0,
         WAVPACK     : 600,
         OPUS        : 0,
-        OPUS_GDP    : 0,
         SPEEX       : 0,
-        SPEEX_GDP   : 0,
        }
 
-CODEC_ORDER = [OPUS_OGG, VORBIS_MKA, FLAC_OGG, MP3, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, OPUS_GDP, VORBIS_GDP, FLAC_GDP, SPEEX_GDP, AAC_GDP, RAW_GDP_LZ4, RAW_GDP_LZO, RAW_GDP]
+CODEC_ORDER = [OPUS_OGG, VORBIS_MKA, FLAC_OGG, MP3, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG]
 
 
 gst = None
@@ -472,10 +455,7 @@ def add_encoder(encoding, encoder, payloader, stream_compressor):
     global ENCODERS
     if encoding in ENCODERS:
         return
-    if WIN32 and encoding in (OPUS_GDP, ):
-        log("avoiding %s on win32", encoding)
-        return
-    if OSX and encoding in (OPUS_GDP, OPUS_OGG):
+    if OSX and encoding in (OPUS_OGG, ):
         log("avoiding %s on Mac OS X", encoding)
         return
     if has_plugins(encoder, payloader):
@@ -515,7 +495,7 @@ def validate_encoding(elements):
         elif encoding==FLAC_OGG:
             log("skipping %s to avoid obscure 'not-negotiated' errors", encoding)
             return False
-    elif WIN32 and encoding in (AAC_GDP, SPEEX_GDP, SPEEX_OGG):
+    elif WIN32 and encoding in (SPEEX_OGG, ):
         log("skipping %s on win32", encoding)
         return False
     elif encoding.startswith(OPUS):
