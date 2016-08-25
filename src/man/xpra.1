@@ -27,7 +27,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
-[\fB\-\-systemd\-run-args\fP=\fARGS\fP]
+[\fB\-\-systemd\-run\-args\fP=\fIARGS\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
 [\fB\-\-sync\-xvfb\fP=\fIDELAY\fP]
 [\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
@@ -778,7 +778,7 @@ fB\-\-start\fP or fB\-\-start\-child\fP.
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
 .TP
-\fB\-\-systemd\-run-args\fP=\fARGS\fP
+\fB\-\-systemd\-run\-args\fP=\fIARGS\fP
 Command line arguments passed to systemd-run.
 .TP
 \fB\-\-use\-display\fP
@@ -1115,7 +1115,8 @@ This affects "speaker forwarding" on the server, and "microphone" forwarding
 on the client.
 To get a list of options use the special value 'help'.
 It is also possible to specify plugin options using the form:
-\fI\-\-sound\-source=pulse\:device=device.alsa_input.pci\-0000_00_14.2.analog\-stereo\fP
+\fI\-\-sound\-source=
+pulse\:device=device.alsa_input.pci\-0000_00_14.2.analog\-stereo\fP
 .TP
 \fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP and \fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP|\fIon:DEVICE\fP|\fIoff:DEVICE\fP
 Sound input and output forwarding support: \fIon\fP will start the forwarding
