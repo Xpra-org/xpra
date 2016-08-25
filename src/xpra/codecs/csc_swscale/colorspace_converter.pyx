@@ -113,7 +113,6 @@ FORMAT_OPTIONS = [
      ]
 FORMATS = {}
 for av_enum_name, av_enum, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
-    log("av_enum(%s)=%s", av_enum_name, av_enum)
     FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name.encode("latin1"), width_mult, height_mult, pix_fmt.encode("latin1"))
     if pix_fmt not in COLORSPACES:
         COLORSPACES.append(pix_fmt)

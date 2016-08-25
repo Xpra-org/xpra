@@ -46,7 +46,7 @@ def load_video_decoders():
         for encoding in vh.get_decodings():
             specs = vh.get_decoder_specs(encoding)
             for colorspace, decoders in specs.items():
-                log("%-4s decoders for %7s: %s", encoding, colorspace, csv([d.get_type() for _,d in decoders]))
+                log("%-5s decoders for %7s: %s", encoding, colorspace, csv([d.get_type() for _,d in decoders]))
                 assert len(decoders)>0
                 #use the first one:
                 _, decoder_module = decoders[0]
