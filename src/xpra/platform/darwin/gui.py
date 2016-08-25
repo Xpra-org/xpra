@@ -355,7 +355,7 @@ except Exception as e:
 
 
 def register_URL_handler(handler):
-    log.info("register_URL_handler(%s)", handler)
+    log("register_URL_handler(%s)", handler)
     import objc         #@UnresolvedImport
     NSAppleEventManager = objc.lookUpClass('NSAppleEventManager')
     NSObject = objc.lookUpClass('NSObject')
@@ -369,7 +369,7 @@ def register_URL_handler(handler):
 
     # A helper to make struct since cocoa headers seem to make
     # it impossible to use kAE*
-    import struct 
+    import struct
     fourCharToInt = lambda code: struct.unpack('>l', code)[0]
 
     manager = NSAppleEventManager.sharedAppleEventManager()
