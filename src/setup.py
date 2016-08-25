@@ -927,20 +927,10 @@ def build_xpra_conf(install_dir):
         try:
             if "/usr/sbin" not in sys.path:
                 sys.path.append("/usr/sbin")
-            from xpra.platform.pycups_printing import get_printer_definitions
+            from xpra.platform.pycups_printing import get_printer_definition
             print("probing cups printer definitions")
-            defs = get_printer_definitions()
-            def get_printer_def(k):
-                v = defs.get("application/%s" % k)
-                if not v:
-                    return ""
-                if len(v)!=2:
-                    return ""
-                if v[0] not in ("-m", "-P"):
-                    return ""
-                return v[1]     #ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
-            pdf = get_printer_def("pdf")
-            postscript = get_printer_def("postscript")
+            pdf = get_printer_definition("pdf")
+            postscript = get_printer_definition("postscript")
         except Exception as e:
             print("could not probe for pdf/postscript printers: %s" % e)
     def pretty_cmd(cmd):

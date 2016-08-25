@@ -2303,6 +2303,17 @@ def run_showconfig(options, args):
     from xpra.util import nonl
     d = dict_to_validated_config({})
     fixup_options(d)
+    #this one is normally only probed at build time:
+    #(so probe it here again)
+    if os.name=="posix":
+        try:
+            from xpra.platform.pycups_printing import get_printer_definition
+            for mimetype in ("pdf", "postscript"):
+                pdef = get_printer_definition(mimetype)
+                #ie: d.pdf_printer = "/usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd"
+                setattr(d, "%s_printer" % mimetype, pdef)
+        except:
+            pass
     VIRTUAL = ["mode"]       #no such option! (it's a virtual one for the launch by config files)
     #hide irrelevant options:
     HIDDEN = []

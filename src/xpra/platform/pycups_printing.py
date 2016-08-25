@@ -209,6 +209,16 @@ def get_printer_definitions():
         log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
     return PRINTER_DEF
 
+def get_printer_definition(mimetype):
+    v = get_printer_definitions().get("application/%s" % mimetype)
+    if not v:
+        return ""
+    if len(v)!=2:
+        return ""
+    if v[0] not in ("-m", "-P"):
+        return ""
+    return v[1]     #ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
+
 
 def validate_setup():
     #very simple check: at least one ppd file exists
