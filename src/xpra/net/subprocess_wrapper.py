@@ -189,6 +189,9 @@ class subprocess_callee(object):
         if p:
             self.protocol = None
             p.close()
+        self.do_stop()
+
+    def do_stop(self):
         log("stop() stopping mainloop %s", self.mainloop)
         self.mainloop.quit()
 
