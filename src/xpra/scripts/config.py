@@ -894,9 +894,13 @@ def fixup_keyboard(options):
     def p(v):
         try:
             from xpra.util import remove_dupes
-            return remove_dupes([x.strip() for x in v.split(",")])
+            r = remove_dupes([x.strip() for x in v.split(",")])
+            #remove empty string if that's the only value:
+            if r and len(r)==1 and r[0]=="":
+                r = []
+            return r
         except:
-            return None
+            return []
     options.keyboard_layouts = p(options.keyboard_layouts)
     options.keyboard_variants = p(options.keyboard_variants)
     options.keyboard_raw = parse_bool("keyboard-raw", options.keyboard_raw)
