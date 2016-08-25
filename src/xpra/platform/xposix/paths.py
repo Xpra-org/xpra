@@ -70,7 +70,7 @@ def _get_runtime_dir():
         #replace uid with the string "$UID"
         head, tail = list(os.path.split(runtime_dir))
         try:
-            assert int(tail)
+            assert int(tail)>=0
             runtime_dir = os.path.join(head, "$UID")
         except (ValueError, AssertionError):
             pass
