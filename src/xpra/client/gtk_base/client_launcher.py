@@ -876,13 +876,13 @@ def main():
                     #wait a little bit for the "openFile" signal
                     app.__osx_open_signal = False
                     def do_open_file(filename):
-                        app.__osx_open_signal = True
                         app.update_options_from_file(filename)
                         #the compressors and packet encoders cannot be changed from the UI
                         #so apply them now:
                         configure_network(app.config)
                         app.update_gui_from_config()
                         if app.config.autoconnect:
+                            app.__osx_open_signal = True
                             glib.idle_add(app.do_connect)
                     def open_file(_, filename):
                         log("open_file(%s)", filename)
@@ -894,24 +894,19 @@ def main():
                         #so apply them now:
                         configure_network(app.config)
                         app.update_gui_from_config()
-                        if app.config.autoconnect:
-                            glib.idle_add(app.do_connect)
-                    def open_URL(_, url):
+                        glib.idle_add(app.do_connect)
+                    def open_URL(url):
                         log("open_URL(%s)", url)
                         glib.idle_add(do_open_URL, url)
-                    from xpra.platform.darwin.gui import get_OSXApplication
-                    try:
-                        get_OSXApplication().connect("NSApplicationOpenURL", open_URL)
-                    except Exception as e:
-                        log.error("Error: cannot handle URLs:")
-                        log.error(" %s", e)
+                    from xpra.platform.darwin.gui import get_OSXApplication, register_URL_handler
+                    register_URL_handler(open_URL)
                     try:
                         get_OSXApplication().connect("NSApplicationOpenFile", open_file)
                     except Exception as e:
                         log.error("Error: cannot handle file associations:")
                         log.error(" %s", e)
                     def may_show():
-                        log("may_show() osx open file=%s", app.__osx_open_signal)
+                        log("may_show() osx open signal=%s", app.__osx_open_signal)
                         if not app.__osx_open_signal:
                             app.show()
                     glib.timeout_add(500, may_show)

@@ -354,6 +354,31 @@ except Exception as e:
     NSObject = object
 
 
+def register_URL_handler(handler):
+    log.info("register_URL_handler(%s)", handler)
+    import objc         #@UnresolvedImport
+    NSAppleEventManager = objc.lookUpClass('NSAppleEventManager')
+    NSObject = objc.lookUpClass('NSObject')
+
+    class GURLHandler(NSObject):
+        def handleEvent_withReplyEvent_(self, event, reply_event):
+            log("GURLHandler.handleEvent")
+            url = event.descriptorForKeyword_(fourCharToInt('----')).stringValue()
+            log("URL=%s", url)
+            handler(url.encode())
+
+    # A helper to make struct since cocoa headers seem to make
+    # it impossible to use kAE*
+    import struct 
+    fourCharToInt = lambda code: struct.unpack('>l', code)[0]
+
+    manager = NSAppleEventManager.sharedAppleEventManager()
+    manager.setEventHandler_andSelector_forEventClass_andEventID_(
+        GURLHandler.alloc(), 'handleEvent:withReplyEvent:',
+        fourCharToInt('GURL'), fourCharToInt('GURL')
+        )
+
+
 class ClientExtras(object):
     def __init__(self, client, opts):
         swap_keys = opts and opts.swap_keys
