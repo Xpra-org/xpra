@@ -359,9 +359,9 @@
 
   <distutils id="python-netifaces">
 	<branch repo="pypi.python.org"
-		module="/packages/source/n/netifaces/netifaces-0.10.4.tar.gz"
-		hash="md5:36da76e2cfadd24cc7510c2c0012eb1e"
-		version="0.10.4"/>
+		module="/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz"
+		hash="sha1:d05ac5cad10b3a2acd8d312af1e75ece5d2a737f"
+		version="0.10.5"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
