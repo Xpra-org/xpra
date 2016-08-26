@@ -1445,39 +1445,6 @@ class WindowVideoSource(WindowSource):
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
-        def video_fallback():
-            videolog.warn("using non-video fallback encoding")
-            return self.video_fallback(image, options)
-
-        vh = self.video_helper
-        if vh is None:
-            return None         #shortcut when closing down
-        if not self.check_pipeline(encoding, w, h, src_format):
-            #just for diagnostics:
-            supported_csc_modes = self.full_csc_modes.get(encoding, [])
-            encoder_specs = vh.get_encoder_specs(encoding)
-            encoder_types = []
-            ecsc = []
-            for csc in supported_csc_modes:
-                if csc not in encoder_specs:
-                    continue
-                if csc not in ecsc:
-                    ecsc.append(csc)
-                for especs in encoder_specs.get(csc, []):
-                    if especs.codec_type not in encoder_types:
-                        encoder_types.append(especs.codec_type)
-            videolog.error("Error: failed to setup a video pipeline for %s encoding with source format %s", encoding, src_format)
-            videolog.error(" all encoders: %s", ", ".join(list(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
-            videolog.error(" supported CSC modes: %s", ", ".join(supported_csc_modes))
-            videolog.error(" supported encoders: %s", ", ".join(encoder_types))
-            videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))
-            if FORCE_CSC:
-                log.error(" forced csc mode: %s", FORCE_CSC_MODE)
-            return video_fallback()
-        ve = self._video_encoder
-        if not ve:
-            return video_fallback()
-
         #check for scrolling:
         if self.supports_scrolling:
             try:
@@ -1512,6 +1479,39 @@ class WindowVideoSource(WindowSource):
                                 return self.encode_scrolling(image, distances, lcsums, csums, options)
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
+
+        def video_fallback():
+            videolog.warn("using non-video fallback encoding")
+            return self.video_fallback(image, options)
+
+        vh = self.video_helper
+        if vh is None:
+            return None         #shortcut when closing down
+        if not self.check_pipeline(encoding, w, h, src_format):
+            #just for diagnostics:
+            supported_csc_modes = self.full_csc_modes.get(encoding, [])
+            encoder_specs = vh.get_encoder_specs(encoding)
+            encoder_types = []
+            ecsc = []
+            for csc in supported_csc_modes:
+                if csc not in encoder_specs:
+                    continue
+                if csc not in ecsc:
+                    ecsc.append(csc)
+                for especs in encoder_specs.get(csc, []):
+                    if especs.codec_type not in encoder_types:
+                        encoder_types.append(especs.codec_type)
+            videolog.error("Error: failed to setup a video pipeline for %s encoding with source format %s", encoding, src_format)
+            videolog.error(" all encoders: %s", ", ".join(list(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
+            videolog.error(" supported CSC modes: %s", ", ".join(supported_csc_modes))
+            videolog.error(" supported encoders: %s", ", ".join(encoder_types))
+            videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))
+            if FORCE_CSC:
+                log.error(" forced csc mode: %s", FORCE_CSC_MODE)
+            return video_fallback()
+        ve = self._video_encoder
+        if not ve:
+            return video_fallback()
 
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
