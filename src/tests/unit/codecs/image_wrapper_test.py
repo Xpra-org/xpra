@@ -35,7 +35,11 @@ class TestImageWrapper(unittest.TestCase):
             v = int(x<SET_X)
             for y in range(SH):
                 for i in range(4):
-                    av = ord(sub_buf[y*(SW*4)+i])
+                    try:
+                        av = ord(sub_buf[y*(SW*4)+i])
+                    except:
+                        #python3:
+                        av = sub_buf[y*(SW*4)+i]
                     assert av==v, "expected value %#x for pixel (0, %i) of sub-image %s at (%i, 0), but got %#x" % (v, y, sub, x, av)
         start = time.time()
         copy = img.get_sub_image(0, 0, W, H)
