@@ -1604,6 +1604,14 @@ if WIN32:
         add_data_files('',      ['win32\\DirectShow.tlb'])
         add_modules("comtypes.gen.stdole", "comtypes.gen.DirectShowLib")
 
+    if server_ENABLED:
+        try:
+            import xxhash
+            assert xxhash
+            external_includes += ["xxhash"]
+        except ImportError as e:
+            print("Warning: no xxhash module: %s" % e)
+            print(" this is required for scrolling detection")
 
     #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
     #the win32 py-gi installers don't have development headers for pycairo
@@ -1912,6 +1920,8 @@ else:
         modules.append("importlib")
         modules.append("xpra.scripts.gtk_info")
         modules.append("xpra.scripts.show_webcam")
+        #always ship xxhash
+        modules.append("xxhash")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")

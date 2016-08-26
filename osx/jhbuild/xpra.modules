@@ -570,6 +570,19 @@
         </after>
   </distutils>
 
+  <distutils id="python-xxhash">
+	<branch repo="pypi.python.org"
+	        module="/packages/08/ac/f5cf4fc624ef5a12a8c6e80143ee43d9ed8d0c8bda96e2af5772798bcfbe/xxhash-0.6.1.tar.bz2"
+	        hash="sha1:6c57420ea50bb52b3b7161c5b0d9766abc0ac9c9"
+	        version="0.6.1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+  </distutils>
+
   <distutils id="python-lz4">
 	<branch repo="pypi.python.org"
 	        module="/packages/b5/f0/e1de2bb7feb54011f3c4dcf35b7cca3536e19526764db051b50ea26b58e7/lz4-0.8.2.tar.gz"
@@ -887,6 +900,7 @@
       <dep package="python-nose"/>
       <dep package="python-lz4"/>
       <dep package="python-lzo"/>
+      <dep package="python-xxhash"/>
       <dep package="python-ipaddress"/>
       <dep package="python-idna"/>
       <dep package="python-enum34"/>
