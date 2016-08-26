@@ -154,12 +154,15 @@ class ImageWrapper(object):
         if y+h>self.height:
             raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
         assert self.planes==0, "cannot sub-divide planar images!"
+        from xpra.os_util import memoryview_to_bytes
         lines = []
         pixels = self.pixels
-        stride = self.rowstride
-        for i in range(h):
-            pos = (y+i)*stride+x*4
-            lines.append(pixels[pos:pos+w*4])
+        oldstride = self.rowstride
+        newstride = w*4
+        pos = y*oldstride + x*4
+        for _ in range(h):
+            lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
+            pos += oldstride
         return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, w*4, planes=self.planes, thread_safe=True)
 
     def __del__(self):
