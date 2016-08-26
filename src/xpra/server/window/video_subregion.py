@@ -295,7 +295,7 @@ class VideoSubregion(object):
             self.time = time.time()
             self.inout = inoutcount(rect)
             self.score = scoreinout(rect, *self.inout)
-            self.fps = self.inout[0]/(rect.width*rect.height) / (time.time()-from_time)
+            self.fps = int(self.inout[0]/(rect.width*rect.height) / (time.time()-from_time))
             rects = [self.rectangle]
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
