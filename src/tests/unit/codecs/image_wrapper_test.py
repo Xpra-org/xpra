@@ -48,13 +48,13 @@ class TestImageWrapper(unittest.TestCase):
         assert copy.get_pixels()==img.get_pixels()
         total = 0
         N = 10
-        region = (W//4, H//4, W//2, H//2)
-        for _ in range(N):
+        for i in range(N):
+            region = (W//4-N//2+i, H//4-N//2+i, W//2, H//2)
             start = time.time()
             copy = img.get_sub_image(*region)
             end = time.time()
             total += end-start
-        print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, (W//2*4*H//2)/total/1024/1024))
+        print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))
 
 
 def main():
