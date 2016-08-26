@@ -304,7 +304,9 @@ class KeyboardHelper(object):
                     return l
                 return [v]+list(l)
             except:
-                return [v]
+                if v is not None:
+                    return [v]
+                return []
         layout   = self.layout_option or layout
         layouts  = inl(layout, self.layouts_option or layouts)
         variant  = self.variant_option or variant
