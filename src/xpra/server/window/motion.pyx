@@ -86,25 +86,29 @@ def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
     cdef size_t asize = l*(sizeof(int64_t))
     cdef int64_t *a1 = NULL
     cdef int64_t *a2 = NULL
+    cdef int64_t a1v = 0
     cdef int32_t *distances = NULL
     #print("calculate_distances(%s, %s, %i, %i)" % (array1, array2, elen, min_score))
     try:
         a1 = <int64_t*> xmemalign(asize)
         a2 = <int64_t*> xmemalign(asize)
-        distances = <int32_t*> xmemalign(2*l*sizeof(int32_t))
-        memset(<void*> distances, 0, 2*l*sizeof(int32_t))
-        assert a1!=NULL and a2!=NULL and distances!=NULL
+        assert a1!=NULL and a2!=NULL, "failed to allocate %i bytes of scroll array memory" % asize
         for i in range(l):
             a1[i] = castint64(array1[i])
             a2[i] = castint64(array2[i])
         #now compare all the values
-        for y1 in range(l):
-            miny = max(0, y1-max_distance)
-            maxy = min(l, y1+max_distance)
-            for y2 in range(miny, maxy):
-                if a1[y1]==a2[y2]:
-                    #distance = y1-y2
-                    distances[l+y1-y2] += 1
+        distances = <int32_t*> xmemalign(2*l*sizeof(int32_t))
+        assert distances!=NULL
+        with nogil:
+            memset(<void*> distances, 0, 2*l*sizeof(int32_t))
+            for y1 in range(l):
+                miny = max(0, y1-max_distance)
+                maxy = min(l, y1+max_distance)
+                a1v = a1[y1]
+                for y2 in range(miny, maxy):
+                    if a1v==a2[y2]:
+                        #distance = y1-y2
+                        distances[l+y1-y2] += 1
         r = {}
         for i in range(2*l):
             d = distances[i]

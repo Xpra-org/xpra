@@ -113,7 +113,10 @@ class TestMotion(unittest.TestCase):
 			end = time.time()
 			print("CRC_Image %ix%i (%.1fMB) in %.1fms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
 			assert len(ov2)==H
+			start = time.time()
 			distances = motion.calculate_distances(ov1, ov2, min_score=1)
+			end = time.time()
+			print("calculate_distances %i^2 in %.2fms" % (H, 1000.0*(end-start)))
 			linecount = distances.get(N, 0)
 			assert linecount>0, "could not find distance %i" % N
 			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
