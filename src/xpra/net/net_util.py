@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -34,8 +34,9 @@ def get_interfaces():
 def get_gateways():
 	if not has_netifaces:
 		return	{}
-	#no idea why, but this causes crashes on OSX and FreeBSD:
-	if sys.platform.startswith("darwin") or sys.platform.startswith("freebsd"):
+	#versions older than 0.10.5 can crash when calling gateways()
+	#https://bitbucket.org/al45tair/netifaces/issues/15/gateways-function-crash-segmentation-fault
+	if netifaces.version<'0.10.5':
 		return {}
 	try:
 		d =	netifaces.gateways()
