@@ -300,7 +300,7 @@ class KeyboardHelper(object):
         log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants))
         def inl(v, l):
             try:
-                if v in l:
+                if v in l or v is None:
                     return l
                 return [v]+list(l)
             except:
