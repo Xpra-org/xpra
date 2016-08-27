@@ -46,7 +46,8 @@
   <autotools id="openssl" autogen-sh="Configure" autogenargs="shared" skip-install="True"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s &amp;&amp; make install"
              makeinstallargs="install_sw" supports-non-srcdir-builds="no">
-    <branch module="openssl-1.0.2h.tar.gz" version="1.0.2h" hash="md5:9392e65072ce4b614c1392eefc1f23d0" repo="openssl"/>
+    <branch module="openssl-1.1.0.tar.gz" version="1.1.0"
+    		hash="sha1:15e651c40424abdaeba5d5c1a8658e8668e798c8" repo="openssl"/>
   </autotools>
 
   <!-- Rudely demands TeX to build documentation -->
