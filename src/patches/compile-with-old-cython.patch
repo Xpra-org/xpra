@@ -1,0 +1,17 @@
+Index: xpra/server/window/motion.pyx
+===================================================================
+--- xpra/server/window/motion.pyx	(revision 13477)
++++ xpra/server/window/motion.pyx	(working copy)
+@@ -66,9 +66,9 @@
+     return crcs
+ 
+ 
+-DEF MAXINT64 = 2**63
+-DEF MAXUINT64 = 2**64
+-DEF MASK64 = 2**64-1
++MAXINT64 = 2**63
++MAXUINT64 = 2**64
++MASK64 = 2**64-1
+ cdef inline castint64(v):
+     if v>=MAXINT64:
+         return v-MAXUINT64
