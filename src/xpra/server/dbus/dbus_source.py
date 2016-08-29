@@ -99,53 +99,66 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='b')
     def ShowDesktop(self, show):
+        self.log(".ShowDesktop(%s)", show)
         self.source.show_desktop(nb(show))
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def RaiseWindow(self, wid):
+        self.log(".RaiseWindow(%s)", wid)
         self.source.raise_window(ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='')
     def ResetWindowFilters(self):
+        self.log(".ResetWindowFilters()")
         self.source.reset_window_filters()
 
     @dbus.service.method(INTERFACE, in_signature='sssv')
     def AddWindowFilter(self, object_name, property_name, operator, value):
+        self.log(".AddWindowFilter%s", (object_name, property_name, operator, value))
         self.source.add_window_filter(ns(object_name), ns(property_name), ns(operator), n(value))
 
     @dbus.service.method(INTERFACE, out_signature='as')
     def GetAllWindowFilters(self):
-        return [str(x) for x in self.source.get_all_window_filters()]
+        v = [str(x) for x in self.source.get_all_window_filters()]
+        self.log(".GetAllWindowFilters()=%s", v)
+        return v
 
 
     @dbus.service.method(INTERFACE, in_signature='')
     def SetDefaultKeymap(self):
+        self.log(".SetDefaultKeymap()")
         self.source.set_default_keymap()
 
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):
+        self.log(".Suspend()")
         self.source.go_idle()
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Resume(self):
+        self.log(".Resume()")
         self.source.no_idle()
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartSpeaker(self, codec):
+        self.log(".StartSpeaker(%s)", codec)
         self.source.start_sending_sound(ns(codec))
 
     @dbus.service.method(INTERFACE, in_signature='')
     def StopSpeaker(self):
+        self.log(".StopSpeaker()")
         self.source.stop_sending_sound()
 
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def SetAVSyncDelay(self, delay):
+        self.log(".SetAVSyncDelay(%i)", delay)
         self.source.set_av_sync_delay(delay)
 
 
     @dbus.service.method(INTERFACE, in_signature='as')
     def SendClientCommand(self, args):
+        self.log(".SendClientCommand(%s)", args)
         self.source.send_client_command(*args)
