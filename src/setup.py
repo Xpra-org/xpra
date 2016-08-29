@@ -948,7 +948,7 @@ def build_xpra_conf(install_dir):
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : get_default_log_dir(),
             'mdns'                  : not is_RH(),      #no python-avahi on RH / CentOS
-            'dbus_proxy'            : bstr(not OSX and not WIN32),
+            'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,
             'postscript_printer'    : postscript,
