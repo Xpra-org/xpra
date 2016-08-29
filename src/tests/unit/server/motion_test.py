@@ -102,10 +102,16 @@ class TestMotion(unittest.TestCase):
 		import numpy as np
 		try:
 			na1 = np.random.randint(2**63-1, size=LEN//8, dtype="int64")
-		except TypeError:
+		except TypeError as e:
 			#older numpy version may not have dtype argument..
 			#and may not accept 64-bit values
-			na1 = np.random.randint(2**32-1, size=LEN//8)
+			print("skipping motion detection test")
+			print(" because of incompatible numpy version: %s" % e)
+			try:
+				print(" numpy %s" % np.version.version)
+			except:
+				pass
+			return
 		def tobytes(a):
 			try:
 				return a.tobytes()
