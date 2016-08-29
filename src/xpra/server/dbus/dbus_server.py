@@ -168,6 +168,11 @@ class DBUS_Server(dbus.service.Object):
     def SetVideoRegionDetection(self, wid, detection):
         self.server.control_command_video_region_detection(wid, detection)
 
+    @dbus.service.method(INTERFACE, in_signature='iaai')
+    def SetVideoRegionExclusionZones(self, wid, zones):
+        log("SetVideoRegionExclusionZones(%i, %s)", wid, zones)
+        self.server.control_command_video_region_exclusion_zones(wid, zones)
+
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):

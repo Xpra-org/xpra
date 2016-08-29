@@ -749,6 +749,22 @@ class ServerBase(ServerCore):
                 return False
             else:
                 raise ControlError("a boolean is required, not %s" % v)
+        def parse_4intlist(v):
+            if not v:
+                return []
+            l = []
+            #ie: v = " (0,10,100,20), (200,300,20,20)"
+            while v:
+                v = v.strip().strip(",").strip()    #ie: "(0,10,100,20)"
+                lp = v.find("(")
+                assert lp==0, "invalid leading characters: %s" % v[:lp]
+                rp = v.find(")")
+                assert (lp+1)<rp
+                item = v[lp+1:rp].strip()           #"0,10,100,20"
+                items = [int(x) for x in item]      # 0,10,100,20
+                assert len(items)==4, "expected 4 numbers but got %i" % len(items)
+                l.append(items)
+            return l
 
         from xpra.util import parse_scaling_value, from0to100
         for cmd in (
@@ -782,6 +798,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("encoding",              "picture encoding",                 min_args=1, max_args=1),
             ArgsControlCommand("video-region-enabled",  "enable video region",              min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-detection","enable video detection",           min_args=2, max_args=2, validation=[int, parse_boolean_value]),
+            ArgsControlCommand("video-region-exclusion-zones","set window regions to exclude from video regions: 'WID,(x,y,w,h),(x,y,w,h),..', ie: '1 (0,10,100,20),(200,300,20,20)'",  min_args=2, max_args=2, validation=[int, parse_4intlist]),
             ArgsControlCommand("video-region",          "set the video region",             min_args=5, max_args=5, validation=[int, int, int, int, int]),
             ArgsControlCommand("lock-batch-delay",      "set a specific batch delay for a window",       min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("unlock-batch-delay",    "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",  min_args=1, max_args=1, validation=[int]),
@@ -1678,6 +1695,11 @@ class ServerBase(ServerCore):
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_region(x, y, w, h)
         return "video region set to %s for window %i" % ((x, y, w, h), wid)
+
+    def control_command_video_region_exclusion_zones(self, wid, zones):
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_exclusion_zones(zones)
+        return "video exclusion zones set to %s for window %i" % (zones, wid)
 
     def control_command_lock_batch_delay(self, wid, delay):
         for ws in self._control_windowsources_from_args(wid).keys():

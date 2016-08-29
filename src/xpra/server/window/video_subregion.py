@@ -34,6 +34,7 @@ class VideoSubregion(object):
         self.enabled = True
         self.detection = True
         self.rectangle = None
+        self.exclusion_zones = []
         self.inout = 0, 0       #number of damage pixels within / outside the region
         self.score = 0
         self.fps = 0
@@ -75,6 +76,13 @@ class VideoSubregion(object):
         else:
             self.rectangle = rectangle(x, y, w, h)
 
+    def set_exclusion_zones(self, zones):
+        rects = []
+        for (x, y, w, h) in zones:
+            rects.append(rectangle(int(x), int(y), int(w), int(h)))
+        self.exclusion_zones = rects
+        #force expire:
+        self.counter = 0
 
     def set_auto_refresh_delay(self, d):
         refreshlog("subregion auto-refresh delay: %s", d)
@@ -109,6 +117,7 @@ class VideoSubregion(object):
                      "score"        : self.score,
                      "fps"          : self.fps,
                      "damaged"      : self.damaged,
+                     "exclusion-zones" : [(r.x, r.y, r.width, r.height) for r in self.exclusion_zones]
                      })
         rr = list(self.refresh_regions)
         if rr:
@@ -228,14 +237,23 @@ class VideoSubregion(object):
         wc = {}
         hc = {}
         dec = {}
-        #count how many times we see each area, each width/height and where:
+        #count how many times we see each area, each width/height and where,
+        #after removing any exclusion zones:        
         for _,x,y,w,h in lde:
             r = rectangle(x,y,w,h)
-            dec.setdefault(r, MutableInteger()).increase()
-            if w>=MIN_W:
-                wc.setdefault(w, dict()).setdefault(x, set()).add(r)
-            if h>=MIN_H:
-                hc.setdefault(h, dict()).setdefault(y, set()).add(r)
+            rects = [r]
+            if self.exclusion_zones:
+                for e in self.exclusion_zones:
+                    new_rects = []
+                    for r in rects:
+                        new_rects += r.substract_rect(e)
+                    rects = new_rects
+            for r in rects:
+                dec.setdefault(r, MutableInteger()).increase()
+                if w>=MIN_W:
+                    wc.setdefault(w, dict()).setdefault(x, set()).add(r)
+                if h>=MIN_H:
+                    hc.setdefault(h, dict()).setdefault(y, set()).add(r)
 
         def inoutcount(region, ignore_size=0):
             #count how many pixels are in or out if this region
