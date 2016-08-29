@@ -100,7 +100,12 @@ class TestMotion(unittest.TestCase):
 		#W, H, BPP = 2, 4, 4
 		LEN = W * H * BPP
 		import numpy as np
-		na1 = np.random.randint(2**63-1, size=LEN//8)
+		try:
+			na1 = np.random.randint(2**63-1, size=LEN//8, dtype="int64")
+		except TypeError:
+			#older numpy version may not have dtype argument..
+			#and may not accept 64-bit values
+			na1 = np.random.randint(2**32-1, size=LEN//8)
 		def tobytes(a):
 			try:
 				return a.tobytes()
