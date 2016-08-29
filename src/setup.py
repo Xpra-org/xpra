@@ -935,7 +935,10 @@ def build_xpra_conf(install_dir):
             print("could not probe for pdf/postscript printers: %s" % e)
     def pretty_cmd(cmd):
         return " ".join(cmd)
-    SUBS = {'xvfb_command'          : pretty_cmd(xvfb_command),
+    #no python-avahi on RH / CentOS, need dbus module on *nix:
+    mdns = OSX or WIN32 or (not is_RH() and dbus_ENABLED)
+    SUBS = {
+            'xvfb_command'          : pretty_cmd(xvfb_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
@@ -947,7 +950,8 @@ def build_xpra_conf(install_dir):
             'bind'                  : bind,
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : get_default_log_dir(),
-            'mdns'                  : not is_RH(),      #no python-avahi on RH / CentOS
+            'mdns'                  : bstr(mdns),
+            'notifications'         : bstr(OSX or WIN32 or dbus_ENABLED),
             'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,

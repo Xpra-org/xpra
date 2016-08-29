@@ -24,13 +24,19 @@ dbus_helper = None
 MENU_FORWARDING = os.environ.get("XPRA_MENU_FORWARDING", "1")=="1"
 if MENU_FORWARDING:
     try:
-        from xpra.dbus.helper import DBusHelper
-        dbus_helper = DBusHelper()
-        from xpra.dbus.gtk_menuactions import query_actions, query_menu, ACTIONS, MENUS
-    except Exception as e:
-        log.warn("Warning: menu forwarding is disabled:")
-        log.warn(" cannot load dbus helper: %s", e)
-        MENU_FORWARDING = False
+        from xpra import dbus
+        assert dbus
+    except ImportError as e:
+        log("this build does not include the dbus module, no menu forwarding")
+    else:
+        try:
+            from xpra.dbus.helper import DBusHelper
+            dbus_helper = DBusHelper()
+            from xpra.dbus.gtk_menuactions import query_actions, query_menu, ACTIONS, MENUS
+        except Exception as e:
+            log.warn("Warning: menu forwarding is disabled:")
+            log.warn(" cannot load dbus helper: %s", e)
+            MENU_FORWARDING = False
 
 
 X11Window = X11WindowBindings()
