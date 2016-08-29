@@ -270,7 +270,9 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef char *locale = setlocale(LC_ALL, NULL)
         log("setxkbmap: using locale=%s", locale)
 
-        rdefs.model = model or b""
+        #we have to use a temporary value for older versions of Cython:
+        v = model or b""
+        rdefs.model = v
         rdefs.layout = layout
         if variant:
             rdefs.variant = variant
