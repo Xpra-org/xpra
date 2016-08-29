@@ -45,6 +45,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,ffmpeg-xpra
 # packet encoder:
         ,python-rencode
+# fast hashing:
+        ,python-xxhash
 #depend on lz4 for those that have it, lzo otherwise:
 #wheezy:        ,python-lzo
 #jessie:        ,python-lz4

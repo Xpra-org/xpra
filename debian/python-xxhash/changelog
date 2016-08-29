@@ -1,0 +1,5 @@
+python-xxhash (0.6.1-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Antoine Martin <antoine@devloop.org.uk>  Mon, 29 Aug 2016 20:40:07 +0700
