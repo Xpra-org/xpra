@@ -5,13 +5,13 @@
 %define debug_package %{nil}
 
 Name:           python2-pynvml
-Version:        4.304.04
+Version:        7.352.0
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source:        	https://pypi.python.org/packages/bf/0a/390865781cbc4984d54ea178931cd86e50a60fbc948ea0464cd1ff3ec273/nvidia-ml-py-%{version}.tar.gz
+Source:        	https://pypi.python.org/packages/72/31/378ca145e919ca415641a0f17f2669fa98c482a81f1f8fdfb72b1f9dbb37/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -38,5 +38,8 @@ rm -rf %{buildroot}
 %{python2_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
 %changelog
+* Mon Aug 29 2016 Antoine Martin <antoine@devloop.org.uk> - 7.352.0-1
+- build newer version
+
 * Fri Aug 05 2016 Antoine Martin <antoine@devloop.org.uk> - 4.304.04-1
 - initial packaging
