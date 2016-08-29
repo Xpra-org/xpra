@@ -101,13 +101,19 @@ class TestMotion(unittest.TestCase):
 		LEN = W * H * BPP
 		import numpy as np
 		na1 = np.random.randint(2**63-1, size=LEN//8)
-		buf1 = na1.tobytes()
+		def tobytes(a):
+			try:
+				return a.tobytes()
+			except:
+				#older versions of numpy (ie: centos7)
+				return a.tostring()
+		buf1 = tobytes(na1)
 		ov1 = motion.CRC_Image(buf1, W, H, W*BPP, BPP)
 		assert len(ov1)==H
 		#make a new "image" shifted N lines:
 		for N in (1, 20, 100):
 			na2 = np.roll(na1, -N*W*BPP//8)
-			buf2 = na2.tobytes()
+			buf2 = tobytes(na2)
 			start = time.time()
 			ov2 = motion.CRC_Image(buf2, W, H, W*BPP, BPP)
 			end = time.time()
@@ -122,8 +128,8 @@ class TestMotion(unittest.TestCase):
 			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
 		if False:
 			import binascii
-			print("na1:\n%s" % binascii.hexlify(na1.tobytes()))
-			print("na2:\n%s" % binascii.hexlify(na2.tobytes()))
+			print("na1:\n%s" % binascii.hexlify(tobytes(na1)))
+			print("na2:\n%s" % binascii.hexlify(tobytes(na2)))
 			np.set_printoptions(threshold=np.inf)
 			print("na1:\n%s" % (na1, ))
 			print("na2:\n%s" % (na2, ))
