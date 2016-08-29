@@ -98,59 +98,72 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def Focus(self, wid):
+        self.log(".Focus(%i)", wid)
         self.server.control_command_focus(wid)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):
+        self.log(".Suspend()")
         self.server.control_command_suspend()
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Resume(self):
+        self.log(".Resume()")
         self.server.control_command_resume()
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Ungrab(self):
+        self.log(".Ungrab()")
         self.server.control_command_resume()
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def Start(self, command):
+        self.log(".Start()")
         self.server.do_control_command_start(True, ns(command))
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartChild(self, command):
+        self.log(".StartChild(%s)", command)
         self.server.do_control_command_start(False, ns(command))
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyPress(self, keycode):
+        self.log(".KeyPress(%i)", keycode)
         self.server.control_command_key(ns(keycode), press=True)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyRelease(self, keycode):
+        self.log(".KeyRelease(%i)", keycode)
         self.server.control_command_key(ns(keycode), press=False)
 
     @dbus.service.method(INTERFACE)
     def ClearKeysPressed(self):
+        self.log(".ClearKeysPressed()")
         self.server._clear_keys_pressed()
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetKeyboardRepeat(self, repeat_delay, repeat_interval):
+        self.log(".SetKeyboardRepeat(%i, %i)", repeat_delay, repeat_interval)
         self.server.set_keyboard_repeat(ni(repeat_delay), ni(repeat_interval))
 
 
     @dbus.service.method(INTERFACE, in_signature='iii')
     def MovePointer(self, wid, x, y):
+        self.log(".MovePointer(%i, %i, %i)", wid, x, y)
         self.server._move_pointer(ni(wid), (ni(x), ni(y)))
 
     @dbus.service.method(INTERFACE, in_signature='iibiias')
     def MouseClick(self, wid, button, pressed, x, y, modifiers):
+        self.log(".MouseClick%s", (wid, button, pressed, x, y, modifiers))
         packet = [ni(wid), ni(button), nb(pressed), (ni(x), ni(y)), [ns(v) for v in modifiers]]
         self.server._process_button_action(None, packet)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiii')
     def SetWorkarea(self, x, y, w, h):
+        self.log(".SetWorkarea%s", (x, y, w, h))
         workarea = AdHocStruct()
         workarea.x, workarea.y, workarea.width, workarea.height = ni(x), ni(y), ni(w), ni(h)
         self.server.set_workarea(workarea)
@@ -158,14 +171,17 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='iiiii')
     def SetVideoRegion(self, wid, x, y, w, h):
+        self.log(".SetVideoRegion%s", (wid, x, y, w, h))
         self.server.control_command_video_region(wid, x, y, w, h)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionEnabled(self, wid, enabled):
+        self.log(".SetVideoRegionEnabled(%i, %s)", wid, enabled)
         self.server.control_command_video_region_enabled(wid, enabled)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionDetection(self, wid, detection):
+        self.log(".SetVideoRegionDetection(%i, %s)", wid, detection)
         self.server.control_command_video_region_detection(wid, detection)
 
     @dbus.service.method(INTERFACE, in_signature='iaai')
@@ -176,10 +192,12 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):
+        self.log(".LockBatchDelay(%i, %i)", wid, delay)
         self.server.control_command_lock_batch_delay(wid, delay)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def UnlockBatchDelay(self, wid):
+        self.log(".UnlockBatchDelay(%i)", wid)
         self.server.control_command_unlock_batch_delay(wid)
 
 
@@ -191,59 +209,71 @@ class DBUS_Server(dbus.service.Object):
                 d[wid] = window.get_property("title")
             except:
                 d[wid] = str(window)
+        self.log(".ListWindows()=%s", d)
         return d
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetClipboardDirection(self, direction):
+        self.log(".SetClipboardDirection(%s)", direction)
         self.server.control_command_clipboard_direction(direction)
 
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
+        self.log(".MoveWindowToWorkspace(%i, %i)", wid, workspace)
         self.server.control_command_workspace(ni(wid), ni(workspace))
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScaling(self, wid, scaling):
+        self.log(".SetWindowScaling(%i, %s)", wid, scaling)
         s = parse_scaling_value(ns(scaling))
         self.server.control_command_scaling(s, ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetWindowScalingControl(self, wid, scaling_control):
+        self.log(".SetWindowScalingControl(%i, %i)", wid, scaling_control)
         sc = from0to100(ni(scaling_control))
         self.server.control_command_scaling_control(sc, ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowEncoding(self, wid, encoding):
+        self.log(".SetWindowEncoding(%i, %i)", wid, encoding)
         self.server.control_command_encoding(ns(encoding), ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def RefreshWindow(self, wid):
+        self.log(".RefreshWindow(%i)", wid)
         self.server.control_command_refresh(ni(wid))
 
 
     @dbus.service.method(INTERFACE, in_signature='ai')
     def RefreshWindows(self, window_ids):
+        self.log(".RefreshWindows(%s)", window_ids)
         self.server.control_command_refresh(*(ni(x) for x in window_ids))
 
     @dbus.service.method(INTERFACE)
     def RefreshAllWindows(self):
+        self.log(".RefreshAllWindows()")
         self.server.control_command_refresh(*self.server._id_to_window.keys())
 
 
     @dbus.service.method(INTERFACE)
     def ResetWindowFilters(self):
+        self.log(".ResetWindowFilters()")
         self.server.reset_window_filters()
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def EnableDebug(self, category):
+        self.log(".EnableDebug(%s)", category)
         c = ns(category)
         add_debug_category(c)
         enable_debug_for(c)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def DisableDebug(self, category):
+        self.log(".DisableDebug(%s)", category)
         c = ns(category)
         remove_debug_category(c)
         disable_debug_for(c)
@@ -257,10 +287,12 @@ class DBUS_Server(dbus.service.Object):
                 d[source.uuid] = str(p)
             except:
                 d[str(source)] = str(p)
+        self.log(".ListClients()=%s", d)
         return d
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
+        self.log(".GetAllInfo()")
         def gotinfo(proto=None, info={}):
             try:
                 v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in info.items())
@@ -270,10 +302,13 @@ class DBUS_Server(dbus.service.Object):
             except Exception as e:
                 log("GetAllInfo:gotinfo", exc_info=True)
                 errback(str(e))
-        self.server.get_all_info(gotinfo)
+        v = self.server.get_all_info(gotinfo)
+        self.log(".GetAllInfo()=%s", v)
+        return v
 
     @dbus.service.method(INTERFACE, in_signature='s', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetInfo(self, subsystem, callback, errback):
+        self.log(".GetInfo(%s)", subsystem)
         def gotinfo(proto=None, info={}):
             sub = info.get(subsystem)
             try:
@@ -283,4 +318,6 @@ class DBUS_Server(dbus.service.Object):
             except Exception as e:
                 log("GetInfo:gotinfo", exc_info=True)
                 errback(str(e))
-        self.server.get_all_info(gotinfo)
+        v = self.server.get_all_info(gotinfo)
+        self.log(".GetInfo(%s)=%s", subsystem, v)
+        return v
