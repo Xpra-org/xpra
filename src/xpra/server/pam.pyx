@@ -46,6 +46,12 @@ cdef extern from "pam_appl.h":
         pass
     struct pam_response:
         pass
+    struct pam_xauth_data:
+        int namelen
+        char *name
+        int datalen
+        char *data
+
     const char *pam_strerror(pam_handle_t *pamh, int errnum)
     int pam_start(const char *service_name, const char *user, const pam_conv *pam_conversation, pam_handle_t **pamh)
     int pam_open_session(pam_handle_t *pamh, int flags)
@@ -95,7 +101,8 @@ def pam_open(service_name="xpra", env=None, items=None):
     cdef passwd *passwd_struct
     cdef pam_conv conv
     cdef int r
-    cdef const void* item_str
+    cdef const void* item
+    cdef pam_xauth_data xauth_data
 
     if pam_handle!=NULL:
         log.error("Error: cannot open the pam session more than once!")
@@ -126,23 +133,32 @@ def pam_open(service_name="xpra", env=None, items=None):
             name_value = "%s=%s\0" % (k, v)
             r = pam_putenv(pam_handle, name_value)
             if r!=PAM_SUCCESS:
-                log.error("Error: failed to add '%s' to pam environment", name_value)
+                log.error("Error %i: failed to add '%s' to pam environment", r, name_value)
             else:
                 log("pam_putenv: %s", name_value)
 
     if items:
+        from ctypes import addressof, create_string_buffer
         for k,v in items.items():
             item_type = PAM_ITEMS.get(k.upper())
             if item_type is None or item_type in (PAM_CONV, PAM_FAIL_DELAY):
                 log.error("Error: invalid pam item '%s'", k)
                 continue
-            from ctypes import addressof, create_string_buffer
-            s = create_string_buffer(v)
-            l = addressof(s)
-            item_str = <const void*> l
-            r = pam_set_item(pam_handle, item_type, item_str)
+            elif item_type==PAM_XAUTHDATA:
+                method = "MIT-MAGIC-COOKIE-1\0"
+                xauth_data.namelen = len("MIT-MAGIC-COOKIE-1")
+                xauth_data.name = method
+                s = v+"\0"
+                xauth_data.datalen = len(v)
+                xauth_data.data = s
+                item = <const void*> &xauth_data
+            else:
+                s = create_string_buffer(v)
+                l = addressof(s)
+                item = <const void*> l
+            r = pam_set_item(pam_handle, item_type, item)
             if r!=PAM_SUCCESS:
-                log.error("Error: failed to set pam item '%s' to '%s'", k, v)
+                log.error("Error %i: failed to set pam item '%s' to '%s'", r, k, v)
             else:
                 log("pam_set_item: %s=%s", k, v)
 
