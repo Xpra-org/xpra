@@ -14,7 +14,7 @@ import glob
 import site
 from distutils.core import setup
 from distutils.extension import Extension
-import subprocess, sys
+import sys
 import os.path
 import stat
 from distutils.command.build import build
@@ -67,16 +67,8 @@ print("Xpra version %s" % __version__)
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
-def get_status_output(*args, **kwargs):
-    kwargs["stdout"] = subprocess.PIPE
-    kwargs["stderr"] = subprocess.PIPE
-    try:
-        p = subprocess.Popen(*args, **kwargs)
-    except Exception as e:
-        print("error running %s,%s: %s" % (args, kwargs, e))
-        return -1, "", ""
-    stdout, stderr = p.communicate()
-    return p.returncode, stdout.decode("utf-8"), stderr.decode("utf-8")
+from xpra.os_util import get_status_output
+
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
 #we don't support building with "pkg-config" on win32 with python2:
@@ -725,44 +717,6 @@ pkgconfig = exec_pkgconfig
 
 
 #*******************************************************************************
-def get_xorg_bin():
-    # Detect Xorg Binary
-    for p in ("/usr/libexec/Xorg.bin",          #fedora 21?
-              "/usr/libexec/Xorg",              #fedora 22
-              "/usr/lib/xorg-server/Xorg"       #arch linux
-              "/usr/X11/bin/X"                  #OSX
-              ):
-        if os.path.exists(p):
-            return p
-    #look for it in $PATH:
-    for x in os.environ.get("PATH").split(os.pathsep):
-        xorg = os.path.join(x, "Xorg")
-        if os.path.isfile(xorg):
-            return xorg
-    return None
-
-xorg_version = None
-def get_xorg_version(xorg_bin):
-    # can't detect version if there is no binary
-    global xorg_version
-    if xorg_version is not None:
-        return xorg_version
-    if not xorg_bin:
-        return None
-    cmd = [xorg_bin, "-version"]
-    if verbose_ENABLED:
-        print("detecting Xorg version using: %s" % str(cmd))
-    r, _, err = get_status_output(cmd)
-    if r==0:
-        V_LINE = "X.Org X Server "
-        for line in err.splitlines():
-            if line.startswith(V_LINE):
-                v_str = line[len(V_LINE):]
-                xorg_version = [int(x) for x in v_str.split(".")[:2]]
-                break
-    else:
-        print("failed to detect Xorg version: %s" % err)
-    return xorg_version
 
 
 def get_base_conf_dir(install_dir, stripbuildroot=True):
@@ -812,6 +766,7 @@ def detect_xorg_setup(install_dir=None):
     if WIN32:
         return ("", False, False)
 
+    from xpra.scripts.config import get_xorg_bin, get_xorg_version
     xorg_bin = get_xorg_bin()
 
     # detect displayfd support based on Xorg version
@@ -881,7 +836,7 @@ def detect_xorg_setup(install_dir=None):
         if r==0:
             dist = out.split(":")[-1].strip()
         print("found OS release: %s %s" % (dist, release))
-        if release in ("raring", "saucy", "trusty", "vivid", "wily"):
+        if release in ("trusty", "xenial", "yakkety", ):
             #yet another instance of Ubuntu breaking something
             print("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
             return  Xvfb()
@@ -958,7 +913,7 @@ def build_xpra_conf(install_dir):
             'postscript_printer'    : postscript,
             'webcam'                : ["auto", "no"][OSX],
             'printing'              : printing_ENABLED,
-            'dbus_control'          : dbus_ENABLED,
+            'dbus_control'          : bstr(dbus_ENABLED),
             'mmap'                  : bstr(not OSX and not WIN32),
             }
     def convert_templates(subdirs=[]):

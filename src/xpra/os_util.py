@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -332,6 +332,20 @@ def find_lib(libname):
         if os.path.exists(libname_so):
             return libname_so
     return None
+
+
+def get_status_output(*args, **kwargs):
+    import subprocess
+    kwargs["stdout"] = subprocess.PIPE
+    kwargs["stderr"] = subprocess.PIPE
+    try:
+        p = subprocess.Popen(*args, **kwargs)
+    except Exception as e:
+        print("error running %s,%s: %s" % (args, kwargs, e))
+        return -1, "", ""
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout.decode("utf-8"), stderr.decode("utf-8")
+
 
 def is_systemd_pid1():
     if not os.name=="posix":

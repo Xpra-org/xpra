@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -46,12 +46,50 @@ except:
     has_sound_support = False
 
 
-def get_Xdummy_command(use_wrapper, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpra/xorg.conf"):
-    if use_wrapper:
-        Xorg = "xpra_Xdummy"
+def get_xorg_bin():
+    # Detect Xorg Binary
+    for p in ("/usr/libexec/Xorg.bin",          #fedora 21?
+              "/usr/libexec/Xorg",              #fedora 22
+              "/usr/lib/xorg-server/Xorg"       #arch linux
+              "/usr/X11/bin/X"                  #OSX
+              ):
+        if os.path.exists(p):
+            return p
+    #look for it in $PATH:
+    for x in os.environ.get("PATH").split(os.pathsep):
+        xorg = os.path.join(x, "Xorg")
+        if os.path.isfile(xorg):
+            return xorg
+    return None
+
+_xorg_version = None
+def get_xorg_version(xorg_bin):
+    # can't detect version if there is no binary
+    global _xorg_version
+    if _xorg_version is not None:
+        return _xorg_version
+    if not xorg_bin:
+        return None
+    cmd = [xorg_bin, "-version"]
+    debug("detecting Xorg version using: %s" % str(cmd))
+    from xpra.os_util import get_status_output
+    r, _, err = get_status_output(cmd)
+    if r==0:
+        V_LINE = "X.Org X Server "
+        for line in err.splitlines():
+            if line.startswith(V_LINE):
+                v_str = line[len(V_LINE):]
+                xorg_version = [int(x) for x in v_str.split(".")[:2]]
+                break
     else:
-        Xorg = "Xorg"
-    cmd = [Xorg]
+        warn("failed to detect Xorg version: %s" % err)
+    return xorg_version
+
+def get_Xdummy_command(use_wrapper=True, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpra/xorg.conf"):
+    if use_wrapper:
+        cmd = ["xpra_Xdummy"]
+    else:
+        cmd = ["Xorg"]
     if os.path.exists("/etc/debian_version"):
         #no patched dummy driver for debian, so force reasonable DPI instead:
         cmd += ["-dpi", "96"]
