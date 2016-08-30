@@ -1010,6 +1010,18 @@ def fixup_clipboard(options):
         warn(" specify 'to-server', 'to-client' or 'both'")
         options.clipboard_direction = "disabled"
 
+def abs_paths(options):
+    #convert to absolute paths before we daemonize
+    for k in ("clipboard-filter-file",
+              "tcp-encryption-keyfile", "encryption-keyfile",
+              "log-dir", "log-file",
+              "download-path", "exec-wrapper",
+              "ssl-key", "ssl-cert", "ssl-ca-certs"):
+        f = k.replace("-", "_")
+        v = getattr(options, f)
+        if v and (k!="ssl-ca-certs" or v!="default"):
+            setattr(options, f, os.path.abspath(v))
+
 def fixup_options(options, defaults={}):
     fixup_encodings(options)
     fixup_compression(options)
@@ -1018,6 +1030,7 @@ def fixup_options(options, defaults={}):
     fixup_socketdirs(options, defaults)
     fixup_clipboard(options)
     fixup_keyboard(options)
+    abs_paths(options)
     #remote-xpra is meant to be a list, but the user can specify a string using the command line,
     #in which case we replace all the default values with this single entry:
     if not isinstance(options.remote_xpra, (list, tuple)):

@@ -242,8 +242,9 @@ def do_parse_cmdline(cmdline, defaults):
     parser = ModifiedOptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
     hidden_options = {
-                      "display" : defaults.display,
-                      "wm_name" : defaults.wm_name,
+                      "display"         : defaults.display,
+                      "wm_name"         : defaults.wm_name,
+                      "download_path"   : defaults.download_path,
                       }
     def replace_option(oldoption, newoption):
         do_replace_option(cmdline, oldoption, newoption)
