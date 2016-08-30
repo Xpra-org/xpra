@@ -761,9 +761,10 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     return os.path.join(*dirs)
 
 def detect_xorg_setup(install_dir=None):
-    from xpra.scripts.config import detect_xvfb_command
+    from xpra.scripts import config
+    config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
+    return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 def build_xpra_conf(install_dir):
     #generates an actual config file from the template

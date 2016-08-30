@@ -582,7 +582,6 @@ def get_defaults():
         if os.path.exists(conf_dir):
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir)
-    print("xvfb=%s" % (xvfb, ))
     def addtrailingslash(v):
         if v.endswith("/"):
             return v
