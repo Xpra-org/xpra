@@ -188,7 +188,11 @@ class KeyboardHelper(object):
                 extra_modifiers.remove(rm)
             except:
                 pass        #same modifier listed twice?
-        kmod = self.keyboard.get_keymap_modifiers()[0]  #ie: {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', ...}
+        kmod = self.keyboard.get_keymap_modifiers()[0]
+        if not kmod and self.keyboard.modifier_keys:
+            #fallback to server supplied map:
+            kmod = self.keyboard.modifier_keys
+        #ie: {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', ...}
         log("keymap modifiers: %s", kmod)
         ignoremod = ("Caps_Lock", "Num_Lock")
         for x in ignoremod:
