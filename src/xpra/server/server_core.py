@@ -600,8 +600,8 @@ class ServerCore(object):
                         conn_err(str(e))
                         return
                     conn = SocketConnection(sock, sockname, address, target, socktype)
-                    #peek so we can detect invalid clients early:
-                    v = peek()
+                    #we cannot peek on SSL sockets, just clear the unencrypted data:
+                    v = None
                 elif self._tcp_proxy:
                     netlog.info("New tcp proxy connection received from %s", frominfo)
                     def run_proxy():
