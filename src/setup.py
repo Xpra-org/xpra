@@ -16,7 +16,6 @@ from distutils.core import setup
 from distutils.extension import Extension
 import sys
 import os.path
-import stat
 from distutils.command.build import build
 from distutils.command.install_data import install_data
 import shutil
@@ -762,86 +761,9 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     return os.path.join(*dirs)
 
 def detect_xorg_setup(install_dir=None):
-    #returns the xvfb command to use
-    if WIN32:
-        return ""
-
-    from xpra.scripts.config import get_xorg_bin, get_xorg_version
-    xorg_bin = get_xorg_bin()
-
-    def Xvfb():
-        from xpra.scripts.config import get_Xvfb_command
-        return get_Xvfb_command()
-
-    if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
-        print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
-        return Xvfb()
-
-    if OSX:
-        return Xvfb()
-
-    def Xorg_suid_check():
-        xorg_conf = os.path.join(get_conf_dir(install_dir), "xorg.conf")
-        if Xdummy_wrapper_ENABLED is not None:
-            #honour what was specified:
-            use_wrapper = Xdummy_wrapper_ENABLED
-        elif not xorg_bin:
-            print("Warning: Xorg binary not found, assuming the wrapper is needed!")
-            use_wrapper = True
-        else:
-            #Fedora 21+ workaround:
-            if os.path.exists("/usr/libexec/Xorg.wrap"):
-                #we need our own wrapper to bypass all the scripts and wrappers Fedora uses
-                use_wrapper = True
-            else:
-                #auto-detect
-                xorg_stat = os.stat(xorg_bin)
-                if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-                    if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                        print("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
-                        return Xvfb()
-                    print("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
-                    use_wrapper = True
-                else:
-                    use_wrapper = False
-        from xpra.platform.paths import get_default_log_dir
-        log_dir = get_default_log_dir().replace("~/", "${HOME}/")
-        from xpra.scripts.config import get_Xdummy_command
-        return get_Xdummy_command(use_wrapper, log_dir=log_dir, xorg_conf=xorg_conf)
-
-    if Xdummy_ENABLED is False:
-        return Xvfb()
-    elif Xdummy_ENABLED is True:
-        return Xorg_suid_check()
-    else:
-        print("Xdummy support unspecified, will try to detect")
-
-    cmd = ["lsb_release", "-cs"]
-    r, out, err = get_status_output(cmd)
-    release = ""
-    if r==0:
-        release = out.replace("\n", "")
-        r, out, err = get_status_output(["lsb_release", "-i"])
-        dist = ""
-        if r==0:
-            dist = out.split(":")[-1].strip()
-        print("found OS release: %s %s" % (dist, release))
-        if release in ("trusty", "xenial", "yakkety", ):
-            #yet another instance of Ubuntu breaking something
-            print("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
-            return Xvfb()
-    else:
-        print("Warning: failed to detect OS release using %s: %s" % (" ".join(cmd), err))
-
-    xorg_version = get_xorg_version(xorg_bin)
-    if not xorg_version:
-        print("Xorg version could not be detected, Xdummy support disabled (using Xvfb as safe default)")
-        return Xvfb()
-    if xorg_version<[1, 12]:
-        print("Xorg version %s is too old (1.12 or later required), Xdummy support not available" % str(xorg_version))
-        return Xvfb()
-    print("found valid recent version of Xorg server: %s" % ".".join([str(x) for x in xorg_version]))
-    return Xorg_suid_check()
+    from xpra.scripts.config import detect_xvfb_command
+    conf_dir = get_conf_dir(install_dir)
+    return detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 def build_xpra_conf(install_dir):
     #generates an actual config file from the template

@@ -8,8 +8,6 @@
 import sys
 #defaults which may be overriden by platform_import:
 LOCAL_SERVERS_SUPPORTED = sys.version_info[0]<3
-XDUMMY = False
-XDUMMY_WRAPPER = False
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
@@ -46,24 +44,24 @@ else:
     CLIENT_MODULES = ["xpra.client.gtk3.client"]
 
 
-_features_list_ = ["LOCAL_SERVERS_SUPPORTED",
-                "XDUMMY",
-                "XDUMMY_WRAPPER",
-                "SHADOW_SUPPORTED",
-                "CAN_DAEMONIZE",
-                "MMAP_SUPPORTED",
-                "SYSTEM_TRAY_SUPPORTED",
-                "REINIT_WINDOWS",
-                "DEFAULT_ENV",
-                "DEFAULT_SSH_COMMAND",
-                "DEFAULT_PULSEAUDIO_COMMAND",
-                "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
-                "CLIPBOARDS",
-                "CLIPBOARD_WANT_TARGETS",
-                "CLIPBOARD_GREEDY",
-                "CLIPBOARD_NATIVE_CLASS",
-                "UI_THREAD_POLLING",
-                "CLIENT_MODULES"]
+_features_list_ = [
+                   "LOCAL_SERVERS_SUPPORTED",
+                   "SHADOW_SUPPORTED",
+                   "CAN_DAEMONIZE",
+                   "MMAP_SUPPORTED",
+                   "SYSTEM_TRAY_SUPPORTED",
+                   "REINIT_WINDOWS",
+                   "DEFAULT_ENV",
+                   "DEFAULT_SSH_COMMAND",
+                   "DEFAULT_PULSEAUDIO_COMMAND",
+                   "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
+                   "CLIPBOARDS",
+                   "CLIPBOARD_WANT_TARGETS",
+                   "CLIPBOARD_GREEDY",
+                   "CLIPBOARD_NATIVE_CLASS",
+                   "UI_THREAD_POLLING",
+                   "CLIENT_MODULES",
+                   ]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,
                 *_features_list_)

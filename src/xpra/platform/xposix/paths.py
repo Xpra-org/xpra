@@ -24,6 +24,10 @@ def do_get_install_prefix():
         base = site.USER_BASE
     if __file__.startswith(base):
         return base
+    if sys.argv:
+        p = sys.argv[0].find("/bin/xpra")
+        if p>0:
+            return sys.argv[0][:p]
     return sys.prefix
 
 def do_get_resources_dir():

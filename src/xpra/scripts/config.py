@@ -62,34 +62,9 @@ def get_xorg_bin():
             return xorg
     return None
 
-_xorg_version = None
-def get_xorg_version(xorg_bin):
-    # can't detect version if there is no binary
-    global _xorg_version
-    if _xorg_version is not None:
-        return _xorg_version
-    if not xorg_bin:
-        return None
-    cmd = [xorg_bin, "-version"]
-    debug("detecting Xorg version using: %s" % str(cmd))
-    from xpra.os_util import get_status_output
-    r, _, err = get_status_output(cmd)
-    if r==0:
-        V_LINE = "X.Org X Server "
-        for line in err.splitlines():
-            if line.startswith(V_LINE):
-                v_str = line[len(V_LINE):]
-                xorg_version = [int(x) for x in v_str.split(".")[:2]]
-                break
-    else:
-        warn("failed to detect Xorg version: %s" % err)
-    return xorg_version
 
-def get_Xdummy_command(use_wrapper=True, log_dir="${HOME}/.xpra", xorg_conf="/etc/xpra/xorg.conf"):
-    if use_wrapper:
-        cmd = ["xpra_Xdummy"]
-    else:
-        cmd = ["Xorg"]
+def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${HOME}/.xpra", xorg_conf="/etc/xpra/xorg.conf"):
+    cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
     if os.path.exists("/etc/debian_version"):
         #no patched dummy driver for debian, so force reasonable DPI instead:
         cmd += ["-dpi", "96"]
@@ -119,6 +94,79 @@ def get_Xvfb_command():
            "-auth", "$XAUTHORITY"
            ]
     return cmd
+
+def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None):
+    #returns the xvfb command to use
+    if WIN32 or PYTHON3:
+        return ""
+    if OSX:
+        return get_Xvfb_command()
+    if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
+        warn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
+        return get_Xvfb_command()
+
+    xorg_bin = get_xorg_bin()
+    def Xorg_suid_check():
+        if Xdummy_wrapper_ENABLED is not None:
+            #honour what was specified:
+            use_wrapper = Xdummy_wrapper_ENABLED
+        elif not xorg_bin:
+            warn("Warning: Xorg binary not found, assuming the wrapper is needed!")
+            use_wrapper = True
+        else:
+            #Fedora 21+ workaround:
+            if os.path.exists("/usr/libexec/Xorg.wrap"):
+                #we need our own wrapper to bypass all the scripts and wrappers Fedora uses
+                use_wrapper = True
+            else:
+                #auto-detect
+                import stat
+                xorg_stat = os.stat(xorg_bin)
+                if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+                    if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                        warn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                        return get_Xvfb_command()
+                    debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+                    use_wrapper = True
+                else:
+                    use_wrapper = False
+        from xpra.platform.paths import get_default_log_dir
+        log_dir = get_default_log_dir().replace("~/", "${HOME}/")
+        xorg_conf = os.path.join(conf_dir, "xorg.conf")
+        if use_wrapper:
+            xorg_cmd = "xpra_Xdummy"
+        else:
+            xorg_cmd = "Xorg"
+        #so we can run from install dir:
+        if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
+            xorg_cmd = os.path.join(bin_dir, xorg_cmd)
+        return get_Xdummy_command(xorg_cmd, log_dir=log_dir, xorg_conf=xorg_conf)
+
+    if Xdummy_ENABLED is False:
+        return get_Xvfb_command()
+    elif Xdummy_ENABLED is True:
+        return Xorg_suid_check()
+    else:
+        debug("Xdummy support unspecified, will try to detect")
+
+    from xpra.os_util import get_status_output
+    cmd = ["lsb_release", "-cs"]
+    r, out, err = get_status_output(cmd)
+    release = ""
+    if r==0:
+        release = out.replace("\n", "")
+        r, out, err = get_status_output(["lsb_release", "-i"])
+        dist = ""
+        if r==0:
+            dist = out.split(":")[-1].strip()
+        debug("found OS release: %s %s" % (dist, release))
+        if release in ("trusty", "xenial", "yakkety", ):
+            #yet another instance of Ubuntu breaking something
+            warn("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
+            return get_Xvfb_command()
+    else:
+        warn("Warning: failed to detect OS release using %s: %s" % (" ".join(cmd), err))
+    return Xorg_suid_check()
 
 
 def OpenGL_safety_check():
@@ -513,20 +561,28 @@ def get_defaults():
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, \
-                                        XDUMMY, XDUMMY_WRAPPER, DEFAULT_ENV, CAN_DAEMONIZE
+                                        DEFAULT_ENV, CAN_DAEMONIZE
     from xpra.platform.paths import get_download_dir, get_default_log_dir, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
         username = get_username()
     except:
         username = ""
-    if WIN32 or PYTHON3:
-        xvfb = ""
-    elif XDUMMY:
-        log_dir = get_default_log_dir().replace("~/", "${HOME}/")
-        xvfb = get_Xdummy_command(use_wrapper=XDUMMY_WRAPPER, log_dir=log_dir)
+    conf_dirs = []
+    xpra_cmd = sys.argv[0]
+    bin_dir = None
+    if len(sys.argv)>0 and xpra_cmd.find("/bin")>=0:
+        bin_dir = os.path.join(xpra_cmd[:xpra_cmd.find("/bin")], "bin")
+        conf_dirs.append(os.path.join(xpra_cmd[:xpra_cmd.find("/bin")], "etc", "xpra"))
+    if sys.prefix=="/usr":
+        conf_dirs.append("/etc/xpra")
     else:
-        xvfb = get_Xvfb_command()
+        conf_dirs.append(os.path.join(sys.prefix, "etc", "xpra"))
+    for conf_dir in conf_dirs:
+        if os.path.exists(conf_dir):
+            break
+    xvfb = detect_xvfb_command(conf_dir, bin_dir)
+    print("xvfb=%s" % (xvfb, ))
     def addtrailingslash(v):
         if v.endswith("/"):
             return v
