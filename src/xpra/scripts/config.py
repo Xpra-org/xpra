@@ -418,7 +418,6 @@ OPTION_TYPES = {
                     #boolean options:
                     "daemon"            : bool,
                     "use-display"       : bool,
-                    "displayfd"         : bool,
                     "fake-xinerama"     : bool,
                     "resize_display"    : bool,
                     "tray"              : bool,
@@ -513,7 +512,8 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, XDUMMY, XDUMMY_WRAPPER, DISPLAYFD, DEFAULT_ENV, CAN_DAEMONIZE
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, \
+                                        XDUMMY, XDUMMY_WRAPPER, DEFAULT_ENV, CAN_DAEMONIZE
     from xpra.platform.paths import get_download_dir, get_default_log_dir, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
@@ -627,7 +627,6 @@ def get_defaults():
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "use-display"       : False,
-                    "displayfd"         : DISPLAYFD,
                     "fake-xinerama"     : not OSX and not WIN32,
                     "resize-display"    : not OSX and not WIN32,
                     "tray"              : True,

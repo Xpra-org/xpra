@@ -10,7 +10,6 @@ import sys
 LOCAL_SERVERS_SUPPORTED = sys.version_info[0]<3
 XDUMMY = False
 XDUMMY_WRAPPER = False
-DISPLAYFD = False
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
@@ -48,7 +47,6 @@ else:
 
 
 _features_list_ = ["LOCAL_SERVERS_SUPPORTED",
-                "DISPLAYFD",
                 "XDUMMY",
                 "XDUMMY_WRAPPER",
                 "SHADOW_SUPPORTED",

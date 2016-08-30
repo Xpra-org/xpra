@@ -762,26 +762,16 @@ def get_conf_dir(install_dir, stripbuildroot=True):
     return os.path.join(*dirs)
 
 def detect_xorg_setup(install_dir=None):
-    #returns (xvfb_command, has_displayfd, use_dummmy_wrapper)
+    #returns the xvfb command to use
     if WIN32:
-        return ("", False, False)
+        return ""
 
     from xpra.scripts.config import get_xorg_bin, get_xorg_version
     xorg_bin = get_xorg_bin()
 
-    # detect displayfd support based on Xorg version
-    # if Xdummy support is enabled,
-    # then the X server is new enough to support displayfd:
-    if Xdummy_ENABLED is True:
-        has_displayfd = True
-    elif get_xorg_version(xorg_bin) >= [1, 13]:
-        has_displayfd = True
-    else:
-        has_displayfd = False
-
     def Xvfb():
         from xpra.scripts.config import get_Xvfb_command
-        return (get_Xvfb_command(), has_displayfd, False)
+        return get_Xvfb_command()
 
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
         print("Warning: sorry, no support for Xdummy on %s" % sys.platform)
@@ -817,7 +807,7 @@ def detect_xorg_setup(install_dir=None):
         from xpra.platform.paths import get_default_log_dir
         log_dir = get_default_log_dir().replace("~/", "${HOME}/")
         from xpra.scripts.config import get_Xdummy_command
-        return (get_Xdummy_command(use_wrapper, log_dir=log_dir, xorg_conf=xorg_conf), has_displayfd, use_wrapper)
+        return get_Xdummy_command(use_wrapper, log_dir=log_dir, xorg_conf=xorg_conf)
 
     if Xdummy_ENABLED is False:
         return Xvfb()
@@ -839,7 +829,7 @@ def detect_xorg_setup(install_dir=None):
         if release in ("trusty", "xenial", "yakkety", ):
             #yet another instance of Ubuntu breaking something
             print("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
-            return  Xvfb()
+            return Xvfb()
     else:
         print("Warning: failed to detect OS release using %s: %s" % (" ".join(cmd), err))
 
@@ -855,7 +845,7 @@ def detect_xorg_setup(install_dir=None):
 
 def build_xpra_conf(install_dir):
     #generates an actual config file from the template
-    xvfb_command, has_displayfd, _ = detect_xorg_setup(install_dir)
+    xvfb_command = detect_xorg_setup(install_dir)
     from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
         return ["no", "yes"][int(b)]
@@ -898,7 +888,6 @@ def build_xpra_conf(install_dir):
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
             'start_env'             : start_env,
-            'has_displayfd'         : bstr(has_displayfd),
             'pulseaudio_command'    : pretty_cmd(DEFAULT_PULSEAUDIO_COMMAND),
             'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
             'conf_dir'              : conf_dir,
@@ -1843,8 +1832,8 @@ else:
 
             if server_ENABLED and x11_ENABLED:
                 #install xpra_Xdummy if we need it:
-                _, _, use_Xdummy_wrapper = detect_xorg_setup()
-                if use_Xdummy_wrapper:
+                xvfb_command = detect_xorg_setup()
+                if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])):
                     bin_dir = os.path.join(self.install_dir, "bin")
                     self.mkpath(bin_dir)
                     dummy_script = os.path.join(bin_dir, "xpra_Xdummy")

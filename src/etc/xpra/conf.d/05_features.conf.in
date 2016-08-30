@@ -17,7 +17,7 @@ clipboard = yes
 clipboard-direction = both
 
 # Forward notifications:
-notifications = yes
+notifications = %(notifications)s
 
 # Show Xpra's tray menu
 tray = yes

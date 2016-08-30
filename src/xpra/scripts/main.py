@@ -226,13 +226,8 @@ def do_parse_cmdline(cmdline, defaults):
         server_modes.append("start")
         server_modes.append("start-desktop")
         server_modes.append("upgrade")
-        #display: default to required
-        dstr = " DISPLAY"
-        if defaults.displayfd:
-            #display argument is optional (we can use "-displayfd")
-            dstr = " [DISPLAY]"
-        command_options = ["\t%prog start"+dstr+"\n",
-                           "\t%prog start-desktop"+dstr+"\n",
+        command_options = ["\t%prog start [DISPLAY]\n",
+                           "\t%prog start-desktop [DISPLAY]\n",
                            "\t%prog stop [DISPLAY]\n",
                            "\t%prog exit [DISPLAY]\n",
                            "\t%prog list\n",
@@ -246,9 +241,10 @@ def do_parse_cmdline(cmdline, defaults):
 
     parser = ModifiedOptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
-    hidden_options = {"display" : defaults.display,
-                      "displayfd" : defaults.displayfd,
-                      "wm_name" : defaults.wm_name}
+    hidden_options = {
+                      "display" : defaults.display,
+                      "wm_name" : defaults.wm_name,
+                      }
     def replace_option(oldoption, newoption):
         do_replace_option(cmdline, oldoption, newoption)
     def legacy_bool_parse(optionname, newoptionname=None):
@@ -2065,8 +2061,6 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             if len(args)==1:
                 display_name = args[0]
             elif len(args)==0:
-                if not opts.displayfd:
-                    raise InitException("this server does not support displayfd, you must specify a DISPLAY to use")
                 #let the server get one from Xorg via displayfd:
                 display_name = 'S' + str(os.getpid())
                 existing_sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
@@ -2329,7 +2323,7 @@ def run_showconfig(options, args):
                        "exit-with-children", "start-new-commands", "start", "start-child"]
         if WIN32:
             #"exit-ssh"?
-            HIDDEN += ["lpadmin", "daemon", "use-display", "displayfd", "mmap-group", "mdns"]
+            HIDDEN += ["lpadmin", "daemon", "use-display", "mmap-group", "mdns"]
         if not OSX:
             HIDDEN += ["dock-icon", "swap-keys"]
     def vstr(v):

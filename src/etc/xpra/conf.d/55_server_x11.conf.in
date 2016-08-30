@@ -40,6 +40,3 @@ sync-xvfb = 0
 #
 # Selecting virtual X server:
 xvfb = %(xvfb_command)s
-
-# Does the xvfb command support the "-displayfd" argument?
-displayfd = %(has_displayfd)s

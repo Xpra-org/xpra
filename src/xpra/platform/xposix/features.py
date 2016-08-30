@@ -11,8 +11,6 @@ SYSTEM_TRAY_SUPPORTED = not is_unity()
 #this is only our best guess
 #there is more logic in setup.py, but it requires more effort too:
 XDUMMY = not is_Ubuntu() and not sys.platform.find("bsd")>=0
-#displayfd requires Xdummy, and we don't support servers with py3k:
-DISPLAYFD = XDUMMY and sys.version_info[0]<3
 XDUMMY_WRAPPER = is_Fedora()
 
 DEFAULT_ENV = [

@@ -964,8 +964,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         else:
             if proxying:
                 error_cb("you must specify a free virtual display name to use with the proxy server")
-            if not opts.displayfd:
-                error_cb("displayfd support is not enabled on this system, you must specify the display to use")
             if opts.use_display:
                 #only use automatic guess for xpra displays and not X11 displays:
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)

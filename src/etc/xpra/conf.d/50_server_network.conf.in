@@ -2,6 +2,9 @@
 # Server Network Options:
 
 
+# broadcast servers using mDNS:
+mdns = %(mdns)s
+
 ########################################################################
 # local unix domain sockets:
 
@@ -69,7 +72,7 @@ ssl = auto
 
 
 ########################################################################
-# html / tcp-proxy and mdns:
+# html / tcp-proxy:
 
 # Where to send non xpra clients:
 # (can be used to share the port with a web server)
@@ -80,7 +83,3 @@ ssl = auto
 #html = yes
 #html = /var/www/htdocs/
 html = auto
-
-# Publish sessions:
-#mdns = no
-mdns = %(mdns)s
