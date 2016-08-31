@@ -556,8 +556,8 @@ class Protocol(object):
     def _io_thread_loop(self, name, callback):
         try:
             log("io_thread_loop(%s, %s) loop starting", name, callback)
-            while not self._closed:
-                callback()
+            while not self._closed and callback():
+                pass
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except ConnectionClosedException as e:
             log("%s closed", self._conn, exc_info=True)
@@ -581,11 +581,11 @@ class Protocol(object):
         if items is None:
             log("write thread: empty marker, exiting")
             self.close()
-            return
+            return False
         for buf, start_cb, end_cb in items:
             con = self._conn
             if not con:
-                return
+                return False
             if start_cb:
                 try:
                     start_cb(con.output_bytecount)
@@ -603,6 +603,7 @@ class Protocol(object):
                 except:
                     if not self._closed:
                         log.error("error on %s", end_cb, exc_info=True)
+        return True
 
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
@@ -616,8 +617,9 @@ class Protocol(object):
             #give time to the parse thread to call close itself
             #so it has time to parse and process the last packet received
             self.timeout_add(1000, self.close)
-            return
+            return False
         self.input_raw_packetcount += 1
+        return True
 
     def _internal_error(self, message="", exc=None, exc_info=False):
         #log exception info with last log message
