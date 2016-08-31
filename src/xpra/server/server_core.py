@@ -29,7 +29,7 @@ from xpra.server import ClientException
 from xpra.scripts.main import _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool
-from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, SOCKET_TIMEOUT
+from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
@@ -45,7 +45,7 @@ from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, pars
 
 main_thread = threading.current_thread()
 
-MAX_CONCURRENT_CONNECTIONS = 20
+MAX_CONCURRENT_CONNECTIONS = int(os.environ.get("XPRA_MAX_CONCURRENT_CONNECTIONS", "100"))
 SIMULATE_SERVER_HELLO_ERROR = os.environ.get("XPRA_SIMULATE_SERVER_HELLO_ERROR", "0")=="1"
 
 
@@ -624,19 +624,20 @@ class ServerCore(object):
         if not v or v[0] in ("P", ord("P")):
             #xpra packet header, no need to wrap this connection
             return True, conn, v
+        frominfo = pretty_socket(conn.remote)
         if self._html:
             line1 = v.splitlines()[0]
             if line1.find("HTTP/")>0:
                 if line1.startswith("GET ") or line1.startswith("POST "):
                     parts = line1.split(" ")
-                    netlog.info("New http %s request received from %s for '%s'", parts[0], conn.remote, parts[1])
+                    netlog.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
                     tname = "%s-request" % parts[0]
                 else:
-                    netlog.info("New http connection received from %s", conn.remote)
+                    netlog.info("New http connection received from %s", frominfo)
                     tname = "websockify-proxy"
                 def run_websockify():
                     self.start_websockify(conn, conn.remote)
-                start_thread(run_websockify, "%s-for-%s" % (tname, conn.remote), daemon=True)
+                start_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True)
                 return False, conn, None
         if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
             socktype = "SSL"
@@ -646,10 +647,10 @@ class ServerCore(object):
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             return True, conn, None
         elif self._tcp_proxy:
-            netlog.info("New tcp proxy connection received from %s", conn.remote)
+            netlog.info("New tcp proxy connection received from %s", frominfo)
             def run_proxy():
                 self.start_tcp_proxy(conn, conn.remote)
-            start_thread(run_proxy, "tcp-proxy-for-%s" % conn.remote, daemon=True)
+            start_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True)
             return False, conn, None
         return True, conn, v
 
