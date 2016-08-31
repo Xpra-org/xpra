@@ -1676,7 +1676,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
         raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
     #parse protocol:
-    ssl_protocol = getattr(ssl, "PROTOCOL_%s" % opts.ssl_protocol, None)
+    ssl_protocol = getattr(ssl, "PROTOCOL_%s" % (opts.ssl_protocol.upper().replace("V", "v")), None)
     if ssl_protocol is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
         raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (opts.ssl_protocol, csv(values)))
