@@ -9,6 +9,7 @@ import sys
 import os
 import errno
 import socket
+import types
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
@@ -339,3 +340,67 @@ def set_socket_timeout(conn, timeout=None):
     log("set_socket_timeout(%s, %s)", conn, timeout)
     if isinstance(conn, SocketConnection):
         conn._socket.settimeout(timeout)
+
+
+def inject_ssl_socket_info(conn):
+    """
+        If the socket is an SSLSocket,
+        we patch the Connection's get_info method
+        to return additional ssl data.
+        This method does not load the 'ssl' module.
+    """
+    sock = conn._socket
+    ssl = sys.modules.get("ssl")
+    log("ssl=%s, socket class=%s", ssl, type(sock))
+    if ssl and isinstance(sock, ssl.SSLSocket):
+        #inject extra ssl info into the socket class:
+        def get_ssl_socket_info(sock):
+            d = sock.do_get_socket_info()
+            d["ssl"] = True
+            s = sock._socket
+            if not s:
+                return d
+            for k,fn in {
+                         "compression"      : "compression",
+                         "alpn-protocol"    : "selected_alpn_protocol",
+                         "npn-protocol"     : "selected_npn_protocol",
+                         "version"          : "version",
+                         }.items():
+                sfn = getattr(s, fn, None)
+                if sfn:
+                    v = sfn()
+                    if v is not None:
+                        d[k] = v
+            cipher_fn = getattr(s, "cipher", None)
+            if cipher_fn:
+                cipher = cipher_fn()
+                if cipher:
+                    d["cipher"] = {
+                                   "name"       : cipher[0],
+                                   "protocol"   : cipher[1],
+                                   "bits"       : cipher[2],
+                                   }
+            return d
+        conn.get_socket_info = types.MethodType(get_ssl_socket_info, conn)
+
+def log_new_connection(conn):
+    """ logs the new connection message """
+    sock = conn._socket
+    address = conn.remote
+    socktype = conn.info
+    try:
+        peername = sock.getpeername()
+    except:
+        peername = str(address)
+    sockname = sock.getsockname()
+    log("log_new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", conn, sock, sockname, address, peername)
+    if peername:
+        frominfo = pretty_socket(peername)
+        info_msg = "New %s connection received from %s" % (socktype, frominfo)
+    elif socktype=="unix-domain":
+        frominfo = sockname
+        info_msg = "New %s connection received on %s" % (socktype, frominfo)
+    else:
+        frominfo = ""
+        info_msg = "New %s connection received"
+    log.info(info_msg)

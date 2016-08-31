@@ -29,7 +29,7 @@ from xpra.server import ClientException
 from xpra.scripts.main import _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool
-from xpra.net.bytestreams import SocketConnection, pretty_socket, SOCKET_TIMEOUT
+from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, SOCKET_TIMEOUT
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
@@ -531,24 +531,14 @@ class ServerCore(object):
         sock.settimeout(self._socket_timeout)
         netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s. timeout=%s", args, sock, self._socket_timeout, sockname, address, peername, self._socket_timeout)
         conn = SocketConnection(sock, sockname, address, target, socktype)
-        netlog("socket connection: %s", conn)
-        if peername:
-            frominfo = pretty_socket(peername)
-            info_msg = "New %s connection received from %s" % (socktype, frominfo)
-        elif socktype=="unix-domain":
-            frominfo = sockname
-            info_msg = "New %s connection received on %s" % (socktype, frominfo)
-        else:
-            frominfo = ""
-            info_msg = "New %s connection received"
 
         #from here on, we run in a thread, so we can poll (peek does)
         def handle_new_connection():
-            self.handle_new_connection(conn, sock, socktype, sockname, address, target, info_msg, frominfo)
+            self.handle_new_connection(conn, sock, socktype)
         start_thread(handle_new_connection, "new-%s-connection" % socktype, True)
         return True
 
-    def handle_new_connection(self, conn, sock, socktype, sockname, address, target, info_msg, frominfo):
+    def handle_new_connection(self, conn, sock, socktype):
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
@@ -557,60 +547,29 @@ class ServerCore(object):
             #not an xpra client
             netlog.error("Error: %s connection failed:", socktype)
             netlog.error(" %s", msg)
-            if frominfo:
-                netlog.error(" %s", frominfo)
+            if conn.remote:
+                netlog.error(" %s", conn.remote)
             try:
                 sock.settimeout(1)
                 conn.write("disconnect: %s?\n" % msg)
                 conn.close()
             except Exception as e:
                 netlog("error sending '%s': %s", nonl(msg), e)
-
-        def peek():
-            PEEK_SIZE = 128
-            v = conn.peek(PEEK_SIZE)
-            netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
-            return v
-
+        #peek so we can detect invalid clients early,
+        #or handle non-xpra traffic:
+        PEEK_SIZE = 128
+        v = conn.peek(PEEK_SIZE)
+        netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
         if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
-            v = peek()
-            if v and v[0] not in ("P", ord("P")):
-                if self._html:
-                    line1 = v.splitlines()[0]
-                    if line1.find("HTTP/")>0:
-                        if line1.startswith("GET ") or line1.startswith("POST "):
-                            parts = line1.split(" ")
-                            netlog.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
-                            tname = "%s-request" % parts[0]
-                        else:
-                            netlog.info("New http connection received from %s", frominfo)
-                            tname = "websockify-proxy"
-                        def run_websockify():
-                            self.start_websockify(conn, frominfo)
-                        start_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True)
-                        return
-                if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
-                    socktype = "SSL"
-                    try:
-                        sock = self._ssl_wrap_socket(sock)
-                    except IOError as e:
-                        netlog("ssl wrap socket failed", exc_info=True)
-                        conn_err(str(e))
-                        return
-                    conn = SocketConnection(sock, sockname, address, target, socktype)
-                    #we cannot peek on SSL sockets, just clear the unencrypted data:
-                    v = None
-                elif self._tcp_proxy:
-                    netlog.info("New tcp proxy connection received from %s", frominfo)
-                    def run_proxy():
-                        self.start_tcp_proxy(conn, frominfo)
-                    start_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True)
+            try:
+                cont, conn, v = self.may_wrap_socket(conn, v)
+                if not cont:
                     return
-        else:
-            #peek so we can detect invalid clients early:
-            v = peek()
+            except IOError as e:
+                netlog("socket wrapping failed", exc_info=True)
+                conn_err(str(e))
         if v and v[0] not in ("P", ord("P")):
             try:
                 c = ord(v[0])
@@ -618,42 +577,11 @@ class ServerCore(object):
                 c = int(v[0])
             conn_err("invalid packet header character '%s', not an xpra client?" % hex(c))
             return True
-        netlog.info(info_msg)
         sock.settimeout(self._socket_timeout)
-        #add ssl socket info without force loading ssh module:
-        ssl = sys.modules.get("ssl")
-        log("ssl=%s, socket class=%s", ssl, type(sock))
-        if ssl and isinstance(sock, ssl.SSLSocket):
-            #inject extra ssl info into the socket class:
-            def get_ssl_socket_info(sock):
-                d = sock.do_get_socket_info()
-                d["ssl"] = True
-                s = sock._socket
-                if not s:
-                    return d
-                for k,fn in {
-                             "compression"      : "compression",
-                             "alpn-protocol"    : "selected_alpn_protocol",
-                             "npn-protocol"     : "selected_npn_protocol",
-                             "version"          : "version",
-                             }.items():
-                    sfn = getattr(s, fn, None)
-                    if sfn:
-                        v = sfn()
-                        if v is not None:
-                            d[k] = v
-                cipher_fn = getattr(s, "cipher", None)
-                if cipher_fn:
-                    cipher = cipher_fn()
-                    if cipher:
-                        d["cipher"] = {
-                                       "name"       : cipher[0],
-                                       "protocol"   : cipher[1],
-                                       "bits"       : cipher[2],
-                                       }
-                return d
-            conn.get_socket_info = types.MethodType(get_ssl_socket_info, conn)
-        self.make_protocol(socktype, conn, frominfo)
+        inject_ssl_socket_info(conn)
+        log_new_connection(conn)
+        self.make_protocol(socktype, conn)
+
 
     def make_protocol(self, socktype, conn, frominfo=""):
         protocol = Protocol(self, conn, self.process_packet)
@@ -685,9 +613,48 @@ class ServerCore(object):
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
 
+    def may_wrap_socket(self, conn, v):
+        """
+            Returns:
+            * a flag indicating if we should continue processing this connection
+            *  (False for websockify and tcp proxies as they take over the socket)
+            * the connection object (which may now be wrapped, ie: for ssl)
+            * new peek data "v" (which may now be empty),
+        """
+        if not v or v[0] in ("P", ord("P")):
+            #xpra packet header, no need to wrap this connection
+            return True, conn, v
+        if self._html:
+            line1 = v.splitlines()[0]
+            if line1.find("HTTP/")>0:
+                if line1.startswith("GET ") or line1.startswith("POST "):
+                    parts = line1.split(" ")
+                    netlog.info("New http %s request received from %s for '%s'", parts[0], conn.remote, parts[1])
+                    tname = "%s-request" % parts[0]
+                else:
+                    netlog.info("New http connection received from %s", conn.remote)
+                    tname = "websockify-proxy"
+                def run_websockify():
+                    self.start_websockify(conn, conn.remote)
+                start_thread(run_websockify, "%s-for-%s" % (tname, conn.remote), daemon=True)
+                return False, conn, None
+        if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
+            socktype = "SSL"
+            sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
+            sock = self._ssl_wrap_socket(sock)
+            conn = SocketConnection(sock, sockname, address, target, socktype)
+            #we cannot peek on SSL sockets, just clear the unencrypted data:
+            return True, conn, None
+        elif self._tcp_proxy:
+            netlog.info("New tcp proxy connection received from %s", conn.remote)
+            def run_proxy():
+                self.start_tcp_proxy(conn, conn.remote)
+            start_thread(run_proxy, "tcp-proxy-for-%s" % conn.remote, daemon=True)
+            return False, conn, None
+        return True, conn, v
 
     def invalid_header(self, proto, data):
-        netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s, html=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html)
+        netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
         err = "invalid packet format, not an xpra client?"
         proto.gibberish(err, data)
 
