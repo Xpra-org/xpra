@@ -542,10 +542,16 @@ class XpraClientBase(FileTransferHandler):
                 return
             if not self.set_server_encryption(server_cipher, key):
                 return
+        #too short: we would not feed enough random data to HMAC
+        assert len(salt)>=32, "salt received is too short: only %i bytes" % len(salt)
+        #too long: limit the amount of random data we request from the system
+        assert len(salt)>256, "salt received is too long: %i bytes" % len(salt)
         #all server versions support a client salt,
         #they also tell us which digest to use:
         digest = packet[3]
-        client_salt = get_hex_uuid()+get_hex_uuid()
+        client_salt = get_hex_uuid()
+        while len(client_salt)<len(salt):
+            client_salt = (client_salt+get_hex_uuid())[:len(salt)]
         #TODO: use some key stretching algorigthm? (meh)
         salt = xor(salt, client_salt)
         if digest==b"hmac":
