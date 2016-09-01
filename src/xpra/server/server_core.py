@@ -548,7 +548,7 @@ class ServerCore(object):
             netlog.error("Error: %s connection failed:", socktype)
             netlog.error(" %s", msg)
             if conn.remote:
-                netlog.error(" %s", conn.remote)
+                netlog.error(" %s", pretty_socket(conn.remote))
             try:
                 sock.settimeout(1)
                 conn.write("disconnect: %s?\n" % msg)
@@ -570,6 +570,7 @@ class ServerCore(object):
             except IOError as e:
                 netlog("socket wrapping failed", exc_info=True)
                 conn_err(str(e))
+                return
         if v and v[0] not in ("P", ord("P")):
             try:
                 c = ord(v[0])
@@ -621,7 +622,11 @@ class ServerCore(object):
             * the connection object (which may now be wrapped, ie: for ssl)
             * new peek data "v" (which may now be empty),
         """
-        if not v or v[0] in ("P", ord("P")):
+        if not v:
+            netlog("may_wrap_socket: no data, not wrapping")
+            return True, conn, v
+        if v[0] in ("P", ord("P")):
+            netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", v[0])
             #xpra packet header, no need to wrap this connection
             return True, conn, v
         frominfo = pretty_socket(conn.remote)
@@ -645,12 +650,14 @@ class ServerCore(object):
             sock = self._ssl_wrap_socket(sock)
             conn = SocketConnection(sock, sockname, address, target, socktype)
             #we cannot peek on SSL sockets, just clear the unencrypted data:
+            netlog("may_wrap_socket SSL: %s", conn)
             return True, conn, None
         elif self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
             def run_proxy():
                 self.start_tcp_proxy(conn, conn.remote)
-            start_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True)
+            t = start_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True)
+            netlog("may_wrap_socket handling via tcp proxy thread %s", t)
             return False, conn, None
         return True, conn, v
 
