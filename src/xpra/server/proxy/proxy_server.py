@@ -179,7 +179,9 @@ class ProxyServer(ServerCore):
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
             disconnect(SESSION_NOT_FOUND, "invalid display string")
-            log.warn("parse error on %s: %s", display, args)
+            log.warn("Error: parsing failed for display string '%s':", display)
+            for arg in args:
+                log.warn(" %s", arg)
             raise Exception("parse error on %s: %s" % (display, args))
         opts = make_defaults_struct()
         opts.username = client_proto.authenticator.username
