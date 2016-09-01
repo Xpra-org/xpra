@@ -112,7 +112,7 @@ class ProxyInstanceProcess(Process):
                 self.stop("proxy server request")
                 return
             elif m=="socket-handover-complete":
-                log.info("setting sockets %s to blocking mode", (self.client_conn, self.server_conn))
+                log("setting sockets to blocking mode: %s", (self.client_conn, self.server_conn))
                 #set sockets to blocking mode:
                 set_blocking(self.client_conn)
                 set_blocking(self.server_conn)
