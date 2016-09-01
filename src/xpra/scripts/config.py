@@ -1014,7 +1014,7 @@ def abs_paths(options):
     #convert to absolute paths before we daemonize
     for k in ("clipboard-filter-file",
               "tcp-encryption-keyfile", "encryption-keyfile",
-              "log-dir", "log-file",
+              "log-dir",
               "download-path", "exec-wrapper",
               "ssl-key", "ssl-cert", "ssl-ca-certs"):
         f = k.replace("-", "_")
