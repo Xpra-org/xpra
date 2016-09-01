@@ -35,12 +35,12 @@ class SysAuthenticator(object):
 
     def get_uid(self):
         if self.pw is None:
-            raise Exception("username %s not found" % self.username)
+            raise Exception("username '%s' not found" % self.username)
         return self.pw.pw_uid
 
     def get_gid(self):
         if self.pw is None:
-            raise Exception("username %s not found" % self.username)
+            raise Exception("username '%s' not found" % self.username)
         return self.pw.pw_gid
 
     def requires_challenge(self):
@@ -116,12 +116,16 @@ class SysAuthenticator(object):
     def get_sessions(self):
         uid = self.get_uid()
         gid = self.get_gid()
+        log("%s.get_sessions() uid=%i, gid=%i", self, uid, gid)
         try:
             sockdir = DotXpra(socket_dir, socket_dirs, actual_username=self.username)
             results = sockdir.sockets(check_uid=uid)
             displays = [display for state, display in results if state==DotXpra.LIVE]
+            log("sockdir=%s, results=%s, displays=%s", sockdir, results, displays)
         except Exception as e:
             log.error("Error: cannot get socket directory for '%s':", self.username)
             log.error(" %s", e)
             displays = []
-        return uid, gid, displays, {}, {}
+        v = uid, gid, displays, {}, {}
+        log("%s.get_sessions()=%s", self, v)
+        return v

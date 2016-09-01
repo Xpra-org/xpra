@@ -142,11 +142,13 @@ class ProxyServer(ServerCore):
         assert client_proto.authenticator is not None
         #find the target server session:
         def disconnect(reason, *extras):
+            log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
         try:
             sessions = client_proto.authenticator.get_sessions()
         except Exception as e:
-            log.error("failed to get the list of sessions: %s", e)
+            log.error("Error: failed to get the list of sessions using '%s' authenticator", client_proto.authenticator)
+            log.error(" %s", e)
             disconnect(AUTHENTICATION_ERROR)
             return
         if sessions is None:
@@ -172,7 +174,7 @@ class ProxyServer(ServerCore):
                 return
         else:
             if len(displays)!=1:
-                disconnect(SESSION_NOT_FOUND, "please specify a display (more than one available)")
+                disconnect(SESSION_NOT_FOUND, "please specify a display, more than one is available")
                 return
             display = displays[0]
 
