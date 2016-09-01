@@ -74,12 +74,14 @@ def remove_disabled_category(*cat):
 def get_loggers_for_categories(*cat):
     if not cat:
         return  []
+    if "all" in cat:
+        return get_all_loggers()
     cset = set(cat)
     matches = set()
     for l in get_all_loggers():
         if set(l.categories).issuperset(cset):
             matches.add(l)
-    return list(matches or [])
+    return list(matches)
 
 def enable_debug_for(*cat):
     loggers = get_loggers_for_categories(*cat)
