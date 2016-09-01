@@ -34,7 +34,7 @@ from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import crypto_backend_init, new_cipher_caps, \
+from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
@@ -951,8 +951,7 @@ class ServerCore(object):
                 else:
                     authlog.warn("Warning: client expects a challenge but this connection is unauthenticated")
                     #fake challenge so the client will send the real hello:
-                    from xpra.os_util import get_hex_uuid
-                    salt = get_hex_uuid()+get_hex_uuid()
+                    salt = get_salt()
                     digest = "hmac"
                 proto.challenge_sent = True
                 proto.send_now(("challenge", salt, auth_caps or "", digest))

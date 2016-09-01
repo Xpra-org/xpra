@@ -132,10 +132,17 @@ def get_iv():
     #IV = "0000000000000000"
     return IV or get_hex_uuid()[:16]
 
-def get_salt():
-    KEY_SALT = None
-    #KEY_SALT = "0000000000000000"
-    return KEY_SALT or (get_hex_uuid()+get_hex_uuid())
+def get_salt(l=64):
+    #too short: we would not feed enough random data to HMAC
+    assert l>=32, "salt is too short: only %i bytes" % l
+    #too long: limit the amount of random data we request from the system
+    assert l<256, "salt is too long: %i bytes" % l
+    #all server versions support a client salt,
+    #they also tell us which digest to use:
+    salt = get_hex_uuid()
+    while len(salt)<l:
+        salt += get_hex_uuid()
+    return salt[:l]
 
 def get_iterations():
     return DEFAULT_ITERATIONS

@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
-from xpra.os_util import get_hex_uuid, get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -542,16 +542,10 @@ class XpraClientBase(FileTransferHandler):
                 return
             if not self.set_server_encryption(server_cipher, key):
                 return
-        #too short: we would not feed enough random data to HMAC
-        assert len(salt)>=32, "salt received is too short: only %i bytes" % len(salt)
-        #too long: limit the amount of random data we request from the system
-        assert len(salt)>256, "salt received is too long: %i bytes" % len(salt)
         #all server versions support a client salt,
         #they also tell us which digest to use:
         digest = packet[3]
-        client_salt = get_hex_uuid()
-        while len(client_salt)<len(salt):
-            client_salt = (client_salt+get_hex_uuid())[:len(salt)]
+        client_salt = get_salt(len(salt))
         #TODO: use some key stretching algorigthm? (meh)
         salt = xor(salt, client_salt)
         if digest==b"hmac":

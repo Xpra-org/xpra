@@ -23,7 +23,7 @@ from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, get_hex_uuid, strtobytes
+from xpra.os_util import Queue, SIGNAMES, strtobytes
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
@@ -631,11 +631,12 @@ class ProxyInstanceProcess(Process):
         elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
         elif packet_type=="challenge":
+            from xpra.net.crypto import get_salt
             #client may have already responded to the challenge,
             #so we have to handle authentication from this end
             salt = packet[1]
             digest = packet[3]
-            client_salt = get_hex_uuid()+get_hex_uuid()
+            client_salt = get_salt(len(salt))
             salt = xor_str(salt, client_salt)
             if digest!=b"hmac":
                 self.stop("digest mode '%s' not supported", std(digest))
