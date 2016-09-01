@@ -1895,6 +1895,7 @@ def run_client(error_cb, opts, extra_args, mode):
             #which may change the username and password..
             app.username = opts.username
             app.password = opts.password
+            app.display = opts.display
             app.setup_connection(conn)
         except Exception as e:
             app.cleanup()
