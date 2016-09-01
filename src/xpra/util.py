@@ -565,7 +565,7 @@ def parse_simple_dict(s="", sep=","):
 
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
-def updict(todict, prefix, d, suffix=""):
+def updict(todict, prefix, d, suffix="", flatten_dicts=False):
     if not d:
         return
     for k,v in d.items():
@@ -576,7 +576,10 @@ def updict(todict, prefix, d, suffix=""):
                 k = prefix
             if suffix:
                 k = k+"."+suffix
-            todict[k] = v
+            if flatten_dicts and isinstance(v, dict):
+                updict(todict, k, v)
+            else:
+                todict[k] = v
 
 def pver(v, numsep=".", strsep=", "):
     #print for lists with version numbers, or CSV strings

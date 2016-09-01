@@ -442,7 +442,7 @@ class ProxyInstanceProcess(Process):
         #replace the network caps with the proxy's own:
         pcaps.update(flatten_dict(get_network_caps()))
         #then add the proxy info:
-        updict(pcaps, "proxy", get_server_info())
+        updict(pcaps, "proxy", get_server_info(), flatten_dicts=True)
         pcaps["proxy"] = True
         pcaps["proxy.hostname"] = socket.gethostname()
         return pcaps
