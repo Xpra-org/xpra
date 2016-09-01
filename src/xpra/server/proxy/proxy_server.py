@@ -256,21 +256,26 @@ class ProxyServer(ServerCore):
         log("processes: %s", self.processes)
 
     def get_info(self, proto, *args):
-        info = {"server.type" : "Python/GLib/proxy"}
+        info = ServerCore.get_info(self, proto)
+        info["server.type"] = "Python/GLib/proxy"
         #only show more info if we have authenticated
         #as the user running the proxy server process:
-        sessions = proto.authenticator.get_sessions()
-        if sessions:
-            uid, gid = sessions[:2]
-            if uid==os.getuid() and gid==os.getgid():
-                info.update(ServerCore.get_info(self, proto))
-                self.reap()
-                i = 0
-                for p,v in self.processes.items():
-                    d,_ = v
-                    info[i] = {"display"    : d,
-                               "live"       : p.is_alive(),
-                               "pid"        : p.pid}
-                    i += 1
-                info["proxies"] = len(self.processes)
+        pa = proto.authenticator
+        if pa:
+            sessions = pa.get_sessions()
+            if sessions:
+                uid, gid = sessions[:2]
+                if uid==os.getuid() and gid==os.getgid():
+                    info.update(ServerCore.get_info(self, proto))
+                    self.reap()
+                    i = 0
+                    for p,v in self.processes.items():
+                        d,_ = v
+                        info[i] = {
+                                   "display"    : d,
+                                   "live"       : p.is_alive(),
+                                   "pid"        : p.pid,
+                                   }
+                        i += 1
+                    info["proxies"] = len(self.processes)
         return info
