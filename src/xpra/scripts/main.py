@@ -2106,6 +2106,11 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
         if mode=="_shadow_start" and OSX:
             #launch the shadow server via launchctl so it will have GUI access:
+            LAUNCH_AGENT = "org.xpra.Agent"
+            LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
+            if not os.path.exists(LAUNCH_AGENT_FILE):
+                sys.stderr.write("Error: cannot start shadow,\n the launch agent file '%s' is missing.\n" % LAUNCH_AGENT_FILE)
+                pass
             argfile = os.path.expanduser("~/.xpra/shadow-args")
             with open(argfile, "w") as f:
                 f.write('["Xpra", "--no-daemon"')
@@ -2113,9 +2118,9 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                     f.write(', "%s"' % x)
                 f.write(']')
             launch_commands = [
-                               ["launchctl", "unload", "/System/Library/LaunchAgents/org.xpra.Agent.plist"],
-                               ["launchctl", "load", "-S", "Aqua", "/System/Library/LaunchAgents/org.xpra.Agent.plist"],
-                               ["launchctl", "start", "org.xpra.Agent"],
+                               ["launchctl", "unload", LAUNCH_AGENT_FILE],
+                               ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
+                               ["launchctl", "start", LAUNCH_AGENT],
                                ]
             for x in launch_commands:
                 proc = Popen(x, shell=False, close_fds=True)
