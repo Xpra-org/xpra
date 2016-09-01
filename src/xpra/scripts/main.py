@@ -2110,7 +2110,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
             if not os.path.exists(LAUNCH_AGENT_FILE):
                 sys.stderr.write("Error: cannot start shadow,\n the launch agent file '%s' is missing.\n" % LAUNCH_AGENT_FILE)
-                pass
+                return 1
             argfile = os.path.expanduser("~/.xpra/shadow-args")
             with open(argfile, "w") as f:
                 f.write('["Xpra", "--no-daemon"')
