@@ -32,6 +32,7 @@ HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
 
 #compression is fine with default value (3), no need to clutter the UI
 SHOW_COMPRESSION_MENU = False
+SHOW_UPLOAD = os.environ.get("XPRA_SHOW_UPLOAD_MENU", "1")=="1"
 STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
 WEBCAM_MENU = os.environ.get("XPRA_SHOW_WEBCAM_MENU", "1")=="1"
 
@@ -292,7 +293,8 @@ class GTKTrayMenuBase(object):
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_startnewcommandmenuitem())
-        menu.append(self.make_uploadmenuitem())
+        if SHOW_UPLOAD:
+            menu.append(self.make_uploadmenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
