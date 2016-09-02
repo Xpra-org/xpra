@@ -12,7 +12,7 @@ gobject.threads_init()
 import unittest
 from collections import deque
 try:
-    from xpra.server import video_subregion, region
+    from xpra.server.window import video_subregion, region
 except ImportError:
     video_subregion = None
     region = None
@@ -51,13 +51,13 @@ class TestVersionUtilModule(unittest.TestCase):
         r.identify_video_subregion(ww, wh, 0, [])
         assert r.rectangle is None
 
-        log("* checking that full window is not a region")
+        log("* checking that full window can be a region")
         vr = (time.time(), 0, 0, ww, wh)
         last_damage_events = []
         for _ in range(50):
             last_damage_events.append(vr)
         r.identify_video_subregion(ww, wh, 50, last_damage_events)
-        assert r.rectangle is None
+        assert r.rectangle is not None
 
         log("* checking that regions covering the whole window give the same result")
         last_damage_events = deque(maxlen=150)
@@ -68,7 +68,7 @@ class TestVersionUtilModule(unittest.TestCase):
                 last_damage_events.append(vr)
                 last_damage_events.append(vr)
         r.identify_video_subregion(ww, wh, 150, last_damage_events)
-        assert r.rectangle is None
+        assert r.rectangle is not None
 
         vr = (time.time(), ww/4, wh/4, ww/2, wh/2)
         log("* mixed with region using 1/5 of window and 1/3 of updates: %s", vr)
@@ -96,16 +96,28 @@ class TestVersionUtilModule(unittest.TestCase):
         r.reset()
         v1 = (time.time(), 20, 20, 320, 240)
         v2 = (time.time(), ww-20-320, wh-240-20, 320, 240)
-        for _ in range(50):
+        N = 50
+        for _ in range(N):
             last_damage_events.append(v1)
             last_damage_events.append(v2)
         r.identify_video_subregion(ww, wh, 100, last_damage_events)
-        assert r.rectangle is None
+        assert r.rectangle is None, "%i rectangles %s should not match the whole window %ix%i" % (N, (v1, v2), ww, wh)
+
+    def test_cases(self):
+        log = video_subregion.sslog
+        log.enable_debug()
+        from xpra.server.window.video_subregion import scoreinout
+        from xpra.server.window.region import rectangle         #@UnresolvedImport
+        r = rectangle(35, 435, 194, 132)
+        score = scoreinout(1920, 1080, r, 1466834, 21874694)
+        assert score>=100
 
 
 def main():
     if video_subregion and region:
         unittest.main()
+    else:
+        print("video_subregion_test skipped")
 
 if __name__ == '__main__':
     main()

@@ -303,7 +303,10 @@ class VideoSubregion(object):
                     #nothing left: damage covered the whole rect
                     return 1.0
                 rects = new_rects
-            return max(0, min(1.0, 1.0-sum((r.width*r.height) for r in rects)//(rect.width*rect.height)))
+            not_damaged_pixels = sum((r.width*r.height) for r in rects)
+            rect_pixels = rect.width*rect.height
+            #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i", rects, not_damaged_pixels, rect, rect_pixels)
+            return max(0, min(1.0, 1.0-float(not_damaged_pixels)/rect_pixels))
 
         def score_region(info, region, ignore_size=0):
             #check if the region given is a good candidate, and if so we use it
@@ -317,8 +320,10 @@ class VideoSubregion(object):
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
             score = scoreinout(ww, wh, region, incount, outcount)
-            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, score=%2i",
-                  info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, score)
+            d_ratio = damaged_ratio(region)
+            score *= math.sqrt(d_ratio)
+            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
+                  info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, score)
             return score
 
         def updateregion(rect):
