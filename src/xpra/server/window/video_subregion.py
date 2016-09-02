@@ -21,6 +21,28 @@ MIN_W = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_WIDTH", "128"))
 MIN_H = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_HEIGHT", "96"))
 
 
+def scoreinout(ww, wh, region, incount, outcount):
+    total = incount+outcount
+    assert total>0
+    #proportion of damage events that are within this region:
+    inregion = float(incount)/total
+    #devaluate by taking into account the number of pixels in the area
+    #so that a large video region only wins if it really
+    #has a larger proportion of the pixels
+    #(but also offset this value to even things out a bit:
+    # if we have a series of vertical or horizontal bands that we merge,
+    # we would otherwise end up excluding the ones on the edge
+    # if they ever happen to have a slightly lower hit count)
+    #summary: bigger is better, as long as we still have more pixels in than out
+    width = min(ww, region.width)
+    height = min(wh, region.height)
+    #proportion of pixels in this region relative to the whole window:
+    inwindow = float(width*height) / (ww*wh)
+    ratio = inregion / inwindow
+    sizeboost = 1+inwindow
+    sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%.3f, inwindow=%.3f, ratio=%.3f, sizeboost=%.3f", ww, wh, region, incount, outcount, inregion, inwindow, ratio, sizeboost)
+    return int(sizeboost*5 + 100 * ratio**sizeboost)
+
 class VideoSubregion(object):
 
     def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay):
@@ -270,27 +292,18 @@ class VideoSubregion(object):
                     outcount += x.width*x.height*int(count)
             return incount, outcount
 
-        def scoreinout(region, incount, outcount):
-            total = incount+outcount
-            assert total>0
-            #proportion of damage events that are within this region:
-            inregion = float(incount)/total
-            #devaluate by taking into account the number of pixels in the area
-            #so that a large video region only wins if it really
-            #has a larger proportion of the pixels
-            #(but also offset this value to even things out a bit:
-            # if we have a series of vertical or horizontal bands that we merge,
-            # we would otherwise end up excluding the ones on the edge
-            # if they ever happen to have a slightly lower hit count)
-            #summary: bigger is better, as long as we still have more pixels in than out
-            width = min(ww, region.width)
-            height = min(wh, region.height)
-            #proportion of pixels in this region relative to the whole window:
-            inwindow = float(width*height) / (ww*wh)
-            ratio = inregion / inwindow
-            sizeboost = 1+inwindow
-            sslog("scoreinout(%s, %i, %i) inregion=%.3f, inwindow=%.3f, ratio=%.3f, sizeboost=%.3f", region, incount, outcount, inregion, inwindow, ratio, sizeboost)
-            return int(sizeboost*5 + 100 * ratio**sizeboost)
+        def damaged_ratio(rect):
+            rects = [rect]
+            for _,x,y,w,h in lde:
+                r = rectangle(x,y,w,h)
+                new_rects = []
+                for x in rects:
+                    new_rects += x.substract_rect(r)
+                if not new_rects:
+                    #nothing left: damage covered the whole rect
+                    return 1.0
+                rects = new_rects
+            return max(0, min(1.0, 1.0-sum((r.width*r.height) for r in rects)//(rect.width*rect.height)))
 
         def score_region(info, region, ignore_size=0):
             #check if the region given is a good candidate, and if so we use it
@@ -303,7 +316,7 @@ class VideoSubregion(object):
                 return 0
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
-            score = scoreinout(region, incount, outcount)
+            score = scoreinout(ww, wh, region, incount, outcount)
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, score=%2i",
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, score)
             return score
@@ -312,18 +325,9 @@ class VideoSubregion(object):
             self.rectangle = rect
             self.time = time.time()
             self.inout = inoutcount(rect)
-            self.score = scoreinout(rect, *self.inout)
+            self.score = scoreinout(ww, wh, rect, *self.inout)
             self.fps = int(self.inout[0]/(rect.width*rect.height) / (time.time()-from_time))
-            rects = [self.rectangle]
-            for _,x,y,w,h in lde:
-                r = rectangle(x,y,w,h)
-                new_rects = []
-                for x in rects:
-                    new_rects += x.substract_rect(r)
-                rects = new_rects
-                if not rects:
-                    break
-            self.damaged = 100-100*sum((r.width*r.height) for r in rects)//(rect.width*rect.height)
+            self.damaged = int(100*damaged_ratio(self.rectangle))
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
         def setnewregion(rect, msg="", *args):
@@ -424,6 +428,6 @@ class VideoSubregion(object):
             merged = merge_all(damage_count.keys())
             score = score_region("merged", merged)
             if score>=110:
-                return setnewregion(merged, "merged all regions, score=%s", score, 48*48)
+                return setnewregion(merged, "merged all regions, score=%s", score)
 
         self.novideoregion("failed to identify a video region")

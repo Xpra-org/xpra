@@ -38,7 +38,7 @@ cdef class rectangle:
         return self.hash
 
     def __str__(self):
-        return "rectangle[%i, %i, %i, %i]" % (self.x, self.y, self.width, self.height)
+        return "rectangle(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
 
     def __repr__(self):
         return "R(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
