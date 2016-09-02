@@ -104,8 +104,6 @@ class TestVersionUtilModule(unittest.TestCase):
         assert r.rectangle is None, "%i rectangles %s should not match the whole window %ix%i" % (N, (v1, v2), ww, wh)
 
     def test_cases(self):
-        log = video_subregion.sslog
-        log.enable_debug()
         from xpra.server.window.video_subregion import scoreinout
         from xpra.server.window.region import rectangle         #@UnresolvedImport
         r = rectangle(35, 435, 194, 132)
