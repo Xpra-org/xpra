@@ -688,7 +688,7 @@ class ServerCore(object):
                 sock.send = send
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
-                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.info, wsh)
+                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
                 self.make_protocol("tcp", wsc, frominfo)
             WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir)
             return
