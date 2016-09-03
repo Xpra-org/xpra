@@ -63,7 +63,7 @@ class SysAuthenticator(object):
 
     def authenticate(self, challenge_response, client_salt):
         #this will call check(password)
-        self.authenticate_check(challenge_response, client_salt)
+        return self.authenticate_check(challenge_response, client_salt)
 
     def authenticate_check(self, challenge_response, client_salt):
         if self.salt is None:
