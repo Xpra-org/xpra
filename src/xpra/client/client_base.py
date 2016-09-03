@@ -558,7 +558,8 @@ class XpraClientBase(FileTransferHandler):
             if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
                 warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
-            challenge_response = xor(password, salt)
+            salt = salt[:len(password)]
+            challenge_response = strtobytes(xor(password, salt))
         else:
             warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest, "invalid digest")
             return
