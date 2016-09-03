@@ -142,11 +142,11 @@ def pretty_socket(s):
 
 
 class Connection(object):
-    def __init__(self, target, info):
+    def __init__(self, target, socktype):
         if type(target)==tuple:
             target = ":".join([str(x) for x in target])
         self.target = target
-        self.info = info
+        self.socktype = socktype
         self.input_bytecount = 0
         self.input_readcount = 0
         self.output_bytecount = 0
@@ -187,9 +187,8 @@ class Connection(object):
 
     def get_info(self):
         return {
-                "type"              : self.info or "",
+                "type"              : self.socktype or "",
                 "endpoint"          : self.target or "",
-                "info"              : self.info or "",
                 "active"            : self.active,
                 "input"             : {
                                        "bytecount"      : self.input_bytecount,
@@ -277,7 +276,7 @@ class SocketConnection(Connection):
         self._socket = socket
         self.local = local
         self.remote = remote
-        self.socket_type = "socket"
+        self.protocol_type = "socket"
         if type(remote)==str:
             self.filename = remote
 
@@ -303,13 +302,13 @@ class SocketConnection(Connection):
 
     def __repr__(self):
         if self.remote:
-            return "%s %s: %s <- %s" % (self.info, self.socket_type, pretty_socket(self.local), pretty_socket(self.remote))
-        return "%s %s:%s" % (self.info, self.socket_type, pretty_socket(self.local))
+            return "%s %s: %s <- %s" % (self.socktype, self.protocol_type, pretty_socket(self.local), pretty_socket(self.remote))
+        return "%s %s:%s" % (self.socktype, self.protocol_type, pretty_socket(self.local))
 
     def get_info(self):
         d = Connection.get_info(self)
         try:
-            d["type"] = self.socket_type
+            d["protocol-type"] = self.protocol_type
             si = self.get_socket_info()
             if si:
                 d["socket"] = si
@@ -387,7 +386,7 @@ def log_new_connection(conn):
     """ logs the new connection message """
     sock = conn._socket
     address = conn.remote
-    socktype = conn.info
+    socktype = conn.socktype
     try:
         peername = sock.getpeername()
     except:

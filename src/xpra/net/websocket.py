@@ -81,7 +81,7 @@ class WebSocketConnection(SocketConnection):
 
     def __init__(self, socket, local, remote, target, info, ws_handler):
         SocketConnection.__init__(self, socket, local, remote, target, info)
-        self.socket_type = "websocket"
+        self.protocol_type = "websocket"
         self.ws_handler = ws_handler
 
     def read(self, n):

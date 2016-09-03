@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -555,7 +555,8 @@ class XpraClientBase(FileTransferHandler):
             challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
         elif digest==b"xor":
             #don't send XORed password unencrypted:
-            if not self._protocol.cipher_out and not ALLOW_UNENCRYPTED_PASSWORDS:
+            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type")=="ssl"
+            if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
             salt = salt[:len(password)]
