@@ -176,9 +176,8 @@ class Protocol(object):
         cinfo = self._conn or "cleared connection"
         for t in (self._read_thread, self._write_thread):
             if t and t.isAlive():
-                log.warn("%s thread of %s has not yet exited (timeout=%s)", t.name, cinfo, timeout)
+                log.warn("Warning: %s thread of %s is still alive (timeout=%s)", t.name, cinfo, timeout)
                 exited = False
-                break
         return exited
 
     def set_packet_source(self, get_packet_cb):

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -225,7 +225,7 @@ class ProxyServer(ServerCore):
             try:
                 ioe = client_proto.wait_for_io_threads_exit(0.5+self._socket_timeout)
                 if not ioe:
-                    log.error("some network IO threads have failed to terminate!")
+                    log.error("Error: some network IO threads have failed to terminate")
                     return
                 client_conn.set_active(True)
                 assert uid!=0 and gid!=0
