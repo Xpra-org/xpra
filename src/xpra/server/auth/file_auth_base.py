@@ -7,7 +7,8 @@
 
 import os.path
 
-from xpra.os_util import get_hex_uuid, strtobytes
+from xpra.net.crypto import get_salt
+from xpra.os_util import strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 from xpra.log import Logger
 log = Logger("auth")
@@ -38,7 +39,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             if self.salt is not False:
                 self.salt = False
             return None
-        self.salt = get_hex_uuid()+get_hex_uuid()
+        self.salt = get_salt()
         #this authenticator can use the safer "hmac" digest:
         return self.salt, "hmac"
 

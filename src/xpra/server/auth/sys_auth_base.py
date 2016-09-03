@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,8 @@ import hmac, hashlib, binascii
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
-from xpra.os_util import get_hex_uuid, strtobytes
+from xpra.net.crypto import get_salt
+from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("auth")
 
@@ -50,7 +51,7 @@ class SysAuthenticator(object):
         if self.salt is not None:
             log.error("challenge already sent!")
             return None
-        self.salt = get_hex_uuid()+get_hex_uuid()
+        self.salt = get_salt()
         #we need the raw password, so tell the client to use "xor":
         return self.salt, mac
 

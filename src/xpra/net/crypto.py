@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -132,7 +132,7 @@ def get_iv():
     #IV = "0000000000000000"
     return IV or get_hex_uuid()[:16]
 
-def get_salt(l=64):
+def get_rand_str(l):
     #too short: we would not feed enough random data to HMAC
     assert l>=32, "salt is too short: only %i bytes" % l
     #too long: limit the amount of random data we request from the system
@@ -143,6 +143,9 @@ def get_salt(l=64):
     while len(salt)<l:
         salt += get_hex_uuid()
     return salt[:l]
+
+def get_salt(l=64):
+    return get_rand_str(l)
 
 def get_iterations():
     return DEFAULT_ITERATIONS
