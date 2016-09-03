@@ -17,6 +17,7 @@ freeze_support()
 
 from xpra.log import Logger
 log = Logger("proxy")
+authlog = Logger("proxy", "auth")
 
 
 from xpra.scripts.config import InitException
@@ -147,8 +148,9 @@ class ProxyServer(ServerCore):
         try:
             sessions = client_proto.authenticator.get_sessions()
         except Exception as e:
-            log.error("Error: failed to get the list of sessions using '%s' authenticator", client_proto.authenticator)
-            log.error(" %s", e)
+            authlog("failed to get the list of sessions", exc_info=True)
+            authlog.error("Error: failed to get the list of sessions using '%s' authenticator", client_proto.authenticator)
+            authlog.error(" %s", e)
             disconnect(AUTHENTICATION_ERROR)
             return
         if sessions is None:
