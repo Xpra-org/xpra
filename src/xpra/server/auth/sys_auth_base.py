@@ -120,7 +120,10 @@ class SysAuthenticator(object):
         try:
             sockdir = DotXpra(socket_dir, socket_dirs, actual_username=self.username)
             results = sockdir.sockets(check_uid=uid)
-            displays = [display for state, display in results if state==DotXpra.LIVE]
+            displays = []
+            for state, display in results:
+                if state==DotXpra.LIVE and display not in displays:
+                    displays.append(display)
             log("sockdir=%s, results=%s, displays=%s", sockdir, results, displays)
         except Exception as e:
             log.error("Error: cannot get socket directory for '%s':", self.username)
