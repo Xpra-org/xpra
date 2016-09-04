@@ -7,11 +7,16 @@
 #until then... this hack will do
 #runs all the files in "unit/" that end in "test.py"
 
+import sys
+
+
 def main():
-    import sys
     import os.path
     import subprocess
-    p = os.path.abspath(os.path.dirname(__file__))
+    if len(sys.argv)==2:
+        p = os.path.abspath(sys.argv[1])
+    else:
+        p = os.path.abspath(os.path.dirname(__file__))
     #ie: p=~/Xpra/trunk/src/tests/unit
     root = os.path.dirname(p)
     #ie: d=~/Xpra/trunk/src/tests
@@ -51,6 +56,5 @@ def main():
     return add_recursive(p)
 
 if __name__ == '__main__':
-    import sys
     v = main()
     sys.exit(v)
