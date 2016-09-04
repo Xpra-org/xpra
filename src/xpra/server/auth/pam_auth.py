@@ -4,10 +4,8 @@
 # later version. See the file COPYING for details.
 
 import sys
-
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-
-assert init
+assert init and log #tests will disable logging from here
 
 
 check = None

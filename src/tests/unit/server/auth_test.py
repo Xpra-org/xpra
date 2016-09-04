@@ -30,6 +30,10 @@ class TestAuth(unittest.TestCase):
 	def _init_auth(self, module, options={}, username="foo", **kwargs):
 		opts = FakeOpts(options)
 		module.init(opts)
+		log = getattr(module, "log", None)
+		if log:
+			import logging
+			log.logger.setLevel(logging.CRITICAL)
 		try:
 			c = module.Authenticator
 		except Exception as e:

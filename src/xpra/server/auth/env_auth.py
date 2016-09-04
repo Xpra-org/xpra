@@ -4,9 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init
-
-assert init
+from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+assert init and log #tests will disable logging from here
 
 
 class Authenticator(SysAuthenticator):

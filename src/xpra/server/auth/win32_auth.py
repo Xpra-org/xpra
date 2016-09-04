@@ -5,10 +5,11 @@
 
 import os
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init
+from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 import win32security            #@UnresolvedImport
 assert win32security            #avoid pydev warning
-assert init
+assert init and log #tests will disable logging from here
+
 
 class Authenticator(SysAuthenticator):
 

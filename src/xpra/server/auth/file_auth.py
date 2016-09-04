@@ -9,10 +9,8 @@ import binascii
 import hmac, hashlib
 
 from xpra.os_util import strtobytes
-from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init
+from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init, log
 from xpra.util import xor, nonl
-from xpra.log import Logger
-log = Logger("auth")
 
 
 #will be called when we init the module

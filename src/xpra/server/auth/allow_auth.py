@@ -4,9 +4,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.net.crypto import get_salt
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init
+from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+assert init and log #tests will disable logging from here
 
-assert init
 
 class Authenticator(SysAuthenticator):
 

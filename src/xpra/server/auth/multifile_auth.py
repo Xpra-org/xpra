@@ -10,11 +10,9 @@ import os
 import binascii
 import hmac, hashlib
 
-from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init as file_init
+from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
 from xpra.os_util import strtobytes
 from xpra.util import xor, parse_simple_dict
-from xpra.log import Logger
-log = Logger("auth")
 
 
 socket_dir = None
