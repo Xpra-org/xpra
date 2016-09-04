@@ -305,6 +305,7 @@ def isenvdebug(category):
 
 class Logger(object):
     def __init__(self, *categories):
+        global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
         caller = sys._getframe(1).f_globals["__name__"]
         if caller!="__main__":
