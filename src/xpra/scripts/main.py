@@ -1357,7 +1357,7 @@ def parse_display_name(error_cb, opts, display_name):
         username, password, host, port = parse_host_string(host)
         assert port>0, "no port specified in %s" % host
         return desc
-    elif display_name.startswith("vsock:"):
+    elif display_name.startswith("vsock:") or display_name.startswith("vsock/"):
         #use the vsock specified:
         vsock_str = display_name[len("vsock:"):]
         cid, iport = parse_vsock(vsock_str)
@@ -1368,6 +1368,37 @@ def parse_display_name(error_cb, opts, display_name):
                 "vsock"         : (cid, iport),
                 })
         opts.display = display_name
+        return desc
+    elif display_name.startswith("ws:") or display_name.startswith("wss:") or display_name.startswith("ws/") or display_name.startswith("wss/"):
+        if display_name.startswith("wss"):
+            separator = display_name[3] # ":" or "/"
+        else:
+            assert display_name.startswith("ws")
+            separator = display_name[2] # ":" or "/"
+        try:
+            import websocket
+            assert websocket
+        except ImportError as e:
+            raise InitException("the websocket client module cannot be loaded: %s" % e)
+        ws_proto, host = display_name.split(separator, 1)
+        if host.find("?")>=0:
+            host, _ = host.split("?", 1)
+        iport = 0
+        if host.find(":")>=0:
+            host, port = host.split(":", 1)
+            if port.find("/")>=0:
+                port, extra = port.split("/", 1)
+                host += extra
+            iport = int(port)
+            #TODO: parse attrs after "?"
+        desc.update({
+                "type"          : ws_proto,     #"ws" or "wss"
+                "local"         : False,
+                "display"       : display_name,
+                "host"          : host,
+                })
+        if iport>0:
+            desc["port"] = iport
         return desc
     elif sys.platform.startswith("win") or display_name.startswith("named-pipe:"):
         pipe_name = display_name
@@ -1641,6 +1672,50 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         sock.settimeout(None)
         from xpra.net.bytestreams import SocketConnection
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
+
+    elif dtype in ("ws", "wss"):
+        host = display_desc["host"]
+        port = display_desc.get("port", 0)
+        if port>0:
+            host += ":%i" % port
+        import websocket
+        #websocket.enableTrace(True)
+        url = "%s://%s/" % (dtype, host)
+        ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=["binary", "base64"])
+        from xpra.net.bytestreams import Connection, log as connlog
+        class WebSocketClientConnection(Connection):
+            def __init__(self, ws, target, socktype):
+                Connection.__init__(self, target, socktype)
+                self._socket = ws
+        
+            def peek(self, n):
+                return None
+        
+            def read(self, n):
+                return self._read(self._socket.recv)
+        
+            def write(self, buf):
+                return self._write(self._socket.send, buf)
+        
+            def close(self):
+                try:
+                    i = self.get_socket_info()
+                except:
+                    i = self._socket
+                connlog("%s.close() for socket=%s", self, i)
+                Connection.close(self)
+                self._socket.close()
+                self._socket = None
+                connlog("%s.close() done", self)
+        
+            def __repr__(self):
+                return "%s %s" % (self.socktype, self.target)
+        
+            def get_info(self):
+                d = Connection.get_info(self)
+                d["protocol-type"] = "websocket"
+                return d
+        return WebSocketClientConnection(ws, "websocket", host)
 
     elif dtype in ("tcp", "ssl"):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
