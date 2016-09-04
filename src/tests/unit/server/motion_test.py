@@ -93,7 +93,7 @@ class TestMotion(unittest.TestCase):
 		array2 = [N*2-x*2 for x in range(N)]
 		d = motion.calculate_distances(array1, array2, 1)
 		end = time.time()
-		print("distances for %ix%i took %.1fms" % (N, N, (end-start)*1000))
+		print("calculate_distances %4i^2 in %5.1f ms" % (N, (end-start)*1000))
 
 	def test_detect_motion(self):
 		W, H, BPP = 1920, 1080, 4
@@ -128,12 +128,12 @@ class TestMotion(unittest.TestCase):
 			start = time.time()
 			ov2 = motion.CRC_Image(buf2, W, H, W*BPP, BPP)
 			end = time.time()
-			print("CRC_Image %ix%i (%.1fMB) in %.1fms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
+			print("\nCRC_Image %ix%i (%.1fMB) in %4.2f ms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
 			assert len(ov2)==H
 			start = time.time()
 			distances = motion.calculate_distances(ov1, ov2, min_score=1)
 			end = time.time()
-			print("calculate_distances %i^2 in %.2fms" % (H, 1000.0*(end-start)))
+			print("calculate_distances %4i^2 in %5.2f ms" % (H, 1000.0*(end-start)))
 			linecount = distances.get(N, 0)
 			assert linecount>0, "could not find distance %i" % N
 			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
