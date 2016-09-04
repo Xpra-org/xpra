@@ -206,8 +206,8 @@ class Connection(object):
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
-    def __init__(self, writeable, readable, abort_test=None, target=None, info="", close_cb=None):
-        Connection.__init__(self, target, info)
+    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None):
+        Connection.__init__(self, target, socktype)
         self._writeable = writeable
         self._readable = readable
         self._read_fd = self._readable.fileno()
@@ -271,8 +271,8 @@ class TwoFileConnection(Connection):
 
 
 class SocketConnection(Connection):
-    def __init__(self, socket, local, remote, target, info):
-        Connection.__init__(self, target, info)
+    def __init__(self, socket, local, remote, target, socktype):
+        Connection.__init__(self, target, socktype)
         self._socket = socket
         self.local = local
         self.remote = remote

@@ -1593,7 +1593,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             except Exception as e:
                 print("error trying to stop ssh tunnel process: %s" % e)
         from xpra.net.bytestreams import TwoFileConnection
-        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
+        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, socktype=dtype, close_cb=stop_tunnel)
         conn.timeout = 0            #taken care of by abort_test
         conn.process = (child, "ssh", cmd)
 
@@ -2180,7 +2180,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         display = pick_display(error_cb, opts, args)
     server_conn = connect_or_fail(display, opts)
     from xpra.net.bytestreams import TwoFileConnection
-    app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
+    app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
     signal.signal(signal.SIGTERM, app.quit)
     app.run()

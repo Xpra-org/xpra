@@ -779,7 +779,7 @@ class SessionInfo(gtk.Window):
         set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
         set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 
-        self.connection_type_label.set_text(c.info)
+        self.connection_type_label.set_text(c.socktype)
         protocol_info = p.get_info()
         encoder = protocol_info.get("encoder", "bug")
         compressor = protocol_info.get("compressor", "none")
@@ -794,8 +794,8 @@ class SessionInfo(gtk.Window):
                 info = "None"
             else:
                 info = str(cipher)
-            if c.info.lower()=="ssh":
-                info += " (%s)" % c.info
+            if c.socktype.lower()=="ssh":
+                info += " (%s)" % c.socktype
             ncaps = get_network_caps()
             backend = ncaps.get("backend")
             if backend=="pycrypto":

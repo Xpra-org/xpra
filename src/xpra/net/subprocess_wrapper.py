@@ -160,7 +160,7 @@ class subprocess_callee(object):
         else:
             self._output = open(self.output_filename, 'wb')
         #stdin and stdout wrapper:
-        conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, info=self.name, close_cb=self.net_stop)
+        conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, socktype=self.name, close_cb=self.net_stop)
         conn.timeout = 0
         protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         setup_fastencoder_nocompression(protocol)
@@ -353,7 +353,7 @@ class subprocess_caller(object):
 
     def make_protocol(self):
         #make a connection using the process stdin / stdout
-        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=self.abort_test, target=self.description, info=self.description, close_cb=self.subprocess_exit)
+        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=self.abort_test, target=self.description, socktype=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
         protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         setup_fastencoder_nocompression(protocol)
