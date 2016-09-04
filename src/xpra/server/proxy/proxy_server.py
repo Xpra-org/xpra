@@ -21,7 +21,7 @@ authlog = Logger("proxy", "auth")
 
 
 from xpra.scripts.config import InitException
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -156,7 +156,7 @@ class ProxyServer(ServerCore):
         if sessions is None:
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
-        log("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
+        authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
         #log("unused options: %s, %s", env_options, session_options)
         if len(displays)==0:
@@ -167,16 +167,17 @@ class ProxyServer(ServerCore):
         #ensure we don't loop back to the proxy:
         if proxy_virtual_display in displays:
             displays.remove(proxy_virtual_display)
+        authlog("start_proxy: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
         if display==proxy_virtual_display:
             disconnect(SESSION_NOT_FOUND, "invalid display")
             return
         if display:
             if display not in displays:
-                disconnect(SESSION_NOT_FOUND, "display not found")
+                disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
                 return
         else:
             if len(displays)!=1:
-                disconnect(SESSION_NOT_FOUND, "please specify a display, more than one is available")
+                disconnect(SESSION_NOT_FOUND, "please specify a display, more than one is available: %s" % csv(displays))
                 return
             display = displays[0]
 
