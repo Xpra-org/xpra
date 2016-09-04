@@ -556,6 +556,12 @@
         </after>
   </distutils>
 
+  <distutils id="python-websocket-client">
+	<branch repo="pypi.python.org"
+		module="/packages/a3/1e/b717151e29a70e8f212edae9aebb7812a8cae8477b52d9fe990dcaec9bbd/websocket_client-0.37.0.tar.gz"
+		hash="sha1:cd92e24dc645caa5f8433b825ceb232bfad1e001"
+		version="0.37.0"/>
+  </distutils>
 
   <distutils id="python-nose">
 	<branch repo="pypi.python.org"
@@ -896,6 +902,7 @@
       <dep package="python-cython"/>
       <dep package="python-numpy"/>
       <dep package="python-websockify"/>
+      <dep package="python-websocket-client"/>
       <dep package="python-twisted"/>
       <dep package="python-nose"/>
       <dep package="python-lz4"/>
