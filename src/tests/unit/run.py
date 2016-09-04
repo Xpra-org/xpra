@@ -38,13 +38,14 @@ def main():
         paths = os.listdir(d)
         for path in paths:
             p = os.path.join(d, path)
+            v = 0
             if os.path.isfile(p) and p.endswith("test.py"):
                 v = run_file(p)
-                if v!=0:
-                    return v
             elif os.path.isdir(p):
                 fp = os.path.join(d, p)
-                return add_recursive(fp)
+                v = add_recursive(fp)
+            if v !=0:
+                return v
         return 0
     print("running all the tests in %s" % p)
     return add_recursive(p)
