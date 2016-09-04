@@ -939,12 +939,17 @@ class ServerCore(object):
                 if proto.authenticator:
                     challenge = proto.authenticator.get_challenge()
                     if challenge is None:
-                        auth_failed("invalid state, unexpected challenge response")
-                        return False
-                    authlog("challenge: %s", challenge)
-                    salt, digest = challenge
-                    authlog.info("Authentication required by %s authenticator module", proto.authenticator)
-                    authlog.info(" sending challenge for '%s' using %s digest", username, digest)
+                        if proto.authenticator.requires_challenge():
+                            auth_failed("invalid state, unexpected challenge response")
+                            return False
+                        authlog.warn("Warning: authentication module %s does not require any credentials")
+                        authlog.warn(" but the client %s supplied them", proto)
+                        salt, digest = get_salt(), "hmac"
+                    else:
+                        authlog("challenge: %s", challenge)
+                        salt, digest = challenge
+                        authlog.info("Authentication required by %s authenticator module", proto.authenticator)
+                        authlog.info(" sending challenge for '%s' using %s digest", username, digest)
                     if digest not in self.digest_modes:
                         auth_failed("cannot proceed without %s digest support" % digest)
                         return False
