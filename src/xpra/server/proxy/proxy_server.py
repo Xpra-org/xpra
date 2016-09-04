@@ -223,7 +223,7 @@ class ProxyServer(ServerCore):
             log("do_start_proxy()")
             message_queue = MQueue()
             try:
-                ioe = client_proto.wait_for_io_threads_exit(0.5+self._socket_timeout)
+                ioe = client_proto.wait_for_io_threads_exit(5+self._socket_timeout)
                 if not ioe:
                     log.error("Error: some network IO threads have failed to terminate")
                     return
