@@ -672,12 +672,15 @@ class ServerCore(object):
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
-            sock.setblocking(1)
+            #set the websocket to non-blocking because:
+            # * win32 servers don't seem to honour our request to use blocking sockets anyway
+            #   (this should not be needed on any other platform,
+            #   maybe this should go in websockify somewhere instead)
+            # * the proxy server needs this to steal the connection?
+            sock.setblocking(False)
+            sock.settimeout(1.0)
             if sys.platform.startswith("win"):
                 from xpra.net.bytestreams import untilConcludes
-                #workaround for win32 servers (this should not be needed on any other platform)
-                #which don't seem to honour our request to use blocking sockets
-                #maybe this should go in websockify somewhere?
                 saved_recv = sock.recv
                 saved_send = sock.send
                 def recv(*args):
@@ -881,7 +884,7 @@ class ServerCore(object):
         #authenticator:
         username = c.strget("username")
         if proto.authenticator is None and proto.auth_class:
-            authlog("creating authenticator %s", proto.auth_class)
+            authlog("creating authenticator %s with username=%s", proto.auth_class, username)
             try:
                 auth, aclass, options = proto.auth_class
                 ainstance = aclass(username, **options)
