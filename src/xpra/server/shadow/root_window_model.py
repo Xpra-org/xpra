@@ -117,8 +117,16 @@ class RootWindowModel(object):
                 log("failed to return window icon")
                 return None
         else:
-            raise Exception("invalid property: %s" % prop)
+            raise ValueError("invalid property: %s" % prop)
         return None
+
+    def get(self, name, default_value=None):
+        try:
+            return self.get_property(name)
+        except ValueError as e:
+            log("get(%s, %s) %s on %s", name, default_value, e, self)
+            return default_value
+
 
     def connect(self, *args):
         log.warn("ignoring signal connect request: %s", args)
