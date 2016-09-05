@@ -13,7 +13,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, username, **kwargs):
         SysAuthenticator.__init__(self, username, **kwargs)
         self.salt = None
-        self.username = get_username()
+        self.username = username or get_username()
 
     def requires_challenge(self):
         return False
