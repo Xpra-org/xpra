@@ -11,9 +11,8 @@ assert init and log #tests will disable logging from here
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        SysAuthenticator.__init__(self, username, **kwargs)
+        SysAuthenticator.__init__(self, username or get_username(), **kwargs)
         self.salt = None
-        self.username = username or get_username()
 
     def requires_challenge(self):
         return False
