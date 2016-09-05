@@ -1383,13 +1383,14 @@ def parse_display_name(error_cb, opts, display_name):
         ws_proto, host = display_name.split(separator, 1)
         if host.find("?")>=0:
             host, _ = host.split("?", 1)
-        iport = 0
+        port = 0
         if host.find(":")>=0:
-            host, port = host.split(":", 1)
-            if port.find("/")>=0:
-                port, extra = port.split("/", 1)
-                host += extra
-            iport = int(port)
+            if host.find("/")>=0:
+                host, extra = host.split("/", 1)
+            else:
+                extra = ""
+            username, password, host, port = parse_host_string(host)
+            host += extra
             #TODO: parse attrs after "?"
         desc.update({
                 "type"          : ws_proto,     #"ws" or "wss"
@@ -1397,8 +1398,8 @@ def parse_display_name(error_cb, opts, display_name):
                 "display"       : display_name,
                 "host"          : host,
                 })
-        if iport>0:
-            desc["port"] = iport
+        if port>0:
+            desc["port"] = port
         return desc
     elif sys.platform.startswith("win") or display_name.startswith("named-pipe:"):
         pipe_name = display_name
