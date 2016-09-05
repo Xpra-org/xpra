@@ -1496,11 +1496,11 @@ def setsid():
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     from xpra.net.bytestreams import TCP_NODELAY, SOCKET_TIMEOUT, VSOCK_TIMEOUT
+    from xpra.net import ConnectionClosedException
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None
     if dtype == "ssh":
-        from xpra.net import ConnectionClosedException
         sshpass_command = None
         try:
             cmd = display_desc["full_ssh"]
@@ -1687,10 +1687,16 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             def __init__(self, ws, target, socktype):
                 Connection.__init__(self, target, socktype)
                 self._socket = ws
-        
+
             def peek(self, n):
                 return None
         
+            def untilConcludes(self, *args):
+                try:
+                    return Connection.untilConcludes(self, *args)
+                except websocket.WebSocketTimeoutException as e:
+                    raise ConnectionClosedException(e)
+
             def read(self, n):
                 return self._read(self._socket.recv)
         
@@ -1714,6 +1720,14 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             def get_info(self):
                 d = Connection.get_info(self)
                 d["protocol-type"] = "websocket"
+                ws = self._socket
+                if ws:
+                    d.update({
+                              "sub-protocol"    : ws.getsubprotocol(),
+                              "fileno"          : ws.fileno(),
+                              "status"          : ws.getstatus(),
+                              "connected"       : ws.connected,
+                              })
                 return d
         return WebSocketClientConnection(ws, "websocket", host)
 
