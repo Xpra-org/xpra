@@ -290,14 +290,17 @@ class SocketConnection(Connection):
         return self._write(self._socket.send, buf)
 
     def close(self):
+        s = self._socket
         try:
             i = self.get_socket_info()
         except:
-            i = self._socket
+            i = s
         log("%s.close() for socket=%s", self, i)
         Connection.close(self)
-        self._socket.settimeout(0)
-        self._socket.close()
+        s.settimeout(0)
+        #this is more proper but would break the proxy server:
+        #s.shutdown(socket.SHUT_RDWR)
+        s.close()
         log("%s.close() done", self)
 
     def __repr__(self):
