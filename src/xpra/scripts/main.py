@@ -1724,7 +1724,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 ws = self._socket
                 if ws:
                     d.update({
-                              "sub-protocol"    : ws.getsubprotocol(),
+                              "sub-protocol"    : ws.getsubprotocol() or "",
+                              "headers"         : ws.getheaders() or {},
                               "fileno"          : ws.fileno(),
                               "status"          : ws.getstatus(),
                               "connected"       : ws.connected,
