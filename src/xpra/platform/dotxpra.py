@@ -42,6 +42,9 @@ class DotXpra(object):
         self._sockdir = os.path.expanduser(sockdir)
         self._sockdirs = [osexpand(x) for x in sockdirs]
 
+    def __repr__(self):
+        return "DotXpra(%s, %s)" % (self._sockdir, self._sockdirs)
+
     def mksockdir(self):
         if self._sockdir and not os.path.exists(self._sockdir):
             os.mkdir(self._sockdir, 0o700)
