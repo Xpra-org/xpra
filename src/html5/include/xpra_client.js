@@ -27,7 +27,7 @@ function XpraClient(container) {
 	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
-	this.username = "html5user";
+	this.username = "";
 	this.disconnect_reason = null;
 	// encryption
 	this.encryption = false;
