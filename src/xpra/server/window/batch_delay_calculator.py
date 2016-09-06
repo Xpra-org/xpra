@@ -217,23 +217,26 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in list(statistics.encoding_stats) if pixels>=4096]
     if len(es)>=2:
         #use the recent vs average compression ratio
-        #(add 10 to smooth things out a bit, so very low compression ratios don't skew things)
+        #(add value to smooth things out a bit, so very low compression ratios don't skew things)
         ascore, rscore = calculate_timesize_weighted_average_score(es)
         bump = 0
         if ascore>rscore:
             #raise the quality
             #only if there is no backlog:
             if packets_backlog==0:
-                bump = logp((float(10+ascore)/(10+rscore))-1.0)
+                smooth = 150
+                bump = logp((float(smooth+ascore)/(smooth+rscore)))-1.0
         else:
             #lower the quality
             #more so if the compression is not doing very well:
             mult = (1000 + rscore)/2000.0           #mult should be in the range 0.5 to ~1.0
-            bump = -logp((float(10+rscore)/(10+ascore))-1.0) * mult
+            smooth = 50
+            bump = -logp((float(smooth+rscore)/(smooth+ascore))-1.0) * mult
         target += bump
         cratio_factor = ascore, rscore, int(100*bump)
     latency_q = -1
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
+        #if the latency is too high, lower quality target:
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
         target = min(target, latency_q)
     target = min(1.0, max(0.0, target))
