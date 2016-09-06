@@ -89,7 +89,6 @@ class TestVersionUtilModule(unittest.TestCase):
             last_damage_events.append(v1)
             last_damage_events.append(v2)
         r.identify_video_subregion(ww, wh, 100, last_damage_events)
-        m = region.merge_all([region.rectangle(*v1[1:]), region.rectangle(*v2[1:])])
         assert r.rectangle is None
 
         log("* checking that two video regions close to each other can be merged")
@@ -106,7 +105,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
 
     def test_cases(self):
-        from xpra.server.window.video_subregion import scoreinout, sslog
+        from xpra.server.window.video_subregion import scoreinout   #, sslog
         from xpra.server.window.region import rectangle         #@UnresolvedImport
         #sslog.enable_debug()
         r = rectangle(35, 435, 194, 132)
