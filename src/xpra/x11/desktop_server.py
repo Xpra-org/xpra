@@ -371,7 +371,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
     def set_best_screen_size(self):
         return self.root_window.get_size()
 
-    def _process_desktop_size(self, packet):
+    def _process_desktop_size(self, proto, packet):
         return
 
     def calculate_desktops(self):
