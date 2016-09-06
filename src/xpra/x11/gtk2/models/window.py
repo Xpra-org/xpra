@@ -150,7 +150,6 @@ class WindowModel(BaseWindowModel):
         #extra state attributes so we can unmanage() the window cleanly:
         self.in_save_set = False
         self.client_reparented = False
-        self.last_unmap_serial = 0
         self.kill_count = 0
 
         self.call_setup()
@@ -301,7 +300,7 @@ class WindowModel(BaseWindowModel):
         with xsync:
             if X11Window.is_mapped(self.xid):
                 self.last_unmap_serial = X11Window.Unmap(self.xid)
-                log("client window %#x unmapped, serial=%s", self.xid, self.last_unmap_serial)
+                log("client window %#x unmapped, serial=%#x", self.xid, self.last_unmap_serial)
 
     def map(self):
         with xsync:
@@ -340,8 +339,8 @@ class WindowModel(BaseWindowModel):
         # Also, if we receive a *synthetic* UnmapNotify event, that always
         # means that the client has withdrawn the window (even if it was not
         # mapped in the first place) -- ICCCM section 4.1.4.
-        log("do_xpra_unmap_event(%s) client window unmapped", event)
-        if event.send_event or event.serial>self.last_unmap_serial:
+        log("do_xpra_unmap_event(%s) client window unmapped, last_unmap_serial=%#x", event, self.last_unmap_serial)
+        if event.send_event or self.serial_after_last_unmap(event.serial):
             self.unmanage()
 
     def do_xpra_destroy_event(self, event):

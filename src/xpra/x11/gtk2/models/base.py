@@ -211,7 +211,18 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def __init__(self, client_window):
         super(BaseWindowModel, self).__init__(client_window)
+        self.last_unmap_serial = 0
         self._input_field = True            # The WM_HINTS input field
+
+    def serial_after_last_unmap(self, serial):
+        #"The serial member is set from the serial number reported in the protocol
+        # but expanded from the 16-bit least-significant bits to a full 32-bit value"
+        if serial>self.last_unmap_serial:
+            return True
+        #the serial can wrap around:
+        if self.last_unmap_serial-serial>=2**15:
+            return True
+        return False 
 
 
     def _read_initial_X11_properties(self):
@@ -654,8 +665,8 @@ class BaseWindowModel(CoreX11WindowModel):
             return True
         elif event.message_type=="WM_CHANGE_STATE":
             iconic = event.data[0]
-            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%s", ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
-            if iconic in (IconicState, NormalState) and event.serial>self.last_unmap_serial and not self.is_OR() and not self.is_tray():
+            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%#x", ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
+            if iconic in (IconicState, NormalState) and self.serial_after_last_unmap(event.serial) and not self.is_OR() and not self.is_tray():
                 self._updateprop("iconic", iconic==IconicState)
             return True
         elif event.message_type=="_NET_WM_MOVERESIZE":
