@@ -278,6 +278,10 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         return changes
 
 
+    def get_screen_number(self, wid):
+        model = self._id_to_window.get(wid)
+        return model.client_window.get_screen().get_number()
+
     def _adjust_pointer(self, wid, pointer):
         #adjust pointer position for window position in client:
         x, y = pointer

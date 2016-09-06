@@ -612,11 +612,20 @@ class X11ServerBase(GTKServerBase):
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
 
+    def get_screen_number(self, wid):
+        #maybe this should be in all cases (it is in desktop_server):
+        #model = self._id_to_window.get(wid)
+        #return model.client_window.get_screen().get_number()
+        #return gtk.gdk.display_get_default().get_default_screen().get_number()
+        #-1 uses the current screen
+        return -1
+
     def _move_pointer(self, wid, pos):
         #(this is called within an xswallow context)
-        mouselog("move_pointer(%s, %s)", wid, pos)
+        screen_no = self.get_screen_number(wid)
+        mouselog("move_pointer(%s, %s) screen_no=%i", wid, pos, screen_no)
         x, y = pos
-        X11Keyboard.xtest_fake_motion(self.screen_number, x, y)
+        X11Keyboard.xtest_fake_motion(screen_no, x, y)
 
     def do_process_mouse_common(self, proto, wid, pointer):
         if self.readonly:
