@@ -1091,7 +1091,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     if os.name=="posix" and os.getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
-    if mode in ("start", "start_desktop", "shadow"):
+    ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
+
+    if mode in ("start", "start_desktop", "shadow") and not ssh_display:
         systemd_run = parse_bool("systemd-run", options.systemd_run)
         if systemd_run is None:
             #detect:
@@ -1122,7 +1124,6 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     try:
-        ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
         if mode in ("start", "start-desktop", "shadow") and ssh_display:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
