@@ -20,7 +20,7 @@ log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
 from xpra.os_util import Queue, strtobytes
-from xpra.util import repr_ellipsized, csv
+from xpra.util import repr_ellipsized, csv, envint
 from xpra.net import ConnectionClosedException
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -40,7 +40,7 @@ if sys.version > '3':
     JOIN_TYPES = (bytes, )
 
 
-FAULT_RATE = int(os.environ.get("XPRA_PROTOCOL_FAULT_INJECTION_RATE", "0"))
+FAULT_RATE = envint("XPRA_PROTOCOL_FAULT_INJECTION_RATE")
 if FAULT_RATE>0:
     _counter = 0
     def INJECT_FAULT(p):
@@ -55,14 +55,14 @@ else:
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 
-READ_BUFFER_SIZE = int(os.environ.get("XPRA_READ_BUFFER_SIZE", 65536))
+READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 #merge header and packet if packet is smaller than:
-PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE))
-LARGE_PACKET_SIZE = int(os.environ.get("XPRA_LARGE_PACKET_SIZE", 4096))
+PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
+LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 4096)
 #inline compressed data in packet if smaller than:
-INLINE_SIZE = int(os.environ.get("XPRA_INLINE_SIZE", 32768))
-FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
-MIN_COMPRESS_SIZE = int(os.environ.get("XPRA_MIN_COMPRESS_SIZE", 378))
+INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
+FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
+MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 
 
 def get_network_caps():

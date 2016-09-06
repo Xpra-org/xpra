@@ -1,21 +1,20 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import threading
 import binascii
-import os
 
 from xpra.log import Logger
 log = Logger("proxy")
 
 from xpra.net.bytestreams import untilConcludes
-from xpra.util import repr_ellipsized
+from xpra.util import repr_ellipsized, envint
 
-SHOW_DATA = os.environ.get("XPRA_PROXY_SHOW_DATA", "0")=="1"
-PROXY_BUFFER_SIZE = int(os.environ.get("XPRA_PROXY_BUFFER_SIZE", "65536"))
+SHOW_DATA = envint("XPRA_PROXY_SHOW_DATA")
+PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
 
 
 class XpraProxy(object):

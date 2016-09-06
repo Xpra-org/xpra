@@ -9,6 +9,7 @@ from xpra.os_util import strtobytes, bytestostr
 import traceback
 import threading
 import sys
+import os
 import re
 
 
@@ -694,3 +695,9 @@ def csv(v):
         return ", ".join(str(x) for x in v)
     except:
         return str(v)
+
+def envint(name, d=0):
+    try:
+        return int(os.environ.get(name, d))
+    except:
+        return d

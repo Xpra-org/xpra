@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,6 +12,7 @@
 import os, sys
 import signal
 
+from xpra.util import envint
 from xpra.log import Logger
 log = Logger("server", "util")
 
@@ -20,8 +21,8 @@ log = Logger("server", "util")
 # or when the user requests it with the env var:
 BUGGY_PYTHON = sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
 USE_PROCESS_POLLING = os.name!="posix" or os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or BUGGY_PYTHON
-POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
-POLL_WARNING = os.environ.get("XPRA_POLL_WARNING", "1")=="1"
+POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
+POLL_WARNING = envint("XPRA_POLL_WARNING", 1)
 
 
 singleton = None

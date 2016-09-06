@@ -1,20 +1,20 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
 from xpra.gtk_common.gobject_compat import import_glib
 glib = import_glib()
-import os
 
 from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.util import envint
 from xpra.log import Logger
 log = Logger("window", "fake")
 
 
-FAKE_BACKING_DELAY = int(os.environ.get("XPRA_FAKE_BACKING_DELAY", "5"))
+FAKE_BACKING_DELAY = envint("XPRA_FAKE_BACKING_DELAY", 5)
 
 
 class FakeBacking(object):

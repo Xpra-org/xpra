@@ -1,9 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import time
 
 from xpra.log import Logger
@@ -16,12 +15,12 @@ gst = import_gst()
 MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
 from xpra.sound.gstreamer_util import gst_version       #must be done after import_gst()
 
-from xpra.util import csv
+from xpra.util import csv, envint
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 
 
-FAULT_RATE = int(os.environ.get("XPRA_SOUND_FAULT_INJECTION_RATE", "0"))
+FAULT_RATE = envint("XPRA_SOUND_FAULT_INJECTION_RATE")
 _counter = 0
 def inject_fault():
     global FAULT_RATE

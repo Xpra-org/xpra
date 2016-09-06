@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015,2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,18 +11,18 @@ from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, fo
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.util import AdHocStruct, typedict, parse_simple_dict
+from xpra.util import AdHocStruct, typedict, parse_simple_dict, envint
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")
 
-DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
+DEBUG_SOUND = envint("XPRA_SOUND_DEBUG")
 SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
-FAKE_START_FAILURE = os.environ.get("XPRA_SOUND_FAKE_START_FAILURE", "0")=="1"
-FAKE_EXIT = int(os.environ.get("XPRA_SOUND_FAKE_EXIT", "0"))
-FAKE_CRASH = int(os.environ.get("XPRA_SOUND_FAKE_CRASH", "0"))
-SOUND_START_TIMEOUT = int(os.environ.get("XPRA_SOUND_START_TIMEOUT", "3000"))
-BUNDLE_METADATA = os.environ.get("XPRA_SOUND_BUNDLE_METADATA", "1")=="1"
+FAKE_START_FAILURE = envint("XPRA_SOUND_FAKE_START_FAILURE")
+FAKE_EXIT = envint("XPRA_SOUND_FAKE_EXIT")
+FAKE_CRASH = envint("XPRA_SOUND_FAKE_CRASH")
+SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 3000)
+BUNDLE_METADATA = envint("XPRA_SOUND_BUNDLE_METADATA", 1)
 
 
 def get_sound_wrapper_env():

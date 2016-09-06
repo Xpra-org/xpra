@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -26,7 +26,7 @@ grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes
-from xpra.util import AdHocStruct, bytestostr, typedict, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
+from xpra.util import AdHocStruct, bytestostr, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS
@@ -68,9 +68,9 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
         pass
 
 
-SAVE_WINDOW_ICONS = os.environ.get("XPRA_SAVE_WINDOW_ICONS", "0")=="1"
-UNDECORATED_TRANSIENT_IS_OR = int(os.environ.get("XPRA_UNDECORATED_TRANSIENT_IS_OR", "1"))
-LAZY_SHAPE = os.environ.get("XPRA_LAZY_SHAPE", "1")=="1"
+SAVE_WINDOW_ICONS = envint("XPRA_SAVE_WINDOW_ICONS")
+UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
+LAZY_SHAPE = envint("XPRA_LAZY_SHAPE", 1)
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((

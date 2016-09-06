@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ import subprocess
 import win32print       #@UnresolvedImport
 import win32con         #@UnresolvedImport
 
-from xpra.util import csv
+from xpra.util import csv, envint
 
 
 #allows us to skip some printers we don't want to export
@@ -28,7 +28,7 @@ for k in ("LOCAL", "NAME", "SHARED", "CONNECTIONS",
         PRINTER_ENUM_NAMES[v] = k
 log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
-PRINTER_LEVEL = int(os.environ.get("XPRA_WIN32_PRINTER_LEVEL", "1"))
+PRINTER_LEVEL = envint("XPRA_WIN32_PRINTER_LEVEL", 1)
 #DEFAULT_PRINTER_FLAGS = "LOCAL"
 DEFAULT_PRINTER_FLAGS = "LOCAL,SHARED+NETWORK+CONNECTIONS"
 PRINTER_FLAGS = [x.strip() for x in os.environ.get("XPRA_WIN32_PRINTER_FLAGS", DEFAULT_PRINTER_FLAGS).split(",")]

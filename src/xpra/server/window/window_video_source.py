@@ -18,7 +18,7 @@ from xpra.server.window.motion import match_distance, consecutive_lines, calcula
 from xpra.server.window.video_subregion import VideoSubregion
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import parse_scaling_value, engs
+from xpra.util import parse_scaling_value, engs, envint
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -30,12 +30,6 @@ videolog = Logger("video")
 avsynclog = Logger("av-sync")
 scrolllog = Logger("scroll")
 
-
-def envint(name, d):
-    try:
-        return int(os.environ.get(name, d))
-    except:
-        return d
 
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 MIN_VIDEO_FPS = envint("XPRA_MIN_VIDEO_FPS", 10)

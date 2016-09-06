@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import sys
 import time
 
 from xpra.os_util import SIGNAMES, Queue
-from xpra.util import csv, AtomicInteger
+from xpra.util import csv, envint, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_gst_version, get_queue_time, \
@@ -21,14 +21,12 @@ log = Logger("sound")
 gstlog = Logger("gstreamer")
 
 APPSINK = os.environ.get("XPRA_SOURCE_APPSINK", "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false")
-JITTER = int(os.environ.get("XPRA_SOUND_SOURCE_JITTER", "0"))
+JITTER = envint("XPRA_SOUND_SOURCE_JITTER", 0)
 SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
-BUFFER_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_BUFFER_TIME", "0"))     #ie: 64
-LATENCY_TIME = int(os.environ.get("XPRA_SOUND_SOURCE_LATENCY_TIME", "0"))   #ie: 32
-
-BUNDLE_METADATA = os.environ.get("XPRA_SOUND_BUNDLE_METADATA", "1")=="1"
-
+BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    #ie: 64
+LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
+BUNDLE_METADATA = envint("XPRA_SOUND_BUNDLE_METADATA", 1)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 generation = AtomicInteger()

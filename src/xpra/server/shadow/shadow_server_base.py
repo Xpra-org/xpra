@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,9 +12,9 @@ log = Logger("shadow")
 from xpra.net.compression import Compressed
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.util import DONE
+from xpra.util import envint, DONE
 
-REFRESH_DELAY = int(os.environ.get("XPRA_SHADOW_REFRESH_DELAY", "50"))
+REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
 
 
 class ShadowServerBase(object):

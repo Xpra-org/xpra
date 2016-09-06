@@ -12,7 +12,7 @@ from xpra.sound.common import FLAC_OGG, OPUS_OGG, SPEEX_OGG, VORBIS_OGG, VORBIS_
                                 VORBIS, FLAC, MP3, OPUS, SPEEX, WAV, WAVPACK, \
                                 MPEG4, MKA, OGG
 
-from xpra.util import csv, engs, parse_simple_dict
+from xpra.util import csv, engs, parse_simple_dict, envint
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
@@ -30,7 +30,7 @@ GST_QUEUE_LEAK_DOWNSTREAM     = 2
 GST_QUEUE_LEAK_DEFAULT = GST_QUEUE_LEAK_DOWNSTREAM
 MS_TO_NS = 1000000
 
-QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_LEAK_DEFAULT))
+QUEUE_LEAK = envint("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_LEAK_DEFAULT)
 if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK_DOWNSTREAM):
     log.error("invalid leak option %s", QUEUE_LEAK)
     QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
@@ -44,10 +44,10 @@ def get_queue_time(default_value=450, prefix=""):
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 
-ALLOW_SOUND_LOOP = os.environ.get("XPRA_ALLOW_SOUND_LOOP", "0")=="1"
-GSTREAMER1 = os.environ.get("XPRA_GSTREAMER1", "1")=="1"
+ALLOW_SOUND_LOOP = envint("XPRA_ALLOW_SOUND_LOOP")
+GSTREAMER1 = envint("XPRA_GSTREAMER1", 1)
 PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
-USE_DEFAULT_DEVICE = os.environ.get("XPRA_USE_DEFAULT_DEVICE", "1")=="1"
+USE_DEFAULT_DEVICE = envint("XPRA_USE_DEFAULT_DEVICE", 1)
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 

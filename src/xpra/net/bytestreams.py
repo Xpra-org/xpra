@@ -14,11 +14,12 @@ import types
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net import ConnectionClosedException
+from xpra.util import envint
 
 
-TCP_NODELAY = int(os.environ.get("XPRA_TCP_NODELAY", "1"))
-VSOCK_TIMEOUT = int(os.environ.get("XPRA_VSOCK_TIMEOUT", 5))
-SOCKET_TIMEOUT = int(os.environ.get("XPRA_SOCKET_TIMEOUT", 10))
+TCP_NODELAY = envint("XPRA_TCP_NODELAY", 1)
+VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
+SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 10)
 
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from collections import deque
 
 from pycuda import driver
 
-from xpra.util import AtomicInteger, engs, csv, pver
+from xpra.util import AtomicInteger, engs, csv, pver, envint
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -34,9 +34,9 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30
 
-cdef int YUV444_THRESHOLD = int(os.environ.get("XPRA_NVENC_YUV444_THRESHOLD", "85"))
-cdef int LOSSLESS_THRESHOLD = int(os.environ.get("XPRA_NVENC_LOSSLESS_THRESHOLD", "100"))
-cdef int DEBUG_API = int(os.environ.get("XPRA_NVENC_DEBUG_API", "0")=="1")
+cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
+cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
+cdef int DEBUG_API = envint("XPRA_NVENC_DEBUG_API")
 
 cdef int QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 

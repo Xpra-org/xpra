@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -24,7 +24,7 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES, strtobytes
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, \
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
 from xpra.make_thread import start_thread
@@ -41,9 +41,9 @@ except:
     pass
 
 
-PROXY_QUEUE_SIZE = int(os.environ.get("XPRA_PROXY_QUEUE_SIZE", "10"))
+PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
 #for testing only: passthrough as RGB:
-PASSTHROUGH = os.environ.get("XPRA_PROXY_PASSTHROUGH", "0")=="1"
+PASSTHROUGH = envint("XPRA_PROXY_PASSTHROUGH")
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
 

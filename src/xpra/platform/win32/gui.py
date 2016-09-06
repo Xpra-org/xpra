@@ -1,13 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
 import sys
-import os
 import types
 from xpra.log import Logger
 log = Logger("win32")
@@ -19,7 +18,7 @@ grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
-from xpra.util import AdHocStruct, csv
+from xpra.util import AdHocStruct, csv, envint
 import ctypes
 from ctypes import windll, byref
 
@@ -27,20 +26,20 @@ import win32con     #@UnresolvedImport
 import win32api     #@UnresolvedImport
 import win32gui     #@UnresolvedImport
 
-WINDOW_HOOKS = os.environ.get("XPRA_WIN32_WINDOW_HOOKS", "1")=="1"
-GROUP_LEADER = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GROUP_LEADER", "1")=="1"
-UNDECORATED_STYLE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_UNDECORATED_STYLE", "1")=="1"
+WINDOW_HOOKS = envint("XPRA_WIN32_WINDOW_HOOKS", 1)
+GROUP_LEADER = WINDOW_HOOKS and envint("XPRA_WIN32_GROUP_LEADER", 1)
+UNDECORATED_STYLE = WINDOW_HOOKS and envint("XPRA_WIN32_UNDECORATED_STYLE", 1)
 #GTK3 is fixed, so we don't need this hook:
 DEFAULT_MAX_SIZE_HINT = sys.version_info[0]<3
-MAX_SIZE_HINT = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_MAX_SIZE_HINT", str(int(DEFAULT_MAX_SIZE_HINT)))=="1"
-GEOMETRY = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_GEOMETRY", "1")=="1"
-LANGCHANGE = WINDOW_HOOKS and os.environ.get("XPRA_WIN32_LANGCHANGE", "1")=="1"
+MAX_SIZE_HINT = WINDOW_HOOKS and envint("XPRA_WIN32_MAX_SIZE_HINT", DEFAULT_MAX_SIZE_HINT)
+GEOMETRY = WINDOW_HOOKS and envint("XPRA_WIN32_GEOMETRY", 1)
+LANGCHANGE = WINDOW_HOOKS and envint("XPRA_WIN32_LANGCHANGE", 1)
 
-DPI_AWARE = os.environ.get("XPRA_DPI_AWARE", "1")=="1"
-DPI_AWARENESS = int(os.environ.get("XPRA_DPI_AWARENESS", "1"))
-FORWARD_WINDOWS_KEY = os.environ.get("XPRA_FORWARD_WINDOWS_KEY", "1")=="1"
-WHEEL = os.environ.get("XPRA_WHEEL", "1")=="1"
-WHEEL_DELTA = int(os.environ.get("XPRA_WHEEL_DELTA", "120"))
+DPI_AWARE = envint("XPRA_DPI_AWARE", 1)
+DPI_AWARENESS = envint("XPRA_DPI_AWARENESS", 1)
+FORWARD_WINDOWS_KEY = envint("XPRA_FORWARD_WINDOWS_KEY", 1)
+WHEEL = envint("XPRA_WHEEL", 1)
+WHEEL_DELTA = envint("XPRA_WHEEL_DELTA", 120)
 assert WHEEL_DELTA>0
 
 

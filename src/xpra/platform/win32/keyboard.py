@@ -1,10 +1,8 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-import os
 
 import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
@@ -13,12 +11,12 @@ import win32gui         #@UnresolvedImport
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.util import csv
+from xpra.util import csv, envint
 from xpra.log import Logger
 log = Logger("keyboard")
 
-EMULATE_ALTGR = os.environ.get("XPRA_EMULATE_ALTGR", "1")=="1"
-EMULATE_ALTGR_CONTROL_KEY_DELAY = int(os.environ.get("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", "50"))
+EMULATE_ALTGR = envint("XPRA_EMULATE_ALTGR", 1)
+EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 if EMULATE_ALTGR:
     #needed for altgr emulation timeouts:
     from xpra.gtk_common.gobject_compat import import_glib

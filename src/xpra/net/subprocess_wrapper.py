@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015, 2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import subprocess
 import binascii
 
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.util import repr_ellipsized
+from xpra.util import repr_ellipsized, envint
 
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net import ConnectionClosedException
@@ -30,15 +30,15 @@ log = Logger("util")
 #using the protocol for encoding the data
 
 
-DEBUG_WRAPPER = os.environ.get("XPRA_WRAPPER_DEBUG", "0")=="1"
+DEBUG_WRAPPER = envint("XPRA_WRAPPER_DEBUG")
 #to make it possible to inspect files (more human readable):
-HEXLIFY_PACKETS = os.environ.get("XPRA_HEXLIFY_PACKETS", "0")=="1"
+HEXLIFY_PACKETS = envint("XPRA_HEXLIFY_PACKETS")
 #avoids showing a new console window on win32:
-WIN32_SHOWWINDOW = os.environ.get("XPRA_WIN32_SHOWWINDOW", "0")=="1"
+WIN32_SHOWWINDOW = envint("XPRA_WIN32_SHOWWINDOW")
 #this used to cause problems with py3k / gi bindings?
-HANDLE_SIGINT = os.environ.get("XPRA_WRAPPER_SIGING", "1")=="1"
+HANDLE_SIGINT = envint("XPRA_WRAPPER_SIGINT", 1)
 
-FAULT_RATE = int(os.environ.get("XPRA_WRAPPER_FAULT_INJECTION_RATE", "0"))
+FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 if FAULT_RATE>0:
     _counter = 0
     def INJECT_FAULT(p):

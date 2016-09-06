@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os, sys
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.os_util import bytestostr
+from xpra.util import envint
 
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
@@ -21,7 +22,7 @@ except:
         cpus = multiprocessing.cpu_count()
     except:
         pass
-cdef int VPX_THREADS = int(os.environ.get("XPRA_VPX_THREADS", max(1, cpus-1)))
+cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)

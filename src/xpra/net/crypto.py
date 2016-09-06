@@ -5,16 +5,17 @@
 # later version. See the file COPYING for details.
 
 import os
+from xpra.util import envint
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
-ENABLE_CRYPTO = os.environ.get("XPRA_ENABLE_CRYPTO", "1")=="1"
-ENCRYPT_FIRST_PACKET = os.environ.get("XPRA_ENCRYPT_FIRST_PACKET", "0")=="1"
+ENABLE_CRYPTO = envint("XPRA_ENABLE_CRYPTO", 1)
+ENCRYPT_FIRST_PACKET = envint("XPRA_ENCRYPT_FIRST_PACKET")
 
 DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
-DEFAULT_ITERATIONS = int(os.environ.get("XPRA_CRYPTO_DEFAULT_ITERATIONS", "1000"))
-DEFAULT_BLOCKSIZE = int(os.environ.get("XPRA_CRYPTO_BLOCKSIZE", "32"))      #fixme: can we derive this?
+DEFAULT_ITERATIONS = envint("XPRA_CRYPTO_DEFAULT_ITERATIONS", 1000)
+DEFAULT_BLOCKSIZE = envint("XPRA_CRYPTO_BLOCKSIZE", 32)      #fixme: can we derive this?
 
 #other option "PKCS#7", "legacy"
 PADDING_LEGACY = "legacy"

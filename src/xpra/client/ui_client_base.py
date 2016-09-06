@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -57,7 +57,7 @@ from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, iround, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
+from xpra.util import nonl, std, iround, envint, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -71,20 +71,20 @@ except:
         return codecs
 
 
-FAKE_BROKEN_CONNECTION = int(os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0"))
-PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
+FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
+PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 MONITOR_CHANGE_REINIT = os.environ.get("XPRA_MONITOR_CHANGE_REINIT")
 
-AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
-MOUSE_ECHO = os.environ.get("XPRA_MOUSE_ECHO", "0")=="1"
+AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
+MOUSE_ECHO = envint("XPRA_MOUSE_ECHO")
 
-PAINT_FAULT_RATE = int(os.environ.get("XPRA_PAINT_FAULT_INJECTION_RATE", "0"))
-PAINT_FAULT_TELL = os.environ.get("XPRA_PAINT_FAULT_INJECTION_TELL", "1")=="1"
+PAINT_FAULT_RATE = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
+PAINT_FAULT_TELL = envint("XPRA_PAINT_FAULT_INJECTION_TELL", 1)
 
-B_FRAMES = os.environ.get("XPRA_B_FRAMES", "1")=="1"
-PAINT_FLUSH = os.environ.get("XPRA_PAINT_FLUSH", "1")=="1"
+B_FRAMES = envint("XPRA_B_FRAMES", 1)
+PAINT_FLUSH = envint("XPRA_PAINT_FLUSH", 1)
 
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
@@ -94,15 +94,15 @@ MIN_SCALING = float(os.environ.get("XPRA_MIN_SCALING", "0.1"))
 MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "8"))
 SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
-MAX_SOFT_EXPIRED = int(os.environ.get("XPRA_MAX_SOFT_EXPIRED", "5"))
+MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
 
-RPC_TIMEOUT = int(os.environ.get("XPRA_RPC_TIMEOUT", "5000"))
+RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
-WEBCAM_ALLOW_VIRTUAL = os.environ.get("XPRA_WEBCAM_ALLOW_VIRTUAL", "0")=="1"
-WEBCAM_TARGET_FPS = max(1, min(50, int(os.environ.get("XPRA_WEBCAM_FPS", "20"))))
+WEBCAM_ALLOW_VIRTUAL = envint("XPRA_WEBCAM_ALLOW_VIRTUAL")
+WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")

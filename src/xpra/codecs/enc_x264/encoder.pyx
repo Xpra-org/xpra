@@ -8,19 +8,21 @@ import os
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
-THREADS = int(os.environ.get("XPRA_X264_THREADS", "0"))
-SLICED_THREADS = os.environ.get("XPRA_X264_SLICED_THREADS", "1")=="1"
-LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
-PROFILE = os.environ.get("XPRA_X264_PROFILE")
-TUNE = os.environ.get("XPRA_X264_TUNE")
-LOG_NALS = os.environ.get("XPRA_X264_LOG_NALS", "0")=="1"
-#USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
-from xpra.util import nonl, AtomicInteger
+from xpra.util import nonl, envint, AtomicInteger
 from xpra.os_util import bytestostr
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
+
+
+THREADS = envint("XPRA_X264_THREADS")
+SLICED_THREADS = envint("XPRA_X264_SLICED_THREADS", 1)
+LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
+PROFILE = os.environ.get("XPRA_X264_PROFILE")
+TUNE = os.environ.get("XPRA_X264_TUNE")
+LOG_NALS = envint("XPRA_X264_LOG_NALS")
+#USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
 cdef extern from "string.h":

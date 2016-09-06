@@ -22,15 +22,15 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv
+from xpra.util import csv, envint
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
-NO_ROOT_WARNING = int(os.environ.get("XPRA_NO_ROOT_WARNING", "0"))
-USE_SSL_CONTEXT = os.environ.get("XPRA_USE_SSL_CONTEXT", "1")=="1"
+NO_ROOT_WARNING = envint("XPRA_NO_ROOT_WARNING")
+USE_SSL_CONTEXT = envint("XPRA_USE_SSL_CONTEXT", 1)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 

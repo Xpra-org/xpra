@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -43,7 +43,8 @@ from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
 from xpra.server.background_worker import add_work_item
-from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, AtomicInteger, CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
+from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, AtomicInteger, \
+                    CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 def no_legacy_names(v):
     return v
 try:
@@ -53,18 +54,15 @@ except:
     new_to_legacy = no_legacy_names
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
-MAX_CLIPBOARD_PER_SECOND = int(os.environ.get("XPRA_CLIPBOARD_LIMIT", "20"))
-ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
-try:
-    GRACE_PERCENT = int(os.environ.get("XPRA_GRACE_PERCENT", "90"))
-except:
-    GRACE_PERCENT = 90
-AV_SYNC_DELTA = int(os.environ.get("XPRA_AV_SYNC_DELTA", "0"))
+MAX_CLIPBOARD_PER_SECOND = envint("XPRA_CLIPBOARD_LIMIT", 20)
+ADD_LOCAL_PRINTERS = envint("XPRA_ADD_LOCAL_PRINTERS")
+GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
+AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
-MIN_PIXEL_RECALCULATE = int(os.environ.get("XPRA_MIN_PIXEL_RECALCULATE", 2000))
+MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
 counter = AtomicInteger()
 

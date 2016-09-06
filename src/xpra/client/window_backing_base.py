@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import hashlib
 from xpra.log import Logger
 log = Logger("paint")
@@ -13,16 +12,16 @@ deltalog = Logger("delta")
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
-from xpra.util import typedict, csv
+from xpra.util import typedict, csv, envint
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr, _buffer
 from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
 
-DELTA_BUCKETS = int(os.environ.get("XPRA_DELTA_BUCKETS", "5"))
-INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
-WEBP_PILLOW = os.environ.get("XPRA_WEBP_PILLOW", "0")=="1"
+DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
+INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH")
+WEBP_PILLOW = envint("XPRA_WEBP_PILLOW")
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }

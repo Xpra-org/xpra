@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,16 +15,16 @@ import getpass
 import urllib
 from threading import Lock
 
-from xpra.util import engs
+from xpra.util import engs, envint
 from xpra.log import Logger
 log = Logger("printing")
 
 
-SIMULATE_PRINT_FAILURE = os.environ.get("XPRA_SIMULATE_PRINT_FAILURE", "0")=="1"
+SIMULATE_PRINT_FAILURE = envint("XPRA_SIMULATE_PRINT_FAILURE")
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
-RAW_MODE = os.environ.get("XPRA_PRINTER_RAW", "0")=="1"
-GENERIC = os.environ.get("XPRA_PRINTERS_GENERIC", "1")=="1"
+RAW_MODE = envint("XPRA_PRINTER_RAW")
+GENERIC = envint("XPRA_PRINTERS_GENERIC", 1)
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 #the mimetype to use for clients that do not specify one
 #(older clients just assumed postscript)
@@ -37,16 +37,16 @@ FORWARDER_BACKEND = "xpraforwarder"
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Cups-PDF").split(",")
 
 #PRINTER_PREFIX = "Xpra:"
-ADD_LOCAL_PRINTERS = os.environ.get("XPRA_ADD_LOCAL_PRINTERS", "0")=="1"
+ADD_LOCAL_PRINTERS = envint("XPRA_ADD_LOCAL_PRINTERS")
 PRINTER_PREFIX = ""
 if ADD_LOCAL_PRINTERS:
     #this prevents problems where we end up deleting local printers!
     PRINTER_PREFIX = "Xpra:"
 PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 
-DEFAULT_CUPS_DBUS = str(int(not sys.platform.startswith("darwin")))
-CUPS_DBUS = os.environ.get("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)=="1"
-POLLING_DELAY = int(os.environ.get("XPRA_CUPS_POLLING_DELAY", "60"))
+DEFAULT_CUPS_DBUS = int(not sys.platform.startswith("darwin"))
+CUPS_DBUS = envint("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)
+POLLING_DELAY = envint("XPRA_CUPS_POLLING_DELAY", 60)
 log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
 log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
 log("pycups settings: ALLOW=%s", ALLOW)

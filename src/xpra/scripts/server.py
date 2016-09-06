@@ -21,13 +21,14 @@ import traceback
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, parse_bool
 from xpra.os_util import SIGNAMES
+from xpra.util import envint
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
 # or when the user requests it with the env var:
-USE_PROCESS_POLLING = os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
-WAIT_FOR_UNKNOWN = int(os.environ.get("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", "5"))
+USE_PROCESS_POLLING = envint("XPRA_USE_PROCESS_POLLING") or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
+WAIT_FOR_UNKNOWN = envint("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", 5)
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "1920x1080").replace(",", "x").split("x", 1))
 

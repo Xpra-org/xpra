@@ -16,7 +16,7 @@ from xpra.gtk_common.gobject_compat import import_glib
 from xpra.net.compression import decompress_by_name
 
 from xpra.scripts.config import InitExit
-from xpra.util import csv
+from xpra.util import csv, envint
 from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger("sound")
@@ -41,12 +41,12 @@ SINK_DEFAULT_ATTRIBUTES = {0 : {
 QUEUE_SILENT = os.environ.get("XPRA_QUEUE_SILENT", "0")=="1"
 QUEUE_TIME = get_queue_time(450)
 
-UNMUTE_DELAY = int(os.environ.get("XPRA_UNMUTE_DELAY", "1000"))
-GRACE_PERIOD = int(os.environ.get("XPRA_SOUND_GRACE_PERIOD", "2000"))
+UNMUTE_DELAY = envint("XPRA_UNMUTE_DELAY", 1000)
+GRACE_PERIOD = envint("XPRA_SOUND_GRACE_PERIOD", 2000)
 #percentage: from 0 for no margin, to 200% which triples the buffer target
-MARGIN = max(0, min(200, int(os.environ.get("XPRA_SOUND_MARGIN", "50"))))
+MARGIN = max(0, min(200, envint("XPRA_SOUND_MARGIN", 50)))
 #how high we push up the min-level to prevent underruns:
-UNDERRUN_MIN_LEVEL = max(0, int(os.environ.get("XPRA_SOUND_UNDERRUN_MIN_LEVEL", "50")))
+UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 50))
 
 
 GST_FORMAT_BYTES = 2

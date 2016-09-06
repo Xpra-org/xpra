@@ -7,13 +7,15 @@
 import os
 import time, math
 
+from xpra.util import envint
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
-OPENGL_DEBUG = os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1"
-OPENGL_PAINT_BOX = int(os.environ.get("XPRA_OPENGL_PAINT_BOX", "0"))
-SCROLL_ENCODING = os.environ.get("XPRA_SCROLL_ENCODING", "1")=="1"
-PAINT_FLUSH = os.environ.get("XPRA_PAINT_FLUSH", "1")=="1"
+
+OPENGL_DEBUG = envint("XPRA_OPENGL_DEBUG")
+OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX")
+SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 1)
+PAINT_FLUSH = envint("XPRA_PAINT_FLUSH", 1)
 
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 

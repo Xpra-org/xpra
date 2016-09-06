@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,14 +11,13 @@ glib = import_glib()
 from xpra.log import Logger
 log = Logger("gobject", "client")
 
-import os
 import sys
-from xpra.util import nonl, sorted_nicely, print_nested_dict, DONE
+from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, DONE
 from xpra.os_util import bytestostr
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_TIMEOUT, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
-FLATTEN_INFO = int(os.environ.get("XPRA_FLATTEN_INFO", "1"))
+FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):

@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,6 +12,7 @@ import hashlib
 import threading
 from collections import deque
 
+from xpra.util import envint
 from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
@@ -24,31 +25,31 @@ avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 
 
-AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 100))
-AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 100))
-AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 50))
+AUTO_REFRESH_THRESHOLD = envint("XPRA_AUTO_REFRESH_THRESHOLD", 100)
+AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
+AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
-MAX_PIXELS_PREFER_RGB = int(os.environ.get("XPRA_MAX_PIXELS_PREFER_RGB", 4096))
+MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 
-DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
-MIN_DELTA_SIZE = int(os.environ.get("XPRA_MIN_DELTA_SIZE", "1024"))
-MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "32768"))
-MAX_DELTA_HITS = int(os.environ.get("XPRA_MAX_DELTA_HITS", "20"))
-MIN_WINDOW_REGION_SIZE = int(os.environ.get("XPRA_MIN_WINDOW_REGION_SIZE", "1024"))
-MAX_SOFT_EXPIRED = int(os.environ.get("XPRA_MAX_SOFT_EXPIRED", "5"))
+DELTA = envint("XPRA_DELTA", 1)
+MIN_DELTA_SIZE = envint("XPRA_MIN_DELTA_SIZE", 1024)
+MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
+MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
+MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
+MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 
-HAS_ALPHA = os.environ.get("XPRA_ALPHA", "1")=="1"
-FORCE_BATCH = os.environ.get("XPRA_FORCE_BATCH", "0")=="1"
-STRICT_MODE = os.environ.get("XPRA_ENCODING_STRICT_MODE", "0")=="1"
-MERGE_REGIONS = os.environ.get("XPRA_MERGE_REGIONS", "1")=="1"
-INTEGRITY_HASH = os.environ.get("XPRA_INTEGRITY_HASH", "0")=="1"
-MAX_SYNC_BUFFER_SIZE = int(os.environ.get("XPRA_MAX_SYNC_BUFFER_SIZE", "256"))*1024*1024        #256MB
-AV_SYNC_RATE_CHANGE = int(os.environ.get("XPRA_AV_SYNC_RATE_CHANGE", "20"))
-AV_SYNC_TIME_CHANGE = int(os.environ.get("XPRA_AV_SYNC_TIME_CHANGE", "500"))
-PAINT_FLUSH = os.environ.get("XPRA_PAINT_FLUSH", "1")=="1"
+HAS_ALPHA = envint("XPRA_ALPHA", 1)
+FORCE_BATCH = envint("XPRA_FORCE_BATCH")
+STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE")
+MERGE_REGIONS = envint("XPRA_MERGE_REGIONS", 1)
+INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH")
+MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
+AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
+AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
+PAINT_FLUSH = envint("XPRA_PAINT_FLUSH", 1)
 
-LOG_THEME_DEFAULT_ICONS = os.environ.get("XPRA_LOG_THEME_DEFAULT_ICONS", "0")=="1"
-SAVE_WINDOW_ICONS = os.environ.get("XPRA_SAVE_WINDOW_ICONS", "0")=="1"
+LOG_THEME_DEFAULT_ICONS = envint("XPRA_LOG_THEME_DEFAULT_ICONS")
+SAVE_WINDOW_ICONS = envint("XPRA_SAVE_WINDOW_ICONS")
 
 
 from xpra.os_util import StringIOClass, memoryview_to_bytes

@@ -1,23 +1,23 @@
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import time
 import threading
 from threading import Event
 from xpra.make_thread import start_thread
 from xpra.log import Logger
+from xpra.util import envint
 log = Logger("util")
 
 from xpra.platform.features import UI_THREAD_POLLING
-FAKE_UI_LOCKUPS = int(os.environ.get("XPRA_FAKE_UI_LOCKUPS", "0"))
+FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 if FAKE_UI_LOCKUPS>0 and UI_THREAD_POLLING<=0:
     #even if the platform normally disables UI thread polling,
     #we need it for testing:
     UI_THREAD_POLLING = 1000
-POLLING = int(os.environ.get("XPRA_UI_THREAD_POLLING", UI_THREAD_POLLING))
+POLLING = envint("XPRA_UI_THREAD_POLLING", UI_THREAD_POLLING)
 
 
 class UI_thread_watcher(object):
