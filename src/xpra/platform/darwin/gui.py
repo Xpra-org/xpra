@@ -372,11 +372,57 @@ def register_URL_handler(handler):
     import struct
     fourCharToInt = lambda code: struct.unpack('>l', code)[0]
 
+    urlh = GURLHandler.alloc()
+    urlh.init()
+    urlh.retain()
     manager = NSAppleEventManager.sharedAppleEventManager()
     manager.setEventHandler_andSelector_forEventClass_andEventID_(
-        GURLHandler.alloc(), 'handleEvent:withReplyEvent:',
+        urlh, 'handleEvent:withReplyEvent:',
         fourCharToInt('GURL'), fourCharToInt('GURL')
         )
+
+
+from AppKit import NSApplication, NSWorkspace, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+import objc         #@UnresolvedImport
+
+class Delegate(NSObject):
+    def applicationDidFinishLaunching_(self, notification):
+        log("applicationDidFinishLaunching_(%s)", notification)
+        if SLEEP_HANDLER:
+            self.register_sleep_handlers()
+
+    def register_sleep_handlers(self):
+        log("register_sleep_handlers()")
+        workspace          = NSWorkspace.sharedWorkspace()
+        notificationCenter = workspace.notificationCenter()
+        notificationCenter.addObserver_selector_name_object_(self, self.receiveSleepNotification_,
+                                                             NSWorkspaceWillSleepNotification, None)
+        notificationCenter.addObserver_selector_name_object_(self, self.receiveWakeNotification_,
+                                                             NSWorkspaceDidWakeNotification, None)
+
+    @objc.signature('B@:#B')
+    def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
+        log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
+        self.cb("deiconify_callback")
+        return True
+
+    def receiveSleepNotification_(self, aNotification):
+        log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
+        self.cb("sleep_callback")
+
+    def receiveWakeNotification_(self, aNotification):
+        log("receiveWakeNotification_(%s)", aNotification)
+        self.cb("wake_callback")
+
+    def cb(self, name):
+        #find the named callback and call it
+        callback = getattr(self, name, None)
+        log("cb(%s)=%s", name, callback)
+        if callback:
+            try:
+                callback()
+            except:
+                log.error("Error in %s callback %s", name, callback, exc_info=True)
 
 
 class ClientExtras(object):
@@ -407,48 +453,7 @@ class ClientExtras(object):
             return
         self.shared_app = None
         self.delegate = None
-        from AppKit import NSApplication, NSWorkspace, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
-        import objc         #@UnresolvedImport
         self.shared_app = NSApplication.sharedApplication()
-
-        class Delegate(NSObject):
-            def applicationDidFinishLaunching_(self, notification):
-                log("applicationDidFinishLaunching_(%s)", notification)
-                if SLEEP_HANDLER:
-                    self.register_sleep_handlers()
-
-            def register_sleep_handlers(self):
-                log("register_sleep_handlers()")
-                workspace          = NSWorkspace.sharedWorkspace()
-                notificationCenter = workspace.notificationCenter()
-                notificationCenter.addObserver_selector_name_object_(self, self.receiveSleepNotification_,
-                                                                     NSWorkspaceWillSleepNotification, None)
-                notificationCenter.addObserver_selector_name_object_(self, self.receiveWakeNotification_,
-                                                                     NSWorkspaceDidWakeNotification, None)
-
-            @objc.signature('B@:#B')
-            def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
-                log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
-                self.cb("deiconify_callback")
-                return True
-
-            def receiveSleepNotification_(self, aNotification):
-                log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
-                self.cb("sleep_callback")
-
-            def receiveWakeNotification_(self, aNotification):
-                log("receiveWakeNotification_(%s)", aNotification)
-                self.cb("wake_callback")
-
-            def cb(self, name):
-                #find the named callback and call it
-                callback = getattr(self, name, None)
-                log("cb(%s)=%s", name, callback)
-                if callback:
-                    try:
-                        callback()
-                    except:
-                        log.error("Error in %s callback %s", name, callback, exc_info=True)
 
         self.delegate = Delegate.alloc().init()
         self.delegate.retain()
