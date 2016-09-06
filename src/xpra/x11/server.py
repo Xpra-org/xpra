@@ -803,7 +803,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             pwid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
-            self._update_modifiers(proto, wid, modifiers)
+            #only update modifiers if the window is in focus:
+            if self._has_focus==wid:
+                self._update_modifiers(proto, wid, modifiers)
             self._process_mouse_common(proto, pwid, pointer)
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
