@@ -9,10 +9,11 @@ import gtk.gdk
 import gobject
 import socket
 
-from xpra.util import updict
+from xpra.util import updict, log_screen_sizes
 from xpra.platform.gui import get_wm_name
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.error import xswallow
+from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
 from xpra.x11.gtk2.models.model_stub import WindowModelStub
 from xpra.x11.gtk2.gdk_bindings import (
                                add_catchall_receiver,       #@UnresolvedImport
@@ -160,8 +161,12 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
     def x11_init(self):
         X11ServerBase.x11_init(self)
         assert init_x11_filter() is True
-        root = gtk.gdk.get_default_root_window()
-        add_event_receiver(root, self)
+        display = gtk.gdk.display_get_default()
+        screens = display.get_n_screens()
+        for n in range(screens):
+            screen = display.get_screen(n)
+            root = screen.get_root_window()
+            add_event_receiver(root, self)
         add_catchall_receiver("xpra-motion-event", self)
         add_catchall_receiver("xpra-xkb-event", self)
         X11Keyboard.selectBellNotification(True)
@@ -172,6 +177,13 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         cleanup_x11_filter()
         with xswallow:
             cleanup_all_event_receivers()
+
+    def print_screen_info(self):
+        X11ServerBase.print_screen_info(self)
+        root_w, root_h = get_root_size()
+        sss = get_screen_sizes()
+        log_screen_sizes(root_w, root_h, sss)
+
 
     def get_server_mode(self):
         return "X11 desktop"
@@ -196,13 +208,17 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
     def load_existing_windows(self):
         #at present, just one  window is forwarded:
         #the root window covering the whole display
-        root = gtk.gdk.get_default_root_window()
-        model = DesktopModel(root)
-        model.setup()
-        windowlog("adding root window model %s", model)
-        X11ServerBase._add_new_window_common(self, model)
-        model.managed_connect("client-contents-changed", self._contents_changed)
-        model.managed_connect("resized", self._window_resized_signaled)
+        display = gtk.gdk.display_get_default()
+        screens = display.get_n_screens()
+        for n in range(screens):
+            screen = display.get_screen(n)
+            root = screen.get_root_window()
+            model = DesktopModel(root)
+            model.setup()
+            windowlog("adding root window model %s", model)
+            X11ServerBase._add_new_window_common(self, model)
+            model.managed_connect("client-contents-changed", self._contents_changed)
+            model.managed_connect("resized", self._window_resized_signaled)
 
 
     def _window_resized_signaled(self, window, *args):

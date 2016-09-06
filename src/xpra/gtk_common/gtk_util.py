@@ -8,6 +8,7 @@ import sys
 import os.path
 
 import array
+from xpra.util import iround
 from xpra.os_util import strtobytes
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, is_gtk3
 gtk     = import_gtk()
@@ -20,6 +21,7 @@ PixbufLoader = import_pixbufloader()
 from xpra.log import Logger
 log = Logger("gtk", "util")
 traylog = Logger("gtk", "tray")
+screenlog = Logger("gtk", "screen")
 
 
 SHOW_ALL_VISUALS = False
@@ -473,6 +475,67 @@ def get_screens_info():
         screen = display.get_screen(i)
         info[i] = get_screen_info(display, screen)
     return info
+
+def get_screen_sizes(xscale=1, yscale=1):
+    from xpra.platform.gui import get_workarea, get_workareas
+    def xs(v):
+        return iround(v/xscale)
+    def ys(v):
+        return iround(v/yscale)
+    def swork(*workarea):
+        return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
+    display = display_get_default()
+    i=0
+    screen_sizes = []
+    n_screens = display.get_n_screens()
+    screenlog("get_screen_sizes(%f, %f) found %s screens", xscale, yscale, n_screens)
+    while i<n_screens:
+        screen = display.get_screen(i)
+        j = 0
+        monitors = []
+        workareas = []
+        #native "get_workareas()" is only valid for a single screen (but describes all the monitors)
+        #and it is only implemented on win32 right now
+        #other platforms only implement "get_workarea()" instead, which is reported against the screen
+        n_monitors = screen.get_n_monitors()
+        screenlog(" screen %s has %s monitors", i, n_monitors)
+        if n_screens==1:
+            workareas = get_workareas()
+            if workareas and len(workareas)!=n_monitors:
+                screenlog(" workareas: %s", workareas)
+                screenlog(" number of monitors does not match number of workareas!")
+                workareas = []
+        while j<screen.get_n_monitors():
+            geom = screen.get_monitor_geometry(j)
+            plug_name = ""
+            if hasattr(screen, "get_monitor_plug_name"):
+                plug_name = screen.get_monitor_plug_name(j) or ""
+            wmm = -1
+            if hasattr(screen, "get_monitor_width_mm"):
+                wmm = screen.get_monitor_width_mm(j)
+            hmm = -1
+            if hasattr(screen, "get_monitor_height_mm"):
+                hmm = screen.get_monitor_height_mm(j)
+            monitor = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
+            screenlog(" monitor %s: %s", j, monitor)
+            if workareas:
+                w = workareas[j]
+                monitor += list(swork(*w))
+            monitors.append(tuple(monitor))
+            j += 1
+        work_x, work_y, work_width, work_height = swork(0, 0, screen.get_width(), screen.get_height())
+        workarea = get_workarea()
+        if workarea:
+            work_x, work_y, work_width, work_height = swork(*workarea)
+        screenlog(" workarea=%s", workarea)
+        item = (screen.make_display_name(), xs(screen.get_width()), ys(screen.get_height()),
+                    screen.get_width_mm(), screen.get_height_mm(),
+                    monitors,
+                    work_x, work_y, work_width, work_height)
+        screenlog(" screen %s: %s", i, item)
+        screen_sizes.append(item)
+        i += 1
+    return screen_sizes
 
 def get_screen_info(display, screen):
     info = {}

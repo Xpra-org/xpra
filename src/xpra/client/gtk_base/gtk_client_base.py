@@ -37,7 +37,7 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_workarea, get_workareas, get_fixed_cursor_size, get_menu_support_function, get_wm_name
+from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_fixed_cursor_size, get_menu_support_function, get_wm_name
 
 missing_cursor_names = set()
 
@@ -425,64 +425,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
-        def xs(v):
-            return iround(v/xscale)
-        def ys(v):
-            return iround(v/yscale)
-        def swork(*workarea):
-            return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
-        display = display_get_default()
-        i=0
-        screen_sizes = []
-        n_screens = display.get_n_screens()
-        screenlog("get_screen_sizes(%f, %f) found %s screens", xscale, yscale, n_screens)
-        while i<n_screens:
-            screen = display.get_screen(i)
-            j = 0
-            monitors = []
-            workareas = []
-            #native "get_workareas()" is only valid for a single screen (but describes all the monitors)
-            #and it is only implemented on win32 right now
-            #other platforms only implement "get_workarea()" instead, which is reported against the screen
-            n_monitors = screen.get_n_monitors()
-            screenlog(" screen %s has %s monitors", i, n_monitors)
-            if n_screens==1:
-                workareas = get_workareas()
-                if workareas and len(workareas)!=n_monitors:
-                    screenlog(" workareas: %s", workareas)
-                    screenlog(" number of monitors does not match number of workareas!")
-                    workareas = []
-            while j<screen.get_n_monitors():
-                geom = screen.get_monitor_geometry(j)
-                plug_name = ""
-                if hasattr(screen, "get_monitor_plug_name"):
-                    plug_name = screen.get_monitor_plug_name(j) or ""
-                wmm = -1
-                if hasattr(screen, "get_monitor_width_mm"):
-                    wmm = screen.get_monitor_width_mm(j)
-                hmm = -1
-                if hasattr(screen, "get_monitor_height_mm"):
-                    hmm = screen.get_monitor_height_mm(j)
-                monitor = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
-                screenlog(" monitor %s: %s", j, monitor)
-                if workareas:
-                    w = workareas[j]
-                    monitor += list(swork(*w))
-                monitors.append(tuple(monitor))
-                j += 1
-            work_x, work_y, work_width, work_height = swork(0, 0, screen.get_width(), screen.get_height())
-            workarea = get_workarea()
-            if workarea:
-                work_x, work_y, work_width, work_height = swork(*workarea)
-            screenlog(" workarea=%s", workarea)
-            item = (screen.make_display_name(), xs(screen.get_width()), ys(screen.get_height()),
-                        screen.get_width_mm(), screen.get_height_mm(),
-                        monitors,
-                        work_x, work_y, work_width, work_height)
-            screenlog(" screen %s: %s", i, item)
-            screen_sizes.append(item)
-            i += 1
-        return screen_sizes
+        from xpra.gtk_common.gtk_util import get_screen_sizes
+        return get_screen_sizes(xscale, yscale)
 
 
     def reset_windows_cursors(self, *args):
