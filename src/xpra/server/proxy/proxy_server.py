@@ -75,6 +75,10 @@ class ProxyServer(ServerCore):
         pass
 
 
+    def print_screen_info(self):
+        #no screen, we just use a virtual display number
+        pass
+
     def get_server_mode(self):
         return "proxy"
 

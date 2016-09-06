@@ -963,8 +963,20 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 display_name_check(display_name)
         else:
             if proxying:
-                error_cb("you must specify a free virtual display name to use with the proxy server")
-            if opts.use_display:
+                #find a free display number:
+                dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+                all_displays = dotxpra.sockets()
+                #ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
+                displays = [v[1] for v in all_displays]
+                display_name = None
+                for x in range(1000, 20000):
+                    v = ":%s" % x
+                    if v not in displays:
+                        display_name = v
+                        break
+                if not display_name:
+                    error_cb("you must specify a free virtual display name to use with the proxy server")
+            elif opts.use_display:
                 #only use automatic guess for xpra displays and not X11 displays:
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
             else:
