@@ -212,7 +212,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         if window.mapped_at:
             x, y = window.mapped_at[:2]
         window.mapped_at = (x, y, w, h)
-        windowlog.warn("window_resized_signaled(%s) mapped at=%s", window, window.mapped_at)
+        windowlog("window_resized_signaled(%s) mapped at=%s", window, window.mapped_at)
         for ss in self._server_sources.values():
             ss.move_resize_window(wid, window, x, y, w, h)
             ss.damage(wid, window, 0, 0, w, h)
@@ -376,7 +376,6 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
 
 
     def do_make_screenshot_packet(self):
-        log.enable_debug()
         log("grabbing screenshot")
         regions = []
         offset_x, offset_y = 0, 0
