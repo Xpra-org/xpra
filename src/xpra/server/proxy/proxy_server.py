@@ -20,7 +20,6 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.scripts.config import InitException
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
@@ -68,8 +67,6 @@ class ProxyServer(ServerCore):
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
-        if not opts.tcp_auth:
-            raise InitException("The proxy server requires an authentication mode (use 'none' to disable authentication)")
         self.video_encoders = opts.video_encoders
         self.csc_modules = opts.csc_modules
         ServerCore.init(self, opts)
@@ -140,11 +137,20 @@ class ProxyServer(ServerCore):
         self.start_proxy(proto, c, auth_caps)
 
     def start_proxy(self, client_proto, c, auth_caps):
-        assert client_proto.authenticator is not None
-        #find the target server session:
         def disconnect(reason, *extras):
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
+
+        #find the target server session:
+        if not client_proto.authenticator:
+            log.error("Error: the proxy server requires an authentication mode,")
+            try:
+                log.error(" client connection '%s' does not specify one", client_proto._conn.socktype)
+            except:
+                pass
+            log.error(" use 'none' to disable authentication")
+            disconnect(SESSION_NOT_FOUND, "no sessions found")
+            return
         try:
             sessions = client_proto.authenticator.get_sessions()
         except Exception as e:
