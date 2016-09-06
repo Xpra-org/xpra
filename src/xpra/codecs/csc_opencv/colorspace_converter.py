@@ -30,11 +30,21 @@ def get_type():
     return "opencv"
 
 def get_version():
-    return cv2.__version__
+    v = cv2.__version__
+    #some Debian versions ship with a bogus version string,
+    #ie: "$Rev: 4557 $" 
+    p = v.split("$")
+    if len(p)==3:
+        v = p[1]
+        p = v.split("Rev:")
+        if len(p)==2:
+            v = "r"+p[1].strip()
+    return v
 
 def get_info():
-    info = {"version"   : cv2.__version__}
-    return info
+    return {
+            "version"   : get_version(),
+            }
 
 
 FLAG_STR = {}
