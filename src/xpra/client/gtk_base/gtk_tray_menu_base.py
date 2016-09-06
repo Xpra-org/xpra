@@ -30,11 +30,10 @@ webcamlog = Logger("menu", "webcam")
 
 HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
 
-#compression is fine with default value (3), no need to clutter the UI
-SHOW_COMPRESSION_MENU = False
 SHOW_UPLOAD = os.environ.get("XPRA_SHOW_UPLOAD_MENU", "1")=="1"
 STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
 WEBCAM_MENU = os.environ.get("XPRA_SHOW_WEBCAM_MENU", "1")=="1"
+RUNCOMMAND_MENU = os.environ.get("XPRA_SHOW_RUNCOMMAND_MENU", "1")=="1"
 
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {
@@ -281,18 +280,16 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_speedmenuitem())
         if STARTSTOP_SOUND_MENU:
             menu.append(self.make_speakermenuitem())
-        if STARTSTOP_SOUND_MENU:
             menu.append(self.make_microphonemenuitem())
         if WEBCAM_MENU:
             menu.append(self.make_webcammenuitem())
-        if SHOW_COMPRESSION_MENU:
-            menu.append(self.make_compressionmenu())
         if self.client.windows_enabled:
             menu.append(self.make_refreshmenuitem())
             menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
-        menu.append(self.make_startnewcommandmenuitem())
+        if RUNCOMMAND_MENU:
+            menu.append(self.make_runcommandmenu())
         if SHOW_UPLOAD:
             menu.append(self.make_uploadmenuitem())
         menu.append(self.make_disconnectmenuitem())
@@ -1087,31 +1084,6 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(set_layout_enabled)
         return keyboard
 
-    def make_compressionmenu(self):
-        self.compression = self.menuitem("Compression", "compressed.png", "Network packet compression", None)
-        set_sensitive(self.compression, False)
-        self.compression_submenu = gtk.Menu()
-        self.compression.set_submenu(self.compression_submenu)
-        self.popup_menu_workaround(self.compression_submenu)
-        compression_options = {0 : "None"}
-        def set_compression(item):
-            ensure_item_selected(self.compression_submenu, item)
-            c = int(item.get_label().replace("None", "0"))
-            if c!=self.client.compression_level:
-                log("setting compression level to %s", c)
-                self.client.set_deflate_level(c)
-        for i in range(0, 10):
-            c = CheckMenuItem(str(compression_options.get(i, i)))
-            c.set_draw_as_radio(True)
-            c.set_active(i==self.client.compression_level)
-            c.connect('activate', set_compression)
-            self.compression_submenu.append(c)
-        def enable_compressionmenu(self):
-            set_sensitive(self.compression, True)
-            self.compression_submenu.show_all()
-        self.client.after_handshake(enable_compressionmenu)
-        return self.compression
-
 
     def make_refreshmenuitem(self):
         def force_refresh(*args):
@@ -1126,7 +1098,7 @@ class GTKTrayMenuBase(object):
                     win.present()
         return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
 
-    def make_startnewcommandmenuitem(self):
+    def make_runcommandmenu(self):
         self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
         def enable_start_new_command(*args):
             log("enable_start_new_command%s start_new_command=%s", args, self.client.start_new_commands)
