@@ -82,7 +82,7 @@ class DotXpra(object):
     #this is imported by winswitch, so we can't change the method signature
     def sockets(self, check_uid=0, matching_state=None):
         #flatten the dictionnary into a list:
-        return [(v[0], v[1]) for details_values in self.socket_details(check_uid, matching_state).values() for v in details_values]
+        return list(set((v[0], v[1]) for details_values in self.socket_details(check_uid, matching_state).values() for v in details_values))
 
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
