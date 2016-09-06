@@ -24,6 +24,9 @@ from xpra.gtk_common.error import XError, xswallow, xsync, trap
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
+from xpra.os_util import StringIOClass, _memoryview
+from xpra.net.compression import Compressed
+
 
 from xpra.log import Logger
 log = Logger("x11", "server")
@@ -651,3 +654,48 @@ class X11ServerBase(GTKServerBase):
             if button>=4:
                 err += " (perhaps your Xvfb does not support mousewheels?)"
             log.warn(err)
+
+
+    def make_screenshot_packet_from_regions(self, regions):
+        #regions = array of (wid, x, y, PIL.Image)
+        if len(regions)==0:
+            log("screenshot: no regions found, returning empty 0x0 image!")
+            return ["screenshot", 0, 0, "png", -1, ""]
+        #in theory, we could run the rest in a non-UI thread since we're done with GTK..
+        minx = min([x for (_,x,_,_) in regions])
+        miny = min([y for (_,_,y,_) in regions])
+        maxx = max([(x+img.get_width()) for (_,x,_,img) in regions])
+        maxy = max([(y+img.get_height()) for (_,_,y,img) in regions])
+        width = maxx-minx
+        height = maxy-miny
+        log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
+        from PIL import Image                           #@UnresolvedImport
+        screenshot = Image.new("RGBA", (width, height))
+        for wid, x, y, img in reversed(regions):
+            pixel_format = img.get_pixel_format()
+            target_format = {
+                     "XRGB"   : "RGB",
+                     "BGRX"   : "RGB",
+                     "BGRA"   : "RGBA"}.get(pixel_format, pixel_format)
+            pixels = img.get_pixels()
+            w = img.get_width()
+            h = img.get_height()
+            #PIL cannot use the memoryview directly:
+            if _memoryview and isinstance(pixels, _memoryview):
+                pixels = pixels.tobytes()
+            try:
+                window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())
+            except:
+                log.error("Error parsing window pixels in %s format for window %i", pixel_format, wid, exc_info=True)
+                continue
+            tx = x-minx
+            ty = y-miny
+            screenshot.paste(window_image, (tx, ty))
+        buf = StringIOClass()
+        screenshot.save(buf, "png")
+        data = buf.getvalue()
+        buf.close()
+        packet = ["screenshot", width, height, "png", width*4, Compressed("png", data)]
+        log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
+        return packet
+

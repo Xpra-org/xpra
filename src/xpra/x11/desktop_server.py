@@ -27,6 +27,7 @@ from xpra.x11.gtk2.window_damage import WindowDamageHandler
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
+from xpra.gtk_common.error import xsync
 
 from xpra.log import Logger
 log = Logger("server")
@@ -372,6 +373,41 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         except Exception as e:
             log.error("Error setting up our dbus server:")
             log.error(" %s", e)
+
+
+    def do_make_screenshot_packet(self):
+        log.enable_debug()
+        log("grabbing screenshot")
+        regions = []
+        offset_x, offset_y = 0, 0
+        for wid in reversed(sorted(self._id_to_window.keys())):
+            window = self._id_to_window.get(wid)
+            log("screenshot: window(%s)=%s", wid, window)
+            if window is None:
+                continue
+            if not window.is_managed():
+                log("screenshot: window %s is not/no longer managed", wid)
+                continue
+            x, y, w, h = window.get_geometry()
+            log("screenshot: geometry(%s)=%s", window, (x, y, w, h))
+            try:
+                with xsync:
+                    img = window.get_image(0, 0, w, h)
+            except:
+                log.warn("screenshot: window %s could not be captured", wid)
+                continue
+            if img is None:
+                log.warn("screenshot: no pixels for window %s", wid)
+                continue
+            log("screenshot: image=%s, size=%s", img, img.get_size())
+            if img.get_pixel_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
+                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
+                continue
+            regions.append((wid, offset_x+x, offset_y+y, img))
+            #tile them horizontally:
+            offset_x += w
+            offset_y += 0
+        return self.make_screenshot_packet_from_regions(regions)
 
 
 gobject.type_register(XpraDesktopServer)

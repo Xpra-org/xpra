@@ -15,7 +15,7 @@ import math
 from collections import deque
 
 from xpra.util import AdHocStruct, updict, rindex, iround
-from xpra.os_util import memoryview_to_bytes, _memoryview
+from xpra.os_util import memoryview_to_bytes
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
@@ -54,9 +54,7 @@ eventlog = Logger("x11", "events")
 
 import xpra
 from xpra.util import nonl, typedict
-from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
-from xpra.net.compression import Compressed
 
 REPARENT_ROOT = os.environ.get("XPRA_REPARENT_ROOT", "0")=="1"
 SCALED_FONT_ANTIALIAS = os.environ.get("XPRA_SCALED_FONT_ANTIALIAS", "0")=="1"
@@ -1078,7 +1076,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if img is None:
                 log.warn("screenshot: no pixels for window %s", wid)
                 continue
-            log("screenshot: image=%s, size=%s", (img, img.get_size()))
+            log("screenshot: image=%s, size=%s", img, img.get_size())
             if img.get_pixel_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
                 log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
                 continue
@@ -1090,46 +1088,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 regions.insert(0, item)
             else:
                 regions.append(item)
-        all_regions = OR_regions+regions
-        if len(all_regions)==0:
-            log("screenshot: no regions found, returning empty 0x0 image!")
-            return ["screenshot", 0, 0, "png", -1, ""]
         log("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
-        #in theory, we could run the rest in a non-UI thread since we're done with GTK..
-        minx = min([x for (_,x,_,_) in all_regions])
-        miny = min([y for (_,_,y,_) in all_regions])
-        maxx = max([(x+img.get_width()) for (_,x,_,img) in all_regions])
-        maxy = max([(y+img.get_height()) for (_,_,y,img) in all_regions])
-        width = maxx-minx
-        height = maxy-miny
-        log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
-        from PIL import Image                           #@UnresolvedImport
-        screenshot = Image.new("RGBA", (width, height))
-        for wid, x, y, img in reversed(all_regions):
-            pixel_format = img.get_pixel_format()
-            target_format = {
-                     "XRGB"   : "RGB",
-                     "BGRX"   : "RGB",
-                     "BGRA"   : "RGBA"}.get(pixel_format, pixel_format)
-            pixels = img.get_pixels()
-            #PIL cannot use the memoryview directly:
-            if _memoryview and isinstance(pixels, _memoryview):
-                pixels = pixels.tobytes()
-            try:
-                window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())
-            except:
-                log.error("Error parsing window pixels in %s format", pixel_format, exc_info=True)
-                continue
-            tx = x-minx
-            ty = y-miny
-            screenshot.paste(window_image, (tx, ty))
-        buf = StringIOClass()
-        screenshot.save(buf, "png")
-        data = buf.getvalue()
-        buf.close()
-        packet = ["screenshot", width, height, "png", width*4, Compressed("png", data)]
-        log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
-        return packet
+        return self.make_screenshot_packet_from_regions(OR_regions+regions)
 
 
     def reset_settings(self):
