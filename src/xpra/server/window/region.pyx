@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013, 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -139,6 +139,8 @@ cdef class rectangle:
     def substract_rect(self, rectangle rect):
         return self.substract(rect.x, rect.y, rect.width, rect.height)
 
+    def get_geometry(self):
+        return (self.x, self.y, self.width, self.height)
 
     def clone(self):
         return rectangle(self.x, self.y, self.width, self.height)

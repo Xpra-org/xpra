@@ -4,21 +4,20 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import time
 import math
 
-from xpra.util import MutableInteger
+from xpra.util import MutableInteger, envint
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
 
 sslog = Logger("regiondetect")
 refreshlog = Logger("regionrefresh")
 
-MAX_TIME = int(os.environ.get("XPRA_VIDEO_DETECT_MAX_TIME", "5"))
-MIN_EVENTS = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_EVENTS", "20"))
-MIN_W = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_WIDTH", "128"))
-MIN_H = int(os.environ.get("XPRA_VIDEO_DETECT_MIN_HEIGHT", "96"))
+MAX_TIME = envint("XPRA_VIDEO_DETECT_MAX_TIME", 5)
+MIN_EVENTS = envint("XPRA_VIDEO_DETECT_MIN_EVENTS", 20)
+MIN_W = envint("XPRA_VIDEO_DETECT_MIN_WIDTH", 128)
+MIN_H = envint("XPRA_VIDEO_DETECT_MIN_HEIGHT", 96)
 
 
 def scoreinout(ww, wh, region, incount, outcount):
@@ -39,9 +38,11 @@ def scoreinout(ww, wh, region, incount, outcount):
     #proportion of pixels in this region relative to the whole window:
     inwindow = float(width*height) / (ww*wh)
     ratio = inregion / inwindow
-    sizeboost = 1+inwindow
-    sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%.3f, inwindow=%.3f, ratio=%.3f, sizeboost=%.3f", ww, wh, region, incount, outcount, inregion, inwindow, ratio, sizeboost)
-    return int(sizeboost*5 + 100 * ratio**sizeboost)
+    score = 100.0*inregion + 10*inwindow
+    #if the region has at least 35% of updates, boost it with window ratio:
+    score += max(0, inregion-0.35) * (math.sqrt(ratio)-1.0) * 25
+    sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%i%%, inwindow=%i%%, ratio=%.1f, score=%i", ww, wh, region, incount, outcount, 100*inregion, 100*inwindow, ratio, score)
+    return int(score)
 
 class VideoSubregion(object):
 
@@ -320,6 +321,8 @@ class VideoSubregion(object):
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
             score = scoreinout(ww, wh, region, incount, outcount)
+            #discount score if the region contains areas that were not damaged:
+            #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
             d_ratio = damaged_ratio(region)
             score *= math.sqrt(d_ratio)
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
