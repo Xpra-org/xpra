@@ -1483,6 +1483,9 @@ def connect_or_fail(display_desc, opts):
     except InitException:
         raise
     except Exception as e:
+        #from xpra.log import Logger
+        #log = Logger("util")
+        #log.error("failed to connect", exc_info=True)
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
@@ -1675,75 +1678,80 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         from xpra.net.bytestreams import SocketConnection
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
-    elif dtype in ("ws", "wss"):
-        host = display_desc["host"]
-        port = display_desc.get("port", 0)
-        if port>0:
-            host += ":%i" % port
-        import websocket
-        #websocket.enableTrace(True)
-        url = "%s://%s/" % (dtype, host)
-        ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=["binary", "base64"])
-        from xpra.net.bytestreams import Connection, log as connlog
-        class WebSocketClientConnection(Connection):
-            def __init__(self, ws, target, socktype):
-                Connection.__init__(self, target, socktype)
-                self._socket = ws
-
-            def peek(self, n):
-                return None
-        
-            def untilConcludes(self, *args):
-                try:
-                    return Connection.untilConcludes(self, *args)
-                except websocket.WebSocketTimeoutException as e:
-                    raise ConnectionClosedException(e)
-
-            def read(self, n):
-                return self._read(self._socket.recv)
-        
-            def write(self, buf):
-                return self._write(self._socket.send, buf)
-        
-            def close(self):
-                try:
-                    i = self.get_socket_info()
-                except:
-                    i = self._socket
-                connlog("%s.close() for socket=%s", self, i)
-                Connection.close(self)
-                self._socket.close()
-                self._socket = None
-                connlog("%s.close() done", self)
-        
-            def __repr__(self):
-                return "%s %s" % (self.socktype, self.target)
-        
-            def get_info(self):
-                d = Connection.get_info(self)
-                d["protocol-type"] = "websocket"
-                ws = self._socket
-                if ws:
-                    d.update({
-                              "sub-protocol"    : ws.getsubprotocol() or "",
-                              "headers"         : ws.getheaders() or {},
-                              "fileno"          : ws.fileno(),
-                              "status"          : ws.getstatus(),
-                              "connected"       : ws.connected,
-                              })
-                return d
-        return WebSocketClientConnection(ws, "websocket", host)
-
-    elif dtype in ("tcp", "ssl"):
+    elif dtype in ("tcp", "ssl", "ws", "wss"):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
-        if dtype == "ssl":
+        if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
+
+        #wrap in a websocket:
+        if dtype in ("ws", "wss"):
+            host = display_desc["host"]
+            port = display_desc.get("port", 0)
+            if port>0:
+                host += ":%i" % port
+            import websocket
+            if envint("XPRA_WEBSOCKET_DEBUG"):
+                websocket.enableTrace(True)
+            url = "%s://%s/" % (dtype, host)
+            try:
+                ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=["binary", "base64"], socket=sock)
+            except ValueError as e:
+                raise InitException("websocket connection failed: %s" % e)
+            from xpra.net.bytestreams import Connection, log as connlog
+            class WebSocketClientConnection(Connection):
+                def __init__(self, ws, target, socktype):
+                    Connection.__init__(self, target, socktype)
+                    self._socket = ws
+    
+                def peek(self, n):
+                    return None
+            
+                def untilConcludes(self, *args):
+                    try:
+                        return Connection.untilConcludes(self, *args)
+                    except websocket.WebSocketTimeoutException as e:
+                        raise ConnectionClosedException(e)
+    
+                def read(self, n):
+                    return self._read(self._socket.recv)
+            
+                def write(self, buf):
+                    return self._write(self._socket.send, buf)
+            
+                def close(self):
+                    try:
+                        i = self.get_socket_info()
+                    except:
+                        i = self._socket
+                    connlog("%s.close() for socket=%s", self, i)
+                    Connection.close(self)
+                    self._socket.close()
+                    self._socket = None
+                    connlog("%s.close() done", self)
+            
+                def __repr__(self):
+                    return "%s %s" % (self.socktype, self.target)
+            
+                def get_info(self):
+                    d = Connection.get_info(self)
+                    d["protocol-type"] = "websocket"
+                    ws = self._socket
+                    if ws:
+                        d.update({
+                                  "sub-protocol"    : ws.getsubprotocol() or "",
+                                  "headers"         : ws.getheaders() or {},
+                                  "fileno"          : ws.fileno(),
+                                  "status"          : ws.getstatus(),
+                                  "connected"       : ws.connected,
+                                  })
+                    return d
+            return WebSocketClientConnection(ws, "websocket", host)
     else:
         assert False, "unsupported display type in connect: %s" % dtype
     return conn
