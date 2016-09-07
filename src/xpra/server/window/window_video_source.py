@@ -587,9 +587,13 @@ class WindowVideoSource(WindowSource):
         """
             Overriden here so we can try to intercept the video_subregion if one exists.
         """
+        vr = self.video_subregion.rectangle
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
         def send_nonvideo(regions=regions, encoding=coding, exclude_region=None, get_best_encoding=self.get_best_nonvideo_encoding):
+            if self.b_frame_flush_timer:
+                #a b-frame is already due, don't clobber it!
+                exclude_region = vr
             WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
@@ -605,7 +609,6 @@ class WindowVideoSource(WindowSource):
             sublog("video disabled in options")
             return send_nonvideo(encoding=None)
 
-        vr = self.video_subregion.rectangle
         if not vr or not self.video_subregion.enabled:
             sublog("no video region, we may use the video encoder for something else")
             WindowSource.do_send_delayed_regions(self, damage_time, regions, coding, options)
