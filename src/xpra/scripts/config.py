@@ -1020,6 +1020,10 @@ def abs_paths(options):
         f = k.replace("-", "_")
         v = getattr(options, f)
         if v and (k!="ssl-ca-certs" or v!="default"):
+            if os.path.isabs(v):
+                continue
+            if v.startswith("~") or v.startswith("$"):
+                continue
             setattr(options, f, os.path.abspath(v))
 
 def fixup_options(options, defaults={}):
