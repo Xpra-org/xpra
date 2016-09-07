@@ -340,10 +340,15 @@ class WindowVideoSource(WindowSource):
         if len(self.non_video_encodings)==0:
             return current_encoding
 
-        sr = self.video_subregion.rectangle
+        #ensure the dimensions we use for decision making are the ones actually used:
+        cww = ww & self.width_mask
+        cwh = wh & self.height_mask
 
         rgbmax = self._rgb_auto_threshold
+        videomin = min(640*480, cww*cwh)
+        sr = self.video_subregion.rectangle
         if sr:
+            videomin = min(sr.width * sr.height)
             rgbmax = min(rgbmax, sr.width*sr.height//2)
         if pixel_count<=rgbmax:
             return lossless("low pixel count")
@@ -351,10 +356,6 @@ class WindowVideoSource(WindowSource):
         if current_encoding not in self.video_encodings:
             #not doing video, bail out:
             return nonvideo()
-
-        #ensure the dimensions we use for decision making are the ones actually used:
-        cww = ww & self.width_mask
-        cwh = wh & self.height_mask
 
         if cww*cwh<=MAX_NONVIDEO_PIXELS:
             #window is too small!
@@ -373,8 +374,8 @@ class WindowVideoSource(WindowSource):
         lde = list(self.statistics.last_damage_events)
         lim = now-2
         pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_2secs<5*min(640*480, cww*cwh):
-            #less than 5 480p frames / full window updates in last 2 seconds
+        if pixels_last_2secs<5*videomin:
+            #less than 5 full frames in last 2 seconds
             return nonvideo()
 
         if self._current_quality!=quality or self._current_speed!=speed:
