@@ -591,7 +591,7 @@ class WindowVideoSource(WindowSource):
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
         def send_nonvideo(regions=regions, encoding=coding, exclude_region=None, get_best_encoding=self.get_best_nonvideo_encoding):
-            if self.b_frame_flush_timer:
+            if self.b_frame_flush_timer and exclude_region is None:
                 #a b-frame is already due, don't clobber it!
                 exclude_region = vr
             WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
@@ -684,7 +684,7 @@ class WindowVideoSource(WindowSource):
             delay = max(self.batch_config.delay*4, 50)
             delay = min(delay, self.video_subregion.non_max_wait-elapsed)
         if delay<=25:
-            send_nonvideo(regions=regions, encoding=None)
+            send_nonvideo(regions=regions, encoding=None, exclude_region=actual_vr)
         else:
             self._damage_delayed = damage_time, regions, coding, options or {}
             sublog("send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
