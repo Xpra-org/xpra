@@ -128,7 +128,8 @@ class VideoSubregion(object):
                 }
         if r is None:
             return info
-        info.update({"x"            : r.x,
+        info.update({
+                     "x"            : r.x,
                      "y"            : r.y,
                      "width"        : r.width,
                      "height"       : r.height,
@@ -269,7 +270,14 @@ class VideoSubregion(object):
                 for e in self.exclusion_zones:
                     new_rects = []
                     for r in rects:
-                        new_rects += r.substract_rect(e)
+                        ex, ey, ew, eh = e.get_geometry()
+                        if ex<0 or ey<0:
+                            #negative values are relative to the width / height of the window:
+                            if ex<0:
+                                ex = max(0, ww-ew)
+                            if ey<0:
+                                ey = max(0, wh-eh)
+                        new_rects += r.substract(ex, ey, ew, eh)
                     rects = new_rects
             for r in rects:
                 dec.setdefault(r, MutableInteger()).increase()
