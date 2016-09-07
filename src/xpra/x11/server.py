@@ -622,16 +622,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #not found! (go back to root)
             return reset_focus()
         if window.is_OR():
-            focuslog.warn("focus(..) cannot focus OR window: %s", window)
+            focuslog.warn("Warning: cannot focus OR window: %s", window)
+            return
+        if not window.is_managed():
+            focuslog.warn("Warning: window %s is no longer managed!", window)
             return
         focuslog("focus: giving focus to %s", window)
-        #using idle_add seems to prevent some focus races:
-        def give_focus():
-            if not window.is_managed():
-                return
-            window.raise_window()
-            window.give_client_focus()
-        self.idle_add(give_focus)
+        window.raise_window()
+        window.give_client_focus()
         if server_source and modifiers is not None:
             focuslog("focus: will set modified mask to %s", modifiers)
             server_source.make_keymask_match(modifiers)
