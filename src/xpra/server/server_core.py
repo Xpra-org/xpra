@@ -1198,6 +1198,7 @@ class ServerCore(object):
                 handler(proto, packet)
                 return
             if not self._closing:
+                netlog("invalid packet: %s", packet)
                 netlog.error("unknown or invalid packet type: '%s' from %s", packet_type, proto)
             proto.close()
         except KeyboardInterrupt:
