@@ -89,8 +89,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
 .HP
-\fBxpra\fP \fBattach\fP
-[\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP | \fItcp:[USER@]HOST:PORT[:DISPLAY]\fP]
+\fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
 [\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|ABSOLUTEFILENAME]
 [\fB\-\-windows\fP=\fIyes\fP|\fIno\fP]
@@ -197,41 +196,49 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tcp\-proxy\fP=HOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
 .HP
-\fBxpra\fP \fBproxy\fP \fI:DISPLAY\fP
+\fBxpra\fP \fBproxy\fP [\fI:DISPLAY\fP]
 .HP
-\fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fBxpra\fP \fBstop\fP [CONNECTIONSTRING]
+[\fB\-\-ssh=CMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
-\fBxpra\fP \fBexit\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:[USER@]HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fBxpra\fP \fBexit\fP [CONNECTIONSTRING]
+[\fB\-\-ssh=CMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
-\fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fBxpra\fP \fBdetach\fP [CONNECTIONSTRING]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
-\fBxpra\fP \fBscreenshot\fP \fIfilename\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fBxpra\fP \fBscreenshot\fP \fIfilename\fP [CONNECTIONSTRING]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
-\fBxpra\fP \fBversion\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fBxpra\fP \fBversion\fP [CONNECTIONSTRING]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
-\fBxpra\fP \fBinfo\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+\fBxpra\fP \fBinfo\fP [CONNECTIONSTRING]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
-\fBxpra\fP \fBcontrol\fP (\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP) \fIcommand\fP [\fIarguments..\fP] [\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP] [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+\fBxpra\fP \fBcontrol\fP [CONNECTIONSTRING] \fIcommand\fP [\fIarguments..\fP]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBinitenv\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
@@ -263,20 +270,21 @@ By default the Xpra server announces available sessions (username and display
 number) via mDNS to the local network. Use \fBmdns=no\fP to disable it.
 .\" --------------------------------------------------------------------
 .SH CONNECTION STRINGS
-Xpra supports 4 types of connection strings:
+Xpra supports 5 types of connection strings (some may require extra
+packages to be installed):
 .SS :DISPLAY
 Local displays: this is the simplest form and is only valid for the
 current local displays of the current user.
-.SS tcp:[USERNAME@]HOST:PORT[:DISPLAY]
+.SS tcp/[USERNAME@]HOST:PORT[/DISPLAY]
 TCP mode uses port numbers and not display numbers. If multiple displays
-are available through a single TCP port (using a proxy server),
+are available through a single TCP port (ie: using a proxy server),
 then one can also specify the display number.
 .SS vhost:[USERNAME[:PASSWORD]@]HOST:PORT
 Almost identical to the TCP mode, but using AF_VSOCK for transport.
+.SS ws/[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY][?key1=value[&key2=value2..]]
+Connect using websocket protocol.
 .SS ssh/[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]/DISPLAY
-SSH mode allows most common connection options to be specified using
-the connection string. Further options can be specified using the
-\fB\-\-ssh\fP command line option.
+Further options can be specified using the \fB\-\-ssh\fP command line option.
 .P
 For backwards compatibility, SSH mode also supports the syntax:
 \fBssh:[USERNAME[:PASSWORD]@HOST:DISPLAY\fP but this form does not
