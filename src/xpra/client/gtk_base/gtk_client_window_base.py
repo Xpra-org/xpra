@@ -787,13 +787,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return True
 
     def keyboard_grab(self, *args):
+        grablog("keyboard_grab%s", args)
         r = gdk.keyboard_grab(self.get_window(), True)
         self._client.keyboard_grabbed = r==GRAB_SUCCESS
         grablog("keyboard_grab%s gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s", args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
     def toggle_keyboard_grab(self):
-        grablog("toggle_keyboard_grab()")
-        if self._client.keyboard_grabbed:
+        grabbed = self._client.keyboard_grabbed
+        grablog("toggle_keyboard_grab() grabbed=%s", grabbed)
+        if grabbed:
             self.keyboard_ungrab()
         else:
             self.keyboard_grab()
