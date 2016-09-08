@@ -559,14 +559,13 @@ class ServerCore(object):
                 netlog("error sending '%s': %s", nonl(msg), e)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
-        PEEK_SIZE = 128
+        PEEK_SIZE = 1024
         v = conn.peek(PEEK_SIZE)
-        netlog("peek(%i)=%s", PEEK_SIZE, binascii.hexlify(v or ""))
         if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
-                cont, conn, v = self.may_wrap_socket(conn, v)
+                cont, conn, v = self.may_wrap_socket(conn, socktype, v)
                 if not cont:
                     return
             except IOError as e:
@@ -616,25 +615,35 @@ class ServerCore(object):
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
 
-    def may_wrap_socket(self, conn, v):
+    def may_wrap_socket(self, conn, socktype, peek_data=""):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
             *  (False for websockify and tcp proxies as they take over the socket)
             * the connection object (which may now be wrapped, ie: for ssl)
-            * new peek data "v" (which may now be empty),
+            * new peek data (which may now be empty),
         """
-        if not v:
+        if not peek_data:
             netlog("may_wrap_socket: no data, not wrapping")
-            return True, conn, v
-        if v[0] in ("P", ord("P")):
-            netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", v[0])
+            return True, conn, peek_data
+        if peek_data[0] in ("P", ord("P")):
+            netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", peek_data[0])
             #xpra packet header, no need to wrap this connection
-            return True, conn, v
+            return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
+        #the peek data we will return:
+        v = peek_data
+        if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
+            socktype = "SSL"
+            sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
+            sock = self._ssl_wrap_socket(sock)
+            conn = SocketConnection(sock, sockname, address, target, socktype)
+            #we cannot peek on SSL sockets, just clear the unencrypted data:
+            netlog("may_wrap_socket SSL: %s", conn)
+            v = None
         if self._html:
-            line1 = v.splitlines()[0]
-            if line1.find("HTTP/")>0:
+            line1 = peek_data.splitlines()[0]
+            if line1.find("HTTP/")>0 or (socktype=="SSL" and peek_data.find("\x08http/1.1")>0):
                 if line1.startswith("GET ") or line1.startswith("POST "):
                     parts = line1.split(" ")
                     netlog.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
@@ -646,15 +655,7 @@ class ServerCore(object):
                     self.start_websockify(conn, conn.remote)
                 start_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True)
                 return False, conn, None
-        if self._ssl_wrap_socket and v[0] in (chr(0x16), 0x16):
-            socktype = "SSL"
-            sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
-            sock = self._ssl_wrap_socket(sock)
-            conn = SocketConnection(sock, sockname, address, target, socktype)
-            #we cannot peek on SSL sockets, just clear the unencrypted data:
-            netlog("may_wrap_socket SSL: %s", conn)
-            return True, conn, None
-        elif self._tcp_proxy:
+        if self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
             def run_proxy():
                 self.start_tcp_proxy(conn, conn.remote)
