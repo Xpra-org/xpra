@@ -1895,7 +1895,12 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         wrap_socket = ssl.wrap_socket
     del opts
     def do_wrap_socket(tcp_socket):
-        ssl_sock = wrap_socket(tcp_socket, **kwargs)
+        try:
+            ssl_sock = wrap_socket(tcp_socket, **kwargs)
+        except Exception as e:
+            SSLEOFError = getattr(ssl, "SSLEOFError", None)
+            if SSLEOFError and isinstance(e, SSLEOFError):
+                return None 
         #ensure we handle ssl exceptions as we should from now on:
         from xpra.net.bytestreams import init_ssl
         init_ssl()

@@ -637,6 +637,10 @@ class ServerCore(object):
             socktype = "SSL"
             sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
             sock = self._ssl_wrap_socket(sock)
+            if sock is None:
+                #None means EOF! (we don't want to import ssl bits here)
+                netlog("ignoring SSL EOF error")
+                return False, None, None
             conn = SocketConnection(sock, sockname, address, target, socktype)
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             netlog("may_wrap_socket SSL: %s", conn)
@@ -644,12 +648,13 @@ class ServerCore(object):
         if self._html:
             line1 = peek_data.splitlines()[0]
             if line1.find("HTTP/")>0 or (socktype=="SSL" and peek_data.find("\x08http/1.1")>0):
+                http_proto = "http"+["","s"][int(socktype=="SSL")]
                 if line1.startswith("GET ") or line1.startswith("POST "):
                     parts = line1.split(" ")
-                    netlog.info("New http %s request received from %s for '%s'", parts[0], frominfo, parts[1])
+                    netlog.info("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
                     tname = "%s-request" % parts[0]
                 else:
-                    netlog.info("New http connection received from %s", frominfo)
+                    netlog.info("New %s connection received from %s", http_proto, frominfo)
                     tname = "websockify-proxy"
                 def run_websockify():
                     self.start_websockify(conn, conn.remote)
