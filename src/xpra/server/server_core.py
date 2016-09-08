@@ -575,15 +575,8 @@ class ServerCore(object):
                 conn_err(str(e))
                 return
         if v and v[0] not in ("P", ord("P")):
-            try:
-                c = ord(v[0])
-            except:
-                c = int(v[0])
-            if c==0x16:
-                msg = "SSL packet"
-            else:
-                msg = "not an xpra client"
-            conn_err("invalid packet header character '%s', %s?" % (hex(c), msg))
+            msg = self.guess_header_protocol(v)
+            conn_err("invalid packet header, %s" % msg)
             return True
         sock.settimeout(self._socket_timeout)
         inject_ssl_socket_info(conn)
@@ -678,8 +671,19 @@ class ServerCore(object):
 
     def invalid_header(self, proto, data):
         netlog("invalid_header(%s, %s bytes: '%s') input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s", proto, len(data or ""), repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
-        err = "invalid packet format, not an xpra client?"
+        err = "invalid packet format, %s" % self.guess_header_protocol(data)
         proto.gibberish(err, data)
+
+    def guess_header_protocol(self, v):
+        try:
+            c = ord(v[0])
+        except:
+            c = int(v[0])
+        if c==0x16:
+            return "SSL packet?"
+        elif len(v)>=3 and v.split(" ")[0] in ("GET", "POST"):
+            return "HTTP %s request" % v.split(" ")[0]
+        return "character %#x, not an xpra client?" % c
 
 
     def start_websockify(self, conn, frominfo):
