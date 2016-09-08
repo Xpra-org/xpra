@@ -33,7 +33,7 @@ ssl-client-verify-mode = optional
 #ssl-server-verify-mode = required
 ssl-server-verify-mode = required
 
-# Wether to match the peer cert's hostname:
+# Whether to match the peer cert's hostname:
 ssl-check-hostname = off
 
 # Server hostname to check for:
