@@ -519,13 +519,25 @@ class GLWindowBackingBase(GTKWindowBacking):
                 if w<=0 or h<=0:
                     fail("invalid scroll area size: %ix%i" % (w, h))
                     continue
-                if x+w>bw or y+h>bh:
-                    fail("scroll rectangle %s too big for the buffer: %s" % ((x, y, w, h), self.size))
-                    continue
-                if x+xdelta<0 or x+w+xdelta>bw:
+                #these should be errors,
+                #but desktop-scaling can cause a mismatch between the backing size
+                #and the real window size server-side.. so we clamp the dimensions instead
+                if x+w>bw:
+                    w = bw-x
+                if y+h>bh:
+                    h = bh-y
+                if x+w+xdelta>bw:
+                    w = bw-x-xdelta
+                    if w<=0:
+                        continue        #nothing left!
+                if y+h+ydelta>bh:
+                    h = bh-y-ydelta
+                    if h<=0:
+                        continue        #nothing left!
+                if x+xdelta<0:
                     fail("horizontal scroll by %i: rectangle %s overflows the backing buffer size %s" % (xdelta, (x, y, w, h), self.size))
                     continue
-                if y+ydelta<0 or y+h+ydelta>bh:
+                if y+ydelta<0:
                     fail("vertical scroll by %i: rectangle %s overflows the backing buffer size %s" % (ydelta, (x, y, w, h), self.size))
                     continue
                 #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
