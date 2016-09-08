@@ -348,7 +348,7 @@ class WindowVideoSource(WindowSource):
         videomin = min(640*480, cww*cwh)
         sr = self.video_subregion.rectangle
         if sr:
-            videomin = min(sr.width * sr.height)
+            videomin = min(videomin, sr.width * sr.height)
             rgbmax = min(rgbmax, sr.width*sr.height//2)
         if pixel_count<=rgbmax:
             return lossless("low pixel count")
