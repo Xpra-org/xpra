@@ -111,6 +111,11 @@ def main(script_file, cmdline):
         if fm:
             return fm()
 
+    def debug_exc(msg="run_mode error"):
+        from xpra.log import Logger
+        log = Logger("util")
+        log(msg, exc_info=True)
+
     try:
         try:
             defaults = make_defaults_struct()
@@ -123,22 +128,28 @@ def main(script_file, cmdline):
                 raise InitException(*args)
             return run_mode(script_file, err, options, args, mode, defaults)
         except SystemExit:
+            debug_exc()
             raise
         except InitExit as e:
+            debug_exc()
             if str(e) and e.args and (e.args[0] or len(e.args)>1):
                 command_info("%s" % e)
             return e.status
         except InitInfo as e:
+            debug_exc()
             command_info("%s" % e)
             return 0
         except InitException as e:
+            debug_exc()
             command_error("xpra initialization error:\n %s" % e)
             return 1
         except AssertionError as e:
+            debug_exc()
             command_error("xpra initialization error:\n %s" % e)
             traceback.print_tb(sys.exc_info()[2])
             return 1
         except Exception:
+            debug_exc()
             command_error("xpra main error:\n%s" % traceback.format_exc())
             return 1
     finally:
@@ -1483,9 +1494,9 @@ def connect_or_fail(display_desc, opts):
     except InitException:
         raise
     except Exception as e:
-        #from xpra.log import Logger
-        #log = Logger("util")
-        #log.error("failed to connect", exc_info=True)
+        from xpra.log import Logger
+        log = Logger("network")
+        log("failed to connect", exc_info=True)
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
