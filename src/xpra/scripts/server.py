@@ -19,7 +19,7 @@ import time
 import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
-from xpra.scripts.config import InitException, parse_bool
+from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.os_util import SIGNAMES
 from xpra.util import envint
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
@@ -1062,8 +1062,18 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #SSL sockets:
     wrap_socket_fn = None
-    ssl_opt = parse_bool("ssl", opts.ssl)
-    if ssl_opt is True or bind_ssl or (ssl_opt is None and opts.bind_tcp and opts.ssl_cert):
+    need_ssl = False
+    ssl_opt = opts.ssl.lower()
+    if ssl_opt in TRUE_OPTIONS or bind_ssl:
+        need_ssl = True
+    if opts.bind_tcp:
+        if ssl_opt=="auto" and opts.ssl_cert:
+            need_ssl = True
+        elif ssl_opt=="tcp":
+            need_ssl = True
+        elif ssl_opt=="www":
+            need_ssl = True
+    if need_ssl:
         from xpra.scripts.main import ssl_wrap_socket_fn
         try:
             wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
