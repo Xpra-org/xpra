@@ -1823,7 +1823,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         context.verify_mode = ssl_cert_reqs
         context.verify_flags = ssl_verify_flags
         context.options = ssl_options
-        if opts.ssl_cert or opts.ssl_key:
+        if opts.ssl_cert:
             context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
         if ssl_cert_reqs!=ssl.CERT_NONE:
             if server_side:
