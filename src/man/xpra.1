@@ -175,7 +175,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
 [\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
 [\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
-[\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
+[\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP|\fItcp\fP|\fIwww\fP]
 [\fB\-\-ssl\-key\fP=\fIKEYFILE\fP]
 [\fB\-\-ssl\-cert\fP=\fCERTFILE\fP]
 [\fB\-\-ssl\-protocol\fP=PROTOCOLVERSION\fP]
@@ -1305,9 +1305,20 @@ appreciate hearing about.
 
 .SS SSL Options
 .TP
-\fB\-\-ssl\fP\=\fIon\fP|\fIauto\fP|\fIoff\fP
-Wether TCP server sockets can be upgraded to SSL.
-This requires an \fBssl\-cert\fP to be specified.
+\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP|\fItcp\fP|\fIwww\fP
+Whether to enable SSL on TCP sockets and for what purpose.
+The TCP sockets will automatically be upgraded to SSL when SSL
+packets are received.
+.RS
+.IP \fBauto\fP
+The server will try to guess what protocol to use for each new
+SSL connection: either xpra's native protocol or https / websocket (wss)
+.IP \fBtcp\fP
+The SSL sockets will only be used for xpra's native protocol
+.IP \fBwww\fP
+The SSL sockets will only be used for https and websocket (wss)
+.RE
+If SSL is enabled, then a \fBssl\-cert\fP is required.
 Authentication, if required, will use the \fBssl\-auth\fP module specified,
 and fallback to \fBtcp-auth\fP or \fBauth\fP unless the value
 \fInone\fP is specified.
@@ -1341,7 +1352,7 @@ Whether to try to verify the server's certificates and how to behave if verifica
 \fB\-\-ssl\-verify-flags\fP=\fIFLAGS\fP
 The flags for certificate verification operations.
 \fB\-\-ssl\-check-hostname\fP=\fIyes\fP|\fIno\fP
-Wether to match the peer cert's hostname.
+Whether to match the peer cert's hostname.
 \fB\-\-ssl\-options\fP=\fIoptions\fP
 Set of SSL options enabled on this context.
 

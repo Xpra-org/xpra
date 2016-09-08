@@ -148,6 +148,7 @@ class ServerCore(object):
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
         self._ssl_wrap_socket = None
+        self.ssl_mode = None
         self._html = False
         self._www_dir = None
         self._aliases = {}
@@ -204,6 +205,7 @@ class ServerCore(object):
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
+        self.ssl_mode = opts.ssl
 
         self.init_html_proxy(opts)
         self.init_auth(opts)
@@ -559,7 +561,7 @@ class ServerCore(object):
                 netlog("error sending '%s': %s", nonl(msg), e)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
-        PEEK_SIZE = 1024
+        PEEK_SIZE = 8192
         v = conn.peek(PEEK_SIZE)
         if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
@@ -577,7 +579,11 @@ class ServerCore(object):
                 c = ord(v[0])
             except:
                 c = int(v[0])
-            conn_err("invalid packet header character '%s', not an xpra client?" % hex(c))
+            if c==0x16:
+                msg = "SSL packet"
+            else:
+                msg = "not an xpra client"
+            conn_err("invalid packet header character '%s', %s?" % (hex(c), msg))
             return True
         sock.settimeout(self._socket_timeout)
         inject_ssl_socket_info(conn)
@@ -645,10 +651,11 @@ class ServerCore(object):
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             netlog("may_wrap_socket SSL: %s", conn)
             v = None
-        if self._html:
+        is_ssl = socktype=="SSL"
+        if self._html and self.ssl_mode!="tcp":
             line1 = peek_data.splitlines()[0]
-            if line1.find("HTTP/")>0 or (socktype=="SSL" and peek_data.find("\x08http/1.1")>0):
-                http_proto = "http"+["","s"][int(socktype=="SSL")]
+            if line1.find("HTTP/")>0 or (is_ssl and (self.ssl_mode=="www" or (self.ssl_mode=="auto" and peek_data.find("\x08http/1.1")>0))):
+                http_proto = "http"+["","s"][int(is_ssl)]
                 if line1.startswith("GET ") or line1.startswith("POST "):
                     parts = line1.split(" ")
                     netlog.info("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])

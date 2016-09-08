@@ -710,7 +710,7 @@ def do_parse_cmdline(cmdline, defaults):
     parser.add_option_group(group)
     group.add_option("--ssl", action="store",
                       dest="ssl", default=defaults.ssl,
-                      help="Wether to enable SSL on TCP sockets (requires 'ssl-cert'). Default: '%s'."  % enabled_str(defaults.ssl))
+                      help="Whether to enable SSL on TCP sockets and for what purpose (requires 'ssl-cert'). Default: '%s'."  % enabled_str(defaults.ssl))
     group.add_option("--ssl-key", action="store",
                       dest="ssl_key", default=defaults.ssl_key,
                       help="Key file to use. Default: '%default'.")
@@ -740,7 +740,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The flags for certificate verification operations. Default: '%default'.")
     group.add_option("--ssl-check-hostname", action="store", metavar="yes|no",
                       dest="ssl_check_hostname", default=defaults.ssl_check_hostname,
-                      help="Wether to match the peer cert's hostname. Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
+                      help="Whether to match the peer cert's hostname or accept any host, dangerous. Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
     group.add_option("--ssl-server-hostname", action="store", metavar="hostname",
                       dest="ssl_server_hostname", default=defaults.ssl_server_hostname,
                       help="The server hostname to match. Default: '%default'.")
