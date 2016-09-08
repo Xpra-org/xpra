@@ -96,7 +96,8 @@ class ProxyServer(ServerCore):
             disp,mq = v
             if disp==display:
                 pid = process.pid
-                log.info("stop command: found process %s with pid %s for display %s, sending it 'stop' request", process, pid, display)
+                log.info("stop command: found process %s with pid %i for display %s", process, pid, display)
+                log.info(" forwarding the 'stop' request")
                 mq.put("stop")
                 return "stopped proxy process with pid %s" % pid
         raise ControlError("no proxy found for display %s" % display)
@@ -217,7 +218,8 @@ class ProxyServer(ServerCore):
         #no other packets should be arriving until the proxy instance responds to the initial hello packet
         def unexpected_packet(packet):
             if packet:
-                log.warn("received an unexpected packet on the proxy connection: %s", repr_ellipsized(packet))
+                log.warn("Warning: received an unexpected packet on the proxy connection %s:", client_proto)
+                log.warn(" %s", repr_ellipsized(packet))
         client_conn = client_proto.steal_connection(unexpected_packet)
         client_state = client_proto.save_state()
         cipher = None
