@@ -517,6 +517,14 @@ class ClientExtras(object):
 
     def setup_dbus_signals(self):
         try:
+            import xpra.dbus
+            assert xpra.dbus
+        except ImportError as e:
+            dbuslog("setup_dbus_signals()", exc_info=True)
+            dbuslog.info("dbus support is not installed")
+            dbuslog.info(" no support for power events")
+            return
+        try:
             from xpra.dbus.common import init_system_bus
             bus = init_system_bus()
             self.system_bus = bus
