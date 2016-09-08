@@ -476,15 +476,17 @@ class GLWindowBackingBase(GTKWindowBacking):
 
     def paint_scroll(self, x, y, w, h, scroll_data, options, callbacks):
         flush = options.intget("flush", 0)
-        self.idle_add(self.do_scroll_paints, scroll_data, flush)
-        fire_paint_callbacks(callbacks, True)
+        self.idle_add(self.do_scroll_paints, scroll_data, flush, callbacks)
 
-    def do_scroll_paints(self, scrolls, flush=0):
+    def do_scroll_paints(self, scrolls, flush=0, callbacks=[]):
         log("do_scroll_paints%s", (scrolls, flush))
         context = self.gl_context()
         if not context:
             log.warn("Warning: cannot paint scroll, no OpenGL context!")
             return
+        def fail(msg):
+            log.error("Error: %s", msg)
+            fire_paint_callbacks(callbacks, False, msg)
         with context:
             bw, bh = self.size
             self.set_rgb_paint_state()
@@ -505,13 +507,27 @@ class GLWindowBackingBase(GTKWindowBacking):
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
             for x,y,w,h,xdelta,ydelta in scrolls:
-                assert abs(xdelta)<bw, "invalid xdelta value: %i" % xdelta
-                assert abs(ydelta)<bh, "invalid ydelta value: %i" % ydelta
-                assert ydelta!=0 or xdelta!=0, "scroll has no delta!"
-                assert w>0 and h>0, "scroll area is empty: %ix%i" % (w, h)
-                assert x+w<=bw and y+h<=bh, "scroll rectangle %s too big for the buffer: %s" % ((x, y, w, h), self.size)
-                assert x+xdelta>=0 and x+w+xdelta<=bw, "horizontal scroll by %i: rectangle %s overflows the backing buffer size %s" % (xdelta, (x, y, w, h), self.size)
-                assert y+ydelta>=0 and y+h+ydelta<=bh, "vertical scroll by %i: rectangle %s overflows the backing buffer size %s" % (ydelta, (x, y, w, h), self.size)
+                if abs(xdelta)>=bw:
+                    fail("invalid xdelta value: %i" % xdelta)
+                    continue
+                if abs(ydelta)>=bh:
+                    fail("invalid ydelta value: %i" % ydelta)
+                    continue
+                if ydelta==0 and xdelta==0:
+                    fail("scroll has no delta!")
+                    continue
+                if w<=0 or h<=0:
+                    fail("invalid scroll area size: %ix%i" % (w, h))
+                    continue
+                if x+w>bw or y+h>bh:
+                    fail("scroll rectangle %s too big for the buffer: %s" % ((x, y, w, h), self.size))
+                    continue
+                if x+xdelta<0 or x+w+xdelta>bw:
+                    fail("horizontal scroll by %i: rectangle %s overflows the backing buffer size %s" % (xdelta, (x, y, w, h), self.size))
+                    continue
+                if y+ydelta<0 or y+h+ydelta>bh:
+                    fail("vertical scroll by %i: rectangle %s overflows the backing buffer size %s" % (ydelta, (x, y, w, h), self.size))
+                    continue
                 #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
                 glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
                                   x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
@@ -535,6 +551,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.unset_rgb_paint_state()
             self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
             self.present_fbo(0, 0, bw, bh, flush)
+            fire_paint_callbacks(callbacks, True)
 
     def set_rgb_paint_state(self):
         # Set GL state for RGB painting:

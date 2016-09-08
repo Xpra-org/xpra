@@ -1330,7 +1330,7 @@ class WindowVideoSource(WindowSource):
 
     def encode_scrolling(self, image, distances, old_csums, csums, options):
         tstart = time.time()
-        scrolllog("encode_scrolling(%s, {..}, [], [], %s)", image, options)
+        scrolllog("encode_scrolling(%s, {..}, [], [], %s) window-dimensions=%s", image, options, self.window_dimensions)
         x, y, w, h = image.get_geometry()[:4]
         yscroll_values = []
         max_scroll_regions = 50
@@ -1390,8 +1390,10 @@ class WindowVideoSource(WindowSource):
                 client_options["flush"] = flush
             packet = self.make_draw_packet(x, y, w, h, "scroll", LargeStructure("scroll data", scrolls), 0, client_options)
             self.queue_damage_packet(packet)
+        scrolllog("scroll encoding took %ims", (time.time()-tstart)*1000)
         #send the rest as rectangles:
         if non_scroll:
+            non_start = time.time()
             for start, count in non_scroll:
                 sub = image.get_sub_image(0, start, w, count)
                 flush -= 1
@@ -1406,9 +1408,8 @@ class WindowVideoSource(WindowSource):
                     client_options["flush"] = flush
                 packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options)
                 self.queue_damage_packet(packet)
+            scrolllog("non-scroll encoding took %ims", (time.time()-non_start)*1000)
         assert flush==0
-        tend = time.time()
-        scrolllog("scroll encoding took %ims", (tend-tstart)*1000)
         return None
 
     def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
