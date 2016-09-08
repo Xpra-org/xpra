@@ -5,7 +5,7 @@
   <repository name="ftp.gnome.org" type="tarball" default="yes"
               href="http://ftp.gnome.org/pub/GNOME/sources/"/>
   <repository name="openssl" type="tarball"
-              href="ftp://www.openssl.org/source/"/>
+              href="ftp://ftp.openssl.org/source/"/>
   <repository name="ftp.gnu.org" type="tarball" href="ftp://ftp.gnu.org/gnu/"/>
   <repository name="sourceforge" type="tarball"
               href="http://downloads.sourceforge.net/sourceforge/"/>
