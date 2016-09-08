@@ -19,6 +19,9 @@ MIN_EVENTS = envint("XPRA_VIDEO_DETECT_MIN_EVENTS", 20)
 MIN_W = envint("XPRA_VIDEO_DETECT_MIN_WIDTH", 128)
 MIN_H = envint("XPRA_VIDEO_DETECT_MIN_HEIGHT", 96)
 
+RATIO_WEIGHT = envint("XPRA_VIDEO_DETECT_RATIO_WEIGHT", 80)
+KEEP_SCORE = envint("XPRA_VIDEO_DETECT_KEEP_SCORE", 160)
+
 
 def scoreinout(ww, wh, region, incount, outcount):
     total = incount+outcount
@@ -38,11 +41,12 @@ def scoreinout(ww, wh, region, incount, outcount):
     #proportion of pixels in this region relative to the whole window:
     inwindow = float(width*height) / (ww*wh)
     ratio = inregion / inwindow
-    score = 100.0*inregion + 10*inwindow
-    #if the region has at least 35% of updates, boost it with window ratio:
-    score += max(0, inregion-0.35) * (math.sqrt(ratio)-1.0) * 25
+    score = 100.0*inregion
+    #if the region has at least 35% of updates, boost it with window ratio
+    #(capped at 6, and smoothed with sqrt):
+    score += max(0, inregion-0.35) * (math.sqrt(min(6, ratio))-1.0) * RATIO_WEIGHT
     sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%i%%, inwindow=%i%%, ratio=%.1f, score=%i", ww, wh, region, incount, outcount, 100*inregion, 100*inwindow, ratio, score)
-    return int(score)
+    return max(0, int(score))
 
 class VideoSubregion(object):
 
@@ -306,8 +310,8 @@ class VideoSubregion(object):
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
                 new_rects = []
-                for x in rects:
-                    new_rects += x.substract_rect(r)
+                for rect in rects:
+                    new_rects += rect.substract_rect(r)
                 if not new_rects:
                     #nothing left: damage covered the whole rect
                     return 1.0
@@ -317,7 +321,7 @@ class VideoSubregion(object):
             #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i", rects, not_damaged_pixels, rect, rect_pixels)
             return max(0, min(1.0, 1.0-float(not_damaged_pixels)/rect_pixels))
 
-        def score_region(info, region, ignore_size=0):
+        def score_region(info, region, ignore_size=0, d_ratio=0):
             #check if the region given is a good candidate, and if so we use it
             #clamp it:
             if region.width<MIN_W or region.height<MIN_H:
@@ -331,7 +335,8 @@ class VideoSubregion(object):
             score = scoreinout(ww, wh, region, incount, outcount)
             #discount score if the region contains areas that were not damaged:
             #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
-            d_ratio = damaged_ratio(region)
+            if d_ratio==0:
+                d_ratio = damaged_ratio(region)
             score *= math.sqrt(d_ratio)
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, score)
@@ -363,7 +368,7 @@ class VideoSubregion(object):
         cur_score = 0
         if rect:
             cur_score = score_region("current", rect)
-            if cur_score>=125:
+            if cur_score>=KEEP_SCORE:
                 sslog("keeping existing video region %s with score %s", rect, cur_score)
                 return
 
@@ -388,7 +393,7 @@ class VideoSubregion(object):
             most_damaged_regions = [r for r,v in damage_count.items() if v==most_damaged]
             if len(most_damaged_regions)==1:
                 r = most_damaged_regions[0]
-                score = score_region("most-damaged", r)
+                score = score_region("most-damaged", r, d_ratio=1.0)
                 sslog("identify video: score most damaged area %s=%s%%", r, score)
                 if score>120:
                     setnewregion(r, "%s%% of large damage requests, score=%s", most_pct, score)
