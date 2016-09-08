@@ -518,10 +518,6 @@ class ServerCore(object):
             netlog.error("Error: cannot accept new connection:")
             netlog.error(" %s", e)
             return True
-        if len(self._potential_protocols)>=self._max_connections:
-            netlog.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
-            sock.close()
-            return True
         try:
             peername = sock.getpeername()
         except:
@@ -529,6 +525,12 @@ class ServerCore(object):
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
+        #limit number of concurrent network connections:
+        if socktype not in ("unix-domain", "named-pipe") and len(self._potential_protocols)>=self._max_connections:
+            netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
+            netlog.error(" ignoring new one: %s", target)
+            sock.close()
+            return True
         netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s. timeout=%s", args, sock, self._socket_timeout, sockname, address, peername, self._socket_timeout)
         conn = SocketConnection(sock, sockname, address, target, socktype)
 
