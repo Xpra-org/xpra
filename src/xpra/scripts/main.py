@@ -1900,7 +1900,8 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         except Exception as e:
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
-                return None 
+                return None
+            raise
         #ensure we handle ssl exceptions as we should from now on:
         from xpra.net.bytestreams import init_ssl
         init_ssl()
