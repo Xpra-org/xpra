@@ -573,10 +573,10 @@ class WindowVideoSource(WindowSource):
 
     def subregion_is_video(self):
         if not self.video_subregion.enabled:
-            return None
+            return False
         vr = self.video_subregion.rectangle
         if not vr:
-            return None
+            return False
         events_count = self.statistics.damage_events_count - self.video_subregion.set_at
         if events_count<MIN_VIDEO_EVENTS:
             return False
@@ -1444,8 +1444,8 @@ class WindowVideoSource(WindowSource):
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
-        #check for scrolling:
-        if self.supports_scrolling:
+        #check for scrolling if we're not dealing with a "real" video area:
+        if self.supports_scrolling and not self.subregion_is_video() and not self.b_frame_flush_timer:
             try:
                 start = time.time()
                 lsd = self.scroll_data
