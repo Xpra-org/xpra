@@ -170,7 +170,9 @@ class WindowVideoSource(WindowSource):
         info = WindowSource.get_info(self)
         sr = self.video_subregion
         if sr:
-            info["video_subregion"] = sr.get_info()
+            sri = sr.get_info()
+            sri["video-mode"] = self.subregion_is_video()
+            info["video_subregion"] = sri
         info["scaling"] = self.actual_scaling
         def addcinfo(prefix, x):
             if not x:
@@ -580,7 +582,9 @@ class WindowVideoSource(WindowSource):
         events_count = self.statistics.damage_events_count - self.video_subregion.set_at
         if events_count<MIN_VIDEO_EVENTS:
             return False
-        return self.video_subregion.fps>=MIN_VIDEO_FPS
+        if self.video_subregion.fps<MIN_VIDEO_FPS:
+            return False
+        return True
 
 
     def do_send_delayed_regions(self, damage_time, regions, coding, options):
@@ -1105,7 +1109,7 @@ class WindowVideoSource(WindowSource):
             if self.actual_scaling!=(1, 1):
                 #if we are already downscaling, boost so we will stick with it a bit longer:
                 #more so if we are downscaling a lot (1/3 -> er=1.5 + ..)
-                er += (0.5 * self.actual_scaling[1] / self.actual_scaling[0]) 
+                er += (0.5 * self.actual_scaling[1] / self.actual_scaling[0])
             qs = s>(q-er*10) and q<(50+er*15)
             #scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
 

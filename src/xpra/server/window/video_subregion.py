@@ -352,12 +352,14 @@ class VideoSubregion(object):
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
         def setnewregion(rect, msg="", *args):
-            sslog("setting new region %s: "+msg, rect, *args)
-            self.set_at = damage_events_count
-            self.counter = damage_events_count
+            if not self.rectangle or self.rectangle!=rect:
+                sslog("setting new region %s: "+msg, rect, *args)
+                self.set_at = damage_events_count
+                self.counter = damage_events_count
             if not self.enabled:
                 #could have been disabled since we started this method!
                 self.novideoregion("disabled")
+                return
             if not self.detection:
                 return
             updateregion(rect)
@@ -394,7 +396,7 @@ class VideoSubregion(object):
             if len(most_damaged_regions)==1:
                 r = most_damaged_regions[0]
                 score = score_region("most-damaged", r, d_ratio=1.0)
-                sslog("identify video: score most damaged area %s=%s%%", r, score)
+                sslog("identify video: score most damaged area %s=%i%%", r, score)
                 if score>120:
                     setnewregion(r, "%s%% of large damage requests, score=%s", most_pct, score)
                     return
