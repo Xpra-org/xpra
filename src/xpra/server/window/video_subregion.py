@@ -71,6 +71,7 @@ class VideoSubregion(object):
         self.time = 0           #see above
         self.refresh_timer = None
         self.refresh_regions = []
+        self.last_scores = {}
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
 
@@ -83,7 +84,7 @@ class VideoSubregion(object):
 
 
     def __repr__(self):
-        return "VideoSubregion(%s)" % self.get_info()
+        return "VideoSubregion%s" % (self.rectangle, )
 
 
     def set_enabled(self, enabled):
@@ -143,6 +144,7 @@ class VideoSubregion(object):
                      "non-max-wait" : self.non_max_wait,
                      "in-out"       : self.inout,
                      "score"        : self.score,
+                     "scores"       : self.last_scores,
                      "fps"          : self.fps,
                      "damaged"      : self.damaged,
                      "exclusion-zones" : [(r.x, r.y, r.width, r.height) for r in self.exclusion_zones]
@@ -341,7 +343,7 @@ class VideoSubregion(object):
             #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
             if d_ratio==0:
                 d_ratio = damaged_ratio(region)
-            score *= math.sqrt(d_ratio)
+            score = int(score * math.sqrt(d_ratio))
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, score)
             scores[region] = score
@@ -354,6 +356,7 @@ class VideoSubregion(object):
             self.score = scoreinout(ww, wh, rect, *self.inout)
             self.fps = int(self.inout[0]/(rect.width*rect.height) / (time.time()-from_time))
             self.damaged = int(100*damaged_ratio(self.rectangle))
+            self.last_scores = scores
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
         def setnewregion(rect, msg="", *args):
@@ -439,8 +442,7 @@ class VideoSubregion(object):
         #retry existing region, tolerate lower score:
         if cur_score>=90 and (highscore<100 or cur_score>=highscore):
             sslog("keeping existing video region %s with score %s", rect, cur_score)
-            updateregion(self.rectangle)
-            return
+            return setnewregion(self.rectangle, "existing region with score: %i" % cur_score)
 
         if highscore>=100:
             region = [r for r,s in scores.items() if s==highscore][0]
@@ -457,3 +459,4 @@ class VideoSubregion(object):
                 return setnewregion(merged, "merged all regions, score=%s", score)
 
         self.novideoregion("failed to identify a video region")
+        self.last_scores = scores
