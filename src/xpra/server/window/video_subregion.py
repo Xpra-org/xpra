@@ -291,6 +291,8 @@ class VideoSubregion(object):
                     wc.setdefault(w, dict()).setdefault(x, set()).add(r)
                 if h>=MIN_H:
                     hc.setdefault(h, dict()).setdefault(y, set()).add(r)
+        #we can shortcut the damaged ratio if the whole window got damaged at least once:
+        all_damaged = dec.get(rectangle(0, 0, ww, wh), 0) > 0
 
         def inoutcount(region, ignore_size=0):
             #count how many pixels are in or out if this region
@@ -308,6 +310,8 @@ class VideoSubregion(object):
             return incount, outcount
 
         def damaged_ratio(rect):
+            if all_damaged:
+                return 1
             rects = [rect]
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
@@ -321,7 +325,7 @@ class VideoSubregion(object):
             not_damaged_pixels = sum((r.width*r.height) for r in rects)
             rect_pixels = rect.width*rect.height
             #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i", rects, not_damaged_pixels, rect, rect_pixels)
-            return max(0, min(1.0, 1.0-float(not_damaged_pixels)/rect_pixels))
+            return max(0, min(1, 1.0-float(not_damaged_pixels)/rect_pixels))
 
         scores = {None : 0}
         def score_region(info, region, ignore_size=0, d_ratio=0):
