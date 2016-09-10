@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import binascii
-from xpra.os_util import strtobytes, bytestostr
 import traceback
 import threading
 import sys
@@ -184,20 +183,30 @@ class typedict(dict):
     from xpra.log import Logger
     log = Logger("util")
 
+    @staticmethod    
+    def strtobytes(self, v):
+        from xpra.os_util import strtobytes
+        return strtobytes(v)
+    @staticmethod    
+    def bytestostr(self, v):
+        from xpra.os_util import bytestostr
+        return bytestostr(v)
+
+
     def capsget(self, key, default=None):
         v = self.get(key)
         #py3k and bytes as keys...
         if v is None and type(key)==str:
-            v = self.get(strtobytes(key), default)
+            v = self.get(typedict.strtobytes(key), default)
         if sys.version >= '3' and type(v)==bytes:
-            v = bytestostr(v)
+            v = typedict.bytestostr(v)
         return v
 
     def strget(self, k, default=None):
         v = self.capsget(k, default)
         if v is None:
             return None
-        return bytestostr(v)
+        return typedict.bytestostr(v)
 
     def intget(self, k, d=0):
         v = self.capsget(k)
@@ -251,7 +260,7 @@ class typedict(dict):
             for i in range(len(aslist)):
                 x = aslist[i]
                 if sys.version > '3' and type(x)==bytes and item_type==str:
-                    x = bytestostr(x)
+                    x = typedict.bytestostr(x)
                     aslist[i] = x
                 elif type(x)==unicode and item_type==str:
                     x = str(x)
@@ -599,6 +608,7 @@ def sorted_nicely(l):
             return int(text)
         else:
             return text
+    from xpra.os_util import bytestostr
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', bytestostr(key)) ]
     return sorted(l, key = alphanum_key)
 
