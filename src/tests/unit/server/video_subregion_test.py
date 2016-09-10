@@ -25,7 +25,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
-        r = video_subregion.VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150)
+        r = video_subregion.VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150, True)
 
         ww = 1024
         wh = 768

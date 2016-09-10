@@ -53,12 +53,12 @@ def scoreinout(ww, wh, region, incount, outcount):
 
 class VideoSubregion(object):
 
-    def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay):
+    def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay, supported=False):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
         self.refresh_cb = refresh_cb        #usage: refresh_cb(window, regions)
         self.auto_refresh_delay = auto_refresh_delay
-        self.supported = False
+        self.supported = supported
         self.enabled = True
         self.detection = True
         self.exclusion_zones = []
