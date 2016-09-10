@@ -98,6 +98,8 @@ class VideoSubregion(object):
 
     def set_detection(self, detection):
         self.detection = detection
+        if not self.detection:
+            self.reset()
 
     def set_region(self, x, y, w, h):
         sslog("set_region%s", (x, y, w, h))
