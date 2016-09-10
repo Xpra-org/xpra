@@ -157,8 +157,8 @@ def is_Ubuntu():
     if os.name!="posix":
         return False
     try:
-        from xpra.scripts.config import python_platform
-        return python_platform.linux_distribution()[0]=="Ubuntu"
+        if get_linux_distribution()[0]=="Ubuntu":
+            return True
     except:
         pass
     try:
@@ -173,6 +173,11 @@ def is_Fedora():
     try:
         if os.path.exists("/etc/fedora-release"):
             return True
+        try:
+            if get_linux_distribution()[0]=="Fedora":
+                return True
+        except:
+            pass
         v = load_binary_file("/etc/issue")
         return v.find("Fedora")>=0
     except:
@@ -185,10 +190,18 @@ def get_linux_distribution():
         #linux_distribution is deprecated in Python 3.5 and it causes warnings,
         #so use our own code first:
         import subprocess
-        cmd = 'lsb_release -a'
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, _ = p.communicate()
-        if p.returncode==0:
+        cmd = ["lsb_release", "-a"]
+        try:
+            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, _ = p.communicate()
+            assert p.returncode==0 and out
+        except:
+            try:
+                from xpra.scripts.config import python_platform
+                _linux_distribution = python_platform.linux_distribution()
+            except:
+                _linux_distribution = ("unknown", "unknown", "unknown")
+        else:
             d = {}
             for line in strtobytes(out).splitlines():
                 line = bytestostr(line)
@@ -198,9 +211,6 @@ def get_linux_distribution():
             v = [d.get(x) for x in ("distributor_id", "release", "codename")]
             if None not in v:
                 return tuple([bytestostr(x) for x in v])
-        else:
-            from xpra.scripts.config import python_platform
-            _linux_distribution = python_platform.linux_distribution()
     return _linux_distribution
 
 def getUbuntuVersion():
@@ -371,13 +381,18 @@ def main():
     log = Logger("util")
     sp = sys.platform
     log.info("platform_name(%s)=%s", sp, platform_name(sp, ""))
+    if sys.platform.startswith("linux"):
+        log.info("linux_distribution=%s", get_linux_distribution())
+        log.info("Ubuntu=%s", is_Ubuntu())
+        if is_Ubuntu():
+            log.info("Ubuntu version=%s", getUbuntuVersion())
+        log.info("Unity=%s", is_unity())
+        log.info("Fedora=%s", is_Fedora())
+        log.info("systemd=%s", is_systemd_pid1())
     log.info("get_machine_id()=%s", get_machine_id())
+    log.info("get_user_uuid()=%s", get_user_uuid())
     log.info("get_hex_uuid()=%s", get_hex_uuid())
     log.info("get_int_uuid()=%s", get_int_uuid())
-    log.info("systemd=%s", is_systemd_pid1())
-    ld = get_linux_distribution()
-    if ld:
-        log.info("get_linux_distribution()=%s", ld)
 
 
 if __name__ == "__main__":
