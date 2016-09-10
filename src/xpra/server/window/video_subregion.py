@@ -319,8 +319,8 @@ class VideoSubregion(object):
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
                 new_rects = []
-                for rect in rects:
-                    new_rects += rect.substract_rect(r)
+                for cr in rects:
+                    new_rects += cr.substract_rect(r)
                 if not new_rects:
                     #nothing left: damage covered the whole rect
                     return 1.0
@@ -328,7 +328,7 @@ class VideoSubregion(object):
             not_damaged_pixels = sum((r.width*r.height) for r in rects)
             rect_pixels = rect.width*rect.height
             #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i", rects, not_damaged_pixels, rect, rect_pixels)
-            return max(0, min(1, 1.0-float(not_damaged_pixels)/rect_pixels))
+            return max(0, min(1, 1.0-float(not_damaged_pixels)/float(rect_pixels)))
 
         scores = {None : 0}
         def score_region(info, region, ignore_size=0, d_ratio=0):
@@ -350,6 +350,7 @@ class VideoSubregion(object):
             #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
             if d_ratio==0:
                 d_ratio = damaged_ratio(region)
+                sslog.warn("damaged_ratio(%s)=%s", region, d_ratio)
             score = int(score * math.sqrt(d_ratio))
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, score)
