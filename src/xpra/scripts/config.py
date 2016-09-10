@@ -39,11 +39,17 @@ WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0]>=3
 
-try:
-    import xpra.sound
-    has_sound_support = bool(xpra.sound)
-except:
-    has_sound_support = False
+
+_has_sound_support = None
+def has_sound_support():
+    global _has_sound_support
+    if _has_sound_support is None:
+        try:
+            import xpra.sound
+            _has_sound_support = bool(xpra.sound)
+        except:
+            _has_sound_support = False
+    return _has_sound_support
 
 
 def get_xorg_bin():
@@ -680,8 +686,8 @@ def get_defaults():
                     "dbus-proxy"        : not OSX and not WIN32,
                     "mmap"              : ["no", "yes"][not OSX and not WIN32],
                     "mmap-group"        : False,
-                    "speaker"           : ["disabled", "on"][has_sound_support],
-                    "microphone"        : ["disabled", "off"][has_sound_support],
+                    "speaker"           : ["disabled", "on"][has_sound_support()],
+                    "microphone"        : ["disabled", "off"][has_sound_support()],
                     "readonly"          : False,
                     "keyboard-sync"     : True,
                     "pings"             : False,
