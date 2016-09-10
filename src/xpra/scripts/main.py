@@ -538,7 +538,7 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("speaker")
     legacy_bool_parse("microphone")
     legacy_bool_parse("av-sync")
-    if has_sound_support:
+    if has_sound_support():
         group.add_option("--speaker", action="store", metavar="on|off|disabled",
                           dest="speaker", default=defaults.speaker,
                           help="Forward sound output to the client(s). Default: %s." % sound_option(defaults.speaker))
@@ -1153,7 +1153,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
         elif mode in ("_sound_record", "_sound_play", "_sound_query"):
-            if not has_sound_support:
+            if not has_sound_support():
                 error_cb("no sound support!")
             from xpra.sound.wrapper import run_sound
             return run_sound(mode, error_cb, options, args)

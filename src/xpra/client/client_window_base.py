@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,7 +9,8 @@ import sys, os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.util import typedict, bytestostr, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.os_util import bytestostr
+from xpra.util import typedict, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 log = Logger("window")
 plog = Logger("paint")

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -183,30 +183,23 @@ class typedict(dict):
     from xpra.log import Logger
     log = Logger("util")
 
-    @staticmethod    
-    def strtobytes(self, v):
-        from xpra.os_util import strtobytes
-        return strtobytes(v)
-    @staticmethod    
-    def bytestostr(self, v):
-        from xpra.os_util import bytestostr
-        return bytestostr(v)
-
-
     def capsget(self, key, default=None):
         v = self.get(key)
         #py3k and bytes as keys...
         if v is None and type(key)==str:
-            v = self.get(typedict.strtobytes(key), default)
+            from xpra.os_util import strtobytes
+            v = self.get(strtobytes(key), default)
         if sys.version >= '3' and type(v)==bytes:
-            v = typedict.bytestostr(v)
+            from xpra.os_util import bytestostr
+            v = bytestostr(v)
         return v
 
     def strget(self, k, default=None):
         v = self.capsget(k, default)
         if v is None:
             return None
-        return typedict.bytestostr(v)
+        from xpra.os_util import bytestostr
+        return bytestostr(v)
 
     def intget(self, k, d=0):
         v = self.capsget(k)
@@ -260,7 +253,8 @@ class typedict(dict):
             for i in range(len(aslist)):
                 x = aslist[i]
                 if sys.version > '3' and type(x)==bytes and item_type==str:
-                    x = typedict.bytestostr(x)
+                    from xpra.os_util import bytestostr
+                    x = bytestostr(x)
                     aslist[i] = x
                 elif type(x)==unicode and item_type==str:
                     x = str(x)

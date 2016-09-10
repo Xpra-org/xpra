@@ -12,7 +12,8 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.util import AtomicInteger, bytestostr, csv, print_nested_dict
+from xpra.util import AtomicInteger, csv, print_nested_dict
+from xpra.os_util import bytestostr
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 

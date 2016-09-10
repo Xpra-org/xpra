@@ -25,8 +25,8 @@ menulog = Logger("menu")
 grablog = Logger("grab")
 
 
-from xpra.os_util import memoryview_to_bytes
-from xpra.util import AdHocStruct, bytestostr, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
+from xpra.os_util import memoryview_to_bytes, bytestostr
+from xpra.util import AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS

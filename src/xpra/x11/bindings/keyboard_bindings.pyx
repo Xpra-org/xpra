@@ -10,7 +10,7 @@ import time
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.util import bytestostr
+from xpra.os_util import bytestostr
 
 
 DEF PATH_MAX = 1024

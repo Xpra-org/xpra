@@ -335,7 +335,7 @@ def main():
 					s += str(v[i])
 				return s
 			if type(v)==bytes:
-				from xpra.util import bytestostr
+				from xpra.os_util import bytestostr
 				v = bytestostr(v)
 			if type(v)==str and v.startswith("v"):
 				return v[1:]

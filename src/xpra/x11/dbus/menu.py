@@ -7,7 +7,8 @@ import weakref
 from xpra.log import Logger
 log = Logger("menu")
 
-from xpra.util import typedict, bytestostr
+from xpra.util import typedict
+from xpra.os_util import bytestostr, strtobytes
 
 
 def has_gtk_menu_support(root_window):
@@ -104,7 +105,6 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
     #make or re-use services:
     try:
         NAME_PREFIX = "org.xpra."
-        from xpra.util import strtobytes
         from xpra.dbus.common import init_session_bus
         from xpra.dbus.gtk_menuactions import Menus, Actions
         session_bus = init_session_bus()
