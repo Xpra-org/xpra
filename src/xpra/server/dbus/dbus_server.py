@@ -99,7 +99,7 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='i')
     def Focus(self, wid):
         self.log(".Focus(%i)", wid)
-        self.server.control_command_focus(wid)
+        self.server.control_command_focus(ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):
@@ -172,33 +172,36 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='iiiii')
     def SetVideoRegion(self, wid, x, y, w, h):
         self.log(".SetVideoRegion%s", (wid, x, y, w, h))
-        self.server.control_command_video_region(wid, x, y, w, h)
+        self.server.control_command_video_region(ni(wid), ni(x), ni(y), ni(w), ni(h))
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionEnabled(self, wid, enabled):
         self.log(".SetVideoRegionEnabled(%i, %s)", wid, enabled)
-        self.server.control_command_video_region_enabled(wid, enabled)
+        self.server.control_command_video_region_enabled(ni(wid), nb(enabled))
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionDetection(self, wid, detection):
         self.log(".SetVideoRegionDetection(%i, %s)", wid, detection)
-        self.server.control_command_video_region_detection(wid, detection)
+        self.server.control_command_video_region_detection(ni(wid), nb(detection))
 
     @dbus.service.method(INTERFACE, in_signature='iaai')
     def SetVideoRegionExclusionZones(self, wid, zones):
         log("SetVideoRegionExclusionZones(%i, %s)", wid, zones)
-        self.server.control_command_video_region_exclusion_zones(wid, zones)
+        nzones = []
+        for zone in zones:
+            nzones.append([ni(x) for x in zone]) 
+        self.server.control_command_video_region_exclusion_zones(ni(wid), nzones)
 
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):
         self.log(".LockBatchDelay(%i, %i)", wid, delay)
-        self.server.control_command_lock_batch_delay(wid, delay)
+        self.server.control_command_lock_batch_delay(ni(wid), ni(delay))
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def UnlockBatchDelay(self, wid):
         self.log(".UnlockBatchDelay(%i)", wid)
-        self.server.control_command_unlock_batch_delay(wid)
+        self.server.control_command_unlock_batch_delay(ni(wid))
 
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
@@ -216,7 +219,7 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetClipboardDirection(self, direction):
         self.log(".SetClipboardDirection(%s)", direction)
-        self.server.control_command_clipboard_direction(direction)
+        self.server.control_command_clipboard_direction(ns(direction))
 
 
     @dbus.service.method(INTERFACE, in_signature='ii')

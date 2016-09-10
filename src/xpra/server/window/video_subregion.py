@@ -88,7 +88,7 @@ class VideoSubregion(object):
 
 
     def __repr__(self):
-        return "VideoSubregion%s" % (self.rectangle, )
+        return "VideoSubregion(%s)" % self.rectangle
 
 
     def set_enabled(self, enabled):
