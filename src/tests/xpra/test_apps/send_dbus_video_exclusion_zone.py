@@ -10,9 +10,9 @@ def test_dbus(display, wid=1, zones=[[100,100,20,20],]):
     bus = dbus.SessionBus()
     server = 'org.xpra.Server%i' % display
     service = bus.get_object(server, "/org/xpra/Server")
-    set_exclusion_zones = service.get_dbus_method('SetVideoRegionExclusionZones', 'org.xpra.Server')
-    print("calling %s.set_exclusion_zones(%i, %s)" % (server, wid, zones))
-    set_exclusion_zones(wid, zones)
+    SetVideoRegionExclusionZones = service.get_dbus_method('SetVideoRegionExclusionZones', 'org.xpra.Server')
+    print("calling %s.SetVideoRegionExclusionZones(%i, %s)" % (server, wid, zones))
+    SetVideoRegionExclusionZones(wid, zones)
 
 def main():
     import sys
@@ -27,7 +27,7 @@ def main():
     try:
         zones = []
         for arg in sys.argv[3:]:
-            zones.append([int(x) for x in arg.split(",")])
+            zones.append([int(x.strip()) for x in arg.split(",")])
     except:
         zones = []
     test_dbus(DISPLAY, wid, zones)
