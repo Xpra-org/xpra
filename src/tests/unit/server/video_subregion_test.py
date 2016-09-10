@@ -72,8 +72,8 @@ class TestVersionUtilModule(unittest.TestCase):
         assertiswin()
 
         vr = (time.time(), ww/4, wh/4, ww/2, wh/2)
-        log("* mixed with region using 1/5 of window and 1/3 of updates: %s", vr)
-        for _ in range(30):
+        log("* mixed with region using 1/4 of window and 1/3 of updates: %s", vr)
+        for _ in range(24):
             last_damage_events.append(vr)
         r.identify_video_subregion(ww, wh, 200, last_damage_events)
         assertiswin()
@@ -92,16 +92,18 @@ class TestVersionUtilModule(unittest.TestCase):
         assert r.rectangle is None
 
         log("* checking that two video regions close to each other can be merged")
-        last_damage_events = deque(maxlen=150)
-        r.reset()
         v1 = (time.time(), 100, 100, 320, 240)
         v2 = (time.time(), 460, 120, 320, 240)
-        for _ in range(50):
-            last_damage_events.append(v1)
-            last_damage_events.append(v2)
-        r.identify_video_subregion(ww, wh, 100, last_damage_events)
-        m = region.merge_all([region.rectangle(*v1[1:]), region.rectangle(*v2[1:])])
-        assert r.rectangle==m, "expected %s but got %s" % (m, r.rectangle)
+        for N1, N2 in ((50, 50), (60, 40), (50, 30)):
+            last_damage_events = deque(maxlen=150)
+            r.reset()
+            for _ in range(N1):
+                last_damage_events.append(v1)
+            for _ in range(N2):
+                last_damage_events.append(v2)
+            r.identify_video_subregion(ww, wh, 100, last_damage_events)
+            m = region.merge_all([region.rectangle(*v1[1:]), region.rectangle(*v2[1:])])
+            assert r.rectangle and r.rectangle==m, "expected %s but got %s" % (m, r.rectangle)
 
 
     def test_cases(self):
