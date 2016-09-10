@@ -350,7 +350,6 @@ class VideoSubregion(object):
             #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
             if d_ratio==0:
                 d_ratio = damaged_ratio(region)
-                sslog.warn("damaged_ratio(%s)=%s", region, d_ratio)
             score = int(score * math.sqrt(d_ratio))
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, score)
