@@ -1678,15 +1678,15 @@ class ServerBase(ServerCore):
         return video_subregions
 
     def control_command_video_region_enabled(self, wid, enabled):
-        assert type(wid)==int, "window id is not an int"
-        assert type(enabled)==bool, "enabled flag is not a boolean"
+        assert type(wid)==int, "window id '%s' is not an int" % wid
+        assert type(enabled)==bool, "enabled flag '%s' is not a boolean" % enabled
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_enabled(enabled)
         return "video region %s for window %i" % (["disabled", "enabled"][int(enabled)], wid)
 
     def control_command_video_region_detection(self, wid, detection):
-        assert type(wid)==int, "window id is not an int"
-        assert type(detection)==bool, "detection flag is not a boolean"
+        assert type(wid)==int, "window id '%s' is not an int" % wid
+        assert type(detection)==bool, "detection flag '%s' is not a boolean" % detection
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_detection(detection)
         return "video region detection %s for window %i" % (["disabled", "enabled"][int(detection)], wid)
