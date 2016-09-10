@@ -207,12 +207,6 @@ class ShadowServerBase(object):
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
 
 
-    def init_dbus_server(self):
-        if not self.dbus_control:
-            return
-        try:
-            from xpra.server.shadow.shadow_dbus_server import Shadow_DBUS_Server
-            self.dbus_server = Shadow_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
-        except Exception as e:
-            log.error("Error setting up our dbus server:")
-            log.error(" %s", e)
+    def make_dbus_server(self):
+        from xpra.server.shadow.shadow_dbus_server import Shadow_DBUS_Server
+        return Shadow_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))

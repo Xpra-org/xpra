@@ -650,15 +650,19 @@ class ServerBase(ServerCore):
             self.supports_dbus_proxy = False
 
     def init_dbus_server(self):
+        dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
         if not self.dbus_control:
             return
         try:
-            from xpra.server.dbus.dbus_server import DBUS_Server
-            self.dbus_server = DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
-            dbuslog("init_dbus_server() DBUS_Server=%s", self.dbus_server)
+            self.dbus_server = self.make_dbus_server()
+            dbuslog("init_dbus_server() dbus_server=%s", self.dbus_server)
         except Exception as e:
             dbuslog.error("Error setting up our dbus server:", exc_info=True)
             dbuslog.error(" %s", e)
+
+    def make_dbus_server(self):
+        from xpra.server.dbus.dbus_server import DBUS_Server
+        return DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
 
     def add_system_tray(self):
@@ -1675,18 +1679,15 @@ class ServerBase(ServerCore):
                 log.warn(" no video subregion attribute found in %s", type(ws))
                 continue
             video_subregions.append(vs)
+        #log("_control_video_subregions_from_wid(%s)=%s", wid, video_subregions)
         return video_subregions
 
     def control_command_video_region_enabled(self, wid, enabled):
-        assert type(wid)==int, "window id '%s' is not an int" % wid
-        assert type(enabled)==bool, "enabled flag '%s' is not a boolean" % enabled
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_enabled(enabled)
         return "video region %s for window %i" % (["disabled", "enabled"][int(enabled)], wid)
 
     def control_command_video_region_detection(self, wid, detection):
-        assert type(wid)==int, "window id '%s' is not an int" % wid
-        assert type(detection)==bool, "detection flag '%s' is not a boolean" % detection
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_detection(detection)
         return "video region detection %s for window %i" % (["disabled", "enabled"][int(detection)], wid)
