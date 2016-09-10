@@ -149,23 +149,10 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
     else:
         debug("Xdummy support unspecified, will try to detect")
 
-    from xpra.os_util import get_status_output
-    cmd = ["lsb_release", "-cs"]
-    r, out, err = get_status_output(cmd)
-    release = ""
-    if r==0:
-        release = out.replace("\n", "")
-        r, out, err = get_status_output(["lsb_release", "-i"])
-        dist = ""
-        if r==0:
-            dist = out.split(":")[-1].strip()
-        debug("found OS release: %s %s" % (dist, release))
-        if release in ("trusty", "xenial", "yakkety", ):
-            #yet another instance of Ubuntu breaking something
-            warn("Warning: Ubuntu '%s' breaks Xorg/Xdummy usage - using Xvfb fallback" % release)
-            return get_Xvfb_command()
-    else:
-        warn("Warning: failed to detect OS release using %s: %s" % (" ".join(cmd), err))
+    from xpra.os_util import is_Ubuntu
+    if is_Ubuntu():
+        debug("Warning: Ubuntu breaks Xorg/Xdummy usage - using Xvfb fallback")
+        return get_Xvfb_command()
     return Xorg_suid_check()
 
 

@@ -152,17 +152,25 @@ def get_user_uuid():
     uupdate(os.environ.get("HOME", ""))
     return u.hexdigest()
 
+
 def is_Ubuntu():
+    if os.name!="posix":
+        return False
     try:
-        assert os.name=="posix"
+        from xpra.scripts.config import python_platform
+        return python_platform.linux_distribution()[0]=="Ubuntu"
+    except:
+        pass
+    try:
         v = load_binary_file("/etc/issue")
         return v.find("Ubuntu")>=0
     except:
         return False
 
 def is_Fedora():
+    if os.name!="posix":
+        return False
     try:
-        assert os.name=="posix"
         if os.path.exists("/etc/fedora-release"):
             return True
         v = load_binary_file("/etc/issue")
@@ -174,6 +182,8 @@ _linux_distribution = None
 def get_linux_distribution():
     global _linux_distribution
     if sys.platform.startswith("linux") and not _linux_distribution:
+        #linux_distribution is deprecated in Python 3.5 and it causes warnings,
+        #so use our own code first:
         import subprocess
         cmd = 'lsb_release -a'
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -188,6 +198,9 @@ def get_linux_distribution():
             v = [d.get(x) for x in ("distributor_id", "release", "codename")]
             if None not in v:
                 return tuple([bytestostr(x) for x in v])
+        else:
+            from xpra.scripts.config import python_platform
+            _linux_distribution = python_platform.linux_distribution()
     return _linux_distribution
 
 def getUbuntuVersion():
