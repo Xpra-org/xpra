@@ -14,6 +14,8 @@ from xpra.log import Logger
 sslog = Logger("regiondetect")
 refreshlog = Logger("regionrefresh")
 
+VIDEO_SUBREGION = envint("XPRA_VIDEO_SUBREGION", 1)
+
 MAX_TIME = envint("XPRA_VIDEO_DETECT_MAX_TIME", 5)
 MIN_EVENTS = envint("XPRA_VIDEO_DETECT_MIN_EVENTS", 20)
 MIN_W = envint("XPRA_VIDEO_DETECT_MIN_WIDTH", 128)
@@ -48,6 +50,7 @@ def scoreinout(ww, wh, region, incount, outcount):
     sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%i%%, inwindow=%i%%, ratio=%.1f, score=%i", ww, wh, region, incount, outcount, 100*inregion, 100*inwindow, ratio, score)
     return max(0, int(score))
 
+
 class VideoSubregion(object):
 
     def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay):
@@ -55,13 +58,14 @@ class VideoSubregion(object):
         self.source_remove = source_remove
         self.refresh_cb = refresh_cb        #usage: refresh_cb(window, regions)
         self.auto_refresh_delay = auto_refresh_delay
+        self.supported = False
+        self.enabled = True
+        self.detection = True
+        self.exclusion_zones = []
         self.init_vars()
 
     def init_vars(self):
-        self.enabled = True
-        self.detection = True
         self.rectangle = None
-        self.exclusion_zones = []
         self.inout = 0, 0       #number of damage pixels within / outside the region
         self.score = 0
         self.fps = 0
@@ -127,6 +131,7 @@ class VideoSubregion(object):
     def get_info(self):
         r = self.rectangle
         info = {
+                "supported" : self.supported,
                 "enabled"   : self.enabled,
                 "detection" : self.detection,
                 "counter"   : self.counter,
@@ -218,11 +223,11 @@ class VideoSubregion(object):
         self.damaged = 0
 
     def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0):
+        if not self.enabled or not self.supported:
+            self.novideoregion("disabled")
+            return
         if not self.detection:
             return
-        if not self.enabled:
-            #could have been disabled since we started this method!
-            self.novideoregion("disabled")
         sslog("%s.identify_video_subregion(..)", self)
         sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
 

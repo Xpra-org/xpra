@@ -15,7 +15,7 @@ from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PI
 from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.window.region import merge_all            #@UnresolvedImport
 from xpra.server.window.motion import match_distance, consecutive_lines, calculate_distances, CRC_Image #@UnresolvedImport
-from xpra.server.window.video_subregion import VideoSubregion
+from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint
@@ -43,7 +43,6 @@ FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
-VIDEO_SUBREGION = envint("XPRA_VIDEO_SUBREGION", 1)==1
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envint("XPRA_B_FRAMES", 1)==1
 VIDEO_SKIP_EDGE = envint("XPRA_VIDEO_SKIP_EDGE", 0)==1
@@ -65,7 +64,6 @@ class WindowVideoSource(WindowSource):
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling")
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
-        self.supports_video_subregion = VIDEO_SUBREGION
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
@@ -93,7 +91,6 @@ class WindowVideoSource(WindowSource):
     def init_vars(self):
         WindowSource.init_vars(self)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
-        self.video_subregion.set_enabled(False)     #disabled until we parse the client props
 
         #these constraints get updated with real values
         #when we construct the video pipeline:
@@ -110,7 +107,6 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_time = 0
 
         self.supports_video_scaling = False
-        self.supports_video_subregion = False
 
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.video_encodings = []
@@ -151,9 +147,8 @@ class WindowVideoSource(WindowSource):
 
     def get_client_info(self):
         info = {
-            "supports_video_scaling"    : self.supports_video_scaling,
-            "supports_video_subregion"  : self.supports_video_subregion,
-            }
+                "supports_video_scaling"    : self.supports_video_scaling,
+                }
         for enc, csc_modes in (self.full_csc_modes or {}).items():
             info["csc_modes.%s" % enc] = csc_modes
         return info
@@ -306,7 +301,7 @@ class WindowVideoSource(WindowSource):
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling)
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
-        self.supports_video_subregion = properties.boolget("encoding.video_subregion", self.supports_video_subregion)
+        self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         self.scaling_control = max(0, min(100, properties.intget("scaling.control", self.scaling_control)))
         WindowSource.do_set_client_properties(self, properties)
         #encodings may have changed, so redo this:
@@ -317,7 +312,7 @@ class WindowVideoSource(WindowSource):
         except:
             self.edge_encoding = None
         log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
-            properties, self.full_csc_modes, self.supports_video_scaling, self.supports_video_subregion, self.non_video_encodings, self.edge_encoding, self.scaling_control)
+            properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         return self.get_best_encoding_video
@@ -467,13 +462,13 @@ class WindowVideoSource(WindowSource):
 
 
     def full_quality_refresh(self, damage_options={}):
-        #override so we can:
-        if self.video_subregion.detection:
-            #reset the video region on full quality refresh
-            self.video_subregion.reset()
-        else:
-            #keep the region, but cancel the refresh:
-            self.video_subregion.cancel_refresh_timer()
+        if self.video_subregion.rectangle:
+            if self.video_subregion.detection:
+                #reset the video region on full quality refresh
+                self.video_subregion.reset()
+            else:
+                #keep the region, but cancel the refresh:
+                self.video_subregion.cancel_refresh_timer()
         self.scroll_data = None
         #refresh the whole window in one go:
         damage_options["novideo"] = True
@@ -562,8 +557,6 @@ class WindowVideoSource(WindowSource):
         return pixels_modified
 
     def matches_video_subregion(self, width, height):
-        if not self.video_subregion.enabled:
-            return None
         vr = self.video_subregion.rectangle
         if not vr:
             return None
@@ -574,8 +567,6 @@ class WindowVideoSource(WindowSource):
         return vr
 
     def subregion_is_video(self):
-        if not self.video_subregion.enabled:
-            return False
         vr = self.video_subregion.rectangle
         if not vr:
             return False
@@ -613,7 +604,7 @@ class WindowVideoSource(WindowSource):
             sublog("video disabled in options")
             return send_nonvideo(encoding=None)
 
-        if not vr or not self.video_subregion.enabled:
+        if not vr:
             sublog("no video region, we may use the video encoder for something else")
             WindowSource.do_send_delayed_regions(self, damage_time, regions, coding, options)
             return
@@ -849,22 +840,19 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         WindowSource.update_encoding_options(self, force_reload)
-        log("update_encoding_options(%s) supports_video_subregion=%s, csc_encoder=%s, video_encoder=%s", force_reload, self.supports_video_subregion, self._csc_encoder, self._video_encoder)
-        self.video_subregion.set_enabled(self.supports_video_subregion)
-        if self.supports_video_subregion:
-            if self.encoding in self.video_encodings and not self.full_frames_only and not STRICT_MODE and len(self.non_video_encodings)>0 and not (self._mmap and self._mmap_size>0):
-                ww, wh = self.window_dimensions
-                self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
-            else:
-                #FIXME: small race if a refresh timer is due when we change encoding - meh
-                self.video_subregion.reset()
-
+        log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
+        if self.encoding not in self.video_encodings or self.full_frames_only or STRICT_MODE or not self.non_video_encodings or (self._mmap and self._mmap_size>0):
+            #cannot use video subregions
+            #FIXME: small race if a refresh timer is due when we change encoding - meh
+            self.video_subregion.reset()
+        else:
+            ww, wh = self.window_dimensions
+            self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
             if self.video_subregion.rectangle:
                 #when we have a video region, lower the lossless threshold
                 #especially for small regions
                 self._lossless_threshold_base = min(80, 10+self._current_speed//5)
                 self._lossless_threshold_pixel_boost = 90-self._current_speed//5
-
         if force_reload:
             self.cleanup_codecs()
         self.check_pipeline_score(force_reload)
@@ -1442,7 +1430,7 @@ class WindowVideoSource(WindowSource):
             Runs in the 'encode' thread.
         """
         x, y, w, h = image.get_geometry()[:4]
-        assert self.supports_video_subregion or (x==0 and y==0), "invalid position: %s,%s" % (x,y)
+        assert (x==0 and y==0) or self.video_subregion.rectangle, "invalid position: %s,%s" % (x,y)
         src_format = image.get_pixel_format()
         if self.pixel_format!=src_format:
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
