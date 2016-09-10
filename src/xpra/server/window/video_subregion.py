@@ -151,7 +151,7 @@ class VideoSubregion(object):
         ls = self.last_scores
         if ls:
             #convert rectangles into tuples:
-            info["scores"] = dict((r.get_geometry(), score) for r,score in ls.items())
+            info["scores"] = dict((r.get_geometry(), score) for r,score in ls.items() if r is not None)
         rr = list(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):
