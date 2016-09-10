@@ -7,7 +7,7 @@
 import sys
 import os
 
-#this is here so we can expose the "platform" module
+#this is here so we can expose the python "platform" module
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
@@ -186,9 +186,13 @@ def OpenGL_safety_check():
         if e.args[0]==errno.EACCES:
             return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
+
 OPENGL_DEFAULT = None       #will auto-detect by probing
-if OpenGL_safety_check() is not None:
-    OPENGL_DEFAULT = False
+def get_opengl_default():
+    global OPENGL_DEFAULT
+    if OpenGL_safety_check() is not None:
+        OPENGL_DEFAULT = False
+    return OPENGL_DEFAULT
 
 
 def get_build_info():
@@ -696,7 +700,7 @@ def get_defaults():
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "dbus-control"      : not WIN32 and not OSX,
-                    "opengl"            : OPENGL_DEFAULT,
+                    "opengl"            : get_opengl_default(),
                     "mdns"              : not WIN32,
                     "file-transfer"     : True,
                     "printing"          : True,
