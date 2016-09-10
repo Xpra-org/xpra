@@ -144,11 +144,14 @@ class VideoSubregion(object):
                      "non-max-wait" : self.non_max_wait,
                      "in-out"       : self.inout,
                      "score"        : self.score,
-                     "scores"       : self.last_scores,
                      "fps"          : self.fps,
                      "damaged"      : self.damaged,
                      "exclusion-zones" : [(r.x, r.y, r.width, r.height) for r in self.exclusion_zones]
                      })
+        ls = self.last_scores
+        if ls:
+            #convert rectangles into tuples:
+            info["scores"] = dict((r.get_geometry(), score) for r,score in ls.items())
         rr = list(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):
