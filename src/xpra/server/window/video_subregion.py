@@ -388,6 +388,10 @@ class VideoSubregion(object):
 
         update_markers()
 
+        if len(dec)==1:
+            rect, count = dec.items()[0]
+            return setnewregion(rect, "only region damaged")
+
         #see if we can keep the region we already have (if any):
         cur_score = 0
         if rect:
