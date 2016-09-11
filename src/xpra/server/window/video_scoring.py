@@ -92,6 +92,16 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
     qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
     sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed))
 
+    #how well the codec deals with larger screen sizes:
+    sizescore = 100
+    mpixels = width*height/(1024.0*1024.0)
+    if mpixels>1.0:
+        #high size efficiency means sizescore stays high even with high number of mpixels,
+        #ie: 1MPixels -> sizescore = 100
+        #ie: 8MPixels -> sizescore = size_efficiency
+        sdisc = (100-encoder_spec.size_efficiency)
+        sizescore = max(0, 100-(mpixels-1)/7.0*sdisc)
+
     #runtime codec adjustements:
     runtime_score = 100
     #score for "edge resistance" via setup cost:
@@ -155,10 +165,10 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
         ee_score += encoder_spec.score_boost
     #edge resistance score: average of csc and encoder score:
     er_score = (ecsc_score + ee_score) / 2.0
-    score = int((qscore+sscore+er_score)*runtime_score/100.0/3.0)
-    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, score=%2i",
+    score = int((qscore+sscore+er_score+sizescore)*runtime_score/100.0/4.0)
+    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, score=%2i",
              enc_in_format, csc_spec, encoder_spec, width, height,
-             qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, score)
+             qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, score)
     return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
 
 def get_encoder_dimensions(csc_spec, encoder_spec, width, height, scaling=(1,1)):

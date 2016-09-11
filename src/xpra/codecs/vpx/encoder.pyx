@@ -331,6 +331,7 @@ def get_spec(encoding, colorspace):
     return video_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
                             quality=quality, speed=speed,
+                            size_efficiency=80,
                             setup_cost=20, max_w=max_w, max_h=max_h)
 
 
@@ -680,11 +681,11 @@ cdef class Encoder:
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
         #But we only use positive values, negative values are just too slow
-        cdef int minv = 0
-        cdef int range = 16
+        cdef int minv = 4
+        cdef int range = 12
         if self.encoding=="vp9":
-            minv = 4
-            range = 4
+            minv = 5
+            range = 3
         #note: we don't use the full range since the percentages are mapped to -20% to +120%
         cdef int value = (speed-20)*3*range//200
         value = minv + MIN(range, MAX(0, value))

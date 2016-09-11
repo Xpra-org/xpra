@@ -47,6 +47,7 @@ class _codec_spec(object):
 
     def __init__(self, codec_class, codec_type="",
                     quality=100, speed=100,
+                    size_efficiency=50,
                     setup_cost=50, cpu_cost=100, gpu_cost=0,
                     min_w=1, min_h=1, max_w=4*1024, max_h=4*1024,
                     can_scale=False,
@@ -56,6 +57,7 @@ class _codec_spec(object):
         self.codec_type = codec_type            #ie: "nvenc"
         self.quality = quality
         self.speed = speed
+        self.size_efficiency = size_efficiency
         self.setup_cost = setup_cost
         self.cpu_cost = cpu_cost
         self.gpu_cost = gpu_cost
