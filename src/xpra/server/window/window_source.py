@@ -663,9 +663,6 @@ class WindowSource(object):
 
 
     def set_new_encoding(self, encoding, strict):
-        """ Changes the encoder for the given 'window_ids',
-            or for all windows if 'window_ids' is None.
-        """
         if strict is not None:
             self.strict = strict or STRICT_MODE
         if self.encoding==encoding:
@@ -686,7 +683,7 @@ class WindowSource(object):
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s)" % (", ".join(self._encoders.keys()), ", ".join(self.core_encodings)))
         #ensure the encoding chosen is supported by this source:
-        if encoding in self.common_encodings:
+        if encoding in self.common_encodings or encoding=="auto":
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
@@ -788,6 +785,8 @@ class WindowSource(object):
     def get_current_or_rgb(self, pixel_count, ww, wh, *args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
+        if self.encoding=="auto":
+            return self.common_encodings[0]
         return self.encoding
 
 

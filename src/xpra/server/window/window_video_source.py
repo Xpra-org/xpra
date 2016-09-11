@@ -18,7 +18,7 @@ from xpra.server.window.motion import match_distance, consecutive_lines, calcula
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import parse_scaling_value, engs, envint
+from xpra.util import parse_scaling_value, engs, envint, csv
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -39,7 +39,7 @@ FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
     log.warn("ignoring invalid CSC mode specified: %s", FORCE_CSC_MODE)
     FORCE_CSC_MODE = ""
-FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
+FORCE_CSC = bool(FORCE_CSC_MODE) or os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
@@ -75,6 +75,7 @@ class WindowVideoSource(WindowSource):
         for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self._encoders[x] = self.video_encode
+        self._encoders["auto"] = self.video_encode
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
@@ -350,7 +351,7 @@ class WindowVideoSource(WindowSource):
         if pixel_count<=rgbmax:
             return lossless("low pixel count")
 
-        if current_encoding not in self.video_encodings:
+        if current_encoding!="auto" and current_encoding not in self.video_encodings:
             #not doing video, bail out:
             return nonvideo()
 
@@ -595,8 +596,8 @@ class WindowVideoSource(WindowSource):
             sublog("BUG? video for tray - don't use video region!")
             return send_nonvideo(encoding=None)
 
-        if coding not in self.video_encodings:
-            sublog("not a video encoding")
+        if coding!="auto" and coding not in self.video_encodings:
+            sublog("not a video encoding: %s" % coding)
             #keep current encoding selection function
             return send_nonvideo(get_best_encoding=self.get_best_encoding)
 
@@ -841,7 +842,9 @@ class WindowVideoSource(WindowSource):
         """
         WindowSource.update_encoding_options(self, force_reload)
         log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
-        if self.encoding not in self.video_encodings or self.full_frames_only or STRICT_MODE or not self.non_video_encodings or (self._mmap and self._mmap_size>0):
+        if (self.encoding!="auto" and self.encoding not in self.video_encodings) or \
+            self.full_frames_only or STRICT_MODE or not self.non_video_encodings or \
+            (self._mmap and self._mmap_size>0):
             #cannot use video subregions
             #FIXME: small race if a refresh timer is due when we change encoding - meh
             self.video_subregion.reset()
@@ -881,12 +884,16 @@ class WindowVideoSource(WindowSource):
             scorelog(*info)
             self.cleanup_codecs()
         #do some sanity checks to see if there is any point in finding a suitable video encoding pipeline:
-        encoding = self.encoding
-        if encoding not in self.video_encodings:
-            return checknovideo("non-video encoding: %s", encoding)
         if self._sequence<2 or self._damage_cancelled>=float("inf"):
             #too early, or too late!
             return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
+        #which video encodings to evaluate:
+        if self.encoding=="auto":
+            eval_encodings = self.video_encodings
+        else:
+            if self.encoding not in self.video_encodings:
+                return checknovideo("non-video encoding: %s", self.encoding)
+            eval_encodings = [self.encoding]
         ww, wh = self.window_dimensions
         w = ww & self.width_mask
         h = wh & self.height_mask
@@ -911,7 +918,7 @@ class WindowVideoSource(WindowSource):
             scorelog("cannot score: csc is closed or closing")
             return
 
-        scores = self.get_video_pipeline_options(encoding, w, h, self.pixel_format, force_reload)
+        scores = self.get_video_pipeline_options(eval_encodings, w, h, self.pixel_format, force_reload)
         if len(scores)==0:
             scorelog("check_pipeline_score(%s) no pipeline options found!", force_reload)
             return
@@ -945,11 +952,11 @@ class WindowVideoSource(WindowSource):
         self._last_pipeline_check = time.time()
 
 
-    def get_video_pipeline_options(self, encoding, width, height, src_format, force_refresh=False):
+    def get_video_pipeline_options(self, encodings, width, height, src_format, force_refresh=False):
         """
             Given a picture format (width, height and src pixel format),
             we find all the pipeline options that will allow us to compress
-            it using the given encoding.
+            it using the given encodings.
             First, we try with direct encoders (for those that support the
             source pixel format natively), then we try all the combinations
             using csc encoders to convert to an intermediary format.
@@ -960,25 +967,16 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        if not force_refresh and (time.time()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encoding, width, height, src_format):
+        if not force_refresh and (time.time()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encodings, width, height, src_format):
             #keep existing scores
-            scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encoding, width, height, src_format, force_refresh), 1000.0*(time.time()-self.last_pipeline_time))
+            scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encodings, width, height, src_format, force_refresh), 1000.0*(time.time()-self.last_pipeline_time))
             return self.last_pipeline_scores
+        scorelog("get_video_pipeline_options%s last params=%s", (encodings, width, height, src_format, force_refresh), self.last_pipeline_params)
 
         vh = self.video_helper
         if vh is None:
             return []       #closing down
 
-        #these are the CSC modes the client can handle for this encoding:
-        #we must check that the output csc mode for each encoder is one of those
-        supported_csc_modes = self.full_csc_modes.get(encoding)
-        if not supported_csc_modes:
-            scorelog("get_video_pipeline_options: no supported csc modes for %s", encoding)
-            return []
-        encoder_specs = vh.get_encoder_specs(encoding)
-        if not encoder_specs:
-            scorelog("get_video_pipeline_options: no encoder specs for %s", encoding)
-            return []
         target_q = int(self._current_quality)
         min_q = self._fixed_min_quality
         target_s = int(self._current_speed)
@@ -996,44 +994,55 @@ class WindowVideoSource(WindowSource):
                 #not the video region, or not really video content, raise quality a bit:
                 target_q = int(sqrt(target_q/100.0)*100)
                 scorelog("raising quality for video encoding of non-video region")
-        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encoding, width, height, src_format), target_s, min_s, target_q, min_q)
+        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)", (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
         scores = []
-        def add_scores(info, csc_spec, enc_in_format):
-            scorelog("add_scores(%s, %s, %s)", info, csc_spec, enc_in_format)
-            #find encoders that take 'enc_in_format' as input:
-            colorspace_specs = encoder_specs.get(enc_in_format)
-            if not colorspace_specs:
-                scorelog("add_scores: no matching colorspace specs for %s", enc_in_format)
-                return
-            #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
-            for encoder_spec in colorspace_specs:
-                #ensure that the output of the encoder can be processed by the client:
-                matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
-                if not matches:
-                    scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
-                    continue
-                scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
-                score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
-                                                target_q, min_q, target_s, min_s,
-                                                self._csc_encoder, self._video_encoder)
-                if score_data:
-                    scores.append(score_data)
-        if not FORCE_CSC or src_format==FORCE_CSC_MODE:
-            add_scores("direct (no csc)", None, src_format)
+        for encoding in encodings:
+            #these are the CSC modes the client can handle for this encoding:
+            #we must check that the output csc mode for each encoder is one of those
+            supported_csc_modes = self.full_csc_modes.get(encoding)
+            if not supported_csc_modes:
+                scorelog("get_video_pipeline_options: no supported csc modes for %s", encoding)
+                continue
+            encoder_specs = vh.get_encoder_specs(encoding)
+            if not encoder_specs:
+                scorelog("get_video_pipeline_options: no encoder specs for %s", encoding)
+                continue
+            def add_scores(info, csc_spec, enc_in_format):
+                scorelog("add_scores(%s, %s, %s)", info, csc_spec, enc_in_format)
+                #find encoders that take 'enc_in_format' as input:
+                colorspace_specs = encoder_specs.get(enc_in_format)
+                if not colorspace_specs:
+                    #scorelog("add_scores: no matching colorspace specs for %s", enc_in_format)
+                    return
+                #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
+                for encoder_spec in colorspace_specs:
+                    #ensure that the output of the encoder can be processed by the client:
+                    matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
+                    if not matches:
+                        scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
+                        continue
+                    scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
+                    score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
+                                                    target_q, min_q, target_s, min_s,
+                                                    self._csc_encoder, self._video_encoder)
+                    if score_data:
+                        scores.append(score_data)
+            if not FORCE_CSC or src_format==FORCE_CSC_MODE:
+                add_scores("direct (no csc)", None, src_format)
 
-        #now add those that require a csc step:
-        csc_specs = vh.get_csc_specs(src_format)
-        if csc_specs:
-            #log("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
-            #we have csc module(s) that can get us from pixel_format to out_csc:
-            for out_csc, l in csc_specs.items():
-                actual_csc = self.csc_equiv(out_csc)
-                if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc:
-                    for csc_spec in l:
-                        add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
+            #now add those that require a csc step:
+            csc_specs = vh.get_csc_specs(src_format)
+            if csc_specs:
+                #log("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
+                #we have csc module(s) that can get us from pixel_format to out_csc:
+                for out_csc, l in csc_specs.items():
+                    actual_csc = self.csc_equiv(out_csc)
+                    if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc:
+                        for csc_spec in l:
+                            add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
-        scorelog("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
-        self.last_pipeline_params = (encoding, width, height, src_format)
+        scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
+        self.last_pipeline_params = (encodings, width, height, src_format)
         self.last_pipeline_scores = s
         self.last_pipeline_time = time.time()
         return s
@@ -1136,10 +1145,14 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        if self.do_check_pipeline(encoding, width, height, src_format):
+        if encoding=="auto":
+            encodings = self.video_encodings
+        else:
+            encodings = [encoding]
+        if self.do_check_pipeline(encodings, width, height, src_format):
             return True  #OK!
 
-        videolog("check_pipeline%s setting up a new pipeline as check failed", (encoding, width, height, src_format))
+        videolog("check_pipeline%s setting up a new pipeline as check failed", (encodings, width, height, src_format))
         #cleanup existing one if needed:
         csce = self._csc_encoder
         if csce:
@@ -1150,10 +1163,12 @@ class WindowVideoSource(WindowSource):
             self._video_encoder = None
             ve.clean()
         #and make a new one:
-        scores = self.get_video_pipeline_options(encoding, width, height, src_format)
+        w = width & self.width_mask
+        h = height & self.height_mask
+        scores = self.get_video_pipeline_options(encodings, w, h, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
 
-    def do_check_pipeline(self, encoding, width, height, src_format):
+    def do_check_pipeline(self, encodings, width, height, src_format):
         """
             Checks that the current pipeline is still valid
             for the given input.
@@ -1196,9 +1211,9 @@ class WindowVideoSource(WindowSource):
                                                 ve.get_src_format(), src_format)
                 return False
 
-        if ve.get_encoding()!=encoding:
-            videolog("do_check_pipeline video: invalid encoding %s, expected %s",
-                                            ve.get_encoding(), encoding)
+        if ve.get_encoding() not in encodings:
+            videolog("do_check_pipeline video: invalid encoding %s, expected one of: %s",
+                                            ve.get_encoding(), csv(encodings))
             return False
         elif ve.get_width()!=encoder_src_width or ve.get_height()!=encoder_src_height:
             videolog("do_check_pipeline video: window dimensions have changed from %sx%s to %sx%s",
@@ -1564,8 +1579,7 @@ class WindowVideoSource(WindowSource):
             self.source_remove(bft)
 
     def schedule_video_encoder_flush(self, ve, csc, frame, x , y, client_options):
-        flush_delay = max(100, min(500, int(self.batch_config.delay*10)))
-        videolog("schedule_video_encoder_flush%s flush delay=%i", (ve, csc, frame, x, y, client_options), flush_delay)
+        flush_delay = max(1000, min(500, int(self.batch_config.delay*10)))
         self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, frame, x, y)
 
     def flush_video_encoder(self, ve, csc, frame, x, y):
@@ -1585,6 +1599,7 @@ class WindowVideoSource(WindowSource):
             self._video_encoder = None
             ve.clean()
             self.idle_add(self.refresh, {"novideo" : True})
+            videolog("flushed frame 0, novideo refresh requested")
             return
         w = ve.get_width()
         h = ve.get_height()

@@ -46,7 +46,7 @@ class _codec_spec(object):
     WARN_LIMIT = 25
 
     def __init__(self, codec_class, codec_type="",
-                    quality=100, speed=100,
+                    quality=50, speed=50,
                     size_efficiency=50,
                     setup_cost=50, cpu_cost=100, gpu_cost=0,
                     min_w=1, min_h=1, max_w=4*1024, max_h=4*1024,

@@ -404,7 +404,7 @@ def get_spec(encoding, colorspace):
     has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRA", "BGRX", "RGB")
     return video_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
-                            quality=50+50*int(has_lossless_mode), speed=50,
+                            quality=60+40*int(has_lossless_mode), speed=60,
                             size_efficiency=40,
                             setup_cost=20, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
@@ -564,6 +564,7 @@ cdef class Encoder:
 
 
     def clean(self):                        #@DuplicatedSignature
+        log("x264 close context %#x", <unsigned long> self.context)
         cdef x264_t *context = self.context
         if context!=NULL:
             self.context = NULL

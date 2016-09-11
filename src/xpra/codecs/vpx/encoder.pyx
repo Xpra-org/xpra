@@ -319,15 +319,15 @@ def get_spec(encoding, colorspace):
     max_w, max_h = MAX_SIZE[encoding]
     if encoding=="vp8":
         has_lossless_mode = False
-        speed = 70
+        speed = 50
         quality = 50
     else:
-        has_lossless_mode = colorspace=="YUV444P"
+        lossless_mode = colorspace=="YUV444P"
         speed = 20
-        quality = 50 + 50*int(has_lossless_mode)
+        quality = 50 + 50*int(lossless_mode)
         if VPX_ENCODER_ABI_VERSION>=11:
             #libvpx 1.5 made some significant performance improvements with vp9:
-            speed = 60
+            speed = 40
     return video_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
                             quality=quality, speed=speed,

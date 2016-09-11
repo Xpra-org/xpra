@@ -29,7 +29,6 @@ dbuslog = Logger("dbus")
 statslog = Logger("stats")
 
 
-from xpra.server import ClientException
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.window_source import WindowSource
@@ -903,8 +902,12 @@ class ServerSource(FileTransferHandler):
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
-            elog.info(" using %s as primary encoding%s", self.encoding, [""," also available:"][int(len(others)>0)])
+            if self.encoding=="auto":
+                elog.info(" automatic picture encoding enabled")
+            else:
+                elog.info(" using %s as primary encoding%s", self.encoding)
             if others:
+                elog.info(" also available:")
                 elog.info("  %s", ", ".join(others))
             else:
                 elog.warn("  no other encodings are available!")
@@ -1338,34 +1341,21 @@ class ServerSource(FileTransferHandler):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
+        log("set_encoding(%s, %s, %s)", encoding, window_ids, strict)
         if not self.ui_client:
             return
-        if encoding:
-            if encoding not in self.encodings:
-                log.warn("client specified an encoding it does not support: %s, client supplied list: %s" % (encoding, self.encodings))
+        if encoding and encoding!="auto":
             #old clients (v0.9.x and earlier) only supported 'rgb24' as 'rgb' mode:
             if encoding=="rgb24":
                 encoding = "rgb"
+            if encoding not in self.encodings:
+                log.warn("Warning: client specified '%s' encoding,", encoding)
+                log.warn(" but it only supports: %s" % csv(self.encodings))
             if encoding not in self.server_encodings:
                 log.error("Error: encoding %s is not supported by this server", encoding)
-                log.error(" will use the first commonly supported encoding instead")
                 encoding = None
-        else:
-            elog("encoding not specified, will use the first match")
         if not encoding:
-            #not specified or not supported, try server default
-            if self.default_encoding and self.default_encoding in self.encodings:
-                encoding = self.default_encoding
-            else:
-                #or find intersection of supported encodings:
-                common = [e for e in self.encodings if e in self.server_encodings]
-                elog("encodings supported by both ends: %s", common)
-                if not common:
-                    log.error("Error no compatible encodings available")
-                    log.error(" this server supports: %s", csv(self.server_encodings) or None)
-                    log.error(" this client supports: %s", csv(self.encodings) or None)
-                    raise ClientException("cannot find a common encoding to use")
-                encoding = common[0]
+            encoding = "auto"
         if window_ids is not None:
             wss = [self.window_sources.get(wid) for wid in window_ids]
         else:
@@ -1378,7 +1368,7 @@ class ServerSource(FileTransferHandler):
         for ws in wss:
             if ws is not None:
                 ws.set_new_encoding(encoding, strict)
-        if not window_ids or self.encoding is None:
+        if not window_ids:
             self.encoding = encoding
 
     def hello(self, server_capabilities):
