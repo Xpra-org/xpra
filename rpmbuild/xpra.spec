@@ -28,7 +28,7 @@
 
 
 #some of these dependencies may get turned off (empty) on some platforms:
-%define dummy --with-Xdummy
+%define build_args --with-Xdummy
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , %{py2prefix}-lzo
@@ -87,10 +87,6 @@
 %define requires_webcam %{nil}
 #no pycups available in repos:
 %define requires_printing %{nil}
-#only v6.4 onwards have Xdummy support:
-%if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3' /etc/redhat-release && echo 1 || echo 0)
-%define dummy --without-Xdummy
-%endif
 #don't try to support opengl with anything older than 6.5:
 %if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3|release 6.4' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl %{nil}
@@ -356,15 +352,15 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{dummy} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
-%{__python3} setup.py build %{dummy} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{build_args} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
+%{__python3} setup.py build %{build_args} --with-tests
 popd
 %endif
 
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{dummy} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{build_args} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
 %if 0%{?with_selinux}
 pushd selinux/cups_xpra
 for selinuxvariant in %{selinux_variants}
@@ -381,11 +377,11 @@ popd
 rm -rf $RPM_BUILD_ROOT
 %if %{with_python3}
 pushd xpra-%{version}-python3
-%{__python3} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
+%{__python3} setup.py install -O1 %{build_args} --prefix /usr --skip-build --root %{buildroot}
 popd
 %endif
 pushd xpra-%{version}-python2
-%{__python2} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
+%{__python2} setup.py install -O1 %{build_args} --prefix /usr --skip-build --root %{buildroot}
 %if 0%{?with_selinux}
 for selinuxvariant in %{selinux_variants}
 do
