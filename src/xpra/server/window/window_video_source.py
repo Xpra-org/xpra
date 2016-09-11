@@ -928,6 +928,9 @@ class WindowVideoSource(WindowSource):
             elif csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
                 scorelog("check_pipeline_score(%s) change of csc input dimensions from %ix%i to %ix%i", force_reload, csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
                 self.csc_encoder_clean()
+            elif csce.get_dst_width()!=enc_width or csce.get_dst_height()!=enc_height:
+                scorelog("check_pipeline_score(%s) change of csc ouput dimensions from %ix%i to %ix%i", force_reload, csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
+                self.csc_encoder_clean()
         if ve is None:
             pass    #nothing to check or clean
         elif ve.get_src_format()!=enc_in_format:
