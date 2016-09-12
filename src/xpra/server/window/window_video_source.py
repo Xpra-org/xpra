@@ -1448,7 +1448,6 @@ class WindowVideoSource(WindowSource):
             Runs in the 'encode' thread.
         """
         x, y, w, h = image.get_geometry()[:4]
-        assert (x==0 and y==0) or self.video_subregion.rectangle, "invalid position: %s,%s" % (x,y)
         src_format = image.get_pixel_format()
         if self.pixel_format!=src_format:
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
