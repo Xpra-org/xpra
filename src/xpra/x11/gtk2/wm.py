@@ -273,7 +273,7 @@ class Wm(gobject.GObject):
             if (w.get_window_type() == gtk.gdk.WINDOW_FOREIGN
                 and not X11Window.is_override_redirect(w.xid)
                 and X11Window.is_mapped(w.xid)):
-                log("Wm managing pre-existing child")
+                log("Wm managing pre-existing child window %#x", w.xid)
                 self._manage_client(w)
 
         # Also watch for focus change events on the root window
@@ -287,6 +287,9 @@ class Wm(gobject.GObject):
 
     def root_set(self, *args):
         prop_set(self._root, *args)
+
+    def root_get(self, *args):
+        return prop_get(self._root, *args)
 
     def set_dpi(self, xdpi, ydpi):
         #this is used by some newer versions of the dummy driver (xf86-driver-dummy)
@@ -304,6 +307,9 @@ class Wm(gobject.GObject):
         v = [width, height]
         screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
+        #update all the windows:
+        for model in self._windows.values():
+            model.update_desktop_geometry(width, height)
 
     def set_default_frame_extents(self, v):
         framelog("set_default_frame_extents(%s)", v)
@@ -345,7 +351,8 @@ class Wm(gobject.GObject):
 
     def do_manage_client(self, gdkwindow):
         try:
-            win = WindowModel(self._root, gdkwindow)
+            desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
+            win = WindowModel(self._root, gdkwindow, desktop_geometry)
         except Unmanageable:
             log("Window disappeared on us, never mind")
             return

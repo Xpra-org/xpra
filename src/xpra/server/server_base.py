@@ -1209,6 +1209,10 @@ class ServerBase(ServerCore):
         self.set_desktop_geometry_attributes(w, h)
         return w, h
 
+    def set_screen_geometry_attributes(self, w, h):
+        #by default, use the screen as desktop area:
+        self.set_desktop_geometry_attributes(w, h)
+
     def set_desktop_geometry_attributes(self, w, h):
         self.calculate_desktops()
         self.calculate_workarea(w, h)
@@ -2144,7 +2148,7 @@ class ServerBase(ServerCore):
         #randr has resized the screen, tell the client (if it supports it)
         w, h = screen.get_width(), screen.get_height()
         screenlog("new screen dimensions: %ix%i", w, h)
-        self.set_desktop_geometry_attributes(w, h)
+        self.set_screen_geometry_attributes(w, h)
         self.idle_add(self.send_updated_screen_size)
 
     def get_root_window_size(self):

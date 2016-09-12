@@ -303,6 +303,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return info
 
 
+    def set_screen_geometry_attributes(self, w, h):
+        #only run the default code if there are no clients,
+        #when we have clients, this should have been done already
+        #in the code that synchonizes the screen resolution
+        if len(self._server_sources)==0:
+            X11ServerBase.set_screen_geometry_attributes(self, w, h)
+
     def set_desktops(self, names):
         if self._wm:
             self._wm.set_desktop_list(names)

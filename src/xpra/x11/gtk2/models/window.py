@@ -137,7 +137,7 @@ class WindowModel(BaseWindowModel):
                               "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]
     _MODELTYPE = "Window"
 
-    def __init__(self, parking_window, client_window):
+    def __init__(self, parking_window, client_window, desktop_geometry):
         """Register a new client window with the WM.
 
         Raises an Unmanageable exception if this window should not be
@@ -147,6 +147,7 @@ class WindowModel(BaseWindowModel):
         super(WindowModel, self).__init__(client_window)
         self.parking_window = parking_window
         self.corral_window = None
+        self.desktop_geometry = desktop_geometry
         #extra state attributes so we can unmanage() the window cleanly:
         self.in_save_set = False
         self.client_reparented = False
@@ -164,8 +165,19 @@ class WindowModel(BaseWindowModel):
         x, y, w, h, _ = self.client_window.get_geometry()
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
+        # clamp this window to the desktop size:
+        if self.desktop_geometry:
+            dw, dh = self.desktop_geometry
+            if x+w<0:
+                x = 10-w
+            elif x>=dw:
+                x = dw-10
+            if y+h<0:
+                y = 10-h
+            elif y>dh:
+                y = dh-10
         self.corral_window = gtk.gdk.Window(self.parking_window,
-                                            x = x, y = y, width =w, height= h,
+                                            x=x, y=y, width=w, height=h,
                                             window_type=gtk.gdk.WINDOW_CHILD,
                                             wclass=gtk.gdk.INPUT_OUTPUT,
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
@@ -208,6 +220,25 @@ class WindowModel(BaseWindowModel):
         #this is here to trigger X11 errors if any are pending
         #or if the window is deleted already:
         self.client_window.get_geometry()
+
+
+    def update_desktop_geometry(self, width, height):
+        if self.desktop_geometry==(width, height):
+            return  #no need to do anything
+        self.desktop_geometry = (width, height)
+        x, y, w, h = self.corral_window.get_geometry()[:4]
+        nx, ny = 0, 0
+        if x+w<0:
+            nx = 10-w
+        elif x>=width:
+            nx = width-10
+        if y+h<0:
+            ny = 10-h
+        elif y>height:
+            ny = height-10
+        if nx or ny:
+            log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
+            self.corral_window.move(nx, ny)
 
 
     def _read_initial_X11_properties(self):
