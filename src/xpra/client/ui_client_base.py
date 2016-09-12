@@ -303,6 +303,7 @@ class UIXpraClient(XpraClientBase):
         self._suspended_at = 0
         self._button_state = {}
         self._on_handshake = []
+        self._current_screen_sizes = None
 
         self.init_aliases()
 
@@ -987,6 +988,7 @@ class UIXpraClient(XpraClientBase):
         self.screen_size_change_pending = False
         u_root_w, u_root_h = self.get_root_size()
         root_w, root_h = self.cp(u_root_w, u_root_h)
+        self._current_screen_sizes = self.get_screen_sizes()
         sss = self.get_screen_sizes(self.xscale, self.yscale)
         ndesktops = get_number_of_desktops()
         desktop_names = get_desktop_names()
@@ -1330,6 +1332,7 @@ class UIXpraClient(XpraClientBase):
         desktop_names = get_desktop_names()
         capabilities["desktop.names"] = desktop_names
         ss = self.get_screen_sizes()
+        self._current_screen_sizes = ss
         log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
         log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale!=1 or self.yscale!=1:

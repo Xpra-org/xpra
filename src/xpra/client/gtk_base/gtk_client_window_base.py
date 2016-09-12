@@ -145,6 +145,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._current_frame_extents = None
         self._screen = -1
         self._frozen = False
+        self.OR_offset = None
         #add platform hooks
         self.on_realize_cb = {}
         self.connect_after("realize", self.on_realize)
@@ -275,8 +276,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
         #try to honour the initial position
         geomlog("setup_window() position=%s, set_initial_position=%s, OR=%s, decorated=%s", self._pos, self._set_initial_position, self.is_OR(), self.get_decorated())
-        if self._pos!=(0, 0) or self._set_initial_position:
+        if self._pos!=(0, 0) or self._set_initial_position or self.is_OR():
             x,y = self._pos
+            if self.is_OR():
+                #make sure OR windows are mapped on screen
+                if self._client._current_screen_sizes:
+                    w, h = self._size
+                    self.OR_offset = self.calculate_OR_offset(x, y, w, h)
+                    if self.OR_offset:
+                        x += self.OR_offset[0]
+                        y += self.OR_offset[1]
             if not self.is_OR() and self.get_decorated():
                 #try to adjust for window frame size if we can figure it out:
                 #Note: we cannot just call self.get_window_frame_size() here because
@@ -296,6 +305,51 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.move(x, y)
         self.set_default_size(*self._size)
 
+    def calculate_OR_offset(self, wx, wy, ww, wh):
+        ss = self._client._current_screen_sizes
+        if not ss:
+            return None
+        if len(ss)!=1:
+            geomlog("cannot handle one more than one screen for OR offset: %s", )
+            return None
+        screen0 = ss[0]
+        monitors = screen0[5]
+        if not monitors:
+            geomlog("screen %s lacks monitors information: %s", screen0)
+            return None
+        distances = {}
+        for i, monitor in enumerate(monitors):
+            plug_name, x, y, w, h = monitor[:5]
+            if wx>=x and wx+ww<=x+w and wy+wh<=y+h:
+                geomlog("window fits in monitor %i: %s", i, plug_name)
+                return None
+            xdists = (wx-x, wx+ww-x, wx-(x+w), wx+ww-(x+w))
+            ydists = (wy-y, wy+wh-y, wy-(y+h), wy+wh-(y+h))
+            distance = min((abs(v) for v in xdists))+min((abs(v) for v in ydists))
+            distances[distance] = i
+        #so it doesn't fit... choose the closest monitor and make it fit
+        geomlog("OR window distances: %s", distances)
+        closest = min(distances.keys())
+        i = distances[closest]
+        monitor = monitors[i]
+        plug_name, x, y, w, h = monitor[:5]
+        geomlog("calculating OR offset for monitor %i: %s", i, plug_name)
+        if ww>w or wh>=h:
+            geomlog("window %ix%i is bigger than the monitor %i: %s %ix%i, not adjusting it", ww, wh, i, plug_name, w, h)
+            return None
+        dx = 0
+        dy = 0
+        if wx<x:
+            dx = x-wx
+        elif wx+ww>x+w:
+            dx = (x+w) - (wx+ww)
+        if wy<y:
+            dy = y-wy
+        elif wy+wh>y+h:
+            dy = (y+h) - (wy+wh)
+        assert dx!=0 or dy!=0
+        geomlog("calculate_OR_offset%s=%s", (wx, wy, ww, wh), (dx, dy))
+        return dx, dy
 
     def when_realized(self, identifier, callback, *args):
         if self.is_realized():
@@ -1040,6 +1094,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
+        if self.OR_offset:
+            x += self.OR_offset[0]
+            y += self.OR_offset[1]
+            #TODO: check this doesn't move it off-screen!
         self._resize_counter = resize_counter
         window = self.get_window()
         if window.get_position()==(x, y):
@@ -1110,7 +1168,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _pointer_modifiers(self, event):
-        pointer = self._client.cp(event.x_root, event.y_root)
+        x = event.x_root
+        y = event.y_root
+        if self.OR_offset:
+            x -= self.OR_offset[0]
+            y -= self.OR_offset[1]
+        pointer = self._client.cp(x, y)
         modifiers = self._client.mask_to_names(event.state)
         buttons = []
         for mask, button in self.BUTTON_MASK.items():
