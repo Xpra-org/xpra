@@ -318,6 +318,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             geomlog("screen %s lacks monitors information: %s", screen0)
             return None
         distances = {}
+        geometries = []
         for i, monitor in enumerate(monitors):
             plug_name, x, y, w, h = monitor[:5]
             if wx>=x and wx+ww<=x+w and wy+wh<=y+h:
@@ -325,10 +326,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 return None
             xdists = (wx-x, wx+ww-x, wx-(x+w), wx+ww-(x+w))
             ydists = (wy-y, wy+wh-y, wy-(y+h), wy+wh-(y+h))
+            if wx>=x and wx+ww<x+w:
+                xdists = [0]
+            if wy>=y and wy+wh<y+h:
+                ydists = [0]
             distance = min((abs(v) for v in xdists))+min((abs(v) for v in ydists))
+            geometries.append((x,y,w,h))
             distances[distance] = i
         #so it doesn't fit... choose the closest monitor and make it fit
-        geomlog("OR window distances: %s", distances)
+        geomlog("OR window distances (%s) to (%s): %s", (wx, wy, ww, wh), geometries, distances)
         closest = min(distances.keys())
         i = distances[closest]
         monitor = monitors[i]
