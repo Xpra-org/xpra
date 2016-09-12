@@ -1579,7 +1579,7 @@ class WindowVideoSource(WindowSource):
             self.source_remove(bft)
 
     def schedule_video_encoder_flush(self, ve, csc, frame, x , y, client_options):
-        flush_delay = max(1000, min(500, int(self.batch_config.delay*10)))
+        flush_delay = max(150, min(500, int(self.batch_config.delay*10)))
         self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder, ve, csc, frame, x, y)
 
     def flush_video_encoder(self, ve, csc, frame, x, y):
