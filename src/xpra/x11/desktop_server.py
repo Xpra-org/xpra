@@ -185,6 +185,11 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         log_screen_sizes(root_w, root_h, sss)
 
 
+    def set_desktop_geometry_attributes(self, w, h):
+        #geometry is not synced with the client's for desktop servers
+        pass
+
+
     def get_server_mode(self):
         return "X11 desktop"
 

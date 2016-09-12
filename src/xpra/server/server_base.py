@@ -1206,10 +1206,13 @@ class ServerBase(ServerCore):
         maxw, maxh = self.get_max_screen_size()
         w = min(w, maxw)
         h = min(h, maxh)
+        self.set_desktop_geometry_attributes(w, h)
+        return w, h
+
+    def set_desktop_geometry_attributes(self, w, h):
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)
-        return w, h
 
     def parse_hello_ui_clipboard(self, ss, c):
         #take the clipboard if no-one else has it yet:
@@ -2141,7 +2144,7 @@ class ServerBase(ServerCore):
         #randr has resized the screen, tell the client (if it supports it)
         w, h = screen.get_width(), screen.get_height()
         screenlog("new screen dimensions: %ix%i", w, h)
-        self.calculate_workarea(w, h)
+        self.set_desktop_geometry_attributes(w, h)
         self.idle_add(self.send_updated_screen_size)
 
     def get_root_window_size(self):
