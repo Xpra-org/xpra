@@ -28,7 +28,7 @@
 
 
 #some of these dependencies may get turned off (empty) on some platforms:
-%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_cython --without-csc_opencv
+%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_cython --without-csc_opencv --without-enc_xvid
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , %{py2prefix}-lzo
@@ -104,6 +104,8 @@
 
 
 %if 0%{?fedora}
+#we have csc-libyuv, so we can drop swscale:
+%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_cython --without-csc_opencv --without-enc_xvid --without-csc_swscale
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
 #note: probably not working since we don't have gtkglext for Python3?
