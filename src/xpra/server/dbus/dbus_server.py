@@ -282,6 +282,12 @@ class DBUS_Server(dbus.service.Object):
         disable_debug_for(c)
 
 
+    @dbus.service.method(INTERFACE, in_signature='sss')
+    def SendNotification(self, title, message, uuids):
+        self.log(".SendNotification%s", (title, message, uuids))
+        self.server.control_command_send_notification(ns(title), ns(message), ns(uuids))
+
+
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
     def ListClients(self):
         d = {}

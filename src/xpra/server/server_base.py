@@ -29,6 +29,7 @@ clipboardlog = Logger("clipboard")
 rpclog = Logger("rpc")
 dbuslog = Logger("dbus")
 webcamlog = Logger("webcam")
+notifylog = Logger("notify")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -784,7 +785,8 @@ class ServerBase(ServerCore):
             ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
             #network and transfers:
             ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=3),
-            ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3),
+            ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3, ),
+            ArgsControlCommand("send-notification",     "sends a notification to the client(s)",  min_args=3, max_args=4),
             ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
             ArgsControlCommand("encoder",               "sets the packet encoder",          min_args=1, max_args=1),
             ArgsControlCommand("clipboard-direction",   "restrict clipboard transfers",     min_args=1, max_args=1),
@@ -1498,6 +1500,17 @@ class ServerBase(ServerCore):
             if notfound:
                 commandlog.warn("client connection not found for uuid(s): %s", notfound)
         return sources
+
+    def control_command_send_notification(self, title, message, client_uuids):
+        sources = self._control_get_sources(client_uuids)
+        notifylog("control_command_send_notification(%s, %s, %s) will send to %s", title, message, client_uuids, sources)
+        count = 0
+        for source in sources:
+            if source.notify(0, 0, "control channel", 0, "", title, message, 10):
+                count += 1
+        msg = "notification message send to %i clients" % count
+        notifylog(msg)
+        return msg
 
     def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
         openit = str(openit).lower() in ("open", "true", "1")

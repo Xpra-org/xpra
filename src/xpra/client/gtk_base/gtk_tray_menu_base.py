@@ -457,8 +457,7 @@ class GTKTrayMenuBase(object):
         def set_notifications_menuitem(*args):
             log("set_notifications_menuitem%s enabled=%s", args, self.client.notifications_enabled)
             self.notifications_menuitem.set_active(self.client.notifications_enabled)
-            c = self.client
-            can_notify = c.server_supports_notifications and c.client_supports_notifications
+            can_notify = self.client.client_supports_notifications
             set_sensitive(self.notifications_menuitem, can_notify)
             if can_notify:
                 self.notifications_menuitem.set_tooltip_text("Forward system notifications")

@@ -27,6 +27,7 @@ avsynclog = Logger("av-sync")
 mmaplog = Logger("mmap")
 dbuslog = Logger("dbus")
 statslog = Logger("stats")
+notifylog = Logger("notify")
 
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
@@ -353,8 +354,8 @@ class ServerSource(FileTransferHandler):
                 dbuslog.error("Error setting up the source's DBUS server:")
                 dbuslog.error(" %s", e)
 
-    def __str__(self):
-        return  "%s(%s)" % (type(self).__name__, self.protocol)
+    def __repr__(self):
+        return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
 
     def init_vars(self):
         self.encoding = None                        #the default encoding for all windows
@@ -1687,9 +1688,14 @@ class ServerSource(FileTransferHandler):
         self.send("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
-        if not self.send_notifications or self.suspended:
-            return
+        if not self.send_notifications:
+            notifylog("client %s does not support notifications", self)
+            return False
+        if self.suspended:
+            notifylog("client %s is suspended, notification not sent", self)
+            return False
         self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
+        return True
 
     def notify_close(self, nid):
         if not self.send_notifications or self.suspended:

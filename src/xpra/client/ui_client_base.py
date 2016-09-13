@@ -35,6 +35,7 @@ avsynclog = Logger("av-sync")
 clipboardlog = Logger("clipboard")
 scalinglog = Logger("scaling")
 webcamlog = Logger("webcam")
+notifylog = Logger("notify")
 
 
 from xpra import __version__ as XPRA_VERSION
@@ -455,9 +456,10 @@ class UIXpraClient(XpraClientBase):
                     #show when the main loop is running:
                     self.idle_add(self.tray.show)
 
+        notifylog("client_supports_notifications=%s", self.client_supports_notifications)
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
-            traylog("using notifier=%s", self.notifier)
+            notifylog("using notifier=%s", self.notifier)
             self.client_supports_notifications = self.notifier is not None
 
         #audio tagging:
@@ -798,7 +800,7 @@ class UIXpraClient(XpraClientBase):
 
     def make_notifier(self):
         nc = self.get_notifier_classes()
-        traylog("make_notifier() notifier classes: %s", nc)
+        notifylog("make_notifier() notifier classes: %s", nc)
         return self.make_instance(nc)
 
     def get_notifier_classes(self):
@@ -1722,7 +1724,7 @@ class UIXpraClient(XpraClientBase):
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_supports_notifications = c.boolget("notifications")
-        self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
+        self.notifications_enabled = self.client_supports_notifications
         self.server_supports_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
         self.server_supports_bell = c.boolget("bell")          #added in 0.5, default to True!
@@ -2573,7 +2575,6 @@ class UIXpraClient(XpraClientBase):
 
     def send_notify_enabled(self):
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
-        assert self.server_supports_notifications, "cannot toggle notifications: the feature is disabled by the server"
         self.send("set-notify", self.notifications_enabled)
 
     def send_bell_enabled(self):
@@ -3001,10 +3002,13 @@ class UIXpraClient(XpraClientBase):
 
     def _process_notify_show(self, packet):
         if not self.notifications_enabled:
+            notifylog("process_notify_show: ignoring packet, notifications are disabled")
             return
         self._ui_event()
         dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
-        log("_process_notify_show(%s)", packet)
+        #note: if the server doesn't support notification forwarding,
+        #it can still send us the messages (via xpra control or the dbus interface)
+        notifylog("_process_notify_show(%s) notifier=%s, server_supports_notifications", packet, self.notifier, self.server_supports_notifications)
         assert self.notifier
         #TODO: choose more appropriate tray if we have more than one shown?
         tray = self.tray
