@@ -389,6 +389,13 @@ class WindowSource(object):
                  "rgb_formats"          : self.rgb_formats,
                  #"icons"                : self.icons_encoding_options,
                  })
+        now = time.time()
+        cutoff = now-5
+        lde = [x for x in self.statistics.last_damage_events if x[0]>=cutoff]
+        dfps = 0
+        if lde:
+            dfps = len(lde) // 5
+        info["damage.fps"] = dfps
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
         idata = self.window_icon_data
