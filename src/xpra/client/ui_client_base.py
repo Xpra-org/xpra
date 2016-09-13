@@ -3008,7 +3008,7 @@ class UIXpraClient(XpraClientBase):
         dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
         #note: if the server doesn't support notification forwarding,
         #it can still send us the messages (via xpra control or the dbus interface)
-        notifylog("_process_notify_show(%s) notifier=%s, server_supports_notifications", packet, self.notifier, self.server_supports_notifications)
+        notifylog("_process_notify_show(%s) notifier=%s, server_supports_notifications=%s", packet, self.notifier, self.server_supports_notifications)
         assert self.notifier
         #TODO: choose more appropriate tray if we have more than one shown?
         tray = self.tray
