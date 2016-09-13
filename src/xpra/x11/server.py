@@ -53,11 +53,11 @@ menulog  = Logger("x11", "menu")
 eventlog = Logger("x11", "events")
 
 import xpra
-from xpra.util import nonl, typedict
+from xpra.util import nonl, typedict, envint
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 
-REPARENT_ROOT = os.environ.get("XPRA_REPARENT_ROOT", "0")=="1"
-SCALED_FONT_ANTIALIAS = os.environ.get("XPRA_SCALED_FONT_ANTIALIAS", "0")=="1"
+REPARENT_ROOT = envint("XPRA_REPARENT_ROOT", 1)
+SCALED_FONT_ANTIALIAS = envint("XPRA_SCALED_FONT_ANTIALIAS")
 
 
 class DesktopManager(gtk.Widget):
