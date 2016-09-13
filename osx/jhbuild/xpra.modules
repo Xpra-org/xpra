@@ -868,9 +868,9 @@
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.9.3.tar.bz2"
-		hash="md5:243036eb28b50ce517fc228eb3250add"
-		version="1.9.3"
+    <branch module="/dist/subversion/subversion-1.9.4.tar.bz2"
+		hash="md5:29121a038f87641055a8183f49e9739f"
+		version="1.9.4"
 		repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="apr-util"/>
