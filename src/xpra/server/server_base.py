@@ -1502,6 +1502,10 @@ class ServerBase(ServerCore):
         return sources
 
     def control_command_send_notification(self, title, message, client_uuids):
+        if not self.notifications:
+            msg = "notifications are disabled"
+            notifylog(msg)
+            return msg
         sources = self._control_get_sources(client_uuids)
         notifylog("control_command_send_notification(%s, %s, %s) will send to %s", title, message, client_uuids, sources)
         count = 0
@@ -2099,13 +2103,13 @@ class ServerBase(ServerCore):
             self._clipboard_client.send_clipboard(parts)
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
-        assert self.notifications_forwarder
+        assert self.notifications_forwarder and self.notifications
         log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s)", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
         for ss in self._server_sources.values():
             ss.notify(dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
 
     def notify_close_callback(self, nid):
-        assert self.notifications_forwarder
+        assert self.notifications_forwarder and self.notifications
         log("notify_close_callback(%s)", nid)
         for ss in self._server_sources.values():
             ss.notify_close(int(nid))
@@ -2375,7 +2379,7 @@ class ServerBase(ServerCore):
 
 
     def _process_set_notify(self, proto, packet):
-        assert self.notifications_forwarder is not None, "cannot toggle notifications: the feature is disabled"
+        assert self.notifications, "cannot toggle notifications: the feature is disabled"
         ss = self._server_sources.get(proto)
         if ss:
             ss.send_notifications = bool(packet[1])
