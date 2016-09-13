@@ -52,7 +52,10 @@
         </branch>
   </autotools>
 
-  <autotools id="perl" autogen-sh="Configure" autogenargs="-des -Dprefix={JHBUILD_PREFIX}">
+  <autotools id="perl"
+        autogen-sh="Configure" 
+        autogen-template="%(srcdir)s/%(autogen-sh)s -Dprefix=%(prefix)s %(autogenargs)s"
+        autogenargs="-des">
 	<branch module="/src/5.0/perl-5.24.0.tar.gz"
 		version="5.24.0"
 		hash="md5:c5bf7f3285439a2d3b6a488e14503701"
