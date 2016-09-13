@@ -1404,14 +1404,15 @@ def parse_display_name(error_cb, opts, display_name):
             username, password, host, port = parse_host_string(host)
             host += extra
             #TODO: parse attrs after "?"
+        else:
+            raise InitException("missing port number from websocket connection string")
         desc.update({
                 "type"          : ws_proto,     #"ws" or "wss"
                 "local"         : False,
                 "display"       : display_name,
                 "host"          : host,
+                "port"          : port,
                 })
-        if port>0:
-            desc["port"] = port
         return desc
     elif sys.platform.startswith("win") or display_name.startswith("named-pipe:"):
         pipe_name = display_name
@@ -1484,6 +1485,9 @@ def _socket_connect(sock, endpoint, description, dtype):
     try:
         sock.connect(endpoint)
     except Exception as e:
+        from xpra.log import Logger
+        log = Logger("network")
+        log("failed to connect", exc_info=True)
         raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
