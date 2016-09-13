@@ -851,7 +851,7 @@
 
   <autotools id="serf" 
         autogen-sh="scons" 
-        autogen-template="%(srcdir)s/%(autogen-sh)s APR=%(prefix)s APU=%(prefix)s OPENSSL=%(prefix)s PREFIX=%(prefix)s %(autogenargs)s"
+        autogen-template="%(autogen-sh)s APR=%(prefix)s APU=%(prefix)s OPENSSL=%(prefix)s PREFIX=%(prefix)s %(autogenargs)s"
         autogenargs="install"
         skip-install="true"
         check-target="false">
