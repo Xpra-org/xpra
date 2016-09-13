@@ -52,6 +52,12 @@
         </branch>
   </autotools>
 
+  <autotools id="perl" autogen-sh="configure" autogenargs="-des -Dprefix=%(prefix)s">
+	<branch module="/src/5.0/perl-5.24.0.tar.gz"
+		version="5.24.0"
+		hash="md5:c5bf7f3285439a2d3b6a488e14503701"
+		repo="cpan.org"/>
+  </autotools>
 
   <autotools id="sshpass" autogen-sh="configure">
 	<branch module="/project/sshpass/sshpass/1.05/sshpass-1.05.tar.gz"
