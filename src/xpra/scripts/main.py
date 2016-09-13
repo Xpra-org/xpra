@@ -1994,6 +1994,8 @@ def run_client(error_cb, opts, extra_args, mode):
             from xpra.codecs.loader import PREFERED_ENCODING_ORDER
             opts.encodings = PREFERED_ENCODING_ORDER
         app.init(opts)
+        if opts.encoding=="auto":
+            opts.encoding = ""
         if opts.encoding or ehelp:
             err = opts.encoding and (opts.encoding not in app.get_encodings())
             info = ""
@@ -2001,7 +2003,8 @@ def run_client(error_cb, opts, extra_args, mode):
                 info = "invalid encoding: %s\n" % opts.encoding
             if opts.encoding=="help" or ehelp or err:
                 from xpra.codecs.loader import encodings_help
-                raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
+                encodings = ["auto"] + app.get_encodings()
+                raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()

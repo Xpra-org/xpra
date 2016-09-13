@@ -631,12 +631,16 @@ class GTKTrayMenuBase(object):
         return encodings
 
     def make_encodingssubmenu(self, handshake_complete=True):
+        server_encodings = self.client.server_encodings
         all_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
         encodings = [x for x in all_encodings if x not in self.client.server_encodings_problematic]
         if not encodings:
             #all we have, show the "bad" hidden ones then!
             encodings = all_encodings
-        encodings_submenu = make_encodingsmenu(self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
+        if self.client.server_auto_video_encoding:
+            encodings.insert(0, "auto")
+            self.client.server_encodings.insert(0, "auto")
+        encodings_submenu = make_encodingsmenu(self.get_current_encoding, self.set_current_encoding, encodings, server_encodings)
         self.popup_menu_workaround(encodings_submenu)
         return encodings_submenu
 

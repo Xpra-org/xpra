@@ -1326,6 +1326,7 @@ class ServerBase(ServerCore):
                 "change-quality", "change-min-quality", "change-speed", "change-min-speed",
                 #newer flags:
                 "av-sync",
+                "auto-video-encoding",
                 "window-filters"))
         f["sound"] = {
                       "ogg-latency-fix" : True,

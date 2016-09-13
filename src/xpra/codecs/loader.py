@@ -257,6 +257,7 @@ if compression.get_enabled_compressors():
     RGB_COMP_OPTIONS  += ["/".join(compression.get_enabled_compressors())]
 
 ENCODINGS_TO_NAME = {
+      "auto"    : "automatic",
       "h264"    : "H.264",
       "h265"    : "H.265",
       "mpeg4"   : "MPEG4",
@@ -271,6 +272,7 @@ ENCODINGS_TO_NAME = {
     }
 
 ENCODINGS_HELP = {
+      "auto"    : "automatic mode (recommended)",
       "h264"    : "H.264 video codec",
       "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
       "vp8"     : "VP8 video codec",
@@ -284,7 +286,7 @@ ENCODINGS_HELP = {
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
       }
 
-HELP_ORDER = ("h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
+HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
 
 #those are currently so useless that we don't want the user to select them by mistake
 PROBLEMATIC_ENCODINGS = ("h265", )
