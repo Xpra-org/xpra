@@ -8,6 +8,7 @@
 import gtk
 import cairo
 
+from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
@@ -60,6 +61,10 @@ CW_MASK_TO_NAME = {
                    }
 def configure_bits(value_mask):
     return "|".join((v for k,v in CW_MASK_TO_NAME.items() if (k&value_mask)))
+
+
+CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
+assert CLAMP_OVERLAP>=0
 
 
 class WindowModel(BaseWindowModel):
@@ -166,16 +171,7 @@ class WindowModel(BaseWindowModel):
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
-        if self.desktop_geometry:
-            dw, dh = self.desktop_geometry
-            if x+w<0:
-                x = 10-w
-            elif x>=dw:
-                x = dw-10
-            if y+h<0:
-                y = 10-h
-            elif y>dh:
-                y = dh-10
+        x, y = self._clamp_to_desktop(x, y, w, h)
         self.corral_window = gtk.gdk.Window(self.parking_window,
                                             x=x, y=y, width=w, height=h,
                                             window_type=gtk.gdk.WINDOW_CHILD,
@@ -222,21 +218,26 @@ class WindowModel(BaseWindowModel):
         self.client_window.get_geometry()
 
 
+    def _clamp_to_desktop(self, x, y, w, h):
+        if self.desktop_geometry:
+            dw, dh = self.desktop_geometry
+            if x+w<0:
+                x = min(0, CLAMP_OVERLAP-w)
+            elif x>=dw:
+                x = max(0, dw-CLAMP_OVERLAP)
+            if y+h<0:
+                y = min(0, CLAMP_OVERLAP-h)
+            elif y>dh:
+                y = max(0, dh-CLAMP_OVERLAP)
+        return x, y
+
     def update_desktop_geometry(self, width, height):
         if self.desktop_geometry==(width, height):
             return  #no need to do anything
         self.desktop_geometry = (width, height)
         x, y, w, h = self.corral_window.get_geometry()[:4]
-        nx, ny = 0, 0
-        if x+w<0:
-            nx = 10-w
-        elif x>=width:
-            nx = width-10
-        if y+h<0:
-            ny = 10-h
-        elif y>height:
-            ny = height-10
-        if nx or ny:
+        nx, ny = self._clamp_to_desktop(x, y, w, h)
+        if nx!=x or ny!=y:
             log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
             self.corral_window.move(nx, ny)
 
