@@ -214,7 +214,7 @@ class WindowSource(object):
         self._rgb_auto_threshold = MAX_PIXELS_PREFER_RGB
 
         self.init_encoders()
-        self.update_encoding_selection(encoding)
+        self.update_encoding_selection(encoding, init=True)
         log("initial encoding for %s: %s", self.wid, self.encoding)
 
     def __repr__(self):
@@ -672,7 +672,7 @@ class WindowSource(object):
         self.update_encoding_selection(encoding)
 
 
-    def update_encoding_selection(self, encoding=None, exclude=[]):
+    def update_encoding_selection(self, encoding=None, exclude=[], init=False):
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
         common_encodings = [x for x in self._encoders.keys() if x in self.core_encodings and x not in exclude]
@@ -687,7 +687,7 @@ class WindowSource(object):
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
-        log("update_encoding_selection(%s) encoding=%s, common encodings=%s", encoding, self.encoding, self.common_encodings)
+        log("update_encoding_selection(%s, %s, %s) encoding=%s, common encodings=%s", encoding, exclude, init, self.encoding, self.common_encodings)
         assert self.encoding is not None
         self.update_quality()
         self.update_speed()
