@@ -906,7 +906,7 @@ class ServerSource(FileTransferHandler):
             if self.encoding=="auto":
                 elog.info(" automatic picture encoding enabled")
             else:
-                elog.info(" using %s as primary encoding%s", self.encoding)
+                elog.info(" using %s as primary encoding", self.encoding)
             if others:
                 elog.info(" also available:")
                 elog.info("  %s", ", ".join(others))
