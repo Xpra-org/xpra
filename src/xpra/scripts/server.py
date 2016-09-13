@@ -19,7 +19,7 @@ import time
 import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
-from xpra.scripts.config import InitException, TRUE_OPTIONS
+from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import SIGNAMES
 from xpra.util import envint
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
@@ -864,6 +864,8 @@ def guess_xpra_display(socket_dir, socket_dirs):
 
 
 def start_dbus(dbus_launch):
+    if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
+        return 0, {}
     try:
         def preexec():
             assert os.name=="posix"
