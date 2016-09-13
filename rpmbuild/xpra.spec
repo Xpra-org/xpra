@@ -104,8 +104,6 @@
 
 
 %if 0%{?fedora}
-#we have csc-libyuv, so we can drop swscale:
-%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_cython --without-csc_opencv --without-enc_xvid --without-csc_swscale
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
 #note: probably not working since we don't have gtkglext for Python3?
