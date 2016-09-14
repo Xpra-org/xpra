@@ -14,7 +14,7 @@
   <autotools id="liboil" autogen-template="autoreconf -fis &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s"
 	     makeargs=' CFLAGS="$CFLAGS -DHAVE_SYMBOL_UNDERSCORE"'>
     <branch repo="liboil" module="liboil-0.3.17.tar.gz" version="0.3.17">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/liboil-use-ac-config-headers-macro.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/liboil-use-ac-config-headers-macro.patch" strip="1"/>
     </branch>
   </autotools>
 
@@ -26,7 +26,7 @@
              autogenargs="-without-bmp --without-xmms --without-drm --without-mpeg4ip">
     <branch repo="sourceforge" version="2.7"
             module="faac/faad2-src/faad2-2.7/faad2-2.7.tar.bz2">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/faad2-2.7-ac-config-headers.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/faad2-2.7-ac-config-headers.patch" strip="1"/>
     </branch>
   </autotools>
 
@@ -34,9 +34,9 @@
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gstreamer/0.10/gstreamer-0.10.36.tar.xz" version="0.10.36"
             hash="sha256:9151aa108c177054387885763fa0e433e76780f7c5655c70a5390f2a6c6871da">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gstreamer-fix-includes-in-gstdatetime.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gstreamer-706462-Make-grammar-y-work-with-Bison-3.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gstreamer-680428-Fix-flex-version-check.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gstreamer-fix-includes-in-gstdatetime.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gstreamer-706462-Make-grammar-y-work-with-Bison-3.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gstreamer-680428-Fix-flex-version-check.patch" strip="1"/>
     </branch>
     <after>
       <dep package="glib"/>
