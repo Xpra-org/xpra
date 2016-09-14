@@ -176,7 +176,6 @@
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-2-m4-creation.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
       <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-fullscreenfix-quartz.patch" strip="1"/>
    </branch>
     <dependencies>
