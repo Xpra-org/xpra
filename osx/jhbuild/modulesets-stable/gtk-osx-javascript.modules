@@ -21,11 +21,11 @@
     <branch version="1.42.0" module="gjs/1.42/gjs-1.42.0.tar.xz"
             hash="sha256:0c9afb7d5be6ead5b68059596f08eb7c3902b1676ee9c8846aa8df09647dba13">
       <patch strip="1"
-             file="http://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-737701-Don-t-error-out-on-missing-cairo-xlib.pc.patch"/>
+             file="https://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-737701-Don-t-error-out-on-missing-cairo-xlib.pc.patch"/>
       <patch strip="1"
-             file="http://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-737702-Use-R-instead-of-rpath.patch"/>
+             file="https://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-737702-Use-R-instead-of-rpath.patch"/>
       <patch strip="1"
-             file="http://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-740696-Use-m4-directory-for-macros.patch"/>
+             file="https://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-740696-Use-m4-directory-for-macros.patch"/>
     </branch>
     <dependencies>
       <dep package="gobject-introspection"/>
