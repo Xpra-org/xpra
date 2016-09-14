@@ -38,7 +38,7 @@
              autogenargs="--without-trust-paths">
     <branch repo="p11-glue" version="0.22.1"
 	    module="p11-kit-0.22.1.tar.gz">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/p11-kit-dirfd.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/p11-kit-dirfd.patch"
        strip="1"/>
     </branch>
     <dependencies>
@@ -72,7 +72,7 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
     <branch repo="ftp.gnupg.org" version="1.17"
             module="gcrypt/libgpg-error/libgpg-error-1.17.tar.bz2">
-            <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libgpg-error-cflags-for-cc-for-build.patch"
+            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libgpg-error-cflags-for-cc-for-build.patch"
        strip="1"/>
     </branch>
   </autotools>
@@ -82,7 +82,7 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
     <branch repo="ftp.gnupg.org" version="1.6.3"
             module="gcrypt/libgcrypt/libgcrypt-1.6.3.tar.bz2">
-            <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libgcrypt-cflags-for-cc-for-build.patch"
+            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libgcrypt-cflags-for-cc-for-build.patch"
        strip="1"/>
     </branch>
     <dependencies>
@@ -90,8 +90,9 @@
     </dependencies>
   </autotools>
 
-   <!-- 10.5 has 7.16.3, which is too old for some things. Otherwise can be skipped. -->
+  <!-- 10.5 has 7.16.3, which is too old for some things, and also doesn't
+  provide a pkgconfig file. Otherwise can be skipped. -->
   <autotools id="libcurl" autogen-sh="configure">
-    <branch repo="curl.haxx.se" module="curl-7.28.0.tar.bz2" version="7.28.0" />
+    <branch repo="curl.haxx.se" module="curl-7.47.1.tar.bz2" version="7.47.1"/>
   </autotools>
 </moduleset>
