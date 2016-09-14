@@ -26,7 +26,13 @@ grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes, bytestostr
-from xpra.util import AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, MOVERESIZE_CANCEL, MOVERESIZE_MOVE, SOURCE_INDICATION_STRING
+from xpra.util import (AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, 
+                       MOVERESIZE_CANCEL,
+                       MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
+                       MOVERESIZE_SIZE_RIGHT,
+                       MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
+                       MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE)
+
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS
@@ -909,28 +915,91 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         except Exception as e:
             log.error("Error: failed to send %s menu rpc request for %s", action_type, action, exc_info=True)
 
+
     def do_motion_notify_event(self, event):
         if self.moveresize_event:
             x_root, y_root, direction, button, wx, wy, ww, wh = self.moveresize_event
+            dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
             buttons = self._event_buttons(event)
-            if direction==MOVERESIZE_MOVE and button==0 or button in buttons:
+            if button>0 and button not in buttons:
+                geomlog("%s for window button %i is no longer pressed (buttons=%s) cancelling moveresize", dirstr, button, buttons)
+                self.moveresize_event = None
+            else:
                 x = event.x_root
                 y = event.y_root
                 dx = x-x_root
                 dy = y-y_root
-                geomlog("motion moveresize for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s", ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons)
-                self.moveresize_data = int(wx+dx), int(wy+dy)
-                #moving the window is slower than moving the pointer,
-                #do it via a timer to batch things together
-                if self.moveresize_timer is None:
-                    self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
-            else:
-                self.moveresize_event = None
+                #clamp resizing using size hints,
+                #or sane defaults: minimum of (1x1) and maximum of (2*15x2*25)
+                minw = self.geometry_hints.get("min_width", 1)
+                minh = self.geometry_hints.get("min_height", 1)
+                maxw = self.geometry_hints.get("max_width", 2**15)
+                maxh = self.geometry_hints.get("max_height", 2**15)
+                geomlog("%s: min=%ix%i, max=%ix%i, window=%ix%i, delta=%ix%i", dirstr, minw, minh, maxw, maxh, ww, wh, dx, dy)
+                if direction in (MOVERESIZE_SIZE_BOTTOMRIGHT, MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT):
+                    #height will be set to: wh+dy
+                    dy = max(minh-wh, dy)
+                    dy = min(maxh-wh, dy)
+                elif direction in (MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPLEFT):
+                    #height will be set to: wh-dy
+                    dy = min(wh-minh, dy)
+                    dy = max(wh-maxh, dy)
+                if direction in (MOVERESIZE_SIZE_BOTTOMRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_TOPRIGHT):
+                    #width will be set to: ww+dx
+                    dx = max(minw-ww, dx)
+                    dx = min(maxw-ww, dx)
+                elif direction in (MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, MOVERESIZE_SIZE_TOPLEFT):
+                    #width will be set to: ww-dx
+                    dx = min(ww-minw, dx)
+                    dx = max(ww-maxw, dx)
+                #calculate move + resize:
+                if direction==MOVERESIZE_MOVE:
+                    data = (wx+dx, wy+dy), None
+                elif direction==MOVERESIZE_SIZE_BOTTOMRIGHT:
+                    data = None, (ww+dx, wh+dy)
+                elif direction==MOVERESIZE_SIZE_BOTTOM:
+                    data = None, (ww, wh+dy)
+                elif direction==MOVERESIZE_SIZE_BOTTOMLEFT:
+                    data = (wx+dx, wy), (ww-dx, wh+dy)
+                elif direction==MOVERESIZE_SIZE_RIGHT:
+                    data = None, (ww+dx, wh)
+                elif direction==MOVERESIZE_SIZE_LEFT:
+                    data = (wx+dx, wy), (ww-dx, wh)
+                elif direction==MOVERESIZE_SIZE_TOPRIGHT:
+                    data = (wx, wy+dy), (ww+dx, wh-dy)
+                elif direction==MOVERESIZE_SIZE_TOP:
+                    data = (wx, wy+dy), (ww, wh-dy)
+                elif direction==MOVERESIZE_SIZE_TOPLEFT:
+                    data = (wx+dx, wy+dy), (ww-dx, wh-dy)
+                else:
+                    #not handled yet!
+                    data = None
+                geomlog("%s for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s, data=%s", dirstr, ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons, data)
+                if data:
+                    #modifying the window is slower than moving the pointer,
+                    #do it via a timer to batch things together
+                    self.moveresize_data = data
+                    if self.moveresize_timer is None:
+                        self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
         ClientWindowBase.do_motion_notify_event(self, event)
 
     def do_moveresize(self):
         self.moveresize_timer = None
-        self.move(*self.moveresize_data)
+        mrd = self.moveresize_data
+        geomlog("do_moveresize() data=%s", mrd)
+        if not mrd:
+            return
+        move, resize = mrd
+        if move:
+            x, y = int(move[0]), int(move[1])
+        if resize:
+            w, h = int(resize[0]), int(resize[1])
+        if move and resize:
+            self.get_window().move_resize(x, y, w, h)
+        elif move:
+            self.get_window().move(x, y)
+        elif resize:
+            self.get_window().resize(w, h)
 
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
@@ -940,6 +1009,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         if direction==MOVERESIZE_CANCEL:
             self.moveresize_event = None
+            self.moveresize_data = None
         else:
             #use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()

@@ -52,7 +52,7 @@ def main():
 		initiate(x, y, direction, button, source_indication)
 	btn.connect('button-press-event', initiate_move)
 
-	def btn_callback(btn, direction):
+	def btn_callback(btn, event, direction):
 		cancel()
 		x, y = root.get_pointer()[:2]
 		source_indication = 1	#normal
@@ -61,7 +61,7 @@ def main():
 	def add_button(x, y, direction):
 		btn = gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
 		table.attach(btn, x, x+1, y, y+1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.EXPAND|gtk.FILL)
-		btn.connect('clicked', btn_callback, direction)
+		btn.connect('button-press-event', btn_callback, direction)
 
 	for x,y,direction in (
 						(0, 0, MOVERESIZE_SIZE_TOPLEFT),
