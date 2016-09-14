@@ -94,9 +94,9 @@
 
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
-    <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
-            version="3.2.1"/>
-  </autotools>
+    <branch module="libffi/libffi-3.0.13.tar.gz" repo="sourceware.org"
+            version="3.0.13" checkoutdir="atgreen-libffi-873d687"/>
+  </autotools><!-- anything higher than this fails on osx 10.5 -->
 
   <autotools id="xorg-util-macros">
     <branch repo="freedesktop" version="1.19.0"
