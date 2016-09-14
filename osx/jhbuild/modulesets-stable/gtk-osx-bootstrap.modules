@@ -40,7 +40,7 @@
   </autotools>
 
   <autotools id="libjpeg" autogen-sh="configure" autogenargs="--with-jpeg8">
-    <branch module="project/libjpeg-turbo/1.5.0/libjpeg-turbo-1.5.0.tar.gz" version="1.5.0"
+    <branch module="project/libjpeg-turbo/1.4.2/libjpeg-turbo-1.4.2.tar.gz" version="1.4.2"
             repo="sourceforge">
     </branch>
   </autotools>
