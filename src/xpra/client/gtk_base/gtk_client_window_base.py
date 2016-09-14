@@ -26,7 +26,7 @@ grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes, bytestostr
-from xpra.util import AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
+from xpra.util import AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, MOVERESIZE_CANCEL, MOVERESIZE_MOVE, SOURCE_INDICATION_STRING
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS
@@ -67,6 +67,9 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
     except ImportError:
         pass
 
+
+BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
+MOVERESIZE_X11 = envint("XPRA_MOVERESIZE_X11", os.name=="posix")
 
 SAVE_WINDOW_ICONS = envint("XPRA_SAVE_WINDOW_ICONS")
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
@@ -145,6 +148,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._current_frame_extents = None
         self._screen = -1
         self._frozen = False
+        self.moveresize_timer = None
+        self.moveresize_event = None
         self.OR_offset = None
         #add platform hooks
         self.on_realize_cb = {}
@@ -904,9 +909,45 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         except Exception as e:
             log.error("Error: failed to send %s menu rpc request for %s", action_type, action, exc_info=True)
 
+    def do_motion_notify_event(self, event):
+        if self.moveresize_event:
+            x_root, y_root, direction, button, wx, wy, ww, wh = self.moveresize_event
+            buttons = self._event_buttons(event)
+            if direction==MOVERESIZE_MOVE and button==0 or button in buttons:
+                x = event.x_root
+                y = event.y_root
+                dx = x-x_root
+                dy = y-y_root
+                geomlog("motion moveresize for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s", ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons)
+                self.moveresize_data = int(wx+dx), int(wy+dy)
+                #moving the window is slower than moving the pointer,
+                #do it via a timer to batch things together
+                if self.moveresize_timer is None:
+                    self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
+            else:
+                self.moveresize_event = None
+        ClientWindowBase.do_motion_notify_event(self, event)
+
+    def do_moveresize(self):
+        self.moveresize_timer = None
+        self.move(*self.moveresize_data)
+
+
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
         statelog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
-        assert HAS_X11_BINDINGS, "cannot handle initiate-moveresize without X11 bindings"
+        if MOVERESIZE_X11 and HAS_X11_BINDINGS:
+            self.initiate_moveresize_X11(x_root, y_root, direction, button, source_indication)
+            return
+        if direction==MOVERESIZE_CANCEL:
+            self.moveresize_event = None
+        else:
+            #use window coordinates (which include decorations)
+            wx, wy = self.get_window().get_root_origin()
+            ww, wh = self.get_window().get_size()
+            self.moveresize_event = (x_root, y_root, direction, button, wx, wy, ww, wh)
+
+    def initiate_moveresize_X11(self, x_root, y_root, direction, button, source_indication):
+        statelog("initiate_moveresize_X11%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
         root = self.get_window().get_screen().get_root_window()
         root_xid = get_xid(root)
@@ -1154,6 +1195,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def destroy(self):
         if self._client._set_window_menu:
             self._client.set_window_menu(False, self._id, {})
+        mrt = self.moveresize_timer
+        if mrt:
+            self.moveresize_timer = None
+            self.source_remove(mrt)
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         gtk.Window.destroy(self)
@@ -1181,13 +1226,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             y -= self.OR_offset[1]
         pointer = self._client.cp(x, y)
         modifiers = self._client.mask_to_names(event.state)
-        buttons = []
-        for mask, button in self.BUTTON_MASK.items():
-            if event.state & mask:
-                buttons.append(button)
+        buttons = self._event_buttons(event)
         v = pointer, modifiers, buttons
         mouselog("pointer_modifiers(%s)=%s", event, v)
         return v
+
+    def _event_buttons(self, event):
+        return [button for mask, button in self.BUTTON_MASK.items() if (event.state & mask)]
 
     def parse_key_event(self, event, pressed):
         keyval = event.keyval
@@ -1207,6 +1252,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_key_press_event(self, event):
         key_event = self.parse_key_event(event, True)
+        if self.moveresize_event and key_event.key_name in BREAK_MOVERESIZE:
+            #cancel move resize if there is one:
+            self.moveresize_event = None
         self._client.handle_key_action(self, key_event)
 
     def do_key_release_event(self, event):
