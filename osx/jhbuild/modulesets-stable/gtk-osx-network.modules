@@ -57,7 +57,7 @@
     <!-- gnutls 3.3.x does not support nettle 3.0 -->
     <branch repo="ftp.gnu.org" version="2.7.1"
             module="nettle/nettle-2.7.1.tar.gz">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/libnettle-cc-for-build-needs-cflags.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libnettle-cc-for-build-needs-cflags.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gmp"/>
@@ -125,15 +125,15 @@
   <autotools id="WebKit" autogen-sh="autoreconf"
              autogenargs='--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0 --disable-geolocation --disable-webkit2 CXXFLAGS="$CXXFLAGS -Wno-c++11-extensions" CFLAGS="$CFLAGS -std=c99"'>
     <branch repo="webkit.org" module="webkitgtk-1.10.2.tar.xz" version="1.10.2">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-no-x11.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-no-x11.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-88407-portable-echo-n.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-88407-portable-echo-n.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-platform-fixes.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-platform-fixes.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-pango-includes.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-pango-includes.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-remove-pangoft2-dependency.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.10-remove-pangoft2-dependency.patch"
              strip="1"/>
     </branch>
     <dependencies>
@@ -153,23 +153,23 @@
   <autotools id="WebKit1.6" autogen-sh="configure"
              autogenargs="--with-target=quartz --disable-video --with-font-backend=pango --with-gtk=2.0">
     <branch repo="webkit.org" module="webkit-1.6.1.tar.gz" version="1.6.1">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-no-x11.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-no-x11.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-pango-includes.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-pango-includes.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-utf8-include.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-missing-utf8-include.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-enable-blob.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-enable-blob.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-gnome-3.6-fixup.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-gnome-3.6-fixup.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-clang-fixup.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-clang-fixup.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-out-of-source-fixup.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-out-of-source-fixup.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-remove-pangoft2-dependency.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-1.6-remove-pangoft2-dependency.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/bug-92264-webkit-bison-2.6.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/bug-92264-webkit-bison-2.6.patch"
              strip="1"/>
     </branch>
     <dependencies>
@@ -195,14 +195,14 @@
       append_autogenargs('WebKit', '&#45;-enable-web-audio')
     -j1: Workaround for https://bugs.webkit.org/show_bug.cgi?id=140171
   -->
-  <autotools id="webkit1gtk3" autogen-sh="autoreconf" makeargs="-j1"
+  <autotools id="webkit1gtk3" autogen-sh="autoreconf"
              autogenargs="--enable-quartz-target --with-gtk=3.0 --disable-webkit2 --disable-credential-storage --disable-geolocation --disable-video --disable-web-audio CXXFLAGS='-std=gnu++11'">
     <branch repo="webkit.org" module="webkitgtk-2.4.9.tar.xz" version="2.4.9">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch"
              strip="1"/>
       <!-- This patch can be commented out for XCode >= 6.3, but does no harm if
       it's left in -->
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch"
              strip="1"/>
     </branch>
     <dependencies>
@@ -236,15 +236,15 @@
   <cmake id="webkit2gtk3"
          cmakeargs="-DPORT=GTK -DENABLE_X11_TARGET=OFF -DENABLE_QUARTZ_TARGET=ON -DENABLE_TOOLS=ON -DENABLE_MINIBROWSER=ON -DENABLE_PLUGIN_PROCESS_GTK2=OFF -DENABLE_VIDEO=OFF -DENABLE_WEB_AUDIO=OFF -DENABLE_CREDENTIAL_STORAGE=OFF -DENABLE_GEOLOCATION=OFF -DENABLE_OPENGL=OFF -DUSE_LIBNOTIFY=OFF -DUSE_LIBHYPHEN=OFF -DCMAKE_CXX_FLAGS='-stdlib=libc++'">
     <branch repo="webkit.org" module="webkitgtk-2.10.2.tar.xz" version="2.10.2">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144561-quartz-backend.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144561-quartz-backend.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144560-platform-fixes.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144560-platform-fixes.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144785-link-injected-bundle.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-144785-link-injected-bundle.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-148606-build-texture-mapper-gl-separately.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-148606-build-texture-mapper-gl-separately.patch"
              strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/webkit-148607-include-stub-for-plugin-permission-request.patch"
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-148607-include-stub-for-plugin-permission-request.patch"
              strip="1"/>
     </branch>
     <dependencies>
