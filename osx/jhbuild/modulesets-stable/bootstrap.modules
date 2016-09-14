@@ -21,11 +21,17 @@
   <repository type="tarball" name="intltool"
               href="http://launchpad.net/intltool/trunk/"/>
 
-  <autotools id="make">
+  <autotools id="make" bootstrap="true">
     <branch repo="ftp.gnu.org" module="make/make-3.82.tar.gz" version="3.82"/>
   </autotools>
 
-  <autotools id='bash' autogen-sh="configure">
+  <autotools id='readline' autogen-sh="configure">
+    <branch repo="ftp.gnu.org" module="readline/readline-6.3.tar.gz"
+      version="6.3">
+    </branch>
+  </autotools>
+
+  <autotools id='bash' autogen-sh="configure"  autogenargs="--with-installed-readline">
     <branch repo="ftp.gnu.org" module="bash/bash-4.3.30.tar.gz"
             version="4.3.30"/>
     <dependencies>
@@ -33,7 +39,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="xz" autogen-sh="configure">
+  <autotools id="xz" autogen-sh="configure" bootstrap="true">
     <branch repo="tukaani.org" module="xz/xz-5.2.1.tar.bz2" version="5.2.1"/>
   </autotools>
 
@@ -67,57 +73,76 @@
   <autotools id="cmake" autogen-sh="bootstrap"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s">
     <branch repo="cmake" module="v3.2/cmake-3.2.1.tar.gz" version="3.2.1">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/cmake-libnetwork.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/cmake-libnetwork.patch" strip="1"/>
     </branch>
   </autotools>
 
-  <autotools id="m4" autogen-sh="configure">
+  <autotools id="m4" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="m4/m4-1.4.17.tar.xz" version="1.4.17"/>
   </autotools>
 
-  <autotools id="autoconf" autogen-sh="configure">
+  <autotools id="autoconf" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="autoconf/autoconf-2.69.tar.xz" version="2.69"/>
     <dependencies>
+      <dep package="xz"/>
       <dep package="m4"/>
     </dependencies>
   </autotools>
 
-  <autotools id="libtool" autogen-sh="configure">
+  <autotools id="libtool" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="libtool/libtool-2.4.6.tar.gz" version="2.4.6"/>
   </autotools>
 
-  <autotools id="automake-1.10" autogen-sh="configure">
+  <autotools id="automake-1.10" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="automake/automake-1.10.3.tar.bz2" version="1.10.3"
             size="957505" md5sum="b8e67fb458da396bc35555af7ef2b49f" />
+    <dependencies>
+      <dep package="autoconf"/>
+    </dependencies>
   </autotools>
 
-  <autotools id="automake-1.11" autogen-sh="configure">
+  <autotools id="automake-1.11" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="automake/automake-1.11.6.tar.xz" version="1.11.6"/>
+    <dependencies>
+      <dep package="autoconf"/>
+    </dependencies>
   </autotools>
 
-  <autotools id="automake-1.12" autogen-sh="configure">
+  <autotools id="automake-1.12" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="automake/automake-1.12.6.tar.xz" version="1.12.6"/>
+    <dependencies>
+      <dep package="autoconf"/>
+    </dependencies>
   </autotools>
 
-  <autotools id="automake-1.13" autogen-sh="configure">
+  <autotools id="automake-1.13" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org"
             module="automake/automake-1.13.4.tar.xz" version="1.13.4"/>
+    <dependencies>
+      <dep package="autoconf"/>
+    </dependencies>
   </autotools>
 
-  <autotools id="automake-1.14" autogen-sh="configure">
+  <autotools id="automake-1.14" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org" version="1.14.1"
             module="automake/automake-1.14.1.tar.xz"/>
+    <dependencies>
+      <dep package="autoconf"/>
+    </dependencies>
   </autotools>
 
-  <autotools id="automake" autogen-sh="configure">
+  <autotools id="automake" autogen-sh="configure" bootstrap="true">
     <branch repo="ftp.gnu.org" version="1.15"
             module="automake/automake-1.15.tar.gz"/>
+    <dependencies>
+      <dep package="autoconf"/>
+    </dependencies>
   </autotools>
 
   <autotools id="pkg-config" autogen-sh="configure"
@@ -203,6 +228,7 @@
       <dep package="make"/>     <!-- Needed for Tiger, skipped otherwise -->
       <dep package="subversion"/>   <!-- Needed for Tiger, skipped otherwise -->
       <dep package="gettext-tools" /> <!-- Needed for 64-bit -->
+      <dep package="readline" />
       <dep package="bash" />  <!-- Needed for El Cap and later to work around SIP. -->
       <dep package="cmake"/>
       <dep package="m4"/>	<!-- Can be skipped for Leopard and later -->
