@@ -918,10 +918,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_motion_notify_event(self, event):
         if self.moveresize_event:
-            x_root, y_root, direction, button, wx, wy, ww, wh = self.moveresize_event
+            x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
             dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
             buttons = self._event_buttons(event)
-            if button>0 and button not in buttons:
+            if start_buttons is None:
+                #first time around, store the buttons
+                start_buttons = buttons
+                self.moveresize_event[4] = buttons
+            if (button>0 and button not in buttons) or (button==0 and start_buttons!=buttons):
                 geomlog("%s for window button %i is no longer pressed (buttons=%s) cancelling moveresize", dirstr, button, buttons)
                 self.moveresize_event = None
             else:
@@ -1003,7 +1007,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
-        statelog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
+        statelog.warn("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_X11(x_root, y_root, direction, button, source_indication)
             return
@@ -1014,7 +1018,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()
             ww, wh = self.get_window().get_size()
-            self.moveresize_event = (x_root, y_root, direction, button, wx, wy, ww, wh)
+            self.moveresize_event = [x_root, y_root, direction, button, None, wx, wy, ww, wh]
 
     def initiate_moveresize_X11(self, x_root, y_root, direction, button, source_indication):
         statelog("initiate_moveresize_X11%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
