@@ -1252,7 +1252,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_key_press_event(self, event):
         key_event = self.parse_key_event(event, True)
-        if self.moveresize_event and key_event.key_name in BREAK_MOVERESIZE:
+        if self.moveresize_event and key_event.keyname in BREAK_MOVERESIZE:
             #cancel move resize if there is one:
             self.moveresize_event = None
         self._client.handle_key_action(self, key_event)
