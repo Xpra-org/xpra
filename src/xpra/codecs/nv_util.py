@@ -95,6 +95,7 @@ def identify_cards():
     try:
         import pynvml
         from pynvml import nvmlInit, nvmlShutdown, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex
+        deviceCount = None
         try:
             nvmlInit()
             deviceCount = nvmlDeviceGetCount()
@@ -157,7 +158,8 @@ def identify_cards():
             log.warn("Warning: failed to query the NVidia cards via NVML:")
             log.warn(" %s", e)
         finally:
-            nvmlShutdown()
+            if deviceCount is not None:
+                nvmlShutdown()
     except ImportError as e:
         log("cannot use nvml to query the kernel module version:")
         log(" %s", e)
