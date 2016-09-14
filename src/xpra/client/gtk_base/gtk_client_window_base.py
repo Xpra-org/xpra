@@ -26,7 +26,7 @@ grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes, bytestostr
-from xpra.util import AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
+from xpra.util import AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS
@@ -904,9 +904,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         except Exception as e:
             log.error("Error: failed to send %s menu rpc request for %s", action_type, action, exc_info=True)
 
-
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
-        statelog("initiate_moveresize%s", (x_root, y_root, direction, button, source_indication))
+        statelog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         assert HAS_X11_BINDINGS, "cannot handle initiate-moveresize without X11 bindings"
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
         root = self.get_window().get_screen().get_root_window()

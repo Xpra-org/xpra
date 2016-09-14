@@ -57,6 +57,43 @@ DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",
                               "role", "opacity", "xid", "group-leader")
 
 
+#initiate-moveresize X11 constants
+MOVERESIZE_SIZE_TOPLEFT      = 0
+MOVERESIZE_SIZE_TOP          = 1
+MOVERESIZE_SIZE_TOPRIGHT     = 2
+MOVERESIZE_SIZE_RIGHT        = 3
+MOVERESIZE_SIZE_BOTTOMRIGHT  = 4
+MOVERESIZE_SIZE_BOTTOM       = 5
+MOVERESIZE_SIZE_BOTTOMLEFT   = 6
+MOVERESIZE_SIZE_LEFT         = 7
+MOVERESIZE_MOVE              = 8
+MOVERESIZE_SIZE_KEYBOARD     = 9
+MOVERESIZE_MOVE_KEYBOARD     = 10
+MOVERESIZE_CANCEL            = 11
+MOVERESIZE_DIRECTION_STRING = {
+                               MOVERESIZE_SIZE_TOPLEFT      : "SIZE_TOPLEFT",
+                               MOVERESIZE_SIZE_TOP          : "SIZE_TOP",
+                               MOVERESIZE_SIZE_TOPRIGHT     : "SIZE_TOPRIGHT",
+                               MOVERESIZE_SIZE_RIGHT        : "SIZE_RIGHT",
+                               MOVERESIZE_SIZE_BOTTOMRIGHT  : "SIZE_BOTTOMRIGHT",
+                               MOVERESIZE_SIZE_BOTTOM       : "SIZE_BOTTOM",
+                               MOVERESIZE_SIZE_BOTTOMLEFT   : "SIZE_BOTTOMLEFT",
+                               MOVERESIZE_SIZE_LEFT         : "SIZE_LEFT",
+                               MOVERESIZE_MOVE              : "MOVE",
+                               MOVERESIZE_SIZE_KEYBOARD     : "SIZE_KEYBOARD",
+                               MOVERESIZE_MOVE_KEYBOARD     : "MOVE_KEYBOARD",
+                               MOVERESIZE_CANCEL            : "CANCEL",
+                               }
+SOURCE_INDICATION_UNSET     = 0
+SOURCE_INDICATION_NORMAL    = 1
+SOURCE_INDICATION_PAGER     = 2
+SOURCE_INDICATION_STRING    = {
+                               SOURCE_INDICATION_UNSET      : "UNSET",
+                               SOURCE_INDICATION_NORMAL     : "NORMAL",
+                               SOURCE_INDICATION_PAGER      : "PAGER",
+                               }
+
+
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason):
     return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=IDLE_TIMEOUT)
