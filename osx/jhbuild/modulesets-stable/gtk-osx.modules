@@ -232,9 +232,9 @@
 
   <autotools id="pixman" autogenargs="--disable-gtk --disable-mmx"
              autogen-sh="configure">
-    <branch version="0.34.0" module="pixman-0.34.0.tar.gz"
+    <branch version="0.32.6" module="pixman-0.32.6.tar.gz"
             repo="cairographics"
-            hash="sha1:a1b1683c1a55acce9d928fea1ab6ceb79142ddc7"/>
+            hash="sha1:8791343cbf6d99451f4d08e8209d6ac11bf96df2"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
