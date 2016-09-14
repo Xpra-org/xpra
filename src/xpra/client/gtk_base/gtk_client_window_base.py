@@ -1007,7 +1007,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
-        statelog.warn("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
+        statelog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_X11(x_root, y_root, direction, button, source_indication)
             return
