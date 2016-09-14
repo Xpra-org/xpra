@@ -471,6 +471,9 @@
 		version="7.50.1"
 		hash="md5:c264788f2e4313a05140d712c1ec90c2"
 		repo="curl.haxx.se"/>
+        <dependencies>
+                <dep package="openssl"/>
+        </dependencies>
   </autotools>
 
   <distutils id="python-pyasn1">
