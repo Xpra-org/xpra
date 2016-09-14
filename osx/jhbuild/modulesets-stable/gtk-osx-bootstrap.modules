@@ -139,7 +139,7 @@
   <autotools id="harfbuzz" autogen-sh="configure"
              autogenargs="--with-coretext --with-freetype --with-icu">
     <branch repo="harfbuzz" module="harfbuzz-0.9.40.tar.bz2" version="0.9.40">
-       <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/>
+       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="freetype-no-harfbuzz"/>
