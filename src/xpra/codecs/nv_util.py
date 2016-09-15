@@ -287,7 +287,7 @@ def main():
         if is_blacklisted():
             log.warn("Warning: this driver version is blacklisted")
         log.info("NVENC license keys:")
-        for v in (0, 4, 5, 6, 7):
+        for v in (0, 7):
             keys = get_nvenc_license_keys(v)
             log.info("* version %s: %s key(s)", v or "common", len(keys))
             for k in keys:
