@@ -581,9 +581,10 @@ class GTKTrayMenuBase(object):
 
     def make_keyboardsyncmenuitem(self):
         def set_keyboard_sync_tooltip():
-            if not self.client.keyboard_helper:
+            kh = self.client.keyboard_helper
+            if not kh:
                 self.keyboard_sync_menuitem.set_tooltip_text("Keyboard support is not loaded")
-            elif self.client.keyboard_helper.keyboard_sync:
+            elif kh.keyboard_sync:
                 self.keyboard_sync_menuitem.set_tooltip_text("Disable keyboard synchronization (prevents spurious key repeats on high latency connections)")
             else:
                 self.keyboard_sync_menuitem.set_tooltip_text("Enable keyboard state synchronization")
@@ -595,9 +596,11 @@ class GTKTrayMenuBase(object):
         self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
         set_sensitive(self.keyboard_sync_menuitem, False)
         def set_keyboard_sync_menuitem(*args):
-            log("set_keyboard_sync_menuitem%s enabled=%s", args, self.client.keyboard_helper.keyboard_sync)
-            self.keyboard_sync_menuitem.set_active(self.client.keyboard_helper.keyboard_sync)
-            set_sensitive(self.keyboard_sync_menuitem, True)
+            kh = self.client.keyboard_helper
+            set_sensitive(self.keyboard_sync_menuitem, bool(kh))
+            if kh:
+                log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.keyboard_sync)
+            self.keyboard_sync_menuitem.set_active(bool(kh) and bool(kh.keyboard_sync))
             set_keyboard_sync_tooltip()
         self.client.after_handshake(set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
