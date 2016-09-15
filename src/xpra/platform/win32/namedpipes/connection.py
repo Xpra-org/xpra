@@ -28,6 +28,8 @@ class NamedPipeConnection(Connection):
             return Connection.untilConcludes(self, *args)
         except error as e:
             code = e[0]
+            if code==winerror.ERROR_PIPE_NOT_CONNECTED:
+                return None
             raise IOError("%s: %s" % (code, win32api.FormatMessage(code)))
 
     def read(self, n):
@@ -54,14 +56,21 @@ class NamedPipeConnection(Connection):
         return len(buf)
 
     def close(self):
+        def _close_err(fn, e):
+            l = log.error
+            code = e[0]
+            if code==winerror.ERROR_PIPE_NOT_CONNECTED:
+                l = log.debug
+            l("Error: %s(%s) %i: %s", fn, self.pipe_handle, code, e)
         try:
             DisconnectNamedPipe(self.pipe_handle)
         except Exception as e:
-            log.error("Error: DisconnectNamedPipe(%s) %s", self.pipe_handle, e)
+            _close_err("DisconnectNamedPipe", e)
         try:
             CloseHandle(self.pipe_handle)
         except Exception as e:
-            log.error("Error: CloseHandle(%s) %s", self.pipe_handle, e)
+            _close_err("CloseHandle", e)
+        self.pipe_handle = None
 
     def __repr__(self):
         return "%s named-pipe" % self.target
@@ -69,4 +78,5 @@ class NamedPipeConnection(Connection):
     def get_info(self):
         d = Connection.get_info(self)
         d["type"] = "named-pipe"
+        d["closed"] = self.pipe_handle is None
         return d

@@ -70,6 +70,7 @@ if sys.platform.startswith("win"):
         ABORT[getattr(errno, x)] = x
     import winerror     #@UnresolvedImport
     ABORT[winerror.ERROR_BROKEN_PIPE] = "BROKENPIPE"
+    ABORT[winerror.ERROR_PIPE_NOT_CONNECTED] = "PIPE_NOT_CONNECTED"
     if sys.version[0]<"3":
         #win32 has problems writing more than 32767 characters to stdout!
         #see: http://bugs.python.org/issue11395
