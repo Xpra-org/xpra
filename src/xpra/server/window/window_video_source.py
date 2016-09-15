@@ -1455,7 +1455,7 @@ class WindowVideoSource(WindowSource):
             self.pixel_format = src_format
 
         #check for scrolling if we're not dealing with a "real" video area:
-        if self.supports_scrolling and not self.subregion_is_video() and not self.b_frame_flush_timer:
+        if self.supports_scrolling and not self.subregion_is_video() and not self.b_frame_flush_timer and not STRICT_MODE:
             try:
                 start = time.time()
                 lsd = self.scroll_data
