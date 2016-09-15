@@ -51,14 +51,16 @@ class GTKStatusIconTray(TrayBase):
     def activate_menu(self, widget, *args):
         log("activate_menu(%s, %s)", widget, args)
         self.may_guess()
-        self.click_cb(1, 1)
-        self.click_cb(1, 0)
+        if self.click_cb:
+            self.click_cb(1, 1)
+            self.click_cb(1, 0)
 
     def popup_menu(self, widget, button, time, *args):
         log("popup_menu(%s, %s, %s, %s)", widget, button, time, args)
         self.may_guess()
-        self.click_cb(button, 1, 0)
-        self.click_cb(button, 0, 0)
+        if self.click_cb:
+            self.click_cb(button, 1, 0)
+            self.click_cb(button, 0, 0)
 
 
     def hide(self, *args):
@@ -166,10 +168,11 @@ def main():
     log.enable_debug()
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
-    s = GTKStatusIconTray(None, "test", "xpra.png", None, None, None, gtk.main_quit)
+    log.enable_debug()
+    s = GTKStatusIconTray(None, None, "test", "xpra.png", None, None, None, gtk.main_quit)
     glib.timeout_add(1000*2, s.set_blinking, True)
     glib.timeout_add(1000*5, s.set_blinking, False)
-    glib.timeout_add(1000*10, gtk.main_quit)
+    glib.timeout_add(1000*30, gtk.main_quit)
     gtk.main()
 
 
