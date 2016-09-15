@@ -40,6 +40,9 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
                 self.xshm.cleanup()
             self.xshm = None
 
+    def get_geometry(self):
+        #used by get_window_info only
+        return self.window.get_size()
 
     def get_image(self, x, y, width, height, logger=None):
         try:
