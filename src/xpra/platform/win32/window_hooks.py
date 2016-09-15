@@ -113,7 +113,7 @@ class Win32Hooks(object):
             #run our callback
             try:
                 v = callback(hwnd, msg, wparam, lparam)
-                vlog("%s=%s", callback, (hwnd, msg, wparam, lparam), v)
+                vlog("%s%s=%s", callback, (hwnd, msg, wparam, lparam), v)
             except Exception as e:
                 log.error("Error: callback %s failed:", callback)
                 log.error(" %s", e)
