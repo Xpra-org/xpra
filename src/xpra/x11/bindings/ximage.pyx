@@ -197,8 +197,10 @@ cdef const char *BGRA = "BGRA"
 cdef const char *RGB = "RGB"
 cdef const char *RGBA = "RGBA"
 cdef const char *RGBX = "RGBX"
+cdef const char *R210 = "R210"
+cdef const char *r210 = "r210"
 
-RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX]
+RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210]
 
 
 cdef int ximage_counter = 0
@@ -256,6 +258,11 @@ cdef class XImageWrapper(object):
                 self.pixel_format = ARGB
             else:
                 self.pixel_format = BGRA
+        elif self.depth==30:
+            if image.byte_order==MSBFirst:
+                self.pixel_format = R210
+            else:
+                self.pixel_format = r210
         else:
             raise Exception("invalid image depth: %i bpp" % self.depth)
 

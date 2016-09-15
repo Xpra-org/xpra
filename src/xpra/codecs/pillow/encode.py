@@ -68,13 +68,18 @@ def encode(coding, image, quality, speed, supports_transparency):
     try:
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
+        if pixel_format=="r210":
+            from xpra.codecs.argb.argb import r210_to_rgba
+            pixels = r210_to_rgba(pixels)
+            pixel_format = "RGBA"
+            rgb = "RGBA"
         #PIL cannot use the memoryview directly:
         if type(pixels)!=_buffer:
             pixels = memoryview_to_bytes(pixels)
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
-        im = PIL.Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
+        im = PIL.Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
         if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
             im = im.convert("RGB")
             rgb = "RGB"

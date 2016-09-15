@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("window", "compress")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba  #@UnresolvedImport
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgb    #@UnresolvedImport
 from xpra.codecs.loader import get_codec
 from xpra.os_util import memoryview_to_bytes, _memoryview
 #"pixels_to_bytes" gets patched up by the OSX shadow server
@@ -160,7 +160,19 @@ def argb_swap(image, rgb_formats, supports_transparency):
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
     rs = image.get_rowstride()
-    if pixel_format in ("BGRX", "BGRA"):
+    if pixel_format=="r210":
+        if supports_transparency and "RGBA" in rgb_formats:
+            log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(r210_to_rgba(pixels))
+            image.set_pixel_format("RGBA")
+            return True
+        if "RGB" in rgb_formats:
+            log("argb_swap: r210_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(r210_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//4)
+            return True
+    elif pixel_format in ("BGRX", "BGRA"):
         if supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgba(pixels))
@@ -172,7 +184,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
             return True
-    if pixel_format in ("XRGB", "ARGB"):
+    elif pixel_format in ("XRGB", "ARGB"):
         if supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgba(pixels))
@@ -213,8 +225,9 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
-    if not PIL:
+    if not PIL or pixel_format=="r210":
         #try to fallback to argb module
+        #(required for r210 which is not handled by PIL directly)
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
     if supports_transparency:

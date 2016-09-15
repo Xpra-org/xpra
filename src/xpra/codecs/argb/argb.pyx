@@ -27,6 +27,64 @@ log = Logger("encoding")
 def buffer_api_version():
     return get_buffer_api_version()
 
+cdef inline unsigned char clamp(int v):
+    if v>255:
+        return 255
+    return <unsigned char> v
+
+
+def r210_to_rgba(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    # buf is a Python buffer object
+    cdef const int* cbuf = <const int *> 0
+    cdef Py_ssize_t cbuf_len = 0
+    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    return r210data_to_rgba(cbuf, cbuf_len)
+
+cdef r210data_to_rgba(const int* r210, const int r210_len):
+    if r210_len <= 0:
+        return None
+    assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
+    rgba = bytearray(r210_len)
+    #number of pixels:
+    cdef int i = 0
+    cdef int v
+    while i < r210_len:
+        v = r210[i//4]
+        rgba[i]  = (v&0x000003ff) >> 2
+        rgba[i+1]  = (v&0x000ffc00) >> 12
+        rgba[i+2]    = (v&0x3ff00000) >> 22
+        rgba[i+3] = clamp(((v&0xc0000000) >> 30)*85)
+        i = i + 4
+    return rgba
+
+
+def r210_to_rgb(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    # buf is a Python buffer object
+    cdef const int* cbuf = <const int *> 0
+    cdef Py_ssize_t cbuf_len = 0
+    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    return r210data_to_rgb(cbuf, cbuf_len)
+
+cdef r210data_to_rgb(const int* r210, const int r210_len):
+    if r210_len <= 0:
+        return None
+    assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
+    rgb = bytearray(r210_len//4*3)
+    #number of pixels:
+    cdef int s = 0
+    cdef int d = 0
+    cdef int v
+    while s < r210_len//4:
+        v = r210[s]
+        rgb[d]  = (v&0x000003ff) >> 2
+        rgb[d+1]  = (v&0x000ffc00) >> 12
+        rgb[d+2]    = (v&0x3ff00000) >> 22
+        s += 1
+        d += 3
+    return rgb
+
 
 def argb_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
@@ -35,12 +93,6 @@ def argb_to_rgba(buf):
     cdef Py_ssize_t cbuf_len = 0
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgba(cbuf, cbuf_len)
-
-
-cdef inline unsigned char clamp(int v):
-    if v>255:
-        return 255
-    return <unsigned char> v
 
 cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
     if argb_len <= 0:
