@@ -109,33 +109,42 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gobject-introspection" autogen-sh="configure">
-    <branch module="gobject-introspection/1.48/gobject-introspection-1.48.0.tar.xz"
-            version="1.48.0"
-            hash="sha256:fa275aaccdbfc91ec0bc9a6fd0562051acdba731e7d584b64a277fec60e75877">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
-            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gi_cairo_library_path.patch" strip="1"/>
+<!-- This is the latest 0.10 version. Later versions are 1.29 and intended to work with glib 2.29; the minor version of gobject-introspection will track the minor version of glib that it's intended to work with. Note that in the unlikely event you need to introspect Gtk+-2.0, you need to build Glib 1.28 and use this gobject-introspection. The default is to *not* introspect Gtk+-2.0 and to use the latest GLib and Gobject-Introspection with Gtk3 -->
+  <autotools id="gobject-introspection-10" autogen-sh="configure">
+    <branch module="gobject-introspection/0.10/gobject-introspection-0.10.8.tar.bz2"
+            version="0.10.8"
+            hash="sha256:5b1387ff37f03db880a2b1cbd6c6b6dfb923a29468d4d8367c458abf7704c61e">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
       <dep package="cairo"/>
-      <if condition-set='64-bit'>
-        <dep package='python'/>
-      </if>
+     <dep package="libffi"/>
     </dependencies>
-    <if condition-unset='64-bit'>
-      <after>
-        <dep package='python'/>
-      </after>
-    </if>
   </autotools>
 
- <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.38.1" module="pango/1.38/pango-1.38.1.tar.xz"
-            hash="sha256:1320569f6c6d75d6b66172b2d28e59c56ee864ee9df202b76799c4506a214eb7">
+  <autotools id="gobject-introspection" autogen-sh="configure">
+    <branch module="gobject-introspection/1.44/gobject-introspection-1.44.0.tar.xz"
+            version="1.44.0"
+            hash="sha256:6f0c2c28aeaa37b5037acbf21558098c4f95029b666db755d3a12c2f1e1627ad">
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
+      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gobject-introspection-625195-Fix-non-libtool-linker-flags-on-Darwin.patch"
+             strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
+      <dep package="cairo"/>
+    </dependencies>
+    <after>
+      <dep package='python'/>
+    </after>
+  </autotools>
+
+ <autotools id="pango"  autogen-sh="autoreconf">
+    <branch version="1.36.8" module="pango/1.36/pango-1.36.8.tar.xz"
+            hash="sha256:18dbb51b8ae12bae0ab7a958e7cf3317c9acfc8a1e1103ec2f147164a0fc2d07">
+    </branch>
+    <dependencies>
       <dep package="cairo"/>
      </dependencies>
     <after>
@@ -154,15 +163,17 @@
       <dep package="glib"/>
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="gobject-introspection"/>
+      <dep package="gobject-introspection-10"/>
     </after>
   </autotools>
 
   <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.34/gdk-pixbuf-2.34.0.tar.xz" version="2.34.0"
-            hash="sha256:d55e5b383ee219bd0e23bf6ed4427d56a7db5379729a6e3e0a0e0eba9a8d8879"/>
+    <branch module="gdk-pixbuf/2.30/gdk-pixbuf-2.30.8.tar.xz" version="2.30.8"
+            hash="sha256:4853830616113db4435837992c0aebd94cbb993c44dc55063cee7f72a7bef8be"/>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
+      <dep package="gobject-introspection-10"/>
     </after>
   </autotools>
 
@@ -188,31 +199,13 @@
     </after>
   </autotools>
 
-  <autotools id="gtk+-3.14" autogen-sh="autogen.sh"
-             autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.14/gtk+-3.14.15.tar.xz" version="3.14.15"
-            hash="sha256:3ac87659112ced9e5ee5bd55d055faa881aafd040f26ca40b0d8ba0fa6509c83">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
-      <!-- https://bugzilla.gnome.org/show_bug.cgi?id=763779 -->
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk-quartz-fix-pixelated-image-surfaces-in-retina-hidpi-.patch" strip="1"/>
-    </branch>
-    <dependencies>
-      <dep package="glib"/>
-      <dep package="pango"/>
-      <dep package="atk"/>
-      <dep package="cairo"/>
-      <dep package="gdk-pixbuf"/>
-      <dep package="gobject-introspection"/>
-    </dependencies>
-    <after>
-      <dep package="meta-gtk-osx-bootstrap"/>
-    </after>
-  </autotools>
-
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.20/gtk+-3.20.3.tar.xz" version="3.20.3"
-            hash="sha256:3834f3bf23b260b3e5ebfea41102e2026a8af29e36c3620edf4a5cf05e82f694">
+    <branch module="gtk+/3.16/gtk+-3.16.7.tar.xz" version="3.16.7"
+            hash="sha256:19689d14de54d182fad538153dbff6d41f53841f940aa871585fdea0306c7fba">
+      <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1" -->
+<!-- The following patch is committed and can be removed after release of gtk+-3.16.4. -->
+      <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-DnD-Introspection-on-Quartz-Backend.patch" strip="1" -->
     </branch>
     <dependencies>
       <dep package="glib"/>
