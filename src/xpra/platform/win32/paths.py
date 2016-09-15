@@ -35,9 +35,16 @@ def _get_data_dir():
         os.mkdir(data_dir)
     return data_dir
 
+
 def do_get_icon_dir():
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
+
+def get_default_icon_extension():
+    return "ico"
+
+def get_default_tray_icon_name():
+    return "xpra.ico"
 
 
 def do_get_system_conf_dirs():

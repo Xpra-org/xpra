@@ -48,6 +48,7 @@ from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBO
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_double_click_time, show_desktop, get_cursor_size,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
+from xpra.platform.paths import get_tray_icon_filename
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option
@@ -440,22 +441,16 @@ class UIXpraClient(XpraClientBase):
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
             self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.key_shortcut, opts.keyboard_raw, *overrides)
 
-        tray_icon_filename = opts.tray_icon
+        tray_icon_filename = get_tray_icon_filename(opts.tray_icon)
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
-            self.tray = self.setup_xpra_tray(opts.tray_icon)
-            if self.tray:
-                tray_icon_filename = self.tray.get_tray_icon_filename(tray_icon_filename)
-                #keep tray widget hidden until:
-                self.tray.hide()
-                if opts.delay_tray:
-                    def show_tray(*args):
-                        traylog("first ui received, showing tray %s", self.tray)
-                        self.tray.show()
-                    self.connect("first-ui-received", show_tray)
-                else:
-                    #show when the main loop is running:
-                    self.idle_add(self.tray.show)
+            def setup_xpra_tray():
+                self.tray = self.setup_xpra_tray(opts.tray_icon)
+            if opts.delay_tray:
+                self.connect("first-ui-received", setup_xpra_tray)
+            else:
+                #show when the main loop is running:
+                self.idle_add(setup_xpra_tray)
 
         notifylog("client_supports_notifications=%s", self.client_supports_notifications)
         if self.client_supports_notifications:

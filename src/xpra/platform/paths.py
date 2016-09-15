@@ -177,6 +177,21 @@ def get_icon(name):
     return get_icon_from_file(filename)
 
 
+def get_default_icon_extension():
+    return "png"
+
+def get_default_tray_icon_name():
+    return "xpra.png"
+
+def get_tray_icon_filename(cmdlineoverride=None):
+    if cmdlineoverride and os.path.exists(cmdlineoverride):
+        return cmdlineoverride
+    f = os.path.join(get_icon_dir(), get_default_tray_icon_name())
+    if os.path.exists(f):
+        return f
+    return None
+
+
 LICENSE_TEXT = None
 def get_license_text(self):
     global LICENSE_TEXT
@@ -227,6 +242,9 @@ platform_import(globals(), "paths", True,
                 "do_get_app_dir",
                 "do_get_icon_dir")
 platform_import(globals(), "paths", False,
+                "get_default_icon_extension",
+                "get_default_tray_icon_name",
+                "get_tray_icon_filename",
                 "do_get_sshpass_command",
                 "do_get_xpra_command",
                 "do_get_sound_command",

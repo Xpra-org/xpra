@@ -22,8 +22,6 @@ class Win32Tray(TrayBase):
 
     def __init__(self, *args):
         TrayBase.__init__(self, *args)
-        self.default_icon_extension = "ico"
-        self.default_icon_name = "xpra.ico"
         self.calculate_offset()
         icon_filename = self.get_tray_icon_filename(self.default_icon_filename)
         self.tray_widget = win32NotifyIcon(self.tooltip, self.move_cb, self.click_cb, self.exit_cb, None, icon_filename)

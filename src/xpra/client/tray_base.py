@@ -6,7 +6,7 @@
 
 import os.path
 
-from xpra.platform.paths import get_icon_dir
+from xpra.platform.paths import get_icon_dir, get_tray_icon_filename, get_default_icon_extension
 from xpra.log import Logger
 from collections import deque
 log = Logger("tray")
@@ -28,8 +28,6 @@ class TrayBase(object):
         self.exit_cb = exit_cb
         self.tray_widget = None
         self.default_icon_filename = icon_filename
-        self.default_icon_extension = "png"
-        self.default_icon_name = "xpra.png"
         #some implementations need this for guessing the geometry (see recalculate_geometry):
         self.geometry_guess = None
         self.tray_event_locations = deque(maxlen=512)
@@ -40,14 +38,7 @@ class TrayBase(object):
             self.tray_widget = None
 
     def get_tray_icon_filename(self, cmdlineoverride=None):
-        if cmdlineoverride and os.path.exists(cmdlineoverride):
-            log("get_tray_icon_filename using %s from command line", cmdlineoverride)
-            return  cmdlineoverride
-        f = os.path.join(get_icon_dir(), self.default_icon_name)
-        if os.path.exists(f):
-            log("get_tray_icon_filename using default: %s", f)
-            return  f
-        return  None
+        return get_tray_icon_filename(cmdlineoverride)
 
     def ready(self):
         pass
@@ -89,7 +80,7 @@ class TrayBase(object):
             filename = self.default_icon_filename or self.get_tray_icon_filename()
         else:
             #create full path + filename from basefilename:
-            with_ext = "%s.%s" % (basefilename, self.default_icon_extension)
+            with_ext = "%s.%s" % (basefilename, get_default_icon_extension())
             icon_dir = get_icon_dir()
             filename = os.path.join(icon_dir, with_ext)
         if not filename or not os.path.exists(filename):
