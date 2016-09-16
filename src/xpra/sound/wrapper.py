@@ -11,7 +11,7 @@ from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, fo
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.util import AdHocStruct, typedict, parse_simple_dict, envint
+from xpra.util import AdHocStruct, typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")

@@ -557,6 +557,7 @@ class ServerBase(ServerCore):
                 bits = self.sound_properties.intget(b"python.bits", 32)
                 log.info("GStreamer version %s for Python %s %i-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
             except Exception as e:
+                soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")
                 soundlog.error(" %s", e)
                 self.speaker_allowed = False
