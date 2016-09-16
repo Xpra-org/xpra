@@ -18,7 +18,8 @@ pango = import_pango()
 
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
-from xpra.util import nonl, strtobytes
+from xpra.util import nonl
+from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("util")
 
