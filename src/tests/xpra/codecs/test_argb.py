@@ -7,7 +7,7 @@
 import time
 
 from tests.xpra.codecs.test_codec import get_source_data
-from xpra.codecs.argb.argb import argb_to_rgba, argb_to_rgb, bgra_to_rgb, bgra_to_rgba, unpremultiply_argb_in_place, unpremultiply_argb #@UnresolvedImport
+from xpra.codecs.argb.argb import argb_to_rgba, argb_to_rgb, bgra_to_rgb, bgra_to_rgba, unpremultiply_argb_in_place, unpremultiply_argb, r210_to_rgba, r210_to_rgb #@UnresolvedImport
 
 N = 10
 
@@ -30,7 +30,7 @@ def test_premultiply():
 def test_argb():
     print("test_argb()")
     #1 frame of 4k 32bpp:
-    _test_functions(argb_to_rgba, argb_to_rgb, bgra_to_rgb, bgra_to_rgba)
+    _test_functions(argb_to_rgba, argb_to_rgb, bgra_to_rgb, bgra_to_rgba, r210_to_rgba, r210_to_rgb)
 
 def main():
     test_premultiply()

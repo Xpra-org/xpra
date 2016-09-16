@@ -70,7 +70,6 @@ def test_csc_rgb(csc_module):
     if len([x for x in in_csc if x in RGB_FORMATS])==0:
         #nothing to test
         return
-    print("")
     for w,h in TEST_SIZES:
         test_csc_rgb_all(csc_module, w, h)
     for w, h in SIZES:
@@ -79,14 +78,14 @@ def test_csc_rgb(csc_module):
 
 def perf_measure_rgb(csc_module, w=1920, h=1080, test_scaling=[(1,1), (1,2), (1,3)]):
     count = min(MAX_ITER, int(PERF_LOOP*1024*1024/(w*h)))
-    rgb_src_formats = sorted([x for x in csc_module.get_input_colorspaces() if (x.find("RGB")>=0 or x.find("BGR")>=0)])
+    rgb_src_formats = sorted([x for x in csc_module.get_input_colorspaces() if x in RGB_FORMATS])
     if DEBUG:
         print("%s: rgb src_formats=%s" % (csc_module, rgb_src_formats))
     for csc_speed in (0, 50, 100):
         print("**** %4ix%-4i - speed=%i%%" % (w, h, csc_speed))
         for src_format in rgb_src_formats:
             pixels = make_rgb_input(src_format, w, h, populate=True)
-            yuv_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")<0 and x.find("BGR")<0)])
+            yuv_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if x not in RGB_FORMATS])
             if DEBUG:
                 print("%s: yuv_formats(%s)=%s" % (csc_module, src_format, yuv_dst_formats))
             for dst_format in yuv_dst_formats:

@@ -77,12 +77,15 @@ def get_CS(in_cs, valid_options):
             log.warn("invalid colorspace override for %s: %s (only supports: %s)", in_cs, cs, valid_options)
     log("environment override for %s: %s", in_cs, env_override)
     return env_override
-COLORSPACES = {"BGRX"       : get_CS("BGRX",    ["YUV420P"]),
+COLORSPACES = {
+               "BGRX"       : get_CS("BGRX",    ["YUV420P"]),
                "RGBX"       : get_CS("RGBX",    ["YUV420P"]),
                "BGR"        : get_CS("BGR",     ["YUV420P"]),
                "RGB"        : get_CS("RGB",     ["YUV420P"]),
                "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
-               "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"])}
+               "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
+               "r210"       : get_CS("r210",    ["YUV420P"]),
+               }
 
 DEBUG_POINTS = []
 dp = os.environ.get("XPRA_CSC_CYTHON_DEBUG_POINTS", "")
@@ -112,8 +115,10 @@ def get_version():
     return tuple([str(x) for x in CSC_CYTHON_VERSION] + CYTHON_VERSION)
 
 def get_info():
-    info = {"version"   : CSC_CYTHON_VERSION,
-            "buffer_api": get_buffer_api_version()}
+    info = {
+            "version"   : CSC_CYTHON_VERSION,
+            "buffer_api": get_buffer_api_version(),
+            }
     if CYTHON_VERSION:
         info["Cython"] = CYTHON_VERSION
     return info
@@ -252,7 +257,7 @@ cdef class ColorspaceConverter:
             self.dst_sizes[i]   = 0
             self.offsets[i]     = 0
 
-        if src_format in ("BGRX", "RGBX", "RGB", "BGR") and dst_format=="YUV420P":
+        if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format=="YUV420P":
             self.dst_strides[0] = roundup(self.dst_width,   STRIDE_ROUNDUP)
             self.dst_strides[1] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
             self.dst_strides[2] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
@@ -271,9 +276,11 @@ cdef class ColorspaceConverter:
                 self.convert_image_function = self.RGBX_to_YUV420P
             elif src_format=="BGR":
                 self.convert_image_function = self.BGR_to_YUV420P
-            else:
-                assert src_format=="RGB"
+            elif src_format=="RGB":
                 self.convert_image_function = self.RGB_to_YUV420P
+            else:
+                assert src_format=="r210"
+                self.convert_image_function = self.r210_to_YUV420P
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
             #3 or 4 bytes per pixel:
             self.dst_strides[0] = roundup(self.dst_width*len(dst_format), STRIDE_ROUNDUP)
@@ -378,6 +385,9 @@ cdef class ColorspaceConverter:
         return self.convert_image_function(image)
 
 
+    def r210_to_YUV420P(self, image):
+        return self.do_RGB_to_YUV420P(image, 4, 0, 0, 0)
+
     def BGR_to_YUV420P(self, image):
         return self.do_RGB_to_YUV420P(image, 3, BGR_R, BGR_G, BGR_B)
 
@@ -393,12 +403,14 @@ cdef class ColorspaceConverter:
     cdef do_RGB_to_YUV420P(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex):
         cdef Py_ssize_t pic_buf_len = 0
         cdef const unsigned char *input_image
+        cdef const unsigned int *input_r210
         cdef unsigned char *output_image
         cdef unsigned int input_stride
         cdef unsigned int x,y,o             #@DuplicatedSignature
         cdef unsigned int sx, sy, ox, oy
         cdef unsigned int workw, workh
         cdef unsigned int Ystride, Ustride, Vstride
+        cdef unsigned unsigned int r210
         cdef unsigned char R, G, B
         cdef unsigned short Rsum, Gsum, Bsum
         cdef unsigned char sum, i, dx, dy
@@ -436,39 +448,77 @@ cdef class ColorspaceConverter:
         workw = roundup(dst_width/2, 2)
         workh = roundup(dst_height/2, 2)
         #from now on, we can release the gil:
-        with nogil:
-            for y in range(workh):
-                for x in range(workw):
-                    R = G = B = 0
-                    Rsum = Gsum = Bsum = 0
-                    sum = 0
-                    for dy in range(2):
-                        oy = y*2 + dy
-                        if oy>=dst_height:
-                            break
-                        sy = oy*src_height//dst_height
-                        for dx in range(2):
-                            ox = x*2 + dx
-                            if ox>=dst_width:
+        if self.src_format=="r210":
+            assert Bpp==4
+            input_r210 = <unsigned int*> input_image
+            with nogil:
+                for y in range(workh):
+                    for x in range(workw):
+                        R = G = B = 0
+                        Rsum = Gsum = Bsum = 0
+                        sum = 0
+                        for dy in range(2):
+                            oy = y*2 + dy
+                            if oy>=dst_height:
                                 break
-                            sx = ox*src_width//dst_width
-                            o = sy*input_stride + sx*Bpp
-                            R = input_image[o + Rindex]
-                            G = input_image[o + Gindex]
-                            B = input_image[o + Bindex]
-                            o = oy*Ystride + ox
-                            Y[o] = clamp(YR * R + YG * G + YB * B + YC)
-                            sum += 1
-                            Rsum += R
-                            Gsum += G
-                            Bsum += B
-                    #write 1U and 1V:
-                    if sum>0:
-                        Rsum /= sum
-                        Gsum /= sum
-                        Bsum /= sum
-                        U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
-                        V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+                            sy = oy*src_height//dst_height
+                            for dx in range(2):
+                                ox = x*2 + dx
+                                if ox>=dst_width:
+                                    break
+                                sx = ox*src_width//dst_width
+                                o = sy*input_stride + sx*Bpp
+                                r210 = input_r210[o//4]
+                                B = (r210&0x3ff00000) >> 22
+                                G = (r210&0x000ffc00) >> 12
+                                R = (r210&0x000003ff) >> 2
+                                o = oy*Ystride + ox
+                                Y[o] = clamp(YR * R + YG * G + YB * B + YC)
+                                sum += 1
+                                Rsum += R
+                                Gsum += G
+                                Bsum += B
+                        #write 1U and 1V:
+                        if sum>0:
+                            Rsum /= sum
+                            Gsum /= sum
+                            Bsum /= sum
+                            U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
+                            V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+        else:
+            with nogil:
+                for y in range(workh):
+                    for x in range(workw):
+                        R = G = B = 0
+                        Rsum = Gsum = Bsum = 0
+                        sum = 0
+                        for dy in range(2):
+                            oy = y*2 + dy
+                            if oy>=dst_height:
+                                break
+                            sy = oy*src_height//dst_height
+                            for dx in range(2):
+                                ox = x*2 + dx
+                                if ox>=dst_width:
+                                    break
+                                sx = ox*src_width//dst_width
+                                o = sy*input_stride + sx*Bpp
+                                R = input_image[o + Rindex]
+                                G = input_image[o + Gindex]
+                                B = input_image[o + Bindex]
+                                o = oy*Ystride + ox
+                                Y[o] = clamp(YR * R + YG * G + YB * B + YC)
+                                sum += 1
+                                Rsum += R
+                                Gsum += G
+                                Bsum += B
+                        #write 1U and 1V:
+                        if sum>0:
+                            Rsum /= sum
+                            Gsum /= sum
+                            Bsum /= sum
+                            U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
+                            V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
 
         if DEBUG_POINTS:
             for x,y in DEBUG_POINTS:

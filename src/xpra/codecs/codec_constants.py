@@ -28,11 +28,15 @@ def get_subsampling_divs(pixel_format):
     return PIXEL_SUBSAMPLING.get(pixel_format)
 
 
-RGB_FORMATS = ("XRGB",
+RGB_FORMATS = (
+               "XRGB",
                "BGRX",
                "ARGB",
                "BGRA",
-               "RGB")
+               "RGB",
+               "BGR",
+               "r210",
+               )
 
 
 class TransientCodecException(Exception):
