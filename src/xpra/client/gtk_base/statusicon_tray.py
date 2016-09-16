@@ -60,8 +60,8 @@ class GTKStatusIconTray(TrayBase):
         log("popup_menu(%s, %s, %s, %s)", widget, button, time, args)
         self.may_guess()
         if self.click_cb:
-            self.click_cb(button, 1, 0)
-            self.click_cb(button, 0, 0)
+            self.click_cb(button, 1, time)
+            self.click_cb(button, 0, time)
 
 
     def hide(self, *args):

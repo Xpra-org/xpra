@@ -145,7 +145,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         traylog("tray_click_callback(%s, %s)", button, pressed)
         if pressed:
             self.close_tray_menu()
-        self.tray_menu.popup(None, None, None, button, 0)
+        self.tray_menu.popup(None, None, None, button, time)
         self.tray_menu_shown = True
 
     def tray_exit_callback(self, *args):

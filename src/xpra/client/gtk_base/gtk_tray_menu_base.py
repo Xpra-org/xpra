@@ -316,9 +316,9 @@ class GTKTrayMenuBase(object):
     def menu_deactivated(self, *args):
         self.menu_shown = False
 
-    def activate(self):
-        log("activate()")
-        self.show_menu(1, 0)
+    def activate(self, button=1, time=0):
+        log("activate(%s, %s)", button, time)
+        self.show_menu(button, time)
 
     def popup(self, button, time):
         log("popup(%s, %s)", button, time)
