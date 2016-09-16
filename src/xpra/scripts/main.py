@@ -482,6 +482,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "but the client cannot enable them if they are disabled on the server.")
     parser.add_option_group(group)
     replace_option("--readwrite", "--readonly=no")
+    replace_option("--readonly", "--readonly=yes")
     group.add_option("--readonly", action="store", metavar="yes|no",
                       dest="readonly", default=defaults.readonly,
                       help="Disable keyboard input and mouse events from the clients. Default: %s." % enabled_str(defaults.readonly))
