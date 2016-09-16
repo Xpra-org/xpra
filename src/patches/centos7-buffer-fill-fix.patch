@@ -1,8 +1,8 @@
 Index: xpra/sound/gstreamer_util.py
 ===================================================================
---- a/xpra/sound/gstreamer_util.py	(revision 13108)
+--- a/xpra/sound/gstreamer_util.py	(revision 13756)
 +++ b/xpra/sound/gstreamer_util.py	(working copy)
-@@ -238,7 +238,8 @@
+@@ -221,7 +221,8 @@
      Gst.get_gst_version = lambda: Gst.version()
      def new_buffer(data):
          buf = Gst.Buffer.new_allocate(None, len(data), None)

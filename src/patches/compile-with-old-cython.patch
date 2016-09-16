@@ -1,8 +1,8 @@
 Index: xpra/server/window/motion.pyx
 ===================================================================
---- xpra/server/window/motion.pyx	(revision 13477)
-+++ xpra/server/window/motion.pyx	(working copy)
-@@ -66,9 +66,9 @@
+--- a/xpra/server/window/motion.pyx	(revision 13756)
++++ b/xpra/server/window/motion.pyx	(working copy)
+@@ -67,9 +67,9 @@
      return crcs
  
  
