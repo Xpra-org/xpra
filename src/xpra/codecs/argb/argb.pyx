@@ -47,7 +47,7 @@ cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
     assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
     rgba = bytearray(r210_len)
     #number of pixels:
-    cdef unsigned int i = 0
+    cdef int i = 0
     cdef unsigned int v
     while i < r210_len:
         v = r210[i//4]
@@ -62,12 +62,12 @@ cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
 def r210_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
-    cdef const int* cbuf = <const int *> 0
+    cdef const unsigned int* cbuf = <const unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0
     assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return r210data_to_rgb(cbuf, cbuf_len)
 
-cdef r210data_to_rgb(const int* r210, const int r210_len):
+cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
     if r210_len <= 0:
         return None
     assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
@@ -75,7 +75,7 @@ cdef r210data_to_rgb(const int* r210, const int r210_len):
     #number of pixels:
     cdef int s = 0
     cdef int d = 0
-    cdef int v
+    cdef unsigned int v
     while s < r210_len//4:
         v = r210[s]
         rgb[d]   = (v&0x000003ff) >> 2
