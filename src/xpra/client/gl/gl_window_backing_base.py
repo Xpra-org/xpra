@@ -7,15 +7,15 @@
 import os
 import time, math
 
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
-OPENGL_DEBUG = envint("XPRA_OPENGL_DEBUG")
-OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX")
-SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 1)
-PAINT_FLUSH = envint("XPRA_PAINT_FLUSH", 1)
+OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
+OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX", 0)
+SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
+PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 
@@ -158,7 +158,7 @@ try:
     import OpenGL_accelerate            #@UnresolvedImport
 except:
     OpenGL_accelerate = None
-zerocopy_upload = bool(OpenGL_accelerate) and os.environ.get("XPRA_ZEROCOPY_OPENGL_UPLOAD", "1")=="1" and is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
+zerocopy_upload = bool(OpenGL_accelerate) and envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True) and is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
 try:
     memoryview_type = memoryview
 except:

@@ -1,13 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 
-
+from xpra.util import envbool
 cython_bencode_loaded = False
-if os.environ.get("XPRA_USE_CYTHON_BENCODE", "1")!="0":
+if envbool("XPRA_USE_CYTHON_BENCODE", True):
     try:
         from xpra.net.bencode.cython_bencode import bencode, bdecode, __version__
         cython_bencode_loaded = True

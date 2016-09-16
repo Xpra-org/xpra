@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os, time
+import sys, time
 from collections import deque
 from threading import Lock
 
@@ -16,7 +16,7 @@ from xpra.gtk_common.gobject_compat import import_glib
 from xpra.net.compression import decompress_by_name
 
 from xpra.scripts.config import InitExit
-from xpra.util import csv, envint
+from xpra.util import csv, envint, envbool
 from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger("sound")
@@ -38,7 +38,7 @@ SINK_DEFAULT_ATTRIBUTES = {0 : {
                                },
                           }
 
-QUEUE_SILENT = os.environ.get("XPRA_QUEUE_SILENT", "0")=="1"
+QUEUE_SILENT = envbool("XPRA_QUEUE_SILENT", False)
 QUEUE_TIME = get_queue_time(450)
 
 UNMUTE_DELAY = envint("XPRA_UNMUTE_DELAY", 1000)

@@ -14,11 +14,11 @@ log = Logger("paint")
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.os_util import memoryview_to_bytes
-from xpra.util import csv
+from xpra.util import csv, envbool
 
 
 PIXMAP_RGB_MODES = ["RGB", "RGBX", "RGBA"]
-INDIRECT_BGR = os.environ.get("XPRA_PIXMAP_INDIRECT_BGR", "0")=="1"
+INDIRECT_BGR = envbool("XPRA_PIXMAP_INDIRECT_BGR", False)
 if INDIRECT_BGR:
     PIXMAP_RGB_MODES += ["BGRX", "BGRA", "BGR"]
 

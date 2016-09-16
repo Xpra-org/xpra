@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
-from xpra.util import nonl, envint, AtomicInteger
+from xpra.util import nonl, envint, envbool, AtomicInteger
 from xpra.os_util import bytestostr
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
@@ -20,8 +20,8 @@ SLICED_THREADS = envint("XPRA_X264_SLICED_THREADS", 1)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
 TUNE = os.environ.get("XPRA_X264_TUNE")
-LOG_NALS = envint("XPRA_X264_LOG_NALS")
-#USE_OPENCL = os.environ.get("XPRA_X264_OPENCL", "0")=="1"
+LOG_NALS = envbool("XPRA_X264_LOG_NALS")
+#USE_OPENCL = envbool("XPRA_X264_OPENCL", False)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 

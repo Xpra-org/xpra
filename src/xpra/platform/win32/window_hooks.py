@@ -1,10 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
@@ -39,9 +40,7 @@ class MINMAXINFO(ctypes.Structure):
 #only hardcoded for handling WM_GETMINMAXINFO,
 #but should be pretty easy to tweak if needed.
 
-
-import os
-HOOK_MINMAXINFO = os.environ.get("XPRA_WIN32_MINMAXINFO", "1")=="1"
+HOOK_MINMAXINFO = envbool("XPRA_WIN32_MINMAXINFO", True)
 
 
 class Win32Hooks(object):

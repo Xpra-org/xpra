@@ -7,9 +7,11 @@
 import sys, os
 
 #default implementation uses pycups
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("printing")
 
+RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 
 py3 = sys.version >= '3'
 if py3:
@@ -52,7 +54,7 @@ def get_mimetypes():
             MIMETYPES = v.split(",")
         else:
             MIMETYPES = DEFAULT_MIMETYPES
-        if os.environ.get("XPRA_PRINTER_RAW", "0")=="1":
+        if RAW_MODE:
             MIMETYPES.append("raw")
         #make it easier to test different mimetypes:
         PREFERRED_MIMETYPE = os.environ.get("XPRA_PRINTING_PREFERRED_MIMETYPE")

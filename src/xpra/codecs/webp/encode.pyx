@@ -8,8 +8,9 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
-cdef int LOG_CONFIG = os.environ.get("XPRA_WEBP_LOG_CONFIG", "0")=="1"
-cdef int USE_THREADS = os.environ.get("XPRA_WEBP_THREADING", "1")=="1"
+from xpra.util envbool
+cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
+cdef int USE_THREADS = envbool("XPRA_WEBP_THREADING", True)
 
 
 cdef inline int MIN(int a, int b):

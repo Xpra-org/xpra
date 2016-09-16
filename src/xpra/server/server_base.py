@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -37,7 +37,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, get_hex_uuid, livefds, load_binary_file
-from xpra.util import typedict, flatten_dict, updict, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
+from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
@@ -52,8 +52,8 @@ if sys.version > '3':
     unicode = str           #@ReservedAssignment
 
 
-DETECT_MEMLEAKS = os.environ.get("XPRA_DETECT_MEMLEAKS", "0")=="1"
-DETECT_FDLEAKS = os.environ.get("XPRA_DETECT_FDLEAKS", "0")=="1"
+DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
+DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 
 

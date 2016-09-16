@@ -23,7 +23,7 @@ from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
-from xpra.util import csv, envint
+from xpra.util import csv, envint, envbool
 
 
 MIN_CLIPBOARD_COMPRESSION_SIZE = 512
@@ -39,7 +39,7 @@ if CLIPBOARDS_ENV is not None:
 
 
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
-STORE_ON_EXIT = envint("XPRA_CLIPBOARD_STORE_ON_EXIT", 1)
+STORE_ON_EXIT = envbool("XPRA_CLIPBOARD_STORE_ON_EXIT", True)
 
 _discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
 if _discard_target_strs_ is not None:

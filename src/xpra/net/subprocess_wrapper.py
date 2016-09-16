@@ -10,7 +10,7 @@ import subprocess
 import binascii
 
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, envint, envbool
 
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net import ConnectionClosedException
@@ -30,13 +30,13 @@ log = Logger("util")
 #using the protocol for encoding the data
 
 
-DEBUG_WRAPPER = envint("XPRA_WRAPPER_DEBUG")
+DEBUG_WRAPPER = envbool("XPRA_WRAPPER_DEBUG", False)
 #to make it possible to inspect files (more human readable):
-HEXLIFY_PACKETS = envint("XPRA_HEXLIFY_PACKETS")
+HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
 #avoids showing a new console window on win32:
-WIN32_SHOWWINDOW = envint("XPRA_WIN32_SHOWWINDOW")
+WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)
 #this used to cause problems with py3k / gi bindings?
-HANDLE_SIGINT = envint("XPRA_WRAPPER_SIGINT", 1)
+HANDLE_SIGINT = envbool("XPRA_WRAPPER_SIGINT", True)
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 if FAULT_RATE>0:

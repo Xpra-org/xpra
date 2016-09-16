@@ -12,7 +12,7 @@ deltalog = Logger("delta")
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
-from xpra.util import typedict, csv, envint
+from xpra.util import typedict, csv, envint, envbool
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr, _buffer
@@ -20,8 +20,8 @@ from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
 
 DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
-INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH")
-WEBP_PILLOW = envint("XPRA_WEBP_PILLOW")
+INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
+WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }

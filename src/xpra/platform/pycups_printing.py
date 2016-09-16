@@ -15,7 +15,7 @@ import getpass
 import urllib
 from threading import Lock
 
-from xpra.util import engs, envint
+from xpra.util import engs, envint, envbool
 from xpra.log import Logger
 log = Logger("printing")
 
@@ -23,8 +23,8 @@ log = Logger("printing")
 SIMULATE_PRINT_FAILURE = envint("XPRA_SIMULATE_PRINT_FAILURE")
 
 ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
-RAW_MODE = envint("XPRA_PRINTER_RAW")
-GENERIC = envint("XPRA_PRINTERS_GENERIC", 1)
+RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
+GENERIC = envbool("XPRA_PRINTERS_GENERIC", True)
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 #the mimetype to use for clients that do not specify one
 #(older clients just assumed postscript)
@@ -37,7 +37,7 @@ FORWARDER_BACKEND = "xpraforwarder"
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Cups-PDF").split(",")
 
 #PRINTER_PREFIX = "Xpra:"
-ADD_LOCAL_PRINTERS = envint("XPRA_ADD_LOCAL_PRINTERS")
+ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_PREFIX = ""
 if ADD_LOCAL_PRINTERS:
     #this prevents problems where we end up deleting local printers!

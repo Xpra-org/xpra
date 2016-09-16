@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,7 +14,7 @@ import time
 import math
 from collections import deque
 
-from xpra.util import AdHocStruct, updict, rindex, iround
+from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envint, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
@@ -54,11 +54,10 @@ menulog  = Logger("x11", "menu")
 eventlog = Logger("x11", "events")
 
 import xpra
-from xpra.util import nonl, typedict, envint
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 
-REPARENT_ROOT = envint("XPRA_REPARENT_ROOT", 1)
-SCALED_FONT_ANTIALIAS = envint("XPRA_SCALED_FONT_ANTIALIAS")
+REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
+SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
 class DesktopManager(gtk.Widget):

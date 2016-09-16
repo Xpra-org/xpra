@@ -8,9 +8,9 @@ import sys
 import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
-from xpra.util import pver, print_nested_dict, engs
+from xpra.util import pver, print_nested_dict, engs, envbool
 
-IGNORE_NVIDIA_DRIVER_BLACKLIST = os.environ.get("XPRA_IGNORE_NVIDIA_DRIVER_BLACKLIST", "0")=="1"
+IGNORE_NVIDIA_DRIVER_BLACKLIST = envbool("XPRA_IGNORE_NVIDIA_DRIVER_BLACKLIST", False)
 
 
 def get_nvml_driver_version():
@@ -215,7 +215,7 @@ def validate_driver_yuv444lossless():
         if v:
             l("Warning: NVidia driver version %s is unsupported with NVENC", pver(v))
             l(" recommended driver versions: up to 350 only")
-        if os.environ.get("XPRA_NVENC_YUV444P", "0")!="1":
+        if envbool("XPRA_NVENC_YUV444P", False):
             l(" disabling YUV444P and lossless mode")
             l(" use XPRA_NVENC_YUV444P=1 to force enable it")
             return False

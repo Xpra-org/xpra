@@ -1,20 +1,20 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from gtk import gdk
-import os
 
 from xpra.log import Logger
 log = Logger("paint")
 
+from xpra.util import envbool
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.codecs.loader import has_codec
 
-USE_PIL = os.environ.get("XPRA_USE_PIL", "1")=="1"
+USE_PIL = envbool("XPRA_USE_PIL", True)
 
 
 """

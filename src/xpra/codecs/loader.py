@@ -6,6 +6,8 @@
 
 import sys
 import os.path
+
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("codec", "loader")
 try:
@@ -22,8 +24,8 @@ if sys.version > '3':
 #do not require the libraries to be installed
 NOWARN = ["nvenc7", "opencl", "opencv"]
 
-SELFTEST = os.environ.get("XPRA_CODEC_SELFTEST", "1")=="1"
-FULL_SELFTEST = os.environ.get("XPRA_CODEC_FULL_SELFTEST", "0")=="1"
+SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
+FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
 
 CODEC_FAIL_IMPORT = os.environ.get("XPRA_CODEC_FAIL_IMPORT", "").split(",")
 CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")

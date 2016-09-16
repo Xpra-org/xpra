@@ -24,7 +24,7 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES, strtobytes
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, \
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
 from xpra.make_thread import start_thread
@@ -43,7 +43,7 @@ except:
 
 PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
 #for testing only: passthrough as RGB:
-PASSTHROUGH = envint("XPRA_PROXY_PASSTHROUGH")
+PASSTHROUGH = envbool("XPRA_PROXY_PASSTHROUGH", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
 

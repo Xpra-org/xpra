@@ -4,10 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from xpra.log import Logger
 log = Logger("x11", "window")
 
+from xpra.util import envbool
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk2.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
@@ -24,7 +24,7 @@ X11Window.ensure_XDamage_support()
 
 
 StructureNotifyMask = constants["StructureNotifyMask"]
-USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
+USE_XSHM = envbool("XPRA_XSHM", True)
 
 
 class WindowDamageHandler(object):

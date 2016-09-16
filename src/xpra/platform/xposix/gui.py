@@ -1,12 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import struct
 import binascii
+
 from xpra.log import Logger
 log = Logger("posix")
 eventlog = Logger("posix", "events")
@@ -15,11 +16,11 @@ dbuslog = Logger("posix", "dbus")
 traylog = Logger("posix", "menu")
 menulog = Logger("posix", "menu")
 
-from xpra.util import iround
+from xpra.util import iround, envbool
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
 device_bell = None
-GTK_MENUS = os.environ.get("XPRA_GTK_MENUS", "0")=="1"
+GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 
 
 def get_native_system_tray_classes():

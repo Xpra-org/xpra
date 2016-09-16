@@ -26,7 +26,8 @@ grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes, bytestostr
-from xpra.util import (AdHocStruct, typedict, envint, WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, 
+from xpra.util import (AdHocStruct, typedict, envint, envbool,
+                       WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, 
                        MOVERESIZE_CANCEL,
                        MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
                        MOVERESIZE_SIZE_RIGHT,
@@ -48,7 +49,7 @@ PixbufLoader = import_pixbufloader()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
+if os.name=="posix" and envbool("XPRA_SET_WORKSPACE", True):
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
@@ -75,11 +76,11 @@ if os.name=="posix" and os.environ.get("XPRA_SET_WORKSPACE", "1")!="0":
 
 
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
-MOVERESIZE_X11 = envint("XPRA_MOVERESIZE_X11", os.name=="posix")
+MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", os.name=="posix")
 
-SAVE_WINDOW_ICONS = envint("XPRA_SAVE_WINDOW_ICONS")
+SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
-LAZY_SHAPE = envint("XPRA_LAZY_SHAPE", 1)
+LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", True)
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((

@@ -16,13 +16,13 @@ from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")
 
-DEBUG_SOUND = envint("XPRA_SOUND_DEBUG")
+DEBUG_SOUND = envbool("XPRA_SOUND_DEBUG", False)
 SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
-FAKE_START_FAILURE = envint("XPRA_SOUND_FAKE_START_FAILURE")
-FAKE_EXIT = envint("XPRA_SOUND_FAKE_EXIT")
-FAKE_CRASH = envint("XPRA_SOUND_FAKE_CRASH")
+FAKE_START_FAILURE = envbool("XPRA_SOUND_FAKE_START_FAILURE", False)
+FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
+FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
 SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 3000)
-BUNDLE_METADATA = envint("XPRA_SOUND_BUNDLE_METADATA", 1)
+BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
 
 def get_sound_wrapper_env():

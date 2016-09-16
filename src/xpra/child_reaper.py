@@ -12,7 +12,7 @@
 import os, sys
 import signal
 
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.log import Logger
 log = Logger("server", "util")
 
@@ -20,9 +20,9 @@ log = Logger("server", "util")
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
 # or when the user requests it with the env var:
 BUGGY_PYTHON = sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
-USE_PROCESS_POLLING = os.name!="posix" or os.environ.get("XPRA_USE_PROCESS_POLLING")=="1" or BUGGY_PYTHON
+USE_PROCESS_POLLING = os.name!="posix" or envbool("XPRA_USE_PROCESS_POLLING") or BUGGY_PYTHON
 POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
-POLL_WARNING = envint("XPRA_POLL_WARNING", 1)
+POLL_WARNING = envbool("XPRA_POLL_WARNING", True)
 
 
 singleton = None

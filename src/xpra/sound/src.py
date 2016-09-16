@@ -9,7 +9,7 @@ import sys
 import time
 
 from xpra.os_util import SIGNAMES, Queue
-from xpra.util import csv, envint, AtomicInteger
+from xpra.util import csv, envint, envbool, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_gst_version, get_queue_time, \
@@ -26,7 +26,7 @@ SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
 BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    #ie: 64
 LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
-BUNDLE_METADATA = envint("XPRA_SOUND_BUNDLE_METADATA", 1)
+BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 generation = AtomicInteger()

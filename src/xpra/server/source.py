@@ -43,7 +43,7 @@ from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
 from xpra.server.background_worker import add_work_item
-from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, AtomicInteger, \
+from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 def no_legacy_names(v):
     return v
@@ -53,9 +53,9 @@ except:
     LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
     new_to_legacy = no_legacy_names
 
-NOYIELD = os.environ.get("XPRA_YIELD") is None
+NOYIELD = not envbool("XPRA_YIELD", False)
 MAX_CLIPBOARD_PER_SECOND = envint("XPRA_CLIPBOARD_LIMIT", 20)
-ADD_LOCAL_PRINTERS = envint("XPRA_ADD_LOCAL_PRINTERS")
+ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 

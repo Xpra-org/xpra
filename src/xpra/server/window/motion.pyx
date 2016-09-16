@@ -10,12 +10,13 @@
 import os
 import time
 
+from xpra.util import envbool
 from xpra.log import Logger
 logger = Logger("encoding")
 
 import zlib
 hashfn = None
-if os.environ.get("XPRA_XXHASH", "1")=="1":
+if envbool("XPRA_XXHASH", True):
     try:
         import xxhash
         def hashfn(x):

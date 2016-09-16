@@ -5,12 +5,12 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
-ENABLE_CRYPTO = envint("XPRA_ENABLE_CRYPTO", 1)
-ENCRYPT_FIRST_PACKET = envint("XPRA_ENCRYPT_FIRST_PACKET")
+ENABLE_CRYPTO = envbool("XPRA_ENABLE_CRYPTO", True)
+ENCRYPT_FIRST_PACKET = envbool("XPRA_ENCRYPT_FIRST_PACKET", False)
 
 DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")

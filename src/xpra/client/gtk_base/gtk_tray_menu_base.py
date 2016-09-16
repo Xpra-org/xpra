@@ -1,16 +1,15 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import os
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
 
-from xpra.util import CLIENT_EXIT, iround
+from xpra.util import CLIENT_EXIT, iround, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem
 from xpra.client.client_base import EXIT_OK
@@ -30,10 +29,10 @@ webcamlog = Logger("menu", "webcam")
 
 HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
 
-SHOW_UPLOAD = os.environ.get("XPRA_SHOW_UPLOAD_MENU", "1")=="1"
-STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
-WEBCAM_MENU = os.environ.get("XPRA_SHOW_WEBCAM_MENU", "1")=="1"
-RUNCOMMAND_MENU = os.environ.get("XPRA_SHOW_RUNCOMMAND_MENU", "1")=="1"
+SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
+STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
+WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
+RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {

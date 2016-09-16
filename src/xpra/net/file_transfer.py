@@ -15,10 +15,10 @@ printlog = Logger("printing")
 filelog = Logger("file")
 
 from xpra.child_reaper import getChildReaper
-from xpra.util import typedict, csv, nonl, envint
+from xpra.util import typedict, csv, nonl, envint, envbool
 from xpra.simple_stats import std_unit
 
-DELETE_PRINTER_FILE = envint("XPRA_DELETE_PRINTER_FILE", 1)
+DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 FILE_CHUNKS_SIZE = max(0, envint("XPRA_FILE_CHUNKS_SIZE", 65536))
 MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
 CHUNK_TIMEOUT = 10*1000

@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os
+import sys
 import logging
+from xpra.util import envbool
 from xpra.log import Logger, CaptureHandler
 log = Logger("opengl")
 
@@ -42,12 +43,12 @@ if False:
 
 #alpha requires gtk3 or *nix only for gtk2:
 DEFAULT_ALPHA = sys.version>'3' or (not sys.platform.startswith("win") and not sys.platform.startswith("darwin"))
-GL_ALPHA_SUPPORTED = os.environ.get("XPRA_ALPHA", DEFAULT_ALPHA) in (True, "1")
+GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_ALPHA)
 #not working with gtk3 yet?
 CAN_DOUBLE_BUFFER = True
 #needed on win32?:
 DEFAULT_DOUBLE_BUFFERED = sys.platform.startswith("win") and CAN_DOUBLE_BUFFER
-DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(int(DEFAULT_DOUBLE_BUFFERED)))=="1"
+DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
 
 
 def get_visual_name(visual):

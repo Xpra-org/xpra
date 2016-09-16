@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -253,7 +253,7 @@ def get_spec(in_colorspace, out_colorspace):
 MIN_SWSCALE_VERSION = (2, 1, 1)
 if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)<MIN_SWSCALE_VERSION and is_Ubuntu():
     log.warn("buggy Ubuntu swscale version detected: %s", get_version())
-    if os.environ.get("XPRA_FORCE_SWSCALE", "0")=="1":
+    if envbool("XPRA_FORCE_SWSCALE", False):
         log.warn("XPRA_FORCE_SWSCALE enabled at your own risk!")
     else:
         log.warn("cowardly refusing to use it to avoid problems, set the environment variable:")

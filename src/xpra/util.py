@@ -742,3 +742,9 @@ def envint(name, d=0):
         return int(os.environ.get(name, d))
     except:
         return d
+
+def envbool(name, d=False):
+    try:
+        return bool(int(os.environ.get(name, d)))
+    except:
+        return d

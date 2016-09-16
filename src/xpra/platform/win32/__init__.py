@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,8 @@
 import errno
 import os.path
 import sys
+
+from xpra.util import envbool
 
 import win32con         #@UnresolvedImport
 import win32api         #@UnresolvedImport
@@ -293,7 +295,7 @@ class console_event_catcher(object):
             self.event_cb(event)
 
 
-SHOW_MESSAGEBOX = os.environ.get("XPRA_MESSAGEBOX", "1")=="1"
+SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
 MB_ICONEXCLAMATION  = 0x00000030
 MB_ICONINFORMATION  = 0x00000040
 MB_SYSTEMMODAL      = 0x00001000

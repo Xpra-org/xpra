@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import gtk
 import gobject
 import os
 
+from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
@@ -41,8 +42,8 @@ CWHeight        = constants["CWHeight"]
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
 NotifyDetailNone    = constants["NotifyDetailNone"]
 
-FORCE_REPLACE_WM = os.environ.get("XPRA_FORCE_REPLACE_WM", "0")=="1"
-LOG_MANAGE_FAILURES = os.environ.get("XPRA_LOG_MANAGE_FAILURES", "0")=="1"
+FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
+LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
 
 NO_NET_SUPPORTED = os.environ.get("XPRA_NO_NET_SUPPORTED", "").split(",")
 

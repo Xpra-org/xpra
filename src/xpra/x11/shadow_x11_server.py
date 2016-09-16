@@ -1,11 +1,12 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os, time
+import time
 
+from xpra.util import envbool
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -18,7 +19,7 @@ from xpra.log import Logger
 log = Logger("x11", "shadow")
 traylog = Logger("tray")
 
-USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
+USE_XSHM = envbool("XPRA_XSHM", True)
 
 
 class GTKX11RootWindowModel(GTKRootWindowModel):

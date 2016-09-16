@@ -10,7 +10,6 @@
 
 import sys
 from socket import error as socket_error
-import os
 import binascii
 from threading import Lock, Event
 
@@ -20,7 +19,7 @@ log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
 from xpra.os_util import Queue, strtobytes
-from xpra.util import repr_ellipsized, csv, envint
+from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.net import ConnectionClosedException
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -53,8 +52,7 @@ else:
     def INJECT_FAULT(p):
         pass
 
-USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
-
+USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 #merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)

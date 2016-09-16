@@ -1,14 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-import os
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
 
+from xpra.util import envbool
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu, \
@@ -31,7 +30,7 @@ SHOW_CLIPBOARD_MENU = True
 
 SHOW_ABOUT_XPRA = True
 
-SINGLE_MENU = os.environ.get("XPRA_OSX_SINGLE_MENU", "1")=="1"
+SINGLE_MENU = envbool("XPRA_OSX_SINGLE_MENU", True)
 
 
 SEPARATOR = "SEPARATOR"

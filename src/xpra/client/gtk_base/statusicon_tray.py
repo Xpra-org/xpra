@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@
 
 import os
 import sys
+from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
@@ -21,8 +22,8 @@ if not is_gtk3():
     ORIENTATION[gtk.ORIENTATION_HORIZONTAL] = "HORIZONTAL"
     ORIENTATION[gtk.ORIENTATION_VERTICAL]   = "VERTICAL"
 
-GUESS_GEOMETRY = str(int(sys.platform.startswith("win") or sys.platform.startswith("darwin")))
-GUESS_GEOMETRY = os.environ.get("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)=="1"
+GUESS_GEOMETRY = sys.platform.startswith("win") or sys.platform.startswith("darwin")
+GUESS_GEOMETRY = envbool("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)
 log("tray GUESS_GEOMETRY=%s", GUESS_GEOMETRY)
 
 

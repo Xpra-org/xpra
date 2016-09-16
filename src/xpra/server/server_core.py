@@ -40,13 +40,13 @@ from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
-from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, \
+from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
 
 main_thread = threading.current_thread()
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
-SIMULATE_SERVER_HELLO_ERROR = envint("XPRA_SIMULATE_SERVER_HELLO_ERROR")
+SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 
 
 def get_server_info():

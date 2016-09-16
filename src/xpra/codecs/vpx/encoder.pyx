@@ -8,7 +8,7 @@ import os
 from collections import deque
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr
-from xpra.util import AtomicInteger, envint
+from xpra.util import AtomicInteger, envint, envbool
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
@@ -35,8 +35,8 @@ include "constants.pxi"
 
 cdef int ENABLE_VP9_YUV444 = False
 IF ENABLE_VP9:
-    ENABLE_VP9_YUV444 = os.environ.get("XPRA_VP9_YUV444", "1")=="1"
-cdef int ENABLE_VP9_TILING = os.environ.get("XPRA_VP9_TILING", "0")=="1"
+    ENABLE_VP9_YUV444 = envbool("XPRA_VP9_YUV444", True)
+cdef int ENABLE_VP9_TILING = envbool("XPRA_VP9_TILING", False)
 
 
 cdef inline int MIN(int a, int b):

@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-import os
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 
+from xpra.util import envbool
 #those are also modified from the command line switch:
-use_rencode = os.environ.get("XPRA_USE_RENCODER", "1")=="1"
-use_bencode = os.environ.get("XPRA_USE_BENCODER", "1")=="1"
-use_yaml    = os.environ.get("XPRA_USE_YAML", "1")=="1"
+use_rencode = envbool("XPRA_USE_RENCODER", True)
+use_bencode = envbool("XPRA_USE_BENCODER", True)
+use_yaml    = envbool("XPRA_USE_YAML", True)
 
 
 has_rencode = None

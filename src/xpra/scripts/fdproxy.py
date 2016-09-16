@@ -11,9 +11,9 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 from xpra.net.bytestreams import untilConcludes
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, envint, envbool
 
-SHOW_DATA = envint("XPRA_PROXY_SHOW_DATA")
+SHOW_DATA = envbool("XPRA_PROXY_SHOW_DATA")
 PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
 
 

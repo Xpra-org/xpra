@@ -18,7 +18,7 @@ from xpra.server.window.motion import match_distance, consecutive_lines, calcula
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import parse_scaling_value, engs, envint, csv
+from xpra.util import parse_scaling_value, engs, envint, envbool, csv
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -39,14 +39,14 @@ FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
     log.warn("ignoring invalid CSC mode specified: %s", FORCE_CSC_MODE)
     FORCE_CSC_MODE = ""
-FORCE_CSC = bool(FORCE_CSC_MODE) or os.environ.get("XPRA_FORCE_CSC", "0")=="1"
-SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
+FORCE_CSC = bool(FORCE_CSC_MODE) or envbool("XPRA_FORCE_CSC", False)
+SCALING = envbool("XPRA_SCALING", True)
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
-B_FRAMES = envint("XPRA_B_FRAMES", 1)==1
-VIDEO_SKIP_EDGE = envint("XPRA_VIDEO_SKIP_EDGE", 0)==1
-SCROLL_ENCODING = envint("XPRA_SCROLL_ENCODING", 1)==1
+B_FRAMES = envbool("XPRA_B_FRAMES", True)
+VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
+SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 40)))
 
 FAST_ORDER = ["jpeg", "rgb32", "rgb24", "png"] + PREFERED_ENCODING_ORDER

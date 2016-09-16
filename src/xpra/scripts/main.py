@@ -22,15 +22,15 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv, envint
+from xpra.util import csv, envint, envbool
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
-NO_ROOT_WARNING = envint("XPRA_NO_ROOT_WARNING")
-USE_SSL_CONTEXT = envint("XPRA_USE_SSL_CONTEXT", 1)
+NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
+USE_SSL_CONTEXT = envbool("XPRA_USE_SSL_CONTEXT", True)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 
@@ -94,7 +94,7 @@ def fixup_defaults(defaults):
         fn = k.replace("-", "_")
         v = getattr(defaults, fn)
         if "help" in v:
-            if os.environ.get("XPRA_SKIP_UI", "0")=="0":
+            if not envbool("XPRA_SKIP_UI", False):
                 #skip-ui: we're running in subprocess, don't bother spamming stderr
                 sys.stderr.write(("Warning: invalid 'help' option found in '%s' configuration\n" % k) +
                              " this should only be used as a command line argument\n")
@@ -1029,7 +1029,7 @@ def configure_logging(options, mode):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
-        if (hasattr(to, "fileno") and os.isatty(to.fileno())) or os.environ.get("XPRA_FORCE_COLOR_LOG", "0")=="1":
+        if (hasattr(to, "fileno") and os.isatty(to.fileno())) or envbool("XPRA_FORCE_COLOR_LOG", False):
             from xpra.log import LOG_FORMAT, NOPREFIX_FORMAT, enable_color
             fmt = LOG_FORMAT
             if mode in ("stop", "showconfig"):
@@ -1113,7 +1113,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             systemd_run = is_systemd_pid1()
         if systemd_run:
             #check if we have wrapped it already (or if disabled via env var)
-            wrapit = os.environ.get("XPRA_SYSTEMD_RUN", "1")=="1"
+            wrapit = envbool("XPRA_SYSTEMD_RUN", True)
             if wrapit:
                 return systemd_run_wrap(mode, sys.argv, options.systemd_run_args)
 
@@ -1711,7 +1711,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             if port>0:
                 host += ":%i" % port
             import websocket
-            if envint("XPRA_WEBSOCKET_DEBUG"):
+            if envbool("XPRA_WEBSOCKET_DEBUG"):
                 websocket.enableTrace(True)
             url = "%s://%s/" % (dtype, host)
             try:

@@ -1,5 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,12 +8,13 @@ import os.path
 import sys
 import site
 
-USE_RUNTIME_DIR = os.environ.get("XPRA_USE_RUNTIME_DIR", "1")
+from xpra.util import envbool
 
+USE_RUNTIME_DIR = envbool("XPRA_USE_RUNTIME_DIR", True)
 
-USE_RUNTIME_LOG_DIR = os.environ.get("XPRA_USE_RUNTIME_LOG_DIR", USE_RUNTIME_DIR)=="1"
-USE_RUNTIME_BIN_DIR = os.environ.get("XPRA_USE_RUNTIME_BIN_DIR", USE_RUNTIME_DIR)=="1"
-USE_RUNTIME_SOCKET_DIR = os.environ.get("XPRA_USE_RUNTIME_SOCKET_DIR", USE_RUNTIME_DIR)=="1"
+USE_RUNTIME_LOG_DIR = envbool("XPRA_USE_RUNTIME_LOG_DIR", USE_RUNTIME_DIR)
+USE_RUNTIME_BIN_DIR = envbool("XPRA_USE_RUNTIME_BIN_DIR", USE_RUNTIME_DIR)
+USE_RUNTIME_SOCKET_DIR = envbool("XPRA_USE_RUNTIME_SOCKET_DIR", USE_RUNTIME_DIR)
 
 
 def do_get_install_prefix():

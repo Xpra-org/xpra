@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ import win32process     #@UnresolvedImport
 import pywintypes       #@UnresolvedImport
 
 from xpra.log import Logger
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, envbool
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
@@ -45,16 +45,16 @@ BUTTON_EVENTS = {
                  (5, False) : NOEVENT,
                  }
 
-SEAMLESS = os.environ.get("XPRA_WIN32_SEAMLESS", "0")=="1"
-DISABLE_DWM_COMPOSITION = 1
+SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
+DISABLE_DWM_COMPOSITION = True
 #no composition on XP, don't bother trying:
 try:
     from sys import getwindowsversion       #@UnresolvedImport
     if getwindowsversion().major<6:
-        DISABLE_DWM_COMPOSITION = 0
+        DISABLE_DWM_COMPOSITION = False
 except:
     pass
-DISABLE_DWM_COMPOSITION = os.environ.get("XPRA_DISABLE_DWM_COMPOSITION", str(DISABLE_DWM_COMPOSITION))=="1"
+DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", DISABLE_DWM_COMPOSITION)
 
 
 class Win32RootWindowModel(RootWindowModel):
@@ -103,7 +103,7 @@ class Win32RootWindowModel(RootWindowModel):
     def get_shape_rectangles(self, logit=False):
         #get the list of windows
         l = log
-        if logit or os.environ.get("XPRA_SHAPE_DEBUG", "0")=="1":
+        if logit or envbool("XPRA_SHAPE_DEBUG", False):
             l = shapelog
         taskbar = win32gui.FindWindow("Shell_TrayWnd", None)
         l("taskbar window=%#x", taskbar)

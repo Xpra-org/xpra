@@ -13,7 +13,7 @@ from collections import deque
 
 from pycuda import driver
 
-from xpra.util import AtomicInteger, engs, csv, pver, envint
+from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
 from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -36,7 +36,7 @@ cdef int MIN_COMPUTE = 0x30
 
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
-cdef int DEBUG_API = envint("XPRA_NVENC_DEBUG_API")
+cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
 
 cdef int QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 

@@ -5,9 +5,10 @@
 
 import os
 import logging
+from xpra.util import envbool
 from xpra.log import Logger
 
-PIL_DEBUG = os.environ.get("XPRA_PIL_DEBUG", "0")=="1"
+PIL_DEBUG = envbool("XPRA_PIL_DEBUG", False)
 if PIL_DEBUG:
     log = Logger("encoder", "pillow")
     log.info("enabling PIL.DEBUG")

@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from xpra.log import Logger
 log = Logger("osx", "events")
 
-SLEEP_HANDLER = os.environ.get("XPRA_OSX_SLEEP_HANDLER", "1")=="1"
+from xpra.util import envbool
+SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 
 
 exit_cb = None

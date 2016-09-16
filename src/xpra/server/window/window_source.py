@@ -12,7 +12,7 @@ import hashlib
 import threading
 from collections import deque
 
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
@@ -31,25 +31,25 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 
-DELTA = envint("XPRA_DELTA", 1)
+DELTA = envbool("XPRA_DELTA", True)
 MIN_DELTA_SIZE = envint("XPRA_MIN_DELTA_SIZE", 1024)
 MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
 MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 
-HAS_ALPHA = envint("XPRA_ALPHA", 1)
-FORCE_BATCH = envint("XPRA_FORCE_BATCH")
-STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE")
-MERGE_REGIONS = envint("XPRA_MERGE_REGIONS", 1)
-INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH")
+HAS_ALPHA = envbool("XPRA_ALPHA", True)
+FORCE_BATCH = envint("XPRA_FORCE_BATCH", False)
+STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE", False)
+MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
+INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH", False)
 MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
 AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
-PAINT_FLUSH = envint("XPRA_PAINT_FLUSH", 1)
+PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 
-LOG_THEME_DEFAULT_ICONS = envint("XPRA_LOG_THEME_DEFAULT_ICONS")
-SAVE_WINDOW_ICONS = envint("XPRA_SAVE_WINDOW_ICONS")
+LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
+SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
 
 from xpra.os_util import StringIOClass, memoryview_to_bytes

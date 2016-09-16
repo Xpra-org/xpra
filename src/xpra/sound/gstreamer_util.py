@@ -12,7 +12,7 @@ from xpra.sound.common import FLAC_OGG, OPUS_OGG, SPEEX_OGG, VORBIS_OGG, VORBIS_
                                 VORBIS, FLAC, MP3, OPUS, SPEEX, WAV, WAVPACK, \
                                 MPEG4, MKA, OGG
 
-from xpra.util import csv, engs, parse_simple_dict, envint
+from xpra.util import csv, engs, parse_simple_dict, envint, envbool
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
 
@@ -44,10 +44,10 @@ def get_queue_time(default_value=450, prefix=""):
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 
-ALLOW_SOUND_LOOP = envint("XPRA_ALLOW_SOUND_LOOP")
-GSTREAMER1 = envint("XPRA_GSTREAMER1", 1)
+ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
+GSTREAMER1 = envbool("XPRA_GSTREAMER1", True)
 PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
-USE_DEFAULT_DEVICE = envint("XPRA_USE_DEFAULT_DEVICE", 1)
+USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
 

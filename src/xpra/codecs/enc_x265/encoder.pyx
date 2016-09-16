@@ -6,10 +6,11 @@
 import time
 import os
 
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
-LOG_NALS = os.environ.get("XPRA_X265_LOG_NALS", "0")=="1"
+LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
 
 
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec

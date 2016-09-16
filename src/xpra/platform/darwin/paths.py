@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
+from xpra.util import envbool
 
 def debug(*msg):
     """ delay import of logger to prevent cycles """
@@ -18,7 +19,7 @@ def do_get_resources_dir():
     RESOURCES = "/Resources/"
     #FUGLY warning: importing gtkosx_application causes the dock to appear,
     #and in some cases we don't want that.. so use the env var XPRA_SKIP_UI as workaround for such cases:
-    if os.environ.get("XPRA_SKIP_UI", "0")=="0":
+    if not envbool("XPRA_SKIP_UI", False):
         try:
             import gtkosx_application        #@UnresolvedImport
             try:

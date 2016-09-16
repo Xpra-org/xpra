@@ -7,14 +7,14 @@
 import time
 import math
 
-from xpra.util import MutableInteger, envint
+from xpra.util import MutableInteger, envint, envbool
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
 
 sslog = Logger("regiondetect")
 refreshlog = Logger("regionrefresh")
 
-VIDEO_SUBREGION = envint("XPRA_VIDEO_SUBREGION", 1)
+VIDEO_SUBREGION = envbool("XPRA_VIDEO_SUBREGION", True)
 
 MAX_TIME = envint("XPRA_VIDEO_DETECT_MAX_TIME", 5)
 MIN_EVENTS = envint("XPRA_VIDEO_DETECT_MIN_EVENTS", 20)

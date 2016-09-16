@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,16 +13,15 @@ import numpy
 import pyopencl             #@UnresolvedImport
 from pyopencl import mem_flags  #@UnresolvedImport
 
-from xpra.util import engs
+from xpra.util import engs, envbool
 from xpra.os_util import _memoryview
 
 PREFERRED_DEVICE_TYPE = os.environ.get("XPRA_OPENCL_DEVICE_TYPE", "GPU")
 PREFERRED_DEVICE_NAME = os.environ.get("XPRA_OPENCL_DEVICE_NAME", "")
 PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
 
-OPENCL_YUV2RGB = os.environ.get("XPRA_OPENCL_YUV2RGB", "0")=="1"
-
-AMD_WARNING_SHOWN = not os.environ.get("XPRA_AMD_WARNING", "1")=="1"
+OPENCL_YUV2RGB = envbool("XPRA_OPENCL_YUV2RGB", False)
+AMD_WARNING_SHOWN = not envbool("XPRA_AMD_WARNING", True)
 
 opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:

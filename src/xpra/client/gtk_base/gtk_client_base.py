@@ -25,7 +25,7 @@ filelog = Logger("gtk", "client", "file")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, DEFAULT_METADATA_SUPPORTED
+from xpra.util import updict, pver, iround, flatten_dict, envbool, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
@@ -43,7 +43,7 @@ from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, sys
 missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
-USE_LOCAL_CURSORS = os.environ.get("XPRA_USE_LOCAL_CURSORS", "1")=="1"
+USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):

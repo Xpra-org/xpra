@@ -10,13 +10,13 @@ import urllib
 from xpra.log import Logger
 log = Logger("network", "websocket")
 
-from xpra.util import AdHocStruct, envint
+from xpra.util import AdHocStruct, envbool
 from xpra.net.bytestreams import SocketConnection
 from websockify.websocket import WebSocketRequestHandler
 
-WEBSOCKET_TCP_NODELAY = envint("WEBSOCKET_TCP_NODELAY", 1)
-WEBSOCKET_TCP_KEEPALIVE = envint("WEBSOCKET_TCP_KEEPALIVE", 1)
-WEBSOCKET_DEBUG = envint("XPRA_WEBSOCKET_DEBUG")
+WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
+WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
+WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
 
 
 class WSRequestHandler(WebSocketRequestHandler):

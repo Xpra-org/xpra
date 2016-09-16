@@ -59,7 +59,7 @@ from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
-from xpra.util import nonl, std, iround, envint, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
+from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -77,16 +77,16 @@ FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
-MONITOR_CHANGE_REINIT = os.environ.get("XPRA_MONITOR_CHANGE_REINIT")
+MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
-MOUSE_ECHO = envint("XPRA_MOUSE_ECHO")
+MOUSE_ECHO = envbool("XPRA_MOUSE_ECHO")
 
 PAINT_FAULT_RATE = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
-PAINT_FAULT_TELL = envint("XPRA_PAINT_FAULT_INJECTION_TELL", 1)
+PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
 
-B_FRAMES = envint("XPRA_B_FRAMES", 1)
-PAINT_FLUSH = envint("XPRA_PAINT_FLUSH", 1)
+B_FRAMES = envbool("XPRA_B_FRAMES", True)
+PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
@@ -103,7 +103,7 @@ WIN32 = sys.platform.startswith("win")
 
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
-WEBCAM_ALLOW_VIRTUAL = envint("XPRA_WEBCAM_ALLOW_VIRTUAL")
+WEBCAM_ALLOW_VIRTUAL = envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False)
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")

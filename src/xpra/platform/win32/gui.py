@@ -18,7 +18,7 @@ grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
-from xpra.util import AdHocStruct, csv, envint
+from xpra.util import AdHocStruct, csv, envint, envbool
 import ctypes
 from ctypes import windll, byref
 
@@ -26,19 +26,19 @@ import win32con     #@UnresolvedImport
 import win32api     #@UnresolvedImport
 import win32gui     #@UnresolvedImport
 
-WINDOW_HOOKS = envint("XPRA_WIN32_WINDOW_HOOKS", 1)
-GROUP_LEADER = WINDOW_HOOKS and envint("XPRA_WIN32_GROUP_LEADER", 1)
-UNDECORATED_STYLE = WINDOW_HOOKS and envint("XPRA_WIN32_UNDECORATED_STYLE", 1)
+WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
+GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
+UNDECORATED_STYLE = WINDOW_HOOKS and envbool("XPRA_WIN32_UNDECORATED_STYLE", True)
 #GTK3 is fixed, so we don't need this hook:
 DEFAULT_MAX_SIZE_HINT = sys.version_info[0]<3
-MAX_SIZE_HINT = WINDOW_HOOKS and envint("XPRA_WIN32_MAX_SIZE_HINT", DEFAULT_MAX_SIZE_HINT)
-GEOMETRY = WINDOW_HOOKS and envint("XPRA_WIN32_GEOMETRY", 1)
-LANGCHANGE = WINDOW_HOOKS and envint("XPRA_WIN32_LANGCHANGE", 1)
+MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", DEFAULT_MAX_SIZE_HINT)
+GEOMETRY = WINDOW_HOOKS and envbool("XPRA_WIN32_GEOMETRY", True)
+LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
 
-DPI_AWARE = envint("XPRA_DPI_AWARE", 1)
+DPI_AWARE = envbool("XPRA_DPI_AWARE", True)
 DPI_AWARENESS = envint("XPRA_DPI_AWARENESS", 1)
-FORWARD_WINDOWS_KEY = envint("XPRA_FORWARD_WINDOWS_KEY", 1)
-WHEEL = envint("XPRA_WHEEL", 1)
+FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
+WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WHEEL_DELTA", 120)
 assert WHEEL_DELTA>0
 

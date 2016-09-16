@@ -11,11 +11,11 @@ import win32gui         #@UnresolvedImport
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.util import csv, envint
+from xpra.util import csv, envint, envbool
 from xpra.log import Logger
 log = Logger("keyboard")
 
-EMULATE_ALTGR = envint("XPRA_EMULATE_ALTGR", 1)
+EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 if EMULATE_ALTGR:
     #needed for altgr emulation timeouts:
