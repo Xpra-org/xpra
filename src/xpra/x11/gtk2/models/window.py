@@ -14,8 +14,9 @@ from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.gtk2 import Unmanageable
 from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
-from xpra.x11.gtk2.models import Unmanageable, MAX_WINDOW_SIZE
+from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
 from xpra.x11.gtk2.models.base import BaseWindowModel, constants
 from xpra.x11.gtk2.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk2.gdk_bindings import (
@@ -201,7 +202,10 @@ class WindowModel(BaseWindowModel):
         self.client_reparented = True
 
         geomlog("setup() geometry")
-        w, h = X11Window.geometry_with_border(self.xid)[2:4]
+        geom = X11Window.geometry_with_border(self.xid)
+        if geom is None:
+            raise Unmanageable("window %#x disappeared already" % self.xid)
+        w, h = geom[2:4]
         hints = self.get_property("size-hints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = calc_constrained_size(w, h, hints)

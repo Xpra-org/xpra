@@ -20,9 +20,10 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
 from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk2 import Unmanageable
 from xpra.x11.gtk2.wm import Wm
 from xpra.x11.gtk2.tray import get_tray_window, SystemTray
-from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
+from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel
 from xpra.x11.gtk2.gdk_bindings import (
                                add_catchall_receiver,       #@UnresolvedImport
                                remove_catchall_receiver,    #@UnresolvedImport

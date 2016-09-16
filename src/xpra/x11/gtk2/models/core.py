@@ -10,7 +10,7 @@ import gobject
 from gtk import gdk
 import signal
 
-from xpra.x11.gtk2.models import Unmanageable
+from xpra.x11.gtk2 import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
@@ -207,6 +207,8 @@ class CoreX11WindowModel(WindowModelStub):
         try:
             with xsync:
                 geom = X11Window.geometry_with_border(self.xid)
+                if geom is None:
+                    raise Unmanageable("window %#x disappeared already" % self.xid)
                 self._internal_set_property("geometry", geom[:4])
                 self._read_initial_X11_properties()
         except XError as e:

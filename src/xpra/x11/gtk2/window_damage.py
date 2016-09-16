@@ -14,6 +14,7 @@ from xpra.x11.gtk2.gdk_bindings import (
             remove_event_receiver,          #@UnresolvedImport
             )
 from xpra.gtk_common.error import trap, xsync, xswallow, XError
+from xpra.x11.gtk2 import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 XImage = XImageBindings()
@@ -56,7 +57,10 @@ class WindowDamageHandler(object):
     def setup(self):
         self.invalidate_pixmap()
         xid = self.client_window.xid
-        self._border_width = X11Window.geometry_with_border(xid)[-1]
+        geom = X11Window.geometry_with_border(xid)
+        if geom is None:
+            raise Unmanageable("window %#x disappeared already" % self.xid)
+        self._border_width = geom[-1]
         self.create_damage_handle()
         add_event_receiver(self.client_window, self)
 

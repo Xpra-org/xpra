@@ -508,7 +508,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         cdef XWindowAttributes geom_attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &geom_attrs)
         if status==0:
-            return False
+            return None
         return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
 
     def get_depth(self, Drawable d):
