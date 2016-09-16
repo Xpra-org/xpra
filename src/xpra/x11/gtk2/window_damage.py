@@ -59,7 +59,7 @@ class WindowDamageHandler(object):
         xid = self.client_window.xid
         geom = X11Window.geometry_with_border(xid)
         if geom is None:
-            raise Unmanageable("window %#x disappeared already" % self.xid)
+            raise Unmanageable("window %#x disappeared already" % xid)
         self._border_width = geom[-1]
         self.create_damage_handle()
         add_event_receiver(self.client_window, self)
