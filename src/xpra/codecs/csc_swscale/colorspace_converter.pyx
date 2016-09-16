@@ -11,6 +11,7 @@ from xpra.log import Logger
 from xpra.codecs.codec_checks import do_testcsc
 log = Logger("csc", "swscale")
 
+from xpra.util import envbool
 from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
