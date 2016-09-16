@@ -69,7 +69,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         if pixel_format=="r210":
-            from xpra.codecs.argb.argb import r210_to_rgba
+            from xpra.codecs.argb.argb import r210_to_rgba          #@UnresolvedImport
             pixels = r210_to_rgba(pixels)
             pixel_format = "RGBA"
             rgb = "RGBA"
