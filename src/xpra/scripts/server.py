@@ -1252,7 +1252,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             # This import is delayed because the module depends on gtk:
             from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
-            if starting or starting_desktop and not clobber:
+            if (starting or starting_desktop) and not clobber and opts.resize_display:
                 try:
                     from xpra.x11.bindings.randr_bindings import RandRBindings
                     #try to set a reasonable display size:
