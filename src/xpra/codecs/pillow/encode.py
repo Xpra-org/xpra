@@ -69,10 +69,16 @@ def encode(coding, image, quality, speed, supports_transparency):
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         if pixel_format=="r210":
-            from xpra.codecs.argb.argb import r210_to_rgba          #@UnresolvedImport
-            pixels = r210_to_rgba(pixels)
-            pixel_format = "RGBA"
-            rgb = "RGBA"
+            from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport
+            if supports_transparency:
+                pixels = r210_to_rgba(pixels)
+                pixel_format = "RGBA"
+                rgb = "RGBA"
+            else:
+                image.set_rowstride(image.get_rowstride()*3//4)
+                pixels = r210_to_rgb(pixels)
+                pixel_format = "RGB"
+                rgb = "RGB"
         #PIL cannot use the memoryview directly:
         if type(pixels)!=_buffer:
             pixels = memoryview_to_bytes(pixels)
