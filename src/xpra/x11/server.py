@@ -14,7 +14,7 @@ import time
 import math
 from collections import deque
 
-from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envint, envbool
+from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
