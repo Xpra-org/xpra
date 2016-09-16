@@ -28,10 +28,11 @@ def test_encoder_dimensions(encoder_module):
 def test_performance(encoder_module, options={}):
     log("")
     log("test_performance()")
-    dims = [(1920, 1080), (1280, 720)]
+    dims = [(1280, 720), (1920, 1080), (3840, 2160)]
     for speed in (100, 80, 50, 0):
         for quality in (0, 80, 100):
             log.info("testing speed=%s, quality=%s", speed, quality)
+            #test_encoder(encoder_module, options, dims, 100, quality, speed, input_colorspaces=["YUV420P"])
             test_encoder(encoder_module, options, dims, 100, quality, speed)
     log("")
 
@@ -39,7 +40,7 @@ def test_performance(encoder_module, options={}):
 def log_output(args):
     log(args)
 
-def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=4, quality=20, speed=0, after_encode_cb=None):
+def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=4, quality=20, speed=0, after_encode_cb=None, input_colorspaces=None):
     encoder_module.init_module()
     log("test_encoder(%s, %s)", encoder_module, dimensions)
     log("version=%s" % str(encoder_module.get_version()))
@@ -57,6 +58,8 @@ def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS,
             ocs = encoder_module.get_output_colorspaces(encoding, ic)
             for c in ocs:
                 log("spec(%s)=%s" % (c, encoder_module.get_spec(encoding, ic)))
+        if input_colorspaces:
+            ics = [x for x in ics if x in input_colorspaces]
         for src_format in ics:
             spec = encoder_module.get_spec(encoding, src_format)
             ocs = encoder_module.get_output_colorspaces(encoding, src_format)
