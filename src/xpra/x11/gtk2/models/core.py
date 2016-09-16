@@ -223,12 +223,14 @@ class CoreX11WindowModel(WindowModelStub):
                 self._composite.setup()
                 if X11Window.displayHasXShape():
                     X11Window.XShapeSelectInput(self.xid)
-        except XError as e:
+        except Exception as e:
             remove_event_receiver(self.client_window, self)
             log("%s %#x does not support compositing: %s", self._MODELTYPE, self.xid, e)
             with xswallow:
                 self._composite.destroy()
             self._composite = None
+            if isinstance(e, Unmanageable):
+                raise
             raise Unmanageable(e)
         #compositing is now enabled,
         #from now on we must call setup_failed to clean things up
