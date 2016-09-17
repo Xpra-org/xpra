@@ -680,6 +680,15 @@ cdef class Encoder:
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
+        source = options.get("source", "unknown")
+        b_frames = options.get("b-frames", 0)
+        if source!=self.source or self.b_frames!=b_frames:
+            #some options have changed:
+            log("compress_image: reconfig b-frames=%s, source=%s (from %s, %s)", b_frames, source, self.b_frames, self.source)
+            self.source = source
+            self.b_frames = b_frames
+            self.reconfig_tune()
+
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
         assert pixels, "failed to get pixels from %s" % image
@@ -799,33 +808,33 @@ cdef class Encoder:
         self.tune = self.get_tune()
         x264_param_default_preset(&param, get_preset_names()[new_preset], self.tune)
         #ensure quality remains what it was:
-        set_f_rf(&param, get_x264_quality(self.quality, self.profile))
-        self.tune_param(&param)
-        #apply it:
-        x264_param_apply_profile(&param, self.profile)
-        if x264_encoder_reconfig(self.context, &param)!=0:
-            raise Exception("x264_encoder_reconfig failed for speed=%s" % pct)
+        self.do_reconfig_tune(&param)
         self.preset = new_preset
 
     def set_encoding_quality(self, int pct):
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
-        assert self.context!=NULL, "context is closed!"
         if self.quality==pct:
             return
         if abs(self.quality - pct)<=4 and pct!=100 and self.quality!=100:
             #not enough of a change to bother (but always change to/from 100)
             return
-        cdef x264_param_t param                  #@DuplicatedSignature
-        #only f_rf_constant is changing
-        #retrieve current parameters:
-        x264_encoder_parameters(self.context, &param)
         #adjust quality:
-        set_f_rf(&param, get_x264_quality(self.quality, self.profile))
-        self.tune_param(&param)
-        #apply it:
-        if x264_encoder_reconfig(self.context, &param)!=0:
-            raise Exception("x264_encoder_reconfig failed for quality=%s" % pct)
         self.quality = pct
+        self.reconfig_tune()
+
+    def reconfig_tune(self):
+        cdef x264_param_t param
+        x264_encoder_parameters(self.context, &param)
+        self.do_reconfig_tune(&param)
+
+    cdef do_reconfig_tune(self, x264_param_t *param):
+        assert self.context!=NULL, "context is closed!"
+        #adjust quality:
+        set_f_rf(param, get_x264_quality(self.quality, self.profile))
+        self.tune_param(param)
+        #apply it:
+        if x264_encoder_reconfig(self.context, param)!=0:
+            raise Exception("x264_encoder_reconfig failed")
 
 
 def selftest(full=False):

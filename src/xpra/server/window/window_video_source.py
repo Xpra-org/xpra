@@ -1322,12 +1322,7 @@ class WindowVideoSource(WindowSource):
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
-        #tweaks for "real" video:
-        if self.matches_video_subregion(width, height) and self.subregion_is_video():
-            options["source"] = "video"
-            if encoder_spec.encoding in self.supports_video_b_frames:
-                #could take av-sync into account here to choose the number of b-frames:
-                options["b-frames"] = 1
+        options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
         ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
         #record new actual limits:
         self.actual_scaling = scaling
@@ -1344,6 +1339,16 @@ class WindowVideoSource(WindowSource):
                 csce, ve, ve.get_info(), (enc_end-enc_start)*1000.0)
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return  True
+
+    def get_video_encoder_options(self, encoding, width, height):
+        #tweaks for "real" video:
+        if self.matches_video_subregion(width, height) and self.subregion_is_video():
+            return {
+                       "source"     : "video",
+                       #could take av-sync into account here to choose the number of b-frames:
+                       "b-frames"   : int(encoding in self.supports_video_b_frames),
+                       }
+        return {}
 
 
     def encode_scrolling(self, image, distances, old_csums, csums, options):
@@ -1539,6 +1544,7 @@ class WindowVideoSource(WindowSource):
         start = time.time()
         quality = max(0, min(100, self._current_quality))
         speed = max(0, min(100, self._current_speed))
+        options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
         ret = ve.compress_image(csc_image, quality, speed, options)
         if ret is None:
             videolog.error("video_encode: ouch, %s compression failed", encoding)
