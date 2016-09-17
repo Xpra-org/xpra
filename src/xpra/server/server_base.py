@@ -959,14 +959,23 @@ class ServerBase(ServerCore):
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("xpra client %i disconnected.", source.counter)
         if len(remaining_sources)==0:
-            self.last_client_exited()
+            self.idle_add(self.last_client_exited)
 
     def last_client_exited(self):
+        #must run from the UI thread (modifies focus and keys)
         if self.exit_with_client:
             netlog.info("Last client has disconnected, terminating")
             self.quit(False)
         else:
             self.reset_server_timeout(True)
+            #so it is now safe to clear them:
+            #(this may fail during shutdown - which is ok)
+            try:
+                self._clear_keys_pressed()
+            except:
+                pass
+            self._focus(None, 0, [])
+
 
     def get_all_protocols(self):
         return list(self._potential_protocols) + list(self._server_sources.keys())
@@ -976,15 +985,6 @@ class ServerBase(ServerCore):
         v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
-
-    def no_more_clients(self):
-        #so it is now safe to clear them:
-        #(this may fail during shutdown - which is ok)
-        try:
-            self._clear_keys_pressed()
-        except:
-            pass
-        self._focus(None, 0, [])
 
 
     def idle_timeout_cb(self, source):
@@ -1019,11 +1019,7 @@ class ServerBase(ServerCore):
         ServerCore._process_connection_lost(self, proto, packet)
         if self._clipboard_client and self._clipboard_client.protocol==proto:
             self._clipboard_client = None
-        source = self.cleanup_protocol(proto)
-        if len(self._server_sources)==0:
-            self._clear_keys_pressed()
-            self._focus(source, 0, [])
-        sys.stdout.flush()
+        self.cleanup_protocol(proto)
 
 
     def hello_oked(self, proto, packet, c, auth_caps):
