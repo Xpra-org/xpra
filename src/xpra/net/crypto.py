@@ -84,7 +84,7 @@ def crypto_backend_init():
 
 def validate_backend(try_backend):
     import binascii
-    from xpra.util import strtobytes
+    from xpra.os_util import strtobytes
     try_backend.init()
     message = b"some message1234"
     password = "this is our secret"

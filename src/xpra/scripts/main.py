@@ -22,7 +22,7 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv, envint, envbool
+from xpra.util import csv, envbool
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
