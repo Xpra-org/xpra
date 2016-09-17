@@ -597,7 +597,7 @@ cdef class Encoder:
         info = get_info()
         info.update({"profile"   : self.profile,
                      "preset"    : get_preset_names()[self.preset],
-                     "b_frames"  : self.b_frames,
+                     "b-frames"  : self.b_frames,
                      "tune"      : self.tune or "",
                      "frames"    : self.frames,
                      "width"     : self.width,
