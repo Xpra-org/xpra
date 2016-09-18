@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import signal
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 glib = import_glib()
 try:
@@ -24,6 +23,7 @@ from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, re
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
+from xpra.child_reaper import getChildReaper
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.main import parse_display_name, connect_to
 from xpra.make_thread import start_thread
@@ -59,17 +59,16 @@ class ProxyServer(ServerCore):
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display", self.handle_stop_command, min_args=1, max_args=1)
 
-        #ensure we cache the platform info before intercepting SIGCHLD
-        #as this will cause a fork and SIGCHLD to be emitted:
-        from xpra.version_util import get_platform_info
-        get_platform_info()
-        signal.signal(signal.SIGCHLD, self.sigchld)
-
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
         self.video_encoders = opts.video_encoders
         self.csc_modules = opts.csc_modules
         ServerCore.init(self, opts)
+        #ensure we cache the platform info before intercepting SIGCHLD
+        #as this will cause a fork and SIGCHLD to be emitted:
+        from xpra.version_util import get_platform_info
+        get_platform_info()
+        self.child_reaper = getChildReaper()
 
     def init_components(self, opts):
         pass
@@ -249,6 +248,10 @@ class ProxyServer(ServerCore):
                 self.processes[process] = (display, message_queue)
                 process.start()
                 log("process started")
+                popen = process._popen
+                assert popen
+                #when this process dies, run reap to update our list of proxy processes:
+                self.child_reaper.add_process(popen, "xpra-proxy-%s" % display, "xpra-proxy-instance", True, True, self.reap)
             finally:
                 #now we can close our handle on the connection:
                 client_conn.close()
@@ -258,19 +261,17 @@ class ProxyServer(ServerCore):
         start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
 
 
-    def reap(self):
+    def reap(self, *args):
+        log("reap%s", args)
         dead = []
         for p in self.processes.keys():
             live = p.is_alive()
             if not live:
                 dead.append(p)
+        log("reap%s dead processes: %s", args, dead or None)
         for p in dead:
             del self.processes[p]
 
-    def sigchld(self, *args):
-        log("sigchld(%s)", args)
-        self.idle_add(self.reap)
-        log("processes: %s", self.processes)
 
     def get_info(self, proto, *args):
         info = ServerCore.get_info(self, proto)
