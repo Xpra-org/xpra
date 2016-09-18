@@ -190,7 +190,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 options = {"b-frames" : True}
                 e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1,1), options)
                 image = make_test_image(cs_in, W, H)
-                v = e.compress_image(image)
+                v = e.compress_image(image, options=options)
                 if v is None:
                     raise Exception("%s compression failed" % encoding)
                 data, meta = v
@@ -210,7 +210,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                     try:
                         wrong_format = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in][0]
                         image = make_test_image(wrong_format, W, H)
-                        out = e.compress_image()
+                        out = e.compress_image(image, options=options)
                     except:
                         out = None
                     assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
@@ -219,7 +219,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                             continue
                         try:
                             image = make_test_image(cs_in, w, h)
-                            out = e.compress_image()
+                            out = e.compress_image(image, options=options)
                         except:
                             out = None
                         assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
