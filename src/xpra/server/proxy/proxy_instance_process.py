@@ -552,7 +552,7 @@ class ProxyInstanceProcess(Process):
         if len(packet)>index:
             data = packet[index]
             if len(data)<512:
-                packet[8] = str(data)
+                packet[index] = str(data)
                 return
             #FIXME: this is ugly and not generic!
             zlib = compression.use_zlib and self.caps.boolget("zlib", True)
