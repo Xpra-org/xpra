@@ -461,7 +461,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s", len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         #named cursors cannot be scaled (round to 10 to compare so 0.95 and 1.05 are considered the same as 1.0, no scaling):
         if len(cursor_data)>=10 and cursor_types and iround(self.xscale*10)==10 and iround(self.yscale*10)==10:
-            cursor_name = bytestostr(cursor_data[8])
+            cursor_name = bytestostr(cursor_data[9])
             if cursor_name and USE_LOCAL_CURSORS:
                 gdk_cursor = cursor_types.get(cursor_name.upper())
                 if gdk_cursor is not None:
