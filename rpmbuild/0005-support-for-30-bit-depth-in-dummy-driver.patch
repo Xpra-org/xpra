@@ -1,0 +1,49 @@
+From ad1c57a6135d95ead488619085a503f4ac297b7b Mon Sep 17 00:00:00 2001
+From: Antoine Martin <antoine@nagafix.co.uk>
+Date: Tue, 20 Sep 2016 12:09:33 +0700
+Subject: [PATCH] support for 30 bit depth in dummy driver
+
+This patch makes it possible to start the server using the dummy
+driver with a 30 bit depth.
+The colormap size is changed from 256 to 1024 to prevent crashes.
+
+Signed-off-by: Antoine Martin <antoine@nagafix.co.uk>
+---
+ src/dummy_driver.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/dummy_driver.c b/src/dummy_driver.c
+index 737f11c..c84000f 100644
+--- a/src/dummy_driver.c
++++ b/src/dummy_driver.c
+@@ -313,6 +313,7 @@ DUMMYPreInit(ScrnInfoPtr pScrn, int flags)
+ 	case 15:
+ 	case 16:
+ 	case 24:
++        case 30:
+ 	    break;
+ 	default:
+ 	    xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+@@ -327,8 +328,8 @@ DUMMYPreInit(ScrnInfoPtr pScrn, int flags)
+ 	pScrn->rgbBits = 8;
+ 
+     /* Get the depth24 pixmap format */
+-    if (pScrn->depth == 24 && pix24bpp == 0)
+-	pix24bpp = xf86GetBppFromDepth(pScrn, 24);
++    if (pScrn->depth >= 24 && pix24bpp == 0)
++	pix24bpp = xf86GetBppFromDepth(pScrn, pScrn->depth);
+ 
+     /*
+      * This must happen after pScrn->display has been set because
+@@ -637,7 +638,7 @@ DUMMYScreenInit(SCREEN_INIT_ARGS_DECL)
+     if(!miCreateDefColormap(pScreen))
+ 	return FALSE;
+ 
+-    if (!xf86HandleColormaps(pScreen, 256, pScrn->rgbBits,
++    if (!xf86HandleColormaps(pScreen, 1024, pScrn->rgbBits,
+                          DUMMYLoadPalette, NULL, 
+                          CMAP_PALETTED_TRUECOLOR 
+ 			     | CMAP_RELOAD_ON_MODE_SWITCH))
+-- 
+2.7.4
+

@@ -7,7 +7,7 @@
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.6
-Release:   25.xpra1%{?dist}
+Release:   25.xpra2%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -17,6 +17,8 @@ Patch0:    0001-Remove-mibstore.h.patch
 Patch1:    0002-Constant-DPI.patch
 Patch2:    0003-fix-pointer-limits.patch
 Patch3:    0004-honour-dac.patch
+Patch4:    0005-support-for-30-bit-depth-in-dummy-driver.patch
+Patch5:    0006-remove-dead-code-in-dummy-driver.patch
 
 ExcludeArch: s390 s390x
 
@@ -35,6 +37,8 @@ X.Org X11 dummy video driver.
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
+%patch4 -p1
+%patch5 -p1
 
 %build
 autoreconf -vif
@@ -58,5 +62,8 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Tue Sep 20 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-25.xpra2
+- add support for 30 bit depth
+
 * Mon Apr 18 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-25.xpra1
 - Rebuilt with xpra fixes: DAC, DPI and pointer limits

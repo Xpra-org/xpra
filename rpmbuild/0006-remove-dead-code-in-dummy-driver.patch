@@ -1,0 +1,43 @@
+From 64b1cb5252a8bcb296d11650c391301453324dff Mon Sep 17 00:00:00 2001
+From: Antoine Martin <antoine@nagafix.co.uk>
+Date: Tue, 20 Sep 2016 13:33:52 +0700
+Subject: [PATCH] remove dead code in dummy driver
+
+Signed-off-by: Antoine Martin <antoine@nagafix.co.uk>
+---
+ src/dummy_driver.c | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/src/dummy_driver.c b/src/dummy_driver.c
+index c84000f..ec1acf3 100644
+--- a/src/dummy_driver.c
++++ b/src/dummy_driver.c
+@@ -700,25 +700,6 @@ DUMMYSwitchMode(SWITCH_MODE_ARGS_DECL)
+ void
+ DUMMYAdjustFrame(ADJUST_FRAME_ARGS_DECL)
+ {
+-    SCRN_INFO_PTR(arg);
+-    int Base; 
+-
+-    Base = (y * pScrn->displayWidth + x) >> 2;
+-
+-    /* Scale Base by the number of bytes per pixel. */
+-    switch (pScrn->depth) {
+-    case  8 :
+-	break;
+-    case 15 :
+-    case 16 :
+-	Base *= 2;
+-	break;
+-    case 24 :
+-	Base *= 3;
+-	break;
+-    default :
+-	break;
+-    }
+ }
+ 
+ /* Mandatory */
+-- 
+2.7.4
+
