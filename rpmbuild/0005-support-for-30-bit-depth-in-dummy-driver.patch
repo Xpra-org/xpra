@@ -1,6 +1,6 @@
-From ad1c57a6135d95ead488619085a503f4ac297b7b Mon Sep 17 00:00:00 2001
+From 210d6aff1eba0709da1dbd0ec0fdb89503315421 Mon Sep 17 00:00:00 2001
 From: Antoine Martin <antoine@nagafix.co.uk>
-Date: Tue, 20 Sep 2016 12:09:33 +0700
+Date: Tue, 20 Sep 2016 22:34:57 +0700
 Subject: [PATCH] support for 30 bit depth in dummy driver
 
 This patch makes it possible to start the server using the dummy
@@ -9,9 +9,23 @@ The colormap size is changed from 256 to 1024 to prevent crashes.
 
 Signed-off-by: Antoine Martin <antoine@nagafix.co.uk>
 ---
+ src/dummy.h        | 2 +-
  src/dummy_driver.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
+diff --git a/src/dummy.h b/src/dummy.h
+index c3fdd6e..0dd8906 100644
+--- a/src/dummy.h
++++ b/src/dummy.h
+@@ -68,7 +68,7 @@ typedef struct dummyRec
+     int overlay_offset;
+     int videoKey;
+     int interlace;
+-    dummy_colors colors[256];
++    dummy_colors colors[1024];
+     pointer* FBBase;
+     Bool        (*CreateWindow)() ;     /* wrapped CreateWindow */
+     Bool prop;
 diff --git a/src/dummy_driver.c b/src/dummy_driver.c
 index 737f11c..c84000f 100644
 --- a/src/dummy_driver.c
