@@ -654,6 +654,11 @@ class WindowVideoSource(WindowSource):
             sublog("send_delayed_regions: video region %s not found in: %s", vr, regions)
         else:
             #found the video region:
+            #sanity check in case the window got resized since:
+            ww, wh = self.window.get_dimensions()
+            if actual_vr.x+actual_vr.width>ww or actual_vr.y+actual_vr.height>wh:
+                sublog("video region partially outside the window")
+                return send_nonvideo(encoding=None)
             #send this using the video encoder:
             video_options = options.copy()
             video_options["av-sync"] = True
