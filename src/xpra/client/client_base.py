@@ -80,6 +80,7 @@ class XpraClientBase(FileTransferHandler):
         self.exit_code = None
         self.exit_on_signal = False
         #connection attributes:
+        self.hello_extra = {}
         self.compression_level = 0
         self.display = None
         self.username = None
@@ -379,6 +380,7 @@ class XpraClientBase(FileTransferHandler):
                 return
             self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations, padding)
             netlog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
+        capabilities.update(self.hello_extra)
         return capabilities
 
     def get_version_info(self):

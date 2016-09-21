@@ -301,6 +301,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                       dest="start_new_commands", default=defaults.start_new_commands,
                       help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
+    legacy_bool_parse("proxy-start-sessions")
+    group.add_option("--proxy-start-sessions", action="store", metavar="yes|no",
+                      dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
+                      help="Allows proxy servers to start new sessions on demand. Default: %s." % enabled_str(defaults.proxy_start_sessions))
     group.add_option("--dbus-launch", action="store",
                       dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
                       help="Start the session within a dbus-launch context, leave empty to turn off. Default: %default.")
@@ -1101,14 +1105,21 @@ def systemd_run_wrap(mode, args, systemd_run_args):
     except KeyboardInterrupt:
         return 128+signal.SIGINT
 
+def isdisplaytype(args, dtype):
+    return len(args)>0 and (args[0].startswith("%s/" % dtype) or args[0].startswith("%s:" % dtype))
+
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if os.name=="posix" and os.getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
-    ssh_display = len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:"))
+    ssh_display = isdisplaytype(args, "ssh")
+    tcp_display = isdisplaytype(args, "tcp")
+    ssl_display = isdisplaytype(args, "ssl")
+    vsock_display = isdisplaytype(args, "vsock")
+    display_is_remote = ssh_display or tcp_display or ssl_display or vsock_display
 
-    if mode in ("start", "start_desktop", "shadow") and not ssh_display:
+    if mode in ("start", "start_desktop", "shadow") and not display_is_remote:
         systemd_run = parse_bool("systemd-run", options.systemd_run)
         if systemd_run is None:
             #detect:
@@ -1139,7 +1150,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     try:
-        if mode in ("start", "start-desktop", "shadow") and ssh_display:
+        if mode in ("start", "start-desktop", "shadow") and display_is_remote:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
         elif (mode in ("start", "start-desktop", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
@@ -2063,43 +2074,61 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 def run_remote_server(error_cb, opts, args, mode, defaults):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     params = parse_display_name(error_cb, opts, args[0])
-    #add special flags to "display_as_args"
-    proxy_args = []
-    if params["display"] is not None:
-        proxy_args.append(params["display"])
+    hello_extra = {}
+    start_child = []
     if opts.start_child:
         start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
-        for c in start_child:
-            proxy_args.append(shellquote("--start-child=%s" % c))
+    start = []
     if opts.start:
         start = strip_defaults_start_child(opts.start, defaults.start)
+    if isdisplaytype(args, "ssh"):
+        #add special flags to "display_as_args"
+        proxy_args = []
+        if params.get("display") is not None:
+            proxy_args.append(params["display"])
+        for c in start_child:
+            proxy_args.append(shellquote("--start-child=%s" % c))
         for c in start:
             proxy_args.append(shellquote("--start=%s" % c))
-    #key=value options we forward:
-    for x in ("session-name", "encoding", "socket-dir", "dpi"):
-        v = getattr(opts, x.replace("-", "_"))
-        if v:
-            proxy_args.append("--%s=%s" % (x, v))
-    #these options must be enabled explicitly (no disable option for most of them):
-    for e in ("exit-with-children", "mmap-group", "readonly"):
-        if getattr(opts, e.replace("-", "_")) is True:
-            proxy_args.append("--%s" % e)
-    #older versions only support disabling:
-    for e in ("pulseaudio", "mmap",
-              "system-tray", "clipboard", "bell"):
-        if getattr(opts, e.replace("-", "_")) is False:
-            proxy_args.append("--no-%s" % e)
-    params["display_as_args"] = proxy_args
-    #and use _proxy_start subcommand:
-    if mode=="shadow":
-        params["proxy_command"] = ["_shadow_start"]
-    elif mode=="start":
-        params["proxy_command"] = ["_proxy_start"]
-    elif mode=="start-desktop":
-        params["proxy_command"] = ["_proxy_start_desktop"]
+        #key=value options we forward:
+        for x in ("session-name", "encoding", "socket-dir", "dpi"):
+            v = getattr(opts, x.replace("-", "_"))
+            if v:
+                proxy_args.append("--%s=%s" % (x, v))
+        #these options must be enabled explicitly (no disable option for most of them):
+        for e in ("exit-with-children", "mmap-group", "readonly"):
+            if getattr(opts, e.replace("-", "_")) is True:
+                proxy_args.append("--%s" % e)
+        #older versions only support disabling:
+        for e in ("pulseaudio", "mmap",
+                  "system-tray", "clipboard", "bell"):
+            if getattr(opts, e.replace("-", "_")) is False:
+                proxy_args.append("--no-%s" % e)
+        params["display_as_args"] = proxy_args
+        #and use a proxy subcommand to start the server:
+        params["proxy_command"] = {
+                                   "shadow"         : "_shadow_start",
+                                   "start"          : "_proxy_start",
+                                   "start-desktop"  : "_proxy_start_desktop",
+                                   }.get(mode)
+    else:
+        #tcp, ssl or vsock:
+        sns = {
+               "start"          : start,
+               "start-child"    : start_child,
+               }
+        for x in ("exit-with-children", "exit-with-client",
+                  "session-name", "encoding", "socket-dir", "dpi",
+                  "pulseaudio", "mmap",
+                  "system-tray", "clipboard", "bell"):
+            v = getattr(opts, x.replace("-", "_"))
+            if v:
+                sns[x] = v
+        hello_extra = {"start-new-session" : sns}
     app = make_client(error_cb, opts)
     app.init(opts)
     app.init_ui(opts)
+    app.hello_extra = hello_extra
     conn = connect_or_fail(params, opts)
     app.setup_connection(conn)
     do_run_client(app)
@@ -2173,7 +2202,9 @@ def run_glcheck(opts):
     return 0
 
 
-def start_server_subprocess(script_file, args, mode, defaults, dotxpra, start=[], start_child=[], exit_with_children=False, exit_with_client=False):
+def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
+                            start=[], start_child=[],
+                            exit_with_children=False, exit_with_client=False):
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
     existing_sockets = set()

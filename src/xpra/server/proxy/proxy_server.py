@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
+
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 glib = import_glib()
 try:
@@ -19,13 +21,13 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv, typedict
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
 from xpra.scripts.config import make_defaults_struct
-from xpra.scripts.main import parse_display_name, connect_to
+from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
 from xpra.make_thread import start_thread
 
 
@@ -48,6 +50,7 @@ class ProxyServer(ServerCore):
         log("ProxyServer.__init__()")
         ServerCore.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
+        self._start_sessions = False
         self.main_loop = None
         #keep track of the proxy process instances
         #the display they're on and the message queue we can
@@ -63,6 +66,7 @@ class ProxyServer(ServerCore):
         log("ProxyServer.init(%s)", opts)
         self.video_encoders = opts.video_encoders
         self.csc_modules = opts.csc_modules
+        self._start_sessions = opts.proxy_start_sessions
         ServerCore.init(self, opts)
         #ensure we cache the platform info before intercepting SIGCHLD
         #as this will cause a fork and SIGCHLD to be emitted:
@@ -169,27 +173,47 @@ class ProxyServer(ServerCore):
         authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
         #log("unused options: %s, %s", env_options, session_options)
-        if len(displays)==0:
-            disconnect(SESSION_NOT_FOUND, "no displays found")
-            return
-        display = c.strget("display")
-        proxy_virtual_display = os.environ.get("DISPLAY")
-        #ensure we don't loop back to the proxy:
-        if proxy_virtual_display in displays:
-            displays.remove(proxy_virtual_display)
-        authlog("start_proxy: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
-        if display==proxy_virtual_display:
-            disconnect(SESSION_NOT_FOUND, "invalid display")
-            return
-        if display:
-            if display not in displays:
-                disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
+        opts = make_defaults_struct()
+        display = None
+        sns = c.dictget("start-new-session")
+        if len(displays)==0 or sns:
+            if self._start_sessions:
+                #start a new session
+                sns = typedict(sns)
+                from xpra.platform.dotxpra import DotXpra
+                dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+                start = sns.strlistget("start")
+                start_child = sns.strlistget("start-child")
+                exit_with_children = sns.boolget("exit-with-children")
+                exit_with_client = sns.boolget("exit-with-client")
+                log("starting new server subprocess: start=%s, start-child=%s, exit-with-children=%s, exit-with-client=%s", start, start_child, exit_with_children, exit_with_client)
+                proc, display = start_server_subprocess(sys.argv[0], [], "start", opts, dotxpra,
+                                                        start, start_child,
+                                                        exit_with_children, exit_with_client)
+                if proc:
+                    self.child_reaper.add_process(proc, "server-%s" % display, "xpra start", True, True)
+            else:
+                disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
-        else:
-            if len(displays)!=1:
-                disconnect(SESSION_NOT_FOUND, "please specify a display, more than one is available: %s" % csv(displays))
+        if display is None:
+            display = c.strget("display")
+            proxy_virtual_display = os.environ.get("DISPLAY")
+            #ensure we don't loop back to the proxy:
+            if proxy_virtual_display in displays:
+                displays.remove(proxy_virtual_display)
+            authlog("start_proxy: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
+            if display==proxy_virtual_display:
+                disconnect(SESSION_NOT_FOUND, "invalid display")
                 return
-            display = displays[0]
+            if display:
+                if display not in displays:
+                    disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
+                    return
+            else:
+                if len(displays)!=1:
+                    disconnect(SESSION_NOT_FOUND, "please specify a display, more than one is available: %s" % csv(displays))
+                    return
+                display = displays[0]
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
@@ -198,7 +222,6 @@ class ProxyServer(ServerCore):
             for arg in args:
                 log.warn(" %s", arg)
             raise Exception("parse error on %s: %s" % (display, args))
-        opts = make_defaults_struct()
         opts.username = client_proto.authenticator.username
         disp_desc = parse_display_name(parse_error, opts, display)
         log("display description(%s) = %s", display, disp_desc)

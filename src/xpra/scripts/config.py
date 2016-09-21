@@ -492,6 +492,7 @@ OPTION_TYPES = {
                     "open-files"        : bool,
                     "swap-keys"         : bool,
                     "start-new-commands": bool,
+                    "proxy-start-sessions": bool,
                     "desktop-fullscreen": bool,
                     "global-menus"      : bool,
                     #arrays of strings:
@@ -703,6 +704,7 @@ def get_defaults():
                     "exit-with-client"  : False,
                     "start-after-connect": False,
                     "start-new-commands": False,
+                    "proxy-start-sessions": True,
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "dbus-control"      : not WIN32 and not OSX,

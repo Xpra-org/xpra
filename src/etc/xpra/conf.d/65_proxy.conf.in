@@ -1,0 +1,5 @@
+########################################################################
+# Proxy Options
+
+# Can the proxy start new sessions on demand?
+proxy-start-sessions = True
