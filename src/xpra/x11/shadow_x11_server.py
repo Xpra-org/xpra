@@ -6,9 +6,11 @@
 
 import time
 
+#ensures we only load GTK2:
+from xpra.x11.x11_server_base import X11ServerBase
+
 from xpra.util import envbool
 from xpra.gtk_common.gtk_util import get_xwindow
-from xpra.x11.x11_server_base import X11ServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport

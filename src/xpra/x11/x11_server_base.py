@@ -8,9 +8,16 @@
 
 import os
 import time
-import gtk.gdk
+
+try:
+    import gtk.gdk
+except Exception as e:
+    from xpra.scripts.main import InitException
+    raise InitException(e)
 
 #ensure that we use gtk as display source:
+from xpra.gtk_common.gobject_compat import want_gtk3
+want_gtk3(False)
 from xpra.x11.gtk2 import gdk_display_source
 assert gdk_display_source
 
