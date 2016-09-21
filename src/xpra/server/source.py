@@ -1389,10 +1389,8 @@ class ServerSource(FileTransferHandler):
                                 "receive"   : self.supports_microphone and len(self.microphone_codecs)>0,
                                 })
             updict(capabilities, "sound", sound_props)
-        if self.wants_encodings or self.send_windows:
-            assert self.encoding, "cannot send windows/encodings without an encoding!"
-            encoding = self.encoding
-            capabilities["encoding"] = encoding
+        if self.wants_encodings and self.encoding:
+            capabilities["encoding"] = self.encoding
         if self.wants_features:
             capabilities.update({
                          "mmap_enabled"         : self.mmap_size>0,
