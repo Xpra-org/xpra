@@ -1,17 +1,30 @@
-v1.0 (2016-07-13)
+v1.0 (2016-09-21)
 ======================
-	-- split configuration file in /etc/xpra/conf.d/
-	-- support keyboard grabbing (mapped to the right control key by default)
+	-- support all current versions of Ubuntu and Debian using a private ffmpeg library
+	-- proxy server can start new sessions on demand
+	-- SSH start server support on OSX < 10.11
+	-- support SSH password in connection dialog on all platforms
+	-- desktop mode for forwarding a full desktop (similar to VNC)
+	-- multi-monitor geometry fixes
+	-- increased webcam framerate, better UI integration
+	-- drag and drop support within applications
+	-- SSL support
+	-- built-in support for websocket transport, both client and server
+	-- keyboard and mouse grabbing support
+	-- window focus fixes
 	-- html improvements: bell support, num lock, cursors, window icons, osx shadow server, etc.
 	-- clipboard direction restrictions: to client, to server, both or disabled
-	-- support for B-frames in video encoders
-	-- support pam sessions
-	-- chunking for file transfers, higher size limitss
-	-- try harder to exit cleanly
-	-- more picture codecs and sound information shown on session info
+	-- automatic video encoder tuning, support for B-frames with x264
+	-- chunking for file transfers, higher file size limits
 	-- more efficient sound subprocess communication channel
 	-- new sound stream compression options, including aac and mpeg4 audio container
+	-- more dynamic video encoding automatic selection
+	-- much faster forwarding of scrolling content
+	-- more picture codecs and sound information shown on session info
 	-- support for arbitrary mmap file locations
+	-- split configuration file in /etc/xpra/conf.d/
+	-- support pam sessions
+	-- try harder to exit cleanly
 	-- build cleanups
 
 
