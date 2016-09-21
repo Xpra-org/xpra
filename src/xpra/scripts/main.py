@@ -34,6 +34,9 @@ USE_SSL_CONTEXT = envbool("XPRA_USE_SSL_CONTEXT", True)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 
+WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
+
 
 def enabled_str(v, true_str="yes", false_str="no"):
     if v:
@@ -1415,7 +1418,7 @@ def parse_display_name(error_cb, opts, display_name):
                 "port"          : port,
                 })
         return desc
-    elif sys.platform.startswith("win") or display_name.startswith("named-pipe:"):
+    elif WIN32 or display_name.startswith("named-pipe:"):
         pipe_name = display_name
         if display_name.startswith("named-pipe:"):
             pipe_name = display_name[len("named-pipe:"):]
@@ -1436,7 +1439,7 @@ def pick_display(error_cb, opts, extra_args):
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
         sockdir, display, path = single_display_match(dir_servers, error_cb)
-        if sys.platform.startswith("win"):
+        if WIN32:
             return {
                     "type"              : "named-pipe",
                     "local"             : True,
@@ -1528,9 +1531,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             kwargs = {}
             env = display_desc.get("env")
             kwargs["stderr"] = sys.stderr
-            if not display_desc.get("exit_ssh", False) and os.name=="posix" and not sys.platform.startswith("darwin"):
+            if not display_desc.get("exit_ssh", False) and os.name=="posix" and not OSX:
                 kwargs["preexec_fn"] = setsid
-            elif sys.platform.startswith("win"):
+            elif WIN32:
                 from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
                 flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
                 kwargs["creationflags"] = flags
@@ -1668,7 +1671,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
 
     elif dtype == "named-pipe":
         pipe_name = display_desc["named-pipe"]
-        if not sys.platform.startswith("win"):
+        if not WIN32:
             raise InitException("named pipes are only supported on MS Windows")
         import errno
         from xpra.platform.win32.dotxpra import PIPE_PATH
@@ -2172,7 +2175,6 @@ def run_glcheck(opts):
 
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
-    from xpra.scripts.fdproxy import XpraProxy
     no_gtk()
     if mode in ("_proxy_start", "_proxy_start_desktop", "_shadow_start"):
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -2197,8 +2199,6 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
             cmd.append("shadow")
             display_name = None
-            WIN32 = sys.platform.startswith("win")
-            OSX = sys.platform.startswith("darwin")
             if len(args)==1 and (args[0]==":" or OSX or WIN32):
                 #display_name was provided:
                 display_name = args[0]
@@ -2303,6 +2303,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)
     server_conn = connect_or_fail(display, opts)
+    from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
     app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
@@ -2444,8 +2445,6 @@ def run_showconfig(options, args):
     HIDDEN = []
     if not "all" in args:
         #this logic probably belongs somewhere else:
-        OSX = sys.platform.startswith("darwin")
-        WIN32 = sys.platform.startswith("win")
         if OSX or WIN32:
             #these options don't make sense on win32 or osx:
             HIDDEN += ["socket-dirs", "socket-dir",
