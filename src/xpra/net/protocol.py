@@ -1036,3 +1036,5 @@ class Protocol(object):
             orq.put_nowait(None)
         except:
             pass
+        #just in case the read thread is waiting again:
+        self._source_has_more.set()
