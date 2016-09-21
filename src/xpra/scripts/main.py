@@ -2126,15 +2126,14 @@ def find_X11_displays(max_display_no=10):
                 pass
     return displays
 
-def guess_X11_display(socket_dir, socket_dirs):
+def guess_X11_display(dotxpra):
     displays = [":%s" % x for x in find_X11_displays()]
     assert len(displays)!=0, "could not detect any live X11 displays"
     if len(displays)>1:
         #since we are here to shadow,
         #assume we want to shadow a real X11 server,
         #so remove xpra's own displays to narrow things down:
-        sockdir = DotXpra(socket_dir, socket_dirs)
-        results = sockdir.sockets()
+        results = dotxpra.sockets()
         xpra_displays = [display for _, display in results]
         displays = list(set(displays)-set(xpra_displays))
         if len(displays)==0:
@@ -2174,123 +2173,131 @@ def run_glcheck(opts):
     return 0
 
 
+def start_server_subprocess(script_file, mode, args, dotxpra, defaults, start=[], start_child=[], exit_with_children=False, exit_with_client=False):
+    #we must use a subprocess to avoid messing things up - yuk
+    assert mode in ("start", "start-desktop", "shadow")
+    existing_sockets = set()
+    if mode in ("start", "start_desktop"):
+        if len(args)==1:
+            display_name = args[0]
+        elif len(args)==0:
+            #let the server get one from Xorg via displayfd:
+            display_name = 'S' + str(os.getpid())
+            existing_sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
+        else:
+            raise InitException("%s: expected 0 or 1 arguments but got %s: %s" % (mode, len(args), args))
+    else:
+        assert mode=="shadow"
+        assert len(args) in (0, 1), "starting shadow server: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
+        display_name = None
+        if len(args)==1 and (args[0]==":" or OSX or WIN32):
+            #display_name was provided:
+            display_name = args[0]
+        elif OSX or WIN32:
+            #no need for a specific display
+            display_name = ":0"
+        else:
+            display_name = guess_X11_display(dotxpra)
+            #we now know the display name, so add it:
+            args = [display_name]
+
+    cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
+    if start_child:
+        for x in start_child:
+            cmd.append("--start-child=%s" % x)
+    if start:
+        for x in start:
+            cmd.append("--start=%s" % x)
+    if exit_with_children:
+        cmd.append("--exit-with-children")
+    if exit_with_client or mode=="shadow":
+        cmd.append("--exit-with-client")
+    #add a unique uuid to the server env:
+    server_env = os.environ.copy()
+    if display_name[0]=='S':
+        from xpra.os_util import get_hex_uuid
+        new_server_uuid = get_hex_uuid()
+        server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
+    if mode=="shadow" and OSX:
+        #launch the shadow server via launchctl so it will have GUI access:
+        LAUNCH_AGENT = "org.xpra.Agent"
+        LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
+        if not os.path.exists(LAUNCH_AGENT_FILE):
+            sys.stderr.write("Error: cannot start shadow,\n the launch agent file '%s' is missing.\n" % LAUNCH_AGENT_FILE)
+            return 1
+        argfile = os.path.expanduser("~/.xpra/shadow-args")
+        with open(argfile, "w") as f:
+            f.write('["Xpra", "--no-daemon"')
+            for x in cmd[1:]:
+                f.write(', "%s"' % x)
+            f.write(']')
+        launch_commands = [
+                           ["launchctl", "unload", LAUNCH_AGENT_FILE],
+                           ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
+                           ["launchctl", "start", LAUNCH_AGENT],
+                           ]
+        for x in launch_commands:
+            proc = Popen(x, shell=False, close_fds=True)
+            proc.wait()
+        proc = None
+    else:
+        proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
+    if display_name[0]=='S':
+        display_name = identify_new_socket(dotxpra, existing_sockets, display_name, new_server_uuid)
+    else:
+        #wait for the display specified to become live:
+        while True:
+            states = [dotxpra.get_server_state(norm_makepath(x, display_name), 1) for x in dotxpra._sockdirs]
+            if DotXpra.LIVE in states:
+                break
+            elapsed = int(time.time()-start)
+            if elapsed>=15:
+                warn("server for display %s failed to start, giving up after %i seconds - sorry!" % (display_name, elapsed))
+                return
+            time.sleep(0.10)
+    return proc, display_name
+
+def identify_new_socket(dotxpra, existing_sockets, display_name, new_server_uuid):
+    #wait until the new socket appears:
+    start = time.time()
+    while time.time()-start<15 and display_name[0]=='S':
+        sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
+        new_sockets = list(sockets-existing_sockets)
+        if len(new_sockets)==1:
+            d = new_sockets[0][1]
+            #verify that this is the right server:
+            try:
+                #we must use a subprocess to avoid messing things up - yuk
+                import subprocess
+                cmd = [sys.argv[0], "info", d]
+                p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, _ = p.communicate()
+                if p.returncode==0:
+                    out = stdout.decode('utf-8')
+                    PREFIX = "env.XPRA_PROXY_START_UUID="
+                    for line in out.splitlines():
+                        if line.startswith(PREFIX):
+                            info_uuid = line[len(PREFIX):]
+                            if info_uuid==new_server_uuid:
+                                #found it!
+                                display_name = d
+                                break
+            except Exception as e:
+                warn("error during server process detection: %s" % e)
+        time.sleep(0.10)
+    if display_name[0]=='S':
+        warn("Error: failed to identify the new server display!")
+    return display_name
+
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     no_gtk()
     if mode in ("_proxy_start", "_proxy_start_desktop", "_shadow_start"):
+        server_mode = mode.replace("_proxy_", "").replace("_", "-")     #"_proxy_start_desktop" -> "start-desktop"
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-        #we must use a subprocess to avoid messing things up - yuk
-        cmd = [script_file]
-        if mode in ("_proxy_start", "_proxy_start_desktop"):
-            if mode=="_proxy_start":
-                cmd.append("start")
-            else:
-                assert mode=="_proxy_start_desktop"
-                cmd.append("start-desktop")
-            if len(args)==1:
-                display_name = args[0]
-            elif len(args)==0:
-                #let the server get one from Xorg via displayfd:
-                display_name = 'S' + str(os.getpid())
-                existing_sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
-            else:
-                raise InitException("%s: expected 0 or 1 arguments but got %s: %s" % (mode, len(args), args))
-        else:
-            assert mode=="_shadow_start"
-            assert len(args) in (0, 1), "_shadow_start: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
-            cmd.append("shadow")
-            display_name = None
-            if len(args)==1 and (args[0]==":" or OSX or WIN32):
-                #display_name was provided:
-                display_name = args[0]
-            elif OSX or WIN32:
-                #no need for a specific display
-                display_name = ":0"
-            else:
-                display_name = guess_X11_display(opts.socket_dir, opts.socket_dirs)
-                #we now know the display name, so add it:
-                args = [display_name]
-        #adds the display to proxy start command:
-        cmd += args
         start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
-        if start_child:
-            for x in start_child:
-                cmd.append("--start-child=%s" % x)
         start = strip_defaults_start_child(opts.start, defaults.start)
-        if start:
-            for x in start:
-                cmd.append("--start=%s" % x)
-        if opts.exit_with_children:
-            cmd.append("--exit-with-children")
-        if opts.exit_with_client or mode=="_shadow_start":
-            cmd.append("--exit-with-client")
-        #add a unique uuid to the server env:
-        server_env = os.environ.copy()
-        if display_name[0]=='S':
-            import uuid
-            new_server_uuid = str(uuid.uuid4())
-            server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
-        if mode=="_shadow_start" and OSX:
-            #launch the shadow server via launchctl so it will have GUI access:
-            LAUNCH_AGENT = "org.xpra.Agent"
-            LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
-            if not os.path.exists(LAUNCH_AGENT_FILE):
-                sys.stderr.write("Error: cannot start shadow,\n the launch agent file '%s' is missing.\n" % LAUNCH_AGENT_FILE)
-                return 1
-            argfile = os.path.expanduser("~/.xpra/shadow-args")
-            with open(argfile, "w") as f:
-                f.write('["Xpra", "--no-daemon"')
-                for x in cmd[1:]:
-                    f.write(', "%s"' % x)
-                f.write(']')
-            launch_commands = [
-                               ["launchctl", "unload", LAUNCH_AGENT_FILE],
-                               ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
-                               ["launchctl", "start", LAUNCH_AGENT],
-                               ]
-            for x in launch_commands:
-                proc = Popen(x, shell=False, close_fds=True)
-                proc.wait()
-            proc = None
-        else:
-            proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
-        start = time.time()
-        if display_name[0]=='S':
-            #wait until the new socket appears:
-            while time.time()-start<15 and display_name[0]=='S':
-                sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
-                new_sockets = list(sockets-existing_sockets)
-                if len(new_sockets)==1:
-                    d = new_sockets[0][1]
-                    #verify that this is the right server:
-                    try:
-                        import subprocess
-                        cmd = [sys.argv[0], "info", d]
-                        p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        stdout, _ = p.communicate()
-                        if p.returncode==0:
-                            out = stdout.decode('utf-8')
-                            PREFIX = "env.XPRA_PROXY_START_UUID="
-                            for line in out.splitlines():
-                                if line.startswith(PREFIX):
-                                    info_uuid = line[len(PREFIX):]
-                                    if info_uuid==new_server_uuid:
-                                        #found it!
-                                        display_name = d
-                                        break
-                    except Exception as e:
-                        warn("error during server process detection: %s" % e)
-                time.sleep(0.10)
-        else:
-            #wait for the display specified to become live:
-            while True:
-                states = [dotxpra.get_server_state(norm_makepath(x, display_name), 1) for x in dotxpra._sockdirs]
-                if DotXpra.LIVE in states:
-                    break
-                elapsed = int(time.time()-start)
-                if elapsed>=15:
-                    warn("server for display %s failed to start, giving up after %i seconds - sorry!" % (display_name, elapsed))
-                    return
-                time.sleep(0.10)
+        proc, display_name = start_server_subprocess(script_file, server_mode, args,
+                                                     dotxpra, defaults, start, start_child, opts.exit_with_children, opts.exit_with_client)
         display = parse_display_name(error_cb, opts, display_name)
         if proc and proc.poll() is None:
             #start a thread just to reap server startup process (yuk)
