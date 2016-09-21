@@ -275,7 +275,7 @@ class ProxyServer(ServerCore):
 
     def get_info(self, proto, *args):
         info = ServerCore.get_info(self, proto)
-        info["server.type"] = "Python/GLib/proxy"
+        info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         #only show more info if we have authenticated
         #as the user running the proxy server process:
         pa = proto.authenticator
