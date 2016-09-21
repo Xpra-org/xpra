@@ -281,9 +281,9 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or sys.platform.startswith("win") or sys.platform.startswith("darwin")
     try:
         if PREFER_PYBONJOUR:
-            from xpra.net.pybonjour_publisher import BonjourPublishers as MDNSPublishers
+            from xpra.net.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
         else:
-            from xpra.net.avahi_publisher import AvahiPublishers as MDNSPublishers
+            from xpra.net.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
         MDNS_WARNING = True
         from xpra.log import Logger
@@ -294,7 +294,11 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         return
     d = text_dict.copy()
     d["mode"] = mode
-    ap = MDNSPublishers(listen_on, "Xpra %s %s" % (mode, display_name), text_dict=d)
+    #ensure we don't have duplicate interfaces:
+    f_listen_on = {}
+    for host, port in listen_on:
+        f_listen_on[get_interface_index(host)] = (host, port)
+    ap = MDNSPublishers(f_listen_on.values(), "Xpra %s %s" % (mode, display_name), text_dict=d)
     _when_ready.append(ap.start)
     _cleanups.append(ap.stop)
 
@@ -1294,10 +1298,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     #publish mdns records:
     if opts.mdns:
         from xpra.platform.info import get_username
-        mdns_info = {"display" : display_name,
-                     "username": get_username()}
+        mdns_info = {
+                     "display"  : display_name,
+                     "username" : get_username(),
+                     }
         if opts.session_name:
             mdns_info["session"] = opts.session_name
+        #reduce
         for mode, listen_on in mdns_recs:
             mdns_publish(display_name, mode, listen_on, mdns_info)
 
