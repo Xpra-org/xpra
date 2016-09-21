@@ -1770,9 +1770,10 @@ class UIXpraClient(XpraClientBase):
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
             self.readonly = True
-        server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
-        if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
-            log.warn("Warning: server does not support auto-refresh!")
+        if self.windows_enabled:
+            server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
+            if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
+                log.warn("Warning: server does not support auto-refresh!")
         self.server_encodings = c.strlistget("encodings")
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
