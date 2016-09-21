@@ -737,6 +737,8 @@ class WindowVideoSource(WindowSource):
             image.free()
             return
         self.pixel_format = image.get_pixel_format()
+        #image may have been clipped to the new window size during resize:
+        w, h = image.get_size()
 
         must_freeze = options.get("av-sync", False) or coding in self.video_encodings
         if must_freeze:
