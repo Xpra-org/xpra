@@ -1467,7 +1467,8 @@ class WindowVideoSource(WindowSource):
             self.pixel_format = src_format
 
         #check for scrolling, unless there's already a b-frame pending, or in strict mode:
-        if self.supports_scrolling and not self.b_frame_flush_timer and not STRICT_MODE:
+        # or when a true video region exists and detection is turned off
+        if self.supports_scrolling and not self.b_frame_flush_timer and not STRICT_MODE and (self.video_subregion.detection or not self.subregion_is_video()):
             try:
                 start = time.time()
                 lsd = self.scroll_data
