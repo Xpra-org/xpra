@@ -21,7 +21,7 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv, typedict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, DONE, repr_ellipsized, print_nested_dict, csv, typedict
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -139,6 +139,7 @@ class ProxyServer(ServerCore):
 
     def hello_oked(self, proto, packet, c, auth_caps):
         if c.boolget("stop_request"):
+            self.disconnect_client(proto, DONE, "proxy server shutting down")
             self.clean_quit()
             return
         self.accept_client(proto, c)
