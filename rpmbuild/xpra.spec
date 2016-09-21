@@ -439,6 +439,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf
+%config %{_sysconfdir}/xpra/conf.d/65_proxy.conf
 %if 0%{?with_selinux}
 %{_datadir}/selinux/*/cups_xpra.pp
 %endif
