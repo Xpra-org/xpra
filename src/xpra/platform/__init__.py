@@ -71,12 +71,12 @@ def do_clean():
 
 
 _name_set = False
-def set_name(prgname=_prgname, appname=_appname):
+def set_name(prgname=None, appname=None):
     global _name_set
     if not _name_set:
         _name_set = True
-        set_prgname(prgname)
-        set_application_name(appname)
+        set_prgname(prgname or _prgname)
+        set_application_name(appname or _appname)
 
 def _glib():
     from xpra.gtk_common.gobject_compat import import_glib
