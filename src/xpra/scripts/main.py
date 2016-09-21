@@ -1726,22 +1726,22 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 def __init__(self, ws, target, socktype):
                     Connection.__init__(self, target, socktype)
                     self._socket = ws
-    
+
                 def peek(self, n):
                     return None
-            
+
                 def untilConcludes(self, *args):
                     try:
                         return Connection.untilConcludes(self, *args)
                     except websocket.WebSocketTimeoutException as e:
                         raise ConnectionClosedException(e)
-    
+
                 def read(self, n):
                     return self._read(self._socket.recv)
-            
+
                 def write(self, buf):
                     return self._write(self._socket.send, buf)
-            
+
                 def close(self):
                     try:
                         i = self.get_socket_info()
@@ -1752,10 +1752,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     self._socket.close()
                     self._socket = None
                     connlog("%s.close() done", self)
-            
+
                 def __repr__(self):
                     return "%s %s" % (self.socktype, self.target)
-            
+
                 def get_info(self):
                     d = Connection.get_info(self)
                     d["protocol-type"] = "websocket"
