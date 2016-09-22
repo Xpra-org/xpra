@@ -82,7 +82,9 @@
 	<branch module="/hogliux/bomutils/archive/debian/0.2-1.tar.gz"
 		version="0.2-1"
                 checkoutdir="bomutils-debian-0.2-1"
-		repo="github.com"/>
+		repo="github.com">
+        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/bomutils-jhbuild-changeprefix.patch" strip="0" />
+        </branch>
   </autotools>
 
   <autotools id="xar" autogen-sh="configure">
