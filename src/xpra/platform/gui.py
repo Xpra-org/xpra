@@ -281,7 +281,7 @@ def main():
             except:
                 pass    #maybe running on OSX? hope for the best..
         i = get_info()
-        print_nested_dict(i)
+        print_nested_dict(i, hex_keys=("data", "icc-data", "icc-profile"))
 
 
 if __name__ == "__main__":

@@ -643,7 +643,7 @@ def sorted_nicely(l):
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', bytestostr(key)) ]
     return sorted(l, key = alphanum_key)
 
-def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None):
+def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None, version_keys=("version", "revision"), hex_keys=("data", )):
     #"smart" value formatting function:
     def sprint(arg):
         if print_fn:
@@ -654,9 +654,9 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
         if vformat:
             return nonl(vformat(v))
         try:
-            if k.find("version")>=0 or k.find("revision")>=0:
+            if any(k.find(x)>=0 for x in version_keys):
                 return nonl(pver(v)).lstrip("v")
-            elif k=="data":
+            elif any(k.find(x)>=0 for x in hex_keys):
                 return binascii.hexlify(v)
         except:
             pass
@@ -675,7 +675,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
                         pass
             else:
                 sprint("%s%s %s" % (prefix, lchar, k))
-            print_nested_dict(v, prefix+"  ", "-", print_fn=print_fn)
+            print_nested_dict(v, prefix+"  ", "-", print_fn=print_fn, version_keys=version_keys, hex_keys=hex_keys)
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), vf(k, v)))
 

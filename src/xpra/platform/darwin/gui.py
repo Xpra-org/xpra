@@ -192,7 +192,7 @@ def get_colorspace_info(cs):
         return MODELS.get(v, "unknown")
     defs = (
             ("name",                "CGColorSpaceCopyName",                 str),
-            ("profile",             "CGColorSpaceCopyICCProfile",           str),
+            ("icc-profile",         "CGColorSpaceCopyICCProfile",           str),
             ("icc-data",            "CGColorSpaceCopyICCData",              str),
             ("components",          "CGColorSpaceGetNumberOfComponents",    int),
             ("supports-output",     "CGColorSpaceSupportsOutput",           bool),
@@ -204,30 +204,18 @@ def get_colorspace_info(cs):
 
 def get_display_mode_info(mode):
     defs = (
-            ("width",           "width",            int),
-            ("height",          "height",           int),
-            ("pixel-encoding",  "pixelEncoding",    str),
-            ("vrefresh",        "refreshRate",      int),
-            ("io-flags",        "ioFlags",          int),
-            ("id",              "ioDisplayModeID",  int),
+            ("width",               "CGDisplayModeGetWidth",                int),
+            ("height",              "CGDisplayModeGetHeight",               int),
+            ("pixel-encoding",      "CGDisplayModeCopyPixelEncoding",       str),
+            ("vrefresh",            "CGDisplayModeGetRefreshRate",          int),
+            ("io-flags",            "CGDisplayModeGetIOFlags",              int),
+            ("id",                  "CGDisplayModeGetIODisplayModeID",      int),
+            ("usable-for-desktop",  "CGDisplayModeIsUsableForDesktopGUI",   bool),
             )
-    return _get_CG_conv(defs, mode)
+    return _call_CG_conv(defs, mode)
 
 def get_display_modes_info(modes):
-    return tuple(get_display_mode_info(mode) for mode in modes)
-
-def _get_CG_conv(obj, defs):
-    #utility for getting attributes on an object,
-    #then convert the return value using another function
-    #missing attributes are ignored, and None values are skipped
-    info = {}
-    for prop_name, attr_name, conv in defs:
-        v = getattr(obj, attr_name, None)
-        if v is not None:
-            info[prop_name] = conv(v)
-        else:
-            log("%s is not set or does not exist", attr_name)
-    return info
+    return dict((i,get_display_mode_info(mode)) for i,mode in enumerate(modes))
 
 
 def _call_CG_conv(defs, argument):
@@ -239,7 +227,11 @@ def _call_CG_conv(defs, argument):
     for prop_name, fn_name, conv in defs:
         fn = getattr(CG, fn_name, None)
         if fn:
-            v = fn(argument)
+            try:
+                v = fn(argument)
+            except Exception as e:
+                log("function %s failed: %s", fn_name, e)
+                continue
             if v is not None:
                 info[prop_name] = conv(v)
             else:
@@ -278,9 +270,14 @@ def get_display_info(did):
             ("colorspace",              "CGDisplayCopyColorSpace",          get_colorspace_info),
             ("opengl-acceleration",     "CGDisplayUsesOpenGLAcceleration",  bool),
             ("mode",                    "CGDisplayCopyDisplayMode",         get_display_mode_info),
-            ("modes",                   "CGDisplayCopyAllDisplayModes",     get_display_modes_info),
             )
-    return _call_CG_conv(defs, did)
+    info = _call_CG_conv(defs, did)
+    try:
+        modes = CG.CGDisplayCopyAllDisplayModes(did, None)
+        info["modes"] = get_display_modes_info(modes)
+    except:
+        log("failed to query display modes: %s", e)
+    return info
     
 def get_displays_info():
     from Quartz import CoreGraphics as CG  #@UnresolvedImport
