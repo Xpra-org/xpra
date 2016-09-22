@@ -1,0 +1,11 @@
+--- Makefile.orig	2016-09-22 14:35:52.000000000 -0700
++++ Makefile	2016-09-22 14:44:40.000000000 -0700
+@@ -20,7 +20,7 @@
+ #  Initial work done by Joseph Coffland and Julian Devlin.
+ #  Numerous further improvements by Baron Roberts.
+ CXX=g++
+-PREFIX=/usr
++PREFIX=$(JHBUILD_PREFIX)
+ 
+ SUFFIX=
+ CXXFLAGS=-Wall
