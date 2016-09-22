@@ -126,6 +126,28 @@ def get_window_frame_size(x, y, w, h):
                 "frame"     : (0, 0, 22, 0),
                }
 
+
+def get_vrefresh():
+    vrefresh = []
+    try:
+        from Quartz import CoreGraphics as CG   #@UnresolvedImport
+        err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+        log("get_vrefresh() %i active displays: %s (err=%i)", no, active_displays, err)
+        if err==0 and no>0:
+            for adid in active_displays:
+                mode = CG.CGDisplayCopyDisplayMode(adid)
+                v = int(CG.CGDisplayModeGetRefreshRate(mode))
+                log("get_vrefresh() refresh-rate(%#x)=%i", adid, v)
+                if v>0:
+                    vrefresh.append(v)
+    except Exception:
+        log("failed to query vrefresh for active displays: %s", exc_info=True)
+    log("get_vrefresh() found %s", vrefresh)
+    if len(vrefresh)>0:
+        return min(vrefresh)
+    return -1
+
+
 def get_display_icc_info():
     info = {}
     try:
