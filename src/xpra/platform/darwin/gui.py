@@ -275,7 +275,7 @@ def get_display_info(did):
     try:
         modes = CG.CGDisplayCopyAllDisplayModes(did, None)
         info["modes"] = get_display_modes_info(modes)
-    except:
+    except Exception as e:
         log("failed to query display modes: %s", e)
     return info
     
