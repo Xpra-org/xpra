@@ -151,7 +151,6 @@ def get_workareas():
         log(" frame=%s", screen.frame())
         log(" visibleFrame=%s", screen.visibleFrame())
         workareas.append(_recttotuple(screen.visibleFrame()))
-        pass
     log("get_workareas()=%s", workareas)
     return workareas
 
