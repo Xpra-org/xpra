@@ -87,6 +87,11 @@ try:
 except:
     Carbon_ctypes = None
 
+def _sizetotuple(s):
+    return int(s.width), int(s.height)
+def _recttotuple(r):
+    return tuple(int(v) for v in (r.origin.x, r.origin.y, r.size.width, r.size.height))
+
 def get_double_click_time():
     try:
         #what are ticks? just an Apple retarded way of measuring elapsed time.
@@ -126,6 +131,29 @@ def get_window_frame_size(x, y, w, h):
                 "frame"     : (0, 0, 22, 0),
                }
 
+def get_workarea():
+    w = get_workareas()
+    if w and len(w)==1:
+        return w[0]
+    return None
+
+#per monitor workareas (assuming a single screen)
+def get_workareas():
+    try:
+        from AppKit import NSScreen     #@UnresolvedImport
+    except ImportError as e:
+        log("cannot get workarea info without AppKit: %s", e)
+        return []
+    workareas = []
+    screens = NSScreen.screens()
+    for screen in screens:
+        log("get_workareas() testing screen %s", screen)
+        log(" frame=%s", screen.frame())
+        log(" visibleFrame=%s", screen.visibleFrame())
+        workareas.append(_recttotuple(screen.visibleFrame()))
+        pass
+    log("get_workareas()=%s", workareas)
+    return workareas
 
 def get_vrefresh():
     vrefresh = []
@@ -239,14 +267,10 @@ def _call_CG_conv(defs, argument):
     return info
 
 def get_display_info(did):
-    def sizetotuple(s):
-        return int(s.width), int(s.height)
-    def recttotuple(r):
-        return tuple(int(v) for v in (r.origin.x, r.origin.y, r.size.width, r.size.height))
     defs = (
             ("height",                  "CGDisplayPixelsHigh",              int),
             ("width",                   "CGDisplayPixelsWide",              int),
-            ("bounds",                  "CGDisplayBounds",                  recttotuple),
+            ("bounds",                  "CGDisplayBounds",                  _recttotuple),
             ("active",                  "CGDisplayIsActive",                bool),
             ("asleep",                  "CGDisplayIsAsleep",                bool),
             ("online",                  "CGDisplayIsOnline",                bool),
@@ -263,7 +287,7 @@ def get_display_info(did):
             ("model",                   "CGDisplayModelNumber",             int),
             ("serial",                  "CGDisplaySerialNumber",            int),
             ("service-port",            "CGDisplayIOServicePort",           int),
-            ("size",                    "CGDisplayScreenSize",              sizetotuple),
+            ("size",                    "CGDisplayScreenSize",              _sizetotuple),
             ("rotation",                "CGDisplayRotation",                int),
             ("colorspace",              "CGDisplayCopyColorSpace",          get_colorspace_info),
             ("opengl-acceleration",     "CGDisplayUsesOpenGLAcceleration",  bool),
