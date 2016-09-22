@@ -152,8 +152,10 @@ class GTKServerBase(ServerBase):
                     screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
                     workarea = workarea.intersect(display_workarea)
         #sanity checks:
+        screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
         if workarea.width==0 or workarea.height==0:
-            screenlog.warn("failed to calculate a common workarea - using the full display area")
+            screenlog.warn("Warning: failed to calculate a common workarea")
+            screenlog.warn(" using the full display area: %ix%i", maxw, maxh)
             workarea = gtk.gdk.Rectangle(0, 0, maxw, maxh)
         self.set_workarea(workarea)
 
