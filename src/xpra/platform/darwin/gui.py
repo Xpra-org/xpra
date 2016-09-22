@@ -126,51 +126,27 @@ def get_window_frame_size(x, y, w, h):
                 "frame"     : (0, 0, 22, 0),
                }
 
-
-def get_icc_info():
-    try:
-        from AppKit import NSScreen     #@UnresolvedImport
-    except ImportError as e:
-        log("cannot get icc info without AppKit: %s", e)
-        return {}
-    ms = NSScreen.mainScreen()
-    info = do_get_screen_icc_info(ms)
-    screens = NSScreen.screens()
-    for i, screen in enumerate(screens):
-        si = do_get_screen_icc_info(screen)
-        if si:
-            info[i] = si
-    return info
-
-def do_get_screen_icc_info(nsscreen):
+def get_display_icc_info():
     info = {}
     try:
-        from AppKit import NSUnknownColorSpaceModel, NSGrayColorSpaceModel, NSRGBColorSpaceModel, NSCMYKColorSpaceModel, NSLABColorSpaceModel, NSDeviceNColorSpaceModel, NSIndexedColorSpaceModel, NSPatternColorSpaceModel    #@UnresolvedImport
-        COLORSPACE_STR = {
-                          NSUnknownColorSpaceModel  : "unknown",
-                          NSGrayColorSpaceModel     : "gray",
-                          NSRGBColorSpaceModel      : "RGB",
-                          NSCMYKColorSpaceModel     : "CMYK",
-                          NSLABColorSpaceModel      : "LAB",
-                          NSDeviceNColorSpaceModel  : "DeviceN",
-                          NSIndexedColorSpaceModel  : "Indexed",
-                          NSPatternColorSpaceModel  : "Pattern",
-                          }
-        try:
-            mscs = nsscreen.colorSpace()
-        except AttributeError as e:
-            #OSX 10.5.x and earlier don't have this attribute
-            return info
-        log("%s.colorSpace=%s", nsscreen, mscs)
-        info.update({
-                     "colorspace"   : COLORSPACE_STR.get(mscs.colorSpaceModel(), "unknown"),
-                     "data"         : str(mscs.ICCProfileData() or ""),
-                     "name"         : str(mscs.localizedName()),
-                     "components"   : mscs.numberOfColorComponents(),
-                     })
+        from Quartz import CoreGraphics as CG   #@UnresolvedImport
+        err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+        if err==0 and no>0:
+            for i,adid in enumerate(active_displays):
+                info[i] = get_colorspace_info(CG.CGDisplayCopyColorSpace(adid))
     except Exception as e:
-        log.warn("Warning: cannot query ICC profiles:")
-        log.warn(" %s", e)
+        log("failed to query colorspace for active displays: %s", e)
+    return info
+
+def get_icc_info():
+    #maybe we shouldn't return anything if there's more than one display?
+    info = {}
+    try:
+        from Quartz import CoreGraphics as CG   #@UnresolvedImport
+        did = CG.CGMainDisplayID()
+        info = get_colorspace_info(CG.CGDisplayCopyColorSpace(did))
+    except Exception as e:
+        log("failed to query colorspace for main display: %s", e)
     return info
 
 
@@ -273,12 +249,13 @@ def get_display_info(did):
             )
     info = _call_CG_conv(defs, did)
     try:
+        from Quartz import CoreGraphics as CG   #@UnresolvedImport
         modes = CG.CGDisplayCopyAllDisplayModes(did, None)
         info["modes"] = get_display_modes_info(modes)
     except Exception as e:
         log("failed to query display modes: %s", e)
     return info
-    
+
 def get_displays_info():
     from Quartz import CoreGraphics as CG  #@UnresolvedImport
     did = CG.CGMainDisplayID()

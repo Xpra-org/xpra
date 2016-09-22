@@ -78,6 +78,10 @@ def get_icon_size():
 def get_antialias_info():
     return {}
 
+def get_display_icc_info():
+    #per display info
+    return {}
+
 def get_icc_info():
     from xpra.log import Logger
     log = Logger("platform")
@@ -228,6 +232,7 @@ def get_info_base():
                                                },
             "antialias"                     : get_antialias_info(),
             "icc"                           : get_icc_info(),
+            "display-icc"                   : get_display_icc_info(),
             "window_frame"                  : get_window_frame_sizes(),
             }
 
@@ -250,7 +255,7 @@ platform_import(globals(), "gui", False,
                 "get_native_notifier_classes",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
-                "get_antialias_info", "get_icc_info", "get_xdpi", "get_ydpi",
+                "get_antialias_info", "get_icc_info", "get_display_icc_info", "get_xdpi", "get_ydpi",
                 "get_icon_size",
                 "get_mouse_config",
                 "get_double_click_time", "get_double_click_distance",

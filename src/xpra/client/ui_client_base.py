@@ -45,7 +45,7 @@ from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE)
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
-from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_double_click_time, show_desktop, get_cursor_size,
+from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_display_icc_info, get_double_click_time, show_desktop, get_cursor_size,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
                                get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
 from xpra.platform.paths import get_tray_icon_filename
@@ -1467,9 +1467,12 @@ class UIXpraClient(XpraClientBase):
             "rgb24zlib"                 : True,
             "max-soft-expired"          : MAX_SOFT_EXPIRED,
             })
-        capabilities["antialias"] = get_antialias_info()
-        capabilities["icc"] = get_icc_info()
-        capabilities["cursor.size"] = int(2*get_cursor_size()/(self.xscale+self.yscale))
+        capabilities.update({
+                             "antialias"    : get_antialias_info(),
+                             "icc"          : get_icc_info(),
+                             "display-icc"  : get_display_icc_info(),
+                             "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
+                             })
         #generic rgb compression flags:
         for x in compression.ALL_COMPRESSORS:
             capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
@@ -2939,7 +2942,7 @@ class UIXpraClient(XpraClientBase):
         if len(packet)>10:
             options = packet[10]
         options = typedict(options)
-        paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        paintlog.warn("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success, message=""):
             if success>0:
