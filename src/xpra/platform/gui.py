@@ -90,8 +90,8 @@ def get_icc_info():
     if ENV_ICC_DATA:
         import binascii
         return {
-                "name"  : "environment-override",
-                "data"  : binascii.unhexlify(ENV_ICC_DATA),
+                "source"    : "environment-override",
+                "data"      : binascii.unhexlify(ENV_ICC_DATA),
                 }
     info = {}
     try:

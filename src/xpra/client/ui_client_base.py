@@ -1469,8 +1469,8 @@ class UIXpraClient(XpraClientBase):
             })
         capabilities.update({
                              "antialias"    : get_antialias_info(),
-                             "icc"          : get_icc_info(),
-                             "display-icc"  : get_display_icc_info(),
+                             "icc"          : self.get_icc_info(),
+                             "display-icc"  : self.get_display_icc_info(),
                              "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
                              })
         #generic rgb compression flags:
@@ -1573,6 +1573,12 @@ class UIXpraClient(XpraClientBase):
 
     def has_transparency(self):
         return False
+
+    def get_icc_info(self):
+        return get_icc_info()
+
+    def get_display_icc_info(self):
+        return get_display_icc_info()
 
 
     def server_ok(self):
