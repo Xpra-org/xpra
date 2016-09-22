@@ -174,6 +174,117 @@ def do_get_screen_icc_info(nsscreen):
     return info
 
 
+def get_colorspace_info(cs):
+    from Quartz import CoreGraphics as CG  #@UnresolvedImport
+    MODELS = {
+              CG.kCGColorSpaceModelUnknown     : "unknown",
+              CG.kCGColorSpaceModelMonochrome  : "monochrome",
+              CG.kCGColorSpaceModelRGB         : "RGB",
+              CG.kCGColorSpaceModelCMYK        : "CMYK",
+              CG.kCGColorSpaceModelLab         : "lab",
+              CG.kCGColorSpaceModelDeviceN     : "DeviceN",
+              CG.kCGColorSpaceModelIndexed     : "indexed",
+              CG.kCGColorSpaceModelPattern     : "pattern",
+              }
+    #base = CGColorSpaceGetBaseColorSpace(cs)
+    #color_table = CGColorSpaceGetColorTable(cs)
+    def tomodelstr(v):
+        return MODELS.get(v, "unknown")
+    defs = (
+            ("name",                "CGColorSpaceCopyName",                 str),
+            ("profile",             "CGColorSpaceCopyICCProfile",           str),
+            ("icc-data",            "CGColorSpaceCopyICCData",              str),
+            ("components",          "CGColorSpaceGetNumberOfComponents",    int),
+            ("supports-output",     "CGColorSpaceSupportsOutput",           bool),
+            ("model",               "CGColorSpaceGetModel",                 tomodelstr),
+            ("wide-gamut",          "CGColorSpaceIsWideGamutRGB",           bool),
+            ("color-table-count",   "CGColorSpaceGetColorTableCount",       int),
+            )
+    return call_CG_conv(defs, cs)
+
+def get_display_mode_info(mode):
+    return {
+            "width"         : mode.width,
+            "height"        : mode.height,
+            }
+
+def call_CG_conv(defs, argument):
+    #utility for calling functions on CG with an argument,
+    #then convert the return value using another function
+    #missing functions are ignored, and None values are skipped
+    from Quartz import CoreGraphics as CG   #@UnresolvedImport
+    info = {}
+    for prop_name, fn_name, conv in defs:
+        fn = getattr(CG, fn_name, None)
+        if fn:
+            v = fn(argument)
+            if v is not None:
+                info[prop_name] = conv(v)
+            else:
+                log("%s is not set", prop_name)
+        else:
+            log("function %s does not exist", fn_name)
+    return info
+
+def get_display_info(did):
+    def sizetotuple(s):
+        return int(s.width), int(s.height)
+    def recttotuple(r):
+        return tuple(int(v) for v in (r.origin.x, r.origin.y, r.size.width, r.size.height))
+    defs = (
+            ("height",                  "CGDisplayPixelsHigh",              int),
+            ("width",                   "CGDisplayPixelsWide",              int),
+            ("bounds",                  "CGDisplayBounds",                  recttotuple),
+            ("active",                  "CGDisplayIsActive",                bool),
+            ("asleep",                  "CGDisplayIsAsleep",                bool),
+            ("online",                  "CGDisplayIsOnline",                bool),
+            ("main",                    "CGDisplayIsMain",                  bool),
+            ("builtin",                 "CGDisplayIsBuiltin",               bool),
+            ("in-mirror-set",           "CGDisplayIsInMirrorSet",           bool),
+            ("always-in-mirror-set",    "CGDisplayIsAlwaysInMirrorSet",     bool),
+            ("in-hw-mirror-set",        "CGDisplayIsInHWMirrorSet",         bool),
+            ("mirrors-display",         "CGDisplayMirrorsDisplay",          int),
+            ("stereo",                  "CGDisplayIsStereo",                bool),
+            ("primary",                 "CGDisplayPrimaryDisplay",          bool),
+            ("unit-number",             "CGDisplayUnitNumber",              int),
+            ("vendor",                  "CGDisplayVendorNumber",            int),
+            ("model",                   "CGDisplayModelNumber",             int),
+            ("serial",                  "CGDisplaySerialNumber",            int),
+            ("service-port",            "CGDisplayIOServicePort",           int),
+            ("size",                    "CGDisplayScreenSize",              sizetotuple),
+            ("rotation",                "CGDisplayRotation",                int),
+            ("colorspace",              "CGDisplayCopyColorSpace",          get_colorspace_info),
+            ("opengl-acceleration",     "CGDisplayUsesOpenGLAcceleration",  bool),
+            ("mode",                    "CGDisplayCopyDisplayMode",         get_display_mode_info),
+            )
+    return call_CG_conv(defs, did)
+    
+def get_displays_info():
+    from Quartz import CoreGraphics as CG  #@UnresolvedImport
+    did = CG.CGMainDisplayID()
+    info = {
+            "main" : get_display_info(did),
+            }
+    err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+    if err==0 and no>0:
+        for i,adid in enumerate(active_displays):
+            info.setdefault("active", {})[i] = get_display_info(adid)
+    err, online_displays, no = CG.CGGetOnlineDisplayList(99, None, None)
+    if err==0 and no>0:
+        for i,odid in enumerate(online_displays):
+            info.setdefault("online", {})[i] = get_display_info(odid)
+    return info
+
+def get_info():
+    from xpra.platform.gui import get_info_base
+    i = get_info_base()
+    try:
+        i["displays"] = get_displays_info()
+    except:
+        log.error("Error: OSX get_display_info failed", exc_info=True)
+    return i
+
+
 #global menu handling:
 window_menus = {}
 
