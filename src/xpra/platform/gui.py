@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 
 _init_done = False
@@ -85,6 +86,13 @@ def get_display_icc_info():
 def get_icc_info():
     from xpra.log import Logger
     log = Logger("platform")
+    ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
+    if ENV_ICC_DATA:
+        import binascii
+        return {
+                "name"  : "environment-override",
+                "data"  : binascii.unhexlify(ENV_ICC_DATA),
+                }
     info = {}
     try:
         from PIL import ImageCms
@@ -279,7 +287,6 @@ def main():
                 x.enable_debug()
 
         #naughty, but how else can I hook this up?
-        import os
         if os.name=="posix":
             try:
                 from xpra.x11.bindings import posix_display_source      #@UnusedImport

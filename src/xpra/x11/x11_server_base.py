@@ -540,6 +540,36 @@ class X11ServerBase(GTKServerBase):
         return  root_w, root_h
 
 
+    def set_icc_profile(self):
+        ui_clients = [s for s in self._server_sources.values() if s.ui_client]
+        if len(ui_clients)!=1:
+            screenlog("%i UI clients, not setting ICC profile")
+            self.reset_icc_profile()
+            return
+        icc = ui_clients[0].icc
+        data = None
+        for x in ("data", "icc-data", "icc-profile"):
+            if x in icc:
+                data = icc.get(x)
+                break
+        if not data:
+            screenlog("no icc data found in %s", icc)
+            self.reset_icc_profile()
+            return
+        import binascii
+        screenlog("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], binascii.hexlify(data or ""), len(data or ""))
+        from xpra.x11.gtk_x11.prop import prop_set
+        #long byte data as CARDINAL and numbers as strings - wth?
+        prop_set(self.root_window, "_ICC_PROFILE", ["u32"], [ord(x) for x in data])
+        prop_set(self.root_window, "_ICC_PROFILE_IN_X_VERSION", "latin1", u"4")  #0.4 -> 0*100+4*1
+
+    def reset_icc_profile(self):
+        screenlog("reset_icc_profile()")
+        from xpra.x11.gtk_x11.prop import prop_del
+        prop_del(self.root_window, "_ICC_PROFILE")
+        prop_del(self.root_window, "_ICC_PROFILE_IN_X_VERSION")
+
+
     def do_cleanup(self, *args):
         GTKServerBase.do_cleanup(self)
         cleanup_fakeXinerama()

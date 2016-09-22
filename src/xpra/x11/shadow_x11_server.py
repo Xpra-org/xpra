@@ -118,6 +118,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
         X11ServerBase.last_client_exited(self)
 
 
+    def set_icc_profile(self):
+        pass
+
+    def reset_icc_profile(self):
+        pass
+
+
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))

@@ -305,6 +305,9 @@ class ServerSource(FileTransferHandler):
         self.av_sync_delay_total = 0
         self.av_sync_delta = AV_SYNC_DELTA
 
+        self.icc = None
+        self.display_icc = {}
+
         self.server_core_encodings = core_encodings
         self.server_encodings = encodings
         self.default_encoding = default_encoding
@@ -731,6 +734,9 @@ class ServerSource(FileTransferHandler):
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.set_screen_sizes(c.listget("screen_sizes"))
         self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
+
+        self.icc = c.dictget("icc")
+        self.display_icc = c.dictget("display-icc")
 
         #sound stuff:
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")

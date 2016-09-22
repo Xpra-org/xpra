@@ -975,6 +975,7 @@ class ServerBase(ServerCore):
             except:
                 pass
             self._focus(None, 0, [])
+            self.reset_icc_profile()
 
 
     def get_all_protocols(self):
@@ -1206,6 +1207,7 @@ class ServerBase(ServerCore):
         w = min(w, maxw)
         h = min(h, maxh)
         self.set_desktop_geometry_attributes(w, h)
+        self.set_icc_profile()
         return w, h
 
     def set_screen_geometry_attributes(self, w, h):
@@ -1216,6 +1218,14 @@ class ServerBase(ServerCore):
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)
+
+
+    def set_icc_profile(self):
+        pass
+
+    def reset_icc_profile(self):
+        pass
+
 
     def parse_hello_ui_clipboard(self, ss, c):
         #take the clipboard if no-one else has it yet:
