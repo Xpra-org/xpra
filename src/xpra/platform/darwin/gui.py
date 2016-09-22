@@ -200,15 +200,37 @@ def get_colorspace_info(cs):
             ("wide-gamut",          "CGColorSpaceIsWideGamutRGB",           bool),
             ("color-table-count",   "CGColorSpaceGetColorTableCount",       int),
             )
-    return call_CG_conv(defs, cs)
+    return _call_CG_conv(defs, cs)
 
 def get_display_mode_info(mode):
-    return {
-            "width"         : mode.width,
-            "height"        : mode.height,
-            }
+    defs = (
+            ("width",           "width",            int),
+            ("height",          "height",           int),
+            ("pixel-encoding",  "pixelEncoding",    str),
+            ("vrefresh",        "refreshRate",      int),
+            ("io-flags",        "ioFlags",          int),
+            ("id",              "ioDisplayModeID",  int),
+            )
+    return _get_CG_conv(defs, mode)
 
-def call_CG_conv(defs, argument):
+def get_display_modes_info(modes):
+    return tuple(get_display_mode_info(mode) for mode in modes)
+
+def _get_CG_conv(obj, defs):
+    #utility for getting attributes on an object,
+    #then convert the return value using another function
+    #missing attributes are ignored, and None values are skipped
+    info = {}
+    for prop_name, attr_name, conv in defs:
+        v = getattr(obj, attr_name, None)
+        if v is not None:
+            info[prop_name] = conv(v)
+        else:
+            log("%s is not set or does not exist", attr_name)
+    return info
+
+
+def _call_CG_conv(defs, argument):
     #utility for calling functions on CG with an argument,
     #then convert the return value using another function
     #missing functions are ignored, and None values are skipped
@@ -256,8 +278,9 @@ def get_display_info(did):
             ("colorspace",              "CGDisplayCopyColorSpace",          get_colorspace_info),
             ("opengl-acceleration",     "CGDisplayUsesOpenGLAcceleration",  bool),
             ("mode",                    "CGDisplayCopyDisplayMode",         get_display_mode_info),
+            ("modes",                   "CGDisplayCopyAllDisplayModes",     get_display_modes_info),
             )
-    return call_CG_conv(defs, did)
+    return _call_CG_conv(defs, did)
     
 def get_displays_info():
     from Quartz import CoreGraphics as CG  #@UnresolvedImport
