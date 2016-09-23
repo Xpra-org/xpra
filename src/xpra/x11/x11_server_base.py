@@ -628,7 +628,9 @@ class X11ServerBase(GTKServerBase):
         if event.type!="bell":
             log.error("do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
-        #FIXME: match wid with event xid
+        #bell events on our windows will come through the bell signal,
+        #this method is a catch-all for events on windows we don't manage,
+        #so we use wid=0 for that:
         wid = 0
         for ss in self._server_sources.values():
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
