@@ -595,7 +595,6 @@ cdef class Decoder:
         if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
             raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
-        #FIXME: we could lose track of framewrappers if an error occurs before the end:
         framewrapper = AVFrameWrapper()
         framewrapper.set_context(self.codec_ctx, self.av_frame)
         img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes, thread_safe=False)
