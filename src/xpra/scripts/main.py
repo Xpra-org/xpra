@@ -357,7 +357,6 @@ def do_parse_cmdline(cmdline, defaults):
                 "log_dir"   : defaults.log_dir,
                 })
 
-    #FIXME: file tranfer command line options:
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
     group.add_option("--file-transfer", action="store", metavar="yes|no",
@@ -378,6 +377,7 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({"lpadmin"   : defaults.lpadmin,
                 "lpinfo"    : defaults.lpinfo})
+    #options without command line equivallents:
     hidden_options["pdf_printer"] = defaults.pdf_printer
     hidden_options["postscript_printer"] = defaults.postscript_printer
     hidden_options["file_size_limit"] = defaults.file_size_limit
