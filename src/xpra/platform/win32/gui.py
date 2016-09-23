@@ -390,7 +390,6 @@ def add_window_hooks(window):
                 keys = wParam & 0xFFFF
                 y = lParam>>16
                 x = lParam & 0xFFFF
-                #FIXME: we should reset those values when the window loses focus..
                 cval = getattr(window, "_win32_%swheel" % orientation, 0)
                 nval = cval + distance
                 units = nval // WHEEL_DELTA
