@@ -547,11 +547,16 @@ class WindowSource(object):
         pixel_data, stride, w, h = idata
         PIL = get_codec("PIL")
         max_w, max_h = self.window_icon_max_size
-        #use png if supported and:
-        # * if we must downscale it (bigger than what the client is willing to deal with)
-        # * if not using a 4-stride (FIXME: should handle this with PIL too)
-        use_png = PIL and ("png" in self.window_icon_encodings)
-        use_png = use_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or stride!=4*w or "premult_argb32" not in self.window_icon_encodings)
+        if stride!=w*4:
+            #re-stride it (I don't think this ever fires?)
+            pixel_data = b"".join(pixel_data[stride*y:stride*y+w*4] for y in range(h))
+            stride = w*4
+        #use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
+        #or if we must downscale it (bigger than what the client is willing to deal with),
+        #or if we want to save window icons
+        has_png = PIL and ("png" in self.window_icon_encodings)
+        has_premult = "premult_argb32" in self.window_icon_encodings
+        use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or not has_premult)
         iconlog("compress_and_send_window_icon: %sx%s, sending as png=%s", w, h, use_png)
         if use_png:
             img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
