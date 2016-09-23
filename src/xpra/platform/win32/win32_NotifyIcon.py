@@ -46,6 +46,7 @@ class win32NotifyIcon(object):
     move_callbacks = {}
     exit_callbacks = {}
     command_callbacks = {}
+    reset_functions = {}
     live_hwnds = set()
 
     def __init__(self, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
@@ -83,6 +84,7 @@ class win32NotifyIcon(object):
         hicon = self.LoadImage(iconPathName)
         self.do_set_icon(hicon)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
+        win32NotifyIcon.reset_functions[self.hwnd] = (self.set_icon, iconPathName)
 
     def do_set_icon(self, hicon):
         log("do_set_icon(%s)", hicon)
@@ -152,6 +154,7 @@ class win32NotifyIcon(object):
                     hicon = FALLBACK_ICON
             self.do_set_icon(hicon)
             win32gui.UpdateWindow(self.hwnd)
+            win32NotifyIcon.reset_functions[self.hwnd] = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
         except:
             log.error("error setting icon", exc_info=True)
         finally:
@@ -179,13 +182,19 @@ class win32NotifyIcon(object):
         return v
 
     @classmethod
-    def restart(cls):
-        #FIXME: keep current icon and repaint it on restart
-        pass
+    def OnTrayRestart(cls, hwnd=0, msg=0, wparam=0, lparam=0):
+        rfn = cls.reset_functions.get(hwnd)
+        log("OnTrayRestart%s reset function: %s", (cls, hwnd, msg, wparam, lparam), rfn)
+        if rfn:
+            try:
+                rfn[0](*rfn[1:])
+            except Exception as e:
+                log.error("Error: cannot reset tray icon")
+                log.error(" %s", e)
 
     @classmethod
     def remove_callbacks(cls, hwnd):
-        for x in (cls.command_callbacks, cls.exit_callbacks, cls.click_callbacks):
+        for x in (cls.command_callbacks, cls.exit_callbacks, cls.click_callbacks, cls.reset_functions):
             if hwnd in x:
                 del x[hwnd]
 
@@ -237,7 +246,7 @@ class win32NotifyIcon(object):
 
 WM_TRAY_EVENT = win32con.WM_USER+20        #a message id we choose
 message_map = {
-    win32gui.RegisterWindowMessage("TaskbarCreated") : win32NotifyIcon.restart,
+    win32gui.RegisterWindowMessage("TaskbarCreated") : win32NotifyIcon.OnTrayRestart,
     win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
     win32con.WM_COMMAND                 : win32NotifyIcon.OnCommand,
     WM_TRAY_EVENT                       : win32NotifyIcon.OnTaskbarNotify,
