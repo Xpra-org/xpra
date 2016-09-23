@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -42,12 +42,9 @@ FALLBACK_ICON = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
 class win32NotifyIcon(object):
 
-    click_callbacks = {}
-    move_callbacks = {}
-    exit_callbacks = {}
-    command_callbacks = {}
-    reset_functions = {}
-    live_hwnds = set()
+    #we register the windows event handler on the class,
+    #this allows us to know which hwnd refers to which instance:
+    instances = {}
 
     def __init__(self, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
         self.title = title[:127]
@@ -55,22 +52,36 @@ class win32NotifyIcon(object):
         # Register the Window class.
         self.hinst = NIwc.hInstance
         # Create the Window.
+        self.current_icon = self.LoadImage(iconPathName)
+        self.create_tray_window()
+        #register callbacks:
+        win32NotifyIcon.instances[self.hwnd] = self
+        self.move_callback = move_callbacks
+        self.click_callback = click_callback
+        self.exit_callback = exit_callback
+        self.command_callback = command_callback
+        self.reset_function = None
+    
+    def create_tray_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         self.hwnd = win32gui.CreateWindow(NIclassAtom, self.title+" StatusIcon Window", style, \
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, self.hinst, None)
         win32gui.UpdateWindow(self.hwnd)
-        self.current_icon = self.LoadImage(iconPathName)
         win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
-        #register callbacks:
-        win32NotifyIcon.live_hwnds.add(self.hwnd)
-        win32NotifyIcon.move_callbacks[self.hwnd] = move_callbacks
-        win32NotifyIcon.click_callbacks[self.hwnd] = click_callback
-        win32NotifyIcon.exit_callbacks[self.hwnd] = exit_callback
-        win32NotifyIcon.command_callbacks[self.hwnd] = command_callback
 
     def make_nid(self, flags):
         return (self.hwnd, 0, flags, WM_TRAY_EVENT, self.current_icon, self.title)
+
+    def delete_tray_window(self):
+        try:
+            nid = (self.hwnd, 0)
+            log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
+            win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+        except Exception as e:
+            log.error("Error: failed to delete tray window")
+            log.error(" %s", e)
+
 
     def set_blinking(self, on):
         #FIXME: implement blinking on win32 using a timer
@@ -80,11 +91,12 @@ class win32NotifyIcon(object):
         self.title = name[:127]
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
 
+
     def set_icon(self, iconPathName):
         hicon = self.LoadImage(iconPathName)
         self.do_set_icon(hicon)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
-        win32NotifyIcon.reset_functions[self.hwnd] = (self.set_icon, iconPathName)
+        self.reset_function = (self.set_icon, iconPathName)
 
     def do_set_icon(self, hicon):
         log("do_set_icon(%s)", hicon)
@@ -93,7 +105,7 @@ class win32NotifyIcon(object):
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        #TODO: use native code somehow to avoid saving to file
+        #this is convoluted but it works..
         log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
         from PIL import Image, ImageOps           #@UnresolvedImport
         if has_alpha:
@@ -154,14 +166,13 @@ class win32NotifyIcon(object):
                     hicon = FALLBACK_ICON
             self.do_set_icon(hicon)
             win32gui.UpdateWindow(self.hwnd)
-            win32NotifyIcon.reset_functions[self.hwnd] = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
+            self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
         except:
             log.error("error setting icon", exc_info=True)
         finally:
             #DeleteDC(dc)
             if hicon!=FALLBACK_ICON:
                 win32gui.DestroyIcon(hicon)
-
 
     def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
         v = fallback
@@ -181,67 +192,75 @@ class win32NotifyIcon(object):
         log("LoadImage(%s)=%s", iconPathName, v)
         return v
 
-    @classmethod
-    def OnTrayRestart(cls, hwnd=0, msg=0, wparam=0, lparam=0):
-        rfn = cls.reset_functions.get(hwnd)
-        log("OnTrayRestart%s reset function: %s", (cls, hwnd, msg, wparam, lparam), rfn)
-        if rfn:
-            try:
-                rfn[0](*rfn[1:])
-            except Exception as e:
-                log.error("Error: cannot reset tray icon")
-                log.error(" %s", e)
 
     @classmethod
-    def remove_callbacks(cls, hwnd):
-        for x in (cls.command_callbacks, cls.exit_callbacks, cls.click_callbacks, cls.reset_functions):
-            if hwnd in x:
-                del x[hwnd]
+    def OnTrayRestart(cls, hwnd=0, msg=0, wparam=0, lparam=0):
+        instance = win32NotifyIcon.instances.get(hwnd)
+        if not instance:
+            log.warn("Warning: tray restart message received for unknown tray id %#x", hwnd)
+            return
+        try:
+            #re-create the tray window:
+            instance.delete_tray_window()
+            instance.create_tray_window()
+            #now try to repaint the tray:
+            rfn = instance.reset_function
+            log("OnTrayRestart%s reset function: %s", (cls, hwnd, msg, wparam, lparam), rfn)
+            if rfn:
+                rfn[0](*rfn[1:])
+        except Exception as e:
+            log.error("Error: cannot reset tray icon")
+            log.error(" %s", e)
 
     @classmethod
     def OnCommand(cls, hwnd, msg, wparam, lparam):
-        cc = cls.command_callbacks.get(hwnd)
-        log("OnCommand(%s,%s,%s,%s) command callback=%s", hwnd, msg, wparam, lparam, cc)
-        if cc:
+        instance = win32NotifyIcon.instances.get(hwnd)
+        cb = getattr(instance, "command_callback", None)
+        log("OnCommand%s instance=%s, callback=%s", (hwnd, msg, wparam, lparam), instance, cb)
+        if cb:
             cid = win32api.LOWORD(wparam)
-            cc(hwnd, cid)
+            cb(hwnd, cid)
 
     @classmethod
     def OnDestroy(cls, hwnd, msg, wparam, lparam):
-        ec = cls.exit_callbacks.get(hwnd)
-        log("OnDestroy(%s,%s,%s,%s) exit_callback=%s", hwnd, msg, wparam, lparam, ec)
-        if hwnd not in cls.live_hwnds:
-            return
-        cls.live_hwnds.remove(hwnd)
-        cls.remove_callbacks(hwnd)
-        try:
-            nid = (hwnd, 0)
-            log("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
-            win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-            log("OnDestroy(..) calling exit_callback=%s", ec)
-            if ec:
-                ec()
-        except:
-            log.error("OnDestroy(..)", exc_info=True)
+        instance = win32NotifyIcon.instances.get(hwnd)
+        log("OnDestroy%s instance=%s", (hwnd, msg, wparam, lparam), instance)
+        if instance:
+            instance.destroy()
 
     @classmethod
     def OnTaskbarNotify(cls, hwnd, msg, wparam, lparam):
+        instance = win32NotifyIcon.instances.get(hwnd)
         if lparam==win32con.WM_MOUSEMOVE:
-            cc = cls.move_callbacks.get(hwnd)
+            cb = getattr(instance, "move_callback")
             bm = [(hwnd, msg, wparam, lparam)]
         else:
-            cc = cls.click_callbacks.get(hwnd)
+            cb = getattr(instance, "click_callback")
             bm = BUTTON_MAP.get(lparam)
-        log("OnTaskbarNotify(%s,%s,%s,%s) button(s) lookup: %s, callback=%s", hwnd, msg, wparam, lparam, bm, cc)
-        if bm is not None and cc:
+        log("OnTaskbarNotify%s button(s) lookup: %s, instance=%s, callback=%s", (hwnd, msg, wparam, lparam), bm, instance, cb)
+        if bm is not None and cb:
             for button_event in bm:
-                cc(*button_event)
+                cb(*button_event)
         return 1
 
     def close(self):
         log("win32NotifyIcon.close()")
-        win32NotifyIcon.remove_callbacks(self.hwnd)
-        win32NotifyIcon.OnDestroy(self.hwnd, None, None, None)
+        self.destroy()
+
+    def destroy(self):
+        cb = self.exit_callback
+        log("destroy() exit callback=%s", cb)
+        self.delete_tray_window()
+        try:
+            if cb:
+                cb()
+        except:
+            log.error("destroy()", exc_info=True)
+        try:
+            del win32NotifyIcon.instances[self.hwnd]
+        except:
+            pass
+
 
 
 WM_TRAY_EVENT = win32con.WM_USER+20        #a message id we choose
