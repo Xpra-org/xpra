@@ -106,7 +106,7 @@ class SystemTray(gobject.GObject):
             X11Window.XSetSelectionOwner(0, SELECTION)
             log("SystemTray.cleanup() reset %s selection owner to %#x", SELECTION, X11Window.XGetSelectionOwner(SELECTION))
         else:
-            log.warn("SystemTray.cleanup() we were no longer the selection owner")
+            log.warn("Warning: we were no longer the tray selection owner")
         remove_event_receiver(self.tray_window, self)
         def undock(window):
             log("undocking %s", window)
@@ -146,17 +146,22 @@ class SystemTray(gobject.GObject):
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
         log("setup tray: tray window %#x", xtray)
         display.request_selection_notification(SELECTION)
-        setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
-        log("setup tray: set selection owner returned %s, owner=%#x", setsel, X11Window.XGetSelectionOwner(SELECTION))
-        event_mask = StructureNotifyMask
-        log("setup tray: sending client message")
-        X11Window.sendClientMessage(root.xid, root.xid, False, event_mask, "MANAGER",
-                          CurrentTime, SELECTION, xtray)
-        owner = X11Window.XGetSelectionOwner(SELECTION)
-        #FIXME: cleanup if we fail!
-        assert owner==xtray, "we failed to get ownership of the tray selection"
-        add_event_receiver(self.tray_window, self)
-        log("setup tray: done")
+        try:
+            with xsync:
+                setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
+                log("setup tray: set selection owner returned %s, owner=%#x", setsel, X11Window.XGetSelectionOwner(SELECTION))
+                event_mask = StructureNotifyMask
+                log("setup tray: sending client message")
+                X11Window.sendClientMessage(root.xid, root.xid, False, event_mask, "MANAGER",
+                                  CurrentTime, SELECTION, xtray)
+                owner = X11Window.XGetSelectionOwner(SELECTION)
+                assert owner==xtray, "we failed to get ownership of the tray selection"
+                add_event_receiver(self.tray_window, self)
+                log("setup tray: done")
+        except Exception:
+            log("setup_tray failure", exc_info=True)
+            self.cleanup()
+            raise
 
     def do_xpra_client_message_event(self, event):
         if event.message_type=="_NET_SYSTEM_TRAY_OPCODE" and event.window==self.tray_window and event.format==32:
