@@ -1276,15 +1276,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
-        if starting:
+        if starting or upgrading:
             if not X11Window.displayHasXComposite():
                 log.error("Xpra 'start' subcommand runs as a compositing manager")
                 log.error(" it cannot use a display which lacks the XComposite extension!")
                 return 1
-            #check for an existing window manager:
-            from xpra.x11.gtk2.wm import wm_check
-            if not wm_check(display, opts.wm_name, upgrading):
-                return 1
+            if starting:
+                #check for an existing window manager:
+                from xpra.x11.gtk2.wm import wm_check
+                if not wm_check(display, opts.wm_name, upgrading):
+                    return 1
             log("XShape=%s", X11Window.displayHasXShape())
             from xpra.x11.server import XpraServer
             app = XpraServer(clobber)
