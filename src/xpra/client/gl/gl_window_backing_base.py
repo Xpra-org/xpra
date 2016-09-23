@@ -364,7 +364,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
             err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
             if err:
-                #FIXME: maybe we should do something else here?
                 log.error("OpenGL shader %s failed:", name)
                 log.error(" %s", err)
                 raise Exception("OpenGL shader %s setup failure: %s" % (name, err))
