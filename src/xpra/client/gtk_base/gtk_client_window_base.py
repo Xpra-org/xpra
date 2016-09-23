@@ -725,7 +725,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
                     return
                 #tell server about new value:
-                #TODO: don't bother if unchanged
                 self._current_frame_extents = v
                 statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
                 self._window_state["frame"] = self._client.crect(*v)
