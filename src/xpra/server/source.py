@@ -1404,8 +1404,12 @@ class ServerSource(FileTransferHandler):
                          })
         if self.mmap_client_token:
             capabilities["mmap_token"] = self.mmap_client_token
+        #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
+        #so clients can figure out which modifiers map to which keys:
         if self.keyboard_config:
-            capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
+            mck = getattr(self.keyboard_config, "modifier_client_keycodes", None)
+            if mck:
+                capabilities["modifier_keycodes"] = mck
         self.send("hello", capabilities)
 
 
