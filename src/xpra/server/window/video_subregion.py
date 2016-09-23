@@ -466,7 +466,9 @@ class VideoSubregion(object):
             region = [r for r,s in scores.items() if s==highscore][0]
             return setnewregion(region, "high score: %s", highscore)
 
-        #FIXME: re-add some scrolling detection
+        #TODO:
+        # * re-add some scrolling detection: the region may have moved
+        # * re-try with a higher "from_time" and a higher score threshold 
 
         #try harder still: try combining all the regions we haven't discarded
         #(flash player with firefox and youtube does stupid unnecessary repaints)
