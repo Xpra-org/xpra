@@ -2114,8 +2114,8 @@ cdef class Encoder:
         #calculate grids/blocks:
         #a block is a group of threads: (blockw * blockh) threads
         #a grid is a group of blocks: (gridw * gridh) blocks
-        cdef uint32_t blockw = 16
-        cdef uint32_t blockh = 16
+        cdef uint32_t blockw = 32
+        cdef uint32_t blockh = 32
         cdef uint32_t gridw = MAX(1, w//(blockw*dx))
         cdef uint32_t gridh = MAX(1, h//(blockh*dy))
         #if dx or dy made us round down, add one:
@@ -2527,6 +2527,7 @@ def init_module():
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
+    cdef Encoder test_encoder
     cdef uint32_t max_version
     #cdef NVENCSTATUS r = NvEncodeAPIGetMaxSupportedVersion(&max_version)
     #raiseNVENC(r, "querying max version")

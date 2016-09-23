@@ -168,7 +168,10 @@ def init_all_devices():
                     #so that the log output is bunched up together
                     log.info("CUDA %s / PyCUDA %s, found %s device%s:",
                              ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus, engs(ngpus))
-                DEVICES.append(i)
+                if SMmajor>=2:
+                    DEVICES.append(i)
+                else:
+                    log.info("  this device is too old!")
                 log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free/total, SMmajor, SMminor)
             finally:
                 context.pop()
