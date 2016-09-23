@@ -333,15 +333,19 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
     except:
         inode = -1
     def cleanup_socket():
+        from xpra.log import Logger
+        log = Logger("network")
         try:
-            cur_inode = os.stat(sockpath)
+            cur_inode = os.stat(sockpath).st_ino
         except:
+            log.info("socket '%s' already deleted", sockpath)
             return
+        delpath = sockpath
+        log("cleanup_socket '%s', old inode=%s, new inode=%s", sockpath, inode, cur_inode)
         if cur_inode==inode:
-            from xpra.log import Logger
-            Logger("network").info("removing socket %s", sockpath)
+            log.info("removing socket %s", delpath)
             try:
-                os.unlink(sockpath)
+                os.unlink(delpath)
             except:
                 pass
     return listener, cleanup_socket
