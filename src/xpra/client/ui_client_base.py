@@ -194,6 +194,8 @@ class UIXpraClient(XpraClientBase):
         self.webcam_device = None
         self.webcam_device_no = -1
         self.webcam_last_ack = -1
+        self.webcam_ack_check_timer = None
+        self.webcam_send_timer = None
         self.webcam_lock = RLock()
         self.server_supports_webcam = False
         self.server_virtual_video_devices = 0
@@ -2155,17 +2157,31 @@ class UIXpraClient(XpraClientBase):
             self.send("webcam-start", device, w, h)
             self.idle_add(self.emit, "webcam-changed")
             webcamlog("webcam started")
-            def check_acks():
-                webcamlog("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
-                if self.webcam_last_ack<0:
-                    webcamlog.warn("Warning: no acknowledgements received from the server, stopping webcam")
-                    self.stop_sending_webcam()
-            self.timeout_add(10*1000, check_acks)
             if self.send_webcam_frame():
-                self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
-            #FIXME: add timer to stop if we don't get an ack
+                delay = 1000//WEBCAM_TARGET_FPS
+                webcamlog("webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
+                self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
         except Exception as e:
             webcamlog.warn("webcam test capture failed: %s", e)
+
+    def cancel_webcam_send_timer(self):
+        wst = self.webcam_send_timer
+        if wst:
+            self.webcam_send_timer = None
+            self.source_remove(wst)
+
+    def cancel_webcam_check_ack_timer(self):
+        wact = self.webcam_ack_check_timer
+        if wact:
+            self.webcam_ack_check_timer = None
+            self.source_remove(wact)
+
+    def webcam_check_acks(self, ack=0):
+        self.webcam_ack_check_timer = None
+        webcamlog("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
+        if self.webcam_last_ack<ack:
+            webcamlog.warn("Warning: no acknowledgements received from the server for frame %i, stopping webcam", ack)
+            self.stop_sending_webcam()
 
     def stop_sending_webcam(self):
         webcamlog("stop_sending_webcam()")
@@ -2173,6 +2189,8 @@ class UIXpraClient(XpraClientBase):
             self.do_stop_sending_webcam()
 
     def do_stop_sending_webcam(self):
+        self.cancel_webcam_send_timer()
+        self.cancel_webcam_check_ack_timer()
         wd = self.webcam_device
         webcamlog("do_stop_sending_webcam() device=%s", wd)
         if not wd:
@@ -2202,7 +2220,10 @@ class UIXpraClient(XpraClientBase):
                 frame_no = packet[2]
                 self.webcam_last_ack = frame_no
                 if self.may_send_webcam_frame():
-                    self.timeout_add(1000//WEBCAM_TARGET_FPS, self.may_send_webcam_frame)
+                    self.cancel_webcam_send_timer()
+                    delay = 1000//WEBCAM_TARGET_FPS
+                    webcamlog("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
+                    self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
 
     def may_send_webcam_frame(self):
         if self.webcam_device_no<0 or not self.webcam_device:
@@ -2214,15 +2235,16 @@ class UIXpraClient(XpraClientBase):
             l = [x for _,x in list(self.server_ping_latency)]
             latency = int(1000 * sum(l) / len(l))
         #how many frames should be in flight
-        n = latency // (1000//WEBCAM_TARGET_FPS)       #20fps -> 50ms target between frames
-        webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i", latency, not_acked, n)
+        n = max(1, latency // (1000//WEBCAM_TARGET_FPS))    #20fps -> 50ms target between frames
         if not_acked>0 and not_acked>n:
+            webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - will wait for next ack", latency, not_acked, n)
             return False
-        if not self.send_webcam_frame():
-            return False
-        return not_acked==0 or not_acked<n
+        webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - trying to send now", latency, not_acked, n)
+        return self.send_webcam_frame()
 
     def send_webcam_frame(self):
+        if not self.webcam_lock.acquire(False):
+            return False
         webcamlog("send_webcam_frame() webcam_device=%s", self.webcam_device)
         try:
             assert self.webcam_device_no>=0, "device number is not set"
@@ -2240,27 +2262,37 @@ class UIXpraClient(XpraClientBase):
             preferred_order = ["jpeg", "png", "png/L", "png/P", "webp"]
             formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
+            start = time.time()
             import cv2
             ret, frame = self.webcam_device.read()
             assert ret and frame.ndim==3
             h, w, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            end = time.time()
+            webcamlog("webcam frame capture took %ims", (end-start)*1000)
+            start = time.time()
             from PIL import Image
             image = Image.fromarray(rgb)
             buf = BytesIOClass()
             image.save(buf, format=encoding)
             data = buf.getvalue()
             buf.close()
+            end = time.time()
+            webcamlog("webcam frame compression to %s took %ims", encoding, (end-start)*1000)
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
             self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, compression.Compressed(encoding, data))
+            self.cancel_webcam_check_ack_timer()
+            self.webcam_ack_check_timer = self.timeout_add(10*1000, self.webcam_check_acks)
             return True
         except Exception as e:
             webcamlog.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
             webcamlog.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()
             return False
+        finally:
+            self.webcam_lock.release()
 
 
     def get_matching_codecs(self, local_codecs, server_codecs):
