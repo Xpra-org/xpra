@@ -24,6 +24,34 @@ def init(opts):
     socket_dirs = opts.socket_dirs
 
 
+def getuid(v):
+    try:
+        return int(v)
+    except:
+        log("uid '%s' is not an int", v)
+    if os.name=="posix":
+        try:
+            import pwd
+            return pwd.getpwnam(v).pw_uid
+        except Exception as e:
+            log.error("Error: cannot find uid of '%s': %s", v, e)
+    return os.getuid()
+
+def getgid(v):
+    try:
+        return int(v)
+    except:
+        log("gid '%s' is not an int", v)
+    if os.name=="posix":
+        try:
+            import grp          #@UnresolvedImport
+            return grp.getgrnam(v).gr_gid
+        except Exception as e:
+            log.error("Error: cannot find gid of '%s': %s", v, e)
+            return
+    return os.getgid()
+
+
 def parse_auth_line(line):
     ldata = line.split(b"|")
     log("found %s fields", len(ldata))
@@ -31,15 +59,8 @@ def parse_auth_line(line):
     #parse fields:
     username = ldata[0]
     password = ldata[1]
-    def getsysid(s, get_default_value):
-        if s:
-            try:
-                return int(s)
-            except:
-                pass
-        return get_default_value()
-    uid = getsysid(ldata[2], os.getuid)
-    gid = getsysid(ldata[3], os.getgid)
+    uid = getuid(ldata[2])
+    gid = getgid(ldata[3])
     displays = ldata[4].split(b",")
     env_options = {}
     session_options = {}

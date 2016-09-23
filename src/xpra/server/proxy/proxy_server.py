@@ -173,6 +173,10 @@ class ProxyServer(ServerCore):
             return
         authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
+        if uid==0 or gid==0:
+            log.error("Error: proxy instances should not run as root")
+            log.error(" use a different uid and gid (ie: nobody)")
+            return
         #log("unused options: %s, %s", env_options, session_options)
         opts = make_defaults_struct()
         display = None
@@ -264,7 +268,6 @@ class ProxyServer(ServerCore):
                     log.error("Error: some network IO threads have failed to terminate")
                     return
                 client_conn.set_active(True)
-                assert uid!=0 and gid!=0
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.csc_modules,
                                                client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
