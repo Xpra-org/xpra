@@ -284,7 +284,6 @@ class ProxyServer(ServerCore):
                 client_conn.close()
                 server_conn.close()
                 message_queue.put("socket-handover-complete")
-            #FIXME: remove processes that have terminated
         start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
 
 
