@@ -241,7 +241,7 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl", "csc_libyuv", "csc_opencv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc7", "enc_xvid"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc7", "enc_xvid", "enc_ffmpeg"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
