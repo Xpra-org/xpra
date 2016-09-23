@@ -32,7 +32,7 @@ def getuid(v):
     if os.name=="posix":
         try:
             import pwd
-            return pwd.getpwnam(v).pw_uid
+            return pwd.getpwnam(v or "nobody").pw_uid
         except Exception as e:
             log.error("Error: cannot find uid of '%s': %s", v, e)
     return os.getuid()
@@ -45,7 +45,7 @@ def getgid(v):
     if os.name=="posix":
         try:
             import grp          #@UnresolvedImport
-            return grp.getgrnam(v).gr_gid
+            return grp.getgrnam(v or "nobody").gr_gid
         except Exception as e:
             log.error("Error: cannot find gid of '%s': %s", v, e)
             return
