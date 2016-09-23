@@ -318,8 +318,10 @@ class PrintClient(SendCommandConnectClient):
         #print command arguments:
         #filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         self.command = command[1:]
-        #FIXME: load as needed...
-        from xpra.os_util import load_binary_file
+        #TODO: load as needed...
+        def sizeerr(size):
+            self.warn_and_quit(EXIT_FILE_TOO_BIG, "the file is too large: %iMB (the file size limit is %iMB)" % (size//1024//1024, self.file_size_limit))
+            return
         if self.filename=="-":
             #replace with filename proposed
             self.filename = command[2]
@@ -327,10 +329,17 @@ class PrintClient(SendCommandConnectClient):
             self.file_data = sys.stdin.read()
             log("read %i bytes from stdin", len(self.file_data))
         else:
+            import os.path
+            size = os.path.getsize(self.filename)
+            if size>self.file_size_limit*1024*1024:
+                sizeerr(size)
+                return
+            from xpra.os_util import load_binary_file
             self.file_data = load_binary_file(self.filename)
             log("read %i bytes from %s", len(self.file_data), self.filename)
-        if len(self.file_data)>=self.file_size_limit*1024*1024:
-            self.warn_and_quit(EXIT_FILE_TOO_BIG, "the file is too large: %iMB (the file size limit is %iMB)" % (len(self.file_data)//1024//1024, self.file_size_limit))
+        size = len(self.file_data)
+        if size>self.file_size_limit*1024*1024:
+            sizeerr(size)
             return
         assert self.file_data, "no data found for '%s'" % self.filename
 
