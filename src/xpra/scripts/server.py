@@ -328,13 +328,22 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
         listener.bind(sockpath)
     finally:
         os.umask(orig_umask)
+    try:
+        inode = os.fstat(listener.fileno()).st_ino
+    except:
+        inode = -1
     def cleanup_socket():
-        from xpra.log import Logger
-        Logger("network").info("removing socket %s", sockpath)
         try:
-            os.unlink(sockpath)
+            cur_inode = os.stat(sockpath)
         except:
-            pass
+            return
+        if cur_inode==inode:
+            from xpra.log import Logger
+            Logger("network").info("removing socket %s", sockpath)
+            try:
+                os.unlink(sockpath)
+            except:
+                pass
     return listener, cleanup_socket
 
 def create_tcp_socket(host, iport):
@@ -1380,15 +1389,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         from xpra.server.server_core import ServerCore
         if e==ServerCore.EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")
-        elif local_sockets:
-            # don't delete the new sockets (probably not ours!)
-            # FIXME: keep track of which server (new or old) owns which socket,
-            # so we can delete the ones that have not been replaced
-            for socket, cleanup_socket in local_sockets:
-                if cleanup_socket in _cleanups:
-                    log("removing cleanup: %s for %s", cleanup_socket, socket)
-                    _cleanups.remove(cleanup_socket)
-            log.info("upgrading: not cleaning up Xvfb or socket")
+        else:
+            log.info("upgrading: not cleaning up Xvfb")
         log("cleanups=%s", _cleanups)
         e = 0
     return e
