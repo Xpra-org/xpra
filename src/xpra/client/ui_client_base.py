@@ -2980,7 +2980,7 @@ class UIXpraClient(XpraClientBase):
         if len(packet)>10:
             options = packet[10]
         options = typedict(options)
-        paintlog.warn("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success, message=""):
             if success>0:
