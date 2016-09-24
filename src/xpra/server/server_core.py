@@ -537,9 +537,7 @@ class ServerCore(object):
         conn = SocketConnection(sock, sockname, address, target, socktype)
 
         #from here on, we run in a thread, so we can poll (peek does)
-        def handle_new_connection():
-            self.handle_new_connection(conn, sock, socktype)
-        start_thread(handle_new_connection, "new-%s-connection" % socktype, True)
+        start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True, args=(conn, sock, socktype))
         return True
 
     def handle_new_connection(self, conn, sock, socktype):
@@ -656,15 +654,11 @@ class ServerCore(object):
                 else:
                     netlog.info("New %s connection received from %s", http_proto, frominfo)
                     tname = "websockify-proxy"
-                def run_websockify():
-                    self.start_websockify(conn, conn.remote)
-                start_thread(run_websockify, "%s-for-%s" % (tname, frominfo), daemon=True)
+                start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, conn.remote))
                 return False, conn, None
         if self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
-            def run_proxy():
-                self.start_tcp_proxy(conn, conn.remote)
-            t = start_thread(run_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True)
+            t = start_thread(self.start_tcp_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True, args=(conn, conn.remote))
             netlog("may_wrap_socket handling via tcp proxy thread %s", t)
             return False, conn, None
         return True, conn, v
