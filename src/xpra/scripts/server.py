@@ -329,7 +329,7 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
     finally:
         os.umask(orig_umask)
     try:
-        inode = os.fstat(listener.fileno()).st_ino
+        inode = os.stat(sockpath).st_ino
     except:
         inode = -1
     def cleanup_socket():
@@ -341,7 +341,7 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
             log.info("socket '%s' already deleted", sockpath)
             return
         delpath = sockpath
-        log("cleanup_socket '%s', old inode=%s, new inode=%s", sockpath, inode, cur_inode)
+        log("cleanup_socket '%s', original inode=%s, new inode=%s", sockpath, inode, cur_inode)
         if cur_inode==inode:
             log.info("removing socket %s", delpath)
             try:
