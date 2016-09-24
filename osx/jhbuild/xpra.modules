@@ -453,11 +453,11 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/6e/96/b8dab146e8be98061dae07e127f80cffa3061ab0e8da0d3d42f3308c6e91/cryptography-1.5.tar.gz"
-		hash="sha1:be8293f1617b640e947ce9495531a1c18729a40e"
-		version="1.5"/>
+		module="/packages/21/e1/37fc14f9d77924e84ba0dcb88eb8352db914583af229287c6c965d66ba0d/cryptography-1.5.1.tar.gz"
+		hash="sha1:18e1b1ab0f6701e979d879cdf9d744ba6db8a66b"
+		version="1.5.1"/>
 	<dependencies>
-                <dep package="python"/>
+		<dep package="python"/>
 		<dep package="openssl"/>
 		<dep package="cffi"/>
 		<dep package="six"/>
