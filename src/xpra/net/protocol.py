@@ -20,6 +20,7 @@ cryptolog = Logger("network", "crypto")
 
 from xpra.os_util import Queue, strtobytes
 from xpra.util import repr_ellipsized, csv, envint, envbool
+from xpra.make_thread import make_thread, start_thread
 from xpra.net import ConnectionClosedException
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -140,8 +141,7 @@ class Protocol(object):
         self.cipher_out_block_size = 0
         self.cipher_out_padding = INITIAL_PADDING
         self._write_lock = Lock()
-        from xpra.make_thread import make_thread
-        self._write_thread = make_thread(self._write_thread_loop, "write", daemon=True)
+        self._write_thread = None
         self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
         self._read_parser_thread = None         #started when needed
         self._write_format_thread = None        #started when needed
@@ -262,7 +262,6 @@ class Protocol(object):
     def start(self):
         def do_start():
             if not self._closed:
-                self._write_thread.start()
                 self._read_thread.start()
         self.idle_add(do_start)
 
@@ -282,7 +281,6 @@ class Protocol(object):
         self._source_has_more.set()
         #start the format thread:
         if not self._write_format_thread and not self._closed:
-            from xpra.make_thread import make_thread
             self._write_format_thread = make_thread(self._write_format_thread_loop, "format", daemon=True)
             self._write_format_thread.start()
         INJECT_FAULT(self)
@@ -357,11 +355,18 @@ class Protocol(object):
                 items.append((header, scb, None))
                 items.append((strtobytes(data), None, ecb))
             counter += 1
+        if self._write_thread is None:
+            self.start_write_thread()
         self._write_queue.put(items)
         self.output_packetcount += 1
 
+    def start_write_thread(self):
+        self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
+
     def raw_write(self, contents, start_cb=None, end_cb=None):
         """ Warning: this bypasses the compression and packet encoder! """
+        if self._write_thread is None:
+            self.start_write_thread()
         self._write_queue.put(((contents, start_cb, end_cb), ))
 
     def verify_packet(self, packet):
@@ -663,7 +668,6 @@ class Protocol(object):
     def read_queue_put(self, data):
         #start the parse thread if needed:
         if not self._read_parser_thread and not self._closed:
-            from xpra.make_thread import make_thread
             self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse", daemon=True)
             self._read_parser_thread.start()
         self._read_queue.put(data)
