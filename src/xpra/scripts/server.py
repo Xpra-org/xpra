@@ -1149,6 +1149,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     xvfb_pid = None
     xauth_data = None
     if start_vfb:
+        assert not proxying
         try:
             xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, display_name, cwd)
         except OSError as e:
@@ -1159,6 +1160,24 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
+
+    close_display = None
+    if not proxying:
+        def close_display():
+            # Close our display(s) first, so the server dying won't kill us.
+            # (if gtk has been loaded)
+            gtk_mod = sys.modules.get("gtk")
+            if gtk_mod:
+                for d in gtk_mod.gdk.display_manager_get().list_displays():
+                    d.close()
+            if xvfb_pid:
+                log.info("killing xvfb with pid %s", xvfb_pid)
+                try:
+                    os.kill(xvfb_pid, signal.SIGTERM)
+                except OSError as e:
+                    log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
+                    log.info(" %s", e)
+        _cleanups.append(close_display)
 
     # if pam is present, try to create a new session:
     if os.name=="posix":
@@ -1241,7 +1260,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
         if clobber:
             #get the saved pids and env
-            xvfb_pid = get_xvfb_pid()
             dbus_pid = get_dbus_pid()
             dbus_env = get_dbus_env()
         else:
@@ -1330,24 +1348,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         for mode, listen_on in mdns_recs:
             mdns_publish(display_name, mode, listen_on, mdns_info)
 
-    #we got this far so the sockets have initialized and
-    #the server should be able to manage the display
-    #from now on, if we exit without upgrading we will also kill the Xvfb
-    def close_display():
-        # Close our display(s) first, so the server dying won't kill us.
-        import gtk  #@Reimport
-        for d in gtk.gdk.display_manager_get().list_displays():
-            d.close()
-        if xvfb_pid:
-            log.info("killing xvfb with pid %s", xvfb_pid)
-            try:
-                os.kill(xvfb_pid, signal.SIGTERM)
-            except OSError as e:
-                log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
-                log.info(" %s", e)
-    if not proxying:
-        _cleanups.append(close_display)
-
     try:
         app._ssl_wrap_socket = wrap_socket_fn
         app.original_desktop_display = desktop_display
@@ -1383,6 +1383,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     app.init_when_ready(_when_ready)
 
     try:
+        #from here on, we own the vfb, even if we inherited one:
+        if (starting or starting_desktop or upgrading) and clobber:
+            #and it will be killed if exit cleanly:
+            xvfb_pid = get_xvfb_pid()
+
         log("running %s", app.run)
         e = app.run()
         log("%s()=%s", app.run, e)
@@ -1394,10 +1399,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         e = -128
     if e>0:
         # Upgrading/exiting, so leave X and dbus servers running
-        if close_display in _cleanups:
+        if close_display:
             _cleanups.remove(close_display)
-            if kill_dbus:
-                _cleanups.remove(kill_dbus)
+        if kill_dbus:
+            _cleanups.remove(kill_dbus)
         from xpra.server.server_core import ServerCore
         if e==ServerCore.EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")
