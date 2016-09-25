@@ -688,7 +688,7 @@ class ServerCore(object):
             WIN32 = sys.platform.startswith("win")
             if WIN32:
                 #the HTTP server fails on win32 if we don't use blocking sockets!
-                sock.setblocking(True)
+                sock.settimeout(10.0)
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
