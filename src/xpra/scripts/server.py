@@ -25,6 +25,10 @@ from xpra.util import envint, envbool
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
+WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
+
+
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
 # or when the user requests it with the env var:
 USE_PROCESS_POLLING = envbool("XPRA_USE_PROCESS_POLLING") or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
@@ -179,7 +183,7 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
     script.append("cd %s\n" % sh_quotemeta(starting_dir))
-    if sys.platform.startswith("darwin"):
+    if OSX:
         #OSX contortions:
         #The executable is the python interpreter,
         #which is execed by a shell script, which we have to find..
@@ -278,7 +282,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return
-    PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or sys.platform.startswith("win") or sys.platform.startswith("darwin")
+    PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
     try:
         if PREFER_PYBONJOUR:
             from xpra.net.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
@@ -500,7 +504,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     log.warn("Warning: skipping duplicate bind path %s", sockpath)
                     continue
                 try:
-                    if sys.platform.startswith("win"):
+                    if WIN32:
                         from xpra.platform.win32.namedpipes.listener import NamedPipeListener
                         npl = NamedPipeListener(sockpath)
                         log.info("created named pipe: %s", sockpath)
@@ -966,7 +970,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #get the display name:
     if shadowing and len(extra_args)==0:
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+        if WIN32 or OSX:
             #just a virtual name for the only display available:
             display_name = ":0"
         else:
