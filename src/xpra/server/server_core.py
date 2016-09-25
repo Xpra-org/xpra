@@ -689,22 +689,28 @@ class ServerCore(object):
             # * win32 servers don't seem to honour our request to use blocking sockets anyway
             #   (this should not be needed on any other platform,
             #   maybe this should go in websockify somewhere instead)
-            # * the proxy server needs this to steal the connection?
+            # * the proxy server needs this to steal the connection
             sock.setblocking(False)
-            sock.settimeout(1.0)
-            if sys.platform.startswith("win"):
-                from xpra.net.bytestreams import untilConcludes
-                saved_recv = sock.recv
-                saved_send = sock.send
-                def recv(*args):
-                    return untilConcludes(conn.is_active, saved_recv, *args)
-                def send(*args):
-                    return untilConcludes(conn.is_active, saved_send, *args)
-                sock.recv = recv
-                sock.send = send
+            sock.settimeout(0.1)
+            from xpra.net.bytestreams import untilConcludes
+            saved_recv = sock.recv
+            saved_send = sock.send
+            def recv(*args):
+                return untilConcludes(conn.is_active, saved_recv, *args)
+            def send(*args):
+                return untilConcludes(conn.is_active, saved_send, *args)
+            sock.recv = recv
+            sock.send = send
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
+                #now we can have a "is_active" that belongs to the real connection object:
+                def recv(*args):
+                    return untilConcludes(wsc.is_active, saved_recv, *args)
+                def send(*args):
+                    return untilConcludes(wsc.is_active, saved_send, *args)
+                sock.recv = recv
+                sock.send = send
                 self.make_protocol("tcp", wsc, frominfo)
             WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir)
             return
