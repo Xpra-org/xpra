@@ -1251,7 +1251,8 @@ class WindowVideoSource(WindowSource):
         assert width>0 and height>0, "invalid dimensions: %sx%s" % (width, height)
         start = time.time()
         if len(scores)==0:
-            log.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
+            if not self.is_cancelled():
+                log.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
             return False
         videolog("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
@@ -1277,11 +1278,12 @@ class WindowVideoSource(WindowSource):
                 self._video_encoder = None
                 ve.clean()
         end = time.time()
-        videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
-        videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
-        videolog.error(" tried the following option%s", engs(scores))
-        for option in scores:
-            videolog.error(" %s", option)
+        if not self.is_cancelled():
+            videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
+            videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
+            videolog.error(" tried the following option%s", engs(scores))
+            for option in scores:
+                videolog.error(" %s", option)
         return False
 
     def setup_pipeline_option(self, width, height, src_format,
@@ -1447,7 +1449,8 @@ class WindowVideoSource(WindowSource):
         #find one that is not video:
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
         if not fallback_encodings:
-            log.error("no non-video fallback encodings are available!")
+            if not self.is_cancelled():
+                log.error("no non-video fallback encodings are available!")
             return None
         fallback_encoding = fallback_encodings[0]
         encode_fn = self._encoders[fallback_encoding]
@@ -1518,6 +1521,8 @@ class WindowVideoSource(WindowSource):
         if vh is None:
             return None         #shortcut when closing down
         if not self.check_pipeline(encoding, w, h, src_format):
+            if self.is_cancelled():
+                return None
             #just for diagnostics:
             supported_csc_modes = self.full_csc_modes.get(encoding, [])
             encoder_specs = vh.get_encoder_specs(encoding)
@@ -1556,7 +1561,8 @@ class WindowVideoSource(WindowSource):
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
         ret = ve.compress_image(csc_image, quality, speed, options)
         if ret is None:
-            videolog.error("video_encode: ouch, %s compression failed", encoding)
+            if not self.is_cancelled():
+                videolog.error("video_encode: ouch, %s compression failed", encoding)
             return None
         data, client_options = ret
         end = time.time()
