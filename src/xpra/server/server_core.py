@@ -685,12 +685,11 @@ class ServerCore(object):
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
-            WIN32 = sys.platform.startswith("win")
             sock.settimeout(10.0)
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
-                if WIN32:
+                if sys.platform.startswith("win"):
                     # win32 servers don't seem to honour our request to use blocking sockets,
                     # and we need this workaround for non-blocking sockets
                     # (it should not be needed on any other platform,
