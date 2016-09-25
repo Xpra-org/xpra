@@ -799,6 +799,8 @@ class ServerSource(FileTransferHandler):
         #encodings:
         self.encodings = c.strlistget("encodings")
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        if self.send_windows and not self.core_encodings:
+            raise Exception("client failed to specify any supported encodings")
         self.window_icon_encodings = ["premult_argb32"]
         if "png" in self.core_encodings:
             self.window_icon_encodings.append("png")
