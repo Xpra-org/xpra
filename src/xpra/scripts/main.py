@@ -257,8 +257,8 @@ def do_parse_cmdline(cmdline, defaults):
                           usage="\n" + "".join(command_options))
     hidden_options = {
                       "display"         : defaults.display,
-                      "wm_name"         : defaults.wm_name,
-                      "download_path"   : defaults.download_path,
+                      "wm-name"         : defaults.wm_name,
+                      "download-path"   : defaults.download_path,
                       }
     def replace_option(oldoption, newoption):
         do_replace_option(cmdline, oldoption, newoption)
@@ -378,11 +378,11 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({"lpadmin"   : defaults.lpadmin,
                 "lpinfo"    : defaults.lpinfo})
     #options without command line equivallents:
-    hidden_options["pdf_printer"] = defaults.pdf_printer
-    hidden_options["postscript_printer"] = defaults.postscript_printer
-    hidden_options["file_size_limit"] = defaults.file_size_limit
-    hidden_options["open_command"] = defaults.open_command
-    hidden_options["open_files"] = defaults.open_files
+    hidden_options["pdf-printer"] = defaults.pdf_printer
+    hidden_options["postscript-printer"] = defaults.postscript_printer
+    hidden_options["file-size-limit"] = defaults.file_size_limit
+    hidden_options["open-command"] = defaults.open_command
+    hidden_options["open-files"] = defaults.open_files
 
     legacy_bool_parse("exit-with-client")
     if (supports_server or supports_shadow):
@@ -597,6 +597,7 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
     else:
         ignore({"video-encoders" : []})
+    hidden_options["proxy-video-encoders"] =  defaults.proxy_video_encoders
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
                       help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help'. Default: %default.")
@@ -693,7 +694,7 @@ def do_parse_cmdline(cmdline, defaults):
     # adds "--no-tray" for platforms that support it
     add_client_options(cmdline, group, defaults)
     hidden_options["tray"] =  True
-    hidden_options["delay_tray"] =  False
+    hidden_options["delay-tray"] =  False
     group.add_option("--tray-icon", action="store",
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
@@ -874,7 +875,7 @@ def do_parse_cmdline(cmdline, defaults):
     #some options are not shown to the user:
     for k,v in hidden_options.items():
         if not hasattr(options, k):
-            setattr(options, k, v)
+            setattr(options, k.replace("-", "_"), v)
 
     #deal with boolean fields by converting them to a boolean value:
     for k,t in OPTION_TYPES.items():

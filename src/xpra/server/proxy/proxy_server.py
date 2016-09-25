@@ -64,7 +64,7 @@ class ProxyServer(ServerCore):
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
-        self.video_encoders = opts.video_encoders
+        self.video_encoders = opts.proxy_video_encoders
         self.csc_modules = opts.csc_modules
         self._start_sessions = opts.proxy_start_sessions
         ServerCore.init(self, opts)

@@ -549,7 +549,7 @@ def repr_ellipsized(obj, limit=100):
             s = binascii.hexlify(obj)
         if len(s)<=limit or limit<=6:
             return s
-        return s[:limit//2-2]+" .. "+s[-limit//2-2:]
+        return s[:limit//2-2]+" .. "+s[2-limit//2:]
     else:
         return repr(obj)
 
