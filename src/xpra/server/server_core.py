@@ -690,8 +690,6 @@ class ServerCore(object):
             #   (this should not be needed on any other platform,
             #   maybe this should go in websockify somewhere instead)
             # * the proxy server needs this to steal the connection
-            sock.setblocking(False)
-            sock.settimeout(0.1)
             from xpra.net.bytestreams import untilConcludes
             saved_recv = sock.recv
             saved_send = sock.send
