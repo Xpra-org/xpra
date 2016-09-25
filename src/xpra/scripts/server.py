@@ -465,6 +465,10 @@ def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wai
 
 
 def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions):
+    if not bind:
+        return []
+    if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
+        raise InitException("at least one socket directory must be set to use unix domain sockets")
     dotxpra = DotXpra(socket_dir or socket_dirs[0])
     try:
         dotxpra.mksockdir()
