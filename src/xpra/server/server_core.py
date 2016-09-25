@@ -960,7 +960,7 @@ class ServerCore(object):
                         if proto.authenticator.requires_challenge():
                             auth_failed("invalid state, unexpected challenge response")
                             return False
-                        authlog.warn("Warning: authentication module %s does not require any credentials")
+                        authlog.warn("Warning: authentication module '%s' does not require any credentials", proto.authenticator)
                         authlog.warn(" but the client %s supplied them", proto)
                         salt, digest = get_salt(), "hmac"
                     else:
