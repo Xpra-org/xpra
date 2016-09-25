@@ -568,6 +568,8 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	this._make_hello_base();
 	// handle a challenge if we need to
 	if((this.authentication_key) && (!challenge_response)) {
+		// tell the server we expect a challenge (this is a partial hello)
+		this.capabilities["challenge"] = true;
 		console.log("sending partial hello");
 	} else {
 		console.log("sending hello");
