@@ -686,13 +686,14 @@ class ServerCore(object):
         try:
             sock = conn._socket
             WIN32 = sys.platform.startswith("win")
-            if WIN32:
+            OSX = sys.platform.startswith("darwin")
+            if WIN32 or OSX:
                 #the HTTP server fails on win32 if we don't use blocking sockets!
                 sock.settimeout(10.0)
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
-                if WIN32:
+                if WIN32 or OSX:
                     # win32 servers don't seem to honour our request to use blocking sockets
                     # (this workaround should not be needed on any other platform,
                     #  and maybe this should go in websockify somewhere instead)
