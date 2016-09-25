@@ -33,9 +33,14 @@
 
 		  <div class="form-group form-inline">
 		    <label class="sr-only" for="server">Server</label>
-		    <input type="text" class="form-control" id="server" placeholder="Server">
+		    <input type="text" class="form-control" id="server" placeholder="Server" maxlength="256">
 		    <label class="sr-only" for="port">Port</label>
-		    <input type="text" class="form-control" id="port" placeholder="Port">
+		    <input type="text" class="form-control" id="port" placeholder="Port" size="5" maxlength="5">
+		    <br />
+		    <label class="sr-only" for="username">username</label>
+		    <input type="text" class="form-control" id="username" placeholder="Username" size="16" maxlength="256">
+		    <label class="sr-only" for="password">password</label>
+		    <input type="text" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
 		  </div>
 
 		  <div class="form-group form-inline">
@@ -200,11 +205,17 @@ if (!window.location.getParameter ) {
 
 function doConnect() {
 	var server = document.getElementById("server").value;
+	var username = document.getElementById("username").value;
+	var password = document.getElementById("password").value;
 	var port = parseInt(document.getElementById("port").value);
 	var encoding = document.getElementById("encoding").value;
 	var keyboard_layout = document.getElementById("keyboard_layout").value;
 	// url to client
 	var url = "/index.html?server="+encodeURIComponent(server)+"&port="+port+"&encoding="+encodeURIComponent(encoding)+"&keyboard_layout="+encodeURIComponent(keyboard_layout)+"&submit=true";
+	if (username.length>0)
+		url += "&username="+encodeURIComponent(username);
+	if (password.length>0)
+		url += "&password="+encodeURIComponent(password);
 	// check options
 	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
 	if(normal_fullscreen) {
