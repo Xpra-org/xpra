@@ -685,24 +685,20 @@ class ServerCore(object):
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
-            # win32 servers don't seem to honour our request to use blocking sockets
-            # (this workaround should not be needed on any other platform,
-            #  and maybe this should go in websockify somewhere instead)
-            from xpra.net.bytestreams import untilConcludes
             WIN32 = sys.platform.startswith("win")
             if WIN32:
-                saved_recv = sock.recv
-                saved_send = sock.send
-                def recv(*args):
-                    return untilConcludes(conn.is_active, saved_recv, *args)
-                def send(*args):
-                    return untilConcludes(conn.is_active, saved_send, *args)
-                sock.recv = recv
-                sock.send = send
+                #the HTTP server fails on win32 if we don't use blocking sockets!
+                sock.setblocking(True)
             def new_websocket_client(wsh):
                 netlog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
                 if WIN32:
+                    # win32 servers don't seem to honour our request to use blocking sockets
+                    # (this workaround should not be needed on any other platform,
+                    #  and maybe this should go in websockify somewhere instead)
+                    from xpra.net.bytestreams import untilConcludes
+                    saved_recv = sock.recv
+                    saved_send = sock.send
                     #now we can have a "is_active" that belongs to the real connection object:
                     def recv(*args):
                         return untilConcludes(wsc.is_active, saved_recv, *args)
