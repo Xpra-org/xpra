@@ -177,6 +177,12 @@ class ProxyServer(ServerCore):
             log.error("Error: proxy instances should not run as root")
             log.error(" use a different uid and gid (ie: nobody)")
             return
+        #ensure we don't loop back to the proxy:
+        proxy_virtual_display = os.environ.get("DISPLAY")
+        if proxy_virtual_display in displays:
+            displays.remove(proxy_virtual_display)
+        #remove proxy instance virtual displays:
+        displays = [x for x in displays if not x.startswith(":proxy-")]
         #log("unused options: %s, %s", env_options, session_options)
         opts = make_defaults_struct()
         display = None
@@ -202,10 +208,6 @@ class ProxyServer(ServerCore):
                 return
         if display is None:
             display = c.strget("display")
-            proxy_virtual_display = os.environ.get("DISPLAY")
-            #ensure we don't loop back to the proxy:
-            if proxy_virtual_display in displays:
-                displays.remove(proxy_virtual_display)
             authlog("start_proxy: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
             if display==proxy_virtual_display:
                 disconnect(SESSION_NOT_FOUND, "invalid display")
