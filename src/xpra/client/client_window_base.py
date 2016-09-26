@@ -23,6 +23,7 @@ metalog = Logger("metadata")
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
+OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
@@ -620,12 +621,33 @@ class ClientWindowBase(ClientWidgetBase):
         return self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 
+    def get_mouse_event_wid(self, x, y):
+        #on OSX, the mouse events are reported against the wrong window by GTK,
+        #so we may have to patch this and use the currently focused window:
+        if sys.platform.startswith("darwin") and OSX_FOCUS_WORKAROUND:
+            focused = self._client._focused
+            w = self._client._id_to_window.get(focused)
+            focuslog("get_mouse_event_wid(%s, %s) focused=%s vs id=%i, window=%s", x, y, focused, self._id, w)
+            if focused and focused!=self._id and w:
+                gdkwin = w.get_window()
+                if gdkwin:
+                    rect = gdkwin.get_frame_extents()
+                    if x>=rect.x and x<=rect.x+rect.width and y>=rect.y and y<=rect.y+rect.height:
+                        focuslog("patched focused window %i, raising %s", focused, w)
+                        #we would prefer using this function,
+                        #but this raises the wrong window! (gdk is really messed up)
+                        #gdkwin.raise_()
+                        w.present()
+                        return focused
+        return self._id
+
     def do_motion_notify_event(self, event):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
-        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, self._id, self._client._focused, self._device_info(event), pointer, modifiers, buttons)
-        self._client.send_mouse_position(["pointer-position", self._id,
+        wid = self.get_mouse_event_wid(*pointer)
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
+        self._client.send_mouse_position(["pointer-position", wid,
                                           pointer, modifiers, buttons])
 
     def _device_info(self, event):
@@ -638,12 +660,13 @@ class ClientWindowBase(ClientWidgetBase):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
-        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s, device=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, self._id, self._client._focused, self._device_info(event), pointer, modifiers, buttons)
+        wid = self.get_mouse_event_wid(*pointer)
+        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
         def send_button(pressed):
-            self._client.send_button(self._id, button, pressed, pointer, modifiers, buttons)
+            self._client.send_button(wid, button, pressed, pointer, modifiers, buttons)
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
-            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", self._id)
+            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
             #(needed for some dialogs on win32):
             send_button(True)
         self.button_state[button] = depressed
