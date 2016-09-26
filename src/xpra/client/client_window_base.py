@@ -23,7 +23,6 @@ metalog = Logger("metadata")
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
-OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
@@ -622,23 +621,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def get_mouse_event_wid(self, x, y):
-        #on OSX, the mouse events are reported against the wrong window by GTK,
-        #so we may have to patch this and use the currently focused window:
-        if sys.platform.startswith("darwin") and OSX_FOCUS_WORKAROUND:
-            focused = self._client._focused
-            w = self._client._id_to_window.get(focused)
-            focuslog("get_mouse_event_wid(%s, %s) focused=%s vs id=%i, window=%s", x, y, focused, self._id, w)
-            if focused and focused!=self._id and w:
-                gdkwin = w.get_window()
-                if gdkwin:
-                    rect = gdkwin.get_frame_extents()
-                    if x>=rect.x and x<=rect.x+rect.width and y>=rect.y and y<=rect.y+rect.height:
-                        focuslog("patched focused window %i, raising %s", focused, w)
-                        #we would prefer using this function,
-                        #but this raises the wrong window! (gdk is really messed up)
-                        #gdkwin.raise_()
-                        w.present()
-                        return focused
+        #overriden in GTKClientWindowBase
         return self._id
 
     def do_motion_notify_event(self, event):
