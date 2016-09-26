@@ -520,9 +520,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         y = max(0, min(yhot, h-1))
         csize = display.get_default_cursor_size()
         cmaxw, cmaxh = display.get_maximal_cursor_size()
-        if len(cursor_data)>=11:
-            ssize = cursor_data[9]
-            smax = cursor_data[10]
+        if len(cursor_data)>=12:
+            ssize = cursor_data[10]
+            smax = cursor_data[11]
             cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
         cursorlog("new %s cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", encoding, xhot, yhot, serial, w, h, len(pixels), csize, (cmaxw, cmaxh))
         fw, fh = get_fixed_cursor_size()
