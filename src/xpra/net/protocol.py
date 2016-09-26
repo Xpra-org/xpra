@@ -271,8 +271,12 @@ class Protocol(object):
             return
         log("send_now(%s ...)", packet[0])
         assert self._get_packet_cb==None, "cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb
+        tmp_queue = [packet]
         def packet_cb():
             self._get_packet_cb = None
+            if not tmp_queue:
+                raise Exception("packet callback used more than once!")
+            packet = tmp_queue.pop()
             return (packet, )
         self._get_packet_cb = packet_cb
         self.source_has_more()
