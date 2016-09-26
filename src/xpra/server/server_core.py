@@ -1010,7 +1010,11 @@ class ServerCore(object):
         return v
 
     def hello_oked(self, proto, packet, c, auth_caps):
-        pass
+        if c.boolget("info_request", False):
+            flatten = not c.boolget("info-namespace", False)
+            self.send_hello_info(proto, flatten)
+            return True
+        return False
 
 
     def handle_command_request(self, proto, *args):
@@ -1071,10 +1075,10 @@ class ServerCore(object):
         self.quit(False)
 
 
-    def make_hello(self, source):
+    def make_hello(self, source=None):
         now = time.time()
         capabilities = flatten_dict(get_network_caps())
-        if source.wants_versions:
+        if source is None or source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))
         capabilities.update({
                         "version"               : xpra.__version__,
@@ -1084,12 +1088,12 @@ class ServerCore(object):
                         "server_type"           : "core",
                         "server.mode"           : self.get_server_mode(),
                         })
-        if source.wants_features:
+        if source is None or source.wants_features:
             capabilities["info-request"] = True
             capabilities["readonly-server"] = True
             if self.readonly:
                 capabilities["readonly"] = True
-        if source.wants_versions:
+        if source is None or source.wants_versions:
             capabilities["uuid"] = get_user_uuid()
             mid = get_machine_id()
             if mid:

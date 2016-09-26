@@ -1024,14 +1024,12 @@ class ServerBase(ServerCore):
 
 
     def hello_oked(self, proto, packet, c, auth_caps):
+        if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
+            #has been handled
+            return
         if c.boolget("screenshot_request"):
             self.send_screenshot(proto)
             return
-        if c.boolget("info_request", False):
-            flatten = not c.boolget("info-namespace", False)
-            self.send_hello_info(proto, flatten)
-            return
-
         detach_request  = c.boolget("detach_request", False)
         stop_request    = c.boolget("stop_request", False)
         exit_request    = c.boolget("exit_request", False)

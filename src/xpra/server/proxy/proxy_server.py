@@ -21,7 +21,7 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, DONE, repr_ellipsized, print_nested_dict, csv, typedict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv, typedict
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -56,6 +56,8 @@ class ProxyServer(ServerCore):
         #the display they're on and the message queue we can
         # use to communicate with them
         self.processes = {}
+        #connections used exclusively for requests:
+        self._requests = set()
         self.idle_add = glib.idle_add
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
@@ -76,6 +78,15 @@ class ProxyServer(ServerCore):
 
     def init_components(self, opts):
         pass
+
+    def init_packet_handlers(self):
+        ServerCore.init_packet_handlers(self)
+        #add shutdown handler
+        self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
+
+    def _process_proxy_shutdown_server(self, proto, packet):
+        assert proto in self._requests
+        self.quit(False)
 
 
     def print_screen_info(self):
@@ -138,12 +149,28 @@ class ProxyServer(ServerCore):
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def hello_oked(self, proto, packet, c, auth_caps):
-        if c.boolget("stop_request"):
-            self.disconnect_client(proto, DONE, "proxy server shutting down")
-            self.clean_quit()
+        if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
+            #already handled in superclass
             return
         self.accept_client(proto, c)
-        self.start_proxy(proto, c, auth_caps)
+        if any(c.boolget("%s_request" % x) for x in ("screenshot", "event", "print", "exit")):
+            self.send_disconnect(proto, "invalid request")
+            return
+        if c.boolget("stop_request"):
+            self._requests.add(proto)
+            #send a hello back and the client should then send its "shutdown-server" packet
+            capabilities = self.make_hello()
+            proto.send_now(("hello", capabilities))
+            def force_exit_request_client():
+                try:
+                    self._requests.remove(proto)
+                except:
+                    pass
+                if not proto._closed:
+                    self.send_disconnect(proto, "timeout")
+            self.timeout_add(10*1000, force_exit_request_client)
+        else:
+            self.start_proxy(proto, c, auth_caps)
 
     def start_proxy(self, client_proto, c, auth_caps):
         def disconnect(reason, *extras):
