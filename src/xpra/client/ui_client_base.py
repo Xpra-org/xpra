@@ -448,6 +448,7 @@ class UIXpraClient(XpraClientBase):
             self.menu_helper = self.make_tray_menu_helper()
             def setup_xpra_tray():
                 self.tray = self.setup_xpra_tray(opts.tray_icon)
+                self.tray.show()
             if opts.delay_tray:
                 self.connect("first-ui-received", setup_xpra_tray)
             else:
