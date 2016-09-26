@@ -2409,10 +2409,11 @@ def run_stopexit(mode, error_cb, opts, extra_args):
     finally:
         if app:
             app.cleanup()
-    if display_desc["local"]:
-        show_final_state(app.exit_code, display_desc)
-    else:
-        print("Sent shutdown command")
+    if e==0:
+        if display_desc["local"]:
+            show_final_state(app.exit_code, display_desc)
+        else:
+            print("Sent shutdown command")
     return  e
 
 
