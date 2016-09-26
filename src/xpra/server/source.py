@@ -1655,7 +1655,7 @@ class ServerSource(FileTransferHandler):
                     cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
                     return
                 self.last_cursor_sent = cursor_data[:8]
-                w, h, _xhot, _yhot, serial, pixels = cursor_data[2:8]
+                w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:8]
                 #compress pixels if needed:
                 encoding = None
                 if pixels is not None:
@@ -1676,7 +1676,7 @@ class ServerSource(FileTransferHandler):
                         cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
                         encoding = "raw"
                     cursor_data[7] = cpixels
-                cursorlog("do_send_cursor(..) %sx%s %s cursor %s with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), serial, delay, self.cursor_encodings)
+                cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%i with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
                 args = list(cursor_data[:9]) + list(cursor_sizes)
                 if self.cursor_encodings and encoding:
                     args = [encoding] + args
