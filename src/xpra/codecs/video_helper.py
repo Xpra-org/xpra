@@ -143,7 +143,7 @@ class VideoHelper(object):
     def set_modules(self, video_encoders=[], csc_modules=[], video_decoders=[]):
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
         def filt(name, inlist, all_list):
-            notfound = [x for x in inlist if x not in all_list]
+            notfound = [x for x in inlist if x and x not in all_list]
             if notfound:
                 log.warn("ignoring unknown %s: %s", name, ", ".join(notfound))
             return [x for x in inlist if x in all_list]
