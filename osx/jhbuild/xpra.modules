@@ -232,8 +232,9 @@
 					--enable-static --enable-shared --enable-gpl
 					--disable-everything
 					--enable-swscale --enable-libx264 --enable-decoder=h264 --enable-decoder=mpeg4
-					--enable-libvpx --enable-decoder=vp8 --enable-decoder=vp9 --enable-decoder=hevc
-					--enable-decoder=mpeg4 --enable-muxer=mp4 --enable-muxer=webm --enable-muxer=matroska --enable-muxer=ogg
+					--enable-libvpx --enable-decoder=vp8 --enable-decoder=vp9 --enable-decoder=hevc --enable-decoder=mpeg4
+					--enable-encoder=libvpx_vp8 --enable-encoder=libvpx_vp9 --enable-encoder=mpeg4 --enable-encoder=libx264
+					--enable-muxer=mp4 --enable-muxer=webm --enable-muxer=matroska --enable-muxer=ogg
 					--disable-protocol=tcp --disable-protocol=rtp
 					--disable-filter=aformat --disable-filter=crop --disable-filter=setpts
 					--disable-filter=anull --disable-filter=format --disable-filter=trim
