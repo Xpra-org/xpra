@@ -222,7 +222,7 @@ class BaseWindowModel(CoreX11WindowModel):
         #the serial can wrap around:
         if self.last_unmap_serial-serial>=2**15:
             return True
-        return False 
+        return False
 
 
     def _read_initial_X11_properties(self):

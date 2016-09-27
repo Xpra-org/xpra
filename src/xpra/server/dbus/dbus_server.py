@@ -189,7 +189,7 @@ class DBUS_Server(dbus.service.Object):
         log("SetVideoRegionExclusionZones(%i, %s)", wid, zones)
         nzones = []
         for zone in zones:
-            nzones.append([ni(x) for x in zone]) 
+            nzones.append([ni(x) for x in zone])
         self.server.control_command_video_region_exclusion_zones(ni(wid), nzones)
 
 

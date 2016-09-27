@@ -61,7 +61,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         so that all the keycodes sent will be mapped
     """
     #First we try to use data from setxkbmap -query,
-    #preferably as structured data: 
+    #preferably as structured data:
     if xkbmap_query and not xkbmap_query_struct:
         xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
     if xkbmap_query_struct:

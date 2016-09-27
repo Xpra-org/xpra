@@ -278,7 +278,7 @@ class VideoSubregion(object):
         hc = {}
         dec = {}
         #count how many times we see each area, each width/height and where,
-        #after removing any exclusion zones:        
+        #after removing any exclusion zones:
         for _,x,y,w,h in lde:
             r = rectangle(x,y,w,h)
             rects = [r]
@@ -468,7 +468,7 @@ class VideoSubregion(object):
 
         #TODO:
         # * re-add some scrolling detection: the region may have moved
-        # * re-try with a higher "from_time" and a higher score threshold 
+        # * re-try with a higher "from_time" and a higher score threshold
 
         #try harder still: try combining all the regions we haven't discarded
         #(flash player with firefox and youtube does stupid unnecessary repaints)

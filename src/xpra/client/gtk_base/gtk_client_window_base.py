@@ -27,7 +27,7 @@ grablog = Logger("grab")
 
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.util import (AdHocStruct, typedict, envint, envbool,
-                       WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, 
+                       WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
                        MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
                        MOVERESIZE_SIZE_RIGHT,

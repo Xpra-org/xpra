@@ -32,7 +32,7 @@ def get_type():
 def get_version():
     v = cv2.__version__
     #some Debian versions ship with a bogus version string,
-    #ie: "$Rev: 4557 $" 
+    #ie: "$Rev: 4557 $"
     p = v.split("$")
     if len(p)==3:
         v = p[1]
