@@ -29,7 +29,7 @@ def getuid(v):
         return int(v)
     except:
         log("uid '%s' is not an int", v)
-    if os.name=="posix":
+    if os.name=="posix" and v:
         try:
             import pwd
             return pwd.getpwnam(v or "nobody").pw_uid
@@ -42,7 +42,7 @@ def getgid(v):
         return int(v)
     except:
         log("gid '%s' is not an int", v)
-    if os.name=="posix":
+    if os.name=="posix" and v:
         try:
             import grp          #@UnresolvedImport
             return grp.getgrnam(v or "nobody").gr_gid
