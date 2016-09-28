@@ -21,7 +21,7 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, repr_ellipsized, print_nested_dict, csv, typedict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -217,17 +217,30 @@ class ProxyServer(ServerCore):
         if len(displays)==0 or sns:
             if self._start_sessions:
                 #start a new session
+                mode = sns.get("mode", "start")
+                assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
                 sns = typedict(sns)
                 from xpra.platform.dotxpra import DotXpra
                 dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+                args = []
+                display = sns.get("display")
+                if display:
+                    args = [display]
                 start = sns.strlistget("start")
                 start_child = sns.strlistget("start-child")
                 exit_with_children = sns.boolget("exit-with-children")
                 exit_with_client = sns.boolget("exit-with-client")
-                log("starting new server subprocess: start=%s, start-child=%s, exit-with-children=%s, exit-with-client=%s", start, start_child, exit_with_children, exit_with_client)
-                proc, display = start_server_subprocess(sys.argv[0], [], "start", opts, dotxpra,
-                                                        start, start_child,
-                                                        exit_with_children, exit_with_client)
+                log("starting new server subprocess: mode=%s, start=%s, start-child=%s, exit-with-children=%s, exit-with-client=%s", mode, start, start_child, exit_with_children, exit_with_client)
+                try:
+                    proc, display = start_server_subprocess(sys.argv[0], args, mode, opts, dotxpra,
+                                                            start, start_child,
+                                                            exit_with_children, exit_with_client)
+                except Exception as e:
+                    log("start_server_subprocess failed", exc_info=True)
+                    log.error("Error: failed to start server subprocess:")
+                    log.error(" %s", e)
+                    disconnect(SERVER_ERROR, "failed to start a new session")
+                    return
                 if proc:
                     self.child_reaper.add_process(proc, "server-%s" % display, "xpra start", True, True)
             else:

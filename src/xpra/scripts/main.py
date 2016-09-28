@@ -2117,6 +2117,8 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         sns = {
                "start"          : start,
                "start-child"    : start_child,
+               "mode"           : mode,
+               "display"        : params.get("display", ""),
                }
         for x in ("exit-with-children", "exit-with-client",
                   "session-name", "encoding", "socket-dir", "dpi",
@@ -2209,7 +2211,7 @@ def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
     existing_sockets = set()
-    if mode in ("start", "start_desktop"):
+    if mode in ("start", "start-desktop"):
         if len(args)==1:
             display_name = args[0]
         elif len(args)==0:
