@@ -351,7 +351,7 @@ class ProxyServer(ServerCore):
             sessions = pa.get_sessions()
             if sessions:
                 uid, gid = sessions[:2]
-                if uid==os.getuid() and gid==os.getgid():
+                if os.name!="posix" or (uid==os.getuid() and gid==os.getgid()):
                     info.update(ServerCore.get_info(self, proto))
                     self.reap()
                     i = 0

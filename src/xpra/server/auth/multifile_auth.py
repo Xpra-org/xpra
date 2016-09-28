@@ -35,7 +35,8 @@ def getuid(v):
             return pwd.getpwnam(v or "nobody").pw_uid
         except Exception as e:
             log.error("Error: cannot find uid of '%s': %s", v, e)
-    return os.getuid()
+        return os.getuid()
+    return -1
 
 def getgid(v):
     try:
@@ -48,7 +49,8 @@ def getgid(v):
             return grp.getgrnam(v or "nobody").gr_gid
         except Exception as e:
             log.error("Error: cannot find gid of '%s': %s", v, e)
-    return os.getgid()
+        return os.getgid()
+    return -1
 
 
 def parse_auth_line(line):
