@@ -1655,7 +1655,7 @@ class ServerSource(FileTransferHandler):
                     cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
                     return
                 self.last_cursor_sent = cursor_data[:8]
-                w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:8]
+                w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
                 #compress pixels if needed:
                 encoding = None
                 if pixels is not None:
