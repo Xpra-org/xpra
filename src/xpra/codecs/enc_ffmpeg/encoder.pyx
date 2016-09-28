@@ -519,6 +519,7 @@ cdef class Encoder(object):
         self.codec_ctx.thread_count = THREAD_COUNT     #0=auto
         self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         #av_opt_set(c->priv_data, "preset", "slow", 0)
+        log("init_encoder() b-frames=%i, thread-type=%i, thread-count=%i", b_frames, THREAD_TYPE, THREAD_COUNT)
         log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.codec_ctx.flags))
         log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.codec_ctx.flags2))
 
@@ -698,10 +699,10 @@ cdef class Encoder(object):
                 log("ffmpeg EAGAIN: delayed picture")
                 break
             if ret!=0 and bufs:
-                log("avcodec_receive_packet returned error %s for image %s, returning existing buffer", av_error_str(ret), image)
+                log("avcodec_receive_packet returned error '%s' for image %s, returning existing buffer", av_error_str(ret), image)
                 break
             if ret!=0 and not image:
-                log("avcodec_receive_packet returned error %s for flush request", av_error_str(ret))
+                log("avcodec_receive_packet returned error '%s' for flush request", av_error_str(ret))
                 break
             if ret<0:
                 free(avpkt.data)
