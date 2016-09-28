@@ -12,10 +12,13 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.util import AtomicInteger, csv, print_nested_dict
+from xpra.util import AtomicInteger, csv, print_nested_dict, envint
 from xpra.os_util import bytestostr
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+
+THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
+THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
 
 
 from libc.stdint cimport uint8_t, int64_t
@@ -76,6 +79,9 @@ cdef extern from "libavutil/pixfmt.h":
 
 
 cdef extern from "libavcodec/avcodec.h":
+    int FF_THREAD_SLICE     #allow more than one thread per frame
+    int FF_THREAD_FRAME     #Decode more than one frame at once
+
     int CODEC_FLAG_UNALIGNED
     int CODEC_FLAG_QSCALE
     int CODEC_FLAG_4MV
@@ -509,8 +515,8 @@ cdef class Encoder(object):
         self.codec_ctx.bit_rate = 500000
         self.codec_ctx.pix_fmt = self.pix_fmt
         self.codec_ctx.thread_safe_callbacks = 1
-        self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
-        self.codec_ctx.thread_count = 0     #auto
+        self.codec_ctx.thread_type = THREAD_TYPE
+        self.codec_ctx.thread_count = THREAD_COUNT     #0=auto
         self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         #av_opt_set(c->priv_data, "preset", "slow", 0)
         log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.codec_ctx.flags))
