@@ -48,7 +48,6 @@ def getgid(v):
             return grp.getgrnam(v or "nobody").gr_gid
         except Exception as e:
             log.error("Error: cannot find gid of '%s': %s", v, e)
-            return
     return os.getgid()
 
 
