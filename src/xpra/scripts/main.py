@@ -22,7 +22,7 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv, envbool
+from xpra.util import csv, envbool, DEFAULT_PORT
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -425,7 +425,7 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Listen for connections over unix domain sockets. You may specify this option multiple times to listen on different locations.")
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
-                          metavar="[HOST]:PORT",
+                          metavar="[HOST]:[PORT]",
                           help="Listen for connections over TCP (use --tcp-auth to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ssl", action="append",
@@ -1224,7 +1224,7 @@ def parse_display_name(error_cb, opts, display_name):
         upos = host.find("@")
         username = None
         password = None
-        port = 0
+        port = DEFAULT_PORT
         if upos>=0:
             #HOST=username@host
             username = host[:upos]
@@ -1260,11 +1260,11 @@ def parse_display_name(error_cb, opts, display_name):
         if port_str:
             try:
                 port = int(port_str)
-                desc["port"] = int(port_str)
-            except:
-                error_cb("invalid port specified: %s" % port_str)
-            if port<=0 or port>=65536:
-                error_cb("invalid port number: %s" % port)
+            except ValueError:
+                error_cb("invalid port number specified: %s" % port_str)
+        if port<=0 or port>=2**16:
+            error_cb("invalid port number: %s" % port)
+        desc["port"] = port
         if host=="":
             host = "127.0.0.1"
         desc["host"] = host
@@ -1368,7 +1368,7 @@ def parse_display_name(error_cb, opts, display_name):
                      })
         parts = display_name.split(separator)
         if len(parts) not in (2, 3, 4):
-            error_cb("invalid %s connection string, use %s/[username[:password]@]host:port[/display] or %s:[username[:password]@]host:port" % (ctype * 3))
+            error_cb("invalid %s connection string, use %s/[username[:password]@]host[:port][/display] or %s:[username[:password]@]host[:port]" % (ctype * 3))
         #display (optional):
         if separator=="/" and len(parts)==3:
             display = parts[2]
@@ -1411,17 +1411,13 @@ def parse_display_name(error_cb, opts, display_name):
         ws_proto, host = display_name.split(separator, 1)
         if host.find("?")>=0:
             host, _ = host.split("?", 1)
-        port = 0
-        if host.find(":")>=0:
-            if host.find("/")>=0:
-                host, extra = host.split("/", 1)
-            else:
-                extra = ""
-            username, password, host, port = parse_host_string(host)
-            host += extra
-            #TODO: parse attrs after "?"
+        if host.find("/")>=0:
+            host, extra = host.split("/", 1)
         else:
-            raise InitException("missing port number from websocket connection string")
+            extra = ""
+        username, password, host, port = parse_host_string(host)
+        host += extra
+        #TODO: parse attrs after "?"
         desc.update({
                 "type"          : ws_proto,     #"ws" or "wss"
                 "local"         : False,

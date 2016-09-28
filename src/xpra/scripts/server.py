@@ -21,7 +21,7 @@ import traceback
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import SIGNAMES
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
@@ -395,10 +395,14 @@ def parse_bind_tcp(bind_tcp):
             host, port = spec.rsplit(":", 1)
             if host == "":
                 host = "127.0.0.1"
-            try:
-                iport = int(port)
-            except:
-                raise InitException("invalid port number: %s" % port)
+            if not port:
+                iport = DEFAULT_PORT
+            else:
+                try:
+                    iport = int(port)
+                    assert iport>0 and iport<2**16
+                except:
+                    raise InitException("invalid port number: %s" % port)
             tcp_sockets.add((host, iport))
     return tcp_sockets
 

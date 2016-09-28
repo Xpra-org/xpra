@@ -38,6 +38,8 @@ IDLE_TIMEOUT            = "idle timeout"
 CLIENT_EXIT             = "client exit"
 
 
+DEFAULT_PORT = 14500
+
 #magic value for "workspace" window property, means unset
 WORKSPACE_UNSET = 65535
 WORKSPACE_ALL = 0xffffffff
