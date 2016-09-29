@@ -208,7 +208,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
                 #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
                 if full:
-                    wrong_formats = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in]
+                    wrong_formats = [x for x in ("YUV420P", "YUV444P", "BGRX", "r210") if x!=cs_in]
                     #log("wrong formats (not %s): %s", cs_in, wrong_formats)
                     if wrong_formats:
                         wrong_format = wrong_formats[0]

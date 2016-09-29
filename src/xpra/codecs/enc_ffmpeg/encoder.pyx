@@ -649,6 +649,9 @@ cdef class Encoder(object):
         assert self.codec!=NULL
 
         if image:
+            assert image.get_pixel_format()==self.src_format, "invalid input format %s, expected %s" % (image.get_pixel_format, self.src_format)
+            assert image.get_width()==self.width and image.get_height()==self.height
+
             pixels = image.get_pixels()
             istrides = image.get_rowstride()
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
