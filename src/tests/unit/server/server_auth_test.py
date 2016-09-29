@@ -26,9 +26,7 @@ class ServerAuthTest(ServerTestUtil):
 		cmd = ["xpra", "info", uri_prefix+display]
 		f = None
 		if password:
-			f = tempfile.NamedTemporaryFile(prefix='xprapassword')
-			f.file.write(password)
-			f.file.flush()
+			f = self._temp_file(password)
 			cmd += ["--password-file=%s" % f.name]
 		client = self.run_xpra(cmd)
 		r = self.pollwait(client, 5)
@@ -53,6 +51,35 @@ class ServerAuthTest(ServerTestUtil):
 		self._test_auth("allow", "", EXIT_PASSWORD_REQUIRED)
 		self._test_auth("allow", "", EXIT_OK, "foo")
 
+	def test_file(self):
+		from xpra.os_util import get_hex_uuid
+		password = get_hex_uuid()
+		f = self._temp_file(password)
+		self._test_auth("file", "", EXIT_PASSWORD_REQUIRED)
+		self._test_auth("file:filename=%s" % f.name, "", EXIT_PASSWORD_REQUIRED)
+		self._test_auth("file:filename=%s" % f.name, "", EXIT_OK, password)
+		self._test_auth("file:filename=%s" % f.name, "", EXIT_FAILURE, password+"A")
+		f.close()
+
+	def test_multifile(self):
+		from xpra.platform.info import get_username
+		username = get_username()
+		from xpra.os_util import get_hex_uuid
+		password = get_hex_uuid()
+		displays = ""
+		data = "%s|%s|%i|%i|%s||" % (username, password, os.getuid(), os.getgid(), displays)
+		f = self._temp_file(data)
+		self._test_auth("multifile", "", EXIT_PASSWORD_REQUIRED)
+		self._test_auth("multifile:filename=%s" % f.name, "", EXIT_PASSWORD_REQUIRED)
+		self._test_auth("multifile:filename=%s" % f.name, "", EXIT_OK, password)
+		self._test_auth("multifile:filename=%s" % f.name, "", EXIT_FAILURE, password+"A")
+		f.close()
+
+	def _temp_file(self, data):
+		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword')
+		f.file.write(data)
+		f.file.flush()
+		return f
 
 
 def main():
