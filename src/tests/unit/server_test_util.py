@@ -6,13 +6,17 @@
 
 import os
 import time
+import tempfile
 import unittest
 import subprocess
+from xpra.util import envbool, repr_ellipsized
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
 
 from xpra.log import Logger
 log = Logger("test")
+
+HIDE_SUBPROCESS_OUTPUT = envbool("XPRA_HIDE_SUBPROCESS_OUTPUT", True)
 
 
 class ServerTestUtil(unittest.TestCase):
@@ -22,9 +26,11 @@ class ServerTestUtil(unittest.TestCase):
 		dirs = get_socket_dirs()
 		cls.display_start = 100
 		cls.dotxpra = DotXpra(dirs[0], dirs)
-		cls.default_xpra_args = ["--systemd-run=no"]
+		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no"]
 		ServerTestUtil.existing_displays = cls.dotxpra.displays()
 		ServerTestUtil.processes = []
+		xpra_list = cls.run_xpra(["xpra", "list"])
+		assert cls.pollwait(xpra_list, 15) is not None
 
 	@classmethod
 	def tearDownClass(cls):
@@ -57,10 +63,26 @@ class ServerTestUtil(unittest.TestCase):
 	def run_command(cls, command, env=None):
 		if env is None:
 			env = cls.run_env()
-		log("run_command(%s, %s)", command, env)
-		proc = subprocess.Popen(args=command, env=env)
+		kwargs = {}
+		if HIDE_SUBPROCESS_OUTPUT:
+			stdout = cls._temp_file()
+			stderr = cls._temp_file()
+			kwargs = {"stdout" : stdout, "stderr" : stderr}
+			log("output of %s sent to %s / %s", command, stdout.name, stderr.name)
+		else:
+			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
+		proc = subprocess.Popen(args=command, env=env, **kwargs)
 		ServerTestUtil.processes.append(proc)
 		return proc
+
+
+	@classmethod
+	def _temp_file(self, data=None):
+		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword')
+		if data:
+			f.file.write(data)
+		f.file.flush()
+		return f
 
 
 	@classmethod
@@ -135,7 +157,13 @@ class ServerTestUtil(unittest.TestCase):
 		assert display in cls.dotxpra.displays(), "server display not found"
 		#query it:
 		info = cls.run_xpra(["xpra", "version", display])
-		assert cls.pollwait(info)==0, "info failed for %s, returned %s" % (display, info.poll())
+		for _ in range(5):
+			r = cls.pollwait(info)
+			log("version for %s returned %s", display, r)
+			if r is not None:
+				assert r==0, "version failed for %s, returned %s" % (display, info.poll())
+				break
+			time.sleep(1)
 		return server_proc
 
 	@classmethod

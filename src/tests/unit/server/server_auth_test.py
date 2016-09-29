@@ -6,7 +6,6 @@
 
 import os
 import unittest
-import tempfile
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED
 from tests.unit.server_test_util import ServerTestUtil, log
 
@@ -74,12 +73,6 @@ class ServerAuthTest(ServerTestUtil):
 		self._test_auth("multifile:filename=%s" % f.name, "", EXIT_OK, password)
 		self._test_auth("multifile:filename=%s" % f.name, "", EXIT_FAILURE, password+"A")
 		f.close()
-
-	def _temp_file(self, data):
-		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword')
-		f.file.write(data)
-		f.file.flush()
-		return f
 
 
 def main():
