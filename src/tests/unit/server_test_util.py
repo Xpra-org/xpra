@@ -84,7 +84,7 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def find_free_display_no(cls):
 		#X11 sockets:
-		X11_displays = cls.find_X11_display_numbers()
+		X11_displays = cls.find_X11_displays()
 		displays = cls.dotxpra.displays()
 		start = cls.display_start % 10000
 		for i in range(start, 20000):
@@ -126,10 +126,16 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def check_start_server(cls, display, *args):
-		server_proc = cls.run_xpra(["xpra", "start", display, "--no-daemon"]+list(args))
-		time.sleep(5)
-		assert server_proc.poll() is None, "server failed to start"
+		return cls.check_server("start", display, *args)
+
+	@classmethod
+	def check_server(cls, subcommand, display, *args):
+		server_proc = cls.run_xpra(["xpra", subcommand, display, "--no-daemon"]+list(args))
+		assert cls.pollwait(server_proc, 3) is None, "server failed to start, returned %s" % server_proc.poll()
 		assert display in cls.dotxpra.displays(), "server display not found"
+		#query it:
+		info = cls.run_xpra(["xpra", "version", display])
+		assert cls.pollwait(info)==0, "info failed for %s, returned %s" % (display, info.poll())
 		return server_proc
 
 	@classmethod
