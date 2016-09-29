@@ -432,6 +432,8 @@ cdef class Encoder:
         start = time.time()
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
+        assert image.get_pixel_format()==self.src_format, "expected %s image but got %s" % (self.src_format, image.get_pixel_format())
+        assert image.get_width()==self.width and image.get_height()==self.height
         assert pixels, "failed to get pixels from %s" % image
         log("compress_image(%s)", image)
 
