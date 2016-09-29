@@ -203,17 +203,21 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 assert data is not None, "None data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 assert len(data)>0, "no compressed data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 assert meta is not None, "missing metadata for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
+                log("%s: %s / %s / %s passed", encoder_module, encoding, cs_in, cs_out)
                 #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
                 #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
                 #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
                 if full:
-                    try:
-                        wrong_format = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in][0]
-                        image = make_test_image(wrong_format, W, H)
-                        out = e.compress_image(image, options=options)
-                    except:
-                        out = None
-                    assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
+                    wrong_formats = [x for x in ("YUV420P", "YUV444P", "BGRX") if x!=cs_in]
+                    #log("wrong formats (not %s): %s", cs_in, wrong_formats)
+                    if wrong_formats:
+                        wrong_format = wrong_formats[0]
+                        try:
+                            image = make_test_image(wrong_format, W, H)
+                            out = e.compress_image(image, options=options)
+                        except:
+                            out = None
+                        assert out is None, "encoder %s should have failed using %s encoding with %s instead of %s / %s" % (encoder_module.get_type(), encoding, wrong_format, cs_in, cs_out)
                     for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
                         if w>limit_w or h>limit_h:
                             continue
@@ -222,7 +226,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                             out = e.compress_image(image, options=options)
                         except:
                             out = None
-                        assert out is None, "encoder %s should have failed using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
+                        assert out is None, "encoder %s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (encoder_module.get_type(), encoding, w, h, W, H)
             finally:
                 e.clean()
 
