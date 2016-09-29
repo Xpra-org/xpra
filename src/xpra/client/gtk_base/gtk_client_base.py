@@ -58,6 +58,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         UIXpraClient.__init__(self)
         self.session_info = None
         self.bug_report = None
+        self.file_size_dialog = None
+        self.file_dialog = None
         self.start_new_command = None
         self.keyboard_helper_class = GTKKeyboardHelper
         #opengl bits:
@@ -136,6 +138,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self.bug_report:
             self.bug_report.destroy()
             self.bug_report = None
+        self.close_file_size_warning()
+        self.close_file_upload_dialog()
         if self.start_new_command:
             self.start_new_command.destroy()
             self.start_new_command = None
@@ -154,37 +158,56 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
+        if self.file_size_dialog:
+            #close previous warning
+            self.file_size_dialog.destroy()
+            self.file_size_dialog = None
         parent = None
         msgs = (
                 "Warning: cannot %s the file '%s'" % (action, basefilename),
                 "this file is too large: %sB" % std_unit(filesize, unit=1024),
                 "the %s file size limit is %iMB" % (location, limit),
                 )
-        md = gtk.MessageDialog(parent, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,
-                                BUTTONS_CLOSE, "\n".join(msgs))
+        self.file_size_dialog = gtk.MessageDialog(parent, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,
+                                                  BUTTONS_CLOSE, "\n".join(msgs))
         try:
             image = gtk.image_new_from_stock(gtk.STOCK_DIALOG_WARNING, 64)
-            md.set_image(image)
+            self.file_size_dialog.set_image(image)
         except Exception as e:
             log.warn("failed to set dialog image: %s", e)
-        md.connect("response", lambda w,resp: md.destroy())
-        md.show()
+        self.file_size_dialog.connect("response", self.close_file_size_warning)
+        self.file_size_dialog.show()
+
+    def close_file_size_warning(self, *args):
+        fsd = self.file_size_dialog
+        if fsd:
+            self.file_size_dialog = None
+            fsd.destroy()
 
     def show_file_upload(self, *args):
+        if self.file_dialog:
+            self.file_dialog.present()
+            return
         filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
         buttons = [gtk.STOCK_CANCEL,    gtk.RESPONSE_CANCEL]
         if self.remote_open_files:
             buttons += [gtk.STOCK_OPEN,      gtk.RESPONSE_ACCEPT]
         buttons += [gtk.STOCK_OK,        gtk.RESPONSE_OK]
-        dialog = gtk.FileChooserDialog("File to upload", parent=None, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=tuple(buttons))
-        dialog.set_default_response(gtk.RESPONSE_OK)
-        dialog.connect("response", self.file_upload_dialog_response)
-        dialog.show()
+        self.file_dialog = gtk.FileChooserDialog("File to upload", parent=None, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=tuple(buttons))
+        self.file_dialog.set_default_response(gtk.RESPONSE_OK)
+        self.file_dialog.connect("response", self.file_upload_dialog_response)
+        self.file_dialog.show()
+
+    def close_file_upload_dialog(self):
+        fd = self.file_dialog
+        if fd:
+            fd.destroy()
+            self.file_dialog = None
 
     def file_upload_dialog_response(self, dialog, v):
         if v not in (gtk.RESPONSE_OK, gtk.RESPONSE_ACCEPT):
             filelog("dialog response code %s", v)
-            dialog.destroy()
+            self.close_file_upload_dialog()
             return
         filename = dialog.get_filename()
         filelog("file_upload_dialog_response: filename=%s", filename)
@@ -194,10 +217,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             pass
         else:
             if not self.check_file_size("upload", filename, filesize):
-                dialog.destroy()
+                self.close_file_upload_dialog()
                 return
         gfile = dialog.get_file()
-        dialog.destroy()
+        self.close_file_upload_dialog()
         filelog("load_contents: filename=%s, response=%s", filename, v)
         gfile.load_contents_async(self.file_upload_ready, user_data=(filename, v==gtk.RESPONSE_ACCEPT))
 
