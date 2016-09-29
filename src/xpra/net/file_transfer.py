@@ -358,6 +358,21 @@ class FileTransferHandler(FileTransferAttributes):
         cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
 
 
+    def file_size_warning(self, action, location, basefilename, filesize, limit):
+        filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
+        filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
+        filelog.warn(" the %s file size limit is %iMB", location, limit)
+
+    def check_file_size(self, action, filename, filesize):
+        basefilename = os.path.basename(filename)
+        if filesize>self.file_size_limit*1024*1024:
+            self.file_size_warning(action, "local", basefilename, filesize, self.file_size_limit)
+            return False
+        if filesize>self.remote_file_size_limit*1024*1024:
+            self.file_size_warning(action, "remote", basefilename, filesize, self.remote_file_size_limit)
+            return False
+        return True
+
     def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}):
         if printit:
             if not self.printing:
@@ -384,16 +399,7 @@ class FileTransferHandler(FileTransferAttributes):
         data = data[:filesize]          #gio may null terminate it
         l("send_file%s", (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
         absfile = os.path.abspath(filename)
-        basefilename = os.path.basename(filename)
-        def sizewarn(location, limit):
-            filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
-            filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-            filelog.warn(" the %s file size limit is %iMB", location, limit)
-        if filesize>self.file_size_limit*1024*1024:
-            sizewarn("local", self.file_size_limit)
-            return False
-        if filesize>self.remote_file_size_limit*1024*1024:
-            sizewarn("remote", self.remote_file_size_limit)
+        if not self.check_file_size(action, filename, filesize):
             return False
         u = hashlib.sha1()
         u.update(data)
@@ -415,6 +421,7 @@ class FileTransferHandler(FileTransferAttributes):
             #send everything now:
             cdata = self.compressed_wrapper("file-data", data)
             assert len(cdata)<=filesize     #compressed wrapper ensures this is true
+        basefilename = os.path.basename(filename)
         self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
         return True
 

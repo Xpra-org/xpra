@@ -27,12 +27,13 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr
+from xpra.simple_stats import std_unit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, \
-            INTERP_BILINEAR, WINDOW_TOPLEVEL
+            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
@@ -151,6 +152,24 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.start_new_command.show()
         return self.start_new_command
 
+
+    def file_size_warning(self, action, location, basefilename, filesize, limit):
+        parent = None
+        msgs = (
+                "Warning: cannot %s the file '%s'" % (action, basefilename),
+                "this file is too large: %sB" % std_unit(filesize, unit=1024),
+                "the %s file size limit is %iMB" % (location, limit),
+                )
+        md = gtk.MessageDialog(parent, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,
+                                BUTTONS_CLOSE, "\n".join(msgs))
+        try:
+            image = gtk.image_new_from_stock(gtk.STOCK_DIALOG_WARNING, 64)
+            md.set_image(image)
+        except Exception as e:
+            log.warn("failed to set dialog image: %s", e)
+        md.connect("response", lambda w,resp: md.destroy())
+        md.show()
+
     def show_file_upload(self, *args):
         filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
         buttons = [gtk.STOCK_CANCEL,    gtk.RESPONSE_CANCEL]
@@ -159,12 +178,24 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         buttons += [gtk.STOCK_OK,        gtk.RESPONSE_OK]
         dialog = gtk.FileChooserDialog("File to upload", parent=None, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=tuple(buttons))
         dialog.set_default_response(gtk.RESPONSE_OK)
-        v = dialog.run()
+        dialog.connect("response", self.file_upload_dialog_response)
+        dialog.show()
+
+    def file_upload_dialog_response(self, dialog, v):
         if v not in (gtk.RESPONSE_OK, gtk.RESPONSE_ACCEPT):
             filelog("dialog response code %s", v)
             dialog.destroy()
             return
         filename = dialog.get_filename()
+        filelog("file_upload_dialog_response: filename=%s", filename)
+        try:
+            filesize = os.stat(filename).st_size
+        except:
+            pass
+        else:
+            if not self.check_file_size("upload", filename, filesize):
+                dialog.destroy()
+                return
         gfile = dialog.get_file()
         dialog.destroy()
         filelog("load_contents: filename=%s, response=%s", filename, v)
