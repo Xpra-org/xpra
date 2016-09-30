@@ -38,6 +38,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
+from xpra.util import DEFAULT_PORT
 from xpra.os_util import thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
@@ -409,15 +410,22 @@ class ApplicationWindow:
 
     def mode_changed(self, *args):
         ssh = self.mode_combo.get_active_text()=="SSH"
-        self.port_entry.set_text("")
         if ssh:
-            self.ssh_port_entry.show()
             self.port_entry.set_tooltip_text("Display number (optional)")
+            self.port_entry.set_text("")
+            self.ssh_port_entry.set_text("22")
+            self.ssh_port_entry.show()
             self.password_entry.set_tooltip_text("SSH Password")
+            self.username_entry.set_tooltip_text("SSH Username")
         else:
             self.ssh_port_entry.hide()
-            self.port_entry.set_tooltip_text("port number")
-            self.password_entry.set_tooltip_text("Session Password")
+            self.ssh_port_entry.set_text("")
+            port_str = self.port_entry.get_text()
+            if not port_str:
+                self.port_entry.set_text(str(max(0, self.config.port) or DEFAULT_PORT))
+            self.port_entry.set_tooltip_text("xpra server port number")
+            self.password_entry.set_tooltip_text("Session Password (optional)")
+            self.username_entry.set_tooltip_text("Session Username (optional)")
             if self.config.port>0:
                 self.port_entry.set_text("%s" % self.config.port)
         can_use_password = not ssh
@@ -726,7 +734,7 @@ class ApplicationWindow:
                     return str(iport)
             except:
                 pass
-            return ""
+            return str(DEFAULT_PORT)
         self.port_entry.set_text(get_port(self.config.port))
         self.ssh_port_entry.set_text(get_port(self.config.ssh_port))
 
