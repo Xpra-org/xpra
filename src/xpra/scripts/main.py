@@ -74,6 +74,7 @@ def nox():
     return DISPLAY
 
 
+supports_proxy  = True
 supports_shadow = SHADOW_SUPPORTED
 supports_server = LOCAL_SERVERS_SUPPORTED
 if supports_server:
@@ -1157,7 +1158,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
-        elif (mode in ("start", "start-desktop", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
+        elif (mode in ("start", "start-desktop", "upgrade") and supports_server) or \
+            (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
             current_display = nox()
             from xpra.scripts.server import run_server
             return run_server(error_cb, options, mode, script_file, args, current_display)
