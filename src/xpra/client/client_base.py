@@ -662,8 +662,11 @@ class XpraClientBase(FileTransferHandler):
         pass
 
     def parse_printing_capabilities(self):
+        printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
-            if self.server_capabilities.boolget("printing"):
+            server_printing = self.server_capabilities.boolget("printing")
+            printlog("parse_printing_capabilities() server printing support=%s", self.printing)
+            if server_printing:
                 self.printer_attributes = self.server_capabilities.strlistget("printer.attributes", ["printer-info", "device-uri"])
                 self.timeout_add(1000, self.init_printing)
 
@@ -673,13 +676,13 @@ class XpraClientBase(FileTransferHandler):
             printlog("init_printing=%s", init_printing)
             init_printing(self.send_printers)
         except Exception as e:
-            log.error("Error initializing printing support:")
-            log.error(" %s", e)
+            printlog.error("Error initializing printing support:")
+            printlog.error(" %s", e)
             self.printing = False
         try:
             self.do_send_printers()
         except Exception:
-            log.error("Error sending the list of printers:", exc_info=True)
+            printlog.error("Error sending the list of printers:", exc_info=True)
             self.printing = False
 
     def cleanup_printing(self):
@@ -693,6 +696,7 @@ class XpraClientBase(FileTransferHandler):
             log.warn("failed to cleanup printing subsystem", exc_info=True)
 
     def send_printers(self, *args):
+        printlog("send_printers%s pending=%s", args, self.send_printers_pending)
         #dbus can fire dozens of times for a single printer change
         #so we wait a bit and fire via a timer to try to batch things together:
         if self.send_printers_pending:
@@ -755,7 +759,7 @@ class XpraClientBase(FileTransferHandler):
             self.exported_printers = exported_printers
             self.send("printers", self.exported_printers)
         except:
-            log.error("do_send_printers()", exc_info=True)
+            printlog.error("do_send_printers()", exc_info=True)
 
 
     def parse_version_capabilities(self):
