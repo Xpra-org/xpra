@@ -7,7 +7,7 @@
 import os
 import unittest
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED
-from tests.unit.server_test_util import ServerTestUtil, log
+from ..server_test_util import ServerTestUtil, log
 
 
 class ServerAuthTest(ServerTestUtil):

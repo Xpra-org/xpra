@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from tests.unit.server_test_util import ServerTestUtil, log
+from ..server_test_util import ServerTestUtil, log
 
 
 class ProxyServerTest(ServerTestUtil):

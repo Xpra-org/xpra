@@ -9,8 +9,8 @@ import shutil
 import unittest
 import tempfile
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST
-from tests.unit.server_test_util import ServerTestUtil, log
 from xpra.net.net_util import get_free_tcp_port
+from ..server_test_util import ServerTestUtil, log
 
 
 class ServerSocketsTest(ServerTestUtil):

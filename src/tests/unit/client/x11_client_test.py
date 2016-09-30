@@ -7,7 +7,7 @@
 import os
 import unittest
 from xpra.os_util import load_binary_file
-from tests.unit.server_test_util import ServerTestUtil, log
+from ..server_test_util import ServerTestUtil, log
 
 
 class X11ClientTest(ServerTestUtil):

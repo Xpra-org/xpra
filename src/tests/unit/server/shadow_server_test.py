@@ -6,7 +6,7 @@
 
 import time
 import unittest
-from tests.unit.server_test_util import ServerTestUtil
+from ..server_test_util import ServerTestUtil
 
 
 class ShadowServerTest(ServerTestUtil):
