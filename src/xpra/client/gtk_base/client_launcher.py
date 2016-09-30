@@ -45,6 +45,7 @@ from xpra.gtk_common.about import about
 from xpra.net.crypto import ENCRYPTION_CIPHERS, crypto_backend_init
 from xpra.scripts.main import connect_to, make_client, configure_network
 from xpra.platform.paths import get_icon_dir
+from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
 log = Logger("launcher")
 
@@ -58,6 +59,7 @@ SAVED_FIELDS = ["username", "password", "host", "port", "mode", "ssh_port",
 LAUNCHER_OPTION_TYPES ={
                         "host"              : str,
                         "port"              : int,
+                        "username"          : str,
                         "password"          : str,
                         "mode"              : str,
                         "autoconnect"       : bool,
@@ -66,6 +68,7 @@ LAUNCHER_OPTION_TYPES ={
 LAUNCHER_DEFAULTS = {
                         "host"              : "",
                         "port"              : -1,
+                        "username"          : get_username(),
                         "password"          : "",
                         "mode"              : "tcp",    #tcp,ssh,..
                         "autoconnect"       : False,
@@ -270,7 +273,7 @@ class ApplicationWindow:
         self.username_entry.set_max_length(128)
         self.username_entry.set_width_chars(16)
         self.username_entry.connect("changed", self.validate)
-        self.username_entry.set_tooltip_text("SSH username")
+        self.username_entry.set_tooltip_text("username")
         self.username_label = gtk.Label("@")
         self.host_entry = gtk.Entry()
         self.host_entry.set_max_length(128)
@@ -411,14 +414,10 @@ class ApplicationWindow:
             self.ssh_port_entry.show()
             self.port_entry.set_tooltip_text("Display number (optional)")
             self.password_entry.set_tooltip_text("SSH Password")
-            self.username_entry.show()
-            self.username_label.show()
         else:
             self.ssh_port_entry.hide()
             self.port_entry.set_tooltip_text("port number")
             self.password_entry.set_tooltip_text("Session Password")
-            self.username_entry.hide()
-            self.username_label.hide()
             if self.config.port>0:
                 self.port_entry.set_text("%s" % self.config.port)
         can_use_password = not ssh
