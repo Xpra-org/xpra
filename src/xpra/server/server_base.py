@@ -1527,7 +1527,7 @@ class ServerBase(ServerCore):
 
     def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
         openit = str(openit).lower() in ("open", "true", "1")
-        return self.do_control_file_command("send file", client_uuids, filename, "file_tranfer", (False, openit))
+        return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 
     def control_command_print(self, filename, printer, client_uuids, maxbitrate=0, title="", *options_strs):
         #parse options into a dict:
@@ -1557,10 +1557,10 @@ class ServerBase(ServerCore):
         file_size_MB = len(data)//1024//1024
         if file_size_MB>self.file_transfer.file_size_limit:
             raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_transfer.file_size_limit))
-        return sources, data
         #send it to each client:
         for ss in sources:
-            if not getattr(ss, source_flag_name):       #ie: ServerSource.file_transfer
+            #ie: ServerSource.file_transfer (found in FileTransferAttributes)
+            if not getattr(ss, source_flag_name):
                 log.warn("Warning: cannot %s '%s'", command_type, filename)
                 log.warn(" client %s does not support this feature", ss)
             elif file_size_MB>ss.file_size_limit:
@@ -1568,7 +1568,7 @@ class ServerBase(ServerCore):
                 log.warn(" client %s file size limit is %iMB (file is %iMB)", ss, ss.file_size_limit, file_size_MB)
             else:
                 ss.send_file(filename, "", data, *send_file_args)
-        return "%s of '%s' to %s initiated" % (command_type, client_uuids)
+        return "%s of '%s' to %s initiated" % (command_type, filename, client_uuids)
 
 
     def control_command_compression(self, compression):
