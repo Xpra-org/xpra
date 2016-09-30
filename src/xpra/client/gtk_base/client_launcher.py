@@ -215,7 +215,7 @@ class ApplicationWindow:
                 return self.config.encoding
             def set_new_encoding(e):
                 self.config.encoding = e
-            encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+            encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
             server_encodings = encodings
             es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
             self.encoding_combo.set_menu(es)
@@ -446,7 +446,7 @@ class ApplicationWindow:
 
     def encoding_changed(self, *args):
         encoding = self.get_selected_encoding()
-        uses_quality_option = encoding in ["jpeg", "webp", "h264"]
+        uses_quality_option = encoding in ["jpeg", "webp", "h264", "auto"]
         log("encoding_changed(%s) uses_quality_option(%s)=%s", args, encoding, uses_quality_option)
         if uses_quality_option:
             self.quality_combo.show()
