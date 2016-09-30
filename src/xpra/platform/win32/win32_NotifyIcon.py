@@ -74,6 +74,8 @@ class win32NotifyIcon(object):
         return (self.hwnd, 0, flags, WM_TRAY_EVENT, self.current_icon, self.title)
 
     def delete_tray_window(self):
+        if not self.hwnd:
+            return
         try:
             nid = (self.hwnd, 0)
             log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
@@ -81,6 +83,7 @@ class win32NotifyIcon(object):
         except Exception as e:
             log.error("Error: failed to delete tray window")
             log.error(" %s", e)
+        self.hwnd = 0
 
 
     def set_blinking(self, on):
@@ -249,17 +252,19 @@ class win32NotifyIcon(object):
 
     def destroy(self):
         cb = self.exit_callback
-        log("destroy() exit callback=%s", cb)
+        hwnd = self.hwnd
+        log("destroy() hwnd=%#x, exit callback=%s", hwnd, cb)
         self.delete_tray_window()
         try:
             if cb:
                 cb()
         except:
             log.error("destroy()", exc_info=True)
-        try:
-            del win32NotifyIcon.instances[self.hwnd]
-        except:
-            pass
+        if hwnd:
+            try:
+                del win32NotifyIcon.instances[hwnd]
+            except:
+                pass
 
 
 
