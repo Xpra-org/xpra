@@ -560,7 +560,10 @@ class ServerCore(object):
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
         PEEK_SIZE = 8192
-        v = conn.peek(PEEK_SIZE)
+        try:
+            v = conn.peek(PEEK_SIZE)
+        except:
+            v = None
         if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
