@@ -1044,9 +1044,11 @@ class UIXpraClient(XpraClientBase):
         self.scaleset(*self.initial_scaling)
 
     def scaleset(self, xscale=1, yscale=1):
-        self.scale_change(xscale/self.xscale, yscale/self.yscale)
+        scalinglog("scaleset(%s, %s) current scaling: %s, %s", xscale, yscale, self.xscale, self.yscale)
+        self.scale_change(float(xscale)/self.xscale, float(yscale)/self.yscale)
 
     def scale_change(self, xchange=1, ychange=1):
+        scalinglog("scale_change(%s, %s)", xchange, ychange)
         if self.server_is_desktop and self.desktop_fullscreen:
             scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)
             return
