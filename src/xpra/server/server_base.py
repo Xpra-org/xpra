@@ -1555,8 +1555,8 @@ class ServerBase(ServerCore):
         data = load_binary_file(actual_filename)
         #verify size:
         file_size_MB = len(data)//1024//1024
-        if file_size_MB>self.file_size_limit:
-            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_size_limit))
+        if file_size_MB>self.file_transfer.file_size_limit:
+            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_transfer.file_size_limit))
         return sources, data
         #send it to each client:
         for ss in sources:
