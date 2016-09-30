@@ -9,4 +9,4 @@ proxy-start-sessions = True
 #  for these encoders)
 #proxy-video-encoders = nvenc7
 #proxy-video-encoders = all
-proxy-video-encoders =
+proxy-video-encoders = none

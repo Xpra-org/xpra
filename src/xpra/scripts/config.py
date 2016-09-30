@@ -899,7 +899,7 @@ def fixup_debug_option(value):
 
 def _csvstr(value):
     if type(value) in (tuple, list):
-        return ",".join(str(x).lower().strip() for x in value)
+        return ",".join(str(x).lower().strip() for x in value if x)
     elif type(value)==str:
         return value.strip().lower()
     raise Exception("don't know how to convert %s to a csv list!" % type(value))
@@ -915,6 +915,7 @@ def fixup_video_all_or_none(options):
     vestr   = _csvstr(options.video_encoders)
     cscstr  = _csvstr(options.csc_modules)
     vdstr   = _csvstr(options.video_decoders)
+    pvestr  = _csvstr(options.proxy_video_encoders)
     def getlist(strarg, help_txt, all_list):
         if strarg=="help":
             raise InitInfo("the following %s may be available: %s" % (help_txt, ", ".join(all_list)))
@@ -923,10 +924,11 @@ def fixup_video_all_or_none(options):
         elif strarg=="all":
             return all_list
         else:
-            return _nodupes(strarg)
+            return [x for x in _nodupes(strarg) if x]
     options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
     options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
     options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
+    options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", avedo)
 
 def fixup_socketdirs(options, defaults):
     if not options.socket_dirs:
