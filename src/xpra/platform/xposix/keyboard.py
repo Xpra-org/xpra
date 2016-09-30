@@ -16,6 +16,7 @@ class Keyboard(KeyboardBase):
 
     def __init__(self):
         KeyboardBase.__init__(self)
+        self.keymap_modifiers = None
         try:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
             self.keyboard_bindings = X11KeyboardBindings()
@@ -25,6 +26,11 @@ class Keyboard(KeyboardBase):
 
 
     def get_keymap_modifiers(self):
+        if self.keymap_modifiers is None:
+            self.keymap_modifiers = self.do_get_keymap_modifiers()
+        return self.keymap_modifiers
+
+    def do_get_keymap_modifiers(self):
         if not self.keyboard_bindings:
             log.warn("keyboard bindings are not available, expect keyboard mapping problems")
             return {}, [], []
@@ -126,6 +132,8 @@ class Keyboard(KeyboardBase):
             self.modifier_map = grok_modifier_map(display, xkbmap_mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP
+        #force re-query on next call:
+        self.keymap_modifiers = None
         try:
             dn = "%s %s" % (type(display).__name__, display.get_name())
         except:
