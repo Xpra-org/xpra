@@ -12,7 +12,7 @@ import uuid
 import hmac
 import hashlib
 from xpra.util import xor
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, bytestostr
 
 try:
 	from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, env_auth, password_auth
@@ -118,7 +118,7 @@ class TestAuth(unittest.TestCase):
 			assert mac=="hmac", "invalid mac: %s" % mac
 			client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
 			auth_salt = strtobytes(xor(salt, client_salt))
-			verify = hmac.HMAC(x, auth_salt, digestmod=hashlib.md5).hexdigest()
+			verify = hmac.HMAC(strtobytes(x), auth_salt, digestmod=hashlib.md5).hexdigest()
 			passed = a.authenticate(verify, client_salt)
 			assert passed == (x==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)
 			assert not a.authenticate(verify, client_salt)
@@ -126,7 +126,7 @@ class TestAuth(unittest.TestCase):
 	def test_env(self):
 		for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
 			password = strtobytes(uuid.uuid4().hex)
-			os.environ[var_name] = password
+			os.environ[var_name] = bytestostr(password)
 			try:
 				kwargs = {}
 				if var_name!="XPRA_PASSWORD":

@@ -5,9 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import time
 import unittest
-from ..server_test_util import ServerTestUtil, log
+from unit.server_test_util import ServerTestUtil, log
 
 
 class ProxyServerTest(ServerTestUtil):
@@ -55,7 +56,7 @@ class ProxyServerTest(ServerTestUtil):
 
 
 def main():
-	if os.name=="posix":
+	if os.name=="posix" and sys.version_info[0]==2:
 		unittest.main()
 
 

@@ -65,7 +65,8 @@ class TestHMAC(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    if xor_str:
+        unittest.main()
 
 if __name__ == '__main__':
     main()

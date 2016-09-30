@@ -149,7 +149,7 @@ pam_ENABLED = DEFAULT and server_ENABLED and os.name=="posix" and not OSX and (o
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
-cython_bencode_ENABLED  = DEFAULT
+cython_bencode_ENABLED  = DEFAULT and not PYTHON3
 clipboard_ENABLED       = DEFAULT and not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
@@ -1985,15 +1985,15 @@ if client_ENABLED or server_ENABLED:
 
 
 #build tests, but don't install them:
-toggle_packages(tests_ENABLED, "tests/unit")
+toggle_packages(tests_ENABLED, "unit")
 
 
 if bundle_tests_ENABLED:
     #bundle the tests directly (not in library.zip):
-    for k,v in glob_recurse("tests").items():
+    for k,v in glob_recurse("unit").items():
         if (k!=""):
             k = os.sep+k
-        add_data_files("tests"+k, v)
+        add_data_files("unit"+k, v)
 
 #python-cryptography needs workarounds for bundling:
 if crypto_ENABLED and (OSX or WIN32):

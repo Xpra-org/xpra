@@ -5,9 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import unittest
 from xpra.os_util import load_binary_file
-from ..server_test_util import ServerTestUtil, log
+from unit.server_test_util import ServerTestUtil, log
 
 
 class X11ClientTest(ServerTestUtil):
@@ -23,7 +24,7 @@ class X11ClientTest(ServerTestUtil):
 		env = self.run_env()
 		env["DISPLAY"] = client_display
 		log("starting test client on Xvfb %s", client_display)
-		return self.run_xpra(["xpra", "attach"] + list(args) , env)
+		return self.run_xpra(["attach"] + list(args) , env)
 
 	def do_test_connect(self, sharing=False, *client_args):
 		display = self.find_free_display()
@@ -94,7 +95,7 @@ class X11ClientTest(ServerTestUtil):
 
 
 def main():
-	if os.name=="posix":
+	if os.name=="posix" and sys.version_info[0]==2:
 		unittest.main()
 
 

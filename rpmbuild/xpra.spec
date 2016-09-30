@@ -232,8 +232,9 @@ BuildRequires: x264-xpra-devel
 BuildRequires: xvidcore-devel
 BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
-#needed for running tests
+%if 0%{?run_tests}
 BuildRequires: %{numpy}
+%endif
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 Requires: %{requires_crypto}
@@ -352,15 +353,15 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{build_args} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
-%{__python3} setup.py build %{build_args} --with-tests
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig
+%{__python3} setup.py build %{build_args}
 popd
 %endif
 
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{build_args} --with-tests --pkg-config-path=%{_libdir}/xpra/pkgconfig
+CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig
 %if 0%{?with_selinux}
 pushd selinux/cups_xpra
 for selinuxvariant in %{selinux_variants}
@@ -400,8 +401,8 @@ find %{buildroot}%{_datadir}/xpra/www/include -name '*.js' -exec chmod 0644 {} \
 
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
-rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/tests
-rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/tests
+rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unit
+rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unit
 
 
 %clean
@@ -460,13 +461,13 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
 %if 0%{?run_tests}
-pushd xpra-%{version}-python2/tests
-PYTHONPATH=%{buildroot}%{python2_sitearch}:. %{__python2} unit/run.py
+pushd xpra-%{version}-python2/
+PYTHONPATH=%{buildroot}%{python2_sitearch}:. %{__python2} ./unit/run.py
 popd
 
 %if 0%{?with_python3}
-pushd xpra-%{version}-python3/tests
-PYTHONPATH=%{buildroot}%{python3_sitearch}:. %{__python3} unit/run.py
+pushd xpra-%{version}-python3/
+PYTHONPATH=%{buildroot}%{python3_sitearch}:. %{__python3} ./unit/run.py
 popd
 %endif
 %endif

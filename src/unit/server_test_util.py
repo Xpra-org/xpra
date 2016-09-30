@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import time
 import tempfile
 import unittest
@@ -31,7 +32,7 @@ class ServerTestUtil(unittest.TestCase):
 		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no"]
 		ServerTestUtil.existing_displays = cls.dotxpra.displays()
 		ServerTestUtil.processes = []
-		xpra_list = cls.run_xpra(["xpra", "list"])
+		xpra_list = cls.run_xpra(["list"])
 		assert cls.pollwait(xpra_list, 15) is not None
 
 	@classmethod
@@ -47,7 +48,7 @@ class ServerTestUtil(unittest.TestCase):
 		if new_displays:
 			for x in list(new_displays):
 				log("stopping display %s" % x)
-				proc = cls.run_xpra(["xpra", "stop", x])
+				proc = cls.run_xpra(["stop", x])
 				proc.communicate(None)
 
 
@@ -58,7 +59,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def run_xpra(cls, command, env=None):
-		cmd = command + cls.default_xpra_args
+		cmd = ["python%i" % sys.version_info[0], "/usr/bin/xpra"] + command + cls.default_xpra_args
 		return cls.run_command(cmd, env)
 
 	@classmethod
@@ -157,11 +158,11 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def check_server(cls, subcommand, display, *args):
-		server_proc = cls.run_xpra(["xpra", subcommand, display, "--no-daemon"]+list(args))
+		server_proc = cls.run_xpra([subcommand, display, "--no-daemon"]+list(args))
 		assert cls.pollwait(server_proc, 3) is None, "server failed to start, returned %s" % server_proc.poll()
 		assert display in cls.dotxpra.displays(), "server display not found"
 		#query it:
-		info = cls.run_xpra(["xpra", "version", display])
+		info = cls.run_xpra(["version", display])
 		for _ in range(5):
 			r = cls.pollwait(info)
 			log("version for %s returned %s", display, r)
@@ -173,6 +174,6 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
-		stopit = cls.run_xpra(["xpra", subcommand, display])
+		stopit = cls.run_xpra([subcommand, display])
 		assert cls.pollwait(stopit) is not None, "server failed to exit"
 		assert display not in cls.dotxpra.displays(), "server socket for display %s should have been removed" % display

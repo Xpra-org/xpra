@@ -4,9 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import sys
 import time
 import unittest
-from ..server_test_util import ServerTestUtil
+from unit.server_test_util import ServerTestUtil
 
 
 class ShadowServerTest(ServerTestUtil):
@@ -25,7 +27,8 @@ class ShadowServerTest(ServerTestUtil):
 
 
 def main():
-	unittest.main()
+	if os.name=="posix" and sys.version_info[0]==2:
+		unittest.main()
 
 
 if __name__ == '__main__':
