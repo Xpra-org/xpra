@@ -232,17 +232,23 @@ def pointer_grab(window, *args):
     if not hwnd:
         window._client.pointer_grabbed = False
         return
-    rect = win32gui.GetWindowRect(hwnd)
-    grablog("ClipCursor(%s)", rect)
-    win32api.ClipCursor(rect)
+    wx1,wy1,wx2,wy2 = win32gui.GetWindowRect(hwnd)
+    grablog("GetWindowRect(%i)=%s", hwnd, (wx1,wy1,wx2,wy2))
+    _, _, _, h = win32gui.GetClientRect(hwnd)
+    bx = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
+    by = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
+    top = (wy2-wy1)-by-h
+    clip = (wx1+bx, wy1+top, wx2-bx, wy2-by)
+    grablog("ClipCursor%s", clip)
+    win32api.ClipCursor(clip)
     window._client.pointer_grabbed = True
 
 def pointer_ungrab(window, *args):
     hwnd = get_window_handle(window)
     grablog("pointer_ungrab%s window=%s, hwnd=%s", args, window, hwnd)
     if hwnd:
-        rect = [0,0,0,0]
-        grablog("ClipCursor(%s)", rect)
+        rect = (0,0,0,0)
+        grablog("ClipCursor%s", rect)
         win32api.ClipCursor(rect)
     window._client.pointer_grabbed = False
 
