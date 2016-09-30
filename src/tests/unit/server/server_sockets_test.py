@@ -10,6 +10,7 @@ import unittest
 import tempfile
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST
 from tests.unit.server_test_util import ServerTestUtil, log
+from xpra.net.net_util import get_free_tcp_port
 
 
 class ServerSocketsTest(ServerTestUtil):
@@ -49,7 +50,13 @@ class ServerSocketsTest(ServerTestUtil):
 	def Xtest_default_socket(self):
 		self._test_connect([], "allow", [], "hello", "", EXIT_OK)
 
-	def test_bind_tmpdir(self):
+	def test_tcp_socket(self):
+		port = get_free_tcp_port()
+		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "tcp/127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws/127.0.0.1:%i/" % port, EXIT_OK)
+
+
+	def Xtest_bind_tmpdir(self):
 		try:
 			tmpdir = tempfile.mkdtemp(suffix='xpra')
 			#run with this extra socket-dir:

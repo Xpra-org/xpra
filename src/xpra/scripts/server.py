@@ -544,13 +544,6 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
     return defs
 
 
-def get_free_tcp_port():
-    s = socket.socket()
-    s.bind(('', 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
 def close_all_fds(exceptions=[]):
     fd_dirs = ["/dev/fd", "/proc/self/fd"]
     for fd_dir in fd_dirs:
