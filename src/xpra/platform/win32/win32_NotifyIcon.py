@@ -257,6 +257,7 @@ class win32NotifyIcon(object):
         self.delete_tray_window()
         try:
             if cb:
+                self.exit_callback = None
                 cb()
         except:
             log.error("destroy()", exc_info=True)
