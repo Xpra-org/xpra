@@ -435,8 +435,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
     cdef XModifierKeymap* get_keymap(self, load):
         if self.work_keymap==NULL and load:
-            log("retrieving keymap")
             self.work_keymap = XGetModifierMapping(self.display)
+            log("retrieved work keymap: %#x", <unsigned long> self.work_keymap)
         return self.work_keymap
 
     cdef set_work_keymap(self, XModifierKeymap* new_keymap):
