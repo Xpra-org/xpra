@@ -135,6 +135,7 @@ if "--minimal" in sys.argv:
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3 and DEFAULT       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3 and DEFAULT
+proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
@@ -223,7 +224,9 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
             "gtk2", "gtk3", "html5", "pam",
             "sound", "opengl", "printing",
             "rebuild",
-            "annotate", "warn", "strict", "shadow", "debug", "PIC",
+            "annotate", "warn", "strict",
+            "shadow", "proxy",
+            "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
 if WIN32:
     SWITCHES.append("zip")
@@ -1896,7 +1899,9 @@ membuffers_c = [memalign_c, inline_c, buffers_c]
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
-toggle_packages(server_ENABLED, "xpra.server", "xpra.server.auth", "xpra.server.proxy", "xpra.server.window")
+toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
+toggle_packages(proxy_ENABLED, "xpra.server.proxy")
+toggle_packages(server_ENABLED, "xpra.server.auth", "xpra.server.window")
 toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipboard")
 #cannot use toggle here as py2exe will complain if we try to exclude this module:
@@ -2020,7 +2025,7 @@ if client_ENABLED or server_ENABLED:
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.scripts.config", "xpra.scripts.exec_util", "xpra.scripts.fdproxy", "xpra.scripts.version")
-if server_ENABLED:
+if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
 if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
     add_modules("xpra.scripts.gtk_info")

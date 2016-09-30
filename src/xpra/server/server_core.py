@@ -7,7 +7,6 @@
 # later version. See the file COPYING for details.
 
 import binascii
-import types
 import os
 import sys
 import time
@@ -31,7 +30,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, SIGNAMES
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
@@ -1207,10 +1206,10 @@ class ServerCore(object):
 
 
     def process_packet(self, proto, packet):
+        packet_type = None
+        handler = None
         try:
-            handler = None
-            packet_type = packet[0]
-            assert isinstance(packet_type, types.StringTypes), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
+            packet_type = bytestostr(packet[0])
             handler = self._default_packet_handlers.get(packet_type)
             if handler:
                 netlog("process packet %s", packet_type)
