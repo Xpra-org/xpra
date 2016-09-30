@@ -1554,7 +1554,8 @@ class ServerBase(ServerCore):
             raise ControlError("file '%s' does not exist" % filename)
         data = load_binary_file(actual_filename)
         #verify size:
-        file_size_MB = len(data)//1024//1024
+        file_size = len(data)
+        file_size_MB = file_size//1024//1024
         if file_size_MB>self.file_transfer.file_size_limit:
             raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_transfer.file_size_limit))
         #send it to each client:
@@ -1567,7 +1568,7 @@ class ServerBase(ServerCore):
                 log.warn("Warning: cannot %s '%s'", command_type, filename)
                 log.warn(" client %s file size limit is %iMB (file is %iMB)", ss, ss.file_size_limit, file_size_MB)
             else:
-                ss.send_file(filename, "", data, *send_file_args)
+                ss.send_file(filename, "", data, file_size, *send_file_args)
         return "%s of '%s' to %s initiated" % (command_type, filename, client_uuids)
 
 
