@@ -375,11 +375,14 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="COMMAND",
                           help="Specify the lpinfo command to use. Default: '%default'.")
     else:
-        ignore({"lpadmin"   : defaults.lpadmin,
-                "lpinfo"    : defaults.lpinfo})
+        ignore({
+                "lpadmin"               : defaults.lpadmin,
+                "lpinfo"                : defaults.lpinfo,
+                })
     #options without command line equivallents:
     hidden_options["pdf-printer"] = defaults.pdf_printer
     hidden_options["postscript-printer"] = defaults.postscript_printer
+    hidden_options["add-printer-options"] = defaults.add_printer_options
     hidden_options["file-size-limit"] = defaults.file_size_limit
     hidden_options["open-command"] = defaults.open_command
     hidden_options["open-files"] = defaults.open_files

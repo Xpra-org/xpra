@@ -133,6 +133,7 @@ class ServerBase(ServerCore):
         self.dbus_server = None
         self.lpadmin = ""
         self.lpinfo = ""
+        self.add_printer_options = []
         self.file_transfer = FileTransferAttributes()
         #starting child commands:
         self.child_display = None
@@ -247,6 +248,7 @@ class ServerBase(ServerCore):
         self.file_transfer.init_opts(opts)
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
+        self.add_printer_options = opts.add_printer_options
         self.av_sync = opts.av_sync
         self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
@@ -382,6 +384,7 @@ class ServerBase(ServerCore):
             from xpra.platform import pycups_printing
             pycups_printing.set_lpadmin_command(self.lpadmin)
             pycups_printing.set_lpinfo_command(self.lpinfo)
+            pycups_printing.set_add_printer_options(self.add_printer_options)
             if self.postscript_printer:
                 pycups_printing.add_printer_def("application/postscript", self.postscript_printer)
             if self.pdf_printer:
@@ -1949,8 +1952,9 @@ class ServerBase(ServerCore):
 
     def get_printing_info(self):
         d = {
-             "lpadmin"  : self.lpadmin,
-             "lpinfo"   : self.lpinfo,
+             "lpadmin"              : self.lpadmin,
+             "lpinfo"               : self.lpinfo,
+             "add-printer-options"  : self.add_printer_options,
              }
         if self.file_transfer.printing:
             from xpra.platform.printing import get_info

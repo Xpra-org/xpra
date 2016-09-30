@@ -11,7 +11,6 @@ import cups
 import time
 import subprocess
 import shlex
-import getpass
 import urllib
 from threading import Lock
 
@@ -22,7 +21,6 @@ log = Logger("printing")
 
 SIMULATE_PRINT_FAILURE = envint("XPRA_SIMULATE_PRINT_FAILURE")
 
-ALLOW = os.environ.get("XPRA_PRINTER_ALLOW", getpass.getuser())
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 GENERIC = envbool("XPRA_PRINTERS_GENERIC", True)
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
@@ -32,6 +30,8 @@ DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/
 
 LPADMIN = "lpadmin"
 LPINFO = "lpinfo"
+ADD_OPTIONS = ["-E", "-o printer-is-shared=false", "-u allow:$USERNAME"]
+
 FORWARDER_BACKEND = "xpraforwarder"
 
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Cups-PDF").split(",")
@@ -49,7 +49,6 @@ CUPS_DBUS = envint("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)
 POLLING_DELAY = envint("XPRA_CUPS_POLLING_DELAY", 60)
 log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
 log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
-log("pycups settings: ALLOW=%s", ALLOW)
 log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
 log("pycups settings: SKIPPED_PRINTERS=%s", SKIPPED_PRINTERS)
 
@@ -78,6 +77,10 @@ if dco:
 def set_lpadmin_command(lpadmin):
     global LPADMIN
     LPADMIN = lpadmin
+
+def set_add_printer_options(options):
+    global ADD_OPTIONS
+    ADD_OPTIONS = options
 
 def set_lpinfo_command(lpinfo):
     global LPINFO
@@ -280,13 +283,21 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
         log.error("Error: cannot add printer '%s':", name)
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
-    command = ["-p", PRINTER_PREFIX+sanitize_name(name),
-               "-E",
+    command = [
+               "-p", PRINTER_PREFIX+sanitize_name(name),
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urllib.urlencode(attributes),
                "-D", info,
                "-L", location,
-               "-o", "printer-is-shared=false",
-               "-u", "allow:%s" % ALLOW]+printer_def
+               ]
+    if ADD_OPTIONS:
+        #ie:
+        #"-E",
+        #"-o", "printer-is-shared=false",
+        #"-u", "allow:$USERNAME"
+        for opt in ADD_OPTIONS:
+            v = shlex.split(opt)
+            command += os.path.expandvars(v)
+    command += printer_def
     #add attributes:
     log("pycups_printing adding printer: %s", command)
     exec_lpadmin(command, success_cb=success_cb)
@@ -428,7 +439,6 @@ def get_info():
                                    "ppd"        : MIMETYPE_TO_PPD},
             "mimetype"          : {"default"    : DEFAULT_MIMETYPE},
             "simulate-failure"  : SIMULATE_PRINT_FAILURE,
-            "allow-user"        : ALLOW,
             "raw-mode"          : RAW_MODE,
             "generic"           : GENERIC,
             "tmpdir"            : FORWARDER_TMPDIR,
