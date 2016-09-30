@@ -15,21 +15,23 @@ class X11ClientTest(ServerTestUtil):
 	def run_client(self, *args):
 		client_display = self.find_free_display()
 		xvfb = self.start_Xvfb(client_display)
+		return xvfb, self.do_run_client(client_display, *args)
+
+	def do_run_client(self, client_display, *args):
 		from xpra.scripts.server import xauth_add
 		xauth_add(client_display)
 		env = self.run_env()
 		env["DISPLAY"] = client_display
 		log("starting test client on Xvfb %s", client_display)
-		
-		return xvfb, self.run_xpra(["xpra", "attach"] + list(args) , env)
+		return self.run_xpra(["xpra", "attach"] + list(args) , env)
 
-	def do_test_connect(self, sharing=False):
+	def do_test_connect(self, sharing=False, *client_args):
 		display = self.find_free_display()
 		log("starting test server on %s", display)
 		server = self.check_start_server(display, "--start=xterm", "--sharing=%s" % sharing)
-		xvfb1, client1 = self.run_client(display, "--sharing=%s" % sharing)
+		xvfb1, client1 = self.run_client(display, "--sharing=%s" % sharing, *client_args)
 		assert self.pollwait(client1, 2) is None
-		xvfb2, client2 = self.run_client(display, "--sharing=%s" % sharing)
+		xvfb2, client2 = self.run_client(display, "--sharing=%s" % sharing, *client_args)
 		assert self.pollwait(client2, 2) is None
 		if not sharing:
 			#starting a second client should disconnect the first when not sharing
@@ -49,6 +51,15 @@ class X11ClientTest(ServerTestUtil):
 
 	def test_sharing(self):
 		self.do_test_connect(True)
+
+	def test_opengl(self):
+		self.do_test_connect(False, "--opengl=yes")
+
+	def test_multiscreen(self):
+		client_display = self.find_free_display()
+		xvfb = self.start_Xvfb(client_display, screens=[(1024,768), (1200, 1024)])
+		#multiscreen requires Xvfb, which does not support opengl:
+		return xvfb, self.do_run_client(client_display, "--opengl=no")
 
 
 def main():

@@ -10,7 +10,8 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, repr_ellipsized
-from xpra.platform.dotxpra import DotXpra
+from xpra.scripts.config import get_defaults
+from xpra.platform.dotxpra import DotXpra, osexpand
 from xpra.platform.paths import get_socket_dirs
 
 from xpra.log import Logger
@@ -23,6 +24,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
+		cls.default_config = get_defaults()
 		dirs = get_socket_dirs()
 		cls.display_start = 100
 		cls.dotxpra = DotXpra(dirs[0], dirs)
@@ -127,11 +129,15 @@ class ServerTestUtil(unittest.TestCase):
 		if display is None:
 			display = cls.find_free_display_no()
 		XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-		cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
-				"-auth", XAUTHORITY]
-		for i, screen in enumerate(screens):
-			(w, h) = screen
-			cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
+		if len(screens)>1:
+			cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
+					"-auth", XAUTHORITY]
+			for i, screen in enumerate(screens):
+				(w, h) = screen
+				cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
+		else:
+			import shlex
+			cmd = shlex.split(osexpand(cls.default_config.get("xvfb")))
 		cmd.append(display)
 		return cls.run_command(cmd)
 
