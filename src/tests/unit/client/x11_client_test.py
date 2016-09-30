@@ -6,11 +6,11 @@
 
 import os
 import unittest
+from xpra.os_util import load_binary_file
 from tests.unit.server_test_util import ServerTestUtil, log
 
 
 class X11ClientTest(ServerTestUtil):
-
 
 	def run_client(self, *args):
 		client_display = self.find_free_display()
@@ -60,6 +60,37 @@ class X11ClientTest(ServerTestUtil):
 		xvfb = self.start_Xvfb(client_display, screens=[(1024,768), (1200, 1024)])
 		#multiscreen requires Xvfb, which does not support opengl:
 		return xvfb, self.do_run_client(client_display, "--opengl=no")
+
+
+	def do_test_control_send_file(self, data):
+		f = self._temp_file(data)
+		try:
+			display = self.find_free_display()
+			server = self.check_start_server(display)
+			xvfb, client = self.run_client(display)
+			assert self.pollwait(client, 2) is None
+			#send a file to this client:
+			send_file_command = ["xpra", "control", display, "send-file", f.name, "1", "*"]
+			send_file = self.run_command(send_file_command)
+			assert self.pollwait(send_file, 2)==0
+			#now verify the file can be found in the download directory
+			from xpra.platform.paths import get_download_dir
+			filename = os.path.join(os.path.expanduser(get_download_dir()), os.path.basename(f.name))
+			assert os.path.exists(filename), "cannot find %s" % filename
+			readback = load_binary_file(filename)
+			assert readback==data
+			os.unlink(filename)
+			#cleanup:
+			client.terminate()
+			xvfb.terminate()
+			server.terminate()
+		finally:
+			f.close()
+
+	def test_control_send_file(self):
+		import uuid
+		data = b"".join(uuid.uuid4().bytes for _ in range(100))
+		self.do_test_control_send_file(data)
 
 
 def main():

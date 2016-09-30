@@ -62,10 +62,9 @@ class ServerTestUtil(unittest.TestCase):
 		return cls.run_command(cmd, env)
 
 	@classmethod
-	def run_command(cls, command, env=None):
+	def run_command(cls, command, env=None, **kwargs):
 		if env is None:
 			env = cls.run_env()
-		kwargs = {}
 		if HIDE_SUBPROCESS_OUTPUT:
 			stdout = cls._temp_file()
 			stderr = cls._temp_file()
