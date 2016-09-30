@@ -1364,7 +1364,7 @@ def parse_display_name(error_cb, opts, display_name):
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/") or \
             display_name.startswith("ssl:") or display_name.startswith("ssl/"):
         ctype = display_name[:3]        #ie: "ssl" or "tcp"
-        separator = display_name[3] # ":" or "/"
+        separator = display_name[3]     # ":" or "/"
         desc.update({
                      "type"     : ctype,
                      "local"    : False,
@@ -1419,15 +1419,15 @@ def parse_display_name(error_cb, opts, display_name):
         else:
             extra = ""
         username, password, host, port = parse_host_string(host)
-        host += extra
-        #TODO: parse attrs after "?"
+        #TODO: parse attrs after "/" and ?"
         desc.update({
                 "type"          : ws_proto,     #"ws" or "wss"
                 "local"         : False,
-                "display"       : display_name,
+                "display"       : extra,
                 "host"          : host,
                 "port"          : port,
                 })
+        print("ws:%s" % desc)
         return desc
     elif WIN32 or display_name.startswith("named-pipe:"):
         pipe_name = display_name
