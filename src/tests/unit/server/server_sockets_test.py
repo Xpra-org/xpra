@@ -47,7 +47,7 @@ class ServerSocketsTest(ServerTestUtil):
 			client.terminate()
 		server.terminate()
 
-	def Xtest_default_socket(self):
+	def test_default_socket(self):
 		self._test_connect([], "allow", [], "hello", "", EXIT_OK)
 
 	def test_tcp_socket(self):
@@ -55,8 +55,59 @@ class ServerSocketsTest(ServerTestUtil):
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "tcp/127.0.0.1:%i/" % port, EXIT_OK)
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws/127.0.0.1:%i/" % port, EXIT_OK)
 
+	def test_ssl_socket(self):
+		server = None
+		display_no = self.find_free_display_no()
+		display = ":%s" % display_no
+		tcp_port = get_free_tcp_port()
+		ssl_port = get_free_tcp_port()
+		try:
+			tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
+			certfile = os.path.join(tmpdir, "self.pem")
+			openssl_command = [
+								"openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+								"-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+    							"-keyout", certfile, "-out", certfile,
+    							]
+			openssl = self.run_command(openssl_command)
+			assert self.pollwait(openssl, 10)==0, "openssl certificate generation failed"
+			server_args = [
+							"--bind-tcp=0.0.0.0:%i" % tcp_port,
+							"--bind-ssl=0.0.0.0:%i" % ssl_port,
+							"--ssl=on",
+							"--ssl-cert=%s" % certfile]
 
-	def Xtest_bind_tmpdir(self):
+			log("starting test server on %s", display)
+			server = self.start_server(display, *server_args)
+
+			#test it with openssl:
+			for port in (tcp_port, ssl_port):
+				openssl_verify_command = "openssl s_client -connect 127.0.0.1:%i -CAfile %s < /dev/null" % (port, certfile)
+				openssl = self.run_command(openssl_verify_command, shell=True)
+				assert self.pollwait(openssl, 10)==0, "openssl certificate verification failed"
+
+			def test_connect(uri, exit_code, *client_args):
+				cmd = ["xpra", "info", uri] + list(client_args)
+				client = self.run_xpra(cmd)
+				r = self.pollwait(client, 5)
+				if client.poll() is None:
+					client.terminate()
+				assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())
+			noverify = "--ssl-server-verify-mode=none"
+			#connect to ssl socket:
+			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_OK, noverify)
+			#tcp socket should upgrade:
+			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+			#self signed cert should fail:
+			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_CONNECTION_LOST)
+			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_CONNECTION_LOST)
+			
+		finally:
+			shutil.rmtree(tmpdir)
+			if server:
+				server.terminate()
+
+	def test_bind_tmpdir(self):
 		try:
 			tmpdir = tempfile.mkdtemp(suffix='xpra')
 			#run with this extra socket-dir:
