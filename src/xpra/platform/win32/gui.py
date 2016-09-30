@@ -14,7 +14,6 @@ grablog = Logger("win32", "grab")
 screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
 mouselog = Logger("win32", "mouse")
-grablog = Logger("win32", "grab")
 
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
@@ -29,6 +28,7 @@ import win32gui     #@UnresolvedImport
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
 UNDECORATED_STYLE = WINDOW_HOOKS and envbool("XPRA_WIN32_UNDECORATED_STYLE", True)
+CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
 #GTK3 is fixed, so we don't need this hook:
 DEFAULT_MAX_SIZE_HINT = sys.version_info[0]<3
 MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", DEFAULT_MAX_SIZE_HINT)
@@ -226,6 +226,26 @@ WS_NAMES = {
 def style_str(style):
     return csv([s for c,s in WS_NAMES.items() if (c & style)==c])
 
+def pointer_grab(window, *args):
+    hwnd = get_window_handle(window)
+    grablog("pointer_grab%s window=%s, hwnd=%s", args, window, hwnd)
+    if not hwnd:
+        window._client.pointer_grabbed = False
+        return
+    rect = win32gui.GetWindowRect(hwnd)
+    grablog("ClipCursor(%s)", rect)
+    win32api.ClipCursor(rect)
+    window._client.pointer_grabbed = True
+
+def pointer_ungrab(window, *args):
+    hwnd = get_window_handle(window)
+    grablog("pointer_ungrab%s window=%s, hwnd=%s", args, window, hwnd)
+    if hwnd:
+        rect = [0,0,0,0]
+        grablog("ClipCursor(%s)", rect)
+        win32api.ClipCursor(rect)
+    window._client.pointer_grabbed = False
+
 def fixup_window_style(self, *args):
     """ a fixup function we want to call from other places """
     hwnd = get_window_handle(self)
@@ -357,6 +377,10 @@ def add_window_hooks(window):
             window.connect("state-updated", window_state_updated)
             #call it at least once:
             window.fixup_window_style()
+
+    if CLIP_CURSOR:
+        window.pointer_grab = types.MethodType(pointer_grab, window)
+        window.pointer_ungrab = types.MethodType(pointer_ungrab, window)
 
     if MAX_SIZE_HINT or LANGCHANGE:
         #glue code for gtk to win32 APIs:
