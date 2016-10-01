@@ -2258,8 +2258,13 @@ def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
         #launch the shadow server via launchctl so it will have GUI access:
         LAUNCH_AGENT = "org.xpra.Agent"
         LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
-        if not os.path.exists(LAUNCH_AGENT_FILE):
-            raise InitException("Error: cannot start shadow,\n the launch agent file '%s' is missing.\n" % LAUNCH_AGENT_FILE)
+        try:
+            os.stat(LAUNCH_AGENT_FILE)
+        except Exception as e:
+            #ignore access denied error, launchctl runs as root
+            import errno
+            if e[0]!=errno.EACCES:
+                sys.stderr.write("Error: shadow may not start,\n the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
         argfile = os.path.expanduser("~/.xpra/shadow-args")
         with open(argfile, "w") as f:
             f.write('["Xpra", "--no-daemon"')
