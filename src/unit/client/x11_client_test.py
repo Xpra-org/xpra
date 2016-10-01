@@ -71,9 +71,9 @@ class X11ClientTest(ServerTestUtil):
 			xvfb, client = self.run_client(display)
 			assert self.pollwait(client, 2) is None
 			#send a file to this client:
-			send_file_command = ["xpra", "control", display, "send-file", f.name, "1", "*"]
-			send_file = self.run_command(send_file_command)
-			assert self.pollwait(send_file, 2)==0
+			send_file_command = ["control", display, "send-file", f.name, "1", "*"]
+			send_file = self.run_xpra(send_file_command)
+			assert self.pollwait(send_file, 5)==0, "send-file command returncode is %s" % send_file.poll()
 			#now verify the file can be found in the download directory
 			from xpra.platform.paths import get_download_dir
 			filename = os.path.join(os.path.expanduser(get_download_dir()), os.path.basename(f.name))
