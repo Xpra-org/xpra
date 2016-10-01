@@ -500,6 +500,14 @@ cdef class Encoder:
         cdef unsigned int i                        #@DuplicatedSignature
 
         assert self.context!=NULL
+        pixels = image.get_pixels()
+        istrides = image.get_rowstride()
+        assert image.get_pixel_format()==self.src_format, "invalid input format %s, expected %s" % (image.get_pixel_format, self.src_format)
+        assert image.get_width()==self.width and image.get_height()==self.height
+        assert pixels, "failed to get pixels from %s" % image
+        assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
+        assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+
         start = time.time()
         data = []
         log("x265.compress_image(%s, %s)", image, options)
@@ -515,9 +523,6 @@ cdef class Encoder:
                 out = <char *>nal[i].payload
                 data.append(out[:nal[i].sizeBytes])
                 log("x265 header[%s]: %s bytes", i, nal[i].sizeBytes)
-
-        pixels = image.get_pixels()
-        istrides = image.get_rowstride()
 
         pic_in = x265_picture_alloc()
         assert pic_in!=NULL
