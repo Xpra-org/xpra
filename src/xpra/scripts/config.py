@@ -568,7 +568,7 @@ def get_defaults():
         username = get_username()
     except:
         username = ""
-    conf_dirs = []
+    conf_dirs = [os.environ.get("XPRA_CONF_DIR")]
     xpra_cmd = sys.argv[0]
     bin_dir = None
     if len(sys.argv)>0 and xpra_cmd.find("/bin")>=0:
@@ -578,7 +578,7 @@ def get_defaults():
         conf_dirs.append("/etc/xpra")
     else:
         conf_dirs.append(os.path.join(sys.prefix, "etc", "xpra"))
-    for conf_dir in conf_dirs:
+    for conf_dir in [x for x in conf_dirs if x]:
         if os.path.exists(conf_dir):
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir)
