@@ -296,6 +296,19 @@ class HideSysArgv(object):
             sys.argv = self.savedsysargv
 
 
+class OSEnvContext(object):
+
+    def __init__(self):
+        self.env = os.environ.copy()
+    def __enter__(self):
+        pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.environ.clear()
+        os.environ.update(self.env)
+    def __repr__(self):
+        return "OSEnvContext"
+
+
 def disable_stdout_buffering():
     import gc
     # Appending to gc.garbage is a way to stop an object from being

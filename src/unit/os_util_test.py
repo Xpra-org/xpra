@@ -6,10 +6,10 @@
 
 import unittest
 
-from xpra.os_util import strtobytes, bytestostr, _memoryview, memoryview_to_bytes
+from xpra.os_util import strtobytes, bytestostr, _memoryview, memoryview_to_bytes, OSEnvContext
 
 
-class TestModuleFunctions(unittest.TestCase):
+class TestOSUtil(unittest.TestCase):
 
     def check(self, str_value):
         b = strtobytes(str_value)
@@ -35,6 +35,14 @@ class TestModuleFunctions(unittest.TestCase):
             self.check(ones)
             self.check(ff)
             self.check(fe)
+
+    def test_env_context(self):
+        import os
+        env = os.environ.copy()
+        with OSEnvContext():
+            os.environ["foo"] = "bar"
+        assert os.environ.get("foo")!="bar"
+        assert os.environ==env
 
 
 def main():
