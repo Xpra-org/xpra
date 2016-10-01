@@ -2108,11 +2108,11 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
                 proxy_args.append("--no-%s" % e)
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
-        params["proxy_command"] = {
+        params["proxy_command"] = [{
                                    "shadow"         : "_shadow_start",
                                    "start"          : "_proxy_start",
                                    "start-desktop"  : "_proxy_start_desktop",
-                                   }.get(mode)
+                                   }.get(mode)]
     else:
         #tcp, ssl or vsock:
         sns = {
