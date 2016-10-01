@@ -11,6 +11,7 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, repr_ellipsized
+from xpra.os_util import OSEnvContext
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra, osexpand
 from xpra.platform.paths import get_socket_dirs
@@ -18,7 +19,7 @@ from xpra.platform.paths import get_socket_dirs
 from xpra.log import Logger
 log = Logger("test")
 
-HIDE_SUBPROCESS_OUTPUT = envbool("XPRA_HIDE_SUBPROCESS_OUTPUT", True)
+XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
 
 
 class ServerTestUtil(unittest.TestCase):
@@ -54,25 +55,28 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def run_env(self):
-		return dict((k,v) for k,v in os.environ.items() if k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", ))
+		return dict((k,v) for k,v in os.environ.items() if k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
 
 
 	@classmethod
 	def run_xpra(cls, command, env=None):
-		cmd = ["python%i" % sys.version_info[0], "/usr/bin/xpra"] + command + cls.default_xpra_args
+		from xpra.platform.paths import get_xpra_command
+		xpra_cmd = get_xpra_command()
+		log("xpra command: %s, env=%s", xpra_cmd, os.environ)
+		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + command + cls.default_xpra_args
 		return cls.run_command(cmd, env)
 
 	@classmethod
 	def run_command(cls, command, env=None, **kwargs):
 		if env is None:
 			env = cls.run_env()
-		if HIDE_SUBPROCESS_OUTPUT:
+		if XPRA_TEST_DEBUG:
+			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
+		else:
 			stdout = cls._temp_file()
 			stderr = cls._temp_file()
 			kwargs = {"stdout" : stdout, "stderr" : stderr}
 			log("output of %s sent to %s / %s", command, stdout.name, stderr.name)
-		else:
-			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
 		proc = subprocess.Popen(args=command, env=env, **kwargs)
 		ServerTestUtil.processes.append(proc)
 		return proc
@@ -127,19 +131,21 @@ class ServerTestUtil(unittest.TestCase):
 	def start_Xvfb(cls, display=None, screens=[(1024,768)]):
 		assert os.name=="posix"
 		if display is None:
-			display = cls.find_free_display_no()
-		XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-		if len(screens)>1:
-			cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
-					"-auth", XAUTHORITY]
-			for i, screen in enumerate(screens):
-				(w, h) = screen
-				cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
-		else:
-			import shlex
-			cmd = shlex.split(osexpand(cls.default_config.get("xvfb")))
-		cmd.append(display)
-		return cls.run_command(cmd)
+			display = cls.find_free_display()
+		with OSEnvContext():
+			os.environ["DISPLAY"] = display
+			XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+			if len(screens)>1:
+				cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
+						"-auth", XAUTHORITY]
+				for i, screen in enumerate(screens):
+					(w, h) = screen
+					cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
+			else:
+				import shlex
+				cmd = shlex.split(osexpand(cls.default_config.get("xvfb")))
+			cmd.append(display)
+			return cls.run_command(cmd)
 
 
 	@classmethod
