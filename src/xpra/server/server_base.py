@@ -1696,11 +1696,16 @@ class ServerBase(ServerCore):
     def control_command_clipboard_direction(self, direction, *args):
         ch = self._clipboard_helper
         assert self.supports_clipboard and ch
-        assert direction in ("to-server", "to-client", "both", "disabled")
+        direction = direction.lower()
+        DIRECTIONS = ("to-server", "to-client", "both", "disabled")
+        assert direction in DIRECTIONS, "invalid direction '%s', must be one of %s" % (direction, csv(DIRECTIONS))
         self.clipboard_direction = direction
         can_send = direction in ("to-server", "both")
         can_receive = direction in ("to-client", "both")
-        self.client.clipboard_helper.set_direction(can_send, can_receive)
+        self._clipboard_helper.set_direction(can_send, can_receive)
+        msg = "clipboard direction set to '%s'" % direction
+        clipboardlog(msg)
+        return msg
 
     def _control_video_subregions_from_wid(self, wid):
         if wid not in self._id_to_window:
