@@ -158,6 +158,7 @@ class ServerBase(ServerCore):
         self.webcam_encodings = []
         self.webcam_forwarding_device = None
         self.virtual_video_devices = 0
+        self.mem_bytes = 0
 
         #sound:
         self.pulseaudio = False
@@ -264,19 +265,6 @@ class ServerBase(ServerCore):
         self.pulseaudio_command = opts.pulseaudio_command
         self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
 
-        #verify we have enough memory:
-        if os.name=="posix":
-            try:
-                mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
-                LOW_MEM_LIMIT = 512*1024*1024
-                if mem_bytes<=LOW_MEM_LIMIT:
-                    log.warn("Warning: only %iMB total system memory available", mem_bytes//(1024**2))
-                    log.warn(" this may not be enough to run a server")
-                else:
-                    log.info("%.1fGB of system memory", mem_bytes/(1024.0**3))
-            except:
-                pass
-
         #video init: default to ALL if not specified
         video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
         csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
@@ -306,6 +294,7 @@ class ServerBase(ServerCore):
         #re-init list of encodings now that we have video initialized
         self.init_encodings()
         self.init_printing()
+        self.init_memcheck()
         log("threaded_init() end")
 
     def init_encodings(self):
@@ -375,6 +364,20 @@ class ServerBase(ServerCore):
             log.warn("Warning: no local sockets defined, cannot enable printing")
             self.file_transfer.printing = False
 
+
+    def init_memcheck(self):
+        #verify we have enough memory:
+        if os.name=="posix" and self.mem_bytes==0:
+            try:
+                self.mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
+                LOW_MEM_LIMIT = 512*1024*1024
+                if self.mem_bytes<=LOW_MEM_LIMIT:
+                    log.warn("Warning: only %iMB total system memory available", self.mem_bytes//(1024**2))
+                    log.warn(" this may not be enough to run a server")
+                else:
+                    log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
+            except:
+                pass
 
     def init_printing(self):
         printing = self.file_transfer.printing
@@ -1936,6 +1939,8 @@ class ServerBase(ServerCore):
     def get_info(self, proto=None, client_uuids=None, wids=None, *args):
         start = time.time()
         info = ServerCore.get_info(self, proto)
+        if self.mem_bytes:
+            info["total-memory"] = self.mem_bytes
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
