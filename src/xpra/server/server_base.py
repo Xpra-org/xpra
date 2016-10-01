@@ -1940,7 +1940,7 @@ class ServerBase(ServerCore):
         start = time.time()
         info = ServerCore.get_info(self, proto)
         if self.mem_bytes:
-            info["total-memory"] = self.mem_bytes
+            info.setdefault("server", {})["total-memory"] = self.mem_bytes
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
