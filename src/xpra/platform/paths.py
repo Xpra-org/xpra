@@ -111,10 +111,13 @@ def do_get_app_dir():
 
 def default_get_app_dir():
     if os.name=="posix":
-        for prefix in [get_install_prefix(),
+        for prefix in [os.environ.get("RPM_BUILD_ROOT"),
+                       get_install_prefix(),
                        sys.exec_prefix,
                        "/usr",
                        "/usr/local"]:
+            if not prefix:
+                continue
             adir = os.path.join(prefix, "share", "xpra")
             if valid_dir(adir):
                 return adir

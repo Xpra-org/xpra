@@ -62,7 +62,6 @@ class ServerTestUtil(unittest.TestCase):
 	def run_xpra(cls, command, env=None):
 		from xpra.platform.paths import get_xpra_command
 		xpra_cmd = get_xpra_command()
-		log("xpra command: %s, env=%s", xpra_cmd, os.environ)
 		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + command + cls.default_xpra_args
 		return cls.run_command(cmd, env)
 
@@ -144,6 +143,8 @@ class ServerTestUtil(unittest.TestCase):
 			else:
 				import shlex
 				cmd = shlex.split(osexpand(cls.default_config.get("xvfb")))
+				if "/etc/xpra/xorg.conf" in cmd:
+					cmd[cmd.index("/etc/xpra/xorg.conf")] = "./etc/xpra/xorg.conf"
 			cmd.append(display)
 			return cls.run_command(cmd)
 

@@ -569,6 +569,9 @@ def get_defaults():
     except:
         username = ""
     conf_dirs = [os.environ.get("XPRA_CONF_DIR")]
+    build_root = os.environ.get("RPM_BUILD_ROOT")
+    if build_root:
+        conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
     xpra_cmd = sys.argv[0]
     bin_dir = None
     if len(sys.argv)>0 and xpra_cmd.find("/bin")>=0:
