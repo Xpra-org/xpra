@@ -6,7 +6,7 @@
 
 
 from xpra.log import Logger
-from xpra.util import csv
+from xpra.util import csv, engs
 log = Logger("util", "command")
 
 
@@ -51,7 +51,7 @@ class ArgsControlCommand(ControlCommand):
 
     def run(self, *args):
         if self.min_args is not None and len(args)<self.min_args:
-            self.raise_error("at least %i arguments are required" % self.min_args)
+            self.raise_error("at least %i argument%s required" % (self.min_args, engs(self.min_args)))
         if self.max_args is not None and len(args)>self.max_args:
             self.raise_error("too many arguments, %i maximum" % self.max_args)
         args = list(args)
