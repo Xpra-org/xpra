@@ -145,7 +145,7 @@ gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT
-pam_ENABLED = DEFAULT and server_ENABLED and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
@@ -1899,9 +1899,9 @@ membuffers_c = [memalign_c, inline_c, buffers_c]
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
-toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
+toggle_packages(server_ENABLED or proxy_ENABLED or shadow_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
-toggle_packages(server_ENABLED, "xpra.server.auth", "xpra.server.window")
+toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipboard")
 #cannot use toggle here as py2exe will complain if we try to exclude this module:
