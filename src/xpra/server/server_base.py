@@ -402,14 +402,15 @@ class ServerBase(ServerCore):
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
         #verify that we can talk to the socket:
-        if printing and self.auth_class and self.auth_class!="none":
+        if printing and self.auth_class:
             try:
                 #this should be the name of the auth module:
                 auth_name = self.auth_class[0]
             except:
                 auth_name = str(self.auth_class)
-            log.warn("Warning: printing conflicts with socket authentication module '%s'", auth_name)
-            printing = False
+            if auth_name!="none":
+                log.warn("Warning: printing conflicts with socket authentication module '%s'", auth_name)
+                printing = False
         #update file transfer attributes since printing nay have been disabled here
         self.file_transfer.printing = printing
         printlog("init_printing() printing=%s", printing)
