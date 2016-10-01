@@ -109,7 +109,11 @@ class DotXpra(object):
             potential_sockets = glob.glob(base + "*")
             results = []
             for sockpath in sorted(potential_sockets):
-                s = os.stat(sockpath)
+                try:
+                    s = os.stat(sockpath)
+                except OSError:
+                    #socket cannot be accessed
+                    continue
                 if stat.S_ISSOCK(s.st_mode):
                     if check_uid>0:
                         if s.st_uid!=check_uid:
