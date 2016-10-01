@@ -13,7 +13,7 @@ import time
 from xpra.log import Logger
 log = Logger("util", "auth")
 
-
+from xpra.os_util import strtobytes
 from posix.types cimport gid_t, pid_t, off_t, uid_t
 
 cdef extern from "errno.h" nogil:
@@ -120,7 +120,7 @@ def pam_open(service_name="xpra", env=None, items=None):
 
     conv.conv = <void*> misc_conv
     conv.appdata_ptr = NULL;
-    r = pam_start(service_name, passwd_struct.pw_name, &conv, &pam_handle)
+    r = pam_start(strtobytes(service_name), strtobytes(passwd_struct.pw_name), &conv, &pam_handle)
     log("pam_start: %s", PAM_ERR_STR.get(r, r))
     if r!=PAM_SUCCESS:
         pam_handle = NULL
@@ -131,7 +131,7 @@ def pam_open(service_name="xpra", env=None, items=None):
     if env:
         for k,v in env.items():
             name_value = "%s=%s\0" % (k, v)
-            r = pam_putenv(pam_handle, name_value)
+            r = pam_putenv(pam_handle, strtobytes(name_value))
             if r!=PAM_SUCCESS:
                 log.error("Error %i: failed to add '%s' to pam environment", r, name_value)
             else:
@@ -140,6 +140,7 @@ def pam_open(service_name="xpra", env=None, items=None):
     if items:
         from ctypes import addressof, create_string_buffer
         for k,v in items.items():
+            v = strtobytes(v)
             item_type = PAM_ITEMS.get(k.upper())
             if item_type is None or item_type in (PAM_CONV, PAM_FAIL_DELAY):
                 log.error("Error: invalid pam item '%s'", k)
@@ -148,7 +149,7 @@ def pam_open(service_name="xpra", env=None, items=None):
                 method = "MIT-MAGIC-COOKIE-1\0"
                 xauth_data.namelen = len("MIT-MAGIC-COOKIE-1")
                 xauth_data.name = method
-                s = v+"\0"
+                s = v+b"\0"
                 xauth_data.datalen = len(v)
                 xauth_data.data = s
                 item = <const void*> &xauth_data
