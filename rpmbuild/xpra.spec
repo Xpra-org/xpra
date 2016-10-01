@@ -463,14 +463,19 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
+%if 0%{?debug_tests}
+export XPRA_UTIL_DEBUG=1
+export XPRA_TEST_DEBUG=1
+%endif
+
 %if 0%{?run_tests}
 pushd xpra-%{version}-python2/
-PYTHONPATH=%{buildroot}%{python2_sitearch}:. %{__python2} ./unit/run.py
+PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/scripts/:$PATH" XPRA_COMMAND="`pwd`/scripts/xpra" %{__python2} ./unit/run.py
 popd
 
 %if 0%{?with_python3}
 pushd xpra-%{version}-python3/
-PYTHONPATH=%{buildroot}%{python3_sitearch}:. %{__python3} ./unit/run.py
+PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="`pwd`/scripts/:$PATH" XPRA_COMMAND="`pwd`/scripts/xpra" %{__python3} ./unit/run.py
 popd
 %endif
 %endif
