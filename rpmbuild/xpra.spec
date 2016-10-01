@@ -33,6 +33,7 @@
 %define requires_websockify , python-websockify
 %define requires_lzo , %{py2prefix}-lzo
 %define numpy numpy
+%define xvfb xorg-x11-server-Xvfb
 %define requires_webcam , python-inotify
 %define requires_shadow shadow-utils
 %define requires_cython Cython
@@ -124,6 +125,7 @@
 #causes problems with automatic dependency calculations:
 %global __requires_exclude typelib\\(.*\\)
 %define numpy python-numpy
+%define xvfb xorg-x11-server
 %define requires_shadow shadow
 %define requires_xorg xauth, xf86-video-dummy
 %define requires_webcam , python-pyinotify
@@ -234,6 +236,7 @@ BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
 %if 0%{?run_tests}
 BuildRequires: %{numpy}
+BuildRequires: %{xvfb}
 %endif
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
