@@ -1220,7 +1220,7 @@ def parse_vsock(vsock_str):
 
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
-    def parse_host_string(host):
+    def parse_host_string(host, default_port=DEFAULT_PORT):
         """
             Parses [username[:password]@]host[:port]
             and returns username, password, host, port
@@ -1229,7 +1229,7 @@ def parse_display_name(error_cb, opts, display_name):
         upos = host.find("@")
         username = None
         password = None
-        port = DEFAULT_PORT
+        port = default_port
         if upos>=0:
             #HOST=username@host
             username = host[:upos]
@@ -1308,7 +1308,7 @@ def parse_display_name(error_cb, opts, display_name):
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         desc["is_putty"] = is_putty
 
-        username, password, host, ssh_port = parse_host_string(host)
+        username, password, host, ssh_port = parse_host_string(host, 22)
         if password and is_putty:
             full_ssh += ["-pw", password]
         if username:
