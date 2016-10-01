@@ -67,6 +67,8 @@ class TestHMAC(unittest.TestCase):
 def main():
     if xor_str:
         unittest.main()
+    else:
+        print("no cyxor module found, test skipped")
 
 if __name__ == '__main__':
     main()
