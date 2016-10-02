@@ -376,13 +376,17 @@ def main():
 		print("SSL:")
 		print_nested_dict(get_ssl_info())
 
-		from xpra.net.crypto import crypto_backend_init, get_crypto_caps
-		crypto_backend_init()
-		ccaps = get_crypto_caps()
-		if ccaps:
-			print("")
-			print("Crypto Capabilities:")
-			print_nested_dict(ccaps)
+		try:
+			from xpra.net.crypto import crypto_backend_init, get_crypto_caps
+			crypto_backend_init()
+			ccaps = get_crypto_caps()
+			if ccaps:
+				print("")
+				print("Crypto Capabilities:")
+				print_nested_dict(ccaps)
+		except Exception as e:
+			print("No Crypto:")
+			print(" %s" % e)
 
 
 if __name__ == "__main__":
