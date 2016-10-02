@@ -10,7 +10,7 @@ import time
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 
 
 DEF PATH_MAX = 1024
@@ -447,7 +447,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef KeySym keysym
         if symbol in ["NoSymbol", "VoidSymbol"]:
             return  NoSymbol
-        keysym = XStringToKeysym(symbol)
+        s = strtobytes(symbol)
+        keysym = XStringToKeysym(s)
         if keysym==NoSymbol:
             if symbol.startswith("U+"):
                 symbol = "0x"+symbol[2:]

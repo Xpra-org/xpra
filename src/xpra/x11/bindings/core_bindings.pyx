@@ -7,7 +7,8 @@
 import os
 import time
 
-from xpra.util import dump_exc
+from xpra.util import dump_exc, envbool
+from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("x11", "bindings", "core")
 
@@ -58,9 +59,9 @@ cdef class _X11CoreBindings:
     def __cinit__(self):
         self.display = get_display()
         assert self.display!=NULL, "display is not set!"
-        dn = get_display_name()
+        dn = strtobytes(get_display_name())
         self.display_name = dn
-        if os.environ.get("XPRA_X_SYNC", "0")=="1":
+        if envbool("XPRA_X_SYNC", False):
             XSynchronize(self.display, True)
 
     def get_display_name(self):
