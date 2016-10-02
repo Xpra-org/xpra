@@ -28,7 +28,7 @@ class ServerSocketsTest(ServerTestUtil):
 		display_no = self.find_free_display_no()
 		display = ":%s" % display_no
 		log("starting test server on %s", display)
-		server = self.start_server(display, "--auth=%s" % auth, *server_args)
+		server = self.start_server(display, "--auth=%s" % auth, "--printing=no", *server_args)
 		#we should always be able to get the version:
 		uri = uri_prefix + str(display_no)
 		client = self.run_xpra(["version", uri] + server_args)
@@ -107,7 +107,7 @@ class ServerSocketsTest(ServerTestUtil):
 			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_OK, noverify)
 			#tcp socket should upgrade:
 			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
-			#self signed cert should fail:
+			#self signed cert should fail without noverify:
 			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_CONNECTION_LOST)
 			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_CONNECTION_LOST)
 			
@@ -117,6 +117,11 @@ class ServerSocketsTest(ServerTestUtil):
 				server.terminate()
 
 	def test_bind_tmpdir(self):
+		#remove socket dirs from default arguments temporarily:
+		saved_default_xpra_args = ServerSocketsTest.default_xpra_args
+		ServerSocketsTest.default_xpra_args = [x for x in saved_default_xpra_args if not x.startswith("--socket-dir")] + ["--socket-dirs=/tmp"]
+		for _ in range(100):
+			log("")
 		try:
 			tmpdir = tempfile.mkdtemp(suffix='xpra')
 			#run with this extra socket-dir:
@@ -126,6 +131,7 @@ class ServerSocketsTest(ServerTestUtil):
 			self._test_connect(args, "none", args, None, ":", EXIT_OK)
 			self._test_connect(args, "none", [], None, ":", EXIT_OK)
 			#now run with ONLY this socket dir:
+			ServerSocketsTest.default_xpra_args = [x for x in saved_default_xpra_args if not x.startswith("--socket-dir")]
 			args = ["--socket-dirs=%s" % tmpdir]
 			#tell the client:
 			self._test_connect(args, "none", args, None, ":", EXIT_OK)
@@ -135,6 +141,7 @@ class ServerSocketsTest(ServerTestUtil):
 			from xpra.platform.dotxpra_common import PREFIX
 			self._test_connect(args, "none", [], None, "socket:"+os.path.join(tmpdir, PREFIX))
 		finally:
+			ServerSocketsTest.default_xpra_args = saved_default_xpra_args
 			shutil.rmtree(tmpdir)
 
 

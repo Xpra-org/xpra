@@ -14,7 +14,6 @@ from xpra.util import envbool, repr_ellipsized
 from xpra.os_util import OSEnvContext
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra, osexpand
-from xpra.platform.paths import get_socket_dirs
 
 from xpra.log import Logger
 log = Logger("test")
@@ -27,10 +26,9 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.default_config = get_defaults()
-		dirs = get_socket_dirs()
 		cls.display_start = 100
-		cls.dotxpra = DotXpra(dirs[0], dirs)
-		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no"]
+		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
+		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
 		ServerTestUtil.existing_displays = cls.dotxpra.displays()
 		ServerTestUtil.processes = []
 		xpra_list = cls.run_xpra(["list"])
@@ -55,7 +53,8 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def run_env(self):
-		return dict((k,v) for k,v in os.environ.items() if k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
+		return dict((k,v) for k,v in os.environ.items() if
+				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
 
 
 	@classmethod
@@ -69,6 +68,7 @@ class ServerTestUtil(unittest.TestCase):
 	def run_command(cls, command, env=None, **kwargs):
 		if env is None:
 			env = cls.run_env()
+			env["XPRA_FLATTEN_INFO"] = "0"
 		if XPRA_TEST_DEBUG:
 			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
 		else:
