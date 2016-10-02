@@ -632,7 +632,8 @@ def pver(v, numsep=".", strsep=", "):
             return numsep.join(str(x) for x in v)
         if len(types)==1 and types[0] in (str, unicode):
             return strsep.join(str(x) for x in v)
-    return str(v)
+    from xpra.os_util import bytestostr
+    return bytestostr(v)
 
 def sorted_nicely(l):
     """ Sort the given iterable in the way that humans expect."""
