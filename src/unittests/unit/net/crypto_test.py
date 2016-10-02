@@ -9,8 +9,11 @@ import time
 import unittest
 import binascii
 from xpra.os_util import strtobytes
+from xpra.util import envbool
 
 from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV
+
+SHOW_PERF = envbool("XPRA_SHOW_PERF")
 
 
 def log(message):
@@ -123,6 +126,8 @@ class TestCrypto(unittest.TestCase):
         return times
 
     def test_perf(self):
+        if not SHOW_PERF:
+            return
         #RANGE = (1, 256, 1024, 1024*1024, 1024*1024*16)
         RANGE = (1, 1024, 1024*1024)
         print("Encryption Performance:")

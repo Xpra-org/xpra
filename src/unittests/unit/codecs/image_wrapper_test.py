@@ -7,6 +7,10 @@
 import time
 import unittest
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.util import envbool
+
+SHOW_PERF = envbool("XPRA_SHOW_PERF")
+
 
 class TestImageWrapper(unittest.TestCase):
 
@@ -45,7 +49,8 @@ class TestImageWrapper(unittest.TestCase):
         start = time.time()
         copy = img.get_sub_image(0, 0, W, H)
         end = time.time()
-        print("image wrapper full %ix%i copy speed: %iMB/s" % (W, H, (W*4*H)/(end-start)/1024/1024))
+        if SHOW_PERF:
+            print("image wrapper full %ix%i copy speed: %iMB/s" % (W, H, (W*4*H)/(end-start)/1024/1024))
         assert copy.get_pixels()==img.get_pixels()
         total = 0
         N = 10
@@ -55,7 +60,8 @@ class TestImageWrapper(unittest.TestCase):
             copy = img.get_sub_image(*region)
             end = time.time()
             total += end-start
-        print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))
+        if SHOW_PERF:
+            print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))
 
 
 def main():
