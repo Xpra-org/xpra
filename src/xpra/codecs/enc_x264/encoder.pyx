@@ -10,7 +10,7 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 
 from xpra.util import nonl, envint, envbool, AtomicInteger
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
 
@@ -516,7 +516,7 @@ cdef class Encoder:
         cdef const char *preset
         preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
-        x264_param_default_preset(&param, preset, self.tune)
+        x264_param_default_preset(&param, strtobytes(preset), strtobytes(self.tune))
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
