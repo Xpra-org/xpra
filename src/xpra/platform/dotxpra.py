@@ -30,6 +30,11 @@ def norm_makepath(dirpath, name):
         name = name[1:]
     return os.path.join(dirpath, PREFIX + name)
 
+def debug(msg, *args):
+    from xpra.log import Logger
+    log = Logger("network")
+    log(msg, *args)
+
 
 class DotXpra(object):
     def __init__(self, sockdir=None, sockdirs=[], actual_username=""):
@@ -67,6 +72,7 @@ class DotXpra(object):
         try:
             sock.connect(sockpath)
         except socket.error as e:
+            debug("get_server_state: connect(%s)=%s", sockpath, e)
             err = e.args[0]
             if err==errno.ECONNREFUSED:
                 #could be the server is starting up
@@ -99,6 +105,7 @@ class DotXpra(object):
         seen = set()
         for d in dirs:
             if not d or not os.path.exists(d):
+                debug("socket_details: '%s' path does not exist", d)
                 continue
             real_dir = os.path.realpath(d)
             if real_dir in seen:
@@ -111,19 +118,23 @@ class DotXpra(object):
             for sockpath in sorted(potential_sockets):
                 try:
                     s = os.stat(sockpath)
-                except OSError:
+                except OSError as e:
+                    debug("socket_details: '%s' path cannot be accessed: %s", sockpath, e)
                     #socket cannot be accessed
                     continue
                 if stat.S_ISSOCK(s.st_mode):
                     if check_uid>0:
                         if s.st_uid!=check_uid:
                             #socket uid does not match
+                            debug("socket_details: '%s' uid does not match (%s vs %s)", sockpath, s.st_uid, check_uid)
                             continue
                     local_display = ":"+sockpath[len(base):]
                     if matching_display and local_display!=matching_display:
+                        debug("socket_details: '%s' display does not match (%s vs %s)", sockpath, local_display, matching_display)
                         continue
                     state = self.get_server_state(sockpath)
                     if matching_state and state!=matching_state:
+                        debug("socket_details: '%s' state does not match (%s vs %s)", sockpath, state, matching_state)
                         continue
                     results.append((state, local_display, sockpath))
             if results:
