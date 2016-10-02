@@ -712,7 +712,8 @@ def start_Xvfb(xvfb_str, display_name, cwd):
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
-    xvfb_cmd = xvfb_str.split()
+    import shlex
+    xvfb_cmd = shlex.split(xvfb_str)
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
     except ValueError:
