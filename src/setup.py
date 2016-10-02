@@ -149,7 +149,7 @@ pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and os.name=="posix"
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
-cython_bencode_ENABLED  = DEFAULT and not PYTHON3
+cython_bencode_ENABLED  = DEFAULT
 clipboard_ENABLED       = DEFAULT and not PYTHON3
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
@@ -2331,6 +2331,7 @@ if v4l2_ENABLED:
 
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
+toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
     cython_add(Extension("xpra.net.bencode.cython_bencode",
