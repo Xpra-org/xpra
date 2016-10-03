@@ -8,10 +8,14 @@ import unittest
 import time
 from zlib import crc32
 
+from xpra.util import envbool
 try:
 	from xpra.server.window import motion
 except ImportError:
 	motion = None
+
+
+SHOW_PERF = envbool("XPRA_SHOW_PERF")
 
 
 class TestMotion(unittest.TestCase):
@@ -93,7 +97,8 @@ class TestMotion(unittest.TestCase):
 		array2 = [N*2-x*2 for x in range(N)]
 		d = motion.calculate_distances(array1, array2, 1)
 		end = time.time()
-		print("calculate_distances %4i^2 in %5.1f ms" % (N, (end-start)*1000))
+		if SHOW_PERF:
+			print("calculate_distances %4i^2 in %5.1f ms" % (N, (end-start)*1000))
 
 	def test_detect_motion(self):
 		W, H, BPP = 1920, 1080, 4
@@ -128,12 +133,14 @@ class TestMotion(unittest.TestCase):
 			start = time.time()
 			ov2 = motion.CRC_Image(buf2, W, H, W*BPP, BPP)
 			end = time.time()
-			print("\nCRC_Image %ix%i (%.1fMB) in %4.2f ms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
+			if SHOW_PERF:
+				print("\nCRC_Image %ix%i (%.1fMB) in %4.2f ms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
 			assert len(ov2)==H
 			start = time.time()
 			distances = motion.calculate_distances(ov1, ov2, min_score=1)
 			end = time.time()
-			print("calculate_distances %4i^2 in %5.2f ms" % (H, 1000.0*(end-start)))
+			if SHOW_PERF:
+				print("calculate_distances %4i^2 in %5.2f ms" % (H, 1000.0*(end-start)))
 			linecount = distances.get(N, 0)
 			assert linecount>0, "could not find distance %i" % N
 			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
