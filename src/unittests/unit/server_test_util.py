@@ -79,10 +79,11 @@ class ServerTestUtil(unittest.TestCase):
 			if "stdout" not in kwargs:
 				stdout = cls._temp_file()
 				kwargs["stdout"] = stdout
+				log("stdout of %s sent to %s", command, stdout.name)
 			if "stderr" not in kwargs:
 				stderr = cls._temp_file()
 				kwargs["stderr"] = stderr
-			log("output of %s sent to %s / %s", command, stdout.name, stderr.name)
+				log("stderr of %s sent to %s", command, stderr.name)
 		try:
 			proc = subprocess.Popen(args=command, env=env, **kwargs)
 		except OSError as e:
