@@ -25,6 +25,10 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
+		from xpra.platform.paths import get_default_log_dir
+		d = osexpand(get_default_log_dir())
+		if not os.path.exists(d):
+			os.makedirs(d)
 		cls.default_config = get_defaults()
 		cls.display_start = 100
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
@@ -52,7 +56,7 @@ class ServerTestUtil(unittest.TestCase):
 
 
 	@classmethod
-	def run_env(self):
+	def get_run_env(self):
 		return dict((k,v) for k,v in os.environ.items() if
 				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
 
@@ -67,14 +71,17 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def run_command(cls, command, env=None, **kwargs):
 		if env is None:
-			env = cls.run_env()
+			env = cls.get_run_env()
 			env["XPRA_FLATTEN_INFO"] = "0"
 		if XPRA_TEST_DEBUG:
 			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
 		else:
-			stdout = cls._temp_file()
-			stderr = cls._temp_file()
-			kwargs = {"stdout" : stdout, "stderr" : stderr}
+			if "stdout" not in kwargs:
+				stdout = cls._temp_file()
+				kwargs["stdout"] = stdout
+			if "stderr" not in kwargs:
+				stderr = cls._temp_file()
+				kwargs["stderr"] = stderr
 			log("output of %s sent to %s / %s", command, stdout.name, stderr.name)
 		try:
 			proc = subprocess.Popen(args=command, env=env, **kwargs)
@@ -166,6 +173,13 @@ class ServerTestUtil(unittest.TestCase):
 				return v
 			time.sleep(0.1)
 		return None
+
+	@classmethod
+	def run_server(cls, *args):
+		display = cls.find_free_display()
+		server = cls.check_server("start", display, *args)
+		server.display = display
+		return server
 
 	@classmethod
 	def check_start_server(cls, display, *args):

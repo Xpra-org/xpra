@@ -2443,7 +2443,8 @@ def run_list(error_cb, opts, extra_args):
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     results = dotxpra.socket_details()
     if not results:
-        error_cb("No xpra sessions found")
+        sys.stdout.write("No xpra sessions found")
+        return 0
     sys.stdout.write("Found the following xpra sessions:\n")
     unknown = []
     for socket_dir, values in results.items():

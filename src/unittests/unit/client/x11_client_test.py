@@ -8,23 +8,10 @@ import os
 import sys
 import unittest
 from xpra.os_util import load_binary_file
-from unit.server_test_util import ServerTestUtil, log
+from unit.client.x11_client_test_util import X11ClientTestUtil, log
 
 
-class X11ClientTest(ServerTestUtil):
-
-	def run_client(self, *args):
-		client_display = self.find_free_display()
-		xvfb = self.start_Xvfb(client_display)
-		return xvfb, self.do_run_client(client_display, *args)
-
-	def do_run_client(self, client_display, *args):
-		from xpra.scripts.server import xauth_add
-		xauth_add(client_display)
-		env = self.run_env()
-		env["DISPLAY"] = client_display
-		log("starting test client on Xvfb %s", client_display)
-		return self.run_xpra(["attach"] + list(args) , env)
+class X11ClientTest(X11ClientTestUtil):
 
 	def do_test_connect(self, sharing=False, *client_args):
 		display = self.find_free_display()
