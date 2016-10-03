@@ -36,7 +36,7 @@ def main():
             return 1
         v = proc.wait()
         if v!=0:
-            print("failure on %s" % name)
+            print("failure on %s, exit code=%s" % (name, v))
             return v
         return 0
     def add_recursive(d):

@@ -76,7 +76,11 @@ class ServerTestUtil(unittest.TestCase):
 			stderr = cls._temp_file()
 			kwargs = {"stdout" : stdout, "stderr" : stderr}
 			log("output of %s sent to %s / %s", command, stdout.name, stderr.name)
-		proc = subprocess.Popen(args=command, env=env, **kwargs)
+		try:
+			proc = subprocess.Popen(args=command, env=env, **kwargs)
+		except OSError as e:
+			log.warn("run_command(%s, %s, %s) %s", command, env, kwargs, e)
+			raise
 		ServerTestUtil.processes.append(proc)
 		return proc
 
@@ -141,12 +145,16 @@ class ServerTestUtil(unittest.TestCase):
 					(w, h) = screen
 					cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
 			else:
+				xvfb_cmd = cls.default_config.get("xvfb")
+				assert xvfb_cmd, "no 'xvfb' command in default config"
 				import shlex
-				cmd = shlex.split(osexpand(cls.default_config.get("xvfb")))
+				cmd = shlex.split(osexpand(xvfb_cmd))
 				if "/etc/xpra/xorg.conf" in cmd:
 					cmd[cmd.index("/etc/xpra/xorg.conf")] = "./etc/xpra/xorg.conf"
 			cmd.append(display)
-			return cls.run_command(cmd)
+			xvfb = cls.run_command(cmd)
+			assert cls.pollwait(xvfb, 2) is None, "xvfb command %s failed and returned %s" % (cmd, xvfb.poll())
+			return xvfb
 
 
 	@classmethod

@@ -16,16 +16,28 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
     Display *XOpenDisplay(char *display_name)
+    int XCloseDisplay(Display *display)
 
 def init_posix_display_source():
     display_name = os.environ.get("DISPLAY")
     if not display_name:
         raise Exception("cannot open display, the environment variable DISPLAY is not set!")
+    return do_init_posix_display_source(display_name)
+
+def do_init_posix_display_source(display_name):
+    if not display_name:
+        raise Exception("display name not provided")
     cdef Display * display = XOpenDisplay(strtobytes(display_name))
     if display==NULL:
         raise Exception("failed to open X11 display '%s'" % display_name)
     set_display(display)
     set_display_name(display_name)
-    print("Using X11 display %s" % display_name)
+    return <unsigned long> display
 
-init_posix_display_source()
+def close_display_source(unsigned long ptr):
+    assert ptr!=0, "invalid NULL display pointer"
+    cdef Display * display = <Display *> ptr
+    cdef int v = XCloseDisplay(display)
+    set_display(NULL)
+    set_display_name("CLOSED")
+    return v

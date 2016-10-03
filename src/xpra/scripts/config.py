@@ -103,7 +103,7 @@ def get_Xvfb_command():
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None):
     #returns the xvfb command to use
-    if WIN32 or PYTHON3:
+    if WIN32:
         return ""
     if OSX:
         return get_Xvfb_command()

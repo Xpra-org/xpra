@@ -1756,7 +1756,7 @@ else:
                 shutil.copyfile(xpraforwarder_src, xpraforwarder_dst)
                 os.chmod(xpraforwarder_dst, 0o700)
 
-            if server_ENABLED and x11_ENABLED:
+            if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])):
