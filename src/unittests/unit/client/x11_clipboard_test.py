@@ -60,11 +60,11 @@ class X11ClipboardTest(X11ClientTestUtil):
 			self.copy_and_verify(server_display, server_display, True, wait=0)
 
 		for _ in range(2):
-			self.copy_and_verify(client_display, server_display, direction in ("both", "client-to-server"))
+			self.copy_and_verify(client_display, server_display, direction in ("both", "to-server"))
 		for _ in range(2):
-			self.copy_and_verify(server_display, client_display, direction in ("both", "server-to-client"))
+			self.copy_and_verify(server_display, client_display, direction in ("both", "to-client"))
 		for _ in range(2):
-			self.copy_and_verify(client_display, server_display, direction in ("both", "client-to-server"))
+			self.copy_and_verify(client_display, server_display, direction in ("both", "to-server"))
 
 		client.terminate()
 		xvfb.terminate()
@@ -75,6 +75,12 @@ class X11ClipboardTest(X11ClientTestUtil):
 
 	def test_disabled(self):
 		self.do_test_copy("disabled")
+
+	def test_to_server(self):
+		self.do_test_copy("to-server")
+
+	def test_to_client(self):
+		self.do_test_copy("to-client")
 
 
 def main():
