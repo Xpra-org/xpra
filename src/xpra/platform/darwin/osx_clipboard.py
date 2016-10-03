@@ -167,7 +167,7 @@ class OSXClipboardProxy(ClipboardProxy):
         for target in targets:
             self.selection_add_target(self._selection, target, 0)
         self.selection_owner_set(self._selection)
-        if target_data:
+        if target_data and self._can_receive:
             for text_target in TEXT_TARGETS:
                 if text_target in target_data:
                     text_data = target_data.get(text_target)
