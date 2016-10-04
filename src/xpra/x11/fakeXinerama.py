@@ -96,7 +96,7 @@ def cleanup_fakeXinerama():
     for f in fakeXinerama_config_files:
         try:
             if os.path.exists(f):
-                log=("cleanup_fakexinerama() deleting fake xinerama file '%s'", f)
+                log("cleanup_fakexinerama() deleting fake xinerama file '%s'", f)
                 os.unlink(f)
         except Exception as e:
             log.warn("cleanup_fakexinerama() error deleting fake xinerama file '%s': %s", f, e)
