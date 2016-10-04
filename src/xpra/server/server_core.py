@@ -857,10 +857,6 @@ class ServerCore(object):
 
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
-            if c.boolget("info_request", False):
-                flatten = not c.boolget("info-namespace", False)
-                self.send_hello_info(proto, flatten)
-                return
             command_req = c.strlistget("command_request")
             if len(command_req)>0:
                 #call from UI thread:
@@ -1012,6 +1008,11 @@ class ServerCore(object):
         return v
 
     def hello_oked(self, proto, packet, c, auth_caps):
+        ctr = c.strget("connect_test_request")
+        if ctr:
+            response = {"connect_test_response" : ctr}
+            proto.send_now(("hello", response))
+            return
         if c.boolget("info_request", False):
             flatten = not c.boolget("info-namespace", False)
             self.send_hello_info(proto, flatten)

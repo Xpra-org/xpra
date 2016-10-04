@@ -36,7 +36,7 @@ class ServerSocketsTest(ServerTestUtil):
 		if client.poll() is None:
 			client.terminate()
 		#try to connect
-		cmd = ["info", uri] + client_args
+		cmd = ["connect-test", uri] + client_args
 		f = None
 		if password:
 			f = self._temp_file(password)

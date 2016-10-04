@@ -1031,7 +1031,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl"):
+    if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl", "test-connect"):
         to = sys.stdout
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
@@ -1163,7 +1163,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             current_display = nox()
             from xpra.scripts.server import run_server
             return run_server(error_cb, options, mode, script_file, args, current_display)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
@@ -1973,6 +1973,9 @@ def run_client(error_cb, opts, extra_args, mode):
     elif mode=="info":
         from xpra.client.gobject_client_base import InfoXpraClient
         app = InfoXpraClient(connect(), opts)
+    elif mode=="connect-test":
+        from xpra.client.gobject_client_base import ConnectTestXpraClient
+        app = ConnectTestXpraClient(connect(), opts)
     elif mode=="_monitor":
         from xpra.client.gobject_client_base import MonitorXpraClient
         app = MonitorXpraClient(connect(), opts)

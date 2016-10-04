@@ -13,9 +13,9 @@ log = Logger("gobject", "client")
 
 import sys
 from xpra.util import nonl, sorted_nicely, print_nested_dict, envbool, DONE
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, get_hex_uuid
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
-from xpra.exit_codes import (EXIT_OK, EXIT_TIMEOUT, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
+from xpra.exit_codes import (EXIT_OK, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
 FLATTEN_INFO = envbool("XPRA_FLATTEN_INFO", True)
 
@@ -225,6 +225,37 @@ class InfoXpraClient(CommandConnectClient):
         capabilities["info_request"] = True
         if FLATTEN_INFO!=1:
             capabilities["info-namespace"] = True
+        return capabilities
+
+class ConnectTestXpraClient(CommandConnectClient):
+    """ This client does one thing only:
+        it queries the server with an 'info' request
+    """
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: no server response")
+
+    def do_command(self):
+        if self.server_capabilities:
+            ctr = self.server_capabilities.get("connect_test_response")
+            log("do_command() expected connect test response='%s', got '%s'", self.value, ctr)
+            if ctr==self.value:
+                self.quit(EXIT_OK)
+            else:
+                self.quit(EXIT_INTERNAL_ERROR)
+        else:
+            self.quit(EXIT_FAILURE)
+
+    def make_hello(self):
+        self.value = get_hex_uuid()
+        capabilities = GObjectXpraClient.make_hello(self)
+        capabilities.update({
+                             "connect_test_request"     : self.value,
+                             #older servers don't know about connect-test,
+                             #pretend that we're interested in info:
+                             "info_request"             : True,
+                             "info-namespace"           : True,
+                             })
         return capabilities
 
 
