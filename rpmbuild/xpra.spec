@@ -406,8 +406,8 @@ find %{buildroot}%{_datadir}/xpra/www/include -name '*.js' -exec chmod 0644 {} \
 
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
-rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unit
-rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unit
+rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
+rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 
 
 %clean
@@ -471,13 +471,13 @@ export XPRA_TEST_DEBUG=1
 %endif
 
 %if 0%{?run_tests}
-pushd xpra-%{version}-python2/
-PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/scripts/:$PATH" XPRA_COMMAND="`pwd`/scripts/xpra" %{__python2} ./unit/run.py
+pushd xpra-%{version}-python2/unittests
+PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python2} ./unit/run.py
 popd
 
 %if 0%{?with_python3}
-pushd xpra-%{version}-python3/
-PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="`pwd`/scripts/:$PATH" XPRA_COMMAND="`pwd`/scripts/xpra" %{__python3} ./unit/run.py
+pushd xpra-%{version}-python3/unittests
+PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python3} ./unit/run.py
 popd
 %endif
 %endif
