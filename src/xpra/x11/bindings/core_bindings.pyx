@@ -77,12 +77,14 @@ cdef class _X11CoreBindings:
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
         string = str_or_int
+        assert self.display!=NULL, "display is closed"
         return XInternAtom(self.display, string, False)
 
     def get_xatom(self, str_or_int):
         return self.xatom(str_or_int)
 
     def get_error_text(self, code):
+        assert self.display!=NULL, "display is closed"
         if type(code)!=int:
             return code
         cdef char[128] buffer
@@ -90,7 +92,9 @@ cdef class _X11CoreBindings:
         return str(buffer[:128])
 
     def UngrabKeyboard(self, time=CurrentTime):
+        assert self.display!=NULL, "display is closed"
         return XUngrabKeyboard(self.display, time)
 
     def UngrabPointer(self, time=CurrentTime):
+        assert self.display!=NULL, "display is closed"
         return XUngrabPointer(self.display, time)
