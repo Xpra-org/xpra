@@ -180,6 +180,7 @@ Requires: which
 Requires: %{py2prefix}-netifaces
 Requires: %{py2prefix}-rencode
 Requires: %{py2prefix}-pillow
+Requires: python2-xxhash
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
 Requires: %{requires_xorg}
@@ -280,6 +281,7 @@ Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %
 Requires: python3-lz4
 Requires: python3-gobject
 Requires: python3-pillow
+Requires: python3-xxhash
 Requires: %{py3requires_crypto}
 #TODO:
 #Requires: dbus-python

@@ -41,6 +41,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
+# scrolling detection:
+        ,python-xxhash
 # ffmpeg based codecs:
         ,ffmpeg-xpra
 # packet encoder:
