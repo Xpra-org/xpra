@@ -94,6 +94,13 @@ class ServerTestUtil(unittest.TestCase):
 
 
 	@classmethod
+	def get_command_output(cls, command, env=None, **kwargs):
+		proc = cls.run_command(command, env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+		out,_ = proc.communicate()
+		return out
+
+
+	@classmethod
 	def _temp_file(self, data=None):
 		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword')
 		if data:

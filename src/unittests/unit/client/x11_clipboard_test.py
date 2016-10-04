@@ -12,6 +12,9 @@ from xpra.util import envbool
 from xpra.os_util import get_hex_uuid
 from unit.client.x11_client_test_util import X11ClientTestUtil
 
+from xpra.log import Logger
+log = Logger("clipboard")
+
 
 SANITY_CHECKS = envbool("XPRA_CLIPBOARD_SANITY_CHECKS", True)
 
@@ -24,26 +27,28 @@ class X11ClipboardTest(X11ClientTestUtil):
 		X11ClipboardTest.default_xpra_args += ["-d clipboard"]
 
 
-	def copy_and_verify(self, display1, display2, synced=True, wait=1):
-		value = get_hex_uuid()
-		xclip = self.run_command("echo '%s' | xclip -selection clipboard -i -d %s" % (value, display1), shell=True)
+	def get_clipboard_value(self, display, selection="clipboard"):
+		return self.get_command_output("xclip -d %s -selection %s -o" % (display, selection), shell=True)
+
+	def set_clipboard_value(self, display, value, selection="clipboard"):
+		xclip = self.run_command("echo -n '%s' | xclip -d %s -selection %s -i" % (value, display, selection), shell=True)
 		assert self.pollwait(xclip, 5)==0, "xclip returned %s" % xclip.poll()
+
+
+	def copy_and_verify(self, display1, display2, synced=True, wait=1):
+		log("copy_and_verify%s", (display1, display2, synced, wait))
+		value = get_hex_uuid()
+		self.set_clipboard_value(display1, value)
 		#wait for synchronization to occur:
 		time.sleep(wait)
-		import subprocess
-		xclip = self.run_command("xclip -selection clipboard -o -d %s" % (display2), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		out,_ = xclip.communicate()
-		new_value = out.strip("\n")
+		new_value = self.get_clipboard_value(display2)
 		if synced:
 			assert new_value==value, "clipboard contents do not match, expected '%s' but got '%s'" % (value, new_value)
 		else:
 			assert new_value!=value, "clipboard contents match but synchronization was not expected: value='%s'" % value
-		if SANITY_CHECKS:
+		if SANITY_CHECKS and display2!=display1:
 			#verify that the value has not changed on the original display:
-			xclip = self.run_command("xclip -selection clipboard -o -d %s" % (display1), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			out,_ = xclip.communicate()
-			new_value = out.strip("\n")
-			assert new_value==value, "clipboard contents have changed, expected '%s' but got '%s'" % (value, new_value)
+			new_value = self.get_clipboard_value(display1)
 		return value
 
 	def do_test_copy(self, direction="both"):
