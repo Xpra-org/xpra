@@ -72,14 +72,14 @@ class ServerSocketsTest(ServerTestUtil):
 								"-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
     							"-keyout", certfile, "-out", certfile,
     							]
+			openssl = self.run_command(openssl_command)
+			assert self.pollwait(openssl, 10)==0, "openssl certificate generation failed"
 			cert_data = load_binary_file(certfile)
 			log("generated cert data: %s", repr_ellipsized(cert_data))
 			if not cert_data:
 				#cannot run openssl? (happens from rpmbuild)
 				log.warn("SSL test skipped, cannot run '%s'", b" ".join(openssl_command))
 				return
-			openssl = self.run_command(openssl_command)
-			assert self.pollwait(openssl, 10)==0, "openssl certificate generation failed"
 			server_args = [
 							"--bind-tcp=0.0.0.0:%i" % tcp_port,
 							"--bind-ssl=0.0.0.0:%i" % ssl_port,
