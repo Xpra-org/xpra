@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from xpra.util import envbool
 #defaults which may be overriden by platform_import:
 LOCAL_SERVERS_SUPPORTED = sys.version_info[0]<3
 SHADOW_SUPPORTED = True
@@ -15,8 +16,8 @@ SYSTEM_TRAY_SUPPORTED = False
 REINIT_WINDOWS = False
 
 CLIPBOARDS = []
-CLIPBOARD_WANT_TARGETS = False
-CLIPBOARD_GREEDY = False
+CLIPBOARD_WANT_TARGETS = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
+CLIPBOARD_GREEDY = envbool("XPRA_CLIPBOARD_GREEDY")
 CLIPBOARD_NATIVE_CLASS = None
 
 UI_THREAD_POLLING = 0
