@@ -664,11 +664,22 @@ class ClipboardProxy(gtk.Invisible):
             return
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s", self._selection, targets, target_data, claim, self._can_receive)
         self._have_token = True
-        if self._greedy_client:
+        if self._greedy_client or CLIPBOARD_GREEDY:
             self._block_owner_change = True
             #re-enable the flag via idle_add so events like do_owner_changed
             #get a chance to run first.
             glib.idle_add(self.remove_block)
+        if CLIPBOARD_GREEDY:
+            if self._can_receive and targets:
+                for target in targets:
+                    self.selection_add_target(self._selection, target, 0)
+                self.selection_owner_set(self._selection)
+            if self._can_receive and target_data:
+                for text_target in TEXT_TARGETS:
+                    if text_target in target_data:
+                        text_data = target_data.get(text_target)
+                        log("clipboard %s set to '%s'", self._selection, text_data)
+                        self._clipboard.set_text(text_data)
         if self._can_receive:
             #if we don't claim the selection (can-receive=False),
             #we will have to send the token back on owner-change!

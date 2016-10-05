@@ -160,39 +160,24 @@ class OSXClipboardProxy(ClipboardProxy):
         change_callbacks.append(self.local_clipboard_changed)
 
     def got_token(self, targets, target_data, claim):
-        # We got the anti-token.
-        log("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
-        if not self._enabled:
-            return
-        self._got_token_events += 1
-        if not claim:
-            log("token packet without claim, not setting the token flag")
-            #the other end is just telling us to send the token again next time something changes,
-            #not that they want to own the clipboard selection
-            return
-        self._block_owner_change = True
-        self._have_token = True
-        for target in targets:
-            self.selection_add_target(self._selection, target, 0)
-        self.selection_owner_set(self._selection)
-        if target_data and self._can_receive:
-            for text_target in TEXT_TARGETS:
-                if text_target in target_data:
-                    text_data = target_data.get(text_target)
-                    log("clipboard %s set to '%s'", self._selection, text_data)
-                    self._clipboard.set_text(text_data)
-        #prevent our change from firing another clipboard update:
+        ClipboardProxy.got_token(self, targets, target_data, claim)
+        #prevent any change from firing another clipboard update:
         if update_clipboard_change_count:
             c = update_clipboard_change_count()
             log("change count now at %s", c)
-        glib.idle_add(self.remove_block)
 
     def local_clipboard_changed(self):
-        log("local_clipboard_changed() greedy_client=%s, have_token=%s, blocked=%s", self._greedy_client, self._have_token, self._block_owner_change)
-        if (self._greedy_client or self._have_token) and not self._block_owner_change and self._can_send:
-            self._have_token = False
-            self.emit("send-clipboard-token")
-            self._sent_token_events += 1
+        log("local_clipboard_changed()")
+        self.do_owner_changed()
+
+    def cleanup(self):
+        ClipboardProxy.cleanup(self)
+        global change_callbacks
+        try:
+            change_callbacks.remove(self.local_clipboard_changed)
+        except:
+            pass
+
 
 gobject.type_register(OSXClipboardProxy)
 
