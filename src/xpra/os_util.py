@@ -370,6 +370,20 @@ def find_lib(libname):
     return None
 
 
+def pollwait(process, timeout=5):
+    import time
+    start = time.time()
+    while time.time()-start<timeout:
+        v = process.poll()
+        if v is not None:
+            return v
+        time.sleep(0.1)
+    return None
+
+def which(command):
+    from distutils.spawn import find_executable
+    return find_executable(command)
+
 def get_status_output(*args, **kwargs):
     import subprocess
     kwargs["stdout"] = subprocess.PIPE

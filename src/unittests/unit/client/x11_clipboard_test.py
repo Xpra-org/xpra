@@ -9,7 +9,7 @@ import sys
 import time
 import unittest
 from xpra.util import envbool
-from xpra.os_util import get_hex_uuid
+from xpra.os_util import get_hex_uuid, pollwait
 from unit.client.x11_client_test_util import X11ClientTestUtil
 from xpra.platform.features import CLIPBOARDS
 
@@ -33,7 +33,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 
 	def set_clipboard_value(self, display, value, selection="clipboard"):
 		xclip = self.run_command("echo -n '%s' | xclip -d %s -selection %s -i" % (value, display, selection), shell=True)
-		assert self.pollwait(xclip, 5)==0, "xclip returned %s" % xclip.poll()
+		assert pollwait(xclip, 5)==0, "xclip returned %s" % xclip.poll()
 
 
 	def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):
@@ -58,7 +58,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 		server_display = server.display
 		#connect a client:
 		xvfb, client = self.run_client(server_display, "--clipboard-direction=%s" % direction, "--remote-logging=no")
-		assert self.pollwait(client, 2) is None, "client has exited with return code %s" % client.poll()
+		assert pollwait(client, 2) is None, "client has exited with return code %s" % client.poll()
 		client_display = xvfb.display
 
 		if SANITY_CHECKS:
@@ -96,6 +96,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 
 	def test_to_client(self):
 		self.do_test_copy("to-client")
+
 
 
 def main():

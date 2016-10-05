@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from xpra.os_util import pollwait
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -14,7 +15,7 @@ class ProxyServerTest(ServerTestUtil):
 		display = self.find_free_display()
 		log("using free display=%s" % display)
 		proxy = self.run_xpra(["proxy", display, "--no-daemon"])
-		assert self.pollwait(proxy, 5) is None, "proxy failed to start"
+		assert pollwait(proxy, 5) is None, "proxy failed to start"
 		assert display in self.dotxpra.displays(), "proxy display not found"
 		self.check_stop_server(proxy, "stop", display)
 

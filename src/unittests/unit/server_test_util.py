@@ -11,7 +11,7 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, repr_ellipsized
-from xpra.os_util import OSEnvContext
+from xpra.os_util import OSEnvContext, pollwait
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra, osexpand
 
@@ -36,7 +36,7 @@ class ServerTestUtil(unittest.TestCase):
 		ServerTestUtil.existing_displays = cls.dotxpra.displays()
 		ServerTestUtil.processes = []
 		xpra_list = cls.run_xpra(["list"])
-		assert cls.pollwait(xpra_list, 15) is not None
+		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
 
 	@classmethod
 	def tearDownClass(cls):
@@ -168,19 +168,9 @@ class ServerTestUtil(unittest.TestCase):
 					cmd[cmd.index("/etc/xpra/xorg.conf")] = "./etc/xpra/xorg.conf"
 			cmd.append(display)
 			xvfb = cls.run_command(cmd)
-			assert cls.pollwait(xvfb, 2) is None, "xvfb command %s failed and returned %s" % (cmd, xvfb.poll())
+			assert pollwait(xvfb, 2) is None, "xvfb command %s failed and returned %s" % (cmd, xvfb.poll())
 			return xvfb
 
-
-	@classmethod
-	def pollwait(cls, proc, timeout=5):
-		start = time.time()
-		while time.time()-start<timeout:
-			v = proc.poll()
-			if v is not None:
-				return v
-			time.sleep(0.1)
-		return None
 
 	@classmethod
 	def run_server(cls, *args):
@@ -196,12 +186,12 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def check_server(cls, subcommand, display, *args):
 		server_proc = cls.run_xpra([subcommand, display, "--no-daemon"]+list(args))
-		assert cls.pollwait(server_proc, 3) is None, "server failed to start, returned %s" % server_proc.poll()
+		assert pollwait(server_proc, 3) is None, "server failed to start, returned %s" % server_proc.poll()
 		assert display in cls.dotxpra.displays(), "server display not found"
 		#query it:
 		info = cls.run_xpra(["version", display])
 		for _ in range(5):
-			r = cls.pollwait(info)
+			r = pollwait(info)
 			log("version for %s returned %s", display, r)
 			if r is not None:
 				assert r==0, "version failed for %s, returned %s" % (display, info.poll())
@@ -212,5 +202,5 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
 		stopit = cls.run_xpra([subcommand, display])
-		assert cls.pollwait(stopit) is not None, "server failed to exit"
+		assert pollwait(stopit) is not None, "server failed to exit"
 		assert display not in cls.dotxpra.displays(), "server socket for display %s should have been removed" % display

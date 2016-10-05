@@ -10,7 +10,7 @@ import shutil
 import unittest
 import tempfile
 from xpra.util import repr_ellipsized
-from xpra.os_util import load_binary_file
+from xpra.os_util import load_binary_file, pollwait
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
@@ -21,7 +21,7 @@ class ServerSocketsTest(ServerTestUtil):
 	@classmethod
 	def start_server(cls, *args):
 		server_proc = cls.run_xpra(["start", "--no-daemon"]+list(args))
-		assert cls.pollwait(server_proc, 5) is None, "server failed to start, returned %s" % server_proc.poll()
+		assert pollwait(server_proc, 5) is None, "server failed to start, returned %s" % server_proc.poll()
 		return server_proc
 
 	def _test_connect(self, server_args=[], auth="none", client_args=[], password=None, uri_prefix=":", exit_code=0):
@@ -32,7 +32,7 @@ class ServerSocketsTest(ServerTestUtil):
 		#we should always be able to get the version:
 		uri = uri_prefix + str(display_no)
 		client = self.run_xpra(["version", uri] + server_args)
-		assert self.pollwait(client, 5)==0, "version client failed to connect"
+		assert pollwait(client, 5)==0, "version client failed to connect"
 		if client.poll() is None:
 			client.terminate()
 		#try to connect
@@ -42,7 +42,7 @@ class ServerSocketsTest(ServerTestUtil):
 			f = self._temp_file(password)
 			cmd += ["--password-file=%s" % f.name]
 		client = self.run_xpra(cmd)
-		r = self.pollwait(client, 5)
+		r = pollwait(client, 5)
 		if f:
 			f.close()
 		assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())
@@ -73,7 +73,7 @@ class ServerSocketsTest(ServerTestUtil):
     							"-keyout", certfile, "-out", certfile,
     							]
 			openssl = self.run_command(openssl_command)
-			assert self.pollwait(openssl, 10)==0, "openssl certificate generation failed"
+			assert pollwait(openssl, 10)==0, "openssl certificate generation failed"
 			cert_data = load_binary_file(certfile)
 			log("generated cert data: %s", repr_ellipsized(cert_data))
 			if not cert_data:
@@ -93,12 +93,12 @@ class ServerSocketsTest(ServerTestUtil):
 			for port in (tcp_port, ssl_port):
 				openssl_verify_command = "openssl s_client -connect 127.0.0.1:%i -CAfile %s < /dev/null" % (port, certfile)
 				openssl = self.run_command(openssl_verify_command, shell=True)
-				assert self.pollwait(openssl, 10)==0, "openssl certificate verification failed"
+				assert pollwait(openssl, 10)==0, "openssl certificate verification failed"
 
 			def test_connect(uri, exit_code, *client_args):
 				cmd = ["info", uri] + list(client_args)
 				client = self.run_xpra(cmd)
-				r = self.pollwait(client, 5)
+				r = pollwait(client, 5)
 				if client.poll() is None:
 					client.terminate()
 				assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())

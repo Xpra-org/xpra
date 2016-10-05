@@ -7,6 +7,7 @@
 import os
 import sys
 import unittest
+from xpra.os_util import pollwait
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED
 from unit.server_test_util import ServerTestUtil, log
 
@@ -19,7 +20,7 @@ class ServerAuthTest(ServerTestUtil):
 		server = self.check_start_server(display, "--auth=%s" % auth, "--printing=no")
 		#we should always be able to get the version:
 		client = self.run_xpra(["version", uri_prefix+display])
-		assert self.pollwait(client, 5)==0, "version client failed to connect"
+		assert pollwait(client, 5)==0, "version client failed to connect"
 		if client.poll() is None:
 			client.terminate()
 		#try to connect
@@ -29,7 +30,7 @@ class ServerAuthTest(ServerTestUtil):
 			f = self._temp_file(password)
 			cmd += ["--password-file=%s" % f.name]
 		client = self.run_xpra(cmd)
-		r = self.pollwait(client, 5)
+		r = pollwait(client, 5)
 		if f:
 			f.close()
 		assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())

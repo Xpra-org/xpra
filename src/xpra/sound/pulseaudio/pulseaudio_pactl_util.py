@@ -8,34 +8,12 @@ import sys
 import os.path
 
 from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
-from xpra.scripts.exec_util import safe_exec
 from xpra.util import nonl, print_nested_dict
+from xpra.os_util import which
 
 from xpra.log import Logger
 log = Logger("sound")
 
-
-def which(name):
-    if sys.platform.startswith("win"):
-        return    ""
-    cmd = ["which", name]
-    try:
-        returncode, out, _ = safe_exec(cmd, log_errors=False)
-        log("safe_exec(%s)=%s", cmd, (returncode, out))
-        if returncode!=0 or not out:
-            return ""
-        c = out.decode("utf8").replace("\n", "").replace("\r", "")
-        if os.path.exists(c) and os.path.isfile(c):
-            if os.name=="posix" and not os.access(c, os.X_OK):
-                #odd, it's there but we can't run it!?
-                return ""
-            return c
-        return ""
-    except Exception as e:
-        log.error("Error: failed to run '%s'", " ".join(cmd))
-        log.error(" %s", e)
-        log("which(%s) error", name, exc_info=True)
-    return ""
 
 pactl_bin = None
 has_pulseaudio = None
@@ -58,9 +36,13 @@ def pactl_output(log_errors=True, *pactl_args):
     #force "C" locale so that we can parse the output as expected
     env = os.environ.copy()
     env["LC_ALL"] = "C"
-    kwargs = {"env" : env}
     try:
-        code, out, err = safe_exec(cmd, log_errors=log_errors, **kwargs)
+        import subprocess
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        from xpra.child_reaper import getChildReaper
+        getChildReaper().add_process(process, "pactl", cmd, True, True)
+        out, err = process.communicate()
+        code = process.poll()
         log("pactl_output%s returned %s", pactl_args, code)
         return  code, out, err
     except Exception as e:

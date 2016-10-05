@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import unittest
+from xpra.os_util import pollwait
 from unit.server_test_util import ServerTestUtil
 
 
@@ -22,7 +23,7 @@ class ShadowServerTest(ServerTestUtil):
 		server = self.check_server("shadow", display)
 		self.check_stop_server(server, "stop", display)
 		time.sleep(1)
-		assert self.pollwait(xvfb, 2) is None, "the Xvfb should not have been killed by xpra shutting down!"
+		assert pollwait(xvfb, 2) is None, "the Xvfb should not have been killed by xpra shutting down!"
 		xvfb.terminate()
 
 

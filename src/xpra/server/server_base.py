@@ -36,7 +36,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, get_hex_uuid, livefds, load_binary_file
+from xpra.os_util import BytesIOClass, thread, get_hex_uuid, livefds, load_binary_file, pollwait
 from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
@@ -534,8 +534,11 @@ class ServerBase(ServerCore):
             soundlog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
                 #first we try pactl (required on Ubuntu):
-                from xpra.scripts.exec_util import safe_exec
-                r, _, _ = safe_exec(["pactl", "exit"])
+                import subprocess
+                cmd = ["pactl", "exit"]
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.add_process(proc, "pactl exit", cmd, True)
+                r = pollwait(proc)
                 #warning: pactl will return 0 whether it succeeds or not...
                 #but we can't kill the process because Ubuntu starts a new one
                 if r!=0:
