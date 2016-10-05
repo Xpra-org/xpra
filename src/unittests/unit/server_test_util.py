@@ -35,7 +35,7 @@ class ServerTestUtil(unittest.TestCase):
 		cls.default_config = get_defaults()
 		cls.display_start = 100
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
-		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
+		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp", "--speaker=no", "--microphone=no"]
 		ServerTestUtil.existing_displays = cls.dotxpra.displays()
 		ServerTestUtil.processes = []
 		xpra_list = cls.run_xpra(["list"])
