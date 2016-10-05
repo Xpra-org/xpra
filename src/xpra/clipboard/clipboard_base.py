@@ -163,9 +163,9 @@ class ClipboardProtocolHelperBase(object):
 
     # Used by the client during startup:
     def send_all_tokens(self):
-        for selection, proxy in self._clipboard_proxies.items():
+        for proxy in self._clipboard_proxies.values():
             proxy._have_token = False
-            self._send_clipboard_token_handler(proxy, selection)
+            self._send_clipboard_token_handler(proxy)
 
     def _process_clipboard_token(self, packet):
         selection = packet[1]
