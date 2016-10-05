@@ -7,19 +7,20 @@
 import os
 import sys
 import unittest
-
 from unit.client.x11_clipboard_test_util import X11ClipboardTestUtil
 
-from xpra.log import Logger
-log = Logger("clipboard")
 
-
-class X11ClipboardTest(X11ClipboardTestUtil):
+class OSXLikeClipboardTest(X11ClipboardTestUtil):
 
 	@classmethod
-	def setUpClass(cls):
-		super(X11ClipboardTest, cls).setUpClass()
-		X11ClipboardTest.default_xpra_args += ["--speaker=no", "--microphone=no", "-d clipboard"]
+	def get_run_env(cls):
+		env = X11ClipboardTestUtil.get_run_env()
+		env.update({
+					"XPRA_CLIPBOARD_WANT_TARGETS"	: "1",
+					"XPRA_CLIPBOARD_GREEDY"			: "1",
+					})
+		return env
+
 
 	def test_copy(self):
 		self.do_test_copy()

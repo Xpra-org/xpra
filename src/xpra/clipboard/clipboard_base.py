@@ -238,16 +238,12 @@ class ClipboardProtocolHelperBase(object):
         def send_token(*args):
             self.send("clipboard-token", *args)
         if proxy._can_receive and not proxy._can_send:
-            #send the token without data, and with claim flag False:
-            #target_data = (target, dtype, dformat, wire_encoding, wire_data)
-            #send_token(rsel, targets, *target_data)
-            #self.send("clipboard-contents", request_id, selection, dtype, dformat, wire_encoding, wire_data)
-            #['clipboard-contents', 8, 'CLIPBOARD', 'ATOM', 32, 'atoms', ('TIMESTAMP', 'TARGETS', 'MULTIPLE')]
-            #log("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
-            #clipboard raw -> wire: ('UTF8_STRING', 8, 'trunk') -> ('bytes', 'trunk')
+            #send the token without data,
+            #and with claim flag set to False, greedy set to True:
             send_token(rsel, [], "NOTARGET", "UTF8_STRING", 8, "bytes", "", False, True)
             return
         if self._want_targets:
+            log("client wants targets with the token, querying TARGETS")
             #send the token with the target and data once we get them:
             #first get the targets, then get the contents for targets we want to send (if any)
             def got_targets(dtype, dformat, targets):
@@ -635,7 +631,7 @@ class ClipboardProxy(gtk.Invisible):
         # Someone else on our side has the selection
         log("do_selection_clear_event(%s) have_token=%s, block_owner_change=%s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
         self._selection_clear_events += 1
-        if self._enabled and self._can_send:
+        if self._enabled and self._can_send and not self._block_owner_change:
             #if greedy_client is set, do_owner_changed will fire the token
             #so don't bother sending it now (same if we don't have it)
             send = ((self._greedy_client and not self._block_owner_change) or self._have_token)
@@ -657,29 +653,29 @@ class ClipboardProxy(gtk.Invisible):
         if not self._enabled:
             return
         self._got_token_events += 1
-        if not claim:
-            log("token packet without claim, not setting the token flag")
-            #the other end is just telling us to send the token again next time something changes,
-            #not that they want to own the clipboard selection
-            return
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s", self._selection, targets, target_data, claim, self._can_receive)
-        self._have_token = True
         if self._greedy_client or CLIPBOARD_GREEDY:
             self._block_owner_change = True
             #re-enable the flag via idle_add so events like do_owner_changed
             #get a chance to run first.
             glib.idle_add(self.remove_block)
-        if CLIPBOARD_GREEDY:
-            if self._can_receive and targets:
+        if CLIPBOARD_GREEDY and self._can_receive:
+            if targets:
                 for target in targets:
                     self.selection_add_target(self._selection, target, 0)
                 self.selection_owner_set(self._selection)
-            if self._can_receive and target_data:
+            if target_data:
                 for text_target in TEXT_TARGETS:
                     if text_target in target_data:
                         text_data = target_data.get(text_target)
                         log("clipboard %s set to '%s'", self._selection, text_data)
                         self._clipboard.set_text(text_data)
+        if not claim:
+            log("token packet without claim, not setting the token flag")
+            #the other end is just telling us to send the token again next time something changes,
+            #not that they want to own the clipboard selection
+            return
+        self._have_token = True
         if self._can_receive:
             #if we don't claim the selection (can-receive=False),
             #we will have to send the token back on owner-change!
