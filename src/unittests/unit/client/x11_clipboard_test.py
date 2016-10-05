@@ -11,6 +11,7 @@ import unittest
 from xpra.util import envbool
 from xpra.os_util import get_hex_uuid
 from unit.client.x11_client_test_util import X11ClientTestUtil
+from xpra.platform.features import CLIPBOARDS
 
 from xpra.log import Logger
 log = Logger("clipboard")
@@ -51,7 +52,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 			new_value = self.get_clipboard_value(display1)
 		return value
 
-	def do_test_copy(self, direction="both", selection="clipboard"):
+	def do_test_copy_selection(self, selection="clipboard", direction="both"):
 		log("do_test_copy(%s)", direction)
 		server = self.run_server()
 		server_display = server.display
@@ -79,6 +80,10 @@ class X11ClipboardTest(X11ClientTestUtil):
 		client.terminate()
 		xvfb.terminate()
 		server.terminate()
+
+	def do_test_copy(self, direction="both"):
+		for selection in CLIPBOARDS:
+			self.do_test_copy_selection(selection, direction)
 
 	def test_copy(self):
 		self.do_test_copy()
