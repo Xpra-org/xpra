@@ -7,8 +7,11 @@
 import os
 import sys
 import unittest
+from xpra.util import envint
 from xpra.os_util import load_binary_file, pollwait
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
+
+CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 5)
 
 
 class X11ClientTest(X11ClientTestUtil):
@@ -18,19 +21,19 @@ class X11ClientTest(X11ClientTestUtil):
 		log("starting test server on %s", display)
 		server = self.check_start_server(display, "--start=xterm", "--sharing=%s" % sharing)
 		xvfb1, client1 = self.run_client(display, "--sharing=%s" % sharing, *client_args)
-		assert pollwait(client1, 2) is None
+		assert pollwait(client1, CLIENT_TIMEOUT) is None
 		xvfb2, client2 = self.run_client(display, "--sharing=%s" % sharing, *client_args)
-		assert pollwait(client2, 2) is None
+		assert pollwait(client2, CLIENT_TIMEOUT) is None
 		if not sharing:
 			#starting a second client should disconnect the first when not sharing
 			assert pollwait(client1, 2) is not None, "the first client should have been disconnected (sharing off)"
 		#killing the Xvfb should kill the client
 		xvfb1.terminate()
 		xvfb2.terminate()
-		assert pollwait(xvfb1, 2) is not None
-		assert pollwait(xvfb2, 2) is not None
-		assert pollwait(client1, 2) is not None
-		assert pollwait(client2, 2) is not None
+		assert pollwait(xvfb1, CLIENT_TIMEOUT) is not None
+		assert pollwait(xvfb2, CLIENT_TIMEOUT) is not None
+		assert pollwait(client1, CLIENT_TIMEOUT) is not None
+		assert pollwait(client2, CLIENT_TIMEOUT) is not None
 		server.terminate()
 
 
@@ -56,11 +59,11 @@ class X11ClientTest(X11ClientTestUtil):
 			display = self.find_free_display()
 			server = self.check_start_server(display)
 			xvfb, client = self.run_client(display)
-			assert pollwait(client, 2) is None
+			assert pollwait(client, CLIENT_TIMEOUT) is None
 			#send a file to this client:
 			send_file_command = ["control", display, "send-file", f.name, "1", "*"]
 			send_file = self.run_xpra(send_file_command)
-			assert pollwait(send_file, 5)==0, "send-file command returncode is %s" % send_file.poll()
+			assert pollwait(send_file, CLIENT_TIMEOUT)==0, "send-file command returncode is %s" % send_file.poll()
 			#now verify the file can be found in the download directory
 			from xpra.platform.paths import get_download_dir
 			filename = os.path.join(os.path.expanduser(get_download_dir()), os.path.basename(f.name))
