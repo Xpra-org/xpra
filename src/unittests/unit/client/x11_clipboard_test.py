@@ -35,7 +35,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 		assert self.pollwait(xclip, 5)==0, "xclip returned %s" % xclip.poll()
 
 
-	def copy_and_verify(self, display1, display2, synced=True, wait=1):
+	def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):
 		log("copy_and_verify%s", (display1, display2, synced, wait))
 		value = get_hex_uuid()
 		self.set_clipboard_value(display1, value)
@@ -51,25 +51,30 @@ class X11ClipboardTest(X11ClientTestUtil):
 			new_value = self.get_clipboard_value(display1)
 		return value
 
-	def do_test_copy(self, direction="both"):
+	def do_test_copy(self, direction="both", selection="clipboard"):
+		log("do_test_copy(%s)", direction)
 		server = self.run_server()
 		server_display = server.display
 		#connect a client:
-		xvfb, client = self.run_client(server_display, "--clipboard-direction=%s" % direction)
+		xvfb, client = self.run_client(server_display, "--clipboard-direction=%s" % direction, "--remote-logging=no")
 		assert self.pollwait(client, 2) is None, "client has exited with return code %s" % client.poll()
 		client_display = xvfb.display
 
 		if SANITY_CHECKS:
+			log("sanity checks")
 			#xclip sanity check: retrieve from the same display:
-			self.copy_and_verify(client_display, client_display, True, wait=0)
-			self.copy_and_verify(server_display, server_display, True, wait=0)
+			self.copy_and_verify(client_display, client_display, True, wait=0, selection=selection)
+			self.copy_and_verify(server_display, server_display, True, wait=0, selection=selection)
 
+		log("copy client %s to server %s", client_display, server_display)
 		for _ in range(2):
-			self.copy_and_verify(client_display, server_display, direction in ("both", "to-server"))
+			self.copy_and_verify(client_display, server_display, direction in ("both", "to-server"), selection=selection)
+		log("copy server %s to client %s", server_display, client_display)
 		for _ in range(2):
-			self.copy_and_verify(server_display, client_display, direction in ("both", "to-client"))
+			self.copy_and_verify(server_display, client_display, direction in ("both", "to-client"), selection=selection)
+		log("copy client %s to server %s", client_display, server_display)
 		for _ in range(2):
-			self.copy_and_verify(client_display, server_display, direction in ("both", "to-server"))
+			self.copy_and_verify(client_display, server_display, direction in ("both", "to-server"), selection=selection)
 
 		client.terminate()
 		xvfb.terminate()
