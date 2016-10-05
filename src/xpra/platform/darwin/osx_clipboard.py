@@ -191,7 +191,7 @@ class OSXClipboardProxy(ClipboardProxy):
         log("local_clipboard_changed() greedy_client=%s, have_token=%s, blocked=%s", self._greedy_client, self._have_token, self._block_owner_change)
         if (self._greedy_client or self._have_token) and not self._block_owner_change and self._can_send:
             self._have_token = False
-            self.emit("send-clipboard-token", self._selection)
+            self.emit("send-clipboard-token")
             self._sent_token_events += 1
 
 gobject.type_register(OSXClipboardProxy)
