@@ -104,6 +104,7 @@ class ChildReaper(object):
         self._proc_info.append(procinfo)
         if procinfo.returncode is not None:
             self.add_dead_process(procinfo)
+        return procinfo
 
     def poll(self):
         #poll each process that is not dead yet:
@@ -175,6 +176,7 @@ class ChildReaper(object):
     def reap(self):
         self.poll()
         while os.name=="posix":
+            log("reap() calling os.waitpid%s", (-1, "WNOHANG"))
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
             except OSError:
