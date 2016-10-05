@@ -159,9 +159,17 @@ class OSXClipboardProxy(ClipboardProxy):
         global change_callbacks
         change_callbacks.append(self.local_clipboard_changed)
 
-    def got_token(self, targets, target_data):
+    def got_token(self, targets, target_data, claim):
         # We got the anti-token.
         log("got token, selection=%s, targets=%s, target_data=%s", self._selection, targets, target_data)
+        if not self._enabled:
+            return
+        self._got_token_events += 1
+        if not claim:
+            log("token packet without claim, not setting the token flag")
+            #the other end is just telling us to send the token again next time something changes,
+            #not that they want to own the clipboard selection
+            return
         self._block_owner_change = True
         self._have_token = True
         for target in targets:
