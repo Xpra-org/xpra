@@ -20,7 +20,8 @@ from xpra.log import Logger
 log = Logger("test")
 
 XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
-SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 10)
+SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 30)
+XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 10)
 
 
 class ServerTestUtil(unittest.TestCase):
@@ -169,7 +170,7 @@ class ServerTestUtil(unittest.TestCase):
 					cmd[cmd.index("/etc/xpra/xorg.conf")] = "./etc/xpra/xorg.conf"
 			cmd.append(display)
 			xvfb = cls.run_command(cmd)
-			assert pollwait(xvfb, 2) is None, "xvfb command %s failed and returned %s" % (cmd, xvfb.poll())
+			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command %s failed and returned %s" % (cmd, xvfb.poll())
 			return xvfb
 
 
