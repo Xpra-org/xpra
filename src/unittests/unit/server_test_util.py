@@ -20,8 +20,8 @@ from xpra.log import Logger
 log = Logger("test")
 
 XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
-SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 30)
-XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 10)
+SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
+XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 5)
 
 
 class ServerTestUtil(unittest.TestCase):
