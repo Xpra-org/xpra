@@ -25,7 +25,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 	@classmethod
 	def setUpClass(cls):
 		super(X11ClipboardTest, cls).setUpClass()
-		X11ClipboardTest.default_xpra_args += ["-d clipboard"]
+		X11ClipboardTest.default_xpra_args += ["--speaker=no", "--microphone=no", "-d clipboard"]
 
 
 	def get_clipboard_value(self, display, selection="clipboard"):
@@ -37,7 +37,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 
 
 	def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):
-		log("copy_and_verify%s", (display1, display2, synced, wait))
+		log("copy_and_verify%s", (display1, display2, synced, wait, selection))
 		value = get_hex_uuid()
 		self.set_clipboard_value(display1, value)
 		#wait for synchronization to occur:
@@ -53,7 +53,7 @@ class X11ClipboardTest(X11ClientTestUtil):
 		return value
 
 	def do_test_copy_selection(self, selection="clipboard", direction="both"):
-		log("do_test_copy(%s)", direction)
+		log("do_test_copy(%s, %s)", selection, direction)
 		server = self.run_server()
 		server_display = server.display
 		#connect a client:
