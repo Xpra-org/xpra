@@ -10,15 +10,17 @@ import time
 import tempfile
 import unittest
 import subprocess
-from xpra.util import envbool, repr_ellipsized
+from xpra.util import envbool, envint, repr_ellipsized
 from xpra.os_util import OSEnvContext, pollwait
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra, osexpand
+from xpra.platform.paths import get_xpra_command
 
 from xpra.log import Logger
 log = Logger("test")
 
 XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
+SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 10)
 
 
 class ServerTestUtil(unittest.TestCase):
@@ -63,7 +65,6 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def run_xpra(cls, command, env=None):
-		from xpra.platform.paths import get_xpra_command
 		xpra_cmd = get_xpra_command()
 		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + command + cls.default_xpra_args
 		return cls.run_command(cmd, env)
@@ -186,7 +187,7 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def check_server(cls, subcommand, display, *args):
 		server_proc = cls.run_xpra([subcommand, display, "--no-daemon"]+list(args))
-		assert pollwait(server_proc, 3) is None, "server failed to start, returned %s" % server_proc.poll()
+		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start, returned %s" % server_proc.poll()
 		assert display in cls.dotxpra.displays(), "server display not found"
 		#query it:
 		info = cls.run_xpra(["version", display])
