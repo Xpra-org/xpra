@@ -38,10 +38,13 @@ def pactl_output(log_errors=True, *pactl_args):
     env["LC_ALL"] = "C"
     try:
         import subprocess
+        log("running %s", cmd)
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         from xpra.child_reaper import getChildReaper
-        getChildReaper().add_process(process, "pactl", cmd, True, True)
+        procinfo = getChildReaper().add_process(process, "pactl", cmd, True, True)
+        log("waiting for %s output", cmd)
         out, err = process.communicate()
+        getChildReaper().add_dead_process(procinfo)
         code = process.poll()
         log("pactl_output%s returned %s", pactl_args, code)
         return  code, out, err
@@ -165,12 +168,14 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
 def get_info():
     i = 0
     dinfo = {}
-    for monitors in (True, False):
-        for io in (True, False):
-            devices = get_pa_device_options(monitors, io, log_errors=False)
-            for d,name in devices.items():
-                dinfo[d] = name
-                i += 1
+    status, out, _ = pactl_output(False, "list")
+    if status==0 and out:
+        for monitors in (True, False):
+            for io in (True, False):
+                devices = do_get_pa_device_options(out, monitors, io, log_errors=False)
+                for d,name in devices.items():
+                    dinfo[d] = name
+                    i += 1
     return {
             "device"        : dinfo,
             "devices"       : i,
