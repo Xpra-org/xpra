@@ -19,7 +19,7 @@ gdk = import_gdk()
 from xpra.log import Logger
 log = Logger("clipboard")
 
-from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
+from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
@@ -231,7 +231,8 @@ class ClipboardProtocolHelperBase(object):
             return
         loop.done({"type": dtype, "format": dformat, "data": data})
 
-    def _send_clipboard_token_handler(self, proxy, selection):
+    def _send_clipboard_token_handler(self, proxy):
+        selection = proxy._selection
         log("send clipboard token: %s", selection)
         rsel = self.local_to_remote(selection)
         def send_token(*args):
@@ -457,7 +458,7 @@ class ClipboardProxy(gtk.Invisible):
                                       (gobject.TYPE_PYOBJECT,) * 2,
                                       ),
         # arguments: (selection,)
-        "send-clipboard-token": n_arg_signal(1),
+        "send-clipboard-token": no_arg_signal,
         }
 
     def __init__(self, selection):
@@ -541,7 +542,7 @@ class ClipboardProxy(gtk.Invisible):
         if (self._can_send and self._greedy_client) or (self._have_token and not self._can_receive):
             self._block_owner_change = True
             self._have_token = False
-            self.emit("send-clipboard-token", self._selection)
+            self.emit("send-clipboard-token")
             self._sent_token_events += 1
             glib.idle_add(self.remove_block)
 
@@ -646,7 +647,7 @@ class ClipboardProxy(gtk.Invisible):
             if send:
                 boc = self._block_owner_change
                 self._block_owner_change = True
-                self.emit("send-clipboard-token", self._selection)
+                self.emit("send-clipboard-token")
                 if boc is False:
                     glib.idle_add(self.remove_block)
         gtk.Invisible.do_selection_clear_event(self, event)
