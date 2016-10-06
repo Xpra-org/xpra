@@ -82,6 +82,11 @@ if supports_server:
         from xpra.x11.bindings.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
     except:
         supports_server = False
+try:
+    from xpra.net import mdns
+    supports_mdns = bool(mdns)
+except:
+    supports_mdns = False
 
 
 #this parse doesn't exit when it encounters an error,
@@ -236,6 +241,8 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog version [DISPLAY]\n"
                         "\t%prog showconfig\n"
                       ]
+    if supports_mdns:
+        command_options.append("\t%prog list-mdns\n")
     server_modes = []
     if supports_server:
         server_modes.append("start")
@@ -1031,7 +1038,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "attach", "stop", "version", "print", "opengl", "test-connect"):
+    if mode in ("showconfig", "info", "control", "list", "list-mdns", "attach", "stop", "version", "print", "opengl", "test-connect"):
         to = sys.stdout
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
@@ -1170,6 +1177,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_stopexit(mode, error_cb, options, args)
         elif mode == "list" and (supports_server or supports_shadow):
             return run_list(error_cb, options, args)
+        elif mode == "list-mdns" and supports_mdns:
+            return run_list_mdns(error_cb, options, args)
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
@@ -2438,6 +2447,78 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
         else:
             sys.stdout.write(" (cleaned up)")
     sys.stdout.write("\n")
+
+def run_list_mdns(error_cb, opts, extra_args):
+    no_gtk()
+    if len(extra_args)<=1:
+        try:
+            MDNS_WAIT = int(extra_args[0])
+        except:
+            MDNS_WAIT = 5
+    else:
+        error_cb("too many arguments for mode")
+    assert supports_mdns
+    from xpra.net.mdns import XPRA_MDNS_TYPE
+    try:
+        from xpra.net.mdns.avahi_listener import AvahiListener
+    except ImportError:
+        error_cb("sorry, 'list-mdns' is not supported on this platform yet")
+    from xpra.net.net_util import if_indextoname
+    from xpra.dbus.common import loop_init
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
+    loop_init()
+    try:
+        import collections
+        found = collections.OrderedDict()
+    except:
+        found = {}
+    shown = set()
+    def show_new_found():
+        new_found = [x for x in found.keys() if x not in shown]
+        for uq in new_found:
+            recs = found[uq]
+            for i, rec in enumerate(recs):
+                iface, _, _, host, address, port, text = rec
+                display = text.get("display")
+                mode = text.get("mode", "")
+                username = text.get("username", "")
+                session = text.get("session")
+                if i==0:
+                    print("* user '%s' on '%s'" % (username, host))
+                    if session:
+                        print(" session '%s'" % session)
+                print(" + %s endpoint on host %s, port %i, interface %s" % (mode, address, port, iface))
+                dstr = ""
+                if display.startswith(":"):
+                    dstr = display[1:]
+                uri = "%s/%s@%s:%s/%s" % (mode, username, address, port, dstr)
+                print("   \"%s\"" % uri)
+            shown.add(uq)
+    def mdns_add(interface, name, domain, host, address, port, text):
+        text = text or {}
+        iface = interface
+        if if_indextoname:
+            iface = if_indextoname(interface)
+        username = text.get("username", "")
+        uq = text.get("uuid", len(found)), username, host
+        found.setdefault(uq, []).append((iface, name, domain, host, address, port, text))
+        glib.timeout_add(1000, show_new_found)
+    listener = AvahiListener(XPRA_MDNS_TYPE, mdns_add=mdns_add)
+    print("Looking for xpra services via mdns")
+    try:
+        glib.idle_add(listener.start)
+        loop = glib.MainLoop()
+        glib.timeout_add(MDNS_WAIT*1000, loop.quit)
+        loop.run()
+    finally:
+        listener.stop()
+    if not found:
+        print("no services found")
+    else:
+        from xpra.util import engs
+        print("%i service%s found" % (len(found), engs(found)))
+    
 
 def run_list(error_cb, opts, extra_args):
     no_gtk()

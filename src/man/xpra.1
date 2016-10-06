@@ -246,6 +246,8 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
+\fBxpra\fP \fBlist-mdns\fP
+.HP
 \fBxpra\fP \fBupgrade\fP \fI:[DISPLAY]\fP [...any options accepted by
 \fBxpra start\fP...]
 .PD
@@ -311,6 +313,9 @@ appear until you attach with \fBxpra attach\fP.
 .TP
 \fBxpra list\fP
 Show a list of xpra servers you have running on the current host.
+.TP
+\fBxpra\fP \fBlist-mdns\fP
+Show a list of xpra servers found via mDNS. (local network)
 .TP
 \fBxpra showconfig\fP
 Shows the configuration that would be used with other sub-commands,
