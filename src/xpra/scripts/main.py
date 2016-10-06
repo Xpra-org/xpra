@@ -2480,6 +2480,7 @@ def run_list_mdns(error_cb, opts, extra_args):
             recs = found[uq]
             for i, rec in enumerate(recs):
                 iface, _, _, host, address, port, text = rec
+                uuid = text.get("uuid")
                 display = text.get("display")
                 mode = text.get("mode", "")
                 username = text.get("username", "")
@@ -2487,7 +2488,9 @@ def run_list_mdns(error_cb, opts, extra_args):
                 if i==0:
                     print("* user '%s' on '%s'" % (username, host))
                     if session:
-                        print(" session '%s'" % session)
+                        print(" session '%s', uuid=%s" % (session, uuid))
+                    elif uuid:
+                        print(" uuid=%s" % uuid)
                 print(" + %s endpoint on host %s, port %i, interface %s" % (mode, address, port, iface))
                 dstr = ""
                 if display.startswith(":"):
