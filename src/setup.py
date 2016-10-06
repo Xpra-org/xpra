@@ -158,6 +158,7 @@ if WIN32 or OSX:
 sound_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
+mdns_ENABLED            = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
@@ -218,7 +219,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
             "dec_avcodec2", "csc_swscale",
             "csc_opencl", "csc_cython", "csc_opencv", "csc_libyuv",
             "memoryview",
-            "bencode", "cython_bencode", "vsock",
+            "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
             "server", "client", "dbus", "x11", "gtk_x11",
             "gtk2", "gtk3", "html5", "pam",
@@ -807,7 +808,7 @@ def build_xpra_conf(install_dir):
     def pretty_cmd(cmd):
         return " ".join(cmd)
     #no python-avahi on RH / CentOS, need dbus module on *nix:
-    mdns = OSX or WIN32 or (not is_RH() and dbus_ENABLED)
+    mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
             'xvfb_command'          : pretty_cmd(xvfb_command),
             'ssh_command'           : DEFAULT_SSH_COMMAND,
@@ -1899,6 +1900,7 @@ membuffers_c = [memalign_c, inline_c, buffers_c]
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
+toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(server_ENABLED or proxy_ENABLED or shadow_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
