@@ -31,11 +31,11 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
     else:
         #how far are we from the current quality heuristics?
         qscore = 100-abs(target_quality - quality)
-        if min_quality>=0:
-            #if the encoder quality is lower or close to min_quality
-            #then it isn't very suitable:
-            mqs = max(0, quality - min_quality)*100/max(1, 100-min_quality)
-            qscore = (qscore + mqs)//2
+        if min_quality>=quality:
+            #if this encoder's quality is lower than the min_quality
+            #then it isn't very suitable, discount its score:
+            mqs = (min_quality - quality) // 2
+            qscore = max(0, qscore - mqs)
         #when downscaling, YUV420P should always win:
         if csc_format=="YUV420P" and scaling!=(1, 1):
             qscore *= 2.0
