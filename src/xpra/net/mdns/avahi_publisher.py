@@ -13,7 +13,7 @@ try:
 except:
     #not available in all versions of the bindings?
     DBusException = Exception
-from xpra.net import XPRA_MDNS_TYPE
+from xpra.net.mdns import XPRA_MDNS_TYPE
 
 from xpra.log import Logger
 log = Logger("network", "mdns")

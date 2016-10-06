@@ -16,7 +16,7 @@ try:
 except OSError as e:
     log("failed to load pybonjour", exc_info=True)
     raise ImportError("cannot load pybonjour module: %s" % e.strerror)
-from xpra.net import XPRA_MDNS_TYPE
+from xpra.net.mdns import XPRA_MDNS_TYPE
 
 SHOW_INTERFACE = True            #publishes the name of the interface we broadcast from
 

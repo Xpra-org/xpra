@@ -284,10 +284,12 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         return
     PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
     try:
+        from xpra.net import mdns
+        assert mdns
         if PREFER_PYBONJOUR:
-            from xpra.net.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
+            from xpra.net.mdns.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
         else:
-            from xpra.net.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
+            from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
         MDNS_WARNING = True
         from xpra.log import Logger
