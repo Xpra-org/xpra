@@ -1337,10 +1337,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #publish mdns records:
     if opts.mdns:
+        from xpra.os_util import get_hex_uuid
         from xpra.platform.info import get_username
         mdns_info = {
                      "display"  : display_name,
                      "username" : get_username(),
+                     "uuid"     : get_hex_uuid(),
                      }
         if opts.session_name:
             mdns_info["session"] = opts.session_name
