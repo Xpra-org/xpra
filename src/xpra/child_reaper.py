@@ -53,6 +53,9 @@ class ProcInfo(object):
 # thus before we even know the pid of the child).  So be careful:
 # We can also end up with multiple procinfo structures with the same pid,
 # and that should be fine too
+#
+# WNOHANG is a tricky beast, see:
+# https://github.com/gevent/gevent/issues/622
 class ChildReaper(object):
     #note: the quit callback will fire only once!
     def __init__(self, quit_cb=None, exit_with_children=False):
