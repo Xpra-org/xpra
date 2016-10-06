@@ -36,14 +36,14 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, get_hex_uuid, livefds, load_binary_file, pollwait
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait
 from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
-from xpra.scripts.config import python_platform, parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.scripts.main import sound_option
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
@@ -454,20 +454,6 @@ class ServerBase(ServerCore):
         devices = get_virtual_video_devices()
         webcamlog.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
         return len(devices)
-
-    def init_uuid(self):
-        # Define a server UUID if needed:
-        self.uuid = self.get_uuid()
-        if not self.uuid:
-            self.uuid = unicode(get_hex_uuid())
-            self.save_uuid()
-        log("server uuid is %s", self.uuid)
-
-    def get_uuid(self):
-        return  None
-
-    def save_uuid(self):
-        pass
 
     def init_notification_forwarder(self):
         log("init_notification_forwarder() enabled=%s", self.notifications)
@@ -1951,7 +1937,16 @@ class ServerBase(ServerCore):
         if not wids:
             wids = self._id_to_window.keys()
         log("info-request: sources=%s, wids=%s", sources, wids)
-        info.update(self.do_get_info(proto, sources, wids))
+        dgi = self.do_get_info(proto, sources, wids)
+        #ugly alert: merge nested dictionaries,
+        #ie: do_get_info may return a dictionary for "server" and we already have one,
+        # so we update it with the new values
+        for k,v in dgi.items():
+            cval = info.get(k)
+            if cval is None:
+                info[k] = v
+                continue
+            cval.update(v)
         info.setdefault("dpi", {}).update({
                              "default"      : self.default_dpi,
                              "value"        : self.dpi,
@@ -2052,8 +2047,7 @@ class ServerBase(ServerCore):
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
         start = time.time()
-        info = {"server" : {"python" : {"version" : python_platform.python_version()}}}
-
+        info = {}
         def up(prefix, d):
             info[prefix] = d
 

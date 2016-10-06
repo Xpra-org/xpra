@@ -27,10 +27,10 @@ import xpra
 from xpra.server import ClientException
 from xpra.scripts.main import _socket_connect
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.config import InitException, parse_bool
+from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, SIGNAMES
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, SIGNAMES
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
@@ -172,6 +172,7 @@ class ServerCore(object):
         self.server_idle_timeout = 0
         self.server_idle_timer = None
 
+        self.init_uuid()
         self.init_control_commands()
         self.init_packet_handlers()
         self.init_aliases()
@@ -208,6 +209,21 @@ class ServerCore(object):
 
         self.init_html_proxy(opts)
         self.init_auth(opts)
+
+
+    def init_uuid(self):
+        # Define a server UUID if needed:
+        self.uuid = self.get_uuid()
+        if not self.uuid:
+            self.uuid = unicode(get_hex_uuid())
+            self.save_uuid()
+        log("server uuid is %s", self.uuid)
+
+    def get_uuid(self):
+        return  None
+
+    def save_uuid(self):
+        pass
 
 
     def init_html_proxy(self, opts):
@@ -1162,12 +1178,14 @@ class ServerCore(object):
         si.update({
                    "mode"              : self.get_server_mode(),
                    "type"              : "Python",
+                   "python"            : {"version" : python_platform.python_version()},
                    "start_time"        : int(self.start_time),
                    "idle-timeout"      : int(self.server_idle_timeout),
                    "argv"              : sys.argv,
                    "path"              : sys.path,
                    "exec_prefix"       : sys.exec_prefix,
                    "executable"        : sys.executable,
+                   "uuid"              : self.uuid,
                 })
         if self.original_desktop_display:
             si["original-desktop-display"] = self.original_desktop_display
