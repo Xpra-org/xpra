@@ -6,6 +6,7 @@ DPKG_EXPORT_BUILDFLAGS = 1
 -include /usr/share/dpkg/default.mk
 
 export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
+export CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
 %:
 	dh $@ --with python2 --with quilt
 
