@@ -16,8 +16,8 @@ LOGFILE=xpra-proxy.log
 start() {
   echo 'Starting service…' >&2
   xpra proxy $VIRTUAL_DISPLAY \
-	--bind-tcp=0.0.0.0:$PORT --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem \
-	--socket-permissions=660 \
+	--bind-tcp=0.0.0.0:$PORT --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem \
+	--socket-permissions=666 \
 	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR
   echo 'Service started' >&2
 }
