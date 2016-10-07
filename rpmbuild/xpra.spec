@@ -239,6 +239,7 @@ BuildRequires: desktop-file-utils
 BuildRequires: %{numpy}
 BuildRequires: %{xvfb}
 %endif
+Requires(post): openssl
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 Requires: %{requires_crypto}
@@ -486,6 +487,11 @@ popd
 
 
 %post
+if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
+	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+		-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
+		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem"
+fi
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :

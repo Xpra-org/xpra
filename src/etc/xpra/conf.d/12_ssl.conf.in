@@ -6,9 +6,11 @@
 
 # Key file to use:
 #ssl-key = /path/to/keyfile
+ssl-key = %(ssl_key)s
 
 # Certifcate file to use:
 #ssl-cert = /path/to/cert
+ssl-cert = %(ssl_cert)s
 
 # Specifies which version of the SSL protocol to use:
 #ssl-protocol = SSLv23

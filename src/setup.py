@@ -250,13 +250,20 @@ if HELP:
     sys.exit(0)
 
 rpath = None
+ssl_cert = None
+ssl_key = None
 filtered_args = []
 for arg in sys.argv:
-    if arg.startswith("--rpath="):
-        rpath = arg[len("--rpath="):]
-        print("rpath=%s" % rpath)
-        continue
     matched = False
+    for x in ("rpath", "ssl-cert", "ssl-key"):
+        varg = "--%s=" % x
+        if arg.startswith(varg):
+            value = arg[len(varg):]
+            globals()[x.replace("-", "_")] = value
+            matched = True
+            break
+    if matched:
+        continue
     for x in SWITCHES:
         with_str = "--with-%s" % x
         without_str = "--without-%s" % x
@@ -819,6 +826,8 @@ def build_xpra_conf(install_dir):
             'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
             'conf_dir'              : conf_dir,
             'bind'                  : bind,
+            'ssl_cert'              : ssl_cert or "",
+            'ssl_key'               : ssl_key or "",
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : get_default_log_dir(),
             'mdns'                  : bstr(mdns),
