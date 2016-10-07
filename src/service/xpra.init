@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          xpra-proxy
+# Provides:          xpra
 # Required-Start:    $local_fs $network $named $time $syslog
 # Required-Stop:     $local_fs $network $named $time $syslog
 # Default-Start:     2 3 4 5
@@ -11,7 +11,7 @@
 VIRTUAL_DISPLAY=:14500
 PORT=14500
 LOGDIR=/var/log/
-LOGFILE=xpra-proxy.log
+LOGFILE=xpra.log
 
 start() {
   echo 'Starting service…' >&2

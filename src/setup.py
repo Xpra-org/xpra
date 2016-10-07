@@ -1877,7 +1877,7 @@ else:
         if is_Fedora() or os.path.exists("/lib/systemd/system"):
             add_data_files("/lib/systemd/system", ["service/xpra.service"])
         else:
-            add_data_files("/etc/init.d/xpra-proxy", ["service/xpra.init"])
+            add_data_files("/etc/init.d/xpra", ["service/xpra.init"])
 
 
 if html5_ENABLED:
