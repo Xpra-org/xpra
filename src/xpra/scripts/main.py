@@ -2398,7 +2398,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         if not socket_path:
             #if we return non-zero, we will try the next run-xpra script in the list..
             return 0
-        display = parse_display_name(error_cb, opts, socket_path)
+        display = parse_display_name(error_cb, opts, "socket:%s" % socket_path)
         if proc and proc.poll() is None:
             #start a thread just to reap server startup process (yuk)
             #(as the server process will exit as it daemonizes)
