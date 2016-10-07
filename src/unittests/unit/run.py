@@ -22,21 +22,24 @@ def main():
     #ie: d=~/Xpra/trunk/src/tests
     sys.path.append(root)
     #now look for tests to run
+    def write(msg):
+        sys.stdout.write("%s\n" % msg)
+        sys.stdout.flush()
     def run_file(p):
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
         assert p.startswith(root) and p.endswith("test.py")
         #ie: "unit.version_util_test"
         name = p[len(root)+1:-3].replace(os.path.sep, ".")
-        print("running %s" % name)
+        write("running %s\n" % name)
         cmd = ["python%s" % sys.version_info[0], p]
         try:
             proc = subprocess.Popen(cmd)
         except:
-            print("failed to execute %s" % p)
+            write("failed to execute %s" % p)
             return 1
         v = proc.wait()
         if v!=0:
-            print("failure on %s, exit code=%s" % (name, v))
+            write("failure on %s, exit code=%s" % (name, v))
             return v
         return 0
     def add_recursive(d):
@@ -52,7 +55,7 @@ def main():
             if v !=0:
                 return v
         return 0
-    print("running all the tests in %s" % p)
+    write("running all the tests in %s" % p)
     return add_recursive(p)
 
 if __name__ == '__main__':
