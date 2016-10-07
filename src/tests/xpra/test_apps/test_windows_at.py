@@ -27,7 +27,7 @@ def main():
 	y = intarg(2, 100)
 	w = intarg(3, 100)
 	h = intarg(4, 100)
-	
+
 	#TestWindow(gtk.WINDOW_TOPLEVEL, x, y, w, h)
 	TestWindow(gtk.WINDOW_POPUP, x, y, w, h)
 	gtk.main()

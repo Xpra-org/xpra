@@ -110,7 +110,7 @@ class ServerSocketsTest(ServerTestUtil):
 			#self signed cert should fail without noverify:
 			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_CONNECTION_LOST)
 			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_CONNECTION_LOST)
-			
+
 		finally:
 			shutil.rmtree(tmpdir)
 			if server:
