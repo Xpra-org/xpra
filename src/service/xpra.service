@@ -6,7 +6,6 @@ Requires=avahi-daemon.socket
 Type=forking
 ExecStart=/usr/bin/xpra proxy :14500 --bind-tcp=0.0.0.0:14500 --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem --socket-permissions=666 --daemon=yes --log-file=/var/log/xpra.log --log-dir=/var/log
 #rely on SIGKILL which returns 128+15=143
-#ExecStop=/usr/bin/xpra stop :14500
 SuccessExitStatus=0 143
 Restart=on-abnormal
 
