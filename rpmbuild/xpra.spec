@@ -28,6 +28,7 @@
 
 
 #some of these dependencies may get turned off (empty) on some platforms:
+%define systemd 0
 %define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_opencv --without-enc_xvid
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
@@ -105,6 +106,7 @@
 
 
 %if 0%{?fedora}
+%define systemd 1
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
 #note: probably not working since we don't have gtkglext for Python3?
@@ -228,6 +230,9 @@ Requires(post):   /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
 Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
 %endif
 %if 0%{?fedora}
+Requires(post): systemd-units
+Requires(preun): systemd-units
+Requires(postun): systemd-units
 BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
 %endif
@@ -425,6 +430,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
+%if 0%{?systemd}
+/lib/systemd/system/xpra.service
+%else
+%{_sysconfdir}/init.d/xpra
+%endif
 /usr/lib/cups/backend/xpraforwarder
 %config /usr/lib/tmpfiles.d/xpra.conf
 %config %{_sysconfdir}/pam.d/xpra
@@ -487,6 +497,11 @@ popd
 
 
 %post
+%if 0%{?systemd}
+if [ $1 -eq 1 ]; then
+        /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+fi
+%endif
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
 		-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
@@ -507,7 +522,21 @@ done
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
 
+%preun
+%if 0%{?systemd}
+if [ $1 -eq 0 ] ; then
+        /bin/systemctl disable xpra.service > /dev/null 2>&1 || :
+        /bin/systemctl stop xpra.service > /dev/null 2>&1 || :
+fi
+%endif
+
 %postun
+%if 0%{?systemd}
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
+fi
+%endif
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then

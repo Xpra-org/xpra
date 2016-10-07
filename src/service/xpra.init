@@ -1,0 +1,44 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          xpra-proxy
+# Required-Start:    $local_fs $network $named $time $syslog
+# Required-Stop:     $local_fs $network $named $time $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Description:       Xpra proxy server
+### END INIT INFO
+
+VIRTUAL_DISPLAY=:14500
+PORT=14500
+LOGDIR=/var/log/
+LOGFILE=xpra-proxy.log
+
+start() {
+  echo 'Starting service…' >&2
+  xpra proxy $VIRTUAL_DISPLAY \
+	--bind-tcp=0.0.0.0:$PORT --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem \
+	--socket-permissions=660 \
+	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR
+  echo 'Service started' >&2
+}
+
+stop() {
+  echo 'Stopping service…' >&2
+  XPRA_NO_ROOT_WARNING=1 xpra stop $VIRTUAL_DISPLAY
+  echo 'Service stopped' >&2
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    stop
+    start
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+esac

@@ -1871,6 +1871,13 @@ else:
             return kw
 
         pkgconfig = osx_pkgconfig
+    else:
+        #Linux init service:
+        from xpra.os_util import is_Fedora
+        if is_Fedora() or os.path.exists("/lib/systemd/system"):
+            add_data_files("/lib/systemd/system", ["service/xpra.service"])
+        else:
+            add_data_files("/etc/init.d/xpra-proxy", ["service/xpra.init"])
 
 
 if html5_ENABLED:
