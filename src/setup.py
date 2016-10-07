@@ -1875,9 +1875,9 @@ else:
         #Linux init service:
         from xpra.os_util import is_Fedora
         if is_Fedora() or os.path.exists("/bin/systemctl"):
-            add_data_files("/lib/systemd/system", ["service/xpra.service"])
+            add_data_files("/lib/systemd/system/", ["service/xpra.service"])
         else:
-            add_data_files("/etc/init.d/xpra", ["service/xpra.init"])
+            add_data_files("/etc/init.d/", ["service/xpra"])
 
 
 if html5_ENABLED:
