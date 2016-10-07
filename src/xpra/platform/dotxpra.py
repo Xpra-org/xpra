@@ -13,16 +13,18 @@ import stat
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN
 
 
-def osexpand(s, actual_username=""):
+def osexpand(s, actual_username="", uid=0, gid=0):
     if len(actual_username)>0 and s.startswith("~/"):
         #replace "~/" with "~$actual_username/"
         s = "~%s/%s" % (actual_username, s[2:])
     v = os.path.expandvars(os.path.expanduser(s))
     if os.name=="posix":
-        v = v.replace("$UID", str(os.getuid()))
-        v = v.replace("$GID", str(os.getgid()))
+        v = v.replace("$UID", str(uid or os.getuid()))
+        v = v.replace("$GID", str(gid or os.getgid()))
     if len(actual_username)>0:
         v = v.replace("$USERNAME", actual_username)
+        v = v.replace("${USERNAME}", actual_username)
+    print("osexpand(%s, %s, %s, %s)=%s" % (s, actual_username, uid, gid, v))
     return v
 
 def norm_makepath(dirpath, name):
@@ -37,15 +39,21 @@ def debug(msg, *args):
 
 
 class DotXpra(object):
-    def __init__(self, sockdir=None, sockdirs=[], actual_username=""):
+    def __init__(self, sockdir=None, sockdirs=[], actual_username="", uid=0, gid=0):
+        self.uid = uid or os.getuid()
+        self.gid = gid or os.getgid()
+        self.username = actual_username
         if sockdir:
-            sockdir = osexpand(sockdir, actual_username)
+            sockdir = self.osexpand(sockdir)
         elif sockdirs:
-            sockdir = sockdirs[0]
+            sockdir = self.osexpand(sockdirs[0])
         else:
             sockdir = "undefined"
-        self._sockdir = os.path.expanduser(sockdir)
-        self._sockdirs = [osexpand(x) for x in sockdirs]
+        self._sockdir = self.osexpand(sockdir)
+        self._sockdirs = [self.osexpand(x) for x in sockdirs]
+
+    def osexpand(self, v):
+        return osexpand(v, self.username, self.uid, self.gid)
 
     def __repr__(self):
         return "DotXpra(%s, %s)" % (self._sockdir, self._sockdirs)
@@ -53,9 +61,11 @@ class DotXpra(object):
     def mksockdir(self):
         if self._sockdir and not os.path.exists(self._sockdir):
             os.mkdir(self._sockdir, 0o700)
+            if self.uid!=os.getuid() or self.gid!=os.getgid():
+                os.chown(self._sockdir, self.uid, self.gid)
 
     def socket_expand(self, path):
-        return osexpand(path)
+        return self.osexpand(path, uid=self.uid, gid=self.gid)
 
     def socket_path(self, local_display_name):
         return norm_makepath(self._sockdir, local_display_name)
@@ -92,6 +102,13 @@ class DotXpra(object):
     def sockets(self, check_uid=0, matching_state=None):
         #flatten the dictionnary into a list:
         return list(set((v[0], v[1]) for details_values in self.socket_details(check_uid, matching_state).values() for v in details_values))
+
+    def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
+        paths = []
+        for details in self.socket_details(check_uid, matching_state, matching_display).values():
+            for _, _, socket_path in details:
+                paths.append(socket_path)
+        return paths
 
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe

@@ -496,9 +496,9 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     try_sockpaths = [norm_makepath(socket_dir, display_name) for socket_dir in socket_dirs]
                 else:
                     try_sockpaths = [dotxpra.socket_path(display_name)]
-                log("sockpaths(%s)=%s", display_name, try_sockpaths)
+                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, try_sockpaths, os.getuid(), os.getgid())
             else:
-                sockpath = osexpand(b)
+                sockpath = dotxpra.osexpand(b)
                 if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
                     sockpath = os.path.abspath(sockpath)
                     if not os.path.exists(sockpath):
@@ -509,7 +509,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 try_sockpaths = [sockpath]
             assert try_sockpaths, "no socket paths to try for %s" % b
             for tsp in try_sockpaths:
-                sockpath = osexpand(tsp)
+                sockpath = dotxpra.osexpand(tsp)
                 if sockpath in sockpaths:
                     log.warn("Warning: skipping duplicate bind path %s", sockpath)
                     continue

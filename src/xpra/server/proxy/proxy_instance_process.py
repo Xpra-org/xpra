@@ -17,6 +17,7 @@ enclog = Logger("encoding")
 
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
+from xpra.scripts.main import setuidgid
 from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
@@ -146,30 +147,7 @@ class ProxyInstanceProcess(Process):
 
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
-        if os.name=="posix":
-            #change uid and gid:
-            try:
-                if os.getgid()!=self.gid:
-                    os.setgid(self.gid)
-            except OSError as e:
-                log.error("Error: cannot change gid to %i:", self.gid)
-                if os.getgid()==0:
-                    #don't run as root!
-                    raise
-                log.error(" %s", e)
-                log.error(" continuing with gid=%i", os.getgid())
-            try:
-                if os.getuid()!=self.uid:
-                    os.setuid(self.uid)
-            except OSError as e:
-                log.error("Error: cannot change uid to %i:", self.uid)
-                if os.getuid()==0:
-                    #don't run as root!
-                    raise
-                log.error(" %s", e)
-                log.error(" continuing with gid=%i", os.getuid())
-            log("ProxyProcess.run() new uid=%s, gid=%s", os.getuid(), os.getgid())
-
+        setuidgid(self.uid, self.gid)
         if self.env_options:
             #TODO: whitelist env update?
             os.environ.update(self.env_options)

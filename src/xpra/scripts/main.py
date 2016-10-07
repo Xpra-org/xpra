@@ -19,7 +19,7 @@ import shlex
 import traceback
 
 from xpra import __version__ as XPRA_VERSION
-from xpra.platform.dotxpra import DotXpra, norm_makepath
+from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, DEFAULT_PORT
@@ -1359,7 +1359,8 @@ def parse_display_name(error_cb, opts, display_name):
                 "display"       : display_name,
                 "socket_dir"    : os.path.basename(sockfile),
                 "socket_dirs"   : opts.socket_dirs,
-                "socket_path"   : sockfile})
+                "socket_path"   : sockfile,
+                })
         opts.display = display_name
         return desc
     elif display_name.startswith(":"):
@@ -1954,7 +1955,7 @@ def get_sockpath(display_desc, error_cb):
     sockpath = display_desc.get("socket_path")
     if not sockpath:
         #find the socket using the display:
-        dotxpra = DotXpra(sockdir=display_desc.get("socket_dir"), sockdirs=display_desc.get("socket_dirs"))
+        dotxpra = DotXpra(display_desc.get("socket_dir"), display_desc.get("socket_dirs"), display_desc.get("username", ""), display_desc.get("uid", 0), display_desc.get("gid", 0))
         display = display_desc["display"]
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE, matching_display=display)
         _, _, sockpath = single_display_match(dir_servers, error_cb)
@@ -2218,19 +2219,57 @@ def run_glcheck(opts):
     return 0
 
 
-def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
+def setuidgid(uid, gid):
+    if os.name!="posix":
+        return
+    from xpra.log import Logger
+    log = Logger("server")
+    #change uid and gid:
+    try:
+        if os.getgid()!=gid:
+            os.setgid(gid)
+    except OSError as e:
+        log.error("Error: cannot change gid to %i:", gid)
+        if os.getgid()==0:
+            #don't run as root!
+            raise
+        log.error(" %s", e)
+        log.error(" continuing with gid=%i", os.getgid())
+    try:
+        if os.getuid()!=uid:
+            os.setuid(uid)
+    except OSError as e:
+        log.error("Error: cannot change uid to %i:", uid)
+        if os.getuid()==0:
+            #don't run as root!
+            raise
+        log.error(" %s", e)
+        log.error(" continuing with gid=%i", os.getuid())
+    log("new uid=%s, gid=%s", os.getuid(), os.getgid())
+
+
+def start_server_subprocess(script_file, args, mode, defaults,
+                            socket_dir, socket_dirs,
                             start=[], start_child=[],
-                            exit_with_children=False, exit_with_client=False):
+                            exit_with_children=False, exit_with_client=False,
+                            uid=0, gid=0):
+    username = ""
+    home = ""
+    if os.name=="posix":
+        import pwd
+        e = pwd.getpwuid(uid)
+        username = e.pw_name
+        home = e.pw_dir
+    print("start_server_subprocess uid=%i, username=%s" % (uid, username))
+    dotxpra = DotXpra(socket_dir, socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
-    existing_sockets = set()
     if mode in ("start", "start-desktop"):
         if len(args)==1:
             display_name = args[0]
         elif len(args)==0:
             #let the server get one from Xorg via displayfd:
             display_name = 'S' + str(os.getpid())
-            existing_sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
         else:
             raise InitException("%s: expected 0 or 1 arguments but got %s: %s" % (mode, len(args), args))
     else:
@@ -2249,6 +2288,13 @@ def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
             #we now know the display name, so add it:
             args = [display_name]
 
+    #get the list of existing sockets so we can spot the new ones:
+    if display_name.startswith("S"):
+        matching_display = None
+    else:
+        matching_display = display_name
+    existing_sockets = set(dotxpra.socket_paths(check_uid=uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
+
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     if start_child:
         for x in start_child:
@@ -2262,10 +2308,15 @@ def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
         cmd.append("--exit-with-client")
     #add a unique uuid to the server env:
     server_env = os.environ.copy()
-    if display_name[0]=='S':
-        from xpra.os_util import get_hex_uuid
-        new_server_uuid = get_hex_uuid()
-        server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
+    from xpra.os_util import get_hex_uuid
+    new_server_uuid = get_hex_uuid()
+    server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
+    if username:
+        server_env.update({
+                           "USER"       : username,
+                           "USERNAME"   : username,
+                           "HOME"       : home or os.path.join("/home", username),
+                           })
     if mode=="shadow" and OSX:
         #launch the shadow server via launchctl so it will have GUI access:
         LAUNCH_AGENT = "org.xpra.Agent"
@@ -2293,36 +2344,27 @@ def start_server_subprocess(script_file, args, mode, defaults, dotxpra,
             proc.wait()
         proc = None
     else:
-        proc = Popen(cmd, preexec_fn=setsid, shell=False, close_fds=True, env=server_env)
-    if display_name[0]=='S':
-        display_name = identify_new_socket(dotxpra, existing_sockets, display_name, new_server_uuid)
-    else:
-        #wait for the display specified to become live:
-        start = time.time()
-        while True:
-            states = [dotxpra.get_server_state(norm_makepath(x, display_name), 1) for x in dotxpra._sockdirs]
-            if DotXpra.LIVE in states:
-                break
-            elapsed = int(time.time()-start)
-            if elapsed>=15:
-                warn("server for display %s failed to start, giving up after %i seconds - sorry!" % (display_name, elapsed))
-                return proc, None
-            time.sleep(0.10)
-    return proc, display_name
+        def preexec():
+            setsid()
+            if uid!=0 or gid!=0:
+                setuidgid(uid, gid)
+        cmd.append("--systemd-run=no")
+        proc = Popen(cmd, shell=False, close_fds=True, env=server_env, preexec_fn=preexec)
+    socket_path = identify_new_socket(proc, dotxpra, existing_sockets, display_name, new_server_uuid, uid)
+    return proc, socket_path
 
-def identify_new_socket(dotxpra, existing_sockets, display_name, new_server_uuid):
+def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, matching_uid=0):
     #wait until the new socket appears:
     start = time.time()
-    while time.time()-start<15 and display_name[0]=='S':
-        sockets = set(dotxpra.sockets(matching_state=dotxpra.LIVE))
+    while time.time()-start<15 and proc.poll() in (None, 0):
+        sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         new_sockets = list(sockets-existing_sockets)
-        if len(new_sockets)==1:
-            d = new_sockets[0][1]
+        for socket_path in new_sockets:
             #verify that this is the right server:
             try:
                 #we must use a subprocess to avoid messing things up - yuk
                 import subprocess
-                cmd = [sys.argv[0], "info", d]
+                cmd = [sys.argv[0], "info", "socket:%s" % socket_path]
                 p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, _ = p.communicate()
                 if p.returncode==0:
@@ -2333,14 +2375,12 @@ def identify_new_socket(dotxpra, existing_sockets, display_name, new_server_uuid
                             info_uuid = line[len(PREFIX):]
                             if info_uuid==new_server_uuid:
                                 #found it!
-                                display_name = d
+                                return socket_path
                                 break
             except Exception as e:
                 warn("error during server process detection: %s" % e)
         time.sleep(0.10)
-    if display_name[0]=='S':
-        warn("Error: failed to identify the new server display!")
-    return display_name
+    raise InitException("failed to identify the new server display!")
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     no_gtk()
@@ -2350,15 +2390,16 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                        "_proxy_start_desktop"   : "start-desktop",
                        "_shadow_start"          : "shadow",
                        }.get(mode)
-        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
         start = strip_defaults_start_child(opts.start, defaults.start)
-        proc, display_name = start_server_subprocess(script_file, args, server_mode, defaults,
-                                                     dotxpra, start, start_child, opts.exit_with_children, opts.exit_with_client)
-        if not display_name:
+        proc, socket_path = start_server_subprocess(script_file, args, server_mode, defaults,
+                                                     opts.socket_dir, opts.socket_dirs,
+                                                     start, start_child, opts.exit_with_children, opts.exit_with_client,
+                                                     os.getuid(), os.getgid())
+        if not socket_path:
             #if we return non-zero, we will try the next run-xpra script in the list..
             return 0
-        display = parse_display_name(error_cb, opts, display_name)
+        display = parse_display_name(error_cb, opts, socket_path)
         if proc and proc.poll() is None:
             #start a thread just to reap server startup process (yuk)
             #(as the server process will exit as it daemonizes)

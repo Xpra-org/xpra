@@ -119,7 +119,7 @@ class SysAuthenticator(object):
         gid = self.get_gid()
         log("%s.get_sessions() uid=%i, gid=%i", self, uid, gid)
         try:
-            sockdir = DotXpra(socket_dir, socket_dirs, actual_username=self.username)
+            sockdir = DotXpra(socket_dir, socket_dirs, actual_username=self.username, uid=uid, gid=gid)
             results = sockdir.sockets(check_uid=uid)
             displays = []
             for state, display in results:

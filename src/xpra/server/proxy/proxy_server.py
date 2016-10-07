@@ -220,9 +220,7 @@ class ProxyServer(ServerCore):
                 mode = sns.get("mode", "start")
                 assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
                 sns = typedict(sns)
-                from xpra.platform.dotxpra import DotXpra
-                dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-                args = []
+                args = ["--systemd-run=no"]
                 display = sns.get("display")
                 if display:
                     args = [display]
@@ -230,11 +228,15 @@ class ProxyServer(ServerCore):
                 start_child = sns.strlistget("start-child")
                 exit_with_children = sns.boolget("exit-with-children")
                 exit_with_client = sns.boolget("exit-with-client")
-                log("starting new server subprocess: mode=%s, start=%s, start-child=%s, exit-with-children=%s, exit-with-client=%s", mode, start, start_child, exit_with_children, exit_with_client)
+                log("starting new server subprocess: mode=%s, socket-dir=%s, socket-dirs=%s, start=%s, start-child=%s, exit-with-children=%s, exit-with-client=%s, uid=%s, gid=%s",
+                    mode, opts.socket_dir, opts.socket_dirs, start, start_child, exit_with_children, exit_with_client, uid, gid)
                 try:
-                    proc, display = start_server_subprocess(sys.argv[0], args, mode, opts, dotxpra,
-                                                            start, start_child,
-                                                            exit_with_children, exit_with_client)
+                    proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts,
+                                                                opts.socket_dir, opts.socket_dirs,
+                                                                start, start_child,
+                                                                exit_with_children, exit_with_client,
+                                                                uid=uid, gid=gid)
+                    display = "socket:%s" % socket_path
                 except Exception as e:
                     log("start_server_subprocess failed", exc_info=True)
                     log.error("Error: failed to start server subprocess:")
@@ -271,6 +273,9 @@ class ProxyServer(ServerCore):
             raise Exception("parse error on %s: %s" % (display, args))
         opts.username = client_proto.authenticator.username
         disp_desc = parse_display_name(parse_error, opts, display)
+        if uid or gid:
+            disp_desc["uid"] = uid
+            disp_desc["gid"] = gid
         log("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc, opts)
