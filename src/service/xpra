@@ -10,8 +10,12 @@
 
 VIRTUAL_DISPLAY=:14500
 PORT=14500
-LOGDIR=/var/log/
 LOGFILE=xpra.log
+if [ "$(id -u)" != "0" ]; then
+	LOGDIR=$HOME/.xpra
+else
+	LOGDIR=/var/log/
+fi
 
 start() {
   echo 'Starting service…' >&2
@@ -19,7 +23,12 @@ start() {
 	--bind-tcp=0.0.0.0:$PORT --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem \
 	--socket-permissions=666 \
 	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR
-  echo 'Service started' >&2
+  if [ $? == 0 ];then
+	echo 'Service started' >&2
+  else
+  	echo 'Service failed to start' >&2
+  	exit 1
+  fi
 }
 
 stop() {
