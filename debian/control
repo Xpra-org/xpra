@@ -19,7 +19,6 @@ Build-Depends: debhelper (>= 8)
 #stretch:        ,dh-systemd
 #xenial:        ,dh-systemd
 #yakkety:        ,dh-systemd
-
 X-Python-Version: >= 2.5
 Standards-Version: 3.9.3
 Homepage: http://xpra.org/
