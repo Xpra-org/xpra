@@ -1824,7 +1824,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     #cadata may be hex encoded:
     cadata = opts.ssl_ca_data
     if cadata:
-        import tempfile
         try:
             import binascii
             cadata = binascii.unhexlify(cadata)
@@ -1892,6 +1891,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             if cadata:
                 #PITA: because of a bug in the ssl module, we can't pass cadata,
                 #so we use a temporary file instead:
+                import tempfile
                 f = tempfile.NamedTemporaryFile(prefix='cadata')
                 f.file.write(cadata)
                 f.file.flush()
@@ -2260,7 +2260,6 @@ def start_server_subprocess(script_file, args, mode, defaults,
         e = pwd.getpwuid(uid)
         username = e.pw_name
         home = e.pw_dir
-    print("start_server_subprocess uid=%i, username=%s" % (uid, username))
     dotxpra = DotXpra(socket_dir, socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
@@ -2572,7 +2571,7 @@ def run_list(error_cb, opts, extra_args):
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     results = dotxpra.socket_details()
     if not results:
-        sys.stdout.write("No xpra sessions found")
+        sys.stdout.write("No xpra sessions found\n")
         return 0
     sys.stdout.write("Found the following xpra sessions:\n")
     unknown = []
@@ -2587,11 +2586,11 @@ def run_list(error_cb, opts, extra_args):
     reprobe = []
     for x in unknown:
         try:
-            stat_info = os.stat(x)
+            stat_info = os.stat(x[2])
             if stat_info.st_uid==os.getuid():
                 reprobe.append(x)
-        except:
-            continue
+        except OSError:
+            pass
     if reprobe:
         sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
         counter = 0
