@@ -2441,11 +2441,12 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
     sys.stdout.write("\t%s session at %s" % (state, display))
     if state in clean_states:
         try:
-            os.unlink(sockpath)
+            stat_info = os.stat(sockpath)
+            if stat_info.st_uid==os.getuid():
+                os.unlink(sockpath)
+                sys.stdout.write(" (cleaned up)")
         except OSError:
             pass
-        else:
-            sys.stdout.write(" (cleaned up)")
     sys.stdout.write("\n")
 
 def run_list_mdns(error_cb, opts, extra_args):
