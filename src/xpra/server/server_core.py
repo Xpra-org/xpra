@@ -463,6 +463,8 @@ class ServerCore(object):
         except:
             log("platform name error:", exc_info=True)
             osinfo = ""
+        if os.name=="posix":
+            log.info(" uid=%i, gid=%i", os.getuid(), os.getgid())
         log.info(" running with pid %s%s", os.getpid(), osinfo)
 
     def print_screen_info(self):
