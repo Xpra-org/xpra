@@ -228,6 +228,8 @@ def write_runner_shell_scripts(contents, overwrite=True):
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
+    from xpra.log import Logger
+    log = Logger("server")
     from xpra.platform.paths import get_script_bin_dirs
     for d in get_script_bin_dirs():
         scriptdir = osexpand(d)
@@ -235,8 +237,8 @@ def write_runner_shell_scripts(contents, overwrite=True):
             try:
                 os.mkdir(scriptdir, 0o700)
             except Exception as e:
-                sys.stderr.write("Error: failed to write script file in '%s':\n" % scriptdir)
-                sys.stderr.write(" %s\n" % e)
+                log.error("Error: failed to write script file in '%s':", scriptdir)
+                log.error(" %s", e)
                 continue
         scriptpath = os.path.join(scriptdir, "run-xpra")
         if os.path.exists(scriptpath) and not overwrite:
@@ -251,8 +253,8 @@ def write_runner_shell_scripts(contents, overwrite=True):
                 os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
                 scriptfile.write(contents)
         except Exception as e:
-            sys.stderr.write("Error: failed to write script file '%s':\n" % scriptpath)
-            sys.stderr.write(" %s\n" % e)
+            log.error("Error: failed to write script file '%s':", scriptpath)
+            log.error(" %s\n", e)
 
 
 def display_name_check(display_name):
