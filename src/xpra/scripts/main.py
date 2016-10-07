@@ -2542,28 +2542,38 @@ def run_list(error_cb, opts, extra_args):
             if state is DotXpra.UNKNOWN:
                 unknown.append((socket_dir, display, sockpath))
     #now, re-probe the "unknown" ones:
-    if len(unknown)>0:
+    #but only re-probe the ones we own:
+    reprobe = []
+    for x in unknown:
+        try:
+            stat_info = os.stat(x)
+            if stat_info.st_uid==os.getuid():
+                reprobe.append(x)
+        except:
+            continue
+    if reprobe:
         sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
-    counter = 0
-    while len(unknown)>0 and counter<5:
-        time.sleep(1)
-        counter += 1
-        probe_list = list(unknown)
-        unknown = []
-        for v in probe_list:
-            socket_dir, display, sockpath = v
-            state = dotxpra.get_server_state(sockpath, 1)
-            if state is DotXpra.DEAD:
-                may_cleanup_socket(state, display, sockpath)
-            elif state is DotXpra.UNKNOWN:
-                unknown.append(v)
-            else:
-                sys.stdout.write("\t%s session at %s\n" % (state, display))
-    #now cleanup those still unknown:
-    clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
-    for state, display, sockpath in unknown:
-        state = dotxpra.get_server_state(sockpath)
-        may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
+        counter = 0
+        while reprobe and counter<5:
+            time.sleep(1)
+            counter += 1
+            probe_list = list(reprobe)
+            unknown = []
+            for v in probe_list:
+                socket_dir, display, sockpath = v
+                state = dotxpra.get_server_state(sockpath, 1)
+                if state is DotXpra.DEAD:
+                    may_cleanup_socket(state, display, sockpath)
+                elif state is DotXpra.UNKNOWN:
+                    unknown.append(v)
+                else:
+                    sys.stdout.write("\t%s session at %s\n" % (state, display))
+            reprobe = unknown
+        #now cleanup those still unknown:
+        clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
+        for state, display, sockpath in unknown:
+            state = dotxpra.get_server_state(sockpath)
+            may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
     return 0
 
 def run_showconfig(options, args):
