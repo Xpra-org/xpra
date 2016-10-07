@@ -52,6 +52,9 @@ class ProxyServer(ServerCore):
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.main_loop = None
+        #proxy servers may have to connect to remote servers,
+        #or even start them, so allow more time before timing out:
+        self._accept_timeout += 10
         #keep track of the proxy process instances
         #the display they're on and the message queue we can
         # use to communicate with them

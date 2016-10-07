@@ -147,6 +147,7 @@ class ServerCore(object):
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
         self._ssl_wrap_socket = None
+        self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
         self._www_dir = None
@@ -630,7 +631,7 @@ class ServerCore(object):
             password = self.get_encryption_key(None, protocol.keyfile)
             protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.start()
-        self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
+        self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
 
     def may_wrap_socket(self, conn, socktype, peek_data=""):
         """
