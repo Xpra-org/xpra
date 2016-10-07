@@ -2349,7 +2349,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
                 setuidgid(uid, gid)
         cmd.append("--systemd-run=no")
         proc = Popen(cmd, shell=False, close_fds=True, env=server_env, preexec_fn=preexec)
-    socket_path = identify_new_socket(proc, dotxpra, existing_sockets, display_name, new_server_uuid, uid)
+    socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, uid)
     return proc, socket_path
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, matching_uid=0):

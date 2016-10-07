@@ -223,8 +223,8 @@ class ProxyServer(ServerCore):
                 mode = sns.get("mode", "start")
                 assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
                 sns = typedict(sns)
-                args = ["--systemd-run=no"]
                 display = sns.get("display")
+                args = []
                 if display:
                     args = [display]
                 start = sns.strlistget("start")

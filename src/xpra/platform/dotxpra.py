@@ -24,7 +24,6 @@ def osexpand(s, actual_username="", uid=0, gid=0):
     if len(actual_username)>0:
         v = v.replace("$USERNAME", actual_username)
         v = v.replace("${USERNAME}", actual_username)
-    print("osexpand(%s, %s, %s, %s)=%s" % (s, actual_username, uid, gid, v))
     return v
 
 def norm_makepath(dirpath, name):
@@ -132,26 +131,29 @@ class DotXpra(object):
             base = os.path.join(d, PREFIX)
             potential_sockets = glob.glob(base + "*")
             results = []
+            from xpra.log import Logger
+            log = Logger("server")
+            log.warn("potential sockets(%s)=%s", base, potential_sockets)
             for sockpath in sorted(potential_sockets):
                 try:
                     s = os.stat(sockpath)
                 except OSError as e:
-                    debug("socket_details: '%s' path cannot be accessed: %s", sockpath, e)
+                    log.warn("socket_details: '%s' path cannot be accessed: %s", sockpath, e)
                     #socket cannot be accessed
                     continue
                 if stat.S_ISSOCK(s.st_mode):
                     if check_uid>0:
                         if s.st_uid!=check_uid:
                             #socket uid does not match
-                            debug("socket_details: '%s' uid does not match (%s vs %s)", sockpath, s.st_uid, check_uid)
+                            log.warn("socket_details: '%s' uid does not match (%s vs %s)", sockpath, s.st_uid, check_uid)
                             continue
                     local_display = ":"+sockpath[len(base):]
                     if matching_display and local_display!=matching_display:
-                        debug("socket_details: '%s' display does not match (%s vs %s)", sockpath, local_display, matching_display)
+                        log.warn("socket_details: '%s' display does not match (%s vs %s)", sockpath, local_display, matching_display)
                         continue
                     state = self.get_server_state(sockpath)
                     if matching_state and state!=matching_state:
-                        debug("socket_details: '%s' state does not match (%s vs %s)", sockpath, state, matching_state)
+                        log.warn("socket_details: '%s' state does not match (%s vs %s)", sockpath, state, matching_state)
                         continue
                     results.append((state, local_display, sockpath))
             if results:
