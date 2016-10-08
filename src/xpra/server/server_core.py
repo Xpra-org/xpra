@@ -961,7 +961,7 @@ class ServerCore(object):
         if (proto.authenticator and proto.authenticator.requires_challenge()) or c.get("challenge") is not None:
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
-            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""), proto.challenge_sent)
+            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s, digest_modes=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""), proto.challenge_sent, digest_modes)
             #send challenge if this is not a response:
             if not challenge_response:
                 if proto.challenge_sent:
