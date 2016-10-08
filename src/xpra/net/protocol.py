@@ -659,13 +659,13 @@ class Protocol(object):
     #delegates to invalid_header()
     #(so this can more easily be intercepted and overriden
     # see tcp-proxy)
-    def _invalid_header(self, data):
-        self.invalid_header(self, data)
+    def _invalid_header(self, data, msg=""):
+        self.invalid_header(self, data, msg)
 
-    def invalid_header(self, proto, data):
-        err = "invalid packet header: '%s'" % binascii.hexlify(data[:8])
+    def invalid_header(self, proto, data, msg="invalid packet header"):
+        err = "%s: '%s'" % (msg, binascii.hexlify(data[:8]))
         if len(data)>1:
-            err += " read buffer=%s" % repr_ellipsized(data)
+            err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
 
@@ -722,7 +722,7 @@ class Protocol(object):
                     break
                 if payload_size<0:
                     if read_buffer[0] not in ("P", ord("P")):
-                        self._invalid_header(read_buffer)
+                        self._invalid_header(read_buffer, "invalid packet header byte %s" % read_buffer[0])
                         return
                     if bl<8:
                         break   #packet still too small
@@ -731,14 +731,14 @@ class Protocol(object):
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
-                        self._invalid_header(read_buffer)
+                        self._invalid_header(read_buffer, "invalid size in packet header: %s" % data_size)
                         return
 
                     bl = len(read_buffer)-8
                     if protocol_flags & FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
                             cryptolog.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
-                            self._invalid_header(read_buffer)
+                            self._invalid_header(read_buffer, "invalid encryption packet flag (no cipher configured)")
                             return
                         padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
                         payload_size = data_size + padding_size
