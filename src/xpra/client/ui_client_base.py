@@ -110,6 +110,9 @@ WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
+
+DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
+
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
     return iround(v*rounding)
 def fequ(v1, v2):
@@ -2984,7 +2987,8 @@ class UIXpraClient(XpraClientBase):
         if len(packet)>10:
             options = packet[10]
         options = typedict(options)
-        drawlog("process_draw: %7i bytes for window %3i using %6s encoding with options=%s", len(data), wid, coding, options)
+        dtype = DRAW_TYPES.get(type(data), type(data))
+        drawlog("process_draw: %7i %8s for window %3i using %6s encoding with options=%s", len(data), dtype, wid, coding, options)
         start = time.time()
         def record_decode_time(success, message=""):
             if success>0:
