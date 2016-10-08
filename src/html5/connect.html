@@ -40,7 +40,7 @@
 		    <label class="sr-only" for="username">username</label>
 		    <input type="text" class="form-control" id="username" placeholder="Username" size="16" maxlength="256">
 		    <label class="sr-only" for="password">password</label>
-		    <input type="text" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
+		    <input type="password" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
 		  </div>
 
 		  <div class="form-group form-inline">
@@ -238,22 +238,37 @@ $(document).ready(function() {
 		document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
 	}
 
-	//IE:
-	//navigator.systemLanguage
-	//navigator.browserLanguage
-	var v = window.navigator.userLanguage || window.navigator.language;
-	var keyboard_layout = "";
-	//ie: v="en_GB";
-	v = v.split(",")[0];
-	var l = v.split("-", 2);
-	if (l.length==1)
-		l = v.split("_", 2);
-	if (l.length==1)
-		//ie: "en"
-		keyboard_layout = l[0];
-	else
-		keyboard_layout = l[1].toLowerCase();
+	//Populate the form:
+	var url = window.location.href;
+	var link = document.createElement('a');
+	link.setAttribute('href', url);
+	document.getElementById("server").value = link.hostname;
+	document.getElementById("port").value = link.port;
+	var username = window.location.getParameter("username") || "";
+	document.getElementById("username").value = username;
+	//link.search;    //  '?startIndex=1&pageSize=10'
+	//link.pathname;  //  '/blog/foo/bar'
+	var encoding = window.location.getParameter("encoding") || "jpeg";
+	document.getElementById('encoding').value = encoding;
 
+	var keyboard_layout = window.location.getParameter("keyboard_layout");
+	if (!keyboard_layout) {
+		//IE:
+		//navigator.systemLanguage
+		//navigator.browserLanguage
+		var v = window.navigator.userLanguage || window.navigator.language;
+		var keyboard_layout = "";
+		//ie: v="en_GB";
+		v = v.split(",")[0];
+		var l = v.split("-", 2);
+		if (l.length==1)
+			l = v.split("_", 2);
+		if (l.length==1)
+			//ie: "en"
+			keyboard_layout = l[0];
+		else
+			keyboard_layout = l[1].toLowerCase();
+	}
 	document.getElementById('keyboard_layout').value = keyboard_layout;
 
 	$("#expandopts").click(function() {

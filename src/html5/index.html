@@ -255,11 +255,11 @@
 			    if(!debug) {
 				    client.callback_close = function(reason) {
 				    	if(submit) {
+				    		var message = "Connection closed (socket closed)";
 				    		if(reason) {
-				    			window.location="connect.html?disconnect="+reason;
-				    		} else {
-				    			window.location="connect.html?disconnect=Connection closed (socket closed)";
+				    			message = reason;
 				    		}
+				    		window.location="connect.html?disconnect="+message+"&username="+username+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&encoding="+encoding;
 				    	} else {
 					    	// if we didn't submit through the form, silently redirect to the connect gui
 					    	window.location="connect.html";
