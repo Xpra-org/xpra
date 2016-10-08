@@ -20,6 +20,7 @@ log = Logger("client")
 windowlog = Logger("client", "window")
 geomlog = Logger("client", "geometry")
 paintlog = Logger("client", "paint")
+drawlog = Logger("client", "draw")
 focuslog = Logger("client", "focus")
 soundlog = Logger("client", "sound")
 filelog = Logger("client", "file")
@@ -2983,7 +2984,7 @@ class UIXpraClient(XpraClientBase):
         if len(packet)>10:
             options = packet[10]
         options = typedict(options)
-        paintlog("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        drawlog("process_draw: %6i bytes for window %3i using %5s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success, message=""):
             if success>0:
@@ -3002,7 +3003,7 @@ class UIXpraClient(XpraClientBase):
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, message)
         self._draw_counter += 1
         if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:
-            log.warn("injecting paint fault for %s draw packet %i, sequence number=%i", coding, self._draw_counter, packet_sequence)
+            drawlog.warn("injecting paint fault for %s draw packet %i, sequence number=%i", coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 self.idle_add(record_decode_time, False, "fault injection for %s draw packet %i, sequence number=%i" % (coding, self._draw_counter, packet_sequence))
             return
@@ -3014,7 +3015,7 @@ class UIXpraClient(XpraClientBase):
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            log.error("draw error", exc_info=True)
+            drawlog.error("Error drawing on window %i", wid, exc_info=True)
             self.idle_add(record_decode_time, False, str(e))
             raise
 

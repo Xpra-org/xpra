@@ -146,6 +146,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
     ("Client", OrderedDict([
                 ("client"       , "All client code"),
                 ("paint"        , "Client window paint code"),
+                ("draw"         , "Client draw packets"),
                 ("cairo"        , "Cairo paint code used with the GTK3 client"),
                 ("opengl"       , "Client OpenGL rendering"),
                 ("info"         , "About and Session info dialogs"),
