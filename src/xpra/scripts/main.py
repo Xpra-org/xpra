@@ -2467,10 +2467,10 @@ def run_stopexit(mode, error_cb, opts, extra_args):
     try:
         if mode=="stop":
             from xpra.client.gobject_client_base import StopXpraClient
-            app = StopXpraClient(conn, opts)
+            app = StopXpraClient((conn, display_desc), opts)
         elif mode=="exit":
             from xpra.client.gobject_client_base import ExitXpraClient
-            app = ExitXpraClient(conn, opts)
+            app = ExitXpraClient((conn, display_desc), opts)
         else:
             raise Exception("invalid mode: %s" % mode)
         e = app.run()
