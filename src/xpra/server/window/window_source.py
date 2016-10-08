@@ -585,7 +585,7 @@ class WindowSource(object):
         else:
             iconlog("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
             return
-        assert wrapper.datatype in ("premult_argb32", "png")
+        assert wrapper.datatype in ("premult_argb32", "png"), "invalid wrapper datatype %s" % wrapper.datatype
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         iconlog("queuing window icon update: %s", packet)
         self.queue_packet(packet)

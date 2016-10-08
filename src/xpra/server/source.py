@@ -1641,7 +1641,7 @@ class ServerSource(FileTransferHandler):
                 return cw
             #skip compressed version: fall through
         #we can't compress, so at least avoid warnings in the protocol layer:
-        return Compressed("raw %s" % datatype, data, can_inline=True)
+        return Compressed(datatype, data, can_inline=True)
 
     def send_cursor(self):
         if not self.send_cursors or self.suspended:
