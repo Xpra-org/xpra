@@ -1072,6 +1072,8 @@ class WindowVideoSource(WindowSource):
 
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):
+        if width==0 or height==0:
+            return (1, 1)
         q = self._current_quality
         s = self._current_speed
         actual_scaling = self.scaling
@@ -1111,13 +1113,15 @@ class WindowVideoSource(WindowSource):
                 sc = max(0, (self.scaling_control-50)//2)
                 #calculate full frames per second (measured in pixels vs window size):
                 ffps = 0
-                stime = time.time()-5           #only look at the last 5 seconds max
+                now = time.time()
+                stime = now-5           #only look at the last 5 seconds max
                 lde = [x for x in list(self.statistics.last_damage_events) if x[0]>stime]
                 if len(lde)>10:
                     #the first event's first element is the oldest event time:
                     otime = lde[0][0]
-                    pixels = sum(w*h for _,_,_,w,h in lde)
-                    ffps = int(pixels/(width*height)/(time.time() - otime))
+                    if now>otime:
+                        pixels = sum(w*h for _,_,_,w,h in lde)
+                        ffps = int(pixels/(width*height)/(now - otime))
 
             #if scaling_control is high (scaling_control=100 -> er=2)
             #then we will match the heuristics more quickly:
