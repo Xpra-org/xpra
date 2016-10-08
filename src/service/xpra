@@ -34,10 +34,14 @@ start() {
 }
 
 stop() {
-  PID=`cat $PIDFILE`
-  echo "Stopping service with pid $PID…" >&2
-  kill $PID
-  echo 'Service stopped' >&2
+  PID=`cat $PIDFILE 2> /dev/null`
+  if [ -z "$PID" ]; then
+	echo "Service not started, pidfile not found"
+  else
+	echo "Stopping service with pid $PID…" >&2
+  	kill $PID
+  	echo 'Service stopped' >&2
+  fi
 }
 
 case "$1" in
