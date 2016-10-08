@@ -724,7 +724,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             return
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
         glDisable(GL_FRAGMENT_PROGRAM_ARB)
-        glLineWidth(self.paint_box_line_width+0.5)
+        glLineWidth(self.paint_box_line_width+0.5+int(encoding=="scroll")*2)
         if is_delta:
             glLineStipple(1, 0xaaaa)
             glEnable(GL_LINE_STIPPLE)
