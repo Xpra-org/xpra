@@ -349,6 +349,9 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--daemon", action="store", metavar="yes|no",
                           dest="daemon", default=defaults.daemon,
                           help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
+        group.add_option("--pidfile", action="store",
+					  dest="pidfile", default=defaults.pidfile,
+					  help="Write the process id to this file (default: '%default')")
         group.add_option("--log-dir", action="store",
                       dest="log_dir", default=defaults.log_dir,
                       help="The directory where log files are placed"
@@ -360,7 +363,9 @@ def do_parse_cmdline(cmdline, defaults):
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
     else:
-        ignore({"daemon"    : False,
+        ignore({
+                "daemon"    : False,
+                "pidfile"   : defaults.pidfile,
                 "log_file"  : defaults.log_file,
                 "log_dir"   : defaults.log_dir,
                 })

@@ -22,6 +22,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
@@ -156,6 +157,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
@@ -645,6 +647,13 @@ By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
 .TP
+
+\fB\-\-pidfile\fP=\fIFILENAME\fP
+Writes the server process ID to this file on startup.
+If the file has not been replaced,
+it will be deleted when the server exits.
+.TP
+
 \fB\-\-bind\fP=\fIBIND_LOCATION\fP
 Create a local Unix domain socket for each \fBbind\fP option specified.
 

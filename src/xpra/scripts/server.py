@@ -256,6 +256,39 @@ def write_runner_shell_scripts(contents, overwrite=True):
             log.error("Error: failed to write script file '%s':", scriptpath)
             log.error(" %s\n", e)
 
+def write_pidfile(pidfile):
+    from xpra.log import Logger
+    log = Logger("server")
+    pidstr = str(os.getpid())
+    try:
+        with open(pidfile, "w") as f:
+            os.fchmod(f.fileno(), 0o600)
+            f.write(pidstr)
+            try:
+                inode = os.fstat(f.fileno()).st_ino
+            except:
+                inode = -1
+        log.info("wrote pid %s to '%s'", pidstr, pidfile)
+        def cleanuppidfile():
+            #verify this is the right file!
+            log("cleanuppidfile: inode=%i", inode)
+            if inode>0:
+                try:
+                    i = os.stat(pidfile).st_ino
+                    log("cleanuppidfile: current inode=%i", i)
+                    if i!=inode:
+                        return
+                except:
+                    pass
+            try:
+                os.unlink(pidfile)
+            except:
+                pass
+        _cleanups.append(cleanuppidfile)
+    except Exception as e:
+        log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
+        log.error(" %s", e)
+
 
 def display_name_check(display_name):
     """ displays a warning
@@ -576,8 +609,14 @@ def open_log_file(logpath):
         then opens it for writing.
     """
     if os.path.exists(logpath):
-        os.rename(logpath, logpath + ".old")
-    return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
+        try:
+            os.rename(logpath, logpath + ".old")
+        except:
+            pass
+    try:
+        return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
+    except OSError as e:
+        raise InitException("cannot open log file '%s': %s" % (logpath, e))
 
 def select_log_file(log_dir, log_file, display_name):
     """ returns the log file path we should be using given the parameters,
@@ -1054,6 +1093,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #this can happen if stderr is closed by the caller already
             pass
 
+    if opts.pidfile:
+        write_pidfile(opts.pidfile)
+
     if os.name=="posix":
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
@@ -1061,7 +1103,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     from xpra.log import Logger
     log = Logger("server")
-
     #warn early about this:
     if (starting or starting_desktop) and desktop_display:
         de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")

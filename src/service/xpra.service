@@ -4,10 +4,11 @@ Requires=avahi-daemon.socket
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/xpra proxy :14500 --bind-tcp=0.0.0.0:14500 --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem --socket-permissions=666 --daemon=no --log-dir=/var/log
+ExecStart=/usr/bin/xpra proxy :14500 --bind-tcp=0.0.0.0:14500 --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem --socket-permissions=666 --daemon=no --log-dir=/var/log --pidfile=/var/run/xpra.pid
 #rely on SIGKILL which returns 128+15=143
 SuccessExitStatus=0 143
 Restart=on-abnormal
+PIDFile=/var/run/xpra.pid
 
 [Install]
 WantedBy=multi-user.target
