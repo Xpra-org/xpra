@@ -606,7 +606,7 @@ XpraClient.prototype._make_hello_base = function() {
         "username" 					: this.username,
         "uuid"						: this._get_hex_uuid(),
         "argv" 						: [window.location.href],
-        "digest" 					: ["hmac"],
+        "digest" 					: ["hmac", "xor"],
         //compression bits:
 		"zlib"						: true,
 		"lz4"						: true,
@@ -981,6 +981,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	console.log("process challenge");
 	if ((!ctx.authentication_key) || (ctx.authentication_key == "")) {
 		ctx.callback_close("No password specified for authentication challenge");
+		return;
 	}
 	if(ctx.encryption) {
 		if(packet.length >=3) {
@@ -988,27 +989,30 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 			ctx.protocol.set_cipher_out(ctx.cipher_out_caps, ctx.encryption_key);
 		} else {
 			ctx.callback_close("challenge does not contain encryption details to use for the response");
+			return;
 		}
 	}
-	var digest = "hmac";
+	var digest = packet[3];
 	var salt = packet[1];
-	var client_can_salt = packet.length >= 4;
 	var client_salt = null;
 	var challenge_response = null;
-	if (client_can_salt) {
-		digest = packet[3];
-		client_salt = ctx._get_hex_uuid()+ctx._get_hex_uuid();
-		salt = ctx._xor_string(salt, client_salt);
-	}
+	client_salt = (ctx._get_hex_uuid()+ctx._get_hex_uuid()).slice(0, salt.length);
+	salt = ctx._xor_string(salt, client_salt);
 	if (digest == "hmac") {
 		var hmac = forge.hmac.create();
 		hmac.start('md5', ctx.authentication_key);
 		hmac.update(salt);
 		challenge_response = hmac.digest().toHex();
 	} else if (digest == "xor") {
-		ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption");
+		if((!ctx.encryption) && (ctx.host!="localhost")) {
+			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
+			return;
+		}
+		var trimmed_salt = salt.slice(0, ctx.authentication_key.length);
+		challenge_response = ctx._xor_string(trimmed_salt, ctx.authentication_key);
 	} else {
 		ctx.callback_close("server requested an unsupported digest " + digest);
+		return;
 	}
 	ctx._send_hello(challenge_response, client_salt);
 }

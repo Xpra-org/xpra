@@ -161,6 +161,7 @@
 		        <ul class="list-group">
 		          <li class="list-group-item"><input type="checkbox" id="sound"> Experimental sound support</li>
 		          <li class="list-group-item"><input type="checkbox" id="normal_fullscreen"> Normal fullscreen windows</li>
+		          <li class="list-group-item"><input type="checkbox" id="debug"> Debugging</li>
 		        </ul>
 		      </div>
 		    </div>
@@ -225,6 +226,10 @@ function doConnect() {
 	if(sound) {
 		url = url + "&sound=true";
 	}
+	var debug = document.getElementById("debug").checked
+	if(debug) {
+		url = url + "&debug=true";
+	}
 	//alert("connect to "+server+" on port "+port+" using "+encoding);
 	window.location = url;
 }
@@ -250,6 +255,8 @@ $(document).ready(function() {
 	//link.pathname;  //  '/blog/foo/bar'
 	var encoding = window.location.getParameter("encoding") || "jpeg";
 	document.getElementById('encoding').value = encoding;
+	var debug = window.location.getParameter("debug");
+	document.getElementById("debug").checked = debug;
 
 	var keyboard_layout = window.location.getParameter("keyboard_layout");
 	if (!keyboard_layout) {
