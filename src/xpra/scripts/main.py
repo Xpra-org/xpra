@@ -1232,6 +1232,9 @@ def parse_vsock(vsock_str):
             raise InitException("invalid vsock port '%s'" % port_str)
     return cid, iport
 
+def is_local(host):
+    return host.lower() in ("localhost", "127.0.0.1", "::1")
+
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
     def parse_host_string(host, default_port=DEFAULT_PORT):
@@ -1287,6 +1290,7 @@ def parse_display_name(error_cb, opts, display_name):
         if host=="":
             host = "127.0.0.1"
         desc["host"] = host
+        desc["local"] = is_local(host)
         return username, password, host, port
 
     if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
@@ -1294,7 +1298,6 @@ def parse_display_name(error_cb, opts, display_name):
         desc.update({
                 "type"             : "ssh",
                 "proxy_command"    : ["_proxy"],
-                "local"            : False,
                 "exit_ssh"         : opts.exit_ssh,
                  })
         parts = display_name.split(separator)
@@ -1384,7 +1387,6 @@ def parse_display_name(error_cb, opts, display_name):
         separator = display_name[3]     # ":" or "/"
         desc.update({
                      "type"     : ctype,
-                     "local"    : False,
                      })
         parts = display_name.split(separator)
         if len(parts) not in (2, 3, 4):
@@ -1439,7 +1441,6 @@ def parse_display_name(error_cb, opts, display_name):
         #TODO: parse attrs after "/" and ?"
         desc.update({
                 "type"          : ws_proto,     #"ws" or "wss"
-                "local"         : False,
                 "display"       : extra,
                 "host"          : host,
                 "port"          : port,
@@ -1980,7 +1981,8 @@ def run_client(error_cb, opts, extra_args, mode):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     def connect():
-        return connect_or_fail(pick_display(error_cb, opts, extra_args), opts)
+        desc = pick_display(error_cb, opts, extra_args)
+        return connect_or_fail(desc, opts), desc
 
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
@@ -2048,12 +2050,13 @@ def run_client(error_cb, opts, extra_args, mode):
             app.after_handshake(handshake_complete)
         app.init_ui(opts, extra_args)
         try:
-            conn = connect()
+            conn, display_desc = connect()
             #UGLY warning: connect will parse the display string,
             #which may change the username and password..
             app.username = opts.username
             app.password = opts.password
             app.display = opts.display
+            app.display_desc = display_desc
             app.setup_connection(conn)
         except Exception as e:
             app.cleanup()

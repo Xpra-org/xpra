@@ -111,7 +111,9 @@ class CommandConnectClient(GObjectXpraClient):
     def __init__(self, conn, opts):
         GObjectXpraClient.__init__(self)
         GObjectXpraClient.init(self, opts)
-        self.connect_with_timeout(conn)
+        connection, display_desc = conn
+        self.display_desc = display_desc
+        self.connect_with_timeout(connection)
         self._protocol._log_stats  = False
         #not used by command line clients,
         #so don't try probing for printers, etc

@@ -46,6 +46,7 @@ except:
 
 EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
+ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 
@@ -79,6 +80,7 @@ class XpraClientBase(FileTransferHandler):
         #client state:
         self.exit_code = None
         self.exit_on_signal = False
+        self.display_desc = {}
         #connection attributes:
         self.hello_extra = {}
         self.compression_level = 0
@@ -558,7 +560,11 @@ class XpraClientBase(FileTransferHandler):
         elif digest==b"xor":
             #don't send XORed password unencrypted:
             encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type")=="ssl"
-            if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
+            local = self.display_desc.get("local", False)
+            authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
+            if local and ALLOW_LOCALHOST_PASSWORDS:
+                pass
+            elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
             salt = salt[:len(password)]

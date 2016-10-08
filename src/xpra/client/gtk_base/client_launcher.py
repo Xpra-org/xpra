@@ -44,7 +44,7 @@ from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_enc
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.gtk_common.about import about
 from xpra.net.crypto import ENCRYPTION_CIPHERS, crypto_backend_init
-from xpra.scripts.main import connect_to, make_client, configure_network
+from xpra.scripts.main import connect_to, make_client, configure_network, is_local
 from xpra.platform.paths import get_icon_dir
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
@@ -558,6 +558,8 @@ class ApplicationWindow:
                     full_ssh += ["-P", str(self.config.ssh_port)]
                 else:
                     full_ssh += ["-p", str(self.config.ssh_port)]
+            params["host"] = host
+            params["local"] = is_local(self.config.host)
             params["full_ssh"] = full_ssh
             params["password"] = password
             params["display_name"] = "ssh:%s:%s" % (self.config.host, self.config.port)
@@ -567,6 +569,7 @@ class ApplicationWindow:
         else:
             assert self.config.mode in ("tcp", "ssl"), "invalid / unsupported mode %s" % self.config.mode
             params["host"] = self.config.host
+            params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = "%s:%s:%s" % (self.config.mode, self.config.host, self.config.port)
 
@@ -586,30 +589,31 @@ class ApplicationWindow:
             self.set_info_text(message)
             self.set_info_color(True)
 
-    def do_connect_builtin(self, params):
+    def do_connect_builtin(self, display_desc):
         self.exit_code = None
         self.current_error = None
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         try:
-            conn = connect_to(params, opts=self.config, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
+            conn = connect_to(display_desc, opts=self.config, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
             log.error("failed to connect", exc_info=True)
             self.handle_exception(e)
             return
         glib.idle_add(self.window.hide)
-        glib.idle_add(self.start_XpraClient, conn)
+        glib.idle_add(self.start_XpraClient, conn, display_desc)
 
-    def start_XpraClient(self, conn):
+    def start_XpraClient(self, conn, display_desc):
         try:
-            self.do_start_XpraClient(conn)
+            self.do_start_XpraClient(conn, display_desc)
         except Exception as e:
             log.error("failed to start client", exc_info=True)
             self.handle_exception(e)
 
-    def do_start_XpraClient(self, conn):
-        log("start_XpraClient() client=%s", self.client)
+    def do_start_XpraClient(self, conn, display_desc={}):
+        log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
+        self.client.display_desc = display_desc
         self.client.setup_connection(conn)
         self.client.init_ui(self.config)
         log("start_XpraClient() client initialized")
