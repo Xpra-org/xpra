@@ -162,7 +162,6 @@ class ServerCore(object):
         self.session_name = ""
 
         #Features:
-        self.digest_modes = ("hmac", )
         self.encryption = None
         self.encryption_keyfile = None
         self.tcp_encryption = None
@@ -924,8 +923,8 @@ class ServerCore(object):
                 authlog.error(" %s", e)
                 auth_failed("authentication failed")
                 return False
-        self.digest_modes = c.get("digest", ("hmac", ))
 
+        digest_modes = c.get("digest", ("hmac", ))
         #client may have requested encryption:
         cipher = c.strget("cipher")
         cipher_iv = c.strget("cipher.iv")
@@ -982,7 +981,7 @@ class ServerCore(object):
                         salt, digest = challenge
                         authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                         authlog.info(" sending challenge for '%s' using %s digest", username, digest)
-                    if digest not in self.digest_modes:
+                    if digest not in digest_modes:
                         auth_failed("cannot proceed without %s digest support" % digest)
                         return False
                 else:
