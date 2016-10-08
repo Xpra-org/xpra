@@ -1633,10 +1633,10 @@ class ServerSource(FileTransferHandler):
             self.send("pointer-ungrab", wid)
 
 
-    def compressed_wrapper(self, datatype, data):
+    def compressed_wrapper(self, datatype, data, min_saving=128):
         if self.zlib or self.lz4 or self.lzo:
             cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
-            if len(cw)<len(data):
+            if len(cw)+min_saving<=len(data):
                 #the compressed version is smaller, use it:
                 return cw
             #skip compressed version: fall through
