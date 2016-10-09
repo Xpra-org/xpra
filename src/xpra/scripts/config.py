@@ -673,7 +673,7 @@ def get_defaults():
                     "remote-logging"    : "both",
                     "lpadmin"           : "/usr/sbin/lpadmin",
                     "lpinfo"            : "/usr/sbin/lpinfo",
-                    "add-printer-options" : ["-E", "-o printer-is-shared=false", "-u allow:$USERNAME"],
+                    "add-printer-options" : ["-E", "-o printer-is-shared=false", "-u allow:$USER"],
                     "pdf-printer"       : "",
                     "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
                     "debug"             : "",
