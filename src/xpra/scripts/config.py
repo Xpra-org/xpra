@@ -554,6 +554,16 @@ def get_default_key_shortcuts():
                (OSX,    "Meta+Shift+degree:scalereset")]
                  if e]
 
+def get_default_systemd_run():
+    #don't use systemd-run on CentOS / RedHat
+    #(it causes failures with "Failed to create bus connection: No such file or directory")
+    if os.path.exists("/etc/redhat-release"):
+        from xpra.os_util import load_binary_file
+        data = load_binary_file("/etc/redhat-release")
+        if data.find("RedHat")>=0 or data.find("CentOS")>=0:
+            return "no"
+    return "auto"
+
 
 GLOBAL_DEFAULTS = None
 #lowest common denominator here
@@ -605,6 +615,15 @@ def get_defaults():
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
 
+    systemd_run = "auto"
+    #don't use systemd-run on CentOS / RedHat
+    #(it causes failures with "Failed to create bus connection: No such file or directory")
+    if os.path.exists("/etc/redhat-release"):
+        from xpra.os_util import load_binary_file
+        data = load_binary_file("/etc/redhat-release")
+        if data.find("RedHat")>=0 or data.find("CentOS")>=0:
+            systemd_run = "no"
+
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
@@ -638,7 +657,7 @@ def get_defaults():
                     "tcp-encryption-keyfile": "",
                     "pidfile"           : "",
                     "ssh"               : DEFAULT_SSH_COMMAND,
-                    "systemd-run"       : "auto",
+                    "systemd-run"       : get_default_systemd_run(),
                     "systemd-run-args"  : "",
                     "xvfb"              : " ".join(xvfb),
                     "socket-dir"        : "",

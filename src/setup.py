@@ -793,7 +793,7 @@ def build_xpra_conf(install_dir):
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import get_default_key_shortcuts, DEFAULT_POSTSCRIPT_PRINTER
+    from xpra.scripts.config import get_default_key_shortcuts, get_default_systemd_run, DEFAULT_POSTSCRIPT_PRINTER
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
@@ -835,6 +835,7 @@ def build_xpra_conf(install_dir):
             'bind'                  : bind,
             'ssl_cert'              : ssl_cert or "",
             'ssl_key'               : ssl_key or "",
+            'systemd_run'           : get_default_systemd_run(),
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : "auto",
             'mdns'                  : bstr(mdns),
