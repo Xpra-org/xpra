@@ -1,10 +1,10 @@
 [Unit]
 Description=Xpra Proxy Server
-Requires=avahi-daemon.socket
+Wants=avahi-daemon.socket
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/xpra proxy :14500 --bind-tcp=0.0.0.0:14500 --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem --socket-permissions=666 --daemon=no --log-dir=/var/log --pidfile=/var/run/xpra.pid
+ExecStart=/usr/bin/xpra proxy :14500 --daemon=no --bind-tcp=0.0.0.0:14500 --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem --bind=auto --auth=sys --socket-dirs=/var/run/xpra --socket-permissions=666 --log-dir=/var/log --pidfile=/var/run/xpra.pid
 #rely on SIGKILL which returns 128+15=143
 SuccessExitStatus=0 143
 Restart=on-abnormal
