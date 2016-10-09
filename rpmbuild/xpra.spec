@@ -510,6 +510,11 @@ if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 		-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
 		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem"
 fi
+ZONE=`firewall-cmd --get-default-zone 2> /dev/null`
+if [ ! -z "${ZONE}" ]; then
+	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent | grep -v "^success"
+	firewall-cmd --reload | grep -v "^success"
+fi
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
@@ -540,6 +545,11 @@ if [ $1 -ge 1 ] ; then
         /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
 fi
 %endif
+ZONE=`firewall-cmd --get-default-zone 2> /dev/null`
+if [ ! -z "${ZONE}" ]; then
+	firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent | grep -v "^success"
+	firewall-cmd --reload | grep -v "^success"
+fi
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
