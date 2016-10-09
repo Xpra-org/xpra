@@ -26,6 +26,7 @@ Summary:        xxhash Bindings for Python
 License:        BSD
 Group:          Development/Languages/Python
 Source:         https://pypi.python.org/packages/08/ac/f5cf4fc624ef5a12a8c6e80143ee43d9ed8d0c8bda96e2af5772798bcfbe/xxhash-%{version}.tar.bz2
+Patch0:			python-xxhash-notest.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -47,7 +48,9 @@ https://github.com/Cyan4973/xxHash by Yann Collet.
 
 %prep
 %setup -q -n xxhash-%{version}
-
+%if 0%{?el6}
+%patch0 -p1
+%endif
 %if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
