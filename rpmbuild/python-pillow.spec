@@ -42,7 +42,7 @@
 
 
 Name:           python2-pillow
-Version:        3.3.1
+Version:        3.4.1
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
@@ -297,6 +297,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Sun Oct 09 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.1-1
+- new upstream release
+
 * Sat Aug 20 2016 Antoine Martin <antoine@devloop.org.uk> - 3.3.1-1
 - new upstream release
 
