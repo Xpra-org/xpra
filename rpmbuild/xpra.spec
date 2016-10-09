@@ -68,8 +68,6 @@
 #not available:
 %define requires_websockify %{nil}
 %define requires_lzo %{nil}
-#cups-pdf is not in the regular repos, so remove it from dependencies:
-%define requires_printing , python-cups
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
 %define requires_sound %{nil}
@@ -81,6 +79,8 @@
 %if 0%{?el6}
 #needs fixing:
 %define with_selinux 0
+#cups-pdf and cups-filters are not in the regular repos:
+%define requires_printing , python-cups
 #can't run the tests with python 2.6 which is too old:
 %define run_tests 0
 #no python cryptography:
@@ -97,6 +97,8 @@
 
 %if 0%{?el7}
 %define systemd 1
+#cups-pdf is not in the regular repos, so remove it from dependencies:
+%define requires_printing , python-cups, cups-filters
 %endif
 %if "%{?dist}"==".el7_0"
 #no python cryptography:
