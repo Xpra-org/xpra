@@ -686,6 +686,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         "-Wno-unneeded-internal-declaration",
                         "-Wno-unknown-attributes",
                         "-Wno-unused-function",
+                        "-Wno-self-assign",
                         "-Wno-sometimes-uninitialized"]
             elif get_gcc_version()>=[4, 4]:
                 eifd = ["-Werror",
