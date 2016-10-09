@@ -1025,7 +1025,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
-            error_cb("too many extra arguments: only expected a display number")
+            error_cb("too many extra arguments (%i): only expected a display number" % len(extra_args))
         if len(extra_args) == 1:
             display_name = extra_args[0]
             if not shadowing and not proxying:
