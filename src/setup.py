@@ -651,20 +651,25 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
-        cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
-        r, out, err = get_status_output(cmd)
+        pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
+        r, pkg_config_out, err = get_status_output(pkg_config_cmd)
         if r!=0:
-            sys.exit("ERROR: call to pkg-config ('%s') failed (err=%s)" % (" ".join(cmd), err))
-        for token in out.split():
-            if token[:2] in ignored_flags:
-                pass
-            elif token[:2] in flag_map:
-                add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
-            else: # throw others to extra_link_args
-                add_to_keywords(kw, 'extra_link_args', token)
-            for k, v in kw.items(): # remove duplicates
-                seen = set()
-                kw[k] = [x for x in v if x not in seen and not seen.add(x)]
+            sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(cmd), err))
+        env_cflags = os.environ.get("CFLAGS")       #["dpkg-buildflags", "--get", "CFLAGS"]
+        env_ldflags = os.environ.get("LDFLAGS")     #["dpkg-buildflags", "--get", "LDFLAGS"]
+        for s in (pkg_config_out, env_cflags, env_ldflags):
+            if not s:
+                continue
+            for token in s.split():
+                if token[:2] in ignored_flags:
+                    pass
+                elif token[:2] in flag_map:
+                    add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+                else: # throw others to extra_link_args
+                    add_to_keywords(kw, 'extra_link_args', token)
+                for k, v in kw.items(): # remove duplicates
+                    seen = set()
+                    kw[k] = [x for x in v if x not in seen and not seen.add(x)]
     if warn_ENABLED:
         if is_msvc():
             add_to_keywords(kw, 'extra_compile_args', "/Wall")
