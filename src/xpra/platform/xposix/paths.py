@@ -102,4 +102,7 @@ def do_get_socket_dirs():
     return SOCKET_DIRS
 
 def do_get_default_log_dirs():
-    return [_get_xpra_runtime_dir(), "~/.xpra", "/tmp"]
+    v = _get_xpra_runtime_dir()
+    if v:
+        return [v, "~/.xpra", "/tmp"]
+    return ["~/.xpra", "/tmp"]
