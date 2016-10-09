@@ -28,10 +28,14 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
-		from xpra.platform.paths import get_default_log_dir
-		d = osexpand(get_default_log_dir())
-		if not os.path.exists(d):
-			os.makedirs(d)
+		from xpra.platform.paths import get_default_log_dirs
+		for d in get_default_log_dirs():
+			ed = osexpand(d)
+			if not os.path.exists(ed):
+				try:
+					os.makedirs(ed)
+				except:
+					pass
 		cls.default_config = get_defaults()
 		cls.display_start = 100
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
