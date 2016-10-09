@@ -290,13 +290,11 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
                "-L", location,
                ]
     if ADD_OPTIONS:
-        #ie:
-        #"-E",
-        #"-o", "printer-is-shared=false",
-        #"-u", "allow:$USER"
+        #ie: ["-E", "-o printer-is-shared=false", "-u allow:$USER"]
         for opt in ADD_OPTIONS:
-            v = shlex.split(opt)
-            command += os.path.expandvars(v)
+            parts = shlex.split(opt)    #ie: "-u allow:$USER" -> ["-u", "allow:$USER"]
+            for part in parts:          #ie: "allow:$USER"
+                command.append(os.path.expandvars(part))
     command += printer_def
     #add attributes:
     log("pycups_printing adding printer: %s", command)
