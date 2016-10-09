@@ -22,8 +22,9 @@ def osexpand(s, actual_username="", uid=0, gid=0):
         v = v.replace("$UID", str(uid or os.getuid()))
         v = v.replace("$GID", str(gid or os.getgid()))
     if len(actual_username)>0:
-        v = v.replace("$USERNAME", actual_username)
-        v = v.replace("${USERNAME}", actual_username)
+        for k in ("USERNAME", "USER"):
+            v = v.replace("$%s" % k, actual_username)
+            v = v.replace("${%s}" % k, actual_username)
     return v
 
 def norm_makepath(dirpath, name):

@@ -30,7 +30,7 @@ DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/
 
 LPADMIN = "lpadmin"
 LPINFO = "lpinfo"
-ADD_OPTIONS = ["-E", "-o printer-is-shared=false", "-u allow:$USERNAME"]
+ADD_OPTIONS = ["-E", "-o printer-is-shared=false", "-u allow:$USER"]
 
 FORWARDER_BACKEND = "xpraforwarder"
 
@@ -293,7 +293,7 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
         #ie:
         #"-E",
         #"-o", "printer-is-shared=false",
-        #"-u", "allow:$USERNAME"
+        #"-u", "allow:$USER"
         for opt in ADD_OPTIONS:
             v = shlex.split(opt)
             command += os.path.expandvars(v)
