@@ -264,7 +264,7 @@ class ServerCore(object):
                 log.error(" '%s' does not exist", self._www_dir)
                 self._html = False
         if self._html:
-            log.info("serving html content from '%s'", self._www_dir)
+            log.info("serving html content from: %s", self._www_dir)
         if self._html and self._tcp_proxy:
             log.warn("Warning: the built in html server is enabled,")
             log.warn(" disabling the tcp-proxy option")

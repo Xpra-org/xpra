@@ -776,12 +776,15 @@ def start_Xvfb(xvfb_str, display_name, cwd):
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
 
     #apply string substitutions:
-    subs = {"XAUTHORITY"    : xauthority,
+    subs = {
+            "XAUTHORITY"    : xauthority,
             "USER"          : os.environ.get("USER", "unknown-user"),
             "UID"           : os.getuid(),
             "GID"           : os.getgid(),
             "HOME"          : os.environ.get("HOME", cwd),
-            "DISPLAY"       : display_name}
+            "DISPLAY"       : display_name,
+            "XPRA_LOG_DIR"  : os.environ.get("XPRA_LOG_DIR"),
+            }
     xvfb_str = shellsub(xvfb_str, subs)
 
     def setsid():
@@ -1065,13 +1068,26 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
-        log_dir = osexpand(opts.log_dir)
-        if not os.path.exists(log_dir):
-            try:
-                os.mkdir(log_dir, 0o700)
-            except Exception as e:
-                sys.stderr.write("%s\n" % e)
-
+        log_dir = opts.log_dir or ""
+        if not log_dir or log_dir.lower()=="auto":
+            log_dir = ""
+            from xpra.platform.paths import get_default_log_dirs
+            for x in get_default_log_dirs():
+                v = osexpand(x)
+                if not os.path.exists(v):
+                    try:
+                        os.mkdir(v, 0o700)
+                    except Exception as e:
+                        sys.stderr.write("%s\n" % e)
+                        continue
+                log_dir = v
+                break
+            if not log_dir:
+                raise InitException("cannot find or create a logging directory")
+        #expose the log-dir as "XPRA_LOG_DIR",
+        #this is used by Xdummy for the Xorg log file
+        if "XPRA_LOG_DIR" not in os.environ:
+            os.environ["XPRA_LOG_DIR"] = log_dir
     stdout = sys.stdout
     stderr = sys.stderr
     # Daemonize:

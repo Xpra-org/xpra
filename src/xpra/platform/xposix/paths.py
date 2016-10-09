@@ -12,7 +12,6 @@ from xpra.util import envbool
 
 USE_RUNTIME_DIR = envbool("XPRA_USE_RUNTIME_DIR", True)
 
-USE_RUNTIME_LOG_DIR = envbool("XPRA_USE_RUNTIME_LOG_DIR", USE_RUNTIME_DIR)
 USE_RUNTIME_BIN_DIR = envbool("XPRA_USE_RUNTIME_BIN_DIR", USE_RUNTIME_DIR)
 USE_RUNTIME_SOCKET_DIR = envbool("XPRA_USE_RUNTIME_SOCKET_DIR", USE_RUNTIME_DIR)
 
@@ -102,8 +101,5 @@ def do_get_socket_dirs():
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
 
-def do_get_default_log_dir():
-    runtime_dir = _get_xpra_runtime_dir()
-    if USE_RUNTIME_LOG_DIR and runtime_dir:
-        return runtime_dir
-    return "~/.xpra"
+def do_get_default_log_dirs():
+    return [_get_xpra_runtime_dir(), "~/.xpra", "/tmp"]

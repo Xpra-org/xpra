@@ -69,7 +69,7 @@ def get_xorg_bin():
     return None
 
 
-def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${HOME}/.xpra", xorg_conf="/etc/xpra/xorg.conf"):
+def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
     cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
     if os.path.exists("/etc/debian_version"):
         #no patched dummy driver for debian, so force reasonable DPI instead:
@@ -136,8 +136,6 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
                     use_wrapper = True
                 else:
                     use_wrapper = False
-        from xpra.platform.paths import get_default_log_dir
-        log_dir = get_default_log_dir().replace("~/", "${HOME}/")
         xorg_conf = os.path.join(conf_dir, "xorg.conf")
         if use_wrapper:
             xorg_cmd = "xpra_Xdummy"
@@ -147,7 +145,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
         if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
             if bin_dir not in ("/usr/bin", "/bin"):
                 xorg_cmd = os.path.join(bin_dir, xorg_cmd)
-        return get_Xdummy_command(xorg_cmd, log_dir=log_dir, xorg_conf=xorg_conf)
+        return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf)
 
     if Xdummy_ENABLED is False:
         return get_Xvfb_command()
@@ -564,7 +562,7 @@ def get_defaults():
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, \
                                         DEFAULT_ENV, CAN_DAEMONIZE
-    from xpra.platform.paths import get_download_dir, get_default_log_dir, get_remote_run_xpra_scripts
+    from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -642,7 +640,7 @@ def get_defaults():
                     "systemd-run-args"  : "",
                     "xvfb"              : " ".join(xvfb),
                     "socket-dir"        : "",
-                    "log-dir"           : get_default_log_dir(),
+                    "log-dir"           : "auto",
                     "log-file"          : "$DISPLAY.log",
                     "border"            : "auto,5:off",
                     "window-close"      : "auto",
@@ -1036,7 +1034,7 @@ def abs_paths(options):
         f = k.replace("-", "_")
         v = getattr(options, f)
         if v and (k!="ssl-ca-certs" or v!="default"):
-            if os.path.isabs(v):
+            if os.path.isabs(v) or v=="auto":
                 continue
             if v.startswith("~") or v.startswith("$"):
                 continue

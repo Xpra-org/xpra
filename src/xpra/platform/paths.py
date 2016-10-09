@@ -65,10 +65,10 @@ def get_socket_dirs():
 def do_get_socket_dirs():
     return ["~/.xpra"]
 
-def get_default_log_dir():
-    return env_or_delegate("XPRA_LOG_DIR", do_get_default_log_dir)
-def do_get_default_log_dir():
-    return "~/.xpra"
+def get_default_log_dirs():
+    return envaslist_or_delegate("XPRA_LOG_DIRS", do_get_default_log_dirs)
+def do_get_default_log_dirs():
+    return ["~/.xpra"]
 
 def get_download_dir():
     return env_or_delegate("XPRA_DOWNLOAD_DIR", do_get_download_dir)
@@ -256,7 +256,7 @@ platform_import(globals(), "paths", False,
                 "do_get_system_conf_dirs",
                 "do_get_user_conf_dirs",
                 "do_get_socket_dirs",
-                "do_get_default_log_dir",
+                "do_get_default_log_dirs",
                 "do_get_download_dir",
                 "do_get_script_bin_dirs")
 
@@ -267,7 +267,7 @@ def get_info():
             "system_conf"       : {"dirs"   : get_system_conf_dirs()},
             "user_conf"         : {"dirs"   : get_user_conf_dirs()},
             "socket"            : {"dirs"   : get_socket_dirs()},
-            "log"               : {"dir"    : get_default_log_dir()},
+            "log"               : {"dirs"   : get_default_log_dirs()},
             "download"          : {"dir"    : get_download_dir()},
             "app"               : {"dir"    : get_app_dir()},
             "app"               : {"default" : {"dir"   : default_get_app_dir()}},

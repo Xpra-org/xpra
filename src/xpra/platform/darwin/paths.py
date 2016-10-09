@@ -98,16 +98,19 @@ def do_get_user_conf_dirs():
     dirs.append("~/.xpra")
     return dirs
 
-def do_get_default_log_dir():
+def do_get_default_log_dirs():
+    dirs = []
     try:
         from Foundation import  NSSearchPathForDirectoriesInDomains, NSLibraryDirectory, NSUserDomainMask    #@UnresolvedImport
         dirs = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, False)
         #ie: ~/Library/
         library_dir = dirs[0]
-        return os.path.join(library_dir, "Xpra")
+        dirs.append(os.path.join(library_dir, "Xpra"))
     except:
         pass
-    return "~/Library/Logs"
+    dirs.append("~/Library/Logs")
+    dirs.append("/tmp")
+    return dirs
 
 def do_get_socket_dirs():
     return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
