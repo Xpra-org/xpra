@@ -557,11 +557,10 @@ def get_default_key_shortcuts():
 def get_default_systemd_run():
     #don't use systemd-run on CentOS / RedHat
     #(it causes failures with "Failed to create bus connection: No such file or directory")
-    if os.path.exists("/etc/redhat-release"):
-        from xpra.os_util import load_binary_file
-        data = load_binary_file("/etc/redhat-release")
-        if data.find("RedHat")>=0 or data.find("CentOS")>=0:
-            return "no"
+    from xpra.os_util import load_binary_file
+    data = load_binary_file("/etc/redhat-release")
+    if data and (data.find("RedHat")>=0 or data.find("CentOS")>=0):
+        return "no"
     return "auto"
 
 

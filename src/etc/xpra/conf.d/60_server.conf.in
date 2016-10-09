@@ -82,7 +82,8 @@ pulseaudio-command = %(pulseaudio_command)s
 # Systemd specific options:
 # Wrap server start commands with systemd-run:
 #systemd-run = no
-systemd-run = auto
+#systemd-run = auto
+systemd-run = %(systemd_run)s
 
 # Command line arguments passed to systemd-run:
 #systemd-run-args = -p MemoryAccounting=true -p MemoryHigh=384M -p MemoryLimit=512M
