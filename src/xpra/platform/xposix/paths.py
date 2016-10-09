@@ -8,13 +8,6 @@ import os.path
 import sys
 import site
 
-from xpra.util import envbool
-
-USE_RUNTIME_DIR = envbool("XPRA_USE_RUNTIME_DIR", True)
-
-USE_RUNTIME_BIN_DIR = envbool("XPRA_USE_RUNTIME_BIN_DIR", USE_RUNTIME_DIR)
-USE_RUNTIME_SOCKET_DIR = envbool("XPRA_USE_RUNTIME_SOCKET_DIR", USE_RUNTIME_DIR)
-
 
 def do_get_install_prefix():
     #special case for "user" installations, ie:
@@ -63,7 +56,7 @@ def do_get_script_bin_dirs():
     #versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
     runtime_dir = _get_xpra_runtime_dir()
-    if USE_RUNTIME_BIN_DIR and runtime_dir:
+    if runtime_dir:
         script_bin_dirs.append(runtime_dir)
     script_bin_dirs.append("~/.xpra")
     return script_bin_dirs
@@ -92,7 +85,7 @@ def _get_xpra_runtime_dir():
 def do_get_socket_dirs():
     SOCKET_DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
-    if USE_RUNTIME_SOCKET_DIR and runtime_dir:
+    if runtime_dir:
         #private, per user: /run/user/1000/xpra
         SOCKET_DIRS.append(runtime_dir)
     SOCKET_DIRS.append("~/.xpra")   #the old default path

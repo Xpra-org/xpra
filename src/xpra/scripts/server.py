@@ -566,6 +566,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                         log.warn("Warning: cannot create socket '%s'", sockpath)
                         log.warn(" %s (missing 'xpra' group membership?)", e)
                         continue
+                    elif sockpath.startswith("/var/run/user"):
+                        log.warn("Warning: cannot create socket '%s'", sockpath)
+                        log.warn(" ($XDG_RUNTIME_DIR has not been created?)", e)
+                        continue
                     else:
                         log.error("Error: failed to create socket '%s':", sockpath)
                         log.error(" %s", e)
