@@ -988,6 +988,19 @@ def show_encoding_help(opts):
         print(" * %s" % encoding_help(e))
     return 0
 
+def find_log_dir():
+    from xpra.platform.paths import get_default_log_dirs
+    for x in get_default_log_dirs():
+        v = osexpand(x)
+        if not os.path.exists(v):
+            try:
+                os.mkdir(v, 0o700)
+            except Exception as e:
+                sys.stderr.write("%s\n" % e)
+                continue
+        return v
+    return None
+
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
@@ -1070,18 +1083,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #either for the vfb, or for our own log file
         log_dir = opts.log_dir or ""
         if not log_dir or log_dir.lower()=="auto":
-            log_dir = ""
-            from xpra.platform.paths import get_default_log_dirs
-            for x in get_default_log_dirs():
-                v = osexpand(x)
-                if not os.path.exists(v):
-                    try:
-                        os.mkdir(v, 0o700)
-                    except Exception as e:
-                        sys.stderr.write("%s\n" % e)
-                        continue
-                log_dir = v
-                break
+            log_dir = find_log_dir()
             if not log_dir:
                 raise InitException("cannot find or create a logging directory")
         #expose the log-dir as "XPRA_LOG_DIR",
