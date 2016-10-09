@@ -170,8 +170,7 @@ Source: xpra-%{version}.tar.bz2
 Patch0: centos-ignore-invalid-gcc-warning.patch
 Patch1: centos7-buffer-fill-fix.patch
 Patch2: gstreamer010.patch
-Patch3: broken-xdgruntime.patch
-Patch4: selinux-homesocket.patch
+Patch3: selinux-homesocket.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
@@ -345,7 +344,6 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 %endif
 %if 0%{no_xdg_runtime_dir}
 %patch3 -p1
-%patch4 -p1
 %endif
 
 popd
