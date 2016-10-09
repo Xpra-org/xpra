@@ -95,6 +95,9 @@
 %endif
 %endif
 
+%if 0%{?el7}
+%define systemd 1
+%endif
 %if "%{?dist}"==".el7_0"
 #no python cryptography:
 %define requires_crypto python-crypto
