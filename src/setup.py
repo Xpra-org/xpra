@@ -816,6 +816,7 @@ def build_xpra_conf(install_dir):
             print("probing cups printer definitions")
             pdf = get_printer_definition("pdf")
             postscript = get_printer_definition("postscript")
+            print("pdf=%s, postscript=%s" % (pdf, postscript))
         except Exception as e:
             print("could not probe for pdf/postscript printers: %s" % e)
     def pretty_cmd(cmd):
