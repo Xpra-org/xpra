@@ -34,6 +34,8 @@ class InitExit(Exception):
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
+DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
+
 POSIX = os.name=="posix"
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
@@ -655,7 +657,7 @@ def get_defaults():
                     "lpinfo"            : "/usr/sbin/lpinfo",
                     "add-printer-options" : ["-E", "-o printer-is-shared=false", "-u allow:$USERNAME"],
                     "pdf-printer"       : "",
-                    "postscript-printer": "",
+                    "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
                     "debug"             : "",
                     "input-method"      : "none",
                     "sound-source"      : "",

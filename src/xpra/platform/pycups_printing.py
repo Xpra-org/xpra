@@ -482,13 +482,18 @@ def main():
             log.info("* %-32s: %s", k, v)
         log.info("")
         log.info("local printers:")
-        printers = get_printers()
-        for k,d in get_all_printers().items():
-            log.info("* %s%s", k, [" (NOT EXPORTED)", ""][int(k in printers)])
-            for pk, pv in d.items():
-                if pk=="printer-state" and pv in PRINTER_STATE:
-                    pv = "%s (%s)" % (pv, PRINTER_STATE.get(pv))
-                log.info("    %-32s: %s", pk, pv)
+        try:
+            printers = get_printers()
+        except RuntimeError as e:
+            log.error("Error accessing the printing system")
+            log.error(" %s", e)
+        else:
+            for k,d in get_all_printers().items():
+                log.info("* %s%s", k, [" (NOT EXPORTED)", ""][int(k in printers)])
+                for pk, pv in d.items():
+                    if pk=="printer-state" and pv in PRINTER_STATE:
+                        pv = "%s (%s)" % (pv, PRINTER_STATE.get(pv))
+                    log.info("    %-32s: %s", pk, pv)
 
 
 if __name__ == "__main__":

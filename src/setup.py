@@ -793,7 +793,7 @@ def build_xpra_conf(install_dir):
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import get_default_key_shortcuts
+    from xpra.scripts.config import get_default_key_shortcuts, DEFAULT_POSTSCRIPT_PRINTER
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
@@ -815,7 +815,7 @@ def build_xpra_conf(install_dir):
             from xpra.platform.pycups_printing import get_printer_definition
             print("probing cups printer definitions")
             pdf = get_printer_definition("pdf")
-            postscript = get_printer_definition("postscript")
+            postscript = get_printer_definition("postscript") or DEFAULT_POSTSCRIPT_PRINTER
             print("pdf=%s, postscript=%s" % (pdf, postscript))
         except Exception as e:
             print("could not probe for pdf/postscript printers: %s" % e)
