@@ -1223,7 +1223,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _cleanups.append(close_display)
 
     # if pam is present, try to create a new session:
-    if os.name=="posix":
+    PAM_OPEN = envbool("XPRA_PAM_OPEN")
+    if os.name=="posix" and PAM_OPEN:
         try:
             from xpra.server.pam import pam_open, pam_close
         except ImportError as e:
