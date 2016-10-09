@@ -145,7 +145,8 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
             xorg_cmd = "Xorg"
         #so we can run from install dir:
         if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
-            xorg_cmd = os.path.join(bin_dir, xorg_cmd)
+            if bin_dir not in ("/usr/bin", "/bin"):
+                xorg_cmd = os.path.join(bin_dir, xorg_cmd)
         return get_Xdummy_command(xorg_cmd, log_dir=log_dir, xorg_conf=xorg_conf)
 
     if Xdummy_ENABLED is False:
@@ -575,9 +576,14 @@ def get_defaults():
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
     xpra_cmd = sys.argv[0]
     bin_dir = None
-    if len(sys.argv)>0 and xpra_cmd.find("/bin")>=0:
-        bin_dir = os.path.join(xpra_cmd[:xpra_cmd.find("/bin")], "bin")
-        conf_dirs.append(os.path.join(xpra_cmd[:xpra_cmd.find("/bin")], "etc", "xpra"))
+    if len(sys.argv)>0:
+        for strip in ("/usr/bin", "/bin"):
+            pos = xpra_cmd.find(strip)
+            if pos>=0:
+                bin_dir = xpra_cmd[:pos+len(strip)]
+                root = xpra_cmd[:pos] or "/"
+                conf_dirs.append(os.path.join(root, "etc", "xpra"))
+                break
     if sys.prefix=="/usr":
         conf_dirs.append("/etc/xpra")
     else:
