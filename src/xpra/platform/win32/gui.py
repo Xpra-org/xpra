@@ -19,7 +19,8 @@ from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 import ctypes
-from ctypes import windll, byref
+from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM
 
 import win32con     #@UnresolvedImport
 import win32api     #@UnresolvedImport
@@ -234,6 +235,16 @@ def pointer_grab(window, *args):
         return
     wx1,wy1,wx2,wy2 = win32gui.GetWindowRect(hwnd)
     grablog("GetWindowRect(%i)=%s", hwnd, (wx1,wy1,wx2,wy2))
+    try:
+        DwmGetWindowAttribute = ctypes.windll.dwmapi.DwmGetWindowAttribute
+        # Vista & 7 stuff
+        rect = ctypes.wintypes.RECT()
+        DWMWA_EXTENDED_FRAME_BOUNDS = 9
+        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_EXTENDED_FRAME_BOUNDS), byref(rect), sizeof(rect))
+        #wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
+        grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd, (rect.left, rect.top, rect.right, rect.bottom))
+    except WindowsError as e:           #@UndefinedVariable
+        grablog("no DwmGetWindowAttribute: %s", e)
     bx = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
     by = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
     top = by
@@ -817,8 +828,6 @@ class ClientExtras(object):
         #self.client = None
 
     def init_keyboard_listener(self):
-        from ctypes import CFUNCTYPE, c_int, POINTER, Structure
-        from ctypes.wintypes import DWORD, WPARAM, LPARAM
         class WindowsKeyEvent(AdHocStruct):
             pass
         class KBDLLHOOKSTRUCT(Structure):
