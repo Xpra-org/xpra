@@ -557,8 +557,8 @@ def get_default_key_shortcuts():
 def get_default_systemd_run():
     #don't use systemd-run on CentOS / RedHat
     #(it causes failures with "Failed to create bus connection: No such file or directory")
-    from xpra.os_util import load_binary_file
-    data = load_binary_file("/etc/redhat-release")
+    from xpra.os_util import load_binary_file, strtobytes
+    data = strtobytes(load_binary_file("/etc/redhat-release") or "")
     if data and (data.find("RedHat")>=0 or data.find("CentOS")>=0):
         return "no"
     return "auto"
@@ -613,15 +613,6 @@ def get_defaults():
     ssl_protocol = "TLSv1_2"
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
-
-    systemd_run = "auto"
-    #don't use systemd-run on CentOS / RedHat
-    #(it causes failures with "Failed to create bus connection: No such file or directory")
-    if os.path.exists("/etc/redhat-release"):
-        from xpra.os_util import load_binary_file
-        data = load_binary_file("/etc/redhat-release")
-        if data.find("RedHat")>=0 or data.find("CentOS")>=0:
-            systemd_run = "no"
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
