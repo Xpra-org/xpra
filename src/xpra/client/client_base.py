@@ -451,9 +451,10 @@ class XpraClientBase(FileTransferHandler):
 
 
     def cleanup(self):
-        FileTransferHandler.cleanup(self)
         reaper_cleanup()
+        #we must clean printing before FileTransferHandler, which turns the printing flag off!
         self.cleanup_printing()
+        FileTransferHandler.cleanup(self)
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
