@@ -163,7 +163,7 @@ def is_Ubuntu():
         pass
     try:
         v = load_binary_file("/etc/issue")
-        return v.find("Ubuntu")>=0
+        return v.find(b"Ubuntu")>=0
     except:
         return False
 
@@ -179,7 +179,7 @@ def is_Fedora():
         except:
             pass
         v = load_binary_file("/etc/issue")
-        return v.find("Fedora")>=0
+        return v.find(b"Fedora")>=0
     except:
         return False
 
@@ -401,7 +401,7 @@ def is_systemd_pid1():
     if not os.name=="posix":
         return False
     d = load_binary_file("/proc/1/cmdline")
-    return d and d.find("/systemd")>=0
+    return d and d.find(b"/systemd")>=0
 
 def main():
     from xpra.log import Logger
