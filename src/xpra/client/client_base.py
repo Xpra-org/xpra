@@ -690,6 +690,7 @@ class XpraClientBase(FileTransferHandler):
         except Exception:
             printlog.error("Error sending the list of printers:", exc_info=True)
             self.printing = False
+        printlog("init_printing() enabled=%s", self.printing)
 
     def cleanup_printing(self):
         printlog("cleanup_printing() printing=%s", self.printing)
@@ -722,7 +723,7 @@ class XpraClientBase(FileTransferHandler):
         if self.exit_on_signal:
             return
         try:
-            self.send_printers_timer = False
+            self.send_printers_timer = None
             from xpra.platform.printing import get_printers, get_mimetypes
             printers = get_printers()
             printlog("do_send_printers() found printers=%s", printers)
