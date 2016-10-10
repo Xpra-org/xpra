@@ -453,13 +453,13 @@ class XpraClientBase(FileTransferHandler):
     def cleanup(self):
         FileTransferHandler.cleanup(self)
         reaper_cleanup()
+        self.cleanup_printing()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
             log("calling %s", p.close)
             p.close()
             self._protocol = None
-        self.cleanup_printing()
         log("cleanup done")
         dump_all_frames()
 
@@ -692,6 +692,7 @@ class XpraClientBase(FileTransferHandler):
             self.printing = False
 
     def cleanup_printing(self):
+        printlog("cleanup_printing() printing=%s", self.printing)
         if not self.printing:
             return
         self.cancel_send_printers_timer()
@@ -712,6 +713,7 @@ class XpraClientBase(FileTransferHandler):
 
     def cancel_send_printers_timer(self):
         spt = self.send_printers_timer
+        printlog("cancel_send_printers_timer() send_printers_timer=%s", spt)
         if spt:
             self.send_printers_timer = None
             self.source_remove(spt)
