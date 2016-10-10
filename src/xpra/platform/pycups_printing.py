@@ -348,10 +348,23 @@ def check_printers():
 _polling_timer = None
 def schedule_polling_timer():
     #fallback to polling:
+    cancel_polling_timer()
     from threading import Timer
     global _polling_timer
     _polling_timer = Timer(POLLING_DELAY, check_printers)
     _polling_timer.start()
+    log("schedule_polling_timer() timer=%s", _polling_timer)
+
+def cancel_polling_timer():
+    global _polling_timer
+    pt = _polling_timer
+    log("cancel_polling_timer() timer=%s", pt)
+    if pt:
+        try:
+            _polling_timer = None
+            pt.cancel()
+        except:
+            pass
 
 def init_printing(callback=None):
     global printers_modified_callback
@@ -362,12 +375,7 @@ def init_printing(callback=None):
         schedule_polling_timer()
 
 def cleanup_printing():
-    global _polling_timer
-    try:
-        _polling_timer.cancel()
-        _polling_timer = None
-    except:
-        pass
+    cancel_polling_timer()
 
 
 def get_printers():
