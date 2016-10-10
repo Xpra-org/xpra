@@ -559,7 +559,7 @@ def get_default_systemd_run():
     #(it causes failures with "Failed to create bus connection: No such file or directory")
     from xpra.os_util import load_binary_file, strtobytes
     data = strtobytes(load_binary_file("/etc/redhat-release") or "")
-    if data and (data.find("RedHat")>=0 or data.find("CentOS")>=0):
+    if data and (data.find(b"RedHat")>=0 or data.find(b"CentOS")>=0):
         return "no"
     return "auto"
 
