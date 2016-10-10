@@ -1651,10 +1651,10 @@ class ServerSource(FileTransferHandler):
             cd = self.get_cursor_data_cb()
             if cd and cd[0]:
                 cursor_data, cursor_sizes = cd
-                if self.last_cursor_sent and self.last_cursor_sent==cursor_data[:8]:
+                if self.last_cursor_sent and self.last_cursor_sent==cursor_data[:9]:
                     cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
                     return
-                self.last_cursor_sent = cursor_data[:8]
+                self.last_cursor_sent = cursor_data[:9]
                 w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
                 #compress pixels if needed:
                 encoding = None
