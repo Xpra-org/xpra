@@ -261,8 +261,13 @@ def do_parse_cmdline(cmdline, defaults):
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
 
-    parser = ModifiedOptionParser(version="xpra v%s" % XPRA_VERSION,
-                          usage="\n" + "".join(command_options))
+    version = "xpra v%s" % XPRA_VERSION
+    try:
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+        version += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])
+    except:
+        pass
+    parser = ModifiedOptionParser(version=version, usage="\n" + "".join(command_options))
     hidden_options = {
                       "display"         : defaults.display,
                       "wm-name"         : defaults.wm_name,
