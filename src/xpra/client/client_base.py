@@ -97,7 +97,7 @@ class XpraClientBase(FileTransferHandler):
         self.speed = 0
         self.min_speed = -1
         self.printer_attributes = []
-        self.send_printers_pending = False
+        self.send_printers_timer = None
         self.exported_printers = None
         #protocol stuff:
         self._protocol = None
@@ -694,6 +694,7 @@ class XpraClientBase(FileTransferHandler):
     def cleanup_printing(self):
         if not self.printing:
             return
+        self.cancel_send_printers_timer()
         try:
             from xpra.platform.printing import cleanup_printing
             printlog("cleanup_printing=%s", cleanup_printing)
@@ -702,17 +703,22 @@ class XpraClientBase(FileTransferHandler):
             log.warn("failed to cleanup printing subsystem", exc_info=True)
 
     def send_printers(self, *args):
-        printlog("send_printers%s pending=%s", args, self.send_printers_pending)
+        printlog("send_printers%s timer=%s", args, self.send_printers_timer)
         #dbus can fire dozens of times for a single printer change
         #so we wait a bit and fire via a timer to try to batch things together:
-        if self.send_printers_pending:
+        if self.send_printers_timer:
             return
-        self.send_printers_pending = True
-        self.timeout_add(500, self.do_send_printers)
+        self.send_printers_timer = self.timeout_add(500, self.do_send_printers)
+
+    def cancel_send_printers_timer(self):
+        spt = self.send_printers_timer
+        if spt:
+            self.send_printers_timer = None
+            self.source_remove(spt)
 
     def do_send_printers(self):
         try:
-            self.send_printers_pending = False
+            self.send_printers_timer = False
             from xpra.platform.printing import get_printers, get_mimetypes
             printers = get_printers()
             printlog("do_send_printers() found printers=%s", printers)
