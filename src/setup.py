@@ -2127,7 +2127,7 @@ if nvenc7_ENABLED:
         try:
             code, out, err = get_status_output(["which", nvcc_exe])
             if code==0:
-                options.append(0, out)
+                options.insert(0, out)
         except:
             pass
     nvcc_versions = {}
