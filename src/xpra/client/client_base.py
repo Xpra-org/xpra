@@ -717,6 +717,8 @@ class XpraClientBase(FileTransferHandler):
             self.source_remove(spt)
 
     def do_send_printers(self):
+        if self.exit_on_signal:
+            return
         try:
             self.send_printers_timer = False
             from xpra.platform.printing import get_printers, get_mimetypes
