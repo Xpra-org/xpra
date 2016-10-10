@@ -234,10 +234,13 @@ def pointer_grab(window, *args):
         return
     wx1,wy1,wx2,wy2 = win32gui.GetWindowRect(hwnd)
     grablog("GetWindowRect(%i)=%s", hwnd, (wx1,wy1,wx2,wy2))
-    _, _, _, h = win32gui.GetClientRect(hwnd)
     bx = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
     by = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
-    top = (wy2-wy1)-by-h
+    top = by
+    style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
+    if style & win32con.WS_CAPTION:
+        top += win32api.GetSystemMetrics(win32con.SM_CYCAPTION)
+    grablog(" window style=%#x, SIZEFRAME=%s, top=%i", style, (bx, by), top)
     clip = (wx1+bx, wy1+top, wx2-bx, wy2-by)
     grablog("ClipCursor%s", clip)
     win32api.ClipCursor(clip)
