@@ -190,7 +190,7 @@
 
   <autotools id="libvpx-16"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
-             autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
+             autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv"
              autogen-sh="configure">
     <branch module="/downloads.webmproject.org/releases/webm/libvpx-1.6.0.tar.bz2"
 		version="1.6.0"
