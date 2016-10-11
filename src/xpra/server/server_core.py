@@ -25,13 +25,13 @@ timeoutlog = Logger("timeout")
 
 import xpra
 from xpra.server import ClientException
-from xpra.scripts.main import _socket_connect
+from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, SIGNAMES
-from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info, local_version
+from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
@@ -449,14 +449,9 @@ class ServerCore(object):
         return self._upgrading
 
     def print_run_info(self):
-        try:
-            from xpra.src_info import REVISION
-            rev_info = "-r%s" % REVISION
-        except:
-            rev_info = ""
         import struct
         bits = struct.calcsize("P") * 8
-        log.info("xpra %s version %s%s %i-bit", self.get_server_mode(), local_version, rev_info, bits)
+        log.info("xpra %s version %s %i-bit", self.get_server_mode(), full_version_str(), bits)
         try:
             pinfo = get_platform_info()
             osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))

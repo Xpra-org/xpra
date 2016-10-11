@@ -222,6 +222,15 @@ def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
 
+def full_version_str():
+    s = XPRA_VERSION
+    try:
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+        s += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])
+    except:
+        pass
+    return s
+
 def do_parse_cmdline(cmdline, defaults):
     #################################################################
     ## NOTE NOTE NOTE
@@ -261,12 +270,7 @@ def do_parse_cmdline(cmdline, defaults):
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
 
-    version = "xpra v%s" % XPRA_VERSION
-    try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        version += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])
-    except:
-        pass
+    version = "xpra v%s" % full_version_str()
     parser = ModifiedOptionParser(version=version, usage="\n" + "".join(command_options))
     hidden_options = {
                       "display"         : defaults.display,
@@ -2620,7 +2624,7 @@ def run_list(error_cb, opts, extra_args):
                 elif state is DotXpra.UNKNOWN:
                     unknown.append(v)
                 else:
-                    sys.stdout.write("\t%s session at %s\n" % (state, display))
+                    sys.stdout.write("\t%s session at %s (%s)\n" % (state, display, socket_dir))
             reprobe = unknown
         #now cleanup those still unknown:
         clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]

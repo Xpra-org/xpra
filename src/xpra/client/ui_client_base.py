@@ -52,7 +52,7 @@ from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_i
 from xpra.platform.paths import get_tray_icon_filename
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
-from xpra.scripts.main import sound_option
+from xpra.scripts.main import sound_option, full_version_str
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
@@ -139,14 +139,9 @@ class UIXpraClient(XpraClientBase):
 
     def __init__(self):
         XpraClientBase.__init__(self)
-        try:
-            from xpra.src_info import REVISION
-            rev_info = "-r%s" % REVISION
-        except:
-            rev_info = ""
         import struct
         bits = struct.calcsize("P") * 8
-        log.info("Xpra %s client version %s%s %i-bit", self.client_toolkit(), XPRA_VERSION, rev_info, bits)
+        log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), bits)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
