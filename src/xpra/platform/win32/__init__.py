@@ -10,8 +10,6 @@ import errno
 import os.path
 import sys
 
-from xpra.util import envbool
-
 import win32con         #@UnresolvedImport
 import win32api         #@UnresolvedImport
 import win32console     #@UnresolvedImport
@@ -295,7 +293,6 @@ class console_event_catcher(object):
             self.event_cb(event)
 
 
-SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
 MB_ICONEXCLAMATION  = 0x00000030
 MB_ICONINFORMATION  = 0x00000040
 MB_SYSTEMMODAL      = 0x00001000
@@ -303,6 +300,8 @@ def _show_message(message, uType):
     global prg_name
     #TODO: detect cx_freeze equivallent
     GUI_MODE = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
+    from xpra.util import envbool
+    SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
     if SHOW_MESSAGEBOX and GUI_MODE:
         #try to use an alert box since no console output will be shown:
         try:
