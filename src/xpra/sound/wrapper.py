@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("sound")
 
 DEBUG_SOUND = envbool("XPRA_SOUND_DEBUG", False)
-SUBPROCESS_DEBUG = os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",")
+SUBPROCESS_DEBUG = [x.strip() for x in os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",") if x.strip()]
 FAKE_START_FAILURE = envbool("XPRA_SOUND_FAKE_START_FAILURE", False)
 FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
 FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
