@@ -248,9 +248,11 @@
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
+		<dep package="libvpx-16"/>
 	</dependencies>
 	<after>
 		<dep package="x264"/>
+		<dep package="libvpx-16"/>
 	</after>
   </autotools>
 
