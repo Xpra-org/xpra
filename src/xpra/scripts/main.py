@@ -2167,31 +2167,53 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     app.setup_connection(conn)
     do_run_client(app)
 
-def find_X11_displays(max_display_no=10):
+def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     displays = []
     X11_SOCKET_DIR = "/tmp/.X11-unix/"
     if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
         for x in os.listdir(X11_SOCKET_DIR):
+            socket_path = os.path.join(X11_SOCKET_DIR, x)
             if not x.startswith("X"):
+                warn("path '%s' does not look like an X11 socket" % socket_path)
                 continue
             try:
                 v = int(x[1:])
-                #arbitrary: only shadow automatically displays below 10..
-                if v<max_display_no:
-                    displays.append(v)
-                #check that this is a socket
-                socket_path = os.path.join(X11_SOCKET_DIR, x)
-                mode = os.stat(socket_path).st_mode
-                is_socket = stat.S_ISSOCK(mode)
-                if not is_socket:
-                    continue
             except:
-                pass
+                warn("'%s' does not parse as a display number" % x)
+                continue
+            try:
+                #arbitrary: only shadow automatically displays below 10..
+                if max_display_no and v>max_display_no:
+                    #warn("display no %i too high (max %i)" % (v, max_display_no))
+                    continue
+                #check that this is a socket
+                sstat = os.stat(socket_path)
+                if match_uid is not None and sstat.st_uid!=match_uid:
+                    #print("display socket %s does not match uid %i (uid=%i)" % (socket_path, match_uid, sstat.st_uid))
+                    continue
+                if match_gid is not None and sstat.st_gid!=match_gid:
+                    #print("display socket %s does not match gid %i (gid=%i)" % (socket_path, match_gid, sstat.st_gid))
+                    continue
+                is_socket = stat.S_ISSOCK(sstat.st_mode)
+                if not is_socket:
+                    warn("display path '%s' is not a socket!" % socket_path)
+                    continue
+                #print("found display path '%s'" % socket_path)
+                displays.append(v)
+            except Exception as e:
+                warn("failure on %s: %s" % (socket_path, e))
     return displays
 
 def guess_X11_display(dotxpra):
-    displays = [":%s" % x for x in find_X11_displays()]
-    assert len(displays)!=0, "could not detect any live X11 displays"
+    displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=os.getuid(), match_gid=os.getgid())]
+    if len(displays)==0:
+        #try without uid match:
+        displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_gid=os.getgid())]
+        if len(displays)==0:
+            #try without gid match:
+            displays = [":%s" % x for x in find_X11_displays(max_display_no=10)]
+    if len(displays)==0:
+        raise InitExit(1, "could not detect any live X11 displays")
     if len(displays)>1:
         #since we are here to shadow,
         #assume we want to shadow a real X11 server,

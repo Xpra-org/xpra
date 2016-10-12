@@ -1051,7 +1051,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             display_name = ":0"
         else:
             from xpra.scripts.main import guess_X11_display
-            display_name = guess_X11_display(opts.socket_dir, opts.socket_dirs)
+            dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+            display_name = guess_X11_display(dotxpra)
     elif upgrading and len(extra_args)==0:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
