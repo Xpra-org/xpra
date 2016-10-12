@@ -506,9 +506,12 @@ if [ $1 -eq 1 ]; then
 fi
 %endif
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
+	umask=`umask`
+	umask 077
 	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
 		-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
-		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem"
+		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem" 2> /dev/null
+	umask $umask
 fi
 ZONE=`firewall-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
