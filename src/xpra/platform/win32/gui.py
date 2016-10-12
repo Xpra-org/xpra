@@ -178,11 +178,12 @@ def get_session_type():
     try:
         b = ctypes.c_bool()
         retcode = ctypes.windll.dwmapi.DwmIsCompositionEnabled(ctypes.byref(b))
-        if retcode == 0 and b.value:
+        log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
+        if retcode==0 and b.value:
             return "aero"
     except AttributeError:
         # No windll, no dwmapi or no DwmIsCompositionEnabled function.
-        pass
+        log("get_session_type() failed to query DwmIsCompositionEnabled", exc_info=True)
     return ""
 #alternative code:
 #    try:
