@@ -12,13 +12,11 @@ PIPE_PATH = "\\\\.\\pipe\\"
 
 
 class DotXpra(object):
-    def __init__(self, sockdir=None, sockdirs=[], actual_username="", uid=0, gid=0):
-        self.uid = uid or os.getuid()
-        self.gid = gid or os.getgid()
+    def __init__(self, sockdir=None, sockdirs=[], actual_username="", *args):
         self.username = actual_username
 
     def osexpand(self, v):
-        return osexpand(v, self.username, self.uid, self.gid)
+        return osexpand(v, self.username)
 
     def mksockdir(self):
         #socket-dir is not used by the win32 shadow server
