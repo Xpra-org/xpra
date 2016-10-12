@@ -2417,8 +2417,11 @@ class UIXpraClient(XpraClientBase):
                 log.warn("Warning: this server's sound support is out of date")
                 log.warn(" the sound latency with the %s codec will be high", codec)
             def sink_ready(*args):
-                soundlog("sink_ready(%s) codec=%s", args, codec)
-                self.send("sound-control", "start", codec)
+                scodec = codec
+                if not self.server_codec_full_names:
+                    scodec = LEGACY_CODEC_NAMES.get(codec, codec)
+                soundlog("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
+                self.send("sound-control", "start", scodec)
                 return False
             self.on_sink_ready = sink_ready
             enabled = self.start_sound_sink(codec)
