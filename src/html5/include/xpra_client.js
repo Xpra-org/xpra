@@ -1004,7 +1004,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 		hmac.update(salt);
 		challenge_response = hmac.digest().toHex();
 	} else if (digest == "xor") {
-		if((!ctx.encryption) && (ctx.host!="localhost")) {
+		if((!ctx.encryption) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
 			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
 			return;
 		}
