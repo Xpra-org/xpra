@@ -20,7 +20,7 @@ from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 import ctypes
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, BOOL
 
 import win32con     #@UnresolvedImport
 import win32api     #@UnresolvedImport
@@ -174,6 +174,33 @@ def get_window_handle(window):
         return None
 
 
+def get_session_type():
+    try:
+        b = ctypes.c_bool()
+        retcode = ctypes.windll.dwmapi.DwmIsCompositionEnabled(ctypes.byref(b))
+        if retcode == 0 and b.value:
+            return "aero"
+    except AttributeError:
+        # No windll, no dwmapi or no DwmIsCompositionEnabled function.
+        pass
+    return ""
+#alternative code:
+#    try:
+#        # Vista & 7 stuff
+#        hwnd = win32gui.GetDesktopWindow()
+#        DwmGetWindowAttribute = ctypes.windll.dwmapi.DwmGetWindowAttribute
+#        DWMWA_NCRENDERING_ENABLED = 1
+#        b = BOOL()
+#        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_NCRENDERING_ENABLED), byref(b), sizeof(b))
+#        #wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
+#        log("DwmGetWindowAttribute: DWMWA_NCRENDERING_ENABLED(%i)=%s", hwnd, b)
+#        if b:
+#            return "aero"
+#    except WindowsError as e:           #@UndefinedVariable
+#        log("no DwmGetWindowAttribute: %s", e)
+#    return ""
+
+
 def win32_propsys_set_group_leader(self, leader):
     """ implements set group leader using propsys """
     hwnd = get_window_handle(self)
@@ -251,7 +278,7 @@ def pointer_grab(window, *args):
     style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
     if style & win32con.WS_CAPTION:
         top += win32api.GetSystemMetrics(win32con.SM_CYCAPTION)
-    grablog(" window style=%#x, SIZEFRAME=%s, top=%i", style, (bx, by), top)
+    grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
     clip = (wx1+bx, wy1+top, wx2-bx, wy2-by)
     grablog("ClipCursor%s", clip)
     win32api.ClipCursor(clip)

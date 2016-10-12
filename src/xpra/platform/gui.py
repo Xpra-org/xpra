@@ -228,6 +228,7 @@ def get_info_base():
             "workareas"                     : get_workareas(),
             "desktops"                      : get_number_of_desktops(),
             "desktop_names"                 : get_desktop_names(),
+            "session-type"                  : get_session_type(),
             "vertical-refresh"              : get_vrefresh(),
             "fixed_cursor_size"             : get_fixed_cursor_size(),
             "cursor_size"                   : get_cursor_size(),
