@@ -12,7 +12,7 @@ log = Logger("network", "mdns")
 from xpra.util import csv
 from xpra.net.net_util import if_indextoname, if_nametoindex, get_iface
 try:
-    from xpra.net import pybonjour
+    from xpra.net.mdns import pybonjour
 except OSError as e:
     log("failed to load pybonjour", exc_info=True)
     raise ImportError("cannot load pybonjour module: %s" % e.strerror)
