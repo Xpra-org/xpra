@@ -49,6 +49,17 @@ MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
 
 
+def getuid():
+    if os.name=="posix":
+        return os.getuid()
+    return 0
+
+def getgid():
+    if os.name=="posix":
+        return os.getgid()
+    return 0
+
+
 def set_blocking(conn):
     #Note: importing set_socket_timeout from xpra.net.bytestreams
     #fails in mysterious ways, so we duplicate the code here instead
@@ -146,7 +157,7 @@ class ProxyInstanceProcess(Process):
         Timer(timeout/1000.0, timer_exec).start()
 
     def run(self):
-        log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), os.getuid(), os.getgid())
+        log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
         setuidgid(self.uid, self.gid)
         if self.env_options:
             #TODO: whitelist env update?
@@ -256,6 +267,7 @@ class ProxyInstanceProcess(Process):
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
             log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)
             return False
+        log("create_control_socket: socket path='%s', uid=%i, gid=%i", sockpath, getuid(), getgid())
         try:
             sock, self.control_socket_cleanup = create_unix_domain_socket(sockpath, None, 0o600)
             sock.listen(5)
