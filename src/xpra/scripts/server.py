@@ -309,6 +309,8 @@ def display_name_check(display_name):
 
 def get_ssh_port():
     #FIXME: how do we find out which port ssh is on?
+    if WIN32:
+        return 0
     return 22
 
 #warn just once:
@@ -340,7 +342,15 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     f_listen_on = {}
     for host, port in listen_on:
         f_listen_on[get_interface_index(host)] = (host, port)
-    ap = MDNSPublishers(f_listen_on.values(), "Xpra %s %s" % (mode, display_name), text_dict=d)
+    try:
+        name = socket.gethostname()
+    except:
+        name = "Xpra"
+    if display_name and not (OSX or WIN32):
+        name += " %s" % display_name
+    if mode!="tcp":
+        name += " (%s)" % mode
+    ap = MDNSPublishers(f_listen_on.values(), name, text_dict=d)
     _when_ready.append(ap.start)
     _cleanups.append(ap.stop)
 
