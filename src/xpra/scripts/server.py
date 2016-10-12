@@ -329,6 +329,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         MDNS_WARNING = True
         from xpra.log import Logger
         log = Logger("mdns")
+        log("mdns import failure", exc_info=True)
         log.warn("Warning: failed to load the mdns %s publisher:", ["avahi", "pybonjour"][PREFER_PYBONJOUR])
         log.warn(" %s", e)
         log.warn(" either fix your installation or use the 'mdns=no' option")
