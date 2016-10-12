@@ -47,7 +47,7 @@ from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_display_icc_info, get_double_click_time, show_desktop, get_cursor_size,
-                               get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes,
+                               get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_session_type,
                                get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
 from xpra.platform.paths import get_tray_icon_filename
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
@@ -1315,6 +1315,7 @@ class UIXpraClient(XpraClientBase):
     def make_hello(self):
         capabilities = XpraClientBase.make_hello(self)
         updict(capabilities, "platform",  get_platform_info())
+        capabilities["session-type"] = get_session_type()
         if self.readonly:
             #don't bother sending keyboard info, as it won't be used
             capabilities["keyboard"] = False

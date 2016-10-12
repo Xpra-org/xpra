@@ -51,6 +51,9 @@ def get_native_notifier_classes():
     return []
 
 
+def get_session_type():
+    return ""
+
 
 def get_xdpi():
     return -1
@@ -261,6 +264,7 @@ platform_import(globals(), "gui", False,
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
+                "get_session_type",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
                 "get_antialias_info", "get_icc_info", "get_display_icc_info", "get_xdpi", "get_ydpi",

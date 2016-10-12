@@ -389,6 +389,7 @@ class ServerSource(FileTransferHandler):
         self.client_release = None
         self.client_proxy = False
         self.client_wm_name = None
+        self.client_session_type = None
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
@@ -695,6 +696,7 @@ class ServerSource(FileTransferHandler):
         self.client_revision = c.strget("build.revision")
         self.client_proxy = c.boolget("proxy")
         self.client_wm_name = c.strget("wm_name")
+        self.client_session_type = c.strget("session-type")
         #file transfers and printing:
         self.parse_file_transfer_caps(c)
         #general features:
@@ -762,6 +764,8 @@ class ServerSource(FileTransferHandler):
         pinfo = ""
         if self.client_platform:
             pinfo = " %s" % platform_name(self.client_platform, c.strlistget("platform.linux_distribution") or self.client_release)
+        if self.client_session_type:
+            pinfo += " %s" % self.client_session_type
         revinfo = ""
         if self.client_revision:
             revinfo="-r%s" % self.client_revision
@@ -1445,7 +1449,7 @@ class ServerSource(FileTransferHandler):
             v = getattr(self, name)
             if v is not None:
                 info[k] = v
-        for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name"):
+        for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name", "session_type"):
             addattr(x, "client_"+x)
         #remove very large item:
         ieo = dict(self.icons_encoding_options)

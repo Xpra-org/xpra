@@ -73,6 +73,10 @@ def get_native_notifier_classes():
     return ncs
 
 
+def get_session_type():
+    return os.environ.get("XDG_SESSION_TYPE", "")
+
+
 #we duplicate some of the code found in gtk_x11.prop ...
 #which is still better than having dependencies on that GTK2 code
 def _get_X11_window_property(xid, name, req_type):
