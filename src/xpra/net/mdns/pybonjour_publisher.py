@@ -6,6 +6,7 @@
 
 # taken from the code I wrote for winswitch
 
+import sys
 from xpra.log import Logger
 log = Logger("network", "mdns")
 
@@ -26,8 +27,10 @@ def get_interface_index(host):
         return    pybonjour.kDNSServiceInterfaceIndexAny
         #kDNSServiceInterfaceIndexLocalOnly
     if not if_nametoindex:
-        log.error("Error: cannot convert interface to index (if_nametoindex is missing)")
-        log.error(" pybonjour will publish on ALL interfaces")
+        WIN32 = sys.platform.startswith("win")
+        if not WIN32:
+            log.error("Error: cannot convert interface to index (if_nametoindex is missing)")
+            log.error(" pybonjour will publish on ALL interfaces")
         return pybonjour.kDNSServiceInterfaceIndexAny
     iface = get_iface(host)
     if not iface:
