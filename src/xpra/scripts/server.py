@@ -1409,6 +1409,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                      "display"  : display_name,
                      "username" : get_username(),
                      "uuid"     : app.uuid,
+                     "platform" : sys.platform,
+                     "type"     : {"xpra" : "seamless", "xpra desktop" : "desktop"}.get(info, info),
                      }
         if opts.session_name:
             mdns_info["session"] = opts.session_name

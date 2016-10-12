@@ -2543,10 +2543,11 @@ def run_list_mdns(error_cb, opts, extra_args):
                 mode = text.get("mode", "")
                 username = text.get("username", "")
                 session = text.get("session")
+                dtype = text.get("type")
                 if i==0:
                     print("* user '%s' on '%s'" % (username, host))
                     if session:
-                        print(" session '%s', uuid=%s" % (session, uuid))
+                        print(" %s session '%s', uuid=%s" % (dtype, session, uuid))
                     elif uuid:
                         print(" uuid=%s" % uuid)
                 print(" + %s endpoint on host %s, port %i, interface %s" % (mode, address, port, iface))
