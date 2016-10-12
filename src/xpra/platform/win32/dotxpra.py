@@ -5,15 +5,20 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN
+from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, osexpand
 
 PIPE_PREFIX = "Xpra\\"
 PIPE_PATH = "\\\\.\\pipe\\"
 
 
 class DotXpra(object):
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, sockdir=None, sockdirs=[], actual_username="", uid=0, gid=0):
+        self.uid = uid or os.getuid()
+        self.gid = gid or os.getgid()
+        self.username = actual_username
+
+    def osexpand(self, v):
+        return osexpand(v, self.username, self.uid, self.gid)
 
     def mksockdir(self):
         #socket-dir is not used by the win32 shadow server

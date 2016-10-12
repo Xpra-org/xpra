@@ -10,22 +10,8 @@ import socket
 import errno
 import stat
 
-from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN
+from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, osexpand
 
-
-def osexpand(s, actual_username="", uid=0, gid=0):
-    if len(actual_username)>0 and s.startswith("~/"):
-        #replace "~/" with "~$actual_username/"
-        s = "~%s/%s" % (actual_username, s[2:])
-    v = os.path.expandvars(os.path.expanduser(s))
-    if os.name=="posix":
-        v = v.replace("$UID", str(uid or os.getuid()))
-        v = v.replace("$GID", str(gid or os.getgid()))
-    if len(actual_username)>0:
-        for k in ("USERNAME", "USER"):
-            v = v.replace("$%s" % k, actual_username)
-            v = v.replace("${%s}" % k, actual_username)
-    return v
 
 def norm_makepath(dirpath, name):
     if name[0]==":":
