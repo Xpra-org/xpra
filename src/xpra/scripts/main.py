@@ -2205,12 +2205,12 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                 warn("failure on %s: %s" % (socket_path, e))
     return displays
 
-def guess_X11_display(dotxpra):
-    displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=os.getuid(), match_gid=os.getgid())]
-    if len(displays)==0:
+def guess_X11_display(dotxpra, uid=getuid(), gid=getgid()):
+    displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]
+    if len(displays)!=1:
         #try without uid match:
-        displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_gid=os.getgid())]
-        if len(displays)==0:
+        displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_gid=gid)]
+        if len(displays)!=1:
             #try without gid match:
             displays = [":%s" % x for x in find_X11_displays(max_display_no=10)]
     if len(displays)==0:
@@ -2337,7 +2337,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
                 #display_name was provided:
                 display_name = args[0]
             else:
-                display_name = guess_X11_display(dotxpra)
+                display_name = guess_X11_display(dotxpra, uid, gid)
             #we now know the display name, so add it:
             args = [display_name]
 
