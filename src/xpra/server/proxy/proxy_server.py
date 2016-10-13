@@ -216,6 +216,7 @@ class ProxyServer(ServerCore):
         #log("unused options: %s, %s", env_options, session_options)
         opts = make_defaults_struct()
         display = None
+        proc = None
         sns = c.dictget("start-new-session")
         if len(displays)==0 or sns:
             if self._start_sessions:
@@ -267,8 +268,13 @@ class ProxyServer(ServerCore):
                     return
                 display = displays[0]
 
+        def stop_server_subprocess():
+            if proc:
+                proc.terminate()
+
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
         def parse_error(*args):
+            stop_server_subprocess()
             disconnect(SESSION_NOT_FOUND, "invalid display string")
             log.warn("Error: parsing failed for display string '%s':", display)
             for arg in args:
@@ -289,6 +295,7 @@ class ProxyServer(ServerCore):
             log.error(" connection definition:")
             print_nested_dict(disp_desc, prefix=" ", lchar="*", pad=20, print_fn=log.error)
             disconnect(SESSION_NOT_FOUND, "failed to connect to display")
+            stop_server_subprocess()
             return
         log("server connection=%s", server_conn)
 
