@@ -80,6 +80,17 @@ def memoryview_to_bytes(v):
     return v
 
 
+def getuid():
+    if os.name=="posix":
+        return os.getuid()
+    return 0
+
+def getgid():
+    if os.name=="posix":
+        return os.getgid()
+    return 0
+
+
 def platform_release(release):
     if sys.platform.startswith("darwin"):
         try:

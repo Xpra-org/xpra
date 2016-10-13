@@ -24,7 +24,7 @@ from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, strtobytes
+from xpra.os_util import Queue, SIGNAMES, strtobytes, getuid, getgid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
@@ -47,17 +47,6 @@ PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
 PASSTHROUGH = envbool("XPRA_PROXY_PASSTHROUGH", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
-
-
-def getuid():
-    if os.name=="posix":
-        return os.getuid()
-    return 0
-
-def getgid():
-    if os.name=="posix":
-        return os.getgid()
-    return 0
 
 
 def set_blocking(conn):
@@ -265,7 +254,8 @@ class ProxyInstanceProcess(Process):
         sockpath = dotxpra.socket_path(":proxy-%s" % os.getpid())
         state = dotxpra.get_server_state(sockpath)
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
-            log.warn("You already have a proxy server running at %s, the control socket will not be created!", sockpath)
+            log.error("Error: you already have a proxy server running at '%s'", sockpath)
+            log.error(" the control socket will not be created")
             return False
         log("create_control_socket: socket path='%s', uid=%i, gid=%i", sockpath, getuid(), getgid())
         try:
@@ -475,8 +465,10 @@ class ProxyInstanceProcess(Process):
             self.control_socket.close()
         except:
             pass
-        if self.control_socket_cleanup:
-            self.control_socket_cleanup()
+        csc = self.control_socket_cleanup
+        if csc:
+            self.control_socket_cleanup = None
+            csc()
         self.main_queue.put(None)
         #empty the main queue:
         q = Queue()
@@ -521,7 +513,7 @@ class ProxyInstanceProcess(Process):
             self.client_protocol.source_has_more()
             return
         elif packet_type=="hello":
-            log.warn("invalid hello packet received after initial authentication (dropped)")
+            log.warn("Warning: invalid hello packet received after initial authentication (dropped)")
             return
         self.queue_server_packet(packet)
 
