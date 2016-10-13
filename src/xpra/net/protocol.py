@@ -260,10 +260,10 @@ class Protocol(object):
 
 
     def start(self):
-        def do_start():
+        def start_network_read_thread():
             if not self._closed:
                 self._read_thread.start()
-        self.idle_add(do_start)
+        self.idle_add(start_network_read_thread)
 
     def send_now(self, packet):
         if self._closed:
