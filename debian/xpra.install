@@ -12,3 +12,4 @@ etc/xpra/xorg.conf
 etc/xpra/xpra.conf
 etc/xpra/conf.d/*conf
 etc/pam.d/xpra
+etc/default/xpra

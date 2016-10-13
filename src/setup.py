@@ -1886,6 +1886,10 @@ else:
             add_data_files("/lib/systemd/system/", ["service/xpra.service"])
         else:
             add_data_files("/etc/init.d/", ["service/xpra"])
+        if is_Fedora() or os.path.exists("/etc/redhat-release"):
+            add_data_files("/etc/sysconfig/", ["etc/sysconfig/xpra"])
+        elif os.path.exists("/etc/default"):
+            add_data_files("/etc/default/", ["etc/sysconfig/xpra"])
 
 
 if html5_ENABLED:

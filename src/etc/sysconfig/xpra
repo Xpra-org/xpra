@@ -1,0 +1,4 @@
+TCP_AUTH=sys
+AUTH=sys
+#DEBUG=auth,proxy
+DEBUG=

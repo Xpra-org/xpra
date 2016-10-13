@@ -19,11 +19,14 @@ else
 	LOGDIR=/var/log/
 fi
 
+[ -e /etc/sysconfig/xpra ] && . /etc/sysconfig/xpra
+[ -e /etc/default/xpra ] && . /etc/default/xpra
+
 start() {
   echo 'Starting service…' >&2
   xpra proxy $VIRTUAL_DISPLAY \
-	--bind-tcp=0.0.0.0:$PORT --auth=sys --tcp-auth=sys --ssl-cert=/etc/xpra/ssl-cert.pem \
-	--socket-permissions=666 \
+	--bind-tcp=0.0.0.0:$PORT --auth=$AUTH --tcp-auth=$TCP_AUTH --ssl-cert=/etc/xpra/ssl-cert.pem \
+	--socket-permissions=666 --debug=$DEBUG \
 	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR --pidfile=$PIDFILE
   if [ "$?" == "0" ];then
 	echo 'Service started' >&2

@@ -446,6 +446,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/xpra.conf
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf
 %config(noreplace) %{_sysconfdir}/xpra/nvenc.keys
+%config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_sysconfdir}/xpra/conf.d/05_features.conf
 %config %{_sysconfdir}/xpra/conf.d/10_network.conf
 %config %{_sysconfdir}/xpra/conf.d/12_ssl.conf
