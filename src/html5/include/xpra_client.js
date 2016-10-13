@@ -27,6 +27,7 @@ function XpraClient(container) {
 	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
+	this.start_new_session = null;
 	this.username = "";
 	this.disconnect_reason = null;
 	// encryption
@@ -629,6 +630,9 @@ XpraClient.prototype._make_hello_base = function() {
     	this._update_capabilities(this.cipher_in_caps);
     	// copy over the encryption caps with the key for recieved data
 		this.protocol.set_cipher_in(this.cipher_in_caps, this.encryption_key);
+	}
+	if(this.start_new_session) {
+		this._update_capabilities({"start-new-session" : this.start_new_session});
 	}
 }
 

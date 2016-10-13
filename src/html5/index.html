@@ -203,6 +203,7 @@
 				var encoding = window.location.getParameter("encoding") || null;
 				var debug = window.location.getParameter("debug") || false;
 				var normal_fullscreen = window.location.getParameter("normal_fullscreen") || null;
+				var action = window.location.getParameter("action") || "connect";
 				var submit = window.location.getParameter("submit") || null;
 				var server = window.location.getParameter("server") || window.location.hostname;
 				var port = window.location.getParameter("port") || window.location.port;
@@ -220,6 +221,13 @@
 			    }
 			    // encodings can be disabled like so
 			    // client.disable_encoding("h264");
+			    if(action && (action!="connect")) {
+			    	client.start_new_session = {
+			    			"mode" 	: action,
+			    			//FIXME: hard-coded for now!
+			    			"start"	: ["xterm"],
+			    	};
+			    }
 
 			    // see if we should undecorate and maximise normal windows
 			    if(normal_fullscreen) {
@@ -259,7 +267,7 @@
 				    		if(reason) {
 				    			message = reason;
 				    		}
-				    		window.location="connect.html?disconnect="+message+"&username="+username+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&encoding="+encoding;
+				    		window.location="connect.html?disconnect="+message+"&username="+username+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&encoding="+encoding+"&action="+action;
 				    	} else {
 					    	// if we didn't submit through the form, silently redirect to the connect gui
 					    	window.location="connect.html";

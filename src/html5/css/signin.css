@@ -16,7 +16,7 @@ body {
 .form-signin .checkbox {
   margin-bottom: 10px;
 }
-.form-signin .checkbox {
+.form-signin .checkbox, .form-signin .radiobox {
   font-weight: normal;
 }
 .form-signin .form-control {
@@ -29,4 +29,11 @@ body {
 }
 .form-signin .form-control:focus {
   z-index: 2;
+}
+.form-signin .panel-group {
+  padding-top:8px;
+}
+
+.form-signin .list-style-none {
+  list-style-type:none;
 }
