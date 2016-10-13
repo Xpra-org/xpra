@@ -240,7 +240,7 @@ def write_runner_shell_scripts(contents, overwrite=True):
                 log.warn("Warning: failed to write script file in '%s':", scriptdir)
                 log.warn(" %s", e)
                 if scriptdir.startswith("/var/run/user") or scriptdir.startswith("/run/user"):
-                    log.warn(" ($XDG_RUNTIME_DIR has not been created?)", e)
+                    log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
                 continue
         scriptpath = os.path.join(scriptdir, "run-xpra")
         if os.path.exists(scriptpath) and not overwrite:
@@ -589,7 +589,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
                         log.warn("Warning: cannot create socket '%s':", sockpath)
                         log.warn(" %s", e)
-                        log.warn(" ($XDG_RUNTIME_DIR has not been created?)", e)
+                        log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
                         continue
                     else:
                         log.error("Error: failed to create socket '%s':", sockpath)
