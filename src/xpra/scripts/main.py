@@ -360,8 +360,8 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="daemon", default=defaults.daemon,
                           help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
         group.add_option("--pidfile", action="store",
-					  dest="pidfile", default=defaults.pidfile,
-					  help="Write the process id to this file (default: '%default')")
+                      dest="pidfile", default=defaults.pidfile,
+                      help="Write the process id to this file (default: '%default')")
         group.add_option("--log-dir", action="store",
                       dest="log_dir", default=defaults.log_dir,
                       help="The directory where log files are placed"

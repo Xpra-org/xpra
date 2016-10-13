@@ -13,7 +13,7 @@ log = Logger("network", "win32")
 
 
 import pywintypes, winerror            #@UnresolvedImport
-from win32file import CloseHandle, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_FLAG_OVERLAPPED, FILE_ALL_ACCESS        		#@UnresolvedImport
+from win32file import CloseHandle, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_FLAG_OVERLAPPED, FILE_ALL_ACCESS             #@UnresolvedImport
 from win32pipe import CreateNamedPipe, ConnectNamedPipe, PIPE_ACCESS_DUPLEX, PIPE_READMODE_BYTE, PIPE_UNLIMITED_INSTANCES   #@UnresolvedImport
 from win32api import error            #@UnresolvedImport
 from ntsecuritycon import SECURITY_CREATOR_SID_AUTHORITY, SECURITY_WORLD_SID_AUTHORITY, SECURITY_WORLD_RID, SECURITY_CREATOR_OWNER_RID    #@UnresolvedImport
