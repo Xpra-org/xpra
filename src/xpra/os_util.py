@@ -94,7 +94,7 @@ def get_username_for_uid(uid):
     if os.name=="posix":
         from pwd import getpwuid
         try:
-            return getpwuid(os.getuid()).pw_name
+            return getpwuid(uid).pw_name
         except KeyError:
             pass
     return ""
