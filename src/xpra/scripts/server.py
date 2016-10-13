@@ -575,13 +575,14 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     log("socket creation error", exc_info=True)
                     if sockpath.startswith("/var/run/xpra"):
                         log.warn("Warning: cannot create socket '%s'", sockpath)
+                        log.warn(" %s", e)
                         if os.name=="posix":
                             uid = getuid()
                             username = get_username_for_uid(uid)
                             groups = get_groups(username)
                             log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
                             if "xpra" not in groups:
-                                log.warn(" %s (missing 'xpra' group membership?)", e)
+                                log.warn(" (missing 'xpra' group membership?)")
                         continue
                     elif sockpath.startswith("/var/run/user"):
                         log.warn("Warning: cannot create socket '%s'", sockpath)
