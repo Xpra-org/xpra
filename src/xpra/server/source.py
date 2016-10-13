@@ -781,7 +781,8 @@ class ServerSource(FileTransferHandler):
             msg += " as '%s'" % std(self.username)
             if self.name and self.name!=self.username:
                 msg += " - '%s'" % std(self.name)
-        log.info(msg)
+        if msg:
+            log.info(msg)
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
