@@ -90,6 +90,21 @@ def getgid():
         return os.getgid()
     return 0
 
+def get_username_for_uid(uid):
+    if os.name=="posix":
+        from pwd import getpwuid
+        try:
+            return getpwuid(os.getuid()).pw_name
+        except KeyError:
+            pass
+    return ""
+
+def get_groups(username):
+    if os.name=="posix":
+        import grp      #@UnresolvedImport
+        return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
+    return []
+
 
 def platform_release(release):
     if sys.platform.startswith("darwin"):

@@ -23,6 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, DEFAULT_PORT
+from xpra.os_util import getuid, getgid
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -1136,7 +1137,7 @@ def isdisplaytype(args, dtype):
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
-    if os.name=="posix" and os.getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
+    if os.name=="posix" and getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
     ssh_display = isdisplaytype(args, "ssh")
@@ -2433,7 +2434,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         proc, socket_path = start_server_subprocess(script_file, args, server_mode, defaults,
                                                      opts.socket_dir, opts.socket_dirs,
                                                      start, start_child, opts.exit_with_children, opts.exit_with_client,
-                                                     os.getuid(), os.getgid())
+                                                     getuid(), getgid())
         if not socket_path:
             #if we return non-zero, we will try the next run-xpra script in the list..
             return 0

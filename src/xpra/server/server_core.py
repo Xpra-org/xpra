@@ -975,7 +975,7 @@ class ServerCore(object):
                         authlog("challenge: %s", challenge)
                         salt, digest = challenge
                         authlog.info("Authentication required by %s authenticator module", proto.authenticator)
-                        authlog.info(" sending challenge for '%s' using %s digest", username, digest)
+                        authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
                     if digest not in digest_modes:
                         auth_failed("cannot proceed without %s digest support" % digest)
                         return False

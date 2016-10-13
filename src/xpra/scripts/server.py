@@ -20,8 +20,8 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES
-from xpra.util import envint, envbool, DEFAULT_PORT
+from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups
+from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
@@ -542,7 +542,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     try_sockpaths = [norm_makepath(socket_dir, display_name) for socket_dir in socket_dirs]
                 else:
                     try_sockpaths = [dotxpra.socket_path(display_name)]
-                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, try_sockpaths, os.getuid(), os.getgid())
+                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, try_sockpaths, getuid(), getgid())
             else:
                 sockpath = dotxpra.osexpand(b)
                 if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
@@ -575,7 +575,13 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     log("socket creation error", exc_info=True)
                     if sockpath.startswith("/var/run/xpra"):
                         log.warn("Warning: cannot create socket '%s'", sockpath)
-                        log.warn(" %s (missing 'xpra' group membership?)", e)
+                        if os.name=="posix":
+                            uid = getuid()
+                            username = get_username_for_uid(uid)
+                            groups = get_groups(username)
+                            log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
+                            if "xpra" not in groups:
+                                log.warn(" %s (missing 'xpra' group membership?)", e)
                         continue
                     elif sockpath.startswith("/var/run/user"):
                         log.warn("Warning: cannot create socket '%s'", sockpath)
@@ -756,6 +762,8 @@ def close_fds(excluding=[0, 1, 2]):
                 pass
 
 def start_Xvfb(xvfb_str, display_name, cwd):
+    if os.name!="posix":
+        raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
     # We need to set up a new server environment
