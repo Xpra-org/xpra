@@ -21,7 +21,8 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, PERMISSION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
+from xpra.os_util import get_username_for_uid, get_groups
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -196,17 +197,26 @@ class ProxyServer(ServerCore):
             authlog("failed to get the list of sessions", exc_info=True)
             authlog.error("Error: failed to get the list of sessions using '%s' authenticator", client_proto.authenticator)
             authlog.error(" %s", e)
-            disconnect(AUTHENTICATION_ERROR)
+            disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
             return
         if sessions is None:
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
         authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
-        if uid==0 or gid==0:
-            log.error("Error: proxy instances should not run as root")
-            log.error(" use a different uid and gid (ie: nobody)")
-            return
+        if os.name=="posix":
+            if uid==0 or gid==0:
+                log.error("Error: proxy instances should not run as root")
+                log.error(" use a different uid and gid (ie: nobody)")
+                disconnect(AUTHENTICATION_ERROR, "cannot run proxy instances as root")
+                return
+            username = get_username_for_uid(uid)
+            groups = get_groups(username)
+            if "xpra" not in groups:
+                log.error("Error: user '%s' (uid=%i) is not in the xpra group", username, uid)
+                log.error(" it belongs to: %s", csv(groups) or None)
+                disconnect(PERMISSION_ERROR, "user missing 'xpra' group membership")
+                return
         #ensure we don't loop back to the proxy:
         proxy_virtual_display = os.environ.get("DISPLAY")
         if proxy_virtual_display in displays:

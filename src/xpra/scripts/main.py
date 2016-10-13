@@ -2264,6 +2264,20 @@ def setuidgid(uid, gid):
         return
     from xpra.log import Logger
     log = Logger("server")
+    if os.getuid()!=uid or os.getgid()!=gid:
+        #find the username for the given uid:
+        from pwd import getpwuid
+        try:
+            username = getpwuid(uid).pw_name
+        except KeyError:
+            raise Exception("uid %i not found" % uid)
+        #set the groups:
+        if hasattr(os, "initgroups"):   # python >= 2.7
+            os.initgroups(username, gid)
+        else:
+            import grp      #@UnresolvedImport
+            groups = [gr.gr_gid for gr in grp.getgrall() if (username in gr.gr_mem)]
+            os.setgroups(groups)
     #change uid and gid:
     try:
         if os.getgid()!=gid:
@@ -2345,6 +2359,9 @@ def start_server_subprocess(script_file, args, mode, defaults,
         cmd.append("--exit-with-children")
     if exit_with_client or mode=="shadow":
         cmd.append("--exit-with-client")
+    cmd.append("--socket-dir=%s" % (socket_dir or ""))
+    for x in socket_dirs:
+        cmd.append("--socket-dirs=%s" % (x or ""))
     #add a unique uuid to the server env:
     server_env = os.environ.copy()
     from xpra.os_util import get_hex_uuid

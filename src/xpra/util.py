@@ -23,6 +23,7 @@ PROTOCOL_ERROR          = "protocol error"
 VERSION_ERROR           = "version error"
 CONTROL_COMMAND_ERROR   = "control command error"
 AUTHENTICATION_ERROR    = "authentication error"
+PERMISSION_ERROR        = "permission error"
 SERVER_ERROR            = "server error"
 SESSION_NOT_FOUND       = "session not found error"
 #informational (not a problem):
