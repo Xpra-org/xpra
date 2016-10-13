@@ -1,6 +1,13 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
+	<!--
+	Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+	Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
+	Licensed under MPL 2.0
+	-->
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,20 +17,19 @@
     <!-- Custom styles for this template -->
     <link href="css/signin.css" rel="stylesheet">
     <title>Xpra HTML5 Client</title>
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
-	<link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+	<link rel="icon" type="image/png" href="/favicon.png">
 
 	<script type="text/javascript" src="include/jquery.min.js"></script>
-  </head>
+</head>
 
 <body>
 
 <div class="container">
 
-
 		<form class="form-signin">
 
-      	<img src="include/xpra-logo.png" />
+      	<img src="include/xpra-logo.png" alt="xpra logo">
         <h2 class="form-signin-heading">Xpra HTML5 Client</h2>
 
         <div id="alert-disconnect" class="alert alert-info" role="alert" style="display:none;">
@@ -36,18 +42,22 @@
 		    <input title="Server" type="text" class="form-control" id="server" placeholder="Server" maxlength="256">
 		    <label class="sr-only" for="port">Port</label>
 		    <input title="Port" type="text" class="form-control" id="port" placeholder="Port" size="5" maxlength="5">
-		    <br />
+		    <br>
 		    <label class="sr-only" for="username">Username</label>
 		    <input title="Username" type="text" class="form-control" id="username" placeholder="Username" size="16" maxlength="256">
 		    <label class="sr-only" for="password">Password</label>
 		    <input title="Password" type="password" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
-		    <br />
+		    <br>
 			<div class="panel-group">
-			  <ul class="list-style-none">
-				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked" /> Connect</li>
-				<li><input type="radio" name="action" class="radiobox" value="start" id="action_start" checked="checked" /> Start Command</li>
-				<li><input type="radio" name="action" class="radiobox" value="start-desktop" id="action_start_desktop" checked="checked" /> Start Desktop</li>
-				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked" /> Shadow</li>
+			  <ul class="list-style-none action">
+				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect</li>
+				<li><input type="radio" name="action" class="radiobox" value="start" id="action_start" checked="checked"> Start Command:
+					 <input title="command" type="text" class="form-control" id="start_command" placeholder="Command" size="16" maxlength="256">
+				</li>
+				<li><input type="radio" name="action" class="radiobox" value="start-desktop" id="action_start_desktop" checked="checked"> Start Desktop:
+					 <input title="desktop command" type="text" class="form-control" id="start_desktop_command" placeholder="Desktop Command" size="16" maxlength="256">
+				</li>
+				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked"> Shadow</li>
 			  </ul>
 			</div>
 		  </div>
@@ -184,8 +194,7 @@
 
     </div> <!-- /container -->
 
-<script>
-
+<script type="text/javascript">
 /**
  * Adds window.location.getParameter to those browsers that don't have it:
  *
@@ -241,17 +250,23 @@ function doConnect() {
 	if(debug) {
 		url = url + "&debug=true";
 	}
+	var start = null;
 	if (document.getElementById("action_connect").checked) {
 		//default action
 	}
 	else if (document.getElementById("action_start").checked) {
 		url = url + "&action=start";
+		start = document.getElementById("start_command").value;
 	}
 	else if (document.getElementById("action_start_desktop").checked) {
 		url = url + "&action=start-desktop";
+		start = document.getElementById("start_desktop_command").value;
 	}
 	else if (document.getElementById("action_shadow").checked) {
 		url = url + "&action=shadow";
+	}
+	if(start) {
+		url = url + "&start="+encodeURIComponent(start);
 	}
 	//alert("connect to "+server+" on port "+port+" using "+encoding);
 	window.location = url;
