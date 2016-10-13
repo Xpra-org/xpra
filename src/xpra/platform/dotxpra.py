@@ -29,12 +29,11 @@ class DotXpra(object):
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()
         self.username = actual_username
-        if sockdir:
-            sockdir = self.osexpand(sockdir)
-        elif sockdirs:
-            sockdir = self.osexpand(sockdirs[0])
-        else:
-            sockdir = "undefined"
+        if not sockdir:
+            if sockdirs:
+                sockdir = sockdirs[0]
+            else:
+                sockdir = "undefined"
         self._sockdir = self.osexpand(sockdir)
         self._sockdirs = [self.osexpand(x) for x in sockdirs]
 
