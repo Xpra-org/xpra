@@ -36,6 +36,8 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<string>True</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 
 	<key>CFBundleDocumentTypes</key>
 	<array>
