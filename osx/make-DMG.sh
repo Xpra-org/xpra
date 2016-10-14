@@ -8,20 +8,16 @@ if [ ! -d "image/Xpra.app" ]; then
 	exit 1
 fi
 
+#get the version and build info from the python build records:
 export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-#prefer revision directly from svn:
-REVISION=`svnversion -n .. | awk -F: '{print $2}'`
-if [ -z "${REVISION}" ]; then
-	#fallback to using revision recorded in build info
-	REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
-fi
-#check for 64-bit builds
+REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
+BUILD_CPU=`python -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_CPU))"`
 BUILD_INFO=""
-AMD64=`python -c "import sys;print(sys.maxsize > 2**32)"`
-if [ "$AMD64" == "True" ]; then
+if [ "$BUILD_CPU" != "i386" ]; then
 	BUILD_INFO="-x86_64"
 fi
+
 DMG_NAME="Xpra$BUILD_INFO-$VERSION-r$REVISION.dmg"
 echo "Creating $DMG_NAME"
 
