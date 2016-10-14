@@ -64,7 +64,7 @@ cat > ./image/flat/base.pkg/PackageInfo << EOF
     <postinstall file="./postinstall"/>
   </scripts>
   <bundle-version>
-    <bundle id="org.xpra.Xpra" CFBundleIdentifier="Xpra" path="./Applications/Xpra.app" CFBundleVersion="1.3.0"/>
+    <bundle id="org.xpra.Xpra" CFBundleIdentifier="org.xpra.Xpra" path="./Applications/Xpra.app" CFBundleVersion="$VERSION" />
   </bundle-version>
 </pkg-info>
 EOF
@@ -75,17 +75,6 @@ cat > ./image/flat/Distribution << EOF
     <title>Xpra $VERSION</title>
     <options customize="never" allow-external-scripts="no"/>
     <domains enable_anywhere="true"/>
-    <installation-check script="pm_install_check();"/>
-    <script>function pm_install_check() {
-  if(!(system.compareVersions(system.version.ProductVersion,'10.5') >= 0)) {
-    my.result.title = 'Failure';
-    my.result.message = 'You need at least Mac OS X 10.5 to install Xpra.';
-    my.result.type = 'Fatal';
-    return false;
-  }
-  return true;
-}
-    </script>
     <background file="background.png" alignment="bottomleft" scaling="none"/>
     <license file="GPL.rtf"/>
     <choices-outline>
@@ -112,6 +101,7 @@ if [ ! -z "${CODESIGN_KEYNAME}" ]; then
 		echo "Signing with key '${CODESIGN_KEYNAME}'"
 		productsign --sign "Developer ID Installer: ${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
 		if [ "$?" == "0" ]; then
+			ls -la ./image/*pkg*
 			mv ./image/$PKG_FILENAME.signed ./image/$PKG_FILENAME
 		fi
 else
