@@ -300,3 +300,11 @@ rsync --delete -rplogt "${IMAGE_DIR}" ~/Desktop/
 echo "Done"
 echo "*******************************************************************************"
 echo
+
+echo "*******************************************************************************"
+if [ ! -z "${CODESIGN_KEYNAME}" ]; then
+		echo "Signing with key '${CODESIGN_KEYNAME}'"
+        codesign --deep --force --verify --verbose --sign "Developer ID Application: ${CODESIGN_KEYNAME}" Xpra.app
+else
+		echo "Signing skipped (no keyname)"
+fi

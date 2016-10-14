@@ -41,10 +41,18 @@ hdiutil detach image/Blank
 
 echo "Creating compressed DMG"
 hdiutil convert image/Blank.dmg -format UDBZ -o image/$DMG_NAME
-echo "Copying to the desktop"
+
+if [ ! -z "${CODESIGN_KEYNAME}" ]; then
+		echo "Signing with key '${CODESIGN_KEYNAME}'"
+        codesign --deep --force --verify --verbose --sign "Developer ID Application: ${CODESIGN_KEYNAME}" image/$DMG_NAME
+else
+		echo "DMG Signing skipped (no keyname)"
+fi
+
+echo "Copying $DMG_NAME to the desktop"
 cp image/$DMG_NAME ~/Desktop/
 echo "Size of disk image: `du -sh image/$DMG_NAME`"
 
-echo "Done"
+echo "Done DMG"
 echo "*******************************************************************************"
 echo

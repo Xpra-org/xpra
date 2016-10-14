@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo
+echo "*******************************************************************************"
 if [ ! -d "./image/Xpra.app" ]; then
 	echo "./image/Xpra.app is missing - cannot continue"
 	exit 1
@@ -28,8 +30,8 @@ echo "Making $PKG_FILENAME"
 rm -fr ./image/flat ./image/root
 mkdir -p ./image/flat/base.pkg ./image/flat/Resources/en.lproj
 mkdir -p ./image/root/Applications
+rsync -rplogt ./image/Xpra.app ./image/root/Applications/
 
-mv ./image/Xpra.app ./image/root/Applications/
 #man page:
 mkdir -p ./image/root/usr/share/man/man1
 for x in xpra xpra_launcher; do
@@ -111,6 +113,20 @@ popd >& /dev/null
 #clean temporary build directories
 rm -fr ./image/flat ./image/root ./image/scripts
 
+if [ ! -z "${CODESIGN_KEYNAME}" ]; then
+		echo "Signing with key '${CODESIGN_KEYNAME}'"
+		productsign --sign "Developer ID Installer: ${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
+		if [ "$?" == "0" ]; then
+			mv ./image/$PKG_FILENAME.signed ./image/$PKG_FILENAME
+		fi
+else
+		echo "PKG Signing skipped (no keyname)"
+fi
+
 #show resulting file and copy it to the desktop
 du -sm ./image/$PKG_FILENAME
 cp ./image/$PKG_FILENAME ~/Desktop/
+
+echo "Done PKG"
+echo "*******************************************************************************"
+echo
