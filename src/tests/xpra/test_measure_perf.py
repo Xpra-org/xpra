@@ -78,6 +78,7 @@ XPRA_VERSION = ""
 for x in XPRA_VERSION_OUTPUT.splitlines():
     if x.startswith("xpra v"):
         XPRA_VERSION = x[len("xpra v"):].replace("\n", "").replace("\r", "")
+XPRA_VERSION = XPRA_VERSION.split("-")[0]
 XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
 XPRA_SERVER_STOP_COMMANDS = [
                              [XPRA_BIN, "stop", ":%s" % config.DISPLAY_NO],
