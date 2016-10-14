@@ -15,7 +15,7 @@
 	<key>CFBundleIconFile</key>
 	<string>xpra.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>Xpra</string>
+	<string>org.xpra.Xpra</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
@@ -74,6 +74,6 @@
         <key>CFBundleURLName</key>
         <string>Xpra Session</string>
     </dict>
-</array>
+	</array>
 </dict>
 </plist>
