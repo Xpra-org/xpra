@@ -64,7 +64,9 @@ cat > ./image/flat/base.pkg/PackageInfo << EOF
     <postinstall file="./postinstall"/>
   </scripts>
   <bundle-version>
-    <bundle id="org.xpra.Xpra" CFBundleIdentifier="org.xpra.Xpra" path="./Applications/Xpra.app" CFBundleVersion="$VERSION" />
+    <bundle id="org.xpra.Xpra" CFBundleIdentifier="org.xpra.Xpra" path="./Applications/Xpra.app" CFBundleVersion="$VERSION">
+    	<bundle id="org.xpra.XpraNoDock" CFBundleIdentifier="org.xpra.XpraNoDock" path="./Contents/Xpra_NoDock.app" CFBundleVersion="$VERSION"/>
+    </bundle>
   </bundle-version>
 </pkg-info>
 EOF
@@ -99,7 +101,7 @@ rm -fr ./image/flat ./image/root ./image/scripts
 
 if [ ! -z "${CODESIGN_KEYNAME}" ]; then
 		echo "Signing with key '${CODESIGN_KEYNAME}'"
-		productsign --sign "Developer ID Installer: ${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
+		productsign --sign "3rd Party Mac Developer Installer: ${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
 		if [ "$?" == "0" ]; then
 			ls -la ./image/*pkg*
 			mv ./image/$PKG_FILENAME.signed ./image/$PKG_FILENAME
