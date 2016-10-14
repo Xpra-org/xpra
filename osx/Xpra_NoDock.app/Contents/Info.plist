@@ -5,9 +5,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>Xpra</string>
+	<string>Xpra_Launcher</string>
 	<key>CFBundleDisplayName</key>
-	<string>Xpra_NoDock</string>
+	<string>Xpra</string>
 	<key>CFBundleName</key>
 	<string>Xpra_NoDock</string>
 	<key>CFBundleGetInfoString</key>
@@ -15,15 +15,13 @@
 	<key>CFBundleIconFile</key>
 	<string>xpra.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>Xpra_NoDock</string>
+	<string>org.xpra.XpraNoDock</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
 	<key>NSHumanReadableCopyright</key>
@@ -32,5 +30,9 @@
 	<string>10.5</string>
 	<key>LSUIElement</key>
 	<string>1</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<string>True</string>
 </dict>
 </plist>
