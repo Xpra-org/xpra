@@ -118,7 +118,7 @@ echo "**************************************************************************
 echo "Add xpra/server/python scripts"
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrapper installed by distutils:
-rm "${MACOS_DIR}/Xpra*Launcher-bin"
+rm ${MACOS_DIR}/Xpra-Launcher-bin
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
