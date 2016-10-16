@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>Xpra_Launcher</string>
+	<string>Xpra-Launcher</string>
 	<key>CFBundleDisplayName</key>
 	<string>Xpra</string>
 	<key>CFBundleName</key>

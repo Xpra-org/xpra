@@ -8,7 +8,7 @@
 		<!-- Comment this out to keep the install names in binaries.  -->
 		<run-install-name-tool/>
 
-		<launcher-script>${project}/Helpers/Xpra_Launcher</launcher-script>
+		<launcher-script>${project}/Helpers/Xpra-Launcher</launcher-script>
 	</meta>
 
 	<plist>${project}/Info.plist</plist>

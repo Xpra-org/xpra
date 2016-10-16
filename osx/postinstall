@@ -18,7 +18,7 @@ if [ -d "$APP_ROOT" ]; then
 		cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
 	fi
 
-	for x in Xpra Xpra_Launcher; do
+	for x in Xpra Xpra-Launcher; do
 		echo '#!/bin/sh' > /usr/local/bin/$x
 		echo exec $APP_ROOT/Contents/MacOS/$x \"\$@\" >> /usr/local/bin/$x
 		chown root:wheel /usr/local/bin/$x
