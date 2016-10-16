@@ -111,14 +111,14 @@ rmdir ${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0
 rmdir ${RSCDIR}/lib/gdk-pixbuf-2.0
 echo "fix gdk-pixbuf.loaders"
 LOADERS="${RSCDIR}/etc/gtk-2.0/gdk-pixbuf.loaders"
-sed -i -e 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "${LOADERS}"
+sed -i '' 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "${LOADERS}"
 
 echo
 echo "*******************************************************************************"
 echo "Add xpra/server/python scripts"
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrapper installed by distutils:
-rm "${MACOS_DIR}/Xpra_Launcher-bin"
+rm "${MACOS_DIR}/Xpra*Launcher-bin"
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
@@ -134,7 +134,7 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 done
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
-cp ./Helpers/Xpra_Launcher ${MACOS_DIR}
+cp ./Helpers/Xpra-Launcher ${MACOS_DIR}
 # Add the icon:
 cp ./*.icns ${RSCDIR}/
 
@@ -270,10 +270,10 @@ groff -mandoc -Thtml < ../src/man/xpra_launcher.1 > ${RSCDIR}/share/launcher-man
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-sed -i -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Info.plist"
-sed -i -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Info.plist"
-sed -i -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
-sed -i -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Info.plist"
+sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Info.plist"
+sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
 
 echo
 echo "*******************************************************************************"
