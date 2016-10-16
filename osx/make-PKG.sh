@@ -52,7 +52,7 @@ DISKUSAGE=`du -sk ./image/root`
 mkdir ./image/scripts
 cp postinstall ./image/scripts/
 chmod +x ./image/scripts/postinstall
-pushd ./image/scripts >& /dev/null./
+pushd ./image/scripts >& /dev/null
 find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Scripts
 popd >& /dev/null
 
