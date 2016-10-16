@@ -47,6 +47,11 @@ if [ "$?" != "0" ]; then
 	tail -n 10 install.log
 	exit 1
 fi
+#get the version and build info from the python build records:
+export PYTHONPATH="."
+VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
+REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
+REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
 echo "OK"
 
 echo
@@ -261,6 +266,14 @@ echo "**************************************************************************
 echo "Add the manual in HTML format (since we cannot install the man page properly..)"
 groff -mandoc -Thtml < ../src/man/xpra.1 > ${RSCDIR}/share/manual.html
 groff -mandoc -Thtml < ../src/man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
+
+echo
+echo "*******************************************************************************"
+echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
+sed -i -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Info.plist"
+sed -i -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Info.plist"
+sed -i -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+sed -i -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
 
 echo
 echo "*******************************************************************************"

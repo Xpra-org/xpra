@@ -11,7 +11,7 @@
 	<key>CFBundleName</key>
 	<string>Xpra_NoDock</string>
 	<key>CFBundleGetInfoString</key>
-	<string>1.0, (c) 2012-2016 http://xpra.org/</string>
+	<string>%VERSION%-r%REVISION% (c) 2012-2016 http://xpra.org/</string>
 	<key>CFBundleIconFile</key>
 	<string>xpra.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -21,9 +21,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>%VERSION%</string>
 	<key>CFBundleVersion</key>
-	<string>1.0</string>
+	<string>%REVISION%</string>
 	<key>CFBundleSignature</key>
 	<string>xpra</string>
 	<key>NSHumanReadableCopyright</key>

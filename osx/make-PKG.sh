@@ -11,13 +11,14 @@ fi
 export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
+REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
 BUILD_CPU=`python -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_CPU))"`
 BUILD_INFO=""
 if [ "$BUILD_CPU" != "i386" ]; then
 	BUILD_INFO="-x86_64"
 fi
 
-PKG_FILENAME="Xpra$BUILD_INFO-$VERSION-r$REVISION.pkg"
+PKG_FILENAME="Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.pkg"
 rm -f ./image/$PKG_FILENAME >& /dev/null
 echo "Making $PKG_FILENAME"
 
@@ -51,7 +52,7 @@ DISKUSAGE=`du -sk ./image/root`
 mkdir ./image/scripts
 cp postinstall ./image/scripts/
 chmod +x ./image/scripts/postinstall
-pushd ./image/scripts >& /dev/null
+pushd ./image/scripts >& /dev/null./
 find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Scripts
 popd >& /dev/null
 
@@ -61,31 +62,34 @@ cat > ./image/flat/base.pkg/PackageInfo << EOF
 <pkg-info format-version="2" identifier="org.xpra.pkg" version="$VERSION" install-location="/" auth="root">
   <payload installKBytes="$DISKUSAGE" numberOfFiles="$FILECOUNT"/>
   <scripts>
-    <postinstall file="./postinstall"/>
+	<postinstall file="./postinstall"/>
   </scripts>
   <bundle-version>
-    <bundle id="org.xpra.Xpra" CFBundleIdentifier="org.xpra.Xpra" path="./Applications/Xpra.app" CFBundleVersion="$VERSION">
-    	<bundle id="org.xpra.XpraNoDock" CFBundleIdentifier="org.xpra.XpraNoDock" path="./Contents/Xpra_NoDock.app" CFBundleVersion="$VERSION"/>
-    </bundle>
+	<bundle id="org.xpra.Xpra" CFBundleIdentifier="org.xpra.Xpra" path="./Applications/Xpra.app" CFBundleVersion="$VERSION">
+		<bundle id="org.xpra.XpraNoDock" CFBundleIdentifier="org.xpra.XpraNoDock" path="./Contents/Xpra_NoDock.app" CFBundleVersion="$VERSION"/>
+	</bundle>
   </bundle-version>
 </pkg-info>
 EOF
 
 cat > ./image/flat/Distribution << EOF
 <?xml version="1.0" encoding="utf-8"?>
-<installer-script minSpecVersion="1.000000" authoringTool="com.apple.PackageMaker" authoringToolVersion="3.0.3" authoringToolBuild="174">
-    <title>Xpra $VERSION</title>
-    <options customize="never" allow-external-scripts="no"/>
-    <domains enable_anywhere="true"/>
-    <background file="background.png" alignment="bottomleft" scaling="none"/>
-    <license file="GPL.rtf"/>
-    <choices-outline>
-        <line choice="choice1"/>
-    </choices-outline>
-    <choice id="choice1" title="base">
-        <pkg-ref id="org.xpra.pkg"/>
-    </choice>
-    <pkg-ref id="org.xpra.pkg" installKBytes="$DISKUSAGE" version="$VERSION" auth="Root">#base.pkg</pkg-ref>
+<installer-script minSpecVersion="2">
+	<title>Xpra $VERSION</title>
+	<allowed-os-versions>
+		<os-version min="10.5.8" />
+	</allowed-os-versions>
+	<options customize="never" require-scripts="false" allow-external-scripts="no"/>
+	<domains enable_anywhere="true"/>
+	<background file="background.png" alignment="bottomleft" scaling="none"/>
+	<license file="GPL.rtf"/>
+	<choices-outline>
+		<line choice="choice1"/>
+	</choices-outline>
+	<choice id="choice1" title="base">
+		<pkg-ref id="org.xpra.pkg"/>
+	</choice>
+	<pkg-ref id="org.xpra.pkg" installKBytes="$DISKUSAGE" version="$VERSION" auth="Root">#base.pkg</pkg-ref>
 </installer-script>
 EOF
 
