@@ -23,7 +23,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>%VERSION%</string>
 	<key>CFBundleVersion</key>
-	<string>%REVISION%</string>
+	<string>%REVISION%.%BUILDNO%</string>
 	<key>CFBundleSignature</key>
 	<string>xpra</string>
 	<key>NSHumanReadableCopyright</key>

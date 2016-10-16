@@ -6,6 +6,7 @@ STRIP_SOURCE="${STRIP_SOURCE:=$STRIP_DEFAULT}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 STRIP_NUMPY="${STRIP_NUMPY:=$STRIP_DEFAULT}"
 
+BUILDNO="${BUILDNO:="0"}"
 IMAGE_DIR="./image/Xpra.app"
 CONTENTS_DIR="${IMAGE_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -272,8 +273,10 @@ echo "**************************************************************************
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
 sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Info.plist"
+sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${CONTENTS_DIR}/Info.plist"
 sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
 
 echo
 echo "*******************************************************************************"
