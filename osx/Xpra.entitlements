@@ -18,5 +18,10 @@
 	<true/>
 	<key>com.apple.security.inherit</key>
     <true/>
+    <key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+    <array>
+    	<string>com.apple.coreservices.launchservicesd</string>
+    	<string>com.apple.systemuiserver.screencapture</string>
+    </array>
 </dict>
 </plist>
