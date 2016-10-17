@@ -15,6 +15,8 @@ DEFAULT_ENV = [
              "MWNOCAPTURE=true",
              "MWNO_RIT=true",
              "MWWM=allwm",
+             "#force GTK3 applications to use X11 so we can intercept them:",
+             "GDK_BACKEND=x11",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
