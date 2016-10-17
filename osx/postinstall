@@ -18,13 +18,13 @@ if [ -d "$APP_ROOT" ]; then
 		cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
 	fi
 
-	for x in Xpra Xpra-Launcher; do
+	for x in Xpra; do
 		echo '#!/bin/sh' > /usr/local/bin/$x
 		echo exec $APP_ROOT/Contents/MacOS/$x \"\$@\" >> /usr/local/bin/$x
 		chown root:wheel /usr/local/bin/$x
 		chmod 755 /usr/local/bin/$x
 	done
-	for x in Bug_Report Config_info Encoding_info GStreamer_info GTK_info Keyboard_Tool Keymap_info Network_info OpenGL_check Path_info PowerMonitor Print Python Version_info Webcam_Test;do
+	for x in Bug_Report Config_info Encoding_info GStreamer_info GTK_info Keyboard_Tool Keymap_info Launcher Network_info OpenGL_check Path_info PowerMonitor Print Python Shadow Version_info Webcam_Test;do
 		echo '#!/bin/sh' > /usr/local/bin/Xpra_$x
 		echo exec $APP_ROOT/Contents/Helpers/$x \"\$@\" >> /usr/local/bin/Xpra_$x
 		chown root:wheel /usr/local/bin/Xpra_$x

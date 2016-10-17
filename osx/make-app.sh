@@ -119,7 +119,7 @@ echo "**************************************************************************
 echo "Add xpra/server/python scripts"
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrapper installed by distutils:
-rm ${MACOS_DIR}/Xpra-Launcher-bin
+rm ${MACOS_DIR}/Launcher-bin
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
@@ -135,7 +135,7 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 done
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
-cp ./Helpers/Xpra-Launcher ${MACOS_DIR}
+cp ./Helpers/Launcher ${MACOS_DIR}
 # Add the icon:
 cp ./*.icns ${RSCDIR}/
 
