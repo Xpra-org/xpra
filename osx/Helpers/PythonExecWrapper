@@ -17,9 +17,15 @@ shift
 
 full_path=$(cd "$(dirname "$0")"; pwd)
 
-tmp=`dirname "$full_path"`
-bundle=`dirname "$tmp"`
-bundle_contents="$bundle"/Contents
+tmp="$full_path"
+while [ "`basename $tmp`" != "Contents" ]; do
+	tmp=`dirname "$tmp"`
+	if [ -z "$tmp" ]; then
+		echo "cannot find /Contents/ in \"$full_path\""
+		exit 1
+	fi
+done
+bundle_contents="$tmp"
 bundle_res="$bundle_contents"/Resources
 bundle_lib="$bundle_res"/lib
 bundle_bin="$bundle_res"/bin
