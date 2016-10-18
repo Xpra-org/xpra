@@ -40,19 +40,24 @@ echo "Making $PKG_FILENAME"
 
 #move all the scripts to Resources/scripts:
 mkdir appstore/Xpra.app/Contents/Resources/scripts
-rm -f appstore/Xpra.app/Contents/MacOS/*
 for x in Bug_Report GTK_info Network_info Python Xpra Launcher Config_info Keyboard_Tool OpenGL_check PythonExecWrapper Encoding_info Keymap_info Path_info Version_info Shadow Feature_info Manual PowerMonitor Webcam_Test GStreamer_info NativeGUI_info Print Websockify; do
 	mv "appstore/Xpra.app/Contents/Helpers/$x" "appstore/Xpra.app/Contents/Resources/scripts/"
-	if [ "$x" != "PythonExecWrapper" ]; then
-		if [ "$x" == "Launcher" ]; then
-			gcc -arch i386 -o "appstore/Xpra.app/Contents/MacOS/$x" "./Shell-wrapper.c"
-		else
-			cat ./Info-template.plist | sed "s+%BUNDLEID%+org.xpra.$x+g" > ./appstore/temp.plist
-			gcc -arch i386 -o "appstore/Xpra.app/Contents/MacOS/$x" "./Shell-wrapper.c" -sectcreate __TEXT __info_plist ./appstore/temp.plist
-			rm appstore/temp.plist
-		fi
+	if [ "$x" != "PythonExecWrapper" ] && [ "$x" != "Launcher" ]; then
+		cp ./Info-template.plist ./appstore/temp.plist
+		#sed -i '' -e "s+%BUNDLEID%+org.xpra.$x+g" ./appstore/temp.plist
+		sed -i '' -e "s+%BUNDLEID%+org.xpra.Xpra+g" ./appstore/temp.plist
+		sed -i '' -e "s+%EXECUTABLE%+$x+g" ./appstore/temp.plist
+		sed -i '' -e "s+%VERSION%+$VERSION+g" ./appstore/temp.plist
+		sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" ./appstore/temp.plist
+		sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" ./appstore/temp.plist
+		gcc -arch i386 -o "appstore/Xpra.app/Contents/Helpers/$x" "./Shell-wrapper.c" -sectcreate __TEXT __info_plist ./appstore/temp.plist
+		rm appstore/temp.plist
 	fi
 done
+#keep only one binary in MacOS:
+rm -f appstore/Xpra.app/Contents/MacOS/*
+gcc -arch i386 -o "appstore/Xpra.app/Contents/MacOS/Launcher" "./Shell-wrapper.c"
+
 echo "MacOS:"
 ls -la@ appstore/Xpra.app/Contents/MacOS
 echo
@@ -64,7 +69,7 @@ rm appstore/Xpra.app/Contents/Helpers/gst*
 
 CODESIGN_ARGS="--force --verbose --sign \"3rd Party Mac Developer Application\" --entitlements ./Xpra.entitlements"
 eval codesign $CODESIGN_ARGS appstore/Xpra.app/Contents/Helpers/*
-EXES=`find appstore/Xpra.app/Contents/MacOS -type f | grep -v "Launcher" | xargs`
+EXES=`find appstore/Xpra.app/Contents/MacOS -type f | xargs`
 eval codesign $CODESIGN_ARGS $EXES
 
 CODESIGN_ARGS="--force --verbose --sign \"3rd Party Mac Developer Application\" --entitlements ./Inherit.entitlements"
