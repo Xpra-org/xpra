@@ -36,7 +36,7 @@ for x in Bug_Report GTK_info Network_info Python Xpra Launcher Config_info Keybo
 		if [ "$x" == "Launcher" ]; then
 			gcc -arch i386 -o "appstore/Xpra.app/Contents/MacOS/$x" "./Shell-wrapper.c"
 		else
-			cat appstore/Xpra.app/Contents/Info.plist | sed "s+Launcher+$x+g" | sed "s+org.xpra.Xpra+org.xpra.$x+g" | sed "s+Xpra+$x+g" > ./appstore/temp.plist
+			cat ./Info-template.plist | sed "s+%BUNDLEID%+org.xpra.$x+g" > ./appstore/temp.plist
 			gcc -arch i386 -o "appstore/Xpra.app/Contents/MacOS/$x" "./Shell-wrapper.c" -sectcreate __TEXT __info_plist ./appstore/temp.plist
 			rm appstore/temp.plist
 		fi
