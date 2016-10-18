@@ -37,3 +37,7 @@ body {
 .form-signin .list-style-none {
   list-style-type:none;
 }
+.form-signin .action input {
+  font-size: 12px;
+  padding: 2px;
+}
