@@ -78,9 +78,9 @@ CHARCODE_TO_NAME = {
 	190	: "period",
 	191	: "slash",
 	192	: "grave",
-	219	: "bracketright",
+	219	: "bracketleft",
 	220	: "backslash",
-	221	: "bracketleft",
+	221	: "bracketright",
 	222	: "apostrophe",
 }
 for (var i=0; i<26; i++) {
