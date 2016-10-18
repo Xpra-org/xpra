@@ -1,5 +1,7 @@
 #!/bin/bash
 
+BUILDNO="${BUILDNO:="0"}"
+
 echo
 echo "*******************************************************************************"
 if [ ! -d "./image/Xpra.app" ]; then
@@ -16,14 +18,23 @@ rm -fr ./appstore/Xpra.app/Contents/Xpra_NoDock.app
 export PYTHONPATH="appstore/Xpra.app/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
+REV_EXTRA=""
+if [ "$BUILDNO" != "0" ]; then
+	REV_EXTRA=".$BUILDNO"
+fi
 REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
 BUILD_CPU=`python -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_CPU))"`
 BUILD_INFO=""
 if [ "$BUILD_CPU" != "i386" ]; then
 	BUILD_INFO="-x86_64"
 fi
-
-PKG_FILENAME="./image/Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD-appstore.pkg"
+echo "VERSION=$VERSION"
+echo "REVISION=$REVISION"
+echo "BUILDNO=$BUILDNO"
+echo "REV_MOD=$REV_MOD"
+echo "BUILD_CPU=$BUILD_CPU"
+echo "BUILD_INFO=$BUILD_INFO"
+PKG_FILENAME="./image/Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD$REV_EXTRA-appstore.pkg"
 rm -f $PKG_FILENAME >& /dev/null
 echo "Making $PKG_FILENAME"
 
