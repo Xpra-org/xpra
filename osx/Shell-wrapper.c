@@ -16,8 +16,8 @@ int main (int argc, char* argv[])
 {
 	int ret;
 	pid_t pid;
-	char pathbuf[PROC_PIDPATHINFO_MAXSIZE+10];
-	char filename[PROC_PIDPATHINFO_MAXSIZE+10];
+	char pathbuf[PROC_PIDPATHINFO_MAXSIZE+64];
+	char filename[PROC_PIDPATHINFO_MAXSIZE];
 	char *p;
 
 	pid = getpid();
@@ -33,7 +33,7 @@ int main (int argc, char* argv[])
 	//stop on last directory separator to copy the filename:
 	p = pathbuf;
 	while (strchr(p, '/')) {
-		p= strchr(p, '/')+1;
+		p = strchr(p, '/')+1;
 	}
 	strcpy(filename, p);
 	//stop on last "/Contents" directory:
@@ -41,8 +41,8 @@ int main (int argc, char* argv[])
 	while (strstr(p, "/Contents/")) {
 		p = strstr(p, "/Contents/")+1;
 	}
-	if (!p) {
-		fprintf(stderr, "invalid command path '%s': '/Contents/' directory not found in path\n", pathbuf);
+	if (p==pathbuf) {
+		fprintf(stderr, "invalid command path: '/Contents/' directory not found in path '%s'\n", pathbuf);
 		return 1;
 	}
 	strcpy(p, "/Contents/Resources/scripts/");
@@ -50,6 +50,7 @@ int main (int argc, char* argv[])
 	char *new_argv[MAX_ARGV];
 	new_argv[0] = "/bin/sh";
 	new_argv[1] = pathbuf;
+	//copy remaining args:
 	int i = 1;
 	while (argv[i]!=NULL && i<(MAX_ARGV-1)) {
 		new_argv[i+1] = argv[i];
