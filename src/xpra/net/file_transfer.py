@@ -319,7 +319,14 @@ class FileTransferHandler(FileTransferAttributes):
             printlog.error(" printers available: %s", csv(printers.keys()) or "none")
             delfile()
             return
-        job = print_files(printer, [filename], title, options)
+        try:
+            job = print_files(printer, [filename], title, options)
+        except Exception as e:
+            printlog("print_files%s", (printer, [filename], title, options), exc_info=True)
+            printlog.error("Error: cannot print file '%s'", os.path.basename(filename))
+            printlog.error(" %s", e)
+            delfile()
+            return
         printlog("printing %s, job=%s", filename, job)
         if job<=0:
             printlog("printing failed and returned %i", job)
