@@ -331,11 +331,11 @@ If we are in a web worker, set up an instance of the protocol
 if (!(typeof window == "object" && typeof document == "object" && window.document === document)) {
 	// some required imports
 	// worker imports are relative to worker script path
-	importScripts('websock.js',
-		'bencode.js',
-		'inflate.min.js',
-		'lz4.min.js',
-		'forge.min.js');
+	importScripts('lib/websock.js',
+		'lib/bencode.js',
+		'lib/inflate.min.js',
+		'lib/lz4.min.js',
+		'lib/forge.min.js');
 	// make protocol instance
 	var protocol = new XpraProtocol();
 	// we create a custom packet handler which posts packet as a message

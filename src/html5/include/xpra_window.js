@@ -105,11 +105,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		if(!this.override_redirect) {
 			// create header
 			jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
-					'<span class="windowicon"><img src="include/noicon.png" id="windowicon' + String(wid) + '" /></span> '+
+					'<span class="windowicon"><img src="../icons/noicon.png" id="windowicon' + String(wid) + '" /></span> '+
 					'<span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> '+
 					'<span class="windowbuttons"> '+
-					'<span id="maximize' + String(wid) + '"><img src="include/maximize.png" /></span> '+
-					'<span id="close' + String(wid) + '"><img src="include/close.png" /></span> '+
+					'<span id="maximize' + String(wid) + '"><img src="../icons/maximize.png" /></span> '+
+					'<span id="close' + String(wid) + '"><img src="../icons/close.png" /></span> '+
 					'</span></div>');
 			// make draggable
 			jQuery(this.div).draggable({
