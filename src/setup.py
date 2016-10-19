@@ -1002,13 +1002,7 @@ def glob_recurse(srcdir):
     return m
 
 
-def install_html5(install_dir):
-    if OSX or WIN32:
-        #win32: 
-        #OSX: Xpra.app/Contents/Resources/www/
-        html5_dir = "www"
-    else:
-        html5_dir = "share/xpra/www"
+def install_html5(install_dir="www"):
     for k,files in glob_recurse("html5").items():
         if (k!=""):
             k = os.sep+k
@@ -1019,7 +1013,7 @@ def install_html5(install_dir):
                 f = os.path.join(*parts[1:])
             if install_dir==".":
                 install_dir = os.getcwd()
-            dst = os.path.join(install_dir, html5_dir, f)
+            dst = os.path.join(install_dir, f)
             ddir = os.path.split(dst)[0]
             if ddir and not os.path.exists(ddir):
                 os.makedirs(ddir, 0o755)
@@ -1811,7 +1805,12 @@ else:
     class install_data_override(install_data):
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
-            install_html5(self.install_dir)
+            if OSX:
+                #OSX: Xpra.app/Contents/Resources/www/
+                html5_dir = "www"
+            else:
+                html5_dir = "share/xpra/www"
+            install_html5(os.path.join(self.install_dir, html5_dir))
             install_data.run(self)
 
             etc_prefix = self.install_dir
