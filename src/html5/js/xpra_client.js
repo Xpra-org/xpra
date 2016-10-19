@@ -165,7 +165,7 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 		console.log("we have webworker support");
 		// spawn worker that checks for a websocket
 		var me = this;
-		var worker = new Worker('include/lib/wsworker_check.js');
+		var worker = new Worker('js/lib/wsworker_check.js');
 		worker.addEventListener('message', function(e) {
 			var data = e.data;
 			switch (data['result']) {

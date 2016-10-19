@@ -27,7 +27,7 @@ function XpraProtocolWorkerHost() {
 
 XpraProtocolWorkerHost.prototype.open = function(uri) {
 	var me = this;
-	this.worker = new Worker('include/xpra_protocol.js');
+	this.worker = new Worker('js/xpra_protocol.js');
 	this.worker.addEventListener('message', function(e) {
 		var data = e.data;
 		switch (data.c) {
