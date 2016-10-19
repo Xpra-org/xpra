@@ -411,7 +411,7 @@ popd
 find %{buildroot}%{python_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 
 # Ensure all .js files are not executeable
-find %{buildroot}%{_datadir}/xpra/www/include -name '*.js' -exec chmod 0644 {} \;
+find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
 
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
