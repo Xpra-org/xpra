@@ -610,7 +610,6 @@ XpraClient.prototype._make_hello_base = function() {
         "digest" 					: ["hmac", "xor"],
         //compression bits:
 		"zlib"						: true,
-		"lz4"						: true,
 		"lzo"						: false,
 		"compression_level"	 		: 1,
 		// packet encoders
@@ -618,6 +617,13 @@ XpraClient.prototype._make_hello_base = function() {
 		"bencode"					: true,
 		"yaml"						: false,
     });
+	var LZ4 = require('lz4');
+	if(LZ4) {
+		this._update_capabilities({
+			"lz4"						: true,
+			"lz4.js.version"			: LZ4.version, 
+		});
+	}
 
     if(this.encryption) {
     	this.cipher_in_caps = {

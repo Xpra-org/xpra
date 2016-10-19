@@ -334,7 +334,7 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 	importScripts('lib/websock.js',
 		'lib/bencode.js',
 		'lib/inflate.min.js',
-		'lib/lz4.min.js',
+		'lib/lz4.js',
 		'lib/forge.min.js');
 	// make protocol instance
 	var protocol = new XpraProtocol();
