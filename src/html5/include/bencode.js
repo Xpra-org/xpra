@@ -19,14 +19,12 @@ all copies or substantial portions of the Software. */
  * - handle booleans as ints (0, 1)
  */
 
-function debug(args) {
-	console.log(args);
-}
 
 // bencode an object
 function bencode(obj) {
-	if (obj==null || obj==undefined)
-		throw "invalid: cannot encode null";
+    if (obj === null || obj === undefined) {
+        throw "invalid: cannot encode null";
+    }
     switch(btypeof(obj)) {
         case "string":     return bstring(obj);
         case "number":     return bint(obj);
@@ -40,7 +38,7 @@ function bencode(obj) {
 function uintToString(uintArray) {
     // apply in chunks of 10400 to avoid call stack overflow
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
-    var s = ""
+    var s = "";
     var skip = 10400;
     var slice = uintArray.slice;
     for (var i=0, len=uintArray.length; i<len; i+=skip) {
@@ -50,7 +48,7 @@ function uintToString(uintArray) {
             s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
         }
     }
-    return s
+    return s;
 }
 
 // decode a bencoded string or bytearray into a javascript object
@@ -79,7 +77,7 @@ function bparse(str) {
 // javascript equivallent of ord()
 // returns the numeric value of the character
 function ord(c) {
-	return c.charCodeAt(0);
+    return c.charCodeAt(0);
 }
 
 // parse a bencoded string
@@ -105,65 +103,53 @@ function bparseInt(str) {
 // parse a bencoded list
 function bparseList(str) {
     var p, list = [];
-    while(str.charAt(0) != "e" && str.length > 0) {
+    while(str.charAt(0) !== "e" && str.length > 0) {
         p = bparse(str);
-        if(null == p)
+        if(null === p) {
             return null;
-        list.push(p[0]);
+        }
+        list[list.length] = p[0];
         str = p[1];
     }
-    if(str.length <= 0)
+    if(str.length <= 0) {
         throw "unexpected end of buffer reading list";
+    }
     return [list, str.substr(1)];
 }
 
 // parse a bencoded dictionary
 function bparseDict(str) {
     var key, val, dict = {};
-    while(str.charAt(0) != "e" && str.length > 0) {
+    while(str.charAt(0) !== "e" && str.length > 0) {
         key = bparseString(str);
-        if(null == key)
+        if(null === key) {
             return;
-
+        }
         val = bparse(key[1]);
-        if(null == val)
+        if(null === val) {
             return null;
-
+        }
         dict[key[0]] = val[0];
         str = val[1];
     }
-    if(str.length <= 0)
+    if(str.length <= 0) {
         return null;
+    }
     return [dict, str.substr(1)];
 }
 
 // is the given string numeric?
 function isNum(str) {
-    /*
-    var i, c;
-    str = str.toString();
-    if(str.charAt(0) == '-')
-        i = 1;
-    else
-        i = 0;
-
-    for(; i < str.length; i++) {
-        c = str.charCodeAt(i);
-        if(c < 48 || c > 57) {
-            return false;
-        }
-    }
-    return true;
-    */
     return !isNaN(str.toString());
 }
 
 // returns the bencoding type of the given object
 function btypeof(obj) {
     var type = typeof obj;
-    if(type == "object") {
-        if(typeof obj.length == "undefined")
+    if(type === 'object') {
+        if(typeof obj.length === 'undefined') {
             return "dictionary";
+        }
         return "list";
     }
     return type;
