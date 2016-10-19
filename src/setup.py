@@ -145,6 +145,7 @@ gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT
+minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
 vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
@@ -222,7 +223,9 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
             "server", "client", "dbus", "x11", "gtk_x11",
-            "gtk2", "gtk3", "html5", "pam",
+            "gtk2", "gtk3",
+            "html5", "minify",
+            "pam",
             "sound", "opengl", "printing",
             "rebuild",
             "annotate", "warn", "strict",
@@ -312,6 +315,13 @@ if "clean" not in sys.argv:
     if memoryview_ENABLED and sys.version<"2.7":
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)
+    if minify_ENABLED:
+        try:
+            import yuicompressor
+            assert yuicompressor
+        except ImportError as e:
+            print("Warning: yuicompressor module not found, cannot minify")
+            minify_ENABLED = False
     if not enc_x264_ENABLED and not vpx_ENABLED:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
@@ -991,6 +1001,47 @@ def glob_recurse(srcdir):
             m.setdefault(dirname, []).append(filename)
     return m
 
+
+def install_html5(install_dir):
+    if OSX or WIN32:
+        #win32: 
+        #OSX: Xpra.app/Contents/Resources/www/
+        html5_dir = "www"
+    else:
+        html5_dir = "share/xpra/www"
+    for k,files in glob_recurse("html5").items():
+        if (k!=""):
+            k = os.sep+k
+        for f in files:
+            src = f
+            parts = f.split(os.path.sep)
+            if parts[0]=="html5":
+                f = os.path.join(*parts[1:])
+            dst = os.path.join(install_dir, html5_dir, f)
+            ddir = os.path.split(dst)[0]
+            if ddir and not os.path.exists(ddir):
+                os.makedirs(ddir, 0o755)
+            ftype = os.path.splitext(f)[1].lstrip(".")
+            if minify_ENABLED and ftype in ("js", "css"):
+                jar = yuicompressor.get_jar_filename()
+                minify_cmd = ["java", "-jar", jar,
+                              src,
+                              "--nomunge",
+                              "--line-break", "400",
+                              "--type", ftype,
+                              "-o", dst]
+                r = get_status_output(minify_cmd)[0]
+                if r!=0:
+                    print("Error: minify for '%s' returned %i" % (f, r))
+                else:
+                    print("minified %s" % (f, ))
+            else:
+                r = -1
+            if r!=0:
+                shutil.copyfile(src, dst)
+                os.chmod(dst, 0o644)
+
+
 #*******************************************************************************
 if WIN32:
     add_packages("xpra.platform.win32")
@@ -1484,6 +1535,7 @@ if WIN32:
         print("calling build_xpra_conf in-place")
         #building etc files in-place:
         build_xpra_conf(".")
+        install_html5(".")
         add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
         add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
@@ -1720,8 +1772,6 @@ if WIN32:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
 
-    html5_dir = 'www'
-
     #END OF win32
 #*******************************************************************************
 else:
@@ -1734,11 +1784,6 @@ else:
     add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
     add_data_files("share/icons",         ["xdg/xpra.png"])
     add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
-    if OSX:
-        #Xpra.app/Contents/Resources/www/
-        html5_dir = "www"
-    else:
-        html5_dir = "share/xpra/www"
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf
@@ -1758,6 +1803,7 @@ else:
     class install_data_override(install_data):
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
+            install_html5(self.install_dir)
             install_data.run(self)
 
             etc_prefix = self.install_dir
@@ -1893,10 +1939,6 @@ else:
 
 
 if html5_ENABLED:
-    for k,v in glob_recurse("html5").items():
-        if (k!=""):
-            k = os.sep+k
-        add_data_files(html5_dir+k, v)
     if WIN32 or OSX:
         external_includes.append("websockify")
         external_includes.append("numpy")
