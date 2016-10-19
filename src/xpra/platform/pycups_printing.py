@@ -402,7 +402,7 @@ def print_files(printer, filenames, title, options):
         raise Exception("invalid printer: '%s'" % printer)
     log("pycups.print_files%s", (printer, filenames, title, options))
     actual_options = DEFAULT_CUPS_OPTIONS.copy()
-    actual_options.update(dict(str(k),str(v) for k,v in options.items()))
+    actual_options.update(dict((str(k),str(v)) for k,v in options.items()))
     if SIMULATE_PRINT_FAILURE:
         log.warn("Warning: simulating print failure")
         conn = None
