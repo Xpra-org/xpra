@@ -1013,10 +1013,12 @@ def install_html5(install_dir):
         if (k!=""):
             k = os.sep+k
         for f in files:
-            src = f
+            src = os.path.join(os.getcwd(), f)
             parts = f.split(os.path.sep)
             if parts[0]=="html5":
                 f = os.path.join(*parts[1:])
+            if install_dir==".":
+                install_dir = os.getcwd()
             dst = os.path.join(install_dir, html5_dir, f)
             ddir = os.path.split(dst)[0]
             if ddir and not os.path.exists(ddir):
@@ -1033,6 +1035,7 @@ def install_html5(install_dir):
                 r = get_status_output(minify_cmd)[0]
                 if r!=0:
                     print("Error: minify for '%s' returned %i" % (f, r))
+                    print(" command: %s" % (minify_cmd,))
                 else:
                     print("minified %s" % (f, ))
             else:
@@ -1535,10 +1538,15 @@ if WIN32:
         print("calling build_xpra_conf in-place")
         #building etc files in-place:
         build_xpra_conf(".")
-        install_html5(".")
         add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
         add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
+        #build minified html5 client in temporary build dir:
+        install_html5("build/www")
+        for k,v in glob_recurse("build/www").items():
+            if (k!=""):
+                k = os.sep+k
+            add_data_files('www'+k, v)
 
     if client_ENABLED or server_ENABLED:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
