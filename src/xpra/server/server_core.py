@@ -18,6 +18,8 @@ import traceback
 from xpra.log import Logger
 log = Logger("server")
 netlog = Logger("network")
+httplog = Logger("http")
+wslog = Logger("ws")
 proxylog = Logger("proxy")
 commandlog = Logger("command")
 authlog = Logger("auth")
@@ -664,10 +666,10 @@ class ServerCore(object):
                 http_proto = "http"+["","s"][int(is_ssl)]
                 if line1.startswith("GET ") or line1.startswith("POST "):
                     parts = line1.split(" ")
-                    netlog.info("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
+                    httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
                     tname = "%s-request" % parts[0]
                 else:
-                    netlog.info("New %s connection received from %s", http_proto, frominfo)
+                    httplog("New %s connection received from %s", http_proto, frominfo)
                     tname = "websockify-proxy"
                 start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, conn.remote))
                 return False, conn, None
@@ -696,13 +698,13 @@ class ServerCore(object):
 
 
     def start_websockify(self, conn, frominfo):
-        netlog("start_websockify(%s, %s) www dir=%s", conn, frominfo, self._www_dir)
+        wslog("start_websockify(%s, %s) www dir=%s", conn, frominfo, self._www_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
             sock.settimeout(0.0)
             def new_websocket_client(wsh):
-                netlog("new_websocket_client(%s) socket=%s", wsh, sock)
+                wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
                 # we need this workaround for non-blocking sockets
                 from xpra.net.bytestreams import untilConcludes
@@ -719,15 +721,15 @@ class ServerCore(object):
             WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir)
             return
         except IOError as e:
-            netlog.error("Error: http failure responding to %s:", frominfo)
-            netlog.error(" %s", e)
-            netlog("", exc_info=True)
+            wslog("", exc_info=True)
+            wslog.error("Error: http failure responding to %s:", frominfo)
+            wslog.error(" %s", e)
         except Exception as e:
-            netlog.error("Error: http failure responding to %s:", frominfo, exc_info=True)
+            wslog.error("Error: http failure responding to %s:", frominfo, exc_info=True)
         try:
             conn.close()
         except Exception as ce:
-            netlog("error closing connection following error: %s", ce)
+            wslog("error closing connection following error: %s", ce)
 
     def start_tcp_proxy(self, conn, frominfo):
         proxylog("start_tcp_proxy(%s, %s)", conn, frominfo)

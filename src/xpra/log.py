@@ -236,6 +236,8 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
     ("Network", OrderedDict([
                 #internal / network:
                 ("network"      , "All network code"),
+                ("http"         , "HTTP requests"),
+                ("ws"           , "Websockets"), 
                 ("mmap"         , "mmap transfers"),
                 ("protocol"     , "Packet input and output (formatting, parsing, sending and receiving)"),
                 ("websocket"    , "Websocket layer"),
