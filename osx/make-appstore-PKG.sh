@@ -11,8 +11,6 @@ fi
 rm -fr ./appstore/ 2>&1 > /dev/null
 mkdir appstore
 cp -R ./image/Xpra.app ./appstore/
-echo "WARNING: removing sound sub-app support"
-rm -fr ./appstore/Xpra.app/Contents/Xpra_NoDock.app
 
 #get the version and build info from the python build records:
 export PYTHONPATH="appstore/Xpra.app/Contents/Resources/lib/python/"
@@ -38,22 +36,35 @@ PKG_FILENAME="./image/Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD$REV_EXTRA-apps
 rm -f $PKG_FILENAME >& /dev/null
 echo "Making $PKG_FILENAME"
 
+#for creating shell or C command wrappers that live in "Helpers":
+function helper_wrapper() {
+	filename=`basename $1`
+	wrapper=$2
+	cp ./Info-template.plist ./appstore/temp.plist
+	#sed -i '' -e "s+%BUNDLEID%+org.xpra.$filename+g" ./appstore/temp.plist
+	sed -i '' -e "s+%BUNDLEID%+org.xpra.Xpra+g" ./appstore/temp.plist
+	sed -i '' -e "s+%EXECUTABLE%+$filename+g" ./appstore/temp.plist
+	sed -i '' -e "s+%VERSION%+$VERSION+g" ./appstore/temp.plist
+	sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" ./appstore/temp.plist
+	sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" ./appstore/temp.plist
+	gcc -arch i386 -o "appstore/Xpra.app/Contents/Helpers/$filename" "./${wrapper}-wrapper.c" -sectcreate __TEXT __info_plist ./appstore/temp.plist
+	rm appstore/temp.plist
+}
+
 #move all the scripts to Resources/scripts:
 mkdir appstore/Xpra.app/Contents/Resources/scripts
-for x in Bug_Report GTK_info Network_info Python Xpra Launcher Config_info Keyboard_Tool OpenGL_check PythonExecWrapper Encoding_info Keymap_info Path_info Version_info Shadow Feature_info Manual PowerMonitor Webcam_Test GStreamer_info NativeGUI_info Print Websockify; do
+for x in `ls appstore/Xpra.app/Contents/Helpers/`; do
 	mv "appstore/Xpra.app/Contents/Helpers/$x" "appstore/Xpra.app/Contents/Resources/scripts/"
-	if [ "$x" != "PythonExecWrapper" ] && [ "$x" != "Launcher" ]; then
-		cp ./Info-template.plist ./appstore/temp.plist
-		#sed -i '' -e "s+%BUNDLEID%+org.xpra.$x+g" ./appstore/temp.plist
-		sed -i '' -e "s+%BUNDLEID%+org.xpra.Xpra+g" ./appstore/temp.plist
-		sed -i '' -e "s+%EXECUTABLE%+$x+g" ./appstore/temp.plist
-		sed -i '' -e "s+%VERSION%+$VERSION+g" ./appstore/temp.plist
-		sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" ./appstore/temp.plist
-		sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" ./appstore/temp.plist
-		gcc -arch i386 -o "appstore/Xpra.app/Contents/Helpers/$x" "./Shell-wrapper.c" -sectcreate __TEXT __info_plist ./appstore/temp.plist
-		rm appstore/temp.plist
-	fi
+	helper_wrapper "$x" "Shell"
 done
+for x in `ls appstore/Xpra.app/Contents/Resources/bin/gst*`; do
+	helper_wrapper "$x" "C"
+done
+helper_wrapper "sshpass" "C"
+#the binaries in "/Contents/Resources/bin" look for "@executable_path/../Resources/lib/*dylib"
+#make it work with a symlink (ugly hack):
+ln -sf . appstore/Xpra.app/Contents/Resources/Resources
+
 #keep only one binary in MacOS:
 rm -f appstore/Xpra.app/Contents/MacOS/*
 gcc -arch i386 -o "appstore/Xpra.app/Contents/MacOS/Launcher" "./Shell-wrapper.c"
@@ -63,9 +74,11 @@ ls -la@ appstore/Xpra.app/Contents/MacOS
 echo
 echo "Helpers:"
 ls -la@ appstore/Xpra.app/Contents/Helpers
-#remove gstreamer bits:
-rm appstore/Xpra.app/Contents/Helpers/gst*
 
+#sound sub-app has a different binary: "Xpra":
+rm -fr ./appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS
+mkdir ./appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS
+gcc -arch i386 -o "appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS/Xpra" "./Shell-wrapper.c" -sectcreate __TEXT __info_plist appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/Info.plist
 
 CODESIGN_ARGS="--force --verbose --sign \"3rd Party Mac Developer Application\" --entitlements ./Xpra.entitlements"
 eval codesign $CODESIGN_ARGS appstore/Xpra.app/Contents/Helpers/*
@@ -78,6 +91,8 @@ eval codesign $CODESIGN_ARGS $LIBS
 eval "find appstore/Xpra.app/Contents/Resources/bin/ -type f -exec codesign $CODESIGN_ARGS {} \;"
 
 CODESIGN_ARGS="--force --verbose --sign \"3rd Party Mac Developer Application\" --entitlements ./Xpra.entitlements"
+eval codesign $CODESIGN_ARGS appstore/Xpra.app/Contents/Xpra_NoDock.app/Contents/MacOS/Xpra
+eval codesign $CODESIGN_ARGS appstore/Xpra.app/Contents/Xpra_NoDock.app
 eval codesign $CODESIGN_ARGS appstore/Xpra.app
 productbuild --component ./appstore/Xpra.app /Applications $PKG_FILENAME --sign "3rd Party Mac Developer Installer: $CODESIGN_KEYNAME"
 
