@@ -293,12 +293,6 @@ class FileTransferHandler(FileTransferAttributes):
             printlog.info(" sending '%s' to printer '%s'", title, printer)
         else:
             printlog.info(" sending to printer '%s'", printer)
-        print_options = options.dictget("options")
-        #TODO: how do we print multiple copies?
-        #copies = options.intget("copies")
-        #whitelist of options we can forward:
-        safe_print_options = dict((k,v) for k,v in print_options.items() if k in ("PageSize", "Resolution"))
-        printlog("safe print options(%s) = %s", options, safe_print_options)
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
         def delfile():
