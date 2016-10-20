@@ -82,6 +82,9 @@
 		${prefix}/lib/libz*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/liblzo*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libssl*.dylib
 	</binary>
 	<binary>
