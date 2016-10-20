@@ -316,11 +316,9 @@ if "clean" not in sys.argv:
         print("Error: memoryview support requires Python version 2.7 or greater")
         exit(1)
     if minify_ENABLED:
-        try:
-            import yuicompressor
-            assert yuicompressor
-        except ImportError as e:
-            print("Warning: yuicompressor module not found, cannot minify")
+        r = get_status_output(["uglifyjs", "--version"])[0]
+        if r!=0:
+            print("Warning: uglifyjs failed and return %i, disabling minification" % r)
             minify_ENABLED = False
     if not enc_x264_ENABLED and not vpx_ENABLED:
         print("Warning: no x264 and no vpx support!")
@@ -1018,14 +1016,13 @@ def install_html5(install_dir="www"):
             if ddir and not os.path.exists(ddir):
                 os.makedirs(ddir, 0o755)
             ftype = os.path.splitext(f)[1].lstrip(".")
-            if minify_ENABLED and ftype in ("js", "css"):
-                jar = yuicompressor.get_jar_filename()
-                minify_cmd = ["java", "-jar", jar,
+            if minify_ENABLED and ftype=="js":
+                minify_cmd = ["uglifyjs",
+                              "--screw-ie8",
                               src,
-                              "--nomunge",
-                              "--line-break", "400",
-                              "--type", ftype,
-                              "-o", dst]
+                              "-o", dst,
+                              "--compress",
+                              ]
                 r = get_status_output(minify_cmd)[0]
                 if r!=0:
                     print("Error: minify for '%s' returned %i" % (f, r))

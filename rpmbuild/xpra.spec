@@ -237,6 +237,7 @@ Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
 Requires(post): systemd-units
 Requires(preun): systemd-units
 Requires(postun): systemd-units
+BuildRequires: uglify-js
 BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
 %endif
