@@ -145,6 +145,10 @@
 		${project}/xpra.icns
 	</data>
 
+	<data dest="${bundle}/Contents/Resources/www">
+		${prefix}/share/xpra/www
+	</data>
+
 	<icon-theme icons="auto">
 		Tango
 	</icon-theme>
