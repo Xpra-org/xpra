@@ -1824,12 +1824,7 @@ else:
     class install_data_override(install_data):
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
-            if OSX:
-                #OSX: Xpra.app/Contents/Resources/www/
-                html5_dir = "www"
-            else:
-                html5_dir = "share/xpra/www"
-            install_html5(os.path.join(self.install_dir, html5_dir))
+            install_html5(os.path.join(self.install_dir, "share/xpra/www"))
             install_data.run(self)
 
             etc_prefix = self.install_dir
