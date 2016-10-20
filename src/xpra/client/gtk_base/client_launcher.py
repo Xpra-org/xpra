@@ -143,7 +143,7 @@ class ApplicationWindow:
     def create_window(self):
         self.window = gtk.Window()
         self.window.connect("destroy", self.destroy)
-        self.window.set_default_size(400, 300)
+        self.window.set_default_size(400, 260)
         self.window.set_border_width(20)
         self.window.set_title("Xpra Launcher")
         self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
@@ -201,70 +201,6 @@ class ApplicationWindow:
         self.mode_combo.connect("changed", self.mode_changed)
         hbox.pack_start(self.mode_combo)
         vbox.pack_start(hbox)
-
-        self.encoding_combo = None
-        if not PYTHON3:
-            #not implemented for gtk3, where we can't use set_menu()...
-
-            # Encoding:
-            hbox = gtk.HBox(False, 20)
-            hbox.set_spacing(20)
-            hbox.pack_start(gtk.Label("Encoding: "))
-            self.encoding_combo = OptionMenu()
-            def get_current_encoding():
-                return self.config.encoding
-            def set_new_encoding(e):
-                self.config.encoding = e
-            encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
-            server_encodings = encodings
-            es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
-            self.encoding_combo.set_menu(es)
-            set_history_from_active(self.encoding_combo)
-            hbox.pack_start(self.encoding_combo)
-            vbox.pack_start(hbox)
-            self.encoding_combo.connect("changed", self.encoding_changed)
-
-            # Quality
-            hbox = gtk.HBox(False, 20)
-            hbox.set_spacing(20)
-            self.quality_label = gtk.Label("Quality: ")
-            hbox.pack_start(self.quality_label)
-            self.quality_combo = OptionMenu()
-            def set_min_quality(q):
-                self.config.min_quality = q
-            def set_quality(q):
-                self.config.quality = q
-            def get_min_quality():
-                return self.config.min_quality
-            def get_quality():
-                return self.config.quality
-            sq = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
-                                       get_min_quality, get_quality, set_min_quality, set_quality)
-            self.quality_combo.set_menu(sq)
-            set_history_from_active(self.quality_combo)
-            hbox.pack_start(self.quality_combo)
-            vbox.pack_start(hbox)
-
-            # Speed
-            hbox = gtk.HBox(False, 20)
-            hbox.set_spacing(20)
-            self.speed_label = gtk.Label("Speed: ")
-            hbox.pack_start(self.speed_label)
-            self.speed_combo = OptionMenu()
-            def set_min_speed(s):
-                self.config.min_speed = s
-            def set_speed(s):
-                self.config.speed = s
-            def get_min_speed():
-                return self.config.min_speed
-            def get_speed():
-                return self.config.speed
-            ss = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
-                                       get_min_speed, get_speed, set_min_speed, set_speed)
-            self.speed_combo.set_menu(ss)
-            set_history_from_active(self.speed_combo)
-            hbox.pack_start(self.speed_combo)
-            vbox.pack_start(hbox)
 
         # Username@Host:Port
         hbox = gtk.HBox(False, 0)
@@ -331,6 +267,86 @@ class ApplicationWindow:
         self.info.modify_fg(STATE_NORMAL, red)
         vbox.pack_start(self.info)
 
+        
+        #hide encoding options by default
+        self.encoding_combo = None
+        self.encoding_options_check = None
+        self.encoding_box = None
+        if not PYTHON3:
+            #not implemented for gtk3, where we can't use set_menu()...
+            hbox = gtk.HBox(False, 0)
+            hbox.set_spacing(20)
+            self.encoding_options_check = gtk.CheckButton("Advanced Encoding Options")
+            self.encoding_options_check.connect("toggled", self.encoding_options_toggled)
+            self.encoding_options_check.set_active(False)
+            al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+            al.add(self.encoding_options_check)
+            hbox.pack_start(al)
+            vbox.pack_start(hbox)
+            self.encoding_box = gtk.VBox()
+            vbox.pack_start(self.encoding_box)
+
+            # Encoding:
+            hbox = gtk.HBox(False, 20)
+            hbox.set_spacing(20)
+            hbox.pack_start(gtk.Label("Encoding: "))
+            self.encoding_combo = OptionMenu()
+            def get_current_encoding():
+                return self.config.encoding
+            def set_new_encoding(e):
+                self.config.encoding = e
+            encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+            server_encodings = encodings
+            es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
+            self.encoding_combo.set_menu(es)
+            set_history_from_active(self.encoding_combo)
+            hbox.pack_start(self.encoding_combo)
+            self.encoding_box.pack_start(hbox)
+            self.encoding_combo.connect("changed", self.encoding_changed)
+
+            # Quality
+            hbox = gtk.HBox(False, 20)
+            hbox.set_spacing(20)
+            self.quality_label = gtk.Label("Quality: ")
+            hbox.pack_start(self.quality_label)
+            self.quality_combo = OptionMenu()
+            def set_min_quality(q):
+                self.config.min_quality = q
+            def set_quality(q):
+                self.config.quality = q
+            def get_min_quality():
+                return self.config.min_quality
+            def get_quality():
+                return self.config.quality
+            sq = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
+                                       get_min_quality, get_quality, set_min_quality, set_quality)
+            self.quality_combo.set_menu(sq)
+            set_history_from_active(self.quality_combo)
+            hbox.pack_start(self.quality_combo)
+            self.encoding_box.pack_start(hbox)
+
+            # Speed
+            hbox = gtk.HBox(False, 20)
+            hbox.set_spacing(20)
+            self.speed_label = gtk.Label("Speed: ")
+            hbox.pack_start(self.speed_label)
+            self.speed_combo = OptionMenu()
+            def set_min_speed(s):
+                self.config.min_speed = s
+            def set_speed(s):
+                self.config.speed = s
+            def get_min_speed():
+                return self.config.min_speed
+            def get_speed():
+                return self.config.speed
+            ss = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
+                                       get_min_speed, get_speed, set_min_speed, set_speed)
+            self.speed_combo.set_menu(ss)
+            set_history_from_active(self.speed_combo)
+            hbox.pack_start(self.speed_combo)
+            self.encoding_box.pack_start(hbox)
+            self.encoding_box.hide()
+
         # Buttons:
         hbox = gtk.HBox(False, 20)
         vbox.pack_start(hbox)
@@ -356,6 +372,7 @@ class ApplicationWindow:
             gtk.main_quit()
         add_close_accel(self.window, accel_close)
         vbox.show_all()
+        self.encoding_options_toggled()
         self.window.vbox = vbox
         self.window.add(vbox)
 
@@ -464,6 +481,15 @@ class ApplicationWindow:
         else:
             self.quality_combo.hide()
             self.quality_label.hide()
+
+    def encoding_options_toggled(self, *args):
+        if not self.encoding_box:
+            return
+        show_opts = self.encoding_options_check.get_active()
+        if show_opts:
+            self.encoding_box.show()
+        else:
+            self.encoding_box.hide()
 
     def reset_errors(self):
         self.set_sensitive(True)
