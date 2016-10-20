@@ -145,5 +145,5 @@ def do_get_sound_command():
     subapp = os.path.join(base, "Xpra_NoDock.app", "Contents")
     if os.path.exists(subapp) and os.path.isdir(subapp):
         base = subapp
-    helper = os.path.join(base, "Resources", "bin", "Xpra")
+    helper = os.path.join(base, "Resources", "scripts", "Xpra")
     return [helper]
