@@ -49,6 +49,7 @@ ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
+SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 
 
 class XpraClientBase(FileTransferHandler):
@@ -747,7 +748,7 @@ class XpraClientBase(FileTransferHandler):
                 #"3" if the destination is idle,
                 #"4" if the destination is printing a job,
                 #"5" if the destination is stopped.
-                if state==5:
+                if state==5 and SKIP_STOPPED_PRINTERS:
                     printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
                 attrs = used_attrs(v)
