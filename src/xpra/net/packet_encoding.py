@@ -107,7 +107,7 @@ def get_packet_encoding_caps():
     return {
             "rencode"               : r,
             "bencode"               : b,
-            "yaml"                  : use_yaml,
+            "yaml"                  : y,
            }
 
 
