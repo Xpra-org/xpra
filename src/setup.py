@@ -317,9 +317,17 @@ if "clean" not in sys.argv:
         exit(1)
     if minify_ENABLED:
         r = get_status_output(["uglifyjs", "--version"])[0]
-        if r!=0:
-            print("Warning: uglifyjs failed and return %i, disabling minification" % r)
-            minify_ENABLED = False
+        if r==0:
+            minifier = "uglifyjs"
+        else:
+            print("Warning: uglifyjs failed and return %i" % r)
+            try:
+                import yuicompressor
+                assert yuicompressor
+                minifier = "yuicompressor"
+            except ImportError as e:
+                print("Warning: yuicompressor module not found, cannot minify")
+                minify_ENABLED = False
     if not enc_x264_ENABLED and not vpx_ENABLED:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
@@ -1001,6 +1009,8 @@ def glob_recurse(srcdir):
 
 
 def install_html5(install_dir="www"):
+    if minify_ENABLED:
+        print("minifying using %s" % minifier)
     for k,files in glob_recurse("html5").items():
         if (k!=""):
             k = os.sep+k
@@ -1017,12 +1027,24 @@ def install_html5(install_dir="www"):
                 os.makedirs(ddir, 0o755)
             ftype = os.path.splitext(f)[1].lstrip(".")
             if minify_ENABLED and ftype=="js":
-                minify_cmd = ["uglifyjs",
-                              "--screw-ie8",
-                              src,
-                              "-o", dst,
-                              "--compress",
-                              ]
+                if minifier=="uglifyjs":
+                    minify_cmd = ["uglifyjs",
+                                  "--screw-ie8",
+                                  src,
+                                  "-o", dst,
+                                  "--compress",
+                                  ]
+                else:
+                    assert minifier=="yuicompressor"
+                    assert yuicompressor
+                    jar = yuicompressor.get_jar_filename()
+                    minify_cmd = ["java", "-jar", jar,
+                                  src,
+                                  "--nomunge",
+                                  "--line-break", "400",
+                                  "--type", ftype,
+                                  "-o", dst,
+                                  ]
                 r = get_status_output(minify_cmd)[0]
                 if r!=0:
                     print("Error: minify for '%s' returned %i" % (f, r))
