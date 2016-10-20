@@ -1010,7 +1010,9 @@ def glob_recurse(srcdir):
 
 def install_html5(install_dir="www"):
     if minify_ENABLED:
-        print("minifying using %s" % minifier)
+        print("minifying html5 client to %s using %s" % (install_dir, minifier))
+    else:
+        print("copying html5 client to %s" % (install_dir, ))
     for k,files in glob_recurse("html5").items():
         if (k!=""):
             k = os.sep+k
@@ -1555,11 +1557,12 @@ if WIN32:
         add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
         #build minified html5 client in temporary build dir:
-        install_html5("build/www")
-        for k,v in glob_recurse("build/www").items():
-            if (k!=""):
-                k = os.sep+k
-            add_data_files('www'+k, v)
+        if "clean" not in sys.argv:
+            install_html5("build/www")
+            for k,v in glob_recurse("build/www").items():
+                if (k!=""):
+                    k = os.sep+k
+                add_data_files('www'+k, v)
 
     if client_ENABLED or server_ENABLED:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
