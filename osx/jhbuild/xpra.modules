@@ -35,6 +35,8 @@
   <repository type="tarball" name="curl.haxx.se" href="https://curl.haxx.se"/>
   <repository type="tarball" name="cpan.org" href="http://www.cpan.org/"/>
   <repository type="tarball" name="apache.org" href="http://www.apache.org/"/>
+  <repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
+
 
 
   <autotools id="yasm" autogen-sh="configure">
@@ -756,6 +758,20 @@
         </after>
   </distutils>
 
+  <distutils id="python-yaml">
+	<branch repo="pyyaml.org"
+		module="/download/pyyaml/PyYAML-3.12.tar.gz"
+		checkoutdir="PyYAML-3.12"
+		hash="sha256:592766c6303207a20efc445587778322d7f73b161bd994f227adaa341ba212ab"
+		version="3.12"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+  </distutils>
+
   <distutils id="python-pycups">
 	<branch repo="pypi.python.org"
 		module="/packages/source/p/pycups/pycups-1.9.73.tar.bz2"
@@ -940,6 +956,7 @@
       <dep package="python-enum34"/>
       <dep package="python-cryptography"/>
       <dep package="python-rencode"/>
+      <dep package="python-yaml"/>
       <dep package="python-macholib"/>
       <dep package="python-modulegraph"/>
       <dep package="python-altgraph"/>
