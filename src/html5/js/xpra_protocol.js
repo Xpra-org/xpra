@@ -333,7 +333,7 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 	// worker imports are relative to worker script path
 	importScripts(
 		'lib/bencode.js',
-		'lib/inflate.min.js',
+		'lib/zlib.js',
 		'lib/lz4.js',
 		'lib/forge.min.js');
 	// make protocol instance
