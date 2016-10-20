@@ -668,10 +668,12 @@ class ServerCore(object):
                     parts = line1.split(" ")
                     httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
                     tname = "%s-request" % parts[0]
+                    req_info = "%s %s" % (http_proto, parts[0])
                 else:
                     httplog("New %s connection received from %s", http_proto, frominfo)
-                    tname = "websockify-proxy"
-                start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, conn.remote))
+                    req_info = "ws%s"+["","s"][int(is_ssl)]
+                    tname = "%s-proxy" % req_info
+                start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, req_info, conn.remote))
                 return False, conn, None
         if self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
@@ -697,8 +699,8 @@ class ServerCore(object):
         return "character %#x, not an xpra client?" % c
 
 
-    def start_websockify(self, conn, frominfo):
-        wslog("start_websockify(%s, %s) www dir=%s", conn, frominfo, self._www_dir)
+    def start_websockify(self, conn, req_info, frominfo):
+        wslog("start_websockify(%s, %s, %s) www dir=%s", conn, req_info, frominfo, self._www_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
@@ -722,10 +724,10 @@ class ServerCore(object):
             return
         except IOError as e:
             wslog("", exc_info=True)
-            wslog.error("Error: http failure responding to %s:", frominfo)
+            wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo))
             wslog.error(" %s", e)
         except Exception as e:
-            wslog.error("Error: http failure responding to %s:", frominfo, exc_info=True)
+            wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
         try:
             conn.close()
         except Exception as ce:
