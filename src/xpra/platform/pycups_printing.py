@@ -35,6 +35,7 @@ ADD_OPTIONS = ["-E", "-o printer-is-shared=false", "-u allow:$USER"]
 FORWARDER_BACKEND = "xpraforwarder"
 
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Cups-PDF").split(",")
+CUPS_OPTIONS_WHITELIST = os.environ.get("XPRA_CUPS_OPTIONS_WHITELIST", "PageSize").split(",")
 
 #PRINTER_PREFIX = "Xpra:"
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
@@ -402,7 +403,11 @@ def print_files(printer, filenames, title, options):
         raise Exception("invalid printer: '%s'" % printer)
     log("pycups.print_files%s", (printer, filenames, title, options))
     actual_options = DEFAULT_CUPS_OPTIONS.copy()
-    actual_options.update(dict((str(k),str(v)) for k,v in options.items()))
+    used_options = dict((str(k),str(v)) for k,v in options.items() if str(k) in CUPS_OPTIONS_WHITELIST)
+    unused_options = dict((str(k),str(v)) for k,v in options.items() if str(k) not in CUPS_OPTIONS_WHITELIST)
+    log("used options=%s", used_options)
+    log("unused options=%s", unused_options)
+    actual_options.update(used_options)
     if SIMULATE_PRINT_FAILURE:
         log.warn("Warning: simulating print failure")
         conn = None
