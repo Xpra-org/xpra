@@ -322,7 +322,7 @@ def import_gst():
             log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
             if bundle_contents:
                 os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
-                os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Helpers", "gst-plugin-scanner-%s" % vstr)
+                os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Resources", "bin", "gst-plugin-scanner-%s" % vstr)
                 if MV==1:
                     gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
                     os.environ["GI_TYPELIB_PATH"]       = gi_dir
