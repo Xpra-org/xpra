@@ -35,7 +35,7 @@ ADD_OPTIONS = ["-E", "-o printer-is-shared=false", "-u allow:$USER"]
 FORWARDER_BACKEND = "xpraforwarder"
 
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Cups-PDF").split(",")
-CUPS_OPTIONS_WHITELIST = os.environ.get("XPRA_CUPS_OPTIONS_WHITELIST", "PageSize").split(",")
+CUPS_OPTIONS_WHITELIST = os.environ.get("XPRA_CUPS_OPTIONS_WHITELIST", "Resolution,PageSize").split(",")
 
 #PRINTER_PREFIX = "Xpra:"
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)

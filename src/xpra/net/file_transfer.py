@@ -289,6 +289,7 @@ class FileTransferHandler(FileTransferAttributes):
     def _print_file(self, filename, mimetype, options):
         printer = options.strget("printer")
         title   = options.strget("title")
+        copies  = options.intget("copies", 1)
         if title:
             printlog.info(" sending '%s' to printer '%s'", title, printer)
         else:
@@ -314,7 +315,9 @@ class FileTransferHandler(FileTransferAttributes):
             delfile()
             return
         try:
-            job = print_files(printer, [filename], title, options)
+            job_options = options.get("options")
+            job_options["copies"] = copies
+            job = print_files(printer, [filename], title, job_options)
         except Exception as e:
             printlog("print_files%s", (printer, [filename], title, options), exc_info=True)
             printlog.error("Error: cannot print file '%s'", os.path.basename(filename))
