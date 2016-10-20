@@ -50,7 +50,6 @@ from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
 log = Logger("launcher")
 
-
 #what we save in the config file:
 SAVED_FIELDS = ["username", "password", "host", "port", "mode", "ssh_port",
                 "encoding", "quality", "min-quality", "speed", "min-speed"]
@@ -315,17 +314,15 @@ class ApplicationWindow:
         hbox.pack_start(self.password_entry)
         vbox.pack_start(hbox)
 
-        if os.name=="posix":
-            hbox = gtk.HBox(False, 0)
-            hbox.set_spacing(20)
-            self.ssh_nostrict = gtk.CheckButton("Disable SSH Strict Host Check")
-            self.ssh_nostrict.set_active(False)
-            al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
-            al.add(self.ssh_nostrict)
-            hbox.pack_start(al)
-            vbox.pack_start(hbox)
-        else:
-            self.ssh_nostrict = None
+        #strict host key check for SSL and SSH
+        hbox = gtk.HBox(False, 0)
+        hbox.set_spacing(20)
+        self.nostrict_host_check = gtk.CheckButton("Disable Strict Host Key Check")
+        self.nostrict_host_check.set_active(False)
+        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(self.nostrict_host_check)
+        hbox.pack_start(al)
+        vbox.pack_start(hbox)
 
         # Info Label
         self.info = gtk.Label()
@@ -409,7 +406,8 @@ class ApplicationWindow:
         return None
 
     def mode_changed(self, *args):
-        ssh = self.mode_combo.get_active_text()=="SSH"
+        mode = self.mode_combo.get_active_text().lower()
+        ssh = mode=="ssh"
         if ssh:
             self.port_entry.set_tooltip_text("Display number (optional)")
             self.port_entry.set_text("")
@@ -445,6 +443,10 @@ class ApplicationWindow:
             self.password_label.hide()
             self.password_entry.hide()
         self.validate()
+        if mode=="ssl" or (mode=="ssh" and not sys.platform.startswith("win")):
+            self.nostrict_host_check.show()
+        else:
+            self.nostrict_host_check.hide()
 
     def get_selected_encoding(self, *args):
         if not self.encoding_combo:
@@ -551,7 +553,7 @@ class ApplicationWindow:
                 params["username"] = username
                 full_ssh += ["-l", username]
             full_ssh += ["-T", host]
-            if self.ssh_nostrict and self.ssh_nostrict.get_active():
+            if self.nostrict_host_check.get_active():
                 full_ssh += ["-o", "StrictHostKeyChecking=no"]
             if str(self.config.ssh_port)!="22":
                 if sys.platform.startswith("win"):
@@ -572,6 +574,8 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = "%s:%s:%s" % (self.config.mode, self.config.host, self.config.port)
+            if self.config.mode=="ssl" and self.nostrict_host_check.get_active():
+                params["strict-host-check"] = False
 
         #print("connect_to(%s)" % params)
         #UGLY warning: the username may have been updated during display parsing,
@@ -707,11 +711,13 @@ class ApplicationWindow:
         self.config.port = self.port_entry.get_text()
         self.config.username = self.username_entry.get_text()
         self.config.encoding = self.get_selected_encoding() or self.config.encoding
-        mode_enc = self.mode_combo.get_active_text()
+        mode_enc = self.mode_combo.get_active_text().upper()
         if mode_enc.startswith("TCP"):
             self.config.mode = "tcp"
             if mode_enc.find("AES")>0 and "AES" in ENCRYPTION_CIPHERS:
                 self.config.encryption = "AES"
+        elif mode_enc=="SSL":
+            self.config.mode = "ssl"
         else:
             self.config.mode = "ssh"
         self.config.password = self.password_entry.get_text()

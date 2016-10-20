@@ -1739,6 +1739,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
+        strict_host_check = display_desc.get("strict-host-check")
+        if strict_host_check is False:
+            opts.ssl_server_verify_mode = "none"
         if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
