@@ -622,6 +622,7 @@ XpraClient.prototype._make_hello_base = function() {
 		this._update_capabilities({
 			"lz4"						: true,
 			"lz4.js.version"			: LZ4.version, 
+			"encoding.rgb_lz4"			: true,
 		});
 	}
 
@@ -678,7 +679,6 @@ XpraClient.prototype._make_hello = function() {
 		// encoding stuff
 		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
-		"encoding.rgb_lz4"			: true,
 		"windows"					: true,
 		//partial support:
 		"keyboard"					: true,
