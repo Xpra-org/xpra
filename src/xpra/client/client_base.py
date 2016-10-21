@@ -673,7 +673,7 @@ class XpraClientBase(FileTransferHandler):
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
             server_printing = self.server_capabilities.boolget("printing")
-            printlog("parse_printing_capabilities() server printing support=%s", self.printing)
+            printlog("parse_printing_capabilities() server printing support=%s", server_printing)
             if server_printing:
                 self.printer_attributes = self.server_capabilities.strlistget("printer.attributes", ["printer-info", "device-uri"])
                 self.timeout_add(1000, self.init_printing)
