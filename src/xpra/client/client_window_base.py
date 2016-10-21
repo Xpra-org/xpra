@@ -19,6 +19,7 @@ mouselog = Logger("mouse")
 workspacelog = Logger("workspace")
 keylog = Logger("keyboard")
 metalog = Logger("metadata")
+geomlog = Logger("geometry")
 
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
@@ -372,7 +373,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def set_size_constraints(self, size_constraints, max_window_size):
-        metalog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
+        geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         hints = typedict()
         for (a, h1, h2) in [
             (b"maximum-size", b"max_width", b"max_height"),
@@ -425,7 +426,7 @@ class ClientWindowBase(ClientWidgetBase):
             #not honouring "base" + "inc", but honouring just "min" instead:
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
-            metalog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
+            geomlog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
             #ensure we don't have duplicates with bytes / strings,
             #and that keys are always "bytes":
             #(in practice this code should never fire, just here as a reminder)
@@ -437,12 +438,12 @@ class ClientWindowBase(ClientWidgetBase):
             hints[b"max_width"] = maxw
             hints[b"max_height"] = maxh
         try:
-            metalog("calling: %s(%s)", self.apply_geometry_hints, hints)
+            geomlog("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:
             self.geometry_hints = hints
             self.apply_geometry_hints(hints)
         except:
-            metalog.error("with hints=%s", hints, exc_info=True)
+            geomlog.error("with hints=%s", hints, exc_info=True)
         #TODO: handle gravity
         #gravity = size_metadata.get("gravity")
 
