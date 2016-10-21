@@ -380,6 +380,14 @@ class ClientWindowBase(ClientWidgetBase):
             (b"base-size", b"base_width", b"base_height"),
             (b"increment", b"width_inc", b"height_inc"),
             ]:
+            if a in (b"base-size", b"increment"):
+                def closetoint(v):
+                    return abs(int(v)-v)<0.00001
+                int_scaling = closetoint(self._client.xscale) and closetoint(self._client.yscale)
+                if not int_scaling:
+                    #don't scale increment and base size constraints with non integer scaling values
+                    #as this would use rounding
+                    continue
             v = size_constraints.intpair(a)
             if v:
                 v1, v2 = v
