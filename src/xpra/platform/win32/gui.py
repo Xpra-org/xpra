@@ -20,7 +20,7 @@ from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 import ctypes
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, BOOL
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM
 
 import win32con     #@UnresolvedImport
 import win32api     #@UnresolvedImport
@@ -181,7 +181,7 @@ def get_session_type():
         log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
         if retcode==0 and b.value:
             return "aero"
-    except AttributeError:
+    except (AttributeError, WindowsError):      #@UndefinedVariable
         # No windll, no dwmapi or no DwmIsCompositionEnabled function.
         log("get_session_type() failed to query DwmIsCompositionEnabled", exc_info=True)
     return ""
