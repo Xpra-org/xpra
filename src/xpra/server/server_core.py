@@ -158,6 +158,7 @@ class ServerCore(object):
         self.socket_types = {}
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout = 0.1
+        self._ws_timeout = 5
         self._socket_dir = None
         self.unix_socket_paths = []
 
@@ -704,7 +705,7 @@ class ServerCore(object):
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
-            sock.settimeout(0.0)
+            sock.settimeout(self._ws_timeout)
             def new_websocket_client(wsh):
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)

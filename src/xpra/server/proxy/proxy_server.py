@@ -56,6 +56,7 @@ class ProxyServer(ServerCore):
         #proxy servers may have to connect to remote servers,
         #or even start them, so allow more time before timing out:
         self._accept_timeout += 10
+        self._ws_timeout = 0.0
         #keep track of the proxy process instances
         #the display they're on and the message queue we can
         # use to communicate with them
