@@ -33,6 +33,7 @@ from xpra.make_thread import start_thread
 
 
 PROXY_SOCKET_TIMEOUT = float(os.environ.get("XPRA_PROXY_SOCKET_TIMEOUT", "0.1"))
+PROXY_WS_TIMEOUT = float(os.environ.get("XPRA_PROXY_WS_TIMEOUT", "0.0"))
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 
 
@@ -56,7 +57,6 @@ class ProxyServer(ServerCore):
         #proxy servers may have to connect to remote servers,
         #or even start them, so allow more time before timing out:
         self._accept_timeout += 10
-        self._ws_timeout = 0.0
         #keep track of the proxy process instances
         #the display they're on and the message queue we can
         # use to communicate with them
@@ -67,6 +67,7 @@ class ProxyServer(ServerCore):
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
+        self._ws_timeout = PROXY_WS_TIMEOUT
         self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display", self.handle_stop_command, min_args=1, max_args=1)
 
     def init(self, opts):
