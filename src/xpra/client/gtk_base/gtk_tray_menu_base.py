@@ -396,7 +396,11 @@ class GTKTrayMenuBase(object):
         return self.readonly_menuitem
 
     def make_bellmenuitem(self):
+        c = self.client
         def bell_toggled(*args):
+            can_toggle_bell = c.server_supports_bell and c.client_supports_bell
+            if not can_toggle_bell:
+                return
             v = self.bell_menuitem.get_active()
             changed = self.client.bell_enabled != v
             self.client.bell_enabled = v
@@ -408,7 +412,6 @@ class GTKTrayMenuBase(object):
         def set_bell_menuitem(*args):
             log("set_bell_menuitem%s enabled=%s", args, self.client.bell_enabled)
             self.bell_menuitem.set_active(self.client.bell_enabled)
-            c = self.client
             can_toggle_bell = c.server_supports_bell and c.client_supports_bell
             set_sensitive(self.bell_menuitem, can_toggle_bell)
             if can_toggle_bell:
