@@ -147,7 +147,7 @@ class ServerBase(ServerCore):
         self.start_after_connect_done = False
         self.start_new_commands = False
         self.remote_logging = False
-        self.env = []
+        self.start_env = []
         self.exec_cwd = None
         self.exec_wrapper = None
         self.child_reaper = None
@@ -243,7 +243,7 @@ class ServerBase(ServerCore):
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.child_reaper = getChildReaper(self.reaper_exit, exit_with_children=opts.exit_with_children)
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
-        self.env = parse_env(opts.env)
+        self.start_env = parse_env(opts.start_env)
         self.send_pings = opts.pings
         #printing and file transfer:
         self.file_transfer.init_opts(opts)
@@ -830,7 +830,7 @@ class ServerBase(ServerCore):
     def get_child_env(self):
         #subclasses may add more items (ie: fakexinerama)
         env = os.environ.copy()
-        env.update(self.env)
+        env.update(self.start_env)
         if self.child_display:
             env["DISPLAY"] = self.child_display
         return env
