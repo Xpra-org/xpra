@@ -5,7 +5,7 @@ Then run make:
 make
 
 To load the policy:
-semodule -i xpra_cups.pp
+semodule -i cups_xpra.pp
 
 To relabel the cups backend:
 restorecon /usr/lib/cups/backend/xpraforwarder

@@ -9,6 +9,8 @@ require {
 	class capability dac_override;
 	class dir { search open read };
 	class sock_file { write };
+
+	type xserver_exec_t;
 }
 
 type cups_xpra_t;
@@ -29,7 +31,7 @@ kernel_read_system_state(cups_xpra_t)
 
 
 allow cups_xpra_t print_spool_t:dir { search open read };
-allow cups_xpra_t user_tmp_t:dir search;
+allow cups_xpra_t user_tmp_t:dir { search getattr };
 
 allow cups_xpra_t self:capability dac_override;
 
@@ -41,3 +43,6 @@ dontaudit cups_xpra_t udev_var_run_t:dir search;
 
 allow cups_xpra_t user_tmp_t:sock_file write;
 
+#to generate the default xpra config object,
+#we may need to getattr the Xorg binary:
+allow cups_xpra_t xserver_exec_t:file getattr;
