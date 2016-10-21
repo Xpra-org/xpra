@@ -252,7 +252,7 @@ XpraProtocol.prototype._process = function() {
 	// the header is still on the buffer so wait for packetsize+headersize bytes!
 	if (this.rQ.length < packet_size+8) {
 		// we already shifted the header off the buffer?
-		debug("packet is not complete yet");
+		//debug("packet is not complete yet");
 		return;
 	}
 

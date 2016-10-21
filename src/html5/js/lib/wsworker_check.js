@@ -22,6 +22,6 @@ self.addEventListener('message', function(e) {
 		}
 		break;
 	default:
-		debug("worker got unknown message");
+		console.log("worker got unknown message: "+data.cmd);
 	};
 }, false);
