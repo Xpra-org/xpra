@@ -204,6 +204,8 @@
 				var normal_fullscreen = window.location.getParameter("normal_fullscreen") || null;
 				var action = window.location.getParameter("action") || "connect";
 				var start = window.location.getParameter("start");
+				var exit_with_children = window.location.getParameter("exit_with_children") || "";
+				var exit_with_client = window.location.getParameter("exit_with_client") || "";
 				var submit = window.location.getParameter("submit") || null;
 				var server = window.location.getParameter("server") || window.location.hostname;
 				var port = window.location.getParameter("port") || window.location.port;
@@ -228,6 +230,12 @@
 	    			if(start) {
 	    				sns["start"] = [start];
 	    			}
+    				if (exit_with_children) {
+    					sns["exit-with-children"] = true;
+    				}
+    				if (exit_with_client) {
+    					sns["exit-with-client"] = true;
+    				}
 			    	client.start_new_session = sns
 			    }
 
@@ -269,7 +277,7 @@
 				    		if(reason) {
 				    			message = reason;
 				    		}
-				    		window.location="connect.html?disconnect="+message+"&username="+username+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&encoding="+encoding+"&action="+action;
+				    		window.location="connect.html?disconnect="+message+"&username="+username+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&encoding="+encoding+"&action="+action+"&sound="+sound+"&exit_with_children="+exit_with_children+"&exit_with_client="+exit_with_client+"&normal_fullscreen="+normal_fullscreen;
 				    	} else {
 					    	// if we didn't submit through the form, silently redirect to the connect gui
 					    	window.location="connect.html";

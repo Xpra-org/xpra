@@ -180,9 +180,21 @@
 					Keyboard Layout
 				  </li>
 
-		          <li class="list-group-item"><input type="checkbox" id="sound"> Experimental sound support</li>
-		          <li class="list-group-item"><input type="checkbox" id="normal_fullscreen"> Normal fullscreen windows</li>
-		          <li class="list-group-item"><input type="checkbox" id="debug"> Debugging</li>
+		          <li class="list-group-item">
+		          	<input type="checkbox" id="sound"> <span>Experimental sound support</span>
+		          </li>
+		          <li class="list-group-item exit_with_children">
+		          	<input type="checkbox" id="exit_with_children"> <span>Terminate server when command exits</span>
+		          </li>
+		          <li class="list-group-item exit_with_client">
+		          	<input type="checkbox" id="exit_with_client"> <span>Terminate server when client disconnects</span>
+		          </li>
+		          <li class="list-group-item">
+		          	<input type="checkbox" id="normal_fullscreen"> <span>Normal fullscreen windows</span>
+		          </li>
+		          <li class="list-group-item">
+		          	<input type="checkbox" id="debug"> <span>Debugging</span>
+		          </li>
 		        </ul>
 		      </div>
 		    </div>
@@ -268,6 +280,12 @@ function doConnect() {
 	if(start) {
 		url = url + "&start="+encodeURIComponent(start);
 	}
+	if (document.getElementById("exit_with_children").checked) {
+		url = url + "&exit_with_children=true";
+	}
+	if (document.getElementById("exit_with_client").checked) {
+		url = url + "&exit_with_client=true";
+	}
 	//alert("connect to "+server+" on port "+port+" using "+encoding);
 	window.location = url;
 }
@@ -303,8 +321,25 @@ $(document).ready(function() {
 	else {
 		document.getElementById("action_connect").checked = true;
 	}
-	//link.search;    //  '?startIndex=1&pageSize=10'
-	//link.pathname;  //  '/blog/foo/bar'
+	function set_exit_actions(disabled) {
+        var opacity = disabled ? 0.6 : 1;
+       	$('input#exit_with_children').prop("disabled", disabled);
+       	$('input#exit_with_client').prop("disabled", disabled);
+       	$('li.exit_with_children span').css("opacity", opacity);
+       	$('li.exit_with_client span').css("opacity", opacity);
+       	if (disabled) {
+           	$('input#exit_with_children').prop("checked", false);
+           	$('input#exit_with_client').prop("checked", false);
+       	}
+    }
+	function on_action_change() {
+        var action = $(this).val();
+        set_exit_actions(action=="connect");
+    }
+	$(document).on('click', '[name="action"]', on_action_change);
+	var action = window.location.getParameter("action") || "connect";
+	$('input:radio[value='+action+']').click();
+
 	var encoding = window.location.getParameter("encoding") || "jpeg";
 	document.getElementById('encoding').value = encoding;
 	var debug = window.location.getParameter("debug");
@@ -329,6 +364,15 @@ $(document).ready(function() {
 			keyboard_layout = l[1].toLowerCase();
 	}
 	document.getElementById('keyboard_layout').value = keyboard_layout;
+
+	var exit_with_children = Boolean(window.location.getParameter("exit_with_children") || "");
+   	$('input#exit_with_children').prop("checked", exit_with_children);
+	var exit_with_client = Boolean(window.location.getParameter("exit_with_client") || "");
+	$('input#exit_with_client').prop("checked", exit_with_client);
+	var sound = Boolean(window.location.getParameter("sound") || "");
+	$('input#sound').prop("checked", sound);
+	var normal_fullscreen = Boolean(window.location.getParameter("normal_fullscreen") || "");
+	$('input#normal_fullscreen').prop("checked", normal_fullscreen);
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
