@@ -581,7 +581,8 @@ cdef class Encoder:
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
         assert image.get_pixel_format()==self.src_format, "invalid input format %s, expected %s" % (image.get_pixel_format, self.src_format)
-        assert image.get_width()==self.width and image.get_height()==self.height
+        assert image.get_width()==self.width, "invalid image width %s, expected %s" % (image.get_width(), self.width)
+        assert image.get_height()==self.height, "invalid image height %s, expected %s" % (image.get_height(), self.height)
         assert pixels, "failed to get pixels from %s" % image
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
