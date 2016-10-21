@@ -414,6 +414,7 @@ def print_files(printer, filenames, title, options):
         printpid = -1
     else:
         conn = cups.Connection()
+        log("calling printFiles on %s", conn)
         printpid = conn.printFiles(printer, filenames, title, actual_options)
     if printpid<=0:
         log.error("Error: pycups printing on '%s' failed for file%s", printer, engs(filenames))
