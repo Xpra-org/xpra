@@ -205,7 +205,6 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
-                "constrain.rounding"     : True,
                 })
         return capabilities
 

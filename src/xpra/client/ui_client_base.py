@@ -1871,11 +1871,6 @@ class UIXpraClient(XpraClientBase):
                     skip_vfb_size_check = self.xscale>1 or self.yscale>1
                     self.scalingoff()
                     self.can_scale = False
-            elif not c.boolget("window.constrain.rounding"):
-                log.info("Server does not support rounding, disabling scaling")
-                skip_vfb_size_check = self.xscale>1 or self.yscale>1
-                self.scalingoff()
-                self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
         if not self.server_is_desktop and not skip_vfb_size_check:
