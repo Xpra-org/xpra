@@ -103,6 +103,7 @@
 %if "%{?dist}"==".el7_0"
 #no python cryptography:
 %define requires_crypto python-crypto
+%define requires_webcam %{nil}
 %endif
 %if "%{?dist}"==".el7_1"
 #no python cryptography:
