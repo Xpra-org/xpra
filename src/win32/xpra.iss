@@ -31,7 +31,7 @@ Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs 
 Name: "{group}\Xpra"; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
-Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500 --tcp-auth=sys"
+Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500 --tcp-auth=sys"; IconFilename: {app}\icons\server-connected.ico
 
 
 [Run]
