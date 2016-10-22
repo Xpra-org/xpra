@@ -175,15 +175,24 @@
 
 			if (!window.location.getParameter ) {
 				window.location.getParameter = function(key) {
-					var rx = new RegExp(key+"=([\%a-zA-Z0-9\.\-]+)");
-					try {
-						var value = document.URL.match(rx)[1];
-						console.log("parameter "+key+" is "+value);
-						return value;
-					} catch (err) {
-						console.log("parameter "+key+" not supplied");
-						return null;
+					function parseParams() {
+							var params = {},
+									e,
+									a = /\+/g,	// Regex for replacing addition symbol with a space
+									r = /([^&=]+)=?([^&]*)/g,
+									d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
+									q = window.location.search.substring(1);
+	
+							while (e = r.exec(q))
+									params[d(e[1])] = d(e[2]);
+	
+							return params;
 					}
+	
+					if (!this.queryStringParams)
+							this.queryStringParams = parseParams();
+	
+					return this.queryStringParams[key];
 				};
 			}
 
@@ -194,11 +203,7 @@
 			}
 
 			function getparam(name) {
-				var v = window.location.getParameter(name);
-				if (!v) {
-					return v;
-				}
-			    return v.replace(/%2D/g, "-").replace(/%5F/g, "_").replace(/%2E/g, ".").replace(/%21/g, "!").replace(/%7E/g, "~").replace(/%2A/g, "*").replace(/%27/g, '\'').replace(/%28/g, '(').replace(/%29/g, ')');
+				return window.location.getParameter(name);
 			}
 
 			$(document).ready(function() {
