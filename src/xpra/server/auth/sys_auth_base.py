@@ -79,13 +79,13 @@ class SysAuthenticator(object):
         #log("authenticate(%s) password=%s", challenge_response, password)
         #verify login:
         try :
-            if not self.check(password):
-                return False
+            ret = self.check(password)
+            log("check(..)=%s", ret)
         except Exception as e:
             log.error("Error in %s authentication checks:", self)
             log.error(" %s", e)
             return False
-        return True
+        return ret
 
     def authenticate_hmac(self, challenge_response, client_salt):
         if not self.salt:
