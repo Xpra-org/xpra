@@ -160,7 +160,7 @@ if "%DO_INSTALLER%"=="1" (
 if "%DO_MSI%"=="1" (
 	FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(\".\".join((__version__.split(\".\")+[\"0\",\"0\",\"0\"])[:4]))"') DO set ZERO_PADDED_VERSION=%%i
 	ECHO %PYTHON_EXE% win32\msi.py win32\msi.xml build\msi.xml INPUT="!INPUT!" OUTPUT="!OUTPUT!" ZERO_PADDED_VERSION="!ZERO_PADDED_VERSION!" FULL_VERSION="!FULL_VERSION!"
-	%PYTHON_EXE% %cd%\win32\msi.py %cd%\win32\msi.xml %cd%\build\msi.xml INPUT="%cd%\!INSTALLER_FILENAME!" OUTPUT="%cd%\!MSI_FILENAME!" ZERO_PADDED_VERSION="!ZERO_PADDED_VERSION!" FULL_VERSION="!FULL_VERSION!"
+	%PYTHON_EXE% %cd%\win32\msi.py %cd%\win32\msi.xml %cd%\build\msi.xml INPUT="%cd%\!INSTALLER_FILENAME!" OUTPUT="%cd%\!MSI_FILENAME!" ZERO_PADDED_VERSION="!ZERO_PADDED_VERSION!" FULL_VERSION="!FULL_VERSION!" > NUL
 	%MSIWRAPPER% msi.xml
 )
 
