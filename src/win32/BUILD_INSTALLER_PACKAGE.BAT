@@ -105,6 +105,15 @@ COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcp110.dll" %DIST%\TortoisePlink-XP\ > NUL
 COPY /B /Y /V "%TORTOISEPLINK_XP%\TortoisePlink.exe" %DIST%\TortoisePlink-XP\Plink.exe > NUL
 COPY /B /Y /V "%TORTOISEPLINK_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
 
+ECHO ****** Adding OpenSSL
+SET OPENSSL="%XPRA_WIN32_BUILD_LIB_PREFIX%\OpenSSL"
+IF NOT EXIST "%OPENSSL%" (
+	ECHO Error: '%OPENSSL%' does not exist!
+	GOTO ERROR
+)
+COPY /Y %OPENSSL%\bin\openssl.exe %DIST%\OpenSSL.exe > NUL
+
+
 if "%DO_ZIP%"=="1" (
 	ECHO ***************************************************************
 	ECHO ****** Creating ZIP file

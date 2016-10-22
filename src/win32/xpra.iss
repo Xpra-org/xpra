@@ -7,8 +7,10 @@ DefaultDirName={pf}\Xpra
 DefaultGroupName=Xpra
 DisableProgramGroupPage=true
 OutputBaseFilename=Xpra_Setup
-Compression=lzma
-SolidCompression=true
+//Compression=none
+//Compression=lzma2/fast
+Compression=lzma2/max
+SolidCompression=yes
 AllowUNCPath=false
 VersionInfoVersion=1.0
 VersionInfoCompany=xpra.org
@@ -22,12 +24,15 @@ UninstallDisplayIcon={app}\Xpra-Launcher.exe
 Name: {app}; Flags: uninsalwaysuninstall;
 
 [Files]
-Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
+Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs onlyifdoesntexist uninsneveruninstall; AfterInstall: PostInstall()
 
 [Icons]
-Name: {group}\Xpra; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
+Name: "{group}\Xpra"; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
+Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500 --tcp-auth=sys"
+
 
 [Run]
 Filename: {app}\Xpra-Launcher.exe; Description: {cm:LaunchProgram,xpra}; Flags: nowait postinstall skipifsilent
@@ -117,5 +122,19 @@ begin
   if nMsgBoxResult = IDCANCEL then
   begin
     Result := False;
+  end;
+end;
+
+procedure PostInstall();
+var
+  cert, args, cmd: string;
+  ResultCode: integer;
+begin
+  cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
+  if (NOT FileExists(cert)) then
+  begin
+    args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -keyout "'+cert+'" -out "'+cert+'"';
+    cmd := ExpandConstant('{app}\OpenSSL.exe');
+	Exec(cmd, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
 end;
