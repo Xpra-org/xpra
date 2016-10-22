@@ -112,6 +112,7 @@ IF NOT EXIST "%OPENSSL%" (
 	GOTO ERROR
 )
 COPY /Y %OPENSSL%\bin\openssl.exe %DIST%\OpenSSL.exe > NUL
+COPY /Y %OPENSSL%\bin\openssl.cfg %DIST%\ > NUL
 
 
 if "%DO_ZIP%"=="1" (

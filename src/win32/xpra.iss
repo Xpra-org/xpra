@@ -31,7 +31,7 @@ Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs 
 Name: "{group}\Xpra"; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
-Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500 --tcp-auth=sys"; IconFilename: {app}\icons\server-connected.ico
+Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500 --tcp-auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"""; IconFilename: {app}\icons\server-connected.ico
 
 
 [Run]
@@ -127,13 +127,14 @@ end;
 
 procedure PostInstall();
 var
-  cert, args, cmd: string;
+  cert, config, args, cmd: string;
   ResultCode: integer;
 begin
   cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
   if (NOT FileExists(cert)) then
   begin
-    args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -keyout "'+cert+'" -out "'+cert+'"';
+    config := ExpandConstant('{app}\openssl.cfg');
+    args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
     cmd := ExpandConstant('{app}\OpenSSL.exe');
 	Exec(cmd, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
