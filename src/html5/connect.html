@@ -195,6 +195,9 @@
 		          <li class="list-group-item">
 		          	<input type="checkbox" id="debug"> <span>Debugging</span>
 		          </li>
+		          <li class="list-group-item">
+		          	<input type="checkbox" id="insecure"> <span>Insecure passwords - Dangerous!</span>
+		          </li>
 		        </ul>
 		      </div>
 		    </div>
@@ -285,6 +288,9 @@ function doConnect() {
 	}
 	if (document.getElementById("exit_with_client").checked) {
 		url = url + "&exit_with_client=true";
+	}
+	if (document.getElementById("insecure").checked) {
+		url = url + "&insecure=true";
 	}
 	//alert("connect to "+server+" on port "+port+" using "+encoding);
 	window.location = url;

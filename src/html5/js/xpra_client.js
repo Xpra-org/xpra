@@ -36,6 +36,7 @@ function XpraClient(container) {
 	this.cipher_in_caps = null;
 	this.cipher_out_caps = null;
 	// authentication
+	this.insecure = false;
 	this.authentication_key = null;
 	// hello
 	this.HELLO_TIMEOUT = 2000;
@@ -1014,7 +1015,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 		hmac.update(salt);
 		challenge_response = hmac.digest().toHex();
 	} else if (digest == "xor") {
-		if((!ctx.encryption) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
+		if((!ctx.encryption) && (!ctx.insecure) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
 			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
 			return;
 		}
@@ -1190,7 +1191,7 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		console.log("start of stream");
 	} else {
 		ctx.audio_ctx.asset.source._on_data(packet[2]);
-		console.log(ctx.audio_ctx.format);
+		//console.log(ctx.audio_ctx.format);
 	}
 }
 
