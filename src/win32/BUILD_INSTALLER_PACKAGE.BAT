@@ -13,6 +13,9 @@ if "%RUN_INSTALLER%"=="" (
 if "%DO_ZIP%"=="" (
 	SET DO_ZIP=1
 )
+if "%DO_MSI%"=="" (
+	SET DO_MSI=1
+)
 if "%DIST%"=="" (
 	SET DIST="dist"
 )
@@ -26,6 +29,10 @@ IF EXIST "%ProgramFiles(x86)%\Inno Setup 5\ISCC.exe" (
 SET ZIP7="%ProgramFiles%\7-Zip\7z.exe"
 IF EXIST "%ProgramFiles(x86)%\7-Zip\7z.exe" (
 	SET ZIP7="%ProgramFiles(x86)%\7-Zip\7z.exe"
+)
+SET MSIWRAPPER="%ProgramFiles%\MSI Wrapper\MsiWrapper.exe"
+IF EXIST "%ProgramFiles(x86)%\MSI Wrapper\MsiWrapper.exe" (
+	SET ZIP7="%ProgramFiles(x86)%\MSI Wrapper\MsiWrapper.exe"
 )
 IF EXIST "E:\Xpra-Build-Libs\" (
 	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs\
@@ -53,6 +60,12 @@ FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
 IF [%REVISION%]==[] set REVISION=%SVNVERSION%
 SET FULL_VERSION=%VERSION%-r%REVISION%
 ECHO Full version           %FULL_VERSION%
+
+
+SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
+SET	MSI_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.msi
+SET ZIP_DIR=Xpra%EXTRA_VERSION%%BUILD_TYPE%_%FULL_VERSION%
+SET ZIP_FILENAME=!ZIP_DIR!.zip
 
 
 REM Use a custom script to move the PyOpenGL bits back into the library.zip
@@ -95,8 +108,6 @@ COPY /B /Y /V "%TORTOISEPLINK_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
 if "%DO_ZIP%"=="1" (
 	ECHO ***************************************************************
 	ECHO ****** Creating ZIP file
-	SET ZIP_DIR=Xpra%EXTRA_VERSION%%BUILD_TYPE%_%FULL_VERSION%
-	SET ZIP_FILENAME=!ZIP_DIR!.zip
 	IF EXIST !ZIP_DIR! (
 		ECHO RD /S /Q !ZIP_DIR!
 		RD /S /Q !ZIP_DIR!
@@ -115,7 +126,6 @@ if "%DO_ZIP%"=="1" (
 if "%DO_INSTALLER%"=="1" (
 	ECHO ***************************************************************
 	ECHO ****** Creating the installer using InnoSetup:
-	SET INSTALLER_FILENAME=Xpra%EXTRA_VERSION%%BUILD_TYPE%_Setup_%FULL_VERSION%.exe
 	SET INNOSETUP_LOG=win32\innosetup.log
 	DEL /Q Xpra_Setup.exe !INSTALLER_FILENAME! !INNOSETUP_LOG! 2> NUL
 	COPY /Y win32\xpra.iss xpra.iss > NUL
@@ -137,6 +147,14 @@ if "%DO_INSTALLER%"=="1" (
 		ECHO ****** Not Running Installer
 	)
 )
+
+if "%DO_MSI%"=="1" (
+	FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print(\".\".join((__version__.split(\".\")+[\"0\",\"0\",\"0\"])[:4]))"') DO set ZERO_PADDED_VERSION=%%i
+	ECHO %PYTHON_EXE% win32\msi.py win32\msi.xml build\msi.xml INPUT="!INPUT!" OUTPUT="!OUTPUT!" ZERO_PADDED_VERSION="!ZERO_PADDED_VERSION!" FULL_VERSION="!FULL_VERSION!"
+	%PYTHON_EXE% %cd%\win32\msi.py %cd%\win32\msi.xml %cd%\build\msi.xml INPUT="%cd%\!INSTALLER_FILENAME!" OUTPUT="%cd%\!MSI_FILENAME!" ZERO_PADDED_VERSION="!ZERO_PADDED_VERSION!" FULL_VERSION="!FULL_VERSION!"
+	%MSIWRAPPER% msi.xml
+)
+
 GOTO END
 
 :ERROR
