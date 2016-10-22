@@ -14,7 +14,7 @@ import win32process     #@UnresolvedImport
 import pywintypes       #@UnresolvedImport
 
 from xpra.log import Logger
-from xpra.util import AdHocStruct, envbool
+from xpra.util import AdHocStruct, envbool, prettify_plug_name
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
@@ -271,6 +271,15 @@ class ShadowServer(GTKShadowServerBase):
                                  win32con.WM_INPUTLANGCHANGE    : "WM_INPUTLANGCHANGE",
                                  win32con.WM_WININICHANGE       : "WM_WININICHANGE",
                                  })
+
+
+    def print_screen_info(self):
+        w, h = self.root.get_size()
+        try:
+            display = prettify_plug_name(self.root.get_screen().get_display().get_name())
+        except:
+            display = ""
+        self.do_print_screen_info(display, w, h)
 
 
     def add_listen_socket(self, socktype, sock):

@@ -35,6 +35,9 @@ class ShadowServerBase(object):
     def print_screen_info(self):
         w, h = self.root_window_model.get_dimensions()
         display = os.environ.get("DISPLAY")
+        self.do_print_screen_info(display, w, h)
+
+    def do_print_screen_info(self, display, w, h):
         if display:
             log.info(" on display %s of size %ix%i", display, w, h)
         else:
