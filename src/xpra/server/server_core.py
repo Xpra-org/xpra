@@ -48,6 +48,7 @@ main_thread = threading.current_thread()
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
+SERVER_SOCKET_TIMEOUT = float(os.environ.get("XPRA_SERVER_SOCKET_TIMEOUT", "0.1"))
 
 
 def get_server_info():
@@ -157,7 +158,7 @@ class ServerCore(object):
         self._reverse_aliases = {}
         self.socket_types = {}
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
-        self._socket_timeout = 0.1
+        self._socket_timeout = SERVER_SOCKET_TIMEOUT
         self._ws_timeout = 5
         self._socket_dir = None
         self.unix_socket_paths = []
