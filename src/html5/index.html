@@ -175,7 +175,7 @@
 
 			if (!window.location.getParameter ) {
 				window.location.getParameter = function(key) {
-					var rx = new RegExp(key+"=([a-zA-Z0-9\.\-]+)");
+					var rx = new RegExp(key+"=([\%a-zA-Z0-9\.\-]+)");
 					try {
 						var value = document.URL.match(rx)[1];
 						console.log("parameter "+key+" is "+value);
@@ -193,26 +193,34 @@
 				return false;
 			}
 
+			function getparam(name) {
+				var v = window.location.getParameter(name);
+				if (!v) {
+					return v;
+				}
+			    return v.replace(/%2D/g, "-").replace(/%5F/g, "_").replace(/%2E/g, ".").replace(/%21/g, "!").replace(/%7E/g, "~").replace(/%2A/g, "*").replace(/%27/g, '\'').replace(/%28/g, '(').replace(/%29/g, ')');
+			}
+
 			$(document).ready(function() {
 
 				// look at url parameters
-				var username = window.location.getParameter("username") || null;
-				var password = window.location.getParameter("password") || null;
-				var sound = window.location.getParameter("sound") || null;
-				var encoding = window.location.getParameter("encoding") || null;
-				var action = window.location.getParameter("action") || "connect";
-				var submit = window.location.getParameter("submit") || null;
-				var server = window.location.getParameter("server") || window.location.hostname;
-				var port = window.location.getParameter("port") || window.location.port;
-				var encryption = window.location.getParameter("encryption") || null;
-				var key = window.location.getParameter("key") || null;
-				var keyboard_layout = window.location.getParameter("keyboard_layout") || null;
-				var start = window.location.getParameter("start");
-				var exit_with_children = window.location.getParameter("exit_with_children") || "";
-				var exit_with_client = window.location.getParameter("exit_with_client") || "";
-				var normal_fullscreen = window.location.getParameter("normal_fullscreen") || null;
-				var debug = window.location.getParameter("debug") || false;
-				var insecure = window.location.getParameter("insecure") || null;
+				var username = getparam("username") || null;
+				var password = getparam("password") || null;
+				var sound = getparam("sound") || null;
+				var encoding = getparam("encoding") || null;
+				var action = getparam("action") || "connect";
+				var submit = getparam("submit") || null;
+				var server = getparam("server") || window.location.hostname;
+				var port = getparam("port") || window.location.port;
+				var encryption = getparam("encryption") || null;
+				var key = getparam("key") || null;
+				var keyboard_layout = getparam("keyboard_layout") || null;
+				var start = getparam("start");
+				var exit_with_children = getparam("exit_with_children") || "";
+				var exit_with_client = getparam("exit_with_client") || "";
+				var normal_fullscreen = getparam("normal_fullscreen") || null;
+				var debug = getparam("debug") || false;
+				var insecure = getparam("insecure") || null;
 
 				// create the client
 			    var client = new XpraClient('screen');

@@ -239,6 +239,10 @@ if (!window.location.getParameter ) {
 	};
 }
 
+function encodeData(s) {
+    return encodeURIComponent(s).replace(/\-/g, "%2D").replace(/\_/g, "%5F").replace(/\./g, "%2E").replace(/\!/g, "%21").replace(/\~/g, "%7E").replace(/\*/g, "%2A").replace(/\'/g, "%27").replace(/\(/g, "%28").replace(/\)/g, "%29");
+}
+
 function doConnect() {
 	var server = document.getElementById("server").value;
 	var username = document.getElementById("username").value;
@@ -247,11 +251,11 @@ function doConnect() {
 	var encoding = document.getElementById("encoding").value;
 	var keyboard_layout = document.getElementById("keyboard_layout").value;
 	// url to client
-	var url = "/index.html?server="+encodeURIComponent(server)+"&port="+port+"&encoding="+encodeURIComponent(encoding)+"&keyboard_layout="+encodeURIComponent(keyboard_layout)+"&submit=true";
+	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true";
 	if (username.length>0)
-		url += "&username="+encodeURIComponent(username);
+		url += "&username="+encodeData(username);
 	if (password.length>0)
-		url += "&password="+encodeURIComponent(password);
+		url += "&password="+encodeData(password);
 	// check options
 	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
 	if(normal_fullscreen) {
@@ -281,7 +285,7 @@ function doConnect() {
 		url = url + "&action=shadow";
 	}
 	if(start) {
-		url = url + "&start="+encodeURIComponent(start);
+		url = url + "&start="+encodeData(start);
 	}
 	if (document.getElementById("exit_with_children").checked) {
 		url = url + "&exit_with_children=true";
