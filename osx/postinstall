@@ -18,6 +18,17 @@ if [ -d "$APP_ROOT" ]; then
 		cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
 	fi
 
+	if [ ! -e "/Library/Application Support/Xpra/ssl-cert.pem" ]; then
+		mkdir "/Library/Application Support/Xpra" 2> /dev/null
+		chmod 755 "/Library/Application Support/Xpra"
+		umask=`umask`
+		umask 077
+		openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+			-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
+			-keyout "/Library/Application Support/Xpra/ssl-cert.pem" -out "/Library/Application Support/Xpra/ssl-cert.pem" 2> /dev/null
+		umask $umask
+	fi
+
 	for x in Xpra; do
 		echo '#!/bin/sh' > /usr/local/bin/$x
 		echo exec $APP_ROOT/Contents/MacOS/$x \"\$@\" >> /usr/local/bin/$x
