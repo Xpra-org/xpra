@@ -228,9 +228,6 @@ if(!COMPILED && goog.ENABLE_DEBUG_LOADER) {
     }
   };
   goog.findBasePath_();
-  if(!goog.global.CLOSURE_NO_DEPS) {
-    goog.importScript_(goog.basePath + "deps.js")
-  }
 }
 goog.typeOf = function(value) {
   var s = typeof value;

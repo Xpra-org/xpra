@@ -1,15 +1,15 @@
 /*
- * Copyright (c) 2013 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
- * Copyright (c) 2015 Spikes, Inc.
+ * Copyright (c) 2015-2016 Spikes, Inc.
  * Licensed under MPL 2.0
  *
  * xpra client
  *
  * requires:
- *	xpra_protocol.js
- *  xpra_window.js
- *  keycodes.js
+ *	Protocol.js
+ *  Window.js
+ *  Keycodes.js
  */
 
 XPRA_CLIENT_FORCE_NO_WORKER = false;

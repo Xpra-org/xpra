@@ -1,6 +1,6 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
  * Licensed under MPL 2.0, see:
  * http://www.mozilla.org/MPL/2.0/
  *
@@ -89,6 +89,8 @@ for (var i=0; i<26; i++) {
 for (i=0; i<10; i++) {
 	CHARCODE_TO_NAME[48+i] = ""+i;
 	CHARCODE_TO_NAME[96+i] = ""+i;
+	//fix for OSX numpad?
+	//CHARCODE_TO_NAME[96+i] = "KP_"+i;
 }
 for (i=1; i<=24; i++) {
 	CHARCODE_TO_NAME[111+i] = "F"+i;
