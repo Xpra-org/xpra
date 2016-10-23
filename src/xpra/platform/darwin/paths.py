@@ -75,23 +75,30 @@ def do_get_default_conf_dirs():
 
 def do_get_system_conf_dirs():
     #the system wide configuration directory
+    dirs = []
     try:
         from Foundation import  NSSearchPathForDirectoriesInDomains, NSApplicationSupportDirectory, NSLocalDomainMask, NSSystemDomainMask  #@UnresolvedImport
-        dirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSLocalDomainMask|NSSystemDomainMask, False)
-        return list(dirs)
+        sdirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSLocalDomainMask|NSSystemDomainMask, False)
+        for x in sdirs:
+            #ie: "/Library/Application Support/Xpra"
+            dirs.append(os.path.join(x, "Xpra"))
     except:
-        pass
-    #fallback to hardcoded:
-    default_conf_dir = "/Library/Application Support/Xpra"
-    return [os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)]
+        #fallback to hardcoded:
+        default_conf_dir = "/Library/Application Support/Xpra"
+        dirs = [os.environ.get("XPRA_SYSCONF_DIR", default_conf_dir)]
+    dirs.append("/etc/xpra")
+    return dirs
 
 def do_get_user_conf_dirs():
     #the system wide configuration directory
+    dirs = []
     try:
         #when running sandboxed, it may look like this:
         #~/Library/Containers/<bundle_id>/Data/Library/Application Support/
         from Foundation import  NSSearchPathForDirectoriesInDomains, NSApplicationSupportDirectory, NSUserDomainMask    #@UnresolvedImport
-        dirs = list(NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, False))
+        udirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, False)
+        for x in udirs:
+            dirs.append(os.path.join(x, "Xpra"))
     except:
         #fallback to hardcoded:
         dirs = ["/Library/Application Support/Xpra"]
@@ -103,12 +110,11 @@ def do_get_default_log_dirs():
     try:
         from Foundation import  NSSearchPathForDirectoriesInDomains, NSLibraryDirectory, NSUserDomainMask    #@UnresolvedImport
         udirs = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, False)
-        #ie: ~/Library/
-        library_dir = udirs[0]
-        dirs.append(os.path.join(library_dir, "Xpra"))
+        for x in udirs:
+            #ie: ~/Library/
+            dirs.append(os.path.join(x, "Logs", "Xpra"))
     except:
-        pass
-    dirs.append("~/Library/Logs")
+        dirs.append("~/Library/Logs/Xpra")
     dirs.append("/tmp")
     return dirs
 
