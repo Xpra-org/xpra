@@ -244,9 +244,9 @@
 					--disable-programs --disable-avfilter --disable-doc
 					--disable-audiotoolbox --disable-videotoolbox"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.1.4.tar.bz2"
-		version="3.1.4"
-		hash="sha256:7c99df75a4dc12d22c0f1ed11d0acf98cac1f8b5fe7a7434344b167f810bcbfa"
+	<branch module="/releases/ffmpeg-3.1.5.tar.bz2"
+		version="3.1.5"
+		hash="sha256:2400882a2c7795c74f0abebc28d267f2796510fb69ba324b0e9f16cc8dbb0d2b"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
