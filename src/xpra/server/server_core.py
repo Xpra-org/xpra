@@ -673,7 +673,7 @@ class ServerCore(object):
                     req_info = "%s %s" % (http_proto, parts[0])
                 else:
                     httplog("New %s connection received from %s", http_proto, frominfo)
-                    req_info = "ws%s"+["","s"][int(is_ssl)]
+                    req_info = "ws"+["","s"][int(is_ssl)]
                     tname = "%s-proxy" % req_info
                 start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, req_info, conn.remote))
                 return False, conn, None
