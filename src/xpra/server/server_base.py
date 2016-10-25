@@ -783,7 +783,8 @@ class ServerBase(ServerCore):
             #network and transfers:
             ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=3),
             ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3, ),
-            ArgsControlCommand("send-notification",     "sends a notification to the client(s)",  min_args=3, max_args=4),
+            ArgsControlCommand("send-notification",     "sends a notification to the client(s)",  min_args=4, max_args=5, validation=[int]),
+            ArgsControlCommand("close-notification",    "send the request to close an existing notification to the client(s)", min_args=1, max_args=2, validation=[int]),
             ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
             ArgsControlCommand("encoder",               "sets the packet encoder",          min_args=1, max_args=1),
             ArgsControlCommand("clipboard-direction",   "restrict clipboard transfers",     min_args=1, max_args=1),
@@ -1503,20 +1504,34 @@ class ServerBase(ServerCore):
                 commandlog.warn("client connection not found for uuid(s): %s", notfound)
         return sources
 
-    def control_command_send_notification(self, title, message, client_uuids):
+    def control_command_send_notification(self, nid, title, message, client_uuids):
         if not self.notifications:
             msg = "notifications are disabled"
             notifylog(msg)
             return msg
         sources = self._control_get_sources(client_uuids)
-        notifylog("control_command_send_notification(%s, %s, %s) will send to %s", title, message, client_uuids, sources)
+        notifylog("control_command_send_notification(%i, %s, %s, %s) will send to %s", nid, title, message, client_uuids, sources)
         count = 0
         for source in sources:
-            if source.notify(0, 0, "control channel", 0, "", title, message, 10):
+            if source.notify(0, nid, "control channel", 0, "", title, message, 10):
                 count += 1
-        msg = "notification message send to %i clients" % count
+        msg = "notification id %i: message sent to %i clients" % (nid, count)
         notifylog(msg)
         return msg
+
+    def control_command_close_notification(self, nid, client_uuids):
+        if not self.notifications:
+            msg = "notifications are disabled"
+            notifylog(msg)
+            return msg
+        sources = self._control_get_sources(client_uuids)
+        notifylog("control_command_close_notification(%s, %s) will send to %s", nid, client_uuids, sources)
+        for source in sources:
+            source.notify_close(nid)
+        msg = "notification id %i: close request sent to %i clients" % (nid, len(sources))
+        notifylog(msg)
+        return msg
+
 
     def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
         openit = str(openit).lower() in ("open", "true", "1")

@@ -14,130 +14,7 @@
 		<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
 		<link rel="icon" type="image/png" href="/favicon.png">
 
-		<style>
-			html, body {
-			    height: 100%;
-			    width: 100%;
-			    padding: 0;
-			    margin: 0;
-			    overflow: hidden;
-			}
-			div#connect_form {
-				display: none;
-			}
-			div#disconnect_form {
-				display: none;
-			}
-			canvas {
-				border: none;
-				padding: 0;
-				margin: 0;
-			}
-			#pasteboard {
-				position: fixed;
-				top: -30px;
-				left: 1px;
-			}
-			.undecorated {
-				position: absolute;
-				padding: 0;
-				overflow: hidden;
-			}
-			.override-redirect {
-				z-index: 15000;
-			}
-			.window {
-				border: 1px;
-				position: absolute;
-				box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
-				padding: 0;
-				overflow: hidden; /* required for radius clip */
-			}
-			.window-NORMAL {
-				border-radius: 6px;
-			}
-			.window-DROPDOWN_MENU {
-				z-index: 20000;
-			}
-			.window-TOOLTIP {
-				z-index: 20000;
-			}
-			.window-POPUP_MENU {
-				z-index: 20000;
-			}
-			.window-MENU {
-				z-index: 20000;
-			}
-			.window-COMBO {
-				z-index: 20000;
-			}
-			.window-UTILITY {
-				z-index: 15000;
-			}
-			.window-DIALOG {
-				z-index: 15000;
-			}
-			.windowhead {
-				height: 30px;
-				color: #000000;
-				background-color: #c0c0c0;
-			}
-			.windowicon {
-				display: inline-block;
-				float: left;
-				width: 30px;
-				height: 30px;
-				overflow: hidden;
-				cursor: default;
-			}
-			.windowtitle {
-				display: inline-block;
-				float: left;
-				width: 70%;
-				overflow: hidden;
-				text-overflow:ellipsis;
-				white-space: nowrap;
-				padding: 5px;
-				cursor: default;
-			}
-			.windowbuttons {
-			    display: inline-block;
-			    float: right;
-			    padding-right: 5px;
-			    cursor: pointer;
-			    padding-top: 7px;
-			}
-			.windowinfocus {
-				z-index: 10000;
-			}
-			.spinneroverlay {
-				width: 100%;
-				height: 100%;
-				display: none;
-				background-color: black;
-				opacity: 0.5;
-				position: absolute;
-			}
-			.spinnermiddle {
-				display: table-cell;
-				vertical-align: middle;
-			}
-			.ui-resizable-helper {
-				border: 2px dotted #00F;
-				z-index: 30000 !important;
-			}
-			.ui-resizable-handle { position: absolute;font-size: 0.1px; display: block; }
-			.ui-resizable-disabled .ui-resizable-handle, .ui-resizable-autohide .ui-resizable-handle { display: none; }
-			.ui-resizable-n { cursor: n-resize; height: 7px; width: 100%; top: -5px; left: 0; }
-			.ui-resizable-s { cursor: s-resize; height: 7px; width: 100%; bottom: -5px; left: 0; }
-			.ui-resizable-e { cursor: e-resize; width: 7px; right: -5px; top: 0; height: 100%; }
-			.ui-resizable-w { cursor: w-resize; width: 7px; left: -5px; top: 0; height: 100%; }
-			.ui-resizable-se { cursor: se-resize; width: 12px; height: 12px; right: 1px; bottom: 1px; }
-			.ui-resizable-sw { cursor: sw-resize; width: 9px; height: 9px; left: -5px; bottom: -5px; }
-			.ui-resizable-nw { cursor: nw-resize; width: 9px; height: 9px; left: -5px; top: -5px; }
-			.ui-resizable-ne { cursor: ne-resize; width: 9px; height: 9px; right: -5px; top: -5px;}
-		</style>
-		
+		<link rel="stylesheet" href="css/client.css">
 		<link rel="stylesheet" href="css/spinner.css">
 
 		<script type="text/javascript" src="js/lib/jquery.min.js"></script>
@@ -158,6 +35,7 @@
 		<script type="text/javascript" src="js/Client.js"></script>
 		<script type="text/javascript" src="js/Protocol.js"></script>
 		<script type="text/javascript" src="js/Window.js"></script>
+		<script type="text/javascript" src="js/Notifications.js"></script>
 	</head>
 
 	<body>
@@ -165,6 +43,9 @@
 		</div>
 
 		<div id="screen" style="width: 100%; height:100%;">
+		</div>
+
+		<div class="notifications">
 		</div>
 
 		<input id="pasteboard" onblur="this.focus()" autofocus />

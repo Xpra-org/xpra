@@ -282,10 +282,14 @@ class DBUS_Server(dbus.service.Object):
         disable_debug_for(c)
 
 
-    @dbus.service.method(INTERFACE, in_signature='sss')
-    def SendNotification(self, title, message, uuids):
-        self.log(".SendNotification%s", (title, message, uuids))
-        self.server.control_command_send_notification(ns(title), ns(message), ns(uuids))
+    @dbus.service.method(INTERFACE, in_signature='isss')
+    def SendNotification(self, nid, title, message, uuids):
+        self.log(".SendNotification%s", (nid, title, message, uuids))
+        self.server.control_command_send_notification(ni(nid), ns(title), ns(message), ns(uuids))
+
+    def CloseNotification(self, nid, uuids):
+        self.log(".CloseNotification%s", (nid, uuids))
+        self.server.control_command_close_notification(ni(nid), ns(uuids))
 
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')

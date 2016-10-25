@@ -1,43 +1,43 @@
 body {
-  padding-top: 40px;
-  padding-bottom: 40px;
-  background-color: #eee;
+	padding-top: 40px;
+	padding-bottom: 40px;
+	background-color: #eee;
 }
 
 .form-signin {
-  max-width: 530px;
-  padding: 15px;
-  margin: 0 auto;
+	max-width: 530px;
+	padding: 15px;
+	margin: 0 auto;
 }
 .form-or-heading {
-  text-align: center;
+	text-align: center;
 }
 .form-signin .form-signin-heading,
 .form-signin .checkbox {
-  margin-bottom: 10px;
+	margin-bottom: 10px;
 }
 .form-signin .checkbox, .form-signin .radiobox {
-  font-weight: normal;
+	font-weight: normal;
 }
 .form-signin .form-control {
-  position: relative;
-  -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
-  padding: 10px;
-  font-size: 16px;
+	position: relative;
+	-webkit-box-sizing: border-box;
+	   -moz-box-sizing: border-box;
+	        box-sizing: border-box;
+	padding: 10px;
+	font-size: 16px;
 }
 .form-signin .form-control:focus {
-  z-index: 2;
+	z-index: 2;
 }
 .form-signin .panel-group {
-  padding-top:8px;
+	padding-top:8px;
 }
 
 .form-signin .list-style-none {
-  list-style-type:none;
+	list-style-type:none;
 }
 .form-signin .action input {
-  font-size: 12px;
-  padding: 2px;
+	font-size: 12px;
+	padding: 2px;
 }

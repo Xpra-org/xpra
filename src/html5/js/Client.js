@@ -103,6 +103,8 @@ function XpraClient(container) {
 		'draw': this._process_draw,
 		'cursor': this._process_cursor,
 		'bell': this._process_bell,
+		'notify_show' : this._process_notify_show,
+		'notify_close' : this._process_notify_close,
 		'sound-data': this._process_sound_data,
 		'clipboard-token': this._process_clipboard_token,
 		'set-clipboard-enabled': this._process_set_clipboard_enabled,
@@ -625,7 +627,7 @@ XpraClient.prototype._make_hello_base = function() {
 	if(LZ4) {
 		this._update_capabilities({
 			"lz4"						: true,
-			"lz4.js.version"			: LZ4.version, 
+			"lz4.js.version"			: LZ4.version,
 			"encoding.rgb_lz4"			: true,
 		});
 	}
@@ -786,7 +788,7 @@ XpraClient.prototype._window_geometry_changed = function(win) {
 	// so use win.client instead of `this` to refer to the client
 	var geom = win.get_internal_geometry();
 	var wid = win.wid;
-	
+
 	if (!win.override_redirect) {
 		win.client._window_set_focus(win);
 	}
@@ -927,7 +929,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
         	}
         }
     }
-    
+
 	var version = hello["version"];
 	try {
 		var vparts = version.split(".");
@@ -1134,6 +1136,35 @@ XpraClient.prototype._process_bell = function(packet, ctx) {
 	}
 	return;
 }
+
+XpraClient.prototype._process_notify_show = function(packet, ctx) {
+	//TODO: add UI switch to disable notifications
+	var dbus_id = packet[1];
+	var nid = packet[2];
+	var app_name = packet[3];
+	var replaces_nid = packet[4];
+	var app_icon = packet[5];
+	var summary = packet[6];
+	var body = packet[7];
+	var expire_timeout = packet[8];
+	if(window.closeNotification) {
+		if (replaces_nid>0) {
+			window.closeNotification(replaces_nid);
+		}
+		window.closeNotification(nid);
+	}
+	if(window.doNotification) {
+		window.doNotification("info", nid, summary, body, expire_timeout);
+	}
+}
+
+XpraClient.prototype._process_notify_close = function(packet, ctx) {
+    nid = packet[1];
+    if(window.closeNotification) {
+    	window.closeNotification(nid);
+    }
+}
+
 
 XpraClient.prototype.reset_cursor = function(packet, ctx) {
 	for (var wid in ctx.id_to_window) {
