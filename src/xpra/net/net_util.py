@@ -111,14 +111,33 @@ def do_get_bind_ifacemask(iface):
 	return ipmasks
 
 def get_iface(ip):
+	log("get_iface(%s)", ip)
 	if not ip:
 		return	None
+	if any(x for x in ip if (".:0123456789").find(x)<0):
+		#extra characters, assume this is a hostname:
+		try:
+			v = socket.getaddrinfo(ip, None)
+			assert len(v)>0
+		except Exception as e:
+			log.error("Error: cannot revolve '%s'", ip)
+			return None
+		for i, x in enumerate(v):
+			family, socktype, proto, canonname, sockaddr = x
+			log("get_iface(%s) [%i]=%s", ip, i, (family, socktype, proto, canonname, sockaddr))
+			if ip.find(":")>0 and family==socket.AF_INET6:
+				break
+			elif family==socket.AF_INET:
+				break
+		log("get_iface(%s) sockaddr=%s", ip, sockaddr)
+		ip = sockaddr[0]
+
 	if ip.find(":")>=0:
 		#ipv6?
 		return None
+	
 	ip_parts = ip.split(".")
 	if len(ip_parts)!=4:
-		log.error("Error: invalid IPv4 format, %d parts in '%s'", len(ip_parts), ip_parts)
 		return	None
 
 	best_match = None
