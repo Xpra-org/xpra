@@ -375,14 +375,22 @@ $(document).ready(function() {
 	}
 	document.getElementById('keyboard_layout').value = keyboard_layout;
 
-	var exit_with_children = Boolean(window.location.getParameter("exit_with_children") || "");
-   	$('input#exit_with_children').prop("checked", exit_with_children);
-	var exit_with_client = Boolean(window.location.getParameter("exit_with_client") || "");
-	$('input#exit_with_client').prop("checked", exit_with_client);
-	var sound = Boolean(window.location.getParameter("sound") || "");
-	$('input#sound').prop("checked", sound);
-	var normal_fullscreen = Boolean(window.location.getParameter("normal_fullscreen") || "");
-	$('input#normal_fullscreen').prop("checked", normal_fullscreen);
+	var exit_with_children = window.location.getParameter("exit_with_children") || "";
+	if(exit_with_children=="true") {
+	   	$('input#exit_with_children').prop("checked", exit_with_children);
+	}
+	var exit_with_client = window.location.getParameter("exit_with_client") || "";
+	if(exit_with_client=="true") {
+		$('input#exit_with_client').prop("checked", exit_with_client);
+	}
+	var sound = window.location.getParameter("sound") || "";
+	if(sound=="true") {
+		$('input#sound').prop("checked", sound);
+	}
+	var normal_fullscreen = window.location.getParameter("normal_fullscreen") || "";
+	if(normal_fullscreen=="true") {
+		$('input#normal_fullscreen').prop("checked", normal_fullscreen);
+	}
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
