@@ -46,6 +46,7 @@ class BonjourPublishers:
     """
 
     def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict={}):
+        log("BonjourPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.publishers = []
         for host, port in listen_on:
             iface_index = get_interface_index(host)
@@ -74,6 +75,7 @@ class BonjourPublishers:
 class BonjourPublisher:
 
     def __init__(self, iface_index, port, service_name, service_type, text_record):
+        log("BonjourPublisher%s", (iface_index, port, service_name, service_type, text_record))
         self.sdref = None
         self.reader = None
         self.iface_index = iface_index

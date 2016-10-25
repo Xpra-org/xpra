@@ -54,6 +54,7 @@ class AvahiPublishers:
     """
 
     def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict={}):
+        log("AvahiPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.publishers = []
         try:
             bus = init_system_bus()
