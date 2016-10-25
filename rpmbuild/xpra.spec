@@ -181,9 +181,6 @@ Requires: %{requires_dbus}
 Requires: %{requires_crypto}
 #used for locating the Xorg binary:
 Requires: which
-#we cannot depend on 'avahi-ui-tools' which we need for mdns support
-#(it provides the avahi python bindings)
-#because Fedora and CentOS bring in some insane dependencies with it (vnc)
 Requires: %{py2prefix}-netifaces
 Requires: %{py2prefix}-rencode
 Requires: %{py2prefix}-pillow
@@ -193,6 +190,7 @@ Requires: gtk2-immodule-xim
 Requires: %{requires_xorg}
 Requires: %{libvpx}
 %if 0%{?fedora}
+Requires: python-avahi
 Requires: libwebp
 Requires: libyuv
 %endif
