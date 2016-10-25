@@ -99,6 +99,7 @@ function XpraClient(container) {
 		'window-resized': this._process_window_resized,
 		'window-move-resize': this._process_window_move_resize,
 		'configure-override-redirect': this._process_configure_override_redirect,
+		'desktop_size': this._process_desktop_size,
 		'draw': this._process_draw,
 		'cursor': this._process_cursor,
 		'bell': this._process_bell,
@@ -1105,6 +1106,12 @@ XpraClient.prototype._process_configure_override_redirect = function(packet, ctx
 	if (win!=null) {
 		win.move_resize(x, y, width, height);
 	}
+}
+
+XpraClient.prototype._process_desktop_size = function(packet, ctx) {
+	//root_w, root_h, max_w, max_h = packet[1:5]
+	//we don't use this yet,
+	//we could use this to clamp the windows to a certain area
 }
 
 XpraClient.prototype._process_bell = function(packet, ctx) {
