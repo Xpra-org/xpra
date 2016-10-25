@@ -157,6 +157,7 @@ class AvahiPublisher:
             self.group.Commit()
             log("dbus service added")
         except DBusException as e:
+            log("cannot add service", exc_info=True)
             #use try+except as older versions may not have those modules?
             message = e.get_dbus_message()
             dbus_error_name = e.get_dbus_name()
