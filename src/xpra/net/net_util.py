@@ -114,6 +114,9 @@ def get_iface(ip):
 	log("get_iface(%s)", ip)
 	if not ip:
 		return	None
+	if ip.find(":")>=0:
+		#ipv6?
+		return None
 	if any(x for x in ip if (".:0123456789").find(x)<0):
 		#extra characters, assume this is a hostname:
 		try:
@@ -125,17 +128,11 @@ def get_iface(ip):
 		for i, x in enumerate(v):
 			family, socktype, proto, canonname, sockaddr = x
 			log("get_iface(%s) [%i]=%s", ip, i, (family, socktype, proto, canonname, sockaddr))
-			if ip.find(":")>0 and family==socket.AF_INET6:
-				break
-			elif family==socket.AF_INET:
+			if family==socket.AF_INET:
 				break
 		log("get_iface(%s) sockaddr=%s", ip, sockaddr)
 		ip = sockaddr[0]
 
-	if ip.find(":")>=0:
-		#ipv6?
-		return None
-	
 	ip_parts = ip.split(".")
 	if len(ip_parts)!=4:
 		return	None
