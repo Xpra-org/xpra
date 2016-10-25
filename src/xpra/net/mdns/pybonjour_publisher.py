@@ -24,8 +24,9 @@ SHOW_INTERFACE = True            #publishes the name of the interface we broadca
 
 def get_interface_index(host):
     if host == "0.0.0.0" or host =="" or host=="*":
-        return    pybonjour.kDNSServiceInterfaceIndexAny
-        #kDNSServiceInterfaceIndexLocalOnly
+        return pybonjour.kDNSServiceInterfaceIndexAny
+    if host=="127.0.0.1" or host=="::1":
+        return pybonjour.kDNSServiceInterfaceIndexLocalOnly
     if not if_nametoindex:
         WIN32 = sys.platform.startswith("win")
         if not WIN32:
