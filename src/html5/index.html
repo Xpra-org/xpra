@@ -107,13 +107,13 @@
 				var insecure = getparam("insecure") || null;
 
 				// create the client
-			    var client = new XpraClient('screen');
+				var client = new XpraClient('screen');
 				client.debug = debug;
 
-			    // the primary encoding can be set
-			    if(encoding) {
-			    	client.enable_encoding(encoding);
-			    }
+				// the primary encoding can be set
+				if(encoding) {
+					client.enable_encoding(encoding);
+				}
 			    // encodings can be disabled like so
 			    // client.disable_encoding("h264");
 			    if(action && (action!="connect")) {

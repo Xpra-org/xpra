@@ -87,22 +87,22 @@ function XpraProtocol() {
 	this.cipher_in = null;
 	this.cipher_in_block_size = null;
 	this.cipher_out = null;
-	this.mode = 'binary';  // Current WebSocket mode: 'binary', 'base64'
-    this.rQ = [];          // Receive queue
-    this.rQi = 0;          // Receive queue index
-    this.rQmax = 10000;    // Max receive queue size before compacting
-    this.sQ = [];          // Send queue
+	this.mode = 'binary';  	// Current WebSocket mode: 'binary', 'base64'
+	this.rQ = [];		  	// Receive queue
+	this.rQi = 0;		  	// Receive queue index
+	this.rQmax = 10000;		// Max receive queue size before compacting
+	this.sQ = [];		  	// Send queue
 }
 
 XpraProtocol.prototype.open = function(uri) {
 	var me = this;
 	// init
-	this.rQ         = [];
-    this.rQi        = 0;
-    this.sQ         = [];
-    this.websocket  = null;
-    // connect the socket
-    this.websocket = new WebSocket(uri, 'binary');
+	this.rQ		 = [];
+	this.rQi		= 0;
+	this.sQ		 = [];
+	this.websocket  = null;
+	// connect the socket
+	this.websocket = new WebSocket(uri, 'binary');
 	this.websocket.binaryType = 'arraybuffer';
 	this.websocket.onopen = function () {
 		me.packet_handler(['open'], me.packet_ctx);
@@ -115,14 +115,14 @@ XpraProtocol.prototype.open = function(uri) {
 	};
 	this.websocket.onmessage = function (e) {
 		// push arraybuffer values onto the end
-        var u8 = new Uint8Array(e.data);
-        for (var i = 0; i < u8.length; i++) {
-            me.rQ.push(u8[i]);
-        }
-        // wait for 8 bytes
-        if (me.rQ.length >= 8) {
-	        me._process();
-	    }
+		var u8 = new Uint8Array(e.data);
+		for (var i = 0; i < u8.length; i++) {
+			me.rQ.push(u8[i]);
+		}
+		// wait for 8 bytes
+		if (me.rQ.length >= 8) {
+			me._process();
+		}
 	};
 }
 

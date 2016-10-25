@@ -114,7 +114,7 @@ function get_event_modifiers(event) {
 			modifiers.push("shift");
 		if (event.modifiers & Event.META_MASK)
 			modifiers.push("meta");
-    } else {
+	} else {
 		if (event.altKey)
 			modifiers.push("alt");
 		if (event.ctrlKey)

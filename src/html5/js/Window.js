@@ -120,11 +120,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 			});
 			// attach resize handles
 			jQuery(this.div).resizable({
-		      helper: "ui-resizable-helper",
-		      stop: function(e, ui) {
-		      	me.handle_resized(ui);
-		      }
-		    });
+			  helper: "ui-resizable-helper",
+			  stop: function(e, ui) {
+			  	me.handle_resized(ui);
+			  }
+			});
 			this.d_header = '#head' + String(wid);
 			this.d_closebtn = '#close' + String(wid);
 			this.d_maximizebtn = '#maximize' + String(wid);
@@ -330,16 +330,16 @@ XpraWindow.prototype.on_mousescroll = function(e) {
 	var buttons = [];
 
 	// see if we are going up or down
-    if (e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) {
-        // scroll up
-        this.handle_mouse_click(4, true, mx, my, modifiers, buttons);
-        this.handle_mouse_click(4, false, mx, my, modifiers, buttons);
-    }
-    else {
-    	// scroll down
-    	this.handle_mouse_click(5, true, mx, my, modifiers, buttons);
-        this.handle_mouse_click(5, false, mx, my, modifiers, buttons);
-    }
+	if (e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) {
+		// scroll up
+		this.handle_mouse_click(4, true, mx, my, modifiers, buttons);
+		this.handle_mouse_click(4, false, mx, my, modifiers, buttons);
+	}
+	else {
+		// scroll down
+		this.handle_mouse_click(5, true, mx, my, modifiers, buttons);
+		this.handle_mouse_click(5, false, mx, my, modifiers, buttons);
+	}
 }
 
 /**
@@ -381,8 +381,8 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	if(safe) {
 		this.set_metadata_safe(metadata);
 	} else {
-    	this.set_metadata(metadata)
-    }
+		this.set_metadata(metadata)
+	}
 };
 
 /**
@@ -390,13 +390,13 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
  */
 XpraWindow.prototype.set_metadata_safe = function(metadata) {
 	"use strict";
-    if ("title" in metadata) {
-    	this.title = metadata["title"];
-    	jQuery('#title' + this.wid).html(this.title);
-    }
-    if ("window-type" in metadata) {
-    	this.windowtype = metadata["window-type"][0];
-    }
+	if ("title" in metadata) {
+		this.title = metadata["title"];
+		jQuery('#title' + this.wid).html(this.title);
+	}
+	if ("window-type" in metadata) {
+		this.windowtype = metadata["window-type"][0];
+	}
 };
 
 /**
@@ -404,19 +404,19 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
  */
 XpraWindow.prototype.set_metadata = function(metadata) {
 	"use strict";
-    if ("fullscreen" in metadata) {
-    	this.set_fullscreen(metadata["fullscreen"]==1);
-    }
-    if ("maximized" in metadata) {
-    	this.set_maximized(metadata["maximized"]==1);
-    }
-    if ("title" in metadata) {
-    	this.title = metadata["title"];
-    	jQuery('#title' + this.wid).html(this.title);
-    }
-    if ("window-type" in metadata) {
-    	this.windowtype = metadata["window-type"][0];
-    }
+	if ("fullscreen" in metadata) {
+		this.set_fullscreen(metadata["fullscreen"]==1);
+	}
+	if ("maximized" in metadata) {
+		this.set_maximized(metadata["maximized"]==1);
+	}
+	if ("title" in metadata) {
+		this.title = metadata["title"];
+		jQuery('#title' + this.wid).html(this.title);
+	}
+	if ("window-type" in metadata) {
+		this.windowtype = metadata["window-type"][0];
+	}
 };
 
 /**
@@ -426,11 +426,11 @@ XpraWindow.prototype.set_metadata = function(metadata) {
 XpraWindow.prototype.save_geometry = function() {
 	"use strict";
 
-    this.saved_geometry = {
-    		"x" : this.x,
-    		"y"	: this.y,
-    		"w"	: this.w,
-    		"h" : this.h};
+	this.saved_geometry = {
+			"x" : this.x,
+			"y"	: this.y,
+			"w"	: this.w,
+			"h" : this.h};
 }
 /**
  * Restores the saved geometry (if it exists).
@@ -712,20 +712,20 @@ XpraWindow.prototype.draw = function() {
 };
 
 XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
-    // apply in chunks of 10400 to avoid call stack overflow
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
-    var s = "";
-    var skip = 10400;
-    if (uintArray.subarray) {
-        for (var i=0, len=uintArray.length; i<len; i+=skip) {
-            s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
-        }
-    } else {
-        for (var i=0, len=uintArray.length; i<len; i+=skip) {
-            s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
-        }
-    }
-    return window.btoa(s);
+	// apply in chunks of 10400 to avoid call stack overflow
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
+	var s = "";
+	var skip = 10400;
+	if (uintArray.subarray) {
+		for (var i=0, len=uintArray.length; i<len; i+=skip) {
+			s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
+		}
+	} else {
+		for (var i=0, len=uintArray.length; i<len; i+=skip) {
+			s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
+		}
+	}
+	return window.btoa(s);
 }
 
 /**
@@ -737,11 +737,11 @@ XpraWindow.prototype._init_avc = function() {
 	this.avc = new Decoder({
 		rgb: true
 	});
-    this.avc.onPictureDecoded = function(buffer, bufWidth, bufHeight) {
-        var img = me.offscreen_canvas_ctx.createImageData(bufWidth, bufHeight);
-        img.data.set(buffer);
+	this.avc.onPictureDecoded = function(buffer, bufWidth, bufHeight) {
+		var img = me.offscreen_canvas_ctx.createImageData(bufWidth, bufHeight);
+		img.data.set(buffer);
 		me.offscreen_canvas_ctx.putImageData(img, 0, 0);
-    };
+	};
 };
 
 
@@ -758,8 +758,8 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	if (coding=="rgb32") {
 		// create image data
 		if(this.offscreen_canvas_mode!='2d') {
-	    	this._init_2d_canvas();
-	    }
+			this._init_2d_canvas();
+		}
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		//if the pixel data is not in an array buffer already, convert it:
 		//(this happens with inlined pixel data)
@@ -809,18 +809,18 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	else if (coding=="jpeg" || coding=="png") {
 		// create image data
 		if(this.offscreen_canvas_mode!='2d') {
-	    	this._init_2d_canvas();
-	    }
+			this._init_2d_canvas();
+		}
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		// decode image
 		var j = new Image();
 		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
 		var me = this;
-	    j.onload = function () {
-	        me.offscreen_canvas_ctx.drawImage(j, x, y);
-	        // send decode callback once we actually decoded
+		j.onload = function () {
+			me.offscreen_canvas_ctx.drawImage(j, x, y);
+			// send decode callback once we actually decoded
 			decode_callback(me.client);
-	    };
+		};
 	}
 	else if (coding=="h264") {
 		if(!this.avc) {
