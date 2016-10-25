@@ -97,6 +97,8 @@ function XpraClient(container) {
 		'raise-window': this._process_raise_window,
 		'window-icon': this._process_window_icon,
 		'window-resized': this._process_window_resized,
+		'window-move-resize': this._process_window_move_resize,
+		'configure-override-redirect': this._process_configure_override_redirect,
 		'draw': this._process_draw,
 		'cursor': this._process_cursor,
 		'bell': this._process_bell,
@@ -1078,6 +1080,30 @@ XpraClient.prototype._process_window_resized = function(packet, ctx) {
 	var win = ctx.id_to_window[wid];
 	if (win!=null) {
 		win.resize(width, height);
+	}
+}
+
+XpraClient.prototype._process_window_move_resize = function(packet, ctx) {
+	var wid = packet[1];
+    var x = packet[2];
+    var y = packet[3];
+	var width = packet[4];
+	var height = packet[5];
+	var win = ctx.id_to_window[wid];
+	if (win!=null) {
+		win.move_resize(x, y, width, height);
+	}
+}
+
+XpraClient.prototype._process_configure_override_redirect = function(packet, ctx) {
+	var wid = packet[1];
+    var x = packet[2];
+    var y = packet[3];
+	var width = packet[4];
+	var height = packet[5];
+	var win = ctx.id_to_window[wid];
+	if (win!=null) {
+		win.move_resize(x, y, width, height);
 	}
 }
 
