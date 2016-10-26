@@ -39,7 +39,6 @@ webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 
 
-from xpra import __version__ as XPRA_VERSION
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase
 from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE)
