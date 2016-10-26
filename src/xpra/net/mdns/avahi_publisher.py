@@ -138,10 +138,12 @@ class AvahiPublisher:
         self.server.connect_to_signal("StateChanged", self.server_state_changed)
         return self.server_state_changed(self.server.GetState())
 
-    def server_state_changed(self, state):
-        log("server_state_changed(%s) on %s", state, self.server)
+    def server_state_changed(self, state, error=None):
+        log("server_state_changed(%s, %s) on %s", state, error, self.server)
         if state == avahi.SERVER_COLLISION:
-            log.error("Warning: mdns server name collision")
+            log.error("Error: mdns server name collision")
+            if error:
+                log.error(" %s", error)
             self.stop()
         elif state == avahi.SERVER_RUNNING:
             self.add_service()
