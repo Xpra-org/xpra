@@ -10,7 +10,7 @@ import re
 from xpra.x11.gtk2 import gdk_display_source
 assert gdk_display_source
 
-from xpra.util import std
+from xpra.util import std, csv
 from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.gtk_common.error import xsync
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -69,7 +69,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         """ The xkbmap_query_struct data will look something like this:
             {
             "rules"       : "evdev",
-            "model"       : "evdev",
+            "model"       : "pc105",
             "layout"      : "gb",
             "options"     : "grp:shift_caps_toggle",
             }
@@ -95,6 +95,12 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                     return
                 except:
                     log.error("failed to set exact keymap even without applying options")
+        else:
+            try:
+                X11Keyboard.setxkbmap(rules, model, "", "", "")
+                return
+            except:
+                log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
     if xkbmap_print:
         log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
@@ -179,7 +185,9 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
             if len(mods)>1:
-                log.warn("keymapping removed invalid keycode entry %s pointing to more than one modifier (%s): %s", keycode, mods, entries)
+                log.warn("Warning: keymapping removed an invalid keycode entry:")
+                log.warn(" keycode %s points to %i modifiers: %s", keycode, len(mods), csv(list(mods)))
+                log.warn(" from definition: %s", csv(list(entries)))
                 continue
             #now remove entries for keysyms we don't have:
             f_entries = set([(keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None])
