@@ -578,6 +578,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     if sockpath.startswith("/var/run/xpra"):
                         log.warn("Warning: cannot create socket '%s'", sockpath)
                         log.warn(" %s", e)
+                        if not os.path.exists("/var/run/xpra"):
+                            log.warn(" %s does not exist", "/var/run/xpra")
                         if os.name=="posix":
                             uid = getuid()
                             username = get_username_for_uid(uid)
@@ -585,11 +587,19 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                             log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
                             if "xpra" not in groups:
                                 log.warn(" (missing 'xpra' group membership?)")
+                            try:
+                                import stat
+                                log.warn(" permissions on %s: %s", "/var/run/xpra", oct(stat.S_IMODE(os.stat("/var/run/xpra").st_mode)))
+                            except:
+                                pass
                         continue
                     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
                         log.warn("Warning: cannot create socket '%s':", sockpath)
                         log.warn(" %s", e)
-                        log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
+                        if not os.path.exists("/var/run/user"):
+                            log.warn(" %s does not exist", "/var/run/user")
+                        else:
+                            log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
                         continue
                     else:
                         log.error("Error: failed to create socket '%s':", sockpath)
