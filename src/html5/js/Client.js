@@ -653,7 +653,7 @@ XpraClient.prototype._make_hello = function() {
 		// printing
 		"file-transfer" 			: true,
 		"printing" 					: true,
-	"file-size-limit"				: 10,
+		"file-size-limit"				: 10,
 	});
 }
 
