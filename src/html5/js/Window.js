@@ -684,7 +684,7 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 
 XpraWindow.prototype.reset_cursor = function() {
 	"use strict";
-	
+
 	jQuery("#"+String(this.wid)).css("cursor", 'default');
 };
 

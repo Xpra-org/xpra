@@ -46,31 +46,25 @@ function XpraClient(container) {
 	this.ping_timer = null;
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
-	// modifier keys
-	this.keyboard_layout = null;
-	this.caps_lock = null;
-	this.num_lock = true;
-	this.num_lock_mod = null;
-	this.alt_modifier = null;
-	this.meta_modifier = null;
-	// audio stuff
-	this.audio_enabled = false;
-	this.audio_ctx = null;
-	try {
-		this.audio_context = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
-	} catch(e) {
-		this.audio_context = null;
-	}
 
-	// the "clipboard"
-	this.clipboard_buffer = "";
-	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
+	this.init_sound()
+	this.init_packet_handlers()
+	this.init_clipboard()
+	this.init_keyboard()
+
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
 	this.container = document.getElementById(container);
 	if(!this.container) {
 		throw "invalid container element";
 	}
+	// assign callback for window resize event
+	if (window.jQuery) {
+		jQuery(window).resize(jQuery.debounce(250, function (e) {
+			me._screen_resized(e, me);
+		}));
+	}
+
 	// a list of our windows
 	this.id_to_window = {};
 	// basic window management
@@ -79,6 +73,65 @@ function XpraClient(container) {
 	this.focus = -1;
 	// the protocol
 	this.protocol = null;
+}
+
+XpraClient.prototype.init_sound = function() {
+	// audio stuff
+	this.audio_enabled = false;
+	this.audio_ctx = null;
+	try {
+		this.audio_context = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
+	} catch(e) {
+		this.audio_context = null;
+	}
+}
+
+XpraClient.prototype.init_clipboard = function() {
+	// the "clipboard"
+	this.clipboard_buffer = "";
+	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
+}
+
+XpraClient.prototype.init_keyboard = function() {
+	var me = this;
+	this.keyboard_layout = null;
+	// modifier keys:
+	this.caps_lock = null;
+	this.num_lock = true;
+	this.num_lock_mod = null;
+	this.alt_modifier = null;
+	this.meta_modifier = null;
+	// assign the keypress callbacks
+	// if we detect jQuery, use that to assign them instead
+	// to allow multiple clients on the same page
+	if (window.jQuery) {
+		jQuery(document).keydown(function (e) {
+			e.preventDefault();
+			me._keyb_onkeydown(e, me);
+		});
+		jQuery(document).keyup(function (e) {
+			e.preventDefault();
+			me._keyb_onkeyup(e, me);
+		});
+		jQuery(document).keypress(function (e) {
+			e.preventDefault();
+			me._keyb_onkeypress(e, me);
+		});
+	} else {
+		document.onkeydown = function (e) {
+			me._keyb_onkeydown(e, me);
+		};
+		document.onkeyup = function (e) {
+			me._keyb_onkeyup(e, me);
+		};
+		document.onkeypress = function (e) {
+			me._keyb_onkeypress(e, me);
+		};
+	}
+}
+
+
+XpraClient.prototype.init_packet_handlers = function() {
 	// the client holds a list of packet handlers
 	this.packet_handlers = {
 		'open': this._process_open,
@@ -111,40 +164,8 @@ function XpraClient(container) {
 		'clipboard-request': this._process_clipboard_request,
 		'send-file': this._process_send_file,
 	};
-	// assign callback for window resize event
-	if (window.jQuery) {
-		jQuery(window).resize(jQuery.debounce(250, function (e) {
-			me._screen_resized(e, me);
-		}));
-	}
-	// assign the keypress callbacks
-	// if we detect jQuery, use that to assign them instead
-	// to allow multiple clients on the same page
-	if (window.jQuery) {
-		jQuery(document).keydown(function (e) {
-			e.preventDefault();
-			me._keyb_onkeydown(e, me);
-		});
-		jQuery(document).keyup(function (e) {
-			e.preventDefault();
-			me._keyb_onkeyup(e, me);
-		});
-		jQuery(document).keypress(function (e) {
-			e.preventDefault();
-			me._keyb_onkeypress(e, me);
-		});
-	} else {
-		document.onkeydown = function (e) {
-			me._keyb_onkeydown(e, me);
-		};
-		document.onkeyup = function (e) {
-			me._keyb_onkeyup(e, me);
-		};
-		document.onkeypress = function (e) {
-			me._keyb_onkeypress(e, me);
-		};
-	}
 }
+
 
 XpraClient.prototype.callback_close = function(reason) {
 	if (reason === undefined) {
@@ -175,17 +196,18 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 		worker.addEventListener('message', function(e) {
 			var data = e.data;
 			switch (data['result']) {
-				case true:
+			case true:
 				// yey, we can use websocket in worker!
 				console.log("we can use websocket in webworker");
 				me._do_connect(true);
 				break;
-				case false:
+			case false:
 				console.log("we can't use websocket in webworker, won't use webworkers");
 				me._do_connect(false);
 				break;
-				default:
+			default:
 				console.log("client got unknown message from worker");
+				me._do_connect(false);
 			};
 		}, false);
 		// ask the worker to check for websocket support, when we receive a reply
@@ -278,7 +300,7 @@ XpraClient.prototype.handle_paste = function(text) {
 	var packet = ["clipboard-token", "CLIPBOARD"];
 	this.protocol.send(packet);
 	// tell user to paste in remote application
-	alert("Paste acknowledged. Please paste in remote application.");
+	// alert("Paste acknowledged. Please paste in remote application.");
 }
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
@@ -385,88 +407,10 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 	return false;
 };
 
-XpraClient.prototype._guess_platform_processor = function() {
-	//mozilla property:
-	if (navigator.oscpu)
-		return navigator.oscpu;
-	//ie:
-	if (navigator.cpuClass)
-		return navigator.cpuClass;
-	return "unknown";
-}
-
-XpraClient.prototype._guess_platform_name = function() {
-	//use python style strings for platforms:
-	if (navigator.appVersion.indexOf("Win")!=-1)
-		return "Microsoft Windows";
-	if (navigator.appVersion.indexOf("Mac")!=-1)
-		return "Mac OSX";
-	if (navigator.appVersion.indexOf("Linux")!=-1)
-		return "Linux";
-	if (navigator.appVersion.indexOf("X11")!=-1)
-		return "Posix";
-	return "unknown";
-}
-
-XpraClient.prototype._guess_platform = function() {
-	//use python style strings for platforms:
-	if (navigator.appVersion.indexOf("Win")!=-1)
-		return "win32";
-	if (navigator.appVersion.indexOf("Mac")!=-1)
-		return "darwin";
-	if (navigator.appVersion.indexOf("Linux")!=-1)
-		return "linux2";
-	if (navigator.appVersion.indexOf("X11")!=-1)
-		return "posix";
-	return "unknown";
-}
-
-XpraClient.prototype._xor_string = function(stra, strb) {
-	var result = "";
-	if(stra.length != strb.length) {
-		throw "strings must be equal length";
-	}
-	for(i=0; i<stra.length; i++) {
-		result += String.fromCharCode(stra[i].charCodeAt(0) ^ strb[i].charCodeAt(0));
-	}
-	return result;
-}
-
-XpraClient.prototype._get_hex_uuid = function() {
-	var s = [];
-	var hexDigits = "0123456789abcdef";
-	for (var i = 0; i < 36; i++) {
-		s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
-	}
-	s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
-	s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
-	// remove dashes
-	s.splice(8, 1);
-	s.splice(13, 1);
-	s.splice(18, 1);
-	s.splice(23, 1);
-
-	var uuid = s.join("");
-	return uuid;
-}
-
 XpraClient.prototype._get_keyboard_layout = function() {
 	if (this.keyboard_layout)
 		return this.keyboard_layout;
-	//IE:
-	//navigator.systemLanguage
-	//navigator.browserLanguage
-	var v = window.navigator.userLanguage || window.navigator.language;
-	//ie: v="en_GB";
-	v = v.split(",")[0];
-	var l = v.split("-", 2);
-	if (l.length==1)
-		l = v.split("_", 2);
-	if (l.length==1)
-		//ie: "en"
-		return l[0];
-	//ie: "gb"
-	return l[1].toLowerCase();
+	return Utilities.getKeyboardLayout();
 }
 
 XpraClient.prototype._get_keycodes = function() {
@@ -603,15 +547,15 @@ XpraClient.prototype._make_hello_base = function() {
 	this._update_capabilities({
 		// version and platform
 		"version"					: "1.0",
-		"platform"					: this._guess_platform(),
-		"platform.name"				: this._guess_platform_name(),
-		"platform.processor"		: this._guess_platform_processor(),
+		"platform"					: Utilities.getPlatformName(),
+		"platform.name"				: Utilities.getPlatformName(),
+		"platform.processor"		: Utilities.getPlatformProcessor(),
 		"platform.platform"			: navigator.appVersion,
 		"namespace"			 		: true,
 		"client_type"		   		: "HTML5",
 		"encoding.generic" 			: true,
 		"username" 					: this.username,
-		"uuid"						: this._get_hex_uuid(),
+		"uuid"						: Utilities.getHexUUID(),
 		"argv" 						: [window.location.href],
 		"digest" 					: ["hmac", "xor"],
 		//compression bits:
@@ -635,8 +579,8 @@ XpraClient.prototype._make_hello_base = function() {
 	if(this.encryption) {
 		this.cipher_in_caps = {
 			"cipher"					: this.encryption,
-			"cipher.iv"					: this._get_hex_uuid().slice(0, 16),
-			"cipher.key_salt"			: this._get_hex_uuid()+this._get_hex_uuid(),
+			"cipher.iv"					: Utilities.getHexUUID().slice(0, 16),
+			"cipher.key_salt"			: Utilities.getHexUUID()+Utilities.getHexUUID(),
 			"cipher.key_stretch_iterations"	: 1000,
 			"cipher.padding.options"	: ["PKCS#7"],
 		};
@@ -1012,8 +956,8 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	var salt = packet[1];
 	var client_salt = null;
 	var challenge_response = null;
-	client_salt = (ctx._get_hex_uuid()+ctx._get_hex_uuid()).slice(0, salt.length);
-	salt = ctx._xor_string(salt, client_salt);
+	client_salt = Utilities.getSalt(salt.length);
+	salt = Utilities.xorString(salt, client_salt);
 	if (digest == "hmac") {
 		var hmac = forge.hmac.create();
 		hmac.start('md5', ctx.authentication_key);
@@ -1025,7 +969,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 			return;
 		}
 		var trimmed_salt = salt.slice(0, ctx.authentication_key.length);
-		challenge_response = ctx._xor_string(trimmed_salt, ctx.authentication_key);
+		challenge_response = Utilities.xorString(trimmed_salt, ctx.authentication_key);
 	} else {
 		ctx.callback_close("server requested an unsupported digest " + digest);
 		return;

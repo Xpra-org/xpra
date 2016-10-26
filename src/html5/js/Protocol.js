@@ -294,7 +294,7 @@ XpraProtocol.prototype._process = function() {
 		//debug("inflated("+packet_data+")="+inflated);
 		packet_data = inflated;
 	}
-	
+
 	//save it for later? (partial raw packet)
 	if (index>0) {
 		//debug("added raw packet for index "+index);
