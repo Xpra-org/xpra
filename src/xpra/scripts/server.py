@@ -1442,11 +1442,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #publish mdns records:
     if opts.mdns:
+        from xpra.os_util import strtobytes
         from xpra.platform.info import get_username
         mdns_info = {
                      "display"  : display_name,
                      "username" : get_username(),
-                     "uuid"     : app.uuid,
+                     "uuid"     : strtobytes(app.uuid),
                      "platform" : sys.platform,
                      "type"     : {"xpra" : "seamless", "xpra desktop" : "desktop"}.get(info, info),
                      }
