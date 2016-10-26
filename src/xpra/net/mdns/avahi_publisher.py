@@ -73,15 +73,22 @@ class AvahiPublishers:
             if text_dict:
                 for k,v in text_dict.items():
                     txt.append("%s=%s" % (k,v))
+            fqdn = host
             if host=="0.0.0.0":
-                host = ""
-            else:
+                fqdn = ""
+            elif host:
                 try:
                     import socket
-                    host = socket.gethostbyaddr(host)[0]
+                    fqdn = socket.gethostbyaddr(host)[0]
+                    log("gethostbyaddr(%s)=%s", host, fqdn)
+                    if fqdn.find(".")<0:
+                        fqdn = socket.getfqdn(host)
+                        log("getfqdn(%s)=%s", host, fqdn)
+                    if fqdn.find(".")<0:
+                        log.warn("Warning: cannot find a fully qualified domain name for '%s'", host)
                 except:
                     pass
-            self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=host, text=txt, interface=iface_index))
+            self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=fqdn, text=txt, interface=iface_index))
 
     def start(self):
         log("avahi:starting: %s", self.publishers)
@@ -121,7 +128,7 @@ class AvahiPublisher:
             if self.interface>0:
                 return "interface %i" % self.interface
             return "all interfaces"
-        return "%s %s:%s %s" % (self.name, self.host, self.port, iface())
+        return "%s %s:%s on %s" % (self.name, self.host, self.port, iface())
 
     def __repr__(self):
         return "AvahiPublisher(%s)" % self.get_info()
