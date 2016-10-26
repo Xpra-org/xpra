@@ -586,10 +586,15 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                             groups = get_groups(username)
                             log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
                             if "xpra" not in groups:
-                                log.warn(" (missing 'xpra' group membership?)")
+                                log.warn("  (missing 'xpra' group membership?)")
                             try:
                                 import stat
-                                log.warn(" permissions on %s: %s", "/var/run/xpra", oct(stat.S_IMODE(os.stat("/var/run/xpra").st_mode)))
+                                stat_info = os.stat("/var/run/xpra")
+                                log.warn(" permissions on directory %s: %s", "/var/run/xpra", oct(stat.S_IMODE(stat_info.st_mode)))
+                                import pwd,grp      #@UnresolvedImport
+                                user = pwd.getpwuid(stat_info.st_uid)[0]
+                                group = grp.getgrgid(stat_info.st_gid)[0]
+                                log.warn("  ownership %s:%s", user, group)
                             except:
                                 pass
                         continue
