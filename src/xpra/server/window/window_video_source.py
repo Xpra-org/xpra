@@ -1553,6 +1553,7 @@ class WindowVideoSource(WindowSource):
         ve = self._video_encoder
         if not ve:
             return video_fallback()
+        csce = self._csc_encoder
 
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
@@ -1590,7 +1591,7 @@ class WindowVideoSource(WindowSource):
         #tell the client about scaling (the size of the encoded picture):
         #(unless the video encoder has already done so):
         scaled_size = None
-        if self._csc_encoder and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
+        if csce and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
             scaled_size = enc_width, enc_height
             client_options["scaled_size"] = scaled_size
 
