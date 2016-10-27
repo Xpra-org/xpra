@@ -1181,20 +1181,20 @@ BUFFER_FORMAT = {
 
 YUV444_ENABLED = None
 
-def get_COLORSPACES():
+def get_COLORSPACES(encoding):
     global YUV444_ENABLED
-    if YUV444_ENABLED:
-        COLORSPACES = {"BGRX" : ("YUV420P", "YUV444P")}
-    else:
-        COLORSPACES = {"BGRX" : ("YUV420P",)}
+    out_cs = ["YUV420P"]
+    if encoding.lower()=="h264" and YUV444_THRESHOLD:
+        out_cs.append("YUV444P")
+    COLORSPACES = {"BGRX" : out_cs}
     return COLORSPACES
 
 def get_input_colorspaces(encoding):
-    return get_COLORSPACES().keys()
+    return get_COLORSPACES(encoding).keys()
 
 def get_output_colorspaces(encoding, input_colorspace):
-    out = get_COLORSPACES().get(input_colorspace)
-    assert out, "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES())
+    out = get_COLORSPACES(encoding).get(input_colorspace)
+    assert out, "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES(encoding))
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
     #(well, NV12... which is equivallent to YUV420P here...)
@@ -1232,7 +1232,7 @@ MAX_SIZE = {}
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_COLORSPACES(), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES())
+    assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     min_w, min_h = 32, 32
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
@@ -1241,7 +1241,7 @@ def get_spec(encoding, colorspace):
     if encoding=="h265":
         #undocumented and found the hard way!
         min_w, min_h = 72, 72
-    cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES()[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
+    cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
@@ -1489,12 +1489,12 @@ cdef class Encoder:
     def get_target_pixel_format(self, quality):
         global YUV444_ENABLED, LOSSLESS_ENABLED
         x,y = self.scaling
-        if YUV444_ENABLED and self.codec_name=="H264" and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
+        if YUV444_ENABLED and ("YUV444P" in self.dst_formats) and ((quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats)):
             return "YUV444P"
         elif "YUV420P" in self.dst_formats:
             return "NV12"
         else:
-            raise Exception("no compatible formats found!")
+            raise Exception("no compatible formats found for quality=%i, YUV444=%s, codec=%s, dst-formats=%s" % (quality, YUV444_ENABLED, self.codec_name, self.dst_formats))
 
     def get_target_lossless(self, pixel_format, quality):
         #log("get_target_lossless(%s, %s) LOSSLESS_ENABLED=%s", pixel_format, quality, LOSSLESS_ENABLED)
@@ -1753,6 +1753,7 @@ cdef class Encoder:
         raiseNVENC(r, "creating output buffer")
         self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
         log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
+        assert self.bitstreamBuffer!=NULL
 
 
     def get_info(self):                     #@DuplicatedSignature
@@ -2144,13 +2145,16 @@ cdef class Encoder:
         mapInputResource.registeredResource  = self.inputHandle
         mapInputResource.mappedBufferFmt = self.bufferFmt
         if DEBUG_API:
-            log("nvEncMapInputResource(%#x)", <unsigned long> &mapInputResource)
+            log("nvEncMapInputResource(%#x) inputHandle=%#x", <unsigned long> &mapInputResource, <unsigned long> self.inputHandle)
         with nogil:
             r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
         raiseNVENC(r, "mapping input resource")
+        cdef NV_ENC_INPUT_PTR mappedResource = mapInputResource.mappedResource
         if DEBUG_API:
-            log("compress_image(..) device buffer mapped to %#x", <unsigned long> mapInputResource.mappedResource)
+            log("compress_image(..) device buffer mapped to %#x", <unsigned long> mappedResource)
+        assert mappedResource!=NULL
 
+        memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
@@ -2159,7 +2163,7 @@ cdef class Encoder:
             picParams.inputWidth = self.encoder_width
             picParams.inputHeight = self.encoder_height
             picParams.inputPitch = self.outputPitch
-            picParams.inputBuffer = mapInputResource.mappedResource
+            picParams.inputBuffer = mappedResource
             picParams.outputBitstream = self.bitstreamBuffer
             #picParams.pictureType: required when enablePTD is disabled
             if self.frames==0:
@@ -2170,9 +2174,9 @@ cdef class Encoder:
                 picParams.pictureType = NV_ENC_PIC_TYPE_P
             picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
             picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
-            picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
-            picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
-            picParams.codecPicParams.h264PicParams.colourPlaneId = 0
+            #this causes crashes with Pascal (ie GTX-1070):
+            #picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
+            #picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
             picParams.frameIdx = self.frames
             picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
             #inputDuration = 0      #FIXME: use frame delay?
@@ -2200,17 +2204,16 @@ cdef class Encoder:
             log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
 
             #lock output buffer:
-            memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
             lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             if DEBUG_API:
-                log("nvEncLockBitstream(%#x) bitstreamBufferPtr=%#x", <unsigned long> &lockOutputBuffer, <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
+                log("nvEncLockBitstream(%#x) bitstreamBuffer=%#x", <unsigned long> &lockOutputBuffer, <unsigned long> self.bitstreamBuffer)
             with nogil:
                 r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
             raiseNVENC(r, "locking output buffer")
             log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
-
+            assert lockOutputBuffer.bitstreamBufferPtr!=NULL
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
             self.bytes_out += size
@@ -2218,8 +2221,9 @@ cdef class Encoder:
         finally:
             if DEBUG_API:
                 log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
-            with nogil:
-                r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
+            if lockOutputBuffer.bitstreamBufferPtr!=NULL:
+                with nogil:
+                    r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
             raiseNVENC(r, "unlocking output buffer")
             if DEBUG_API:
                 log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
