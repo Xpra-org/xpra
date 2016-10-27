@@ -488,7 +488,7 @@ cdef class Decoder:
         log.error(" '%s'", err)
         log.error(" frame %i", self.frames)
         if options:
-            log.error(" frame options=%s", options)
+            log.error(" frame options:")
             for k,v in options.items():
                 log.error("   %s=%s", k, v)
         log.error(" decoder state:")
