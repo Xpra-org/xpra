@@ -103,8 +103,10 @@ class WindowBackingBase(object):
         self.close_decoder(False)
 
     def close_decoder(self, blocking=False):
+        log("close_decoder(%s)", blocking)
         dl = self._decoder_lock
         if dl is None or not dl.acquire(blocking):
+            log("close_decoder(%s) lock %s not acquired", blocking, dl)
             return False
         try:
             self.do_clean_video_decoder()
@@ -357,7 +359,7 @@ class WindowBackingBase(object):
                     log("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif vd.get_width()!=enc_width or vd.get_height()!=enc_height:
-                    log("paint_with_video_decoder: window dimensions have changed from %s to %s", (vd.get_width(), vd.get_height()), (enc_width, enc_height))
+                    log("paint_with_video_decoder: video dimensions have changed from %s to %s", (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
                 elif vd.get_colorspace()!=input_colorspace:
                     #this should only happen on encoder restart, which means this should be the first frame:
@@ -386,7 +388,9 @@ class WindowBackingBase(object):
                     fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (vd.get_type(), len(img_data), coding))
                     log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
                     log.error(" %sx%s pixels using %s", width, height, vd.get_type())
-                    log.error(" decoding options=%s", options)
+                    log.error(" frame options:")
+                    for k,v in options.items():
+                        log.error("   %s=%s", k, v)
                 return
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if self._backing is None:
