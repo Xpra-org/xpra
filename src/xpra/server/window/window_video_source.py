@@ -1577,19 +1577,8 @@ class WindowVideoSource(WindowSource):
             self.free_image_wrapper(csc_image)
             del csc_image
 
-        delayed = client_options.get("delayed", 0)
+        #populate client options:
         frame = client_options.get("frame", 0)
-        self.cancel_video_encoder_flush()
-        if delayed>0:
-            self.schedule_video_encoder_flush(ve, csc, frame, x, y, client_options)
-            if not data:
-                if frame==0:
-                    #first frame has not been sent yet,
-                    #so send something as non-video
-                    #and skip painting this video frame when it does come out:
-                    self.start_video_frame = delayed
-                    return self.video_fallback(image, options, order=FAST_ORDER)
-                return None
         if frame<self.start_video_frame:
             #tell client not to bother updating the screen,
             #as it must have received a non-video frame already
@@ -1602,6 +1591,20 @@ class WindowVideoSource(WindowSource):
         #(unless the video encoder has already done so):
         if self._csc_encoder and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
             client_options["scaled_size"] = enc_width, enc_height
+
+        #deal with delayed b-frames:
+        delayed = client_options.get("delayed", 0)
+        self.cancel_video_encoder_flush()
+        if delayed>0:
+            self.schedule_video_encoder_flush(ve, csc, frame, x, y, client_options)
+            if not data:
+                if frame==0:
+                    #first frame has not been sent yet,
+                    #so send something as non-video
+                    #and skip painting this video frame when it does come out:
+                    self.start_video_frame = delayed
+                    return self.video_fallback(image, options, order=FAST_ORDER)
+                return None
         videolog("video_encode %s encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                             ve.get_type(), encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         return ve.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
@@ -1618,7 +1621,7 @@ class WindowVideoSource(WindowSource):
 
     def schedule_video_encoder_flush(self, ve, csc, frame, x , y, client_options):
         flush_delay = max(150, min(500, int(self.batch_config.delay*10)))
-        self.b_frame_flush_data = (ve, csc, frame, x, y)
+        self.b_frame_flush_data = (ve, csc, frame, x, y, client_options.get("scaled_size"))
         self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder)
 
     def flush_video_encoder_now(self):
@@ -1637,8 +1640,8 @@ class WindowVideoSource(WindowSource):
         flush_data = self.b_frame_flush_data
         if not flush_data:
             return
-        ve, csc, frame, x, y = flush_data
         videolog("do_flush_video_encoder: %s", flush_data)
+        ve, csc, frame, x, y, scaled_size = flush_data
         if self._video_encoder!=ve or ve.is_closed():
             return
         if frame==0:
@@ -1665,6 +1668,8 @@ class WindowVideoSource(WindowSource):
         client_options["csc"] = self.csc_equiv(csc)
         if frame<self.start_video_frame:
             client_options["paint"] = False
+        if scaled_size:
+            client_options["scaled_size"] = scaled_size
         videolog("do_flush_video_encoder %s : (%s %s bytes, %s)", flush_data, len(data or ()), type(data), client_options)
         packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
         self.queue_damage_packet(packet)
