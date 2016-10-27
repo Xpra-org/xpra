@@ -488,10 +488,12 @@ cdef class Decoder:
         log.error(" '%s'", err)
         log.error(" frame %i", self.frames)
         if options:
-            log.error(" options=%s", options)
+            log.error(" frame options=%s", options)
+            for k,v in options.items():
+                log.error("   %s=%s", k, v)
         log.error(" decoder state:")
         for k,v in self.get_info().items():
-            log.error("  %s = %s", k, v)
+            log.error("   %s = %s", k, v)
 
     def decompress_image(self, input, options):
         cdef unsigned char * padded_buf = NULL
