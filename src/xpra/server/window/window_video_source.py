@@ -116,6 +116,8 @@ class WindowVideoSource(WindowSource):
         self.start_video_frame = 0
         self.b_frame_flush_timer = None
         self.b_frame_flush_data = None
+        self.encode_from_queue_timer = None
+        self.encode_from_queue_due = 0
         self.scroll_data = None
 
     def set_auto_refresh_delay(self, d):
@@ -762,7 +764,7 @@ class WindowVideoSource(WindowSource):
                 self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
             else:
                 self.encode_queue.append(item)
-                self.timeout_add(av_delay, self.call_in_encode_thread, True, self.encode_from_queue)
+                self.schedule_encode_from_queue(av_delay)
         #now figure out if we need to send edges separately:
         if coding in self.video_encodings and self.edge_encoding and not VIDEO_SKIP_EDGE:
             dw = w - (w & self.width_mask)
@@ -789,6 +791,21 @@ class WindowVideoSource(WindowSource):
             return 0
         return self.av_sync_delay
 
+    def schedule_encode_from_queue(self, av_delay):
+        #must be called from the UI thread for synchronization
+        #we ensure that the timer will fire no later than av_delay
+        #re-scheduling it if it was due later than that
+        due = time.time()+av_delay
+        if self.encode_from_queue_due==0 or due<self.encode_from_queue_due:
+            self.encode_from_queue_due = due
+            if self.encode_from_queue_timer:
+                self.source_remove(self.encode_from_queue_timer)
+            def timer_encode_from_queue():
+                self.encode_from_queue_timer = None
+                self.encode_from_queue_due = 0
+                self.encode_from_queue()
+            self.encode_from_queue_timer = self.timeout_add(av_delay, self.call_in_encode_thread, True, timer_encode_from_queue)
+
     def encode_from_queue(self):
         #note: we use a queue here to ensure we preserve the order
         #(so we encode frames in the same order they were grabbed)
@@ -799,16 +816,19 @@ class WindowVideoSource(WindowSource):
         self.update_av_sync_delay()
         #find the first item which is due
         #in seconds, same as time.time():
-        av_delay = self.av_sync_delay/1000.0
         if len(self.encode_queue)>=self.encode_queue_max_size:
             av_delay = 0        #we must free some space!
+        elif FORCE_AV_DELAY>0:
+            av_delay = FORCE_AV_DELAY/1000.0
+        else:
+            av_delay = self.av_sync_delay/1000.0
         now = time.time()
         still_due = []
         remove = []
         index = 0
         item = None
         sequence = None
-        done_packet = False
+        done_packet = False     #only one packet per iteration
         try:
             for index,item in enumerate(eq):
                 #item = (w, h, damage_time, now, image, coding, sequence, options, flush)
@@ -828,27 +848,23 @@ class WindowVideoSource(WindowSource):
                 else:
                     #we only process only one item per call (see "done_packet")
                     #and just keep track of extra ones:
-                    still_due.append(due)
+                    still_due.append(int(1000*(due-now)))
         except Exception:
             if not self.is_cancelled(sequence):
                 avsynclog.error("error processing encode queue at index %i", index)
                 avsynclog.error("item=%s", item, exc_info=True)
         #remove the items we've dealt with:
-        #(in reverse order since we pop them by increasing index)
+        #(in reverse order since we pop them from the queue)
         if remove:
             for x in reversed(remove):
                 eq.pop(x)
-        #README: encode_from_queue is scheduled to run every time we add an item
-        #to the encode_queue, but since the av_delay can change it is possible
-        #for us to not pop() any items from the list sometimes, and therefore we must ensure
-        #we run this method again later when the items are actually due,
-        #so we need to calculate when that is:
+        #if there are still some items left in the queue, re-schedule:
         if len(still_due)==0:
             avsynclog("encode_from_queue: nothing due")
             return
-        first_due = int(max(0, min(still_due)-time.time())*1000)
-        avsynclog("encode_from_queue: first due in %ims, due list=%s", first_due, still_due)
-        self.timeout_add(first_due, self.call_in_encode_thread, True, self.encode_from_queue)
+        first_due = max(0, min(still_due))
+        avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i for wid=%i)", first_due, still_due, av_delay, self.wid)
+        self.idle_add(self.schedule_encode_from_queue, first_due)
 
 
     def update_encoding_options(self, force_reload=False):
