@@ -804,35 +804,40 @@ class WindowVideoSource(WindowSource):
             av_delay = 0        #we must free some space!
         now = time.time()
         still_due = []
-        pop = None
+        remove = []
         index = 0
         item = None
         sequence = None
+        done_packet = False
         try:
             for index,item in enumerate(eq):
                 #item = (w, h, damage_time, now, image, coding, sequence, options, flush)
                 sequence = item[6]
                 if self.is_cancelled(sequence):
                     self.free_image_wrapper(item[4])
+                    remove.append(index)
                     continue
                 ts = item[3]
                 due = ts + av_delay
-                if due<now and pop is None:
+                if due<=now and not done_packet:
                     #found an item which is due
-                    pop = index
+                    remove.append(index)
                     avsynclog("encode_from_queue: processing item %s/%s (overdue by %ims)", index+1, len(self.encode_queue), int(1000*(now-due)))
                     self.make_data_packet_cb(*item)
+                    done_packet = True
                 else:
-                    #we only process only one item per call
+                    #we only process only one item per call (see "done_packet")
                     #and just keep track of extra ones:
                     still_due.append(due)
         except Exception:
             if not self.is_cancelled(sequence):
                 avsynclog.error("error processing encode queue at index %i", index)
                 avsynclog.error("item=%s", item, exc_info=True)
-        if pop is not None:
-            eq.pop(pop)
-            return
+        #remove the items we've dealt with:
+        #(in reverse order since we pop them by increasing index)
+        if remove:
+            for x in reversed(remove):
+                eq.pop(x)
         #README: encode_from_queue is scheduled to run every time we add an item
         #to the encode_queue, but since the av_delay can change it is possible
         #for us to not pop() any items from the list sometimes, and therefore we must ensure
