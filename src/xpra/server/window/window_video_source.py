@@ -244,6 +244,7 @@ class WindowVideoSource(WindowSource):
 
     def cleanup(self):
         WindowSource.cleanup(self)
+        self.free_encode_from_queue()
         self.cleanup_codecs()
 
     def cleanup_codecs(self):
@@ -790,6 +791,14 @@ class WindowVideoSource(WindowSource):
             #we must free some space!
             return 0
         return self.av_sync_delay
+
+    def free_encode_from_queue(self):
+        #free all items in the encode queue:
+        eqt = self.encode_from_queue_timer
+        if eqt:
+            self.encode_from_queue_timer = None
+            self.source_remove(eqt)
+        self.call_in_encode_thread(False, self.encode_from_queue)
 
     def schedule_encode_from_queue(self, av_delay):
         #must be called from the UI thread for synchronization
