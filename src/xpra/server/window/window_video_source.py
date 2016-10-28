@@ -454,10 +454,6 @@ class WindowVideoSource(WindowSource):
         return None #can happen during cleanup!
 
 
-    def unmap(self):
-        WindowSource.cancel_damage(self)
-        self.cleanup_codecs()
-
     def cancel_damage(self):
         self.video_subregion.cancel_refresh_timer()
         self.scroll_data = None
