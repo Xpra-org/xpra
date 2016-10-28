@@ -244,7 +244,6 @@ class WindowVideoSource(WindowSource):
 
     def cleanup(self):
         WindowSource.cleanup(self)
-        self.free_encode_from_queue()
         self.cleanup_codecs()
 
     def cleanup_codecs(self):
@@ -455,6 +454,8 @@ class WindowVideoSource(WindowSource):
 
 
     def cancel_damage(self):
+        self.cancel_encode_from_queue()
+        self.free_encode_queue_images()
         self.video_subregion.cancel_refresh_timer()
         self.scroll_data = None
         WindowSource.cancel_damage(self)
@@ -788,13 +789,25 @@ class WindowVideoSource(WindowSource):
             return 0
         return self.av_sync_delay
 
-    def free_encode_from_queue(self):
+    def cancel_encode_from_queue(self):
         #free all items in the encode queue:
         eqt = self.encode_from_queue_timer
+        avsynclog("cancel_encode_from_queue() timer=%s for wid=%i", eqt, self.wid)
         if eqt:
             self.encode_from_queue_timer = None
             self.source_remove(eqt)
-        self.call_in_encode_thread(False, self.encode_from_queue)
+
+    def free_encode_queue_images(self):
+        eq = self.encode_queue
+        avsynclog("free_encode_queue_images() freeing %i images for wid=%i", len(eq), self.wid)
+        if not eq:
+            return
+        self.encode_queue = []
+        for item in eq:
+            try:
+                self.free_image_wrapper(item[4])
+            except:
+                log.error("Error: cannot free image wrapper %s", item[4], exc_info=True)
 
     def schedule_encode_from_queue(self, av_delay):
         #must be called from the UI thread for synchronization
@@ -815,7 +828,7 @@ class WindowVideoSource(WindowSource):
         #note: we use a queue here to ensure we preserve the order
         #(so we encode frames in the same order they were grabbed)
         eq = self.encode_queue
-        avsynclog("encode_from_queue: %s items", len(eq))
+        avsynclog("encode_from_queue: %s items for wid=%i", len(eq), self.wid)
         if not eq:
             return      #nothing to encode, must have been picked off already
         self.update_av_sync_delay()
@@ -868,7 +881,7 @@ class WindowVideoSource(WindowSource):
             avsynclog("encode_from_queue: nothing due")
             return
         first_due = max(0, min(still_due))
-        avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i for wid=%i)", first_due, still_due, av_delay, self.wid)
+        avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%i)", first_due, still_due, self.av_sync_delay, av_delay, self.wid)
         self.idle_add(self.schedule_encode_from_queue, first_due)
 
 

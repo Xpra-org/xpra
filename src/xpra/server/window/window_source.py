@@ -824,14 +824,6 @@ class WindowSource(object):
         self.cancel_av_sync_timer()
         #if a region was delayed, we can just drop it now:
         self.refresh_regions = []
-        eq = self.encode_queue
-        if eq:
-            self.encode_queue = []
-            for item in eq:
-                try:
-                    self.free_image_wrapper(item[4])
-                except:
-                    log.error("Error: cannot free image wrapper %s", item[4], exc_info=True)
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
