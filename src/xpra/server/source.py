@@ -1226,7 +1226,7 @@ class ServerSource(FileTransferHandler):
             cinfo = ""
             if ss:
                 try:
-                    encoder_latency = ss.last_info.get("queue", {}).get("cur", 0)
+                    encoder_latency = ss.info.get("queue", {}).get("cur", 0)
                     avsynclog("server side queue level: %s", encoder_latency)
                     from xpra.sound.gstreamer_util import ENCODER_LATENCY
                     encoder_latency = ENCODER_LATENCY.get(ss.codec, 0)
