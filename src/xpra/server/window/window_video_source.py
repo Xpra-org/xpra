@@ -807,6 +807,7 @@ class WindowVideoSource(WindowSource):
         pop = None
         index = 0
         item = None
+        sequence = None
         try:
             for index,item in enumerate(eq):
                 #item = (w, h, damage_time, now, image, coding, sequence, options, flush)
@@ -826,8 +827,9 @@ class WindowVideoSource(WindowSource):
                     #and just keep track of extra ones:
                     still_due.append(due)
         except Exception:
-            avsynclog.error("error processing encode queue at index %i", index)
-            avsynclog.error("item=%s", item, exc_info=True)
+            if not self.is_cancelled(sequence):
+                avsynclog.error("error processing encode queue at index %i", index)
+                avsynclog.error("item=%s", item, exc_info=True)
         if pop is not None:
             eq.pop(pop)
             return
