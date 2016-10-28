@@ -1241,9 +1241,10 @@ def get_spec(encoding, colorspace):
     if encoding=="h265":
         #undocumented and found the hard way!
         min_w, min_h = 72, 72
+    has_lossless_mode = colorspace in ("BGRX", ) and encoding=="h264"
     cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_ENABLED,
                       codec_class=Encoder, codec_type=get_type(),
-                      quality=80, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
+                      quality=60+has_lossless_mode*40, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
                       #using a hardware encoder for something this small is silly:
                       min_w=min_w, min_h=min_h,
                       max_w=max_w, max_h=max_h,
