@@ -969,10 +969,10 @@ class WindowVideoSource(WindowSource):
         ve = self._video_encoder
         csce = self._csc_encoder
         if ve is not None and ve.is_closed():
-            scorelog("cannot score: video encoder is closed or closing")
+            scorelog("cannot score: video encoder %s is closed or closing", ve)
             return
         if csce is not None and csce.is_closed():
-            scorelog("cannot score: csc is closed or closing")
+            scorelog("cannot score: csc %s is closed or closing", csce)
             return
 
         scores = self.get_video_pipeline_options(eval_encodings, w, h, self.pixel_format, force_reload)

@@ -1428,7 +1428,7 @@ cdef class Encoder:
                 if preset and (preset in presets.keys()):
                     log("using preset '%s' for quality=%s, speed=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return c_parseguid(preset_guid)
-        raise Exception("no matching presets available for '%s'!?" % self.codec_name)
+        raise Exception("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
