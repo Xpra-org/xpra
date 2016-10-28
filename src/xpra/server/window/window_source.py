@@ -831,7 +831,7 @@ class WindowSource(object):
                 try:
                     self.free_image_wrapper(item[4])
                 except:
-                    log.error("Error: cannot free image wrapper %s: %s", item[4], exc_info=True)
+                    log.error("Error: cannot free image wrapper %s", item[4], exc_info=True)
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
@@ -1042,7 +1042,7 @@ class WindowSource(object):
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
-            self.encode_queue_max_size = max(2, min(15, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
+            self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
 
