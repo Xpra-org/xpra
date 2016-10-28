@@ -1184,7 +1184,7 @@ YUV444_ENABLED = None
 def get_COLORSPACES(encoding):
     global YUV444_ENABLED
     out_cs = ["YUV420P"]
-    if encoding.lower()=="h264" and YUV444_THRESHOLD:
+    if encoding.lower()=="h264" and YUV444_ENABLED:
         out_cs.append("YUV444P")
     COLORSPACES = {"BGRX" : out_cs}
     return COLORSPACES
