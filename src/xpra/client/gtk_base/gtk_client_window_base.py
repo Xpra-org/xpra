@@ -1303,7 +1303,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         modifiers = self._client.mask_to_names(event.state)
         buttons = self._event_buttons(event)
         v = pointer, modifiers, buttons
-        mouselog("pointer_modifiers(%s)=%s", event, v)
+        mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, OR_offset=%s)", event, v, event.x_root, event.y_root, self.OR_offset)
         return v
 
     def _event_buttons(self, event):
