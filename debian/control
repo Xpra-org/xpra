@@ -37,7 +37,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #precise:        ,xvfb
 #trusty:        ,xvfb
 #xenial:        ,xvfb
-#yakkety:        ,xvfb
+#yakkety:        ,xserver-xorg-video-dummy
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
