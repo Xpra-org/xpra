@@ -1124,11 +1124,9 @@ def systemd_run_wrap(mode, args, systemd_run_args):
     cmd.append("--systemd-run=no")
     print("using systemd-run to wrap '%s' server command" % mode)
     print("%s" % " ".join(["'%s'" % x for x in cmd]))
-    env = os.environ.copy()
-    env["XPRA_SYSTEMD_RUN"] = "0"
     import subprocess
     try:
-        p = subprocess.Popen(cmd, shell=False, env=env)
+        p = subprocess.Popen(cmd)
         p.wait()
     except KeyboardInterrupt:
         return 128+signal.SIGINT
