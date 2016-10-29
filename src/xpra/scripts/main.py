@@ -1117,10 +1117,11 @@ def configure_env(options):
 
 
 def systemd_run_wrap(mode, args, systemd_run_args):
-    cmd = ["systemd-run", "--scope", "--user"]
+    cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope", "--user"]
     if systemd_run_args:
         cmd += shlex.split(systemd_run_args)
     cmd += args
+    cmd.append("--systemd-run=no")
     print("using systemd-run to wrap '%s' server command" % mode)
     print("%s" % " ".join(["'%s'" % x for x in cmd]))
     env = os.environ.copy()
