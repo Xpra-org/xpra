@@ -475,7 +475,7 @@ def validate_encoding(elements):
     if force_enabled(encoding):
         log.info("sound codec %s force enabled", encoding)
         return True
-    elif len([x for x in elements if (x and (x.find("matroska")>=0 or x.find("gdp")>=0))])>0 and get_gst_version()<(0, 10, 36):
+    elif len([x for x in elements if (x and (x.find("matroska")>=0 or x.find("gdp")>=0))])>0 and get_gst_version()<(1, ):
         #outdated versions of gstreamer cause problems with the gdp and matroskademux muxers,
         #the receiver may not be able to process the data
         #and we have no way of knowing what version they have at this point, so just disable those:
