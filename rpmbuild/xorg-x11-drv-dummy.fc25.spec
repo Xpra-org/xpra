@@ -7,7 +7,7 @@
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.6
-Release:   26.xpra2%{?dist}
+Release:   26.xpra3%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -64,6 +64,9 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Sun Oct 30 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-26.xpra3
+- force rebuild against updated headers
+
 * Wed Oct 26 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-26.xpra2
 - fix change-window-property API call
 
