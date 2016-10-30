@@ -1385,7 +1385,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #pixbuf.save("C-%s-%s.png" % (self._id, int(time.time())), "png")
         iconlog("%s.set_icon(%s)", self, pixbuf)
         self.set_icon(pixbuf)
-        self.get_window().set_icon_list([pixbuf])
         if SAVE_WINDOW_ICONS:
             filename = "client-window-%i-icon-%i.png" % (self._id, int(time.time()))
             pixbuf.save(filename, "png")
