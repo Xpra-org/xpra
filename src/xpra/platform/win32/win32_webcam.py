@@ -10,19 +10,22 @@ log = Logger("webcam", "win32")
 
 from xpra.platform.paths import get_app_dir
 
-#suspend logging during comtypes.client._code_cache:
+#suspend logging during comtypes.client._code_cache and loading of tlb files:
 #also set minimum to INFO for all of comtypes
 import logging
 logging.getLogger("comtypes").setLevel(logging.INFO)
-logger = logging.getLogger("comtypes.client._code_cache")
-saved_level = logger.getEffectiveLevel()
+loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
+saved_levels = [x.getEffectiveLevel() for x in loggers]
 try:
-    logger.setLevel(logging.WARNING)
+    for logger in loggers:
+        logger.setLevel(logging.WARNING)
+    import comtypes                                         #@UnresolvedImport
     from comtypes.client import GetModule, CreateObject     #@UnresolvedImport
     from comtypes import CoClass, GUID                      #@UnresolvedImport
     from comtypes.automation import VARIANT                 #@UnresolvedImport
     from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
     from ctypes import POINTER
+    comtypes.client._generate.__verbose__ = False
 
     #load directshow:
     module_dir = get_app_dir()
@@ -34,7 +37,8 @@ try:
     directshow = GetModule(directshow_tlb)
     log("directshow=%s", directshow)
 finally:
-    logger.setLevel(logging.INFO)
+    for i, logger in enumerate(loggers):
+        logger.setLevel(saved_levels[i])
 
 
 CLSID_VideoInputDeviceCategory  = GUID("{860BB310-5D01-11d0-BD3B-00A0C911CE86}")
