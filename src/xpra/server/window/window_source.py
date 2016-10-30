@@ -563,11 +563,11 @@ class WindowSource(object):
             icon_w, icon_h = self.window_icon_size
             if w>icon_w or h>icon_h:
                 #scale the icon down to the size the client wants
-                if w>=h:
-                    h = min(max_h, int(h*icon_w/w))
+                if float(w)/icon_w>=float(h)/icon_h:
+                    h = min(max_h, h*icon_w//w)
                     w = icon_w
                 else:
-                    w = min(max_w, int(w*icon_h/h))
+                    w = min(max_w, w*icon_h//h)
                     h = icon_h
                 iconlog("scaling window icon down to %sx%s", w, h)
                 img = img.resize((w,h), PIL.Image.ANTIALIAS)
