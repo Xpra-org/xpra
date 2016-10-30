@@ -115,11 +115,16 @@ DEVICES = None
 def init_all_devices():
     global DEVICES, DEVICE_INFO
     if DEVICES is not None:
-        return  DEVICES
+        return DEVICES
     log.info("CUDA initialization (this may take a few seconds)")
-    driver.init()
     DEVICES = []
     DEVICE_INFO = {}
+    try:
+        driver.init()
+    except Exception as e:
+        log.error("Error: cannot initialize CUDA")
+        log.error(" %s", e)
+        return DEVICES
     log("CUDA driver version=%s", driver.get_driver_version())
     ngpus = driver.Device.count()
     if ngpus==0:
