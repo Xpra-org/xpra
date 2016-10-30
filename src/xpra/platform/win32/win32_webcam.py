@@ -23,18 +23,18 @@ try:
     from comtypes.automation import VARIANT                 #@UnresolvedImport
     from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
     from ctypes import POINTER
+
+    #load directshow:
+    module_dir = get_app_dir()
+    #so we can run from the source tree:
+    if os.path.exists(os.path.join(module_dir, "win32")):
+        module_dir = os.path.join(module_dir, "win32")
+    directshow_tlb = os.path.join(module_dir, "DirectShow.tlb")
+    log("loading module from %s", directshow_tlb)
+    directshow = GetModule(directshow_tlb)
+    log("directshow=%s", directshow)
 finally:
     logger.setLevel(logging.INFO)
-
-#load directshow:
-module_dir = get_app_dir()
-#so we can run from the source tree:
-if os.path.exists(os.path.join(module_dir, "win32")):
-    module_dir = os.path.join(module_dir, "win32")
-directshow_tlb = os.path.join(module_dir, "DirectShow.tlb")
-log("loading module from %s", directshow_tlb)
-directshow = GetModule(directshow_tlb)
-log("directshow=%s", directshow)
 
 
 CLSID_VideoInputDeviceCategory  = GUID("{860BB310-5D01-11d0-BD3B-00A0C911CE86}")
