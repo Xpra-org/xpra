@@ -509,11 +509,13 @@ class UIXpraClient(XpraClientBase):
         if desktop_scaling.startswith("auto"):
             #figure out if the command line includes settings to use for auto mode:
             #here are our defaults:
-            limits = ((1920, 1080, 1, 1),           #100% no auto scaling up to 1080p
-                      (2560, 1600, 1.25, 1.25),     #125% upscaling up to WQXGA
-                      (3960, 2160, 1.5, 1.5),       #150% upscaling up to UHD
-                      (7680, 4320, 5.0/3, 5.0/3),   #166% upscaling up to FUHD
-                      (32768, 32768, 2, 2))         #200% if higher (who has this anyway?)
+            limits = ((3960, 2160, 1, 1),           #100% no auto scaling up to 4k
+                      (7680, 4320, 1.25, 1.25),     #125%
+                      (8192, 8192, 1.5, 1.5),       #150%
+                      (16384, 16384, 5.0/3, 5.0/3), #166%
+                      (32768, 32768, 2, 2),
+                      (65536, 65536, 4, 4),
+                      )         #200% if higher (who has this anyway?)
             if desktop_scaling=="auto":
                 pass
             elif desktop_scaling.startswith("auto:"):
