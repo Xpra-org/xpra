@@ -2157,6 +2157,7 @@ class UIXpraClient(XpraClientBase):
             if self.send_webcam_frame():
                 delay = 1000//WEBCAM_TARGET_FPS
                 webcamlog("webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
+                self.cancel_webcam_send_timer()
                 self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
         except Exception as e:
             webcamlog.warn("webcam test capture failed: %s", e)
@@ -2223,6 +2224,7 @@ class UIXpraClient(XpraClientBase):
                     self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
 
     def may_send_webcam_frame(self):
+        self.webcam_send_timer = None
         if self.webcam_device_no<0 or not self.webcam_device:
             return False
         not_acked = self.webcam_frame_no-1-self.webcam_last_ack
