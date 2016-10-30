@@ -16,13 +16,12 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 WHITELIST = {}
 GREYLIST = {
-            "vendor"    : ["Intel", "VMware, Inc."]
+            "vendor"    : ["Intel", "VMware, Inc.", "Humper"]
             }
 VERSION_REQ = {
                "nouveau" : [3, 0],      #older versions have issues
                }
 BLACKLIST = {
-             "vendor"   : ["Humper"],
              "renderer" : ["Software Rasterizer"]
              }
 
