@@ -195,7 +195,7 @@ Requires: libwebp
 Requires: libyuv
 %endif
 Requires: x264-xpra
-Requires: xvidcore
+#Requires: xvidcore
 Requires: ffmpeg-xpra
 Requires: python2-pynvml
 Requires: %{numpy}
@@ -241,7 +241,7 @@ BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
 %endif
 BuildRequires: x264-xpra-devel
-BuildRequires: xvidcore-devel
+#BuildRequires: xvidcore-devel
 BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
 %if 0%{?run_tests}
