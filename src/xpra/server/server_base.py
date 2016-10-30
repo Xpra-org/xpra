@@ -2900,7 +2900,7 @@ class ServerBase(ServerCore):
         try:
             from xpra.codecs.pillow.decode import get_encodings
             assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
-            rgb_pixel_format = "RGBX"       #BGRX
+            rgb_pixel_format = "BGRX"       #BGRX
             from PIL import Image
             buf = BytesIOClass(data)
             img = Image.open(buf)
@@ -2913,11 +2913,24 @@ class ServerBase(ServerCore):
                 return
             #one of those two should be present
             try:
-                from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-            except ImportError:
+                csc_mod = "csc_swscale"
                 from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-            assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
-            assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
+            except ImportError:
+                try:
+                    csc_mod = "csc_cython"
+                    from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+                except ImportError as e:
+                    ss.send_webcam_stop(device, "no csc module")
+                    return
+            try:
+                assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
+                assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
+            except Exception as e:
+                webcamlog.error("Error: cannot convert %s to %s using %s:", rgb_pixel_format, src_format, csc_mod)
+                webcamlog.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
+                webcamlog.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
+                ss.send_webcam_stop(device, "csc format error")
+                return
             tw = vfd.get_width()
             th = vfd.get_height()
             csc = ColorspaceConverter()
