@@ -226,7 +226,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
             "gtk2", "gtk3",
             "html5", "minify",
             "pam",
-            "sound", "opengl", "printing",
+            "sound", "opengl", "printing", "webcam",
             "rebuild",
             "annotate", "warn", "strict",
             "shadow", "proxy",
@@ -837,6 +837,10 @@ def build_xpra_conf(install_dir):
             print("could not probe for pdf/postscript printers: %s" % e)
     def pretty_cmd(cmd):
         return " ".join(cmd)
+    #OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
+    #Ubuntu 16.10 has opencv builds that conflict with our private ffmpeg
+    from xpra.os_util import getUbuntuVersion
+    webcam = webcam_ENABLED and not (OSX or getUbuntuVersion()==[16, 10])
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
@@ -860,7 +864,7 @@ def build_xpra_conf(install_dir):
             'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,
             'postscript_printer'    : postscript,
-            'webcam'                : ["auto", "no"][OSX],
+            'webcam'                : ["no", "auto"][webcam],
             'printing'              : printing_ENABLED,
             'dbus_control'          : bstr(dbus_ENABLED),
             'mmap'                  : bstr(not OSX and not WIN32),
