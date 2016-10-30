@@ -1116,7 +1116,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             props["workspace"] = workspace
         if self._client.server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
-            if wfs:
+            if wfs and len(wfs)==4:
                 state["frame"] = self._client.crect(*wfs)
                 self._current_frame_extents = wfs
         geomlog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
@@ -1385,6 +1385,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #pixbuf.save("C-%s-%s.png" % (self._id, int(time.time())), "png")
         iconlog("%s.set_icon(%s)", self, pixbuf)
         self.set_icon(pixbuf)
+        self.get_window().set_icon_list([pixbuf])
         if SAVE_WINDOW_ICONS:
             filename = "client-window-%i-icon-%i.png" % (self._id, int(time.time()))
             pixbuf.save(filename, "png")
