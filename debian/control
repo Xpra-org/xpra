@@ -121,6 +121,11 @@ Recommends:
 #trusty:        ,python-gst-1.0
 #xenial:        ,python-gst-1.0
 #yakkety:        ,python-gst-1.0
+#for printer forwarding:
+        ,cups-filters
+        ,cups-common
+        ,cups-pdf
+        ,python-cups
 #for webcam support:
         ,python-pyinotify
         ,python-opencv
@@ -148,11 +153,6 @@ Suggests: openssh-server
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
-# for printer forwarding:
-        ,cups-filters
-        ,cups-common
-        ,cups-pdf
-        ,python-cups
 # for notifications forwarding:
         ,python-dbus
 # for publishing servers via mdns:
