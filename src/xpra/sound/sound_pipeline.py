@@ -380,7 +380,7 @@ class SoundPipeline(gobject.GObject):
             found = True
         if not found:
             #these, we know about, so we just log them:
-            for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode", "percent"):
+            for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode", "percent", "language-code", "src-pad"):
                 if structure.has_field(x):
                     v = structure[x]
                     gstlog("tag message: %s = %s", x, v)
