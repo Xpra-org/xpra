@@ -81,6 +81,7 @@ MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", os.name=="posix")
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
+XSHAPE = envbool("XPRA_XSHAPE", True)
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", True)
 
 #window types we map to POPUP rather than TOPLEVEL
@@ -539,7 +540,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def set_shape(self, shape):
         shapelog("set_shape(%s)", shape)
-        if not HAS_X11_BINDINGS:
+        if not HAS_X11_BINDINGS or not XSHAPE:
             return
         def do_set_shape():
             xid = get_xid(self.get_window())

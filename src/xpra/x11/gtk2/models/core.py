@@ -10,6 +10,7 @@ import gobject
 from gtk import gdk
 import signal
 
+from xpra.util import envbool
 from xpra.x11.gtk2 import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
@@ -34,7 +35,9 @@ geomlog = Logger("x11", "window", "geometry")
 
 X11Window = X11WindowBindings()
 ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK
-FORCE_QUIT = os.environ.get("XPRA_FORCE_QUIT", "1")=="1"
+FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
+XSHAPE = envbool("XPRA_XSHAPE", True)
+
 
 # grab stuff:
 NotifyNormal        = constants["NotifyNormal"]
@@ -358,7 +361,7 @@ class CoreX11WindowModel(WindowModelStub):
     #########################################
 
     def _read_xshape(self, x=0, y=0):
-        if not X11Window.displayHasXShape():
+        if not X11Window.displayHasXShape() or not XSHAPE:
             return {}
         extents = X11Window.XShapeQueryExtents(self.xid)
         if not extents:

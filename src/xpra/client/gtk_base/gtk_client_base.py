@@ -8,7 +8,7 @@
 import os, sys
 import weakref
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
-from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS
+from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -472,7 +472,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
-        if HAS_X11_BINDINGS:
+        if HAS_X11_BINDINGS and XSHAPE:
             ms += ["shape"]
         if self._set_window_menu:
             ms += ["menu"]
