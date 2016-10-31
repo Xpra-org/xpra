@@ -183,7 +183,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def __init__(self, clobber):
         self.clobber = clobber
         self.root_overlay = None
-        self.repaint_root_overlay_due = None
+        self.repaint_root_overlay_timer = None
         self.configure_damage_timers = {}
         self._tray = None
         gobject.GObject.__init__(self)
@@ -353,9 +353,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._tray:
             self._tray.cleanup()
             self._tray = None
+        self.cancel_repaint_root_overlay()
         if self.root_overlay:
-            if self.repaint_root_overlay_due:
-                self.source_remove(self.repaint_root_overlay_due)
             with xswallow:
                 X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
             self.root_overlay = None
@@ -955,13 +954,19 @@ class XpraServer(gobject.GObject, X11ServerBase):
         image.free()
 
     def repaint_root_overlay(self):
-        log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims", self.root_overlay, self.repaint_root_overlay_due, self.sync_xvfb)
-        if not self.root_overlay or self.repaint_root_overlay_due:
+        log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims", self.root_overlay, self.repaint_root_overlay_timer, self.sync_xvfb)
+        if not self.root_overlay or self.repaint_root_overlay_timer:
             return
-        self.repaint_root_overlay_due = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
+        self.repaint_root_overlay_timer = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
+
+    def cancel_repaint_root_overlay(self):
+        rrot = self.repaint_root_overlay_timer
+        if rrot:
+            self.repaint_root_overlay_timer = None
+            self.source_remove(rrot)
 
     def do_repaint_root_overlay(self):
-        self.repaint_root_overlay_due = None
+        self.repaint_root_overlay_timer = None
         root_width, root_height = self.get_root_window_size()
         overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())
