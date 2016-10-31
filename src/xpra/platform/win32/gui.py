@@ -873,29 +873,37 @@ class ClientExtras(object):
         def low_level_keyboard_handler(nCode, wParam, lParam):
             try:
                 scan_code = lParam.contents.scan_code
+                vk_code = lParam.contents.vk_code
                 focused = self.client._focused
+                #the keys we intercept before the OS:
                 keyname = {
                            win32con.VK_LWIN   : "Super_L",
                            win32con.VK_RWIN   : "Super_R",
-                           }.get(scan_code)
-                keycode = 0
+                           win32con.VK_TAB    : "Tab",
+                           }.get(vk_code)
                 modifiers = []
                 kh = self.client.keyboard_helper
-                if self.client.keyboard_grabbed and focused and keyname and kh and kh.keyboard and wParam in ALL_KEY_EVENTS:
+                key_event_type = ALL_KEY_EVENTS.get(wParam)
+                #log("low_level_keyboard_handler(%s, %s, %s) vk_code=%i, scan_code=%i, keyname=%s, key_event_type=%s, focused=%s, keyboard_grabbed=%s", nCode, wParam, lParam, vk_code, scan_code, keyname, key_event_type, focused, self.client.keyboard_grabbed)
+                if self.client.keyboard_grabbed and focused and keyname and kh and kh.keyboard and key_event_type:
                     modifier_keycodes = kh.keyboard.modifier_keycodes
                     modifier_keys = kh.keyboard.modifier_keys
-                    #find the keycode: (try the exact key we hit first)
-                    for x in (keyname, "Super_L", "Super_R"):
-                        keycodes = modifier_keycodes.get(x, [])
-                        for k in keycodes:
-                            #only interested in numeric keycodes:
-                            try:
-                                keycode = int(k)
+                    if keyname.startswith("Super"):
+                        keycode = 0
+                        #find the modifier keycode: (try the exact key we hit first)
+                        for x in [keyname, "Super_L", "Super_R"]:
+                            keycodes = modifier_keycodes.get(x, [])
+                            for k in keycodes:
+                                #only interested in numeric keycodes:
+                                try:
+                                    keycode = int(k)
+                                    break
+                                except:
+                                    pass
+                            if keycode>0:
                                 break
-                            except:
-                                pass
-                        if keycode>0:
-                            break
+                    else:
+                        keycode = vk_code           #true for non-modifier keys only!
                     for vk, modkeynames in {
                                         win32con.VK_NUMLOCK     : ["Num_Lock"],
                                         win32con.VK_CAPITAL     : ["Caps_Lock"],
@@ -909,7 +917,7 @@ class ClientExtras(object):
                                     modifiers.append(mod)
                                     break
                     #keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
-                    grablog("scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
+                    grablog("vk_code=%s, scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", vk_code, scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
                     if keycode>0:
                         key_event = WindowsKeyEvent()
                         key_event.keyname = keyname
@@ -919,7 +927,7 @@ class ClientExtras(object):
                         key_event.keycode = keycode
                         key_event.string = ""
                         key_event.group = 0
-                        grablog("detected windows key, sending %s", key_event)
+                        grablog("detected '%s' key, sending %s", keyname, key_event)
                         self.client.keyboard_helper.send_key_action(focused, key_event)
                         #swallow this event:
                         return 1
