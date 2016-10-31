@@ -816,8 +816,7 @@ class WindowVideoSource(WindowSource):
         due = time.time()+av_delay
         if self.encode_from_queue_due==0 or due<self.encode_from_queue_due:
             self.encode_from_queue_due = due
-            if self.encode_from_queue_timer:
-                self.source_remove(self.encode_from_queue_timer)
+            self.cancel_encode_from_queue()
             def timer_encode_from_queue():
                 self.encode_from_queue_timer = None
                 self.encode_from_queue_due = 0
