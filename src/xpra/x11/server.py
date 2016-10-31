@@ -358,7 +358,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             with xswallow:
                 X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
             self.root_overlay = None
-        self.cancel_configure_damage()
+        self.cancel_all_configure_damage()
         X11ServerBase.do_cleanup(self)
         remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
@@ -673,9 +673,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         del self._id_to_window[wid]
         for ss in self._server_sources.values():
             ss.remove_window(wid, window)
-        timer = self.configure_damage_timers.get(wid)
-        if timer:
-            self.source_remove(timer)
+        self.cancel_configure_damage(wid)
         self.repaint_root_overlay()
 
     def _contents_changed(self, window, event):
@@ -864,7 +862,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._damage(window, 0, 0, w, h)
         self.configure_damage_timers[wid] = self.timeout_add(CONFIGURE_DAMAGE_RATE, damage)
 
-    def cancel_configure_damage(self):
+    def cancel_configure_damage(self, wid):
+        timer = self.configure_damage_timers.get(wid)
+        if timer:
+            try:
+                del self.configure_damage_timers[wid]
+            except:
+                pass
+            self.source_remove(timer)
+
+    def cancel_all_configure_damage(self):
         timers = self.configure_damage_timers.values()
         self.configure_damage_timers = {}
         for timer in timers:
