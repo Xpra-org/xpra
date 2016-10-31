@@ -102,16 +102,14 @@ class BugReport(object):
                 return query_sound()
         except:
             get_sound_info = None
-        if self.opengl_info:
-            def get_gl_info():
+        def get_gl_info():
+            if self.opengl_info:
                 return self.opengl_info
-        else:
             try:
                 from xpra.client.gl.gl_check import check_support
-                def get_gl_info():
-                    return check_support(force_enable=True)
-            except:
-                get_gl_info = None
+                return check_support(force_enable=True)
+            except Exception as e:
+                return {"error" : str(e)}
         from xpra.net.net_util import get_info as get_net_info
         from xpra.platform.paths import get_info as get_path_info
         from xpra.platform.gui import get_info as get_gui_info
