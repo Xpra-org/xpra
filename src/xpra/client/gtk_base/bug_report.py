@@ -7,6 +7,7 @@
 
 import os.path
 import sys
+import time
 
 from xpra.platform.gui import init as gui_init
 gui_init()
@@ -18,10 +19,13 @@ pango = import_pango()
 
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
-from xpra.util import nonl
+from xpra.util import nonl, envint
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("util")
+
+
+STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 
 
 class BugReport(object):
@@ -257,6 +261,7 @@ class BugReport(object):
 
 
     def get_text_data(self):
+        log("get_text_data() collecting bug report data")
         data = []
         tb = self.description.get_buffer()
         buf = tb.get_text(*tb.get_bounds(), include_hidden_chars=False)
@@ -269,6 +274,7 @@ class BugReport(object):
             assert cb is not None
             if not cb.get_active():
                 continue
+            log("%s is enabled (%s)", name, tooltip)
             #OK, the checkbox is selected, get the data
             value = value_cb
             if type(value_cb)!=dict:
@@ -290,6 +296,7 @@ class BugReport(object):
             else:
                 s = str(value)
             data.append((title, tooltip, dtype, s))
+            time.sleep(STEP_DELAY)
         return data
 
     def copy_clicked(self, *args):
@@ -311,7 +318,7 @@ class BugReport(object):
             filename = filename+".zip"
         basenoext, _ = os.path.splitext(os.path.basename(filename))
         data = self.get_text_data()
-        import zipfile, time
+        import zipfile
         zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
             for title, tooltip, dtype, s in data:
