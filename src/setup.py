@@ -1493,6 +1493,8 @@ if WIN32:
             add_data_files('etc/gtk-2.0', ['win32/gtkrc'])
             engines_dir = os.path.join(site_dir, 'gtk-2.0/runtime/lib/gtk-2.0/2.10.0/engines')
             add_data_files('lib/gtk-2.0/2.10.0/engines', glob.glob(engines_dir+"/*.dll"))
+            hicolor_dir = os.path.join(site_dir, 'gtk-2.0/runtime/share/icons/hicolor')
+            add_data_files('share/icons/hicolor', glob.glob(hicolor_dir+"/*.*"))
             #END OF py2exe SECTION
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
