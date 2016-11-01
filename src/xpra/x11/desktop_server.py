@@ -71,7 +71,6 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def __init__(self, root):
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
-        self.mapped_at = None
 
     def __repr__(self):
         return "DesktopModel(%#x)" % (self.client_window.xid)
@@ -229,10 +228,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         #the vfb has been resized
         wid = self._window_to_id[window]
         x, y, w, h = window.get_geometry()
-        if window.mapped_at:
-            x, y = window.mapped_at[:2]
-        window.mapped_at = (x, y, w, h)
-        windowlog("window_resized_signaled(%s) mapped at=%s", window, window.mapped_at)
+        windowlog("window_resized_signaled(%s) geometry=%s", window, (x, y, w, h))
         for ss in self._server_sources.values():
             ss.move_resize_window(wid, window, x, y, w, h)
             ss.damage(wid, window, 0, 0, w, h)
@@ -286,16 +282,9 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         model = self._id_to_window.get(wid)
         return model.client_window.get_screen().get_number()
 
-    def _adjust_pointer(self, wid, pointer):
-        #adjust pointer position for window position in client:
-        x, y = pointer
-        model = self._id_to_window.get(wid)
-        if model:
-            ma = model.mapped_at
-            if ma:
-                wx, wy = ma[:2]
-                pointer = x-wx, y-wy
-        return pointer
+    def get_window_position(self, window):
+        #we export the whole desktop as a window:
+        return 0, 0
 
 
     def _process_map_window(self, proto, packet):
@@ -304,12 +293,12 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
             return
-        window.mapped_at = (x, y, w, h)
         geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self._damage(window, 0, 0, w, h)
 
 
@@ -319,12 +308,12 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
-        window.mapped_at = None
         if len(packet)>=4:
             #optional window_state added in 0.15 to update flags
             #during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
         assert not window.is_OR()
+        self._window_mapped_at(proto, wid, window, None)
         #TODO: handle inconification?
         #iconified = len(packet)>=3 and bool(packet[2])
 
@@ -349,13 +338,13 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
             damage = len(changes)>0
         if not skip_geometry:
             owx, owy, oww, owh = window.get_geometry()
-            window.mapped_at = (x, y, w, h)
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
                 self._set_client_properties(proto, wid, window, cprops)
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if damage:
             self._damage(window, 0, 0, w, h)
 

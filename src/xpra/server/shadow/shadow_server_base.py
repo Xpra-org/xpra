@@ -21,7 +21,7 @@ class ShadowServerBase(object):
 
     def __init__(self, root_window):
         self.root = root_window
-        self.mapped_at = None
+        self.mapped = False
         self.pulseaudio = False
         self.sharing = False
         self.refresh_delay = REFRESH_DELAY
@@ -47,6 +47,10 @@ class ShadowServerBase(object):
         return {"shadow" : True}
 
 
+    def get_window_position(self, window):
+        #we export the whole desktop as a window:
+        return 0, 0
+
     def get_cursor_data(self):
         return None
 
@@ -65,12 +69,13 @@ class ShadowServerBase(object):
     # refresh
 
     def start_refresh(self):
+        self.mapped = True
         self.timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v):
         assert v>0 and v<10000
         self.refresh_delay = v
-        if self.mapped_at:
+        if self.mapped:
             if self.timer:
                 self.source_remove(self.timer)
                 self.timer = None
@@ -78,14 +83,14 @@ class ShadowServerBase(object):
 
 
     def stop_refresh(self):
-        log("stop_refresh() mapped_at=%s, timer=%s", self.mapped_at, self.timer)
-        self.mapped_at = None
+        log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.timer)
+        self.mapped = False
         if self.timer:
             self.source_remove(self.timer)
             self.timer = None
 
     def refresh(self):
-        if not self.mapped_at:
+        if not self.mapped:
             self.timer = None
             return False
         w, h = self.root.get_size()
@@ -148,16 +153,6 @@ class ShadowServerBase(object):
             ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
 
 
-    def _adjust_pointer(self, wid, pointer):
-        #adjust pointer position for window position in client:
-        x, y = pointer
-        ma = self.mapped_at
-        if ma:
-            wx, wy = ma[:2]
-            pointer = x-wx, y-wy
-        return pointer
-
-
     def _add_new_window(self, window):
         self._add_new_window_common(window)
         self._send_new_window_packet(window)
@@ -176,7 +171,7 @@ class ShadowServerBase(object):
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
         window = self._process_window_common(wid)
-        self.mapped_at = x, y, width, height
+        self._window_mapped_at(proto, wid, window, (x, y, width, height))
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, self.root_window_model, packet[6])
@@ -187,13 +182,13 @@ class ShadowServerBase(object):
         window = self._process_window_common(wid)
         for ss in self._server_sources.values():
             ss.unmap_window(wid, window)
-        self.mapped_at = None
+        self._window_mapped_at(proto, wid, window, None)
         self.root_window_model.suspend()
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._process_window_common(wid)
-        self.mapped_at = x, y, w, h
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, self.root_window_model, packet[6])

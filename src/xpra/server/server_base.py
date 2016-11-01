@@ -14,6 +14,7 @@ import hashlib
 from xpra.log import Logger
 log = Logger("server")
 keylog = Logger("keyboard")
+mouselog = Logger("mouse")
 focuslog = Logger("focus")
 execlog = Logger("exec")
 commandlog = Logger("command")
@@ -2670,11 +2671,26 @@ class ServerBase(ServerCore):
     def _move_pointer(self, wid, pos):
         raise NotImplementedError()
 
-    def _adjust_pointer(self, wid, pointer):
+    def _adjust_pointer(self, proto, wid, pointer):
+        #the window may not be mapped at the same location by the client:
+        ss = self._server_sources.get(proto)
+        window = self._id_to_window.get(wid)
+        if ss and window:
+            ws = ss.get_window_source(wid)
+            if ws:
+                mapped_at = ws.mapped_at
+                pos = self.get_window_position(window)
+                mouselog("client %s: server window position: %s, client window position: %s", ss, pos, mapped_at)
+                if mapped_at and pos:
+                    wx, wy = pos
+                    cx, cy = mapped_at[:2]
+                    if wx!=cx or wy!=cy:
+                        px, py = pointer
+                        return px+(wx-cx), py+(wy-cy)
         return pointer
 
     def _process_mouse_common(self, proto, wid, pointer):
-        pointer = self._adjust_pointer(wid, pointer)
+        pointer = self._adjust_pointer(proto, wid, pointer)
         self.do_process_mouse_common(proto, wid, pointer)
         return pointer
 
@@ -2802,6 +2818,20 @@ class ServerBase(ServerCore):
             ss.set_min_speed(min_speed)
             self._idle_refresh_all_windows(proto)
 
+
+    def get_window_position(self, window):
+        #where the window is actually mapped on the server screen:
+        return None
+
+    def _window_mapped_at(self, proto, wid, window, coords=None):
+        #record where a window is mapped by a client
+        #(in order to support multiple clients and different offsets)
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        ws = ss.make_window_source(wid, window)
+        ws.mapped_at = coords
+        #log("window %i mapped at %s for client %s", wid, coords, ss)
 
     def _process_map_window(self, proto, packet):
         log.info("_process_map_window(%s, %s)", proto, packet)

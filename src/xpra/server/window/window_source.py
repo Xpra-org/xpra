@@ -156,6 +156,7 @@ class WindowSource(object):
         self.is_shadow = window.is_shadow()
         self.has_alpha = window.has_alpha()
         self.window_dimensions = 0, 0
+        self.mapped_at = None
         self.fullscreen = not self.is_tray and window.get("fullscreen")
         self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ServerSource sets defaults with the client's scaling.control value
         self.scaling = None
@@ -389,6 +390,9 @@ class WindowSource(object):
                  "rgb_formats"          : self.rgb_formats,
                  #"icons"                : self.icons_encoding_options,
                  })
+        ma = self.mapped_at
+        if ma:
+            info["mapped-at"] = ma
         now = time.time()
         cutoff = now-5
         lde = [x for x in self.statistics.last_damage_events if x[0]>=cutoff]

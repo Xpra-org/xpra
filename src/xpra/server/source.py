@@ -2084,6 +2084,10 @@ class ServerSource(FileTransferHandler):
         batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
         return batch_config
 
+
+    def get_window_source(self, wid):
+        return self.window_sources.get(wid)
+
     def make_window_source(self, wid, window):
         ws = self.window_sources.get(wid)
         if ws is None:
