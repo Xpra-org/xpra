@@ -1973,7 +1973,7 @@ class ServerSource(FileTransferHandler):
             else:
                 metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             metadata.update(v)
-        log.warn("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
+        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
