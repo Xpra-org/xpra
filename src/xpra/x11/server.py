@@ -749,6 +749,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def get_window_position(self, window):
         #used to adjust the pointer position with multiple clients
+        if window.is_OR():
+            return None
         return self._desktop_manager.window_position(window)
 
 
