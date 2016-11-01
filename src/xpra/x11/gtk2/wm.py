@@ -19,7 +19,7 @@ from xpra.x11.gtk2.world_window import WorldWindow
 from xpra.x11.gtk2.window import WindowModel, configure_bits
 from xpra.x11.gtk2.gdk_bindings import (
                add_event_receiver,                              #@UnresolvedImport
-               add_catchall_receiver, remove_catchall_receiver, #@UnresolvedImport
+               add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
                get_children,                                    #@UnresolvedImport
                )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -265,7 +265,7 @@ class Wm(gobject.GObject):
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
         add_event_receiver(self._root, self)
-        add_catchall_receiver("xpra-client-message-event", self)
+        add_fallback_receiver("xpra-client-message-event", self)
         X11Window.substructureRedirect(self._root.xid)
 
         for w in get_children(self._root):
@@ -420,7 +420,7 @@ class Wm(gobject.GObject):
         self.cleanup()
 
     def cleanup(self):
-        remove_catchall_receiver("xpra-client-message-event", self)
+        remove_fallback_receiver("xpra-client-message-event", self)
         for win in list(self._windows.itervalues()):
             win.unmanage(True)
 

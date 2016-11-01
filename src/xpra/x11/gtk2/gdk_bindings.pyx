@@ -840,16 +840,24 @@ def remove_catchall_receiver(signal, handler):
         pass
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
-cdef _maybe_send_event(DEBUG, window, signal, event):
-    handlers = window.get_data(_ev_receiver_key)
-    hinfo = ""
-    if not handlers:
-        global catchall_receivers
-        handlers = catchall_receivers.get(signal)
-        hinfo = "catchall "
+fallback_receivers = {}
+def add_fallback_receiver(signal, handler):
+    global fallback_receivers
+    fallback_receivers.setdefault(signal, []).append(handler)
+    log("add_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
+
+def remove_fallback_receiver(signal, handler):
+    global fallback_receivers
+    try:
+        receivers = fallback_receivers.get(signal).remove(handler)
+    except:
+        pass
+    log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
+
+cdef _maybe_send_event(DEBUG, handlers, signal, event, hinfo="window"):
     if not handlers:
         if DEBUG:
-            log.info("  no handler registered for window %#x (%s), ignoring event", window.xid, handlers)
+            log.info("  no handler registered for %s (%s), ignoring event", hinfo, handlers)
         return
     # Copy the 'handlers' list, because signal handlers might cause items
     # to be added or removed from it while we are iterating:
@@ -857,7 +865,7 @@ cdef _maybe_send_event(DEBUG, window, signal, event):
         signals = gobject.signal_list_names(handler)
         if signal in signals:
             if DEBUG:
-                log.info("  forwarding event to a %s %shandler's %s signal", type(handler).__name__, hinfo, signal)
+                log.info("  forwarding event to a %s %s handler's %s signal", type(handler).__name__, hinfo, signal)
             handler.emit(signal, event)
             if DEBUG:
                 log.info("  forwarded")
@@ -875,27 +883,40 @@ cdef _route_event(event, signal, parent_signal):
     DEBUG = event.type in debug_route_events
     if DEBUG:
         log.info("%s event %#x : %s", event_type_names.get(event.type, event.type), event.serial, event)
+    handlers = None
     if event.window is None:
         if DEBUG:
             log.info("  event.window is None, ignoring")
         assert event.type in (UnmapNotify, DestroyNotify), \
                 "event window is None for event type %s!" % (event_type_names.get(event.type, event.type))
-        return
-    if event.window is event.delivered_to:
+    elif event.window is event.delivered_to:
         if signal is not None:
+            window = event.window
             if DEBUG:
-                log.info("  delivering event to window itself: %#x  (signal=%s)", event.window.xid, signal)
-            _maybe_send_event(DEBUG, event.window, signal, event)
+                log.info("  delivering event to window itself: %#x  (signal=%s)", window.xid, signal)
+            handlers = window.get_data(_ev_receiver_key)
+            _maybe_send_event(DEBUG, handlers, signal, event, "window %s" % window.xid)
         elif DEBUG:
             log.info("  received event on window itself but have no signal for that")
     else:
         if parent_signal is not None:
+            window = event.delivered_to
             if DEBUG:
-                log.info("  delivering event to parent window: %#x (signal=%s)", event.delivered_to.xid, parent_signal)
-            _maybe_send_event(DEBUG, event.delivered_to, parent_signal, event)
+                log.info("  delivering event to parent window: %#x (signal=%s)", window.xid, parent_signal)
+            handlers = window.get_data(_ev_receiver_key)
+            _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %s" % window.xid)
         else:
             if DEBUG:
                 log.info("  received event on a parent window but have no parent signal")
+    #fallback only fires if nothing else has fired yet:
+    if not handlers:
+        global fallback_receivers
+        handlers = fallback_receivers.get(signal)
+        _maybe_send_event(DEBUG, handlers, signal, event, "fallback")
+    #always fire those:
+    global catchall_receivers
+    handlers = catchall_receivers.get(signal)
+    _maybe_send_event(DEBUG, handlers, signal, event, "catchall")
 
 
 cdef object _gw(display, Window xwin):
