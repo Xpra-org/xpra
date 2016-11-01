@@ -76,7 +76,7 @@ from OpenGL.GL import \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_COLOR_BUFFER_BIT, \
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
@@ -686,6 +686,21 @@ class GLWindowBackingBase(GTKWindowBacking):
             for px,py in ((0, 0), (bw, 0), (bw, bh), (0, bh)):
                 glVertex2i(px, py)
             glEnd()
+
+        if self.pointer_overlay:
+            x, y, size, start_time = self.pointer_overlay
+            elapsed = time.time()-start_time
+            if elapsed<5:
+                alpha = max(0, (5.0-elapsed)/5.0)
+                glBegin(GL_LINES)
+                glColor4f(0, 0, 0, alpha)
+                glVertex2i(x-size, y)
+                glVertex2i(x+size, y)
+                glVertex2i(x, y-size)
+                glVertex2i(x, y+size)
+                glEnd()
+            else:
+                self.pointer_overlay = None
 
         # Show the backbuffer on screen
         self.gl_show(rect_count)

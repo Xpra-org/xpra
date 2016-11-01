@@ -82,6 +82,7 @@ class X11ServerBase(GTKServerBase):
     def __init__(self):
         self.screen_number = gtk.gdk.display_get_default().get_default_screen().get_number()
         self.root_window = gtk.gdk.get_default_root_window()
+        self.last_mouse_user = None
         GTKServerBase.__init__(self)
 
     def init(self, opts):
@@ -617,10 +618,32 @@ class X11ServerBase(GTKServerBase):
         return False
 
     def do_xpra_motion_event(self, event):
-        mouselog("motion event: %s", event)
-        wid = self._window_to_id.get(event.subwindow, 0)
+        mouselog("motion event: %s (last mouse user=%s)", event, self.last_mouse_user)
+        #find the window model for this gdk window:
+        wid = 0
+        model = None
+        window = event.subwindow
+        #TODO: find the gdk.Window without iterating over all of them:
+        for w,_wid in self._window_to_id.items():
+            if w.get_property("client-window")==window:
+                model = w
+                wid = _wid
+                break
         for ss in self._server_sources.values():
-            ss.update_mouse(wid, event.x_root, event.y_root)
+            if self.last_mouse_user is None or self.last_mouse_user!=ss.uuid:
+                #we may adjust for window position differences
+                x = event.x_root
+                y = event.y_root
+                #relative to the model if we found it
+                if model:
+                    wx, wy = model.get_geometry()[:2]
+                    rx = x-wx
+                    ry = y-wy
+                else:
+                    assert wid==0
+                    rx = x
+                    ry = y
+                ss.update_mouse(wid, x, y, rx, ry)
 
     def do_xpra_xkb_event(self, event):
         #X11: XKBNotify
@@ -671,6 +694,8 @@ class X11ServerBase(GTKServerBase):
             return
         pos = self.root_window.get_pointer()[:2]
         if pos!=pointer:
+            ss = self._server_sources.get(proto)
+            self.last_mouse_user = ss.uuid
             with xswallow:
                 self._move_pointer(wid, pointer)
 

@@ -34,10 +34,15 @@ class GLPixmapBacking(GLWindowBackingBase):
         if not self.paint_screen:
             return
         context = self.gl_context()
-        log("%s.gl_expose_event(%s, %s) context=%s", self, glarea, event, context)
+        if event and event.area:
+            area = event.area
+            rect = (area.x, area.y, area.width, area.height)
+        else:
+            w, h = self.size
+            rect = (0, 0, w, h)
+        log("%s.gl_expose_event(%s, %s) context=%s, area=%s", self, glarea, event, context, area)
         if not context:
             return
         with context:
             self.gl_init()
-            w, h = self.size
-            self.present_fbo(0, 0, w, h)
+            self.present_fbo(*rect)

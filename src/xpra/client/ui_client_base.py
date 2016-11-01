@@ -80,7 +80,7 @@ UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
-MOUSE_ECHO = envbool("XPRA_MOUSE_ECHO")
+MOUSE_SHOW = envbool("XPRA_MOUSE_SHOW", True)
 
 PAINT_FAULT_RATE = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
 PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
@@ -1406,7 +1406,7 @@ class UIXpraClient(XpraClientBase):
             "screen-scaling.enabled"    : (self.xscale!=1 or self.yscale!=1),
             "screen-scaling.values"     : (int(1000*self.xscale), int(1000*self.yscale)),
             #mouse and cursors:
-            "mouse.echo"                : MOUSE_ECHO,
+            "mouse.show"                : MOUSE_SHOW,
             "mouse.initial-position"    : self.get_mouse_position(),
             "named_cursors"             : False,
             "cursors"                   : self.client_supports_cursors,
@@ -3082,8 +3082,27 @@ class UIXpraClient(XpraClientBase):
 
 
     def _process_pointer_position(self, packet):
-        x, y = packet[1:3]
-        mouselog("process_pointer_position: %s - current position is %s", (x, y), self.get_mouse_position())
+        wid, x, y = packet[1:4]
+        if len(packet)>=6:
+            rx, ry = packet[4:6]
+        cx, cy = self.get_mouse_position()
+        size = 4
+        start_time = time.time()
+        mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
+        for i,w in self._id_to_window.items():
+            if i==wid:
+                value = rx, ry, size, start_time
+            else:
+                value = None
+            prev = w._backing.pointer_overlay
+            if prev!=value:
+                b = w._backing
+                b.pointer_overlay = value
+                w.queue_draw(rx-size, ry-size, size*2, size*2)
+                #b.gl_expose_event(b._backing, "pointer: fake event")
+                if prev:
+                    px, py, psize, _ = prev
+                    w.queue_draw(px-psize, py-psize, psize*2, psize*2)
 
 
     def _process_initiate_moveresize(self, packet):

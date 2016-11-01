@@ -9,6 +9,7 @@ log = Logger("opengl", "window")
 
 import gobject
 
+from xpra.util import AdHocStruct
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
 from xpra.client.gl.gtk2.gl_window_backing import GLPixmapBacking
 
@@ -51,9 +52,22 @@ class GLClientWindow(GTK2WindowBase):
         b.paint_spinner = self.can_have_spinner() and not ok
         log("spinner(%s) backing=%s, paint_screen=%s, paint_spinner=%s", ok, b._backing, b.paint_screen, b.paint_spinner)
         if b._backing and b.paint_screen:
-            b.gl_expose_event(self._backing._backing, "spinner: fake event")
             w, h = self.get_size()
             self.queue_draw(0, 0, w, h)
+
+    def queue_draw(self, x, y, w, h):
+        b = self._backing
+        if not b:
+            return
+        if b._backing and b.paint_screen:
+            area = AdHocStruct()
+            area.x = x
+            area.y = y
+            area.width = w
+            area.height = h
+            event = AdHocStruct()
+            event.area = area
+            b.gl_expose_event(b._backing, event)
 
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)

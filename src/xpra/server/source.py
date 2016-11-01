@@ -17,6 +17,7 @@ log = Logger("server")
 elog = Logger("encoding")
 soundlog = Logger("sound")
 keylog = Logger("keyboard")
+mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 printlog = Logger("printing")
@@ -287,7 +288,7 @@ class ServerSource(FileTransferHandler):
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
         # mouse echo:
-        self.mouse_echo = False
+        self.mouse_show = False
         self.mouse_last_position = None
         # sound:
         self.sound_properties = sound_properties
@@ -711,7 +712,7 @@ class ServerSource(FileTransferHandler):
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
         self.randr_notify = c.boolget("randr_notify")
-        self.mouse_echo = c.boolget("mouse.echo")
+        self.mouse_show = c.boolget("mouse.show")
         self.mouse_last_position = c.intpair("mouse.initial-position")
         self.clipboard_enabled = c.boolget("clipboard", True)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
@@ -1309,13 +1310,13 @@ class ServerSource(FileTransferHandler):
         return self.keyboard_config.get_keycode(client_keycode, keyname, modifiers)
 
 
-    def update_mouse(self, wid, x, y):
-        log("update_mouse(%s, %i, %i) current=%s", wid, x, y, self.mouse_last_position)
-        if not self.mouse_echo:
+    def update_mouse(self, wid, x, y, rx, ry):
+        mouselog("update_mouse(%s, %i, %i, %i, %i) current=%s", wid, x, y, rx, ry, self.mouse_last_position)
+        if not self.mouse_show:
             return
-        if self.mouse_last_position!=(x,y):
-            self.mouse_last_position = (x, y)
-            self.send("pointer-position", x, y)
+        if self.mouse_last_position!=(x, y, rx, ry):
+            self.mouse_last_position = (x, y, rx, ry)
+            self.send("pointer-position", wid, x, y, rx, ry)
 
 #
 # Functions for interacting with the network layer:
@@ -1972,7 +1973,7 @@ class ServerSource(FileTransferHandler):
             else:
                 metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             metadata.update(v)
-        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
+        log.warn("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)

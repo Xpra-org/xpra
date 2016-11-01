@@ -82,6 +82,7 @@ class WindowBackingBase(object):
         self._csc_decoder = None
         self._decoder_lock = Lock()
         self._PIL_encodings = []
+        self.pointer_overlay = None
         PIL = get_codec("dec_pillow")
         if PIL:
             self._PIL_encodings = PIL.get_encodings()
