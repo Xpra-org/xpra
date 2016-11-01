@@ -371,7 +371,7 @@ cdef class ColorspaceConverter:
                 strides.append(self.scaled_stride[i])
                 planes.append(memory_as_readonly_pybuffer(<void *> scaled_planes[i], self.scaled_size[i]))
             self.frames += 1
-            out_image = YUVImageWrapper(0, 0, self.src_width, self.src_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
+            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
             out_image.cython_buffer = <unsigned long> scaled_buffer
         else:
             #use output buffer directly:
@@ -379,7 +379,7 @@ cdef class ColorspaceConverter:
                 strides.append(self.out_stride[i])
                 planes.append(memory_as_readonly_pybuffer(<void *> out_planes[i], self.out_size[i]))
             self.frames += 1
-            out_image = YUVImageWrapper(0, 0, self.src_width, self.src_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
+            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
             out_image.cython_buffer = <unsigned long> output_buffer
         return out_image
 
