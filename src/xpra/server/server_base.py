@@ -25,6 +25,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
 metalog = Logger("metadata")
+geomlog = Logger("geometry")
 windowlog = Logger("window")
 clipboardlog = Logger("clipboard")
 rpclog = Logger("rpc")
@@ -2189,9 +2190,22 @@ class ServerBase(ServerCore):
 
     def _do_send_new_window_packet(self, ptype, window, geometry):
         wid = self._window_to_id[window]
-        x, y, w, h = geometry
         for ss in self._server_sources.values():
             wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+            x, y, w, h = geometry
+            #adjust if the transient-for window is not mapped in the same place by the client we send to:
+            if "transient-for" in window.get_property_names():
+                transient_for = self.get_transient_for(window)
+                if transient_for>0:
+                    parent = self._id_to_window.get(transient_for)
+                    parent_ws = ss.get_window_source(transient_for)
+                    pos = self.get_window_position(parent)
+                    geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
+                    if parent and parent_ws and parent_ws.mapped_at and pos:
+                        cx, cy = parent_ws.mapped_at[:2]
+                        px, py = pos
+                        x += cx-px
+                        y += cy-py
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
 
