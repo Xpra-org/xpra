@@ -151,5 +151,8 @@ def do_get_sound_command():
     subapp = os.path.join(base, "Xpra_NoDock.app", "Contents")
     if os.path.exists(subapp) and os.path.isdir(subapp):
         base = subapp
+    #appstore builds have script wrappers:
     helper = os.path.join(base, "Resources", "scripts", "Xpra")
+    if not os.path.exists(helper):
+        helper = os.path.join(base, "Helpers", "Xpra")
     return [helper]
