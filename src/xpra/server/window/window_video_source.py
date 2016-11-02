@@ -47,7 +47,7 @@ FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
-SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 40)))
+SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 
 FAST_ORDER = ["jpeg", "rgb32", "rgb24", "png"] + PREFERED_ENCODING_ORDER
 
@@ -339,7 +339,7 @@ class WindowVideoSource(WindowSource):
             q = 100
             return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
-        if len(self.non_video_encodings)==0:
+        if not self.non_video_encodings:
             return current_encoding
 
         #ensure the dimensions we use for decision making are the ones actually used:
@@ -373,13 +373,6 @@ class WindowVideoSource(WindowSource):
             #window has just been resized, may still resize
             return nonvideo(q=quality-30)
 
-        lde = list(self.statistics.last_damage_events)
-        lim = now-2
-        pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_2secs<5*videomin:
-            #less than 5 full frames in last 2 seconds
-            return nonvideo()
-
         if self._current_quality!=quality or self._current_speed!=speed:
             #quality or speed override, best not to force video encoder re-init
             return nonvideo()
@@ -388,6 +381,18 @@ class WindowVideoSource(WindowSource):
             #we have a video region, and this is not it, so don't use video
             #raise the quality as the areas around video tend to not be graphics
             return nonvideo(q=quality+30)
+
+        lde = list(self.statistics.last_damage_events)
+        lim = now-2
+        pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
+        if pixels_last_2secs<5*videomin:
+            #less than 5 full frames in last 2 seconds
+            return nonvideo()
+        lim = now-0.5
+        pixels_last_05secs = sum(w*h for when,_,_,w,h in lde if when>lim)
+        if pixels_last_05secs<pixels_last_2secs//8:
+            #framerate is dropping?
+            return nonvideo()
 
         #calculate the threshold for using video vs small regions:
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
