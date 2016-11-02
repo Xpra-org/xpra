@@ -361,7 +361,7 @@ class WindowVideoSource(WindowSource):
 
         if cww*cwh<=MAX_NONVIDEO_PIXELS:
             #window is too small!
-            return nonvideo()
+            return nonvideo(quality+30)
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
             #video encoder cannot handle this size!
@@ -371,7 +371,7 @@ class WindowVideoSource(WindowSource):
         now = time.time()
         if now-self.statistics.last_resized<0.350:
             #window has just been resized, may still resize
-            return nonvideo(q=quality-30)
+            return nonvideo(quality-30)
 
         if self._current_quality!=quality or self._current_speed!=speed:
             #quality or speed override, best not to force video encoder re-init
@@ -380,19 +380,19 @@ class WindowVideoSource(WindowSource):
         if sr and ((sr.width&self.width_mask)!=cww or (sr.height&self.height_mask)!=cwh):
             #we have a video region, and this is not it, so don't use video
             #raise the quality as the areas around video tend to not be graphics
-            return nonvideo(q=quality+30)
+            return nonvideo(quality+30)
 
         lde = list(self.statistics.last_damage_events)
         lim = now-2
         pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
         if pixels_last_2secs<5*videomin:
             #less than 5 full frames in last 2 seconds
-            return nonvideo()
+            return nonvideo(quality+30)
         lim = now-0.5
         pixels_last_05secs = sum(w*h for when,_,_,w,h in lde if when>lim)
         if pixels_last_05secs<pixels_last_2secs//8:
             #framerate is dropping?
-            return nonvideo()
+            return nonvideo(quality+30)
 
         #calculate the threshold for using video vs small regions:
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
@@ -403,7 +403,7 @@ class WindowVideoSource(WindowSource):
         max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
         if pixel_count<=max_nvp:
             #below threshold
-            return nonvideo()
+            return nonvideo(quality+30)
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
             #failsafe:
