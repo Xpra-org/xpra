@@ -78,7 +78,7 @@ libtool --finish %{buildroot}%{_libdir}/gstreamer-%{majorminor}
 %doc %{_datarootdir}/gtk-doc/html/gst-plugins-ugly-plugins-%{majorminor}
 
 %changelog
-* Wed Nov 02 2015 Antoine Martin <antoine@devloop.org.uk> 1.8.3-1
+* Wed Nov 02 2016 Antoine Martin <antoine@devloop.org.uk> 1.8.3-1
 - Fedora 25 rebuild
 
 * Thu Sep 10 2015 Antoine Martin <antoine@devloop.org.uk> 1.4.5-1
