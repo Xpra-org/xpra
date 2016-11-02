@@ -7,7 +7,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
 
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu, \
@@ -283,6 +283,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         selected_items = [x for x in all_items if x==item] + [x for x in all_items if x.get_label()==label]
         if not selected_items:
             log.error("Error: cannot find any clipboard menu options to match '%s'", label)
+            log.error(" all menu items: %s", csv(all_items))
+            log.error(" selected: %s", csv(selected_items))
             return None
         self._clipboard_change_pending = True
         sel = selected_items[0]
