@@ -690,8 +690,9 @@ class GLWindowBackingBase(GTKWindowBacking):
         if self.pointer_overlay:
             x, y, size, start_time = self.pointer_overlay
             elapsed = time.time()-start_time
-            if elapsed<5:
+            if elapsed<6:
                 alpha = max(0, (5.0-elapsed)/5.0)
+                glLineWidth(1)
                 glBegin(GL_LINES)
                 glColor4f(0, 0, 0, alpha)
                 glVertex2i(x-size, y)

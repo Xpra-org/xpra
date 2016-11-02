@@ -108,6 +108,7 @@ class ServerBase(ServerCore):
         self.window_filters = []
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
+        self.ui_driver = None
 
         self.default_quality = -1
         self.default_min_quality = 0
@@ -2095,6 +2096,7 @@ class ServerBase(ServerCore):
             cinfo = {}
             for i, ss in enumerate(server_sources):
                 sinfo = ss.get_info()
+                sinfo["ui-driver"] = self.ui_driver==ss.uuid
                 sinfo.update(ss.get_window_info(window_ids))
                 cinfo[i] = sinfo
             up("client", cinfo)
@@ -2566,6 +2568,7 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        self.ui_driver = ss.uuid
         keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
         log("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
@@ -2713,7 +2716,19 @@ class ServerBase(ServerCore):
 
 
     def _process_button_action(self, proto, packet):
+        mouselog("process_button_action(%s, %s)", proto, packet)
+        if self.readonly:
+            return
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        ss.user_event()
+        self.ui_driver = ss.uuid
+        self.do_process_button_action(proto, *packet[1:])
+
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         pass
+
 
     def _update_modifiers(self, proto, wid, modifiers):
         pass
@@ -2725,6 +2740,8 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is not None:
             ss.mouse_last_position = pointer
+        if self.ui_driver and self.ui_driver!=ss.uuid:
+            return
         self._update_modifiers(proto, wid, modifiers)
         self._process_mouse_common(proto, wid, pointer)
 

@@ -617,33 +617,17 @@ class X11ServerBase(GTKServerBase):
             ss.send_cursor()
         return False
 
-    def do_xpra_motion_event(self, event):
-        mouselog("motion event: %s (last mouse user=%s)", event, self.last_mouse_user)
+
+    def _motion_signaled(self, model, event):
+        mouselog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         #find the window model for this gdk window:
-        wid = 0
-        model = None
-        window = event.subwindow
-        #TODO: find the gdk.Window without iterating over all of them:
-        for w,_wid in self._window_to_id.items():
-            if w.get_property("client-window")==window:
-                model = w
-                wid = _wid
-                break
+        wid = self._window_to_id.get(model)
+        if not wid:
+            return
         for ss in self._server_sources.values():
             if self.last_mouse_user is None or self.last_mouse_user!=ss.uuid:
-                #we may adjust for window position differences
-                x = event.x_root
-                y = event.y_root
-                #relative to the model if we found it
-                if model:
-                    wx, wy = model.get_geometry()[:2]
-                    rx = x-wx
-                    ry = y-wy
-                else:
-                    assert wid==0
-                    rx = x
-                    ry = y
-                ss.update_mouse(wid, x, y, rx, ry)
+                ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
+
 
     def do_xpra_xkb_event(self, event):
         #X11: XKBNotify
@@ -695,6 +679,7 @@ class X11ServerBase(GTKServerBase):
         pos = self.root_window.get_pointer()[:2]
         if pos!=pointer:
             ss = self._server_sources.get(proto)
+            assert ss, "source not found for %s" % proto
             self.last_mouse_user = ss.uuid
             with xswallow:
                 self._move_pointer(wid, pointer)
@@ -704,20 +689,15 @@ class X11ServerBase(GTKServerBase):
             return
         ss = self._server_sources.get(proto)
         if ss:
+            if self.ui_driver and self.ui_driver!=ss.uuid:
+                return
             ss.make_keymask_match(modifiers)
             if wid==self.get_focus():
                 ss.user_event()
 
-    def _process_button_action(self, proto, packet):
-        if self.readonly:
-            return
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        wid, button, pressed, pointer, modifiers = packet[1:6]
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         self._update_modifiers(proto, wid, modifiers)
         self._process_mouse_common(proto, wid, pointer)
-        ss.user_event()
         mouselog("xtest_fake_button(%s, %s) at %s", button, pressed, pointer)
         try:
             with xsync:

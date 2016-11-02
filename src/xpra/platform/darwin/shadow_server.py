@@ -148,9 +148,7 @@ class ShadowServer(GTKShadowServerBase):
         #this causes crashes, don't do it!
         #CG.CFRelease(e)
 
-    def _process_button_action(self, proto, packet):
-        wid, button, pressed, pointer, modifiers = packet[1:6]
-        log("process_button_action(%s, %s)", proto, packet)
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         self._update_modifiers(proto, wid, modifiers)
         pointer = self._process_mouse_common(proto, wid, pointer)
         if button<=3:

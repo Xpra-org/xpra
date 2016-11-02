@@ -333,8 +333,7 @@ class ShadowServer(GTKShadowServerBase):
     def fake_key(self, keycode, press):
         fake_key(keycode, press)
 
-    def _process_button_action(self, proto, packet):
-        wid, button, pressed, pointer, modifiers = packet[1:6]
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         self._update_modifiers(proto, wid, modifiers)
         x, y = self._process_mouse_common(proto, wid, pointer)
         self._server_sources.get(proto).user_event()

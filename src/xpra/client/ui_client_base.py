@@ -3090,19 +3090,15 @@ class UIXpraClient(XpraClientBase):
         start_time = time.time()
         mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
         for i,w in self._id_to_window.items():
-            if i==wid:
-                value = rx, ry, size, start_time
-            else:
-                value = None
-            prev = w._backing.pointer_overlay
-            if prev!=value:
-                b = w._backing
-                b.pointer_overlay = value
-                w.queue_draw(rx-size, ry-size, size*2, size*2)
-                #b.gl_expose_event(b._backing, "pointer: fake event")
-                if prev:
-                    px, py, psize, _ = prev
-                    w.queue_draw(px-psize, py-psize, psize*2, psize*2)
+            #not all window implementations have this method:
+            #(but GLClientWindow does)
+            show_pointer_overlay = getattr(w, "show_pointer_overlay", None)
+            if show_pointer_overlay:
+                if i==wid:
+                    value = rx, ry, size, start_time
+                else:
+                    value = None
+                show_pointer_overlay(value)
 
 
     def _process_initiate_moveresize(self, packet):

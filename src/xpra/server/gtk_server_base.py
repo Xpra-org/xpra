@@ -174,7 +174,7 @@ class GTKServerBase(ServerBase):
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
-    def _process_button_action(self, proto, packet):
+    def do_process_button_action(self, *args):
         pass
 
 

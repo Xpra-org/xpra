@@ -34,7 +34,8 @@ geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
-ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK
+ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK | gdk.POINTER_MOTION_MASK
+
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 
@@ -152,6 +153,7 @@ class CoreX11WindowModel(WindowModelStub):
         "ungrab"                        : one_arg_signal,
         "bell"                          : one_arg_signal,
         "client-contents-changed"       : one_arg_signal,
+        "motion"                        : one_arg_signal,
         #x11 events we catch (and often re-emit as something else):
         "xpra-property-notify-event"    : one_arg_signal,
         "xpra-xkb-event"                : one_arg_signal,
@@ -161,6 +163,7 @@ class CoreX11WindowModel(WindowModelStub):
         "xpra-client-message-event"     : one_arg_signal,
         "xpra-focus-in-event"           : one_arg_signal,
         "xpra-focus-out-event"          : one_arg_signal,
+        "xpra-motion-event"             : one_arg_signal,
         }
 
     #things that we expose:
@@ -642,6 +645,10 @@ class CoreX11WindowModel(WindowModelStub):
         if event.mode==NotifyUngrab:
             grablog("emitting ungrab on %s", self)
             self.emit("ungrab", event)
+
+
+    def do_xpra_motion_event(self, event):
+        self.emit("motion", event)
 
 
     ################################

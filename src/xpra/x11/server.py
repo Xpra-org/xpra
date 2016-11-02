@@ -25,8 +25,6 @@ from xpra.x11.gtk2.wm import Wm
 from xpra.x11.gtk2.tray import get_tray_window, SystemTray
 from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel
 from xpra.x11.gtk2.gdk_bindings import (
-                               add_catchall_receiver,       #@UnresolvedImport
-                               remove_catchall_receiver,    #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
@@ -176,7 +174,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
     __gsignals__ = {
         "xpra-child-map-event"  : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
-        "xpra-motion-event"     : one_arg_signal,
         "server-event"          : one_arg_signal,
         }
 
@@ -237,7 +234,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
-        add_catchall_receiver("xpra-motion-event", self)
 
         #save default xsettings:
         self.default_xsettings = XSettingsHelper().get_settings()
@@ -360,7 +356,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.root_overlay = None
         self.cancel_all_configure_damage()
         X11ServerBase.do_cleanup(self)
-        remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
         if self._wm:
@@ -471,6 +466,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("grab", self._window_grab)
         window.managed_connect("ungrab", self._window_ungrab)
         window.managed_connect("bell", self._bell_signaled)
+        window.managed_connect("motion", self._motion_signaled)
         if not window.is_tray():
             window.managed_connect("raised", self._raised_window)
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)

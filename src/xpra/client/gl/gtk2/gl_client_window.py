@@ -20,6 +20,7 @@ class GLClientWindow(GTK2WindowBase):
 
     def __init__(self, *args):
         log("GLClientWindow(..)")
+        self.remove_pointer_overlay_timer = None
         GTK2WindowBase.__init__(self, *args)
 
 
@@ -83,6 +84,7 @@ class GLClientWindow(GTK2WindowBase):
         self._backing.paint_screen = True
 
     def destroy(self):
+        self.cancel_remove_pointer_overlay_timer()
         self.remove_backing()
         GTK2WindowBase.destroy(self)
 
@@ -110,6 +112,34 @@ class GLClientWindow(GTK2WindowBase):
         self.remove_backing()
         GTK2WindowBase.freeze(self)
 
+
+    def show_pointer_overlay(self, value):
+        log("show_pointer_overlay(%s)", value)
+        b = self._backing
+        if not b:
+            return
+        prev = b.pointer_overlay
+        if prev==value:
+            return
+        b.pointer_overlay = value
+        if value:
+            x, y, size = value[:3]
+            self.queue_draw(x-size, y-size, size*2, size*2)
+            #clear it shortly after:
+            self.cancel_remove_pointer_overlay_timer()
+            def remove_pointer_overlay():
+                self.remove_pointer_overlay_timer = None
+                self.show_pointer_overlay(None)
+            self.remove_pointer_overlay_timer = self.timeout_add(500, remove_pointer_overlay)
+        if prev:
+            px, py, psize = prev[:3]
+            self.queue_draw(px-psize, py-psize, psize*2, psize*2)
+
+    def cancel_remove_pointer_overlay_timer(self):
+        rpot = self.remove_pointer_overlay_timer
+        if rpot:
+            self.remove_pointer_overlay_timer = None
+            self.source_remove(rpot)
 
     def toggle_debug(self, *args):
         b = self._backing
