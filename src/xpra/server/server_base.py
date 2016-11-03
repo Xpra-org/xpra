@@ -658,8 +658,11 @@ class ServerBase(ServerCore):
             self.dbus_server = self.make_dbus_server()
             dbuslog("init_dbus_server() dbus_server=%s", self.dbus_server)
         except Exception as e:
-            dbuslog.error("Error setting up our dbus server:", exc_info=True)
-            dbuslog.error(" %s", e)
+            if str(e).find("org.freedesktop.DBus.Error.NoServer")<0:
+                dbuslog.error("dbus server error", exc_info=True)
+            dbuslog.error("Error setting up our dbus server:")
+            for x in str(e).split(":"):
+                dbuslog.error("  %s", x.strip())
 
     def make_dbus_server(self):
         from xpra.server.dbus.dbus_server import DBUS_Server
