@@ -478,8 +478,9 @@ class WindowVideoSource(WindowSource):
                 #keep the region, but cancel the refresh:
                 self.video_subregion.cancel_refresh_timer()
         self.scroll_data = None
-        #refresh the whole window in one go:
-        damage_options["novideo"] = True
+        if self.non_video_encodings:
+            #refresh the whole window in one go:
+            damage_options["novideo"] = True
         WindowSource.full_quality_refresh(self, damage_options)
 
 
@@ -1662,7 +1663,7 @@ class WindowVideoSource(WindowSource):
         self.cancel_video_encoder_flush()
         if delayed>0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
-            if not data:
+            if not data and self.non_video_encodings:
                 if frame==0:
                     #first frame has not been sent yet,
                     #so send something as non-video
@@ -1713,8 +1714,9 @@ class WindowVideoSource(WindowSource):
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
             self._video_encoder = None
             ve.clean()
-            self.idle_add(self.refresh, {"novideo" : True})
-            videolog("flushed frame 0, novideo refresh requested")
+            if self.non_video_encodings:
+                self.idle_add(self.refresh, {"novideo" : True})
+                videolog("flushed frame 0, novideo refresh requested")
             return
         w = ve.get_width()
         h = ve.get_height()

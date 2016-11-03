@@ -699,7 +699,7 @@ class WindowSource(object):
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s)" % (", ".join(self._encoders.keys()), ", ".join(self.core_encodings)))
         #ensure the encoding chosen is supported by this source:
-        if encoding in self.common_encodings or encoding=="auto":
+        if (encoding in self.common_encodings or encoding=="auto") and len(self.common_encodings)>1:
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
