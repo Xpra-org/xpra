@@ -86,6 +86,10 @@
 				return window.location.getParameter(name);
 			}
 
+			function encodeData(s) {
+				return encodeURIComponent(s);
+			}
+
 			$(document).ready(function() {
 
 				// look at url parameters
@@ -176,7 +180,35 @@
 				    		if(reason) {
 				    			message = reason;
 				    		}
-				    		window.location="connect.html?disconnect="+message+"&username="+username+"&encoding="+encoding+"&keyboard_layout="+keyboard_layout+"&encoding="+encoding+"&action="+action+"&sound="+sound+"&exit_with_children="+exit_with_children+"&exit_with_client="+exit_with_client+"&normal_fullscreen="+normal_fullscreen;
+				    		var url = "/connect.html?disconnect="+message;
+				    		if (username) {
+				    			url += "&username="+encodeData(username);
+				    		}
+				    		if (password) {
+				    			url += "&password="+encodeData(password);
+				    		}
+				    		if (encoding) {
+				    			url += "&encoding="+encodeData(encoding);
+				    		}
+				    		if (keyboard_layout) {
+				    			url += "&keyboard_layout="+encodeData(keyboard_layout);
+				    		}
+				    		if (action) {
+				    			url += "&action="+encodeData(action);
+				    		}
+				    		if (sound) {
+				    			url += "&sound="+encodeData(sound);
+				    		}
+				    		if (exit_with_children) {
+				    			url += "&exit_with_children="+encodeData(exit_with_children);
+				    		}
+				    		if (exit_with_client) {
+				    			url += "&exit_with_client="+encodeData(exit_with_client);
+				    		}
+				    		if (normal_fullscreen) {
+				    			url += "&normal_fullscreen="+encodeData(normal_fullscreen);
+				    		}
+				    		window.location=url;
 				    	} else {
 					    	// if we didn't submit through the form, silently redirect to the connect gui
 					    	window.location="connect.html";
