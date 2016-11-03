@@ -1,3 +1,12 @@
+/*
+ * This file is part of Xpra.
+ * Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2016 Spikes, Inc.
+ * Licensed under MPL 2.0, see:
+ * http://www.mozilla.org/MPL/2.0/
+ *
+ */
+
 'use strict';
 
 var Utilities = {

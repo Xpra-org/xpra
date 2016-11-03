@@ -833,6 +833,21 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		decode_callback(this.client);
 		//this._h264_process_raw(img_data);
 	}
+	else if (coding=="scroll") {
+		if(this.offscreen_canvas_mode!='2d') {
+			this._init_2d_canvas();
+		}
+		for(var i=0,j=img_data.length;i<j;++i) {
+			var scroll_data = img_data[i];
+			var sx = scroll_data[0],
+				sy = scroll_data[1],
+				sw = scroll_data[2],
+				sh = scroll_data[3],
+				xdelta = scroll_data[4],
+				ydelta = scroll_data[5];
+            this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, y+ydelta, sw, sh);
+		}
+	}
 	else {
 		throw "unsupported coding " + coding;
 	}

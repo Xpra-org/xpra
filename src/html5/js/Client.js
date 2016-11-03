@@ -24,7 +24,7 @@ function XpraClient(container) {
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
-	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];
+	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//, "h264"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
 	this.start_new_session = null;
@@ -617,6 +617,7 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.transparency"		: true,
 		"encoding.client_options"	: true,
 		"encoding.csc_atoms"		: true,
+		"encoding.scrolling"		: true,
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
