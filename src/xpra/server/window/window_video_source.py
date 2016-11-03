@@ -1215,13 +1215,13 @@ class WindowVideoSource(WindowSource):
             Runs in the 'encode' thread.
         """
         if encoding=="auto":
-            encodings = self.video_encodings
+            encodings = [x for x in self.video_encodings if x in self.common_encodings]
         else:
             encodings = [encoding]
         if self.do_check_pipeline(encodings, width, height, src_format):
             return True  #OK!
 
-        videolog("check_pipeline%s setting up a new pipeline as check failed", (encodings, width, height, src_format))
+        videolog("check_pipeline%s setting up a new pipeline as check failed - encodings=%s", (encoding, width, height, src_format), encodings)
         #cleanup existing one if needed:
         csce = self._csc_encoder
         if csce:
