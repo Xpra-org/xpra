@@ -654,15 +654,8 @@ class ServerBase(ServerCore):
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
         if not self.dbus_control:
             return
-        try:
-            self.dbus_server = self.make_dbus_server()
-            dbuslog("init_dbus_server() dbus_server=%s", self.dbus_server)
-        except Exception as e:
-            if str(e).find("org.freedesktop.DBus.Error.NoServer")<0:
-                dbuslog.error("dbus server error", exc_info=True)
-            dbuslog.error("Error setting up our dbus server:")
-            for x in str(e).split(":"):
-                dbuslog.error("  %s", x.strip())
+        from xpra.server.dbus.dbus_common import dbus_exception_wrap
+        self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
 
     def make_dbus_server(self):
         from xpra.server.dbus.dbus_server import DBUS_Server

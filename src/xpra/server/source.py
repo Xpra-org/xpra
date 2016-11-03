@@ -350,13 +350,12 @@ class ServerSource(FileTransferHandler):
         self.encode_thread = start_thread(self.encode_loop, "encode")
         #dbus:
         if self.dbus_control:
-            try:
+            from xpra.server.dbus.dbus_common import dbus_exception_wrap
+            def make_dbus_server():
                 from xpra.server.dbus.dbus_source import DBUS_Source
-                self.dbus_server = DBUS_Source(self, os.environ.get("DISPLAY", "").lstrip(":"))
-                dbuslog("Source DBUS_Server=%s", self.dbus_server)
-            except Exception as e:
-                dbuslog.error("Error setting up the source's DBUS server:")
-                dbuslog.error(" %s", e)
+                return DBUS_Source(self, os.environ.get("DISPLAY", "").lstrip(":"))
+            self.dbus_server = dbus_exception_wrap(make_dbus_server, "setting up client dbus instance")
+
 
     def __repr__(self):
         return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
