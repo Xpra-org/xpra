@@ -559,7 +559,6 @@ class ClientWindowBase(ClientWidgetBase):
                     rect = self._client.srect(x, y, width, height)
                 self.idle_add(self.queue_draw, *rect)
         #only register this callback if we actually need it:
-        log.warn("%s.draw_needs_refresh=%s", backing, backing.draw_needs_refresh)
         if backing.draw_needs_refresh:
             callbacks.append(after_draw_refresh)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
