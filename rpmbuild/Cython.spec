@@ -10,7 +10,7 @@ Name:		python-Cython
 Name:		Cython
 %endif
 
-Version:	0.25
+Version:	0.25.1
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -112,7 +112,10 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Wed Jul 26 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25-1
+* Fri Nov 04 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.1-1
+- new upstream release
+
+* Wed Oct 26 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25-1
 - new upstream release
 
 * Fri Jul 15 2016 Antoine Martin <antoine@devloop.org.uk> - 0.24.1-1
@@ -142,10 +145,10 @@ rm -rf %{buildroot}
 * Wed Aug 19 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23-2
 - add upstream patch for infinite deepcopy loop
 
-* Sun Aug 09 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23
+* Sun Aug 09 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23-1
 - new upstream release
 
-* Mon Jun 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.1
+* Mon Jun 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.1-1
 - Crash when returning values on generator termination.
 - In some cases, exceptions raised during internal isinstance() checks were not propagated.
 - Runtime reported file paths of source files (e.g for profiling and tracing) are now relative to the build root directory instead of the main source file.
@@ -160,7 +163,7 @@ rm -rf %{buildroot}
 - Fixed a memory leak in the compiler when compiling multiple modules.
 - When compiling multiple modules, external library dependencies could leak into later compiler runs. Fix by Jeroen Demeyer. This fixes ticket 845.
 
-* Thu Feb 12 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22
+* Thu Feb 12 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22-1
 - new upstream release
 
 * Thu Jan 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.beta0-0

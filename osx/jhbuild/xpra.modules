@@ -524,9 +524,9 @@
 
   <distutils id="python-cython">
 	<branch repo="pypi.python.org"
-		module="/packages/f8/2e/5898046f8089205981447c23ebb8fe02cd9d66939cd74338aa4872853d8e/Cython-0.25.tar.gz"
-		hash="sha256:c651eeec6bdcb57de59527e8765c9d2c4970c56bf96731893df66dda17aba46b"
-		version="0.25"/>
+		module="/packages/2f/ae/0bb6ca970b949d97ca622641532d4a26395322172adaf645149ebef664eb/Cython-0.25.1.tar.gz"
+		hash="sha256:e0941455769335ec5afb17dee36dc3833b7edc2ae20a8ed5806c58215e4b6669"
+		version="0.25.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
