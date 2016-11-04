@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import errno
 import weakref
 from xpra.log import Logger
 log = Logger("decoder", "avcodec")
@@ -16,8 +17,6 @@ from xpra.os_util import bytestostr
 
 ctypedef unsigned long size_t
 ctypedef unsigned char uint8_t
-
-DEF EAGAIN = -11
 
 
 cdef extern from "../../buffers/buffers.h":
@@ -538,7 +537,7 @@ cdef class Decoder:
         with nogil:
             ret = avcodec_receive_frame(self.codec_ctx, self.av_frame)
         free(padded_buf)
-        if ret==EAGAIN:
+        if ret==-errno.EAGAIN:
             d = options.get("delayed", 0)
             if d>0:
                 log("avcodec_decode_video2 %i delayed pictures", d)

@@ -356,7 +356,10 @@ class WindowBackingBase(object):
 
             vd = self._video_decoder
             if vd:
-                if vd.get_encoding()!=coding:
+                if options.get("frame", -1)==0:
+                    log("paint_with_video_decoder: first frame of new stream")
+                    self.do_clean_video_decoder()
+                elif vd.get_encoding()!=coding:
                     log("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif vd.get_width()!=enc_width or vd.get_height()!=enc_height:
@@ -364,13 +367,7 @@ class WindowBackingBase(object):
                     self.do_clean_video_decoder()
                 elif vd.get_colorspace()!=input_colorspace:
                     #this should only happen on encoder restart, which means this should be the first frame:
-                    l = log
-                    if options.get("frame", 0)>1:
-                        l = log.warn
-                    l("paint_with_video_decoder: colorspace changed from %s to %s", vd.get_colorspace(), input_colorspace)
-                    self.do_clean_video_decoder()
-                elif options.get("frame")==0:
-                    log("paint_with_video_decoder: first frame of new stream")
+                    log.warn("Warning: colorspace unexpectedly changed from %s to %s", vd.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
                 log("paint_with_video_decoder: new %s(%s,%s,%s)", decoder_module.Decoder, width, height, input_colorspace)
