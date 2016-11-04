@@ -1410,7 +1410,7 @@ class WindowVideoSource(WindowSource):
             return {
                        "source"     : "video",
                        #could take av-sync into account here to choose the number of b-frames:
-                       "b-frames"   : int(encoding in self.supports_video_b_frames),
+                       "b-frames"   : int(B_FRAMES and (encoding in self.supports_video_b_frames)),
                        }
         return {}
 
