@@ -12,7 +12,7 @@ import hashlib
 import threading
 from collections import deque
 
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, csv
 from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
@@ -697,13 +697,13 @@ class WindowSource(object):
             common_encodings.append("rgb")
         self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
         if not self.common_encodings:
-            raise Exception("no common encodings found (server: %s vs client: %s)" % (", ".join(self._encoders.keys()), ", ".join(self.core_encodings)))
+            raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
         if (encoding in self.common_encodings or encoding=="auto") and len(self.common_encodings)>1:
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
-        log("update_encoding_selection(%s, %s, %s) encoding=%s, common encodings=%s", encoding, exclude, init, self.encoding, self.common_encodings)
+        log("ws.update_encoding_selection(%s, %s, %s) encoding=%s, common encodings=%s", encoding, exclude, init, self.encoding, self.common_encodings)
         assert self.encoding is not None
         self.update_quality()
         self.update_speed()

@@ -288,17 +288,19 @@ class WindowVideoSource(WindowSource):
 
     def update_encoding_selection(self, encoding=None, exclude=[], init=False):
         #override so we don't use encodings that don't have valid csc modes:
-        log("update_encoding_selection(%s, %s, %s)", encoding, exclude, init)
+        log("wvs.update_encoding_selection(%s, %s, %s)", encoding, exclude, init)
         for x in self.video_encodings:
             if x not in self.core_encodings:
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.get(x)
-            csclog("full_csc_modes[%s]=%s", x, csc_modes)
             if not csc_modes or x not in self.core_encodings:
                 exclude.append(x)
                 if not init:
-                    csclog.warn("client does not support any csc modes with %s", x)
+                    l = log.warn
+                else:
+                    l = log
+                l("client does not support any csc modes with %s", x)
         WindowSource.update_encoding_selection(self, encoding, exclude, init)
 
     def do_set_client_properties(self, properties):
@@ -967,8 +969,8 @@ class WindowVideoSource(WindowSource):
                 h = r.height & self.width_mask
         if w<self.min_w or w>self.max_w or h<self.min_h or h>self.max_h:
             return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)", w, h, self.min_w, self.min_h, self.max_w, self.max_h)
-        if time.time()-self.statistics.last_resized<0.500:
-            return checknovideo("resized just %.1f seconds ago", time.time()-self.statistics.last_resized)
+        #if time.time()-self.statistics.last_resized<0.500:
+        #    return checknovideo("resized just %.1f seconds ago", time.time()-self.statistics.last_resized)
 
         #must copy reference to those objects because of threading races:
         ve = self._video_encoder
