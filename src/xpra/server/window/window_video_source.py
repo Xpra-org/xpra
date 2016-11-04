@@ -1710,7 +1710,7 @@ class WindowVideoSource(WindowSource):
         ve, csc, frame, x, y, scaled_size = flush_data
         if self._video_encoder!=ve or ve.is_closed():
             return
-        if frame==0:
+        if frame==0 and ve.get_type()=="x264":
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
             self._video_encoder = None
             ve.clean()
@@ -1742,7 +1742,8 @@ class WindowVideoSource(WindowSource):
         packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
         self.queue_damage_packet(packet)
         #check for more delayed frames since we want to support multiple b-frames:
-        self.flush_video_encoder(ve, csc, frame, x, y)
+        if not self.b_frame_flush_timer and client_options.get("delayed", 0)>0:
+            self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
 
 
     def csc_image(self, image, width, height):
