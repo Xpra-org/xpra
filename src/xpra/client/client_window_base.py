@@ -554,10 +554,12 @@ class ClientWindowBase(ClientWidgetBase):
             if backing and backing.draw_needs_refresh:
                 if REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
                     w, h = self.get_size()
-                    self.queue_draw(0, 0, w, h)
+                    rect = 0, 0, w, h
                 else:
-                    self.queue_draw(*self._client.srect(x, y, width, height))
+                    rect = self._client.srect(x, y, width, height)
+                self.idle_add(self.queue_draw, *rect)
         #only register this callback if we actually need it:
+        log.warn("%s.draw_needs_refresh=%s", backing, backing.draw_needs_refresh)
         if backing.draw_needs_refresh:
             callbacks.append(after_draw_refresh)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)

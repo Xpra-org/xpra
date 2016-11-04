@@ -224,7 +224,6 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.border = None
         self.paint_screen = False
         self.paint_spinner = False
-        self.draw_needs_refresh = False
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.pending_fbo_paint = []
@@ -241,6 +240,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.texture_pixel_format = GL_RGBA
         else:
             self.texture_pixel_format = GL_RGB
+        self.draw_needs_refresh = False
         self._backing.show()
 
     def init_gl_config(self, window_alpha):
