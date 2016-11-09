@@ -950,6 +950,8 @@ class ServerBase(ServerCore):
 
     def cleanup_source(self, source):
         self.server_event("connection-lost", source.uuid)
+        if self.ui_driver==source.uuid:
+            self.ui_driver = None
         source.close()
         remaining_sources = [x for x in self._server_sources.values() if x!=source]
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)

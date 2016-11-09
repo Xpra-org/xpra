@@ -757,15 +757,24 @@ class XpraServer(gobject.GObject, X11ServerBase):
             windowlog("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
-        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        geomlog("client %s mapped window %s - %s, at: %s", ss, wid, window, (x, y, w, h))
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
+        if len(packet)>=7:
+            self._set_client_properties(proto, wid, window, packet[6])
+        if not self.ui_driver:
+            self.ui_driver = ss.uuid
+        elif self.ui_driver!=ss.uuid:
+            return
+        if self._desktop_manager.is_shown(window):
+            return
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
         ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
         self._desktop_manager.configure_window(window, ax, ay, aw, ah)
         self._desktop_manager.show_window(window)
-        if len(packet)>=7:
-            self._set_client_properties(proto, wid, window, packet[6])
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self._damage(window, 0, 0, w, h)
 
 
@@ -775,21 +784,29 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
+        assert not window.is_OR()
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        self._window_mapped_at(proto, wid, window, None)
+        if not self.ui_driver:
+            self.ui_driver = ss.uuid
+        elif self.ui_driver!=ss.uuid:
+            return
         if len(packet)>=4:
             #optional window_state added in 0.15 to update flags
             #during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
-        assert not window.is_OR()
-        geomlog("client unmapped window %s - %s", wid, window)
-        for ss in self._server_sources.values():
-            ss.unmap_window(wid, window)
-        window.unmap()
-        iconified = len(packet)>=3 and bool(packet[2])
-        if iconified and not window.get_property("iconic"):
-            window.set_property("iconic", True)
-        self._desktop_manager.hide_window(window)
-        self._window_mapped_at(proto, wid, window, None)
-        self.repaint_root_overlay()
+        if self._desktop_manager.is_shown(window):
+            geomlog("client %s unmapped window %s - %s", ss, wid, window)
+            for ss in self._server_sources.values():
+                ss.unmap_window(wid, window)
+            window.unmap()
+            iconified = len(packet)>=3 and bool(packet[2])
+            if iconified and not window.get_property("iconic"):
+                window.set_property("iconic", True)
+            self._desktop_manager.hide_window(window)
+            self.repaint_root_overlay()
 
     def _clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
         rw, rh = self.get_root_window_size()
@@ -807,9 +824,26 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        resize_counter = 0
-        if len(packet)>=8:
-            resize_counter = packet[7]
+        window = self._id_to_window.get(wid)
+        if not window:
+            geomlog("cannot map window %s: already removed!", wid)
+            return
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        #some "configure-window" packets are only meant for metadata updates:
+        skip_geometry = len(packet)>=10 and packet[9]
+        if not skip_geometry:
+            self._window_mapped_at(proto, wid, window, (x, y, w, h))
+        if len(packet)>=7:
+            cprops = packet[6]
+            if cprops:
+                metadatalog("window client properties updates: %s", cprops)
+                self._set_client_properties(proto, wid, window, cprops)
+        if not self.ui_driver:
+            self.ui_driver = ss.uuid
+        elif self.ui_driver!=ss.uuid and self._desktop_manager.is_shown(window):
+            return
         if len(packet)>=13:
             pwid = packet[10]
             pointer = packet[11]
@@ -818,12 +852,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if self._has_focus==wid:
                 self._update_modifiers(proto, wid, modifiers)
             self._process_mouse_common(proto, pwid, pointer)
-        #some "configure-window" packets are only meant for metadata updates:
-        skip_geometry = len(packet)>=10 and packet[9]
-        window = self._id_to_window.get(wid)
-        if not window:
-            geomlog("cannot map window %s: already removed!", wid)
-            return
         damage = False
         if window.is_tray():
             assert self._tray
@@ -832,30 +860,26 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._tray.move_resize(window, x, y, w, h)
                 damage = True
         else:
-            assert not window.is_OR() or skip_geometry, "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
+            assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
             self.last_client_configure_event = time.time()
             if len(packet)>=9:
                 changes = self._set_window_state(proto, wid, window, packet[8])
                 damage = len(changes)>0
             if not skip_geometry:
+                resize_counter = 0
+                if len(packet)>=8:
+                    resize_counter = packet[7]
                 owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                 geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
                 ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                 self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
                 damage |= owx!=ax or owy!=ay or oww!=aw or owh!=ah
-        if len(packet)>=7:
-            cprops = packet[6]
-            if cprops:
-                metadatalog("window client properties updates: %s", cprops)
-                self._set_client_properties(proto, wid, window, cprops)
         self.repaint_root_overlay()
-        if not skip_geometry:
-            self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        #rate-limit the damage events generated by configure:
         if damage:
             self.schedule_configure_damage(wid)
 
     def schedule_configure_damage(self, wid):
+        #rate-limit the damage events
         timer = self.configure_damage_timers.get(wid)
         if timer:
             return  #we already have one pending
