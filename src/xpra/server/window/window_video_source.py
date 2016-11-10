@@ -828,8 +828,8 @@ class WindowVideoSource(WindowSource):
             def timer_encode_from_queue():
                 self.encode_from_queue_timer = None
                 self.encode_from_queue_due = 0
-                self.encode_from_queue()
-            self.encode_from_queue_timer = self.timeout_add(av_delay, self.call_in_encode_thread, True, timer_encode_from_queue)
+                self.call_in_encode_thread(True, self.encode_from_queue)
+            self.encode_from_queue_timer = self.timeout_add(av_delay, timer_encode_from_queue)
 
     def encode_from_queue(self):
         #note: we use a queue here to ensure we preserve the order
