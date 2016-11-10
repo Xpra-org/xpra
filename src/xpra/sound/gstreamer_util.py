@@ -7,9 +7,9 @@
 import sys
 import os
 
-from xpra.sound.common import FLAC_OGG, OPUS_OGG, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
+from xpra.sound.common import FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
                                 AAC_MPEG4, WAV_LZ4, WAV_LZO, \
-                                VORBIS, FLAC, MP3, OPUS, SPEEX, WAV, WAVPACK, \
+                                VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
                                 MPEG4, MKA, OGG
 
 from xpra.util import csv, engs, parse_simple_dict, envint, envbool
@@ -89,29 +89,28 @@ NAME_TO_INFO_PLUGIN = {
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
-        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",    "matroskademux",            None),
-        #fails silently - no idea why:
-        #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",    "oggdemux"),
-        #does not work - no idea why:
-        #(FLAC       , "flacenc",        "oggmux",       "flacparse ! flacdec",      "oggdemux"),
+        (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux"),
+        #those two fail silently - no idea why:
+        #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux"),
+        #(VORBIS     , "vorbisenc",      None,           "vorbisparse ! vorbisdec",      None),
+        (FLAC       , "flacenc",        None,           "flacparse ! flacdec",          None),
         #this only works in gstreamer 0.10 and is filtered out during initialization:
-        (FLAC_OGG   , "flacenc",        "oggmux",       "flacdec",      "oggdemux",                 None),
-        (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",           None,           None),
-        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",     None,           None),
-        (WAV        , "wavenc",         None,           "wavparse",     None,                       None),
-        (WAV_LZ4    , "wavenc",         None,           "wavparse",     None,                       "lz4"),
-        (WAV_LZO    , "wavenc",         None,           "wavparse",     None,                       "lzo"),
-        (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",      "oggdemux",                 None),
-        #for rtp, we would need to send the caps:
-        #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusdec",      "rtpopusdepay"),
-        #(OPUS_RTP   , "opusenc",        "rtpopuspay",   "opusparse ! opusdec",      "rtpopusdepay"),
-        #this causes "could not link opusenc0 to webmmux0"
-        #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusdec",      "matroskademux"),
-        #(OPUS_WEBM  , "opusenc",        "webmmux",      "opusparse ! opusdec",      "matroskademux"),
-        (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",     "oggdemux",                 None),
-        (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",   None,        None),
-        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",         "qtdemux",                  None),
-        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",    "qtdemux",                  None),
+        (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
+        (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",               None),
+        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",         None),
+        (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mp3parse ! mad",               "qtdemux"),
+        (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
+        (WAV        , "wavenc",         None,           "wavparse",                     None),
+        (WAV_LZ4    , "wavenc",         None,           "wavparse",                     None,                       "lz4"),
+        (WAV_LZO    , "wavenc",         None,           "wavparse",                     None,                       "lzo"),
+        (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
+        (OPUS       , "opusenc",        None,           "opusparse ! opusdec",          None),
+        #this can cause "could not link opusenc0 to webmmux0"
+        (OPUS_MKA  , "opusenc",        "webmmux",      "opusdec",                       "matroskademux"),
+        (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux"),
+        (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",    None),
+        (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux"),
+        (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux"),
             ]
 
 MUX_OPTIONS = [
@@ -138,13 +137,21 @@ SOURCE_NEEDS_AUDIOCONVERT = ("directsoundsrc", "osxaudiosrc", "autoaudiosrc")
 #options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
 ENCODER_DEFAULT_OPTIONS_COMMON = {
-            "lamemp3enc"    : {"encoding-engine-quality": 0},   #"fast"
+            "lamemp3enc"    : {
+                               "encoding-engine-quality" : 0,
+                               },   #"fast"
             "wavpackenc"    : {
-                               "mode"       : 1,    #"fast" (0 aka "very fast" is not supported)
+                               "mode"       : 1,        #"fast" (0 aka "very fast" is not supported)
                                "bitrate"    : 256000,
                                },
-            "flacenc"       : {"quality" : 0},  #"fast"
-            "avenc_aac"     : {"compliance" : -2}       #allows experimental
+            "flacenc"       : {
+                               "quality"    : 0,        #"fast"
+                               },
+            "avenc_aac"     : {
+                               "compliance" : -2,       #allows experimental
+                               },
+            #"faac"          : {"perfect-timestamp" : 1},
+            #"vorbisenc"     : {"perfect-timestamp" : 1},
                            }
 ENCODER_DEFAULT_OPTIONS = {
                             0       : {
@@ -164,13 +171,18 @@ ENCODER_DEFAULT_OPTIONS = {
                            }
 #we may want to review this if/when we implement UDP transport:
 MUXER_DEFAULT_OPTIONS = {
-            "oggmux"        : {"max-delay"      : OGG_DELAY,
-                               "max-page-delay" : OGG_DELAY,
+            "oggmux"        : {
+                               "max-delay"          : OGG_DELAY,
+                               "max-page-delay"     : OGG_DELAY,
                                },
-            "webmmux"       : {"writing-app"    : "Xpra"},
+            "webmmux"       : {
+                               "writing-app"        : "Xpra",
+                               "streamable"         : 1,
+                               "min-index-interval" : 100000000,
+                               },
             "mp4mux"        : {
-                               "faststart"      : 1,
-                               "streamable"     : 1,
+                               "faststart"          : 1,
+                               "streamable"         : 1,
                                "fragment-duration"  : 1,
                                "presentation-time"  : 0,
                                }
@@ -189,7 +201,7 @@ ENCODER_LATENCY = {
         SPEEX       : 0,
        }
 
-CODEC_ORDER = [OPUS_OGG, VORBIS_MKA, FLAC_OGG, MP3, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG]
+CODEC_ORDER = [OPUS_OGG, VORBIS_MKA, FLAC_OGG, MP3, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, OPUS, VORBIS, FLAC_OGG, OPUS_MKA, FLAC, MP3_MPEG4]
 
 
 gst = None
@@ -430,7 +442,7 @@ def init_codecs():
         if not validate_encoding(elements):
             continue
         try:
-            encoding, encoder, payloader, decoder, depayloader, stream_compressor = elements
+            encoding, encoder, payloader, decoder, depayloader, stream_compressor = (list(elements)+[None])[:6]
         except ValueError as e:
             log.error("Error: invalid codec entry: %s", e)
             log.error(" %s", elements)
@@ -475,7 +487,7 @@ def validate_encoding(elements):
     if force_enabled(encoding):
         log.info("sound codec %s force enabled", encoding)
         return True
-    elif len([x for x in elements if (x and (x.find("matroska")>=0 or x.find("gdp")>=0))])>0 and get_gst_version()<(1, ):
+    elif len([x for x in elements if x and (x.find("matroska")>=0)])>0 and get_gst_version()<(1, ):
         #outdated versions of gstreamer cause problems with the gdp and matroskademux muxers,
         #the receiver may not be able to process the data
         #and we have no way of knowing what version they have at this point, so just disable those:
@@ -489,12 +501,6 @@ def validate_encoding(elements):
             #so avoid using those:
             log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
             return False
-        elif encoding==FLAC and gst_major_version==1:
-            log("skipping flac with GStreamer 1.x to avoid obscure 'not-negotiated' errors")
-            return False
-        elif encoding==FLAC_OGG:
-            log("skipping %s to avoid obscure 'not-negotiated' errors", encoding)
-            return False
     elif WIN32 and encoding in (SPEEX_OGG, ):
         log("skipping %s on win32", encoding)
         return False
@@ -502,7 +508,15 @@ def validate_encoding(elements):
         if gst_major_version<1:
             log("skipping %s with GStreamer 0.10", encoding)
             return False
-    stream_compressor = elements[5]
+        if encoding==OPUS_MKA and get_gst_version()<(1, 8):
+            #this causes "could not link opusenc0 to webmmux0"
+            #(not sure which versions are affected, but 1.8.x is not)
+            log("skipping %s with GStreamer %s", encoding, get_gst_version())
+            return False
+    try:
+        stream_compressor = elements[5]
+    except:
+        stream_compressor = None
     if stream_compressor and not has_stream_compressor(stream_compressor):
         log("skipping %s: missing %s", encoding, stream_compressor)
         return False

@@ -1899,13 +1899,17 @@ class UIXpraClient(XpraClientBase):
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
+        self.server_codec_full_names = c.boolget("sound.codec-full-names")
         try:
-            from xpra.sound.common import legacy_to_new
-            self.server_sound_decoders = legacy_to_new(c.strlistget("sound.decoders", []))
-            self.server_sound_encoders = legacy_to_new(c.strlistget("sound.encoders", []))
+            if not self.server_codec_full_names:
+                from xpra.sound.common import legacy_to_new as conv
+            else:
+                def conv(v):
+                    return v
+            self.server_sound_decoders = conv(c.strlistget("sound.decoders", []))
+            self.server_sound_encoders = conv(c.strlistget("sound.encoders", []))
         except:
-            soundlog("cannot parse server sound codecs", exc_info=True)
-        self.server_codec_full_names = c.boolget("codec-full-names")
+            soundlog("Error: cannot parse server sound codec data", exc_info=True)
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
@@ -2491,7 +2495,6 @@ class UIXpraClient(XpraClientBase):
 
     def start_sound_sink(self, codec):
         soundlog("start_sound_sink(%s)", codec)
-        codec = NEW_CODEC_NAMES.get(codec, codec)
         assert self.sound_sink is None, "sound sink already exists!"
         try:
             soundlog("starting %s sound sink", codec)
@@ -2544,7 +2547,8 @@ class UIXpraClient(XpraClientBase):
     def _process_sound_data(self, packet):
         codec, data, metadata = packet[1:4]
         codec = bytestostr(codec)
-        codec = NEW_CODEC_NAMES.get(codec, codec)
+        if not self.server_codec_full_names:
+            codec = NEW_CODEC_NAMES.get(codec, codec)
         metadata = typedict(metadata)
         if data:
             self.sound_in_bytecount += len(data)

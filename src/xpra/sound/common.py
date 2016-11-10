@@ -33,12 +33,13 @@ FLAC_OGG    = FLAC+"+"+OGG
 OPUS_OGG    = OPUS+"+"+OGG
 SPEEX_OGG   = SPEEX+"+"+OGG
 VORBIS_OGG  = VORBIS+"+"+OGG
-#OPUS_WEBM   = OPUS+"+"+WEBM
+OPUS_MKA    = OPUS+"+"+MKA
 #OPUS_RTP    = OPUS+"+"+RTP
 VORBIS_MKA  = VORBIS+"+"+MKA
 AAC_MPEG4   = AAC+"+"+MPEG4
 WAV_LZ4     = WAV+"+"+LZ4
 WAV_LZO     = WAV+"+"+LZO
+MP3_MPEG4   = MP3+"+"+MPEG4
 
 #when codecs were first added, there was no support for multiple muxers,
 #but now there is...
@@ -70,7 +71,7 @@ def legacy_to_new(codecs):
 
 #used for parsing codec names specified on the command line:
 def sound_option_or_all(name, options, all_values):
-    all_values = legacy_to_new(all_values)
+    log("sound_option_or_all%s", (name, options, all_values))
     if not options:
         v = all_values              #not specified on command line: use default
     else:
@@ -80,7 +81,6 @@ def sound_option_or_all(name, options, all_values):
             #options is a list, but it may have csv embedded:
             for o in x.split(","):
                 o = o.strip()
-                o = NEW_CODEC_NAMES.get(o, o)
                 if o not in all_values:
                     invalid_options.append(o)
                 else:
