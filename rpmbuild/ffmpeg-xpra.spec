@@ -1,7 +1,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     3.2
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -64,6 +64,7 @@ This package contains the development files for %{name}.
 	--enable-encoder=libvpx_vp9 \
 	--enable-encoder=mpeg4 \
 	--enable-encoder=libx264 \
+	--enable-encoder=aac \
 	--enable-muxer=mp4 \
 	--enable-muxer=webm \
 	--enable-muxer=matroska \
@@ -139,6 +140,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Nov 04 2016 Antoine Martin <antoine@devloop.org.uk> 3.2-2
+- add aac encoder for html5 client
+
 * Sun Oct 30 2016 Antoine Martin <antoine@devloop.org.uk> 3.2-1
 - new upstream release
 
