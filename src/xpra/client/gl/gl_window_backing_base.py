@@ -432,7 +432,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             if self.textures is None:
                 self.gl_init_textures()
 
-            glEnable(GL_FRAGMENT_PROGRAM_ARB)
             # Define empty tmp FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
             set_texture_level()
@@ -456,6 +455,7 @@ class GLWindowBackingBase(GTKWindowBacking):
 
             # Bind program 0 for YUV painting by default
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
+            glEnable(GL_FRAGMENT_PROGRAM_ARB)
             self.gl_setup = True
 
     def close(self):
