@@ -108,14 +108,16 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     #compression stage:
     level = 0
     algo = "not"
-    if len(pixels)>=256:
-        level = max(0, min(5, int(115-speed)/20))
-        if len(pixels)<1024:
-            #fewer pixels, make it more likely we won't bother compressing:
-            level = level // 2
+    l = len(pixels)
+    if l>=512 and speed<100:
+        if l>=32768:
+            level = 1+max(0, min(8, int(100-speed)//12))
+        else:
+            #fewer pixels, make it more likely we won't bother compressing (speed>90):
+            level = max(0, min(5, int(110-speed)//20))
     if level>0:
         if rgb_lz4 and compression.use_lz4:
-            cwrapper = compression.compressed_wrapper(coding, pixels, lz4=True)
+            cwrapper = compression.compressed_wrapper(coding, pixels, lz4=True, level=level)
             algo = "lz4"
             level = 1
         elif rgb_lzo and compression.use_lzo:
@@ -123,7 +125,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             algo = "lzo"
             level = 1
         elif rgb_zlib and compression.use_zlib:
-            cwrapper = compression.compressed_wrapper(coding, pixels, zlib=True, level=level)
+            cwrapper = compression.compressed_wrapper(coding, pixels, zlib=True, level=level//2)
             algo = "zlib"
         else:
             cwrapper = None
@@ -146,7 +148,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         bpp = 32
     else:
         bpp = 24
-    log("rgb_encode using level=%s, %s compressed %sx%s in %s/%s: %s bytes down to %s", level, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
+    log("rgb_encode using level=%s for %5i pixels at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s", level, l, speed, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, options, width, height, stride, bpp
