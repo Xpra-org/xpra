@@ -180,14 +180,17 @@
 					Keyboard Layout
 				  </li>
 
-				  <li class="list-group-item">
-				  	<input type="checkbox" id="sound"> <span>Experimental sound support</span>
+				  <li class="list-group-item sound">
+					<input type="checkbox" id="sound"> <span>Experimental sound support</span>
 				  </li>
 				  <li class="list-group-item exit_with_children">
 				  	<input type="checkbox" id="exit_with_children"> <span>Terminate server when command exits</span>
 				  </li>
 				  <li class="list-group-item exit_with_client">
 				  	<input type="checkbox" id="exit_with_client"> <span>Terminate server when client disconnects</span>
+				  </li>
+				  <li class="list-group-item">
+				  	<input type="checkbox" id="sharing"> <span>Share session</span>
 				  </li>
 				  <li class="list-group-item">
 				  	<input type="checkbox" id="normal_fullscreen"> <span>Normal fullscreen windows</span>
@@ -256,19 +259,7 @@ function doConnect() {
 		url += "&username="+encodeData(username);
 	if (password.length>0)
 		url += "&password="+encodeData(password);
-	// check options
-	var normal_fullscreen = document.getElementById("normal_fullscreen").checked;
-	if(normal_fullscreen) {
-		url = url + "&normal_fullscreen=true";
-	}
-	var sound = document.getElementById("sound").checked;
-	if(sound) {
-		url = url + "&sound=true";
-	}
-	var debug = document.getElementById("debug").checked;
-	if(debug) {
-		url = url + "&debug=true";
-	}
+
 	var start = null;
 	if (document.getElementById("action_connect").checked) {
 		//default action
@@ -287,16 +278,14 @@ function doConnect() {
 	if(start) {
 		url = url + "&start="+encodeData(start);
 	}
-	if (document.getElementById("exit_with_children").checked) {
-		url = url + "&exit_with_children=true";
+
+	var bool_props = ["sound", "exit_with_children", "exit_with_client", "sharing", "normal_fullscreen", "debug", "insecure"];
+	for (var i = 0; i < bool_props.length; i++) {
+		var prop = bool_props[i];
+		if(document.getElementById(prop).checked) {
+			url = url + "&"+prop+"=true";
+		}
 	}
-	if (document.getElementById("exit_with_client").checked) {
-		url = url + "&exit_with_client=true";
-	}
-	if (document.getElementById("insecure").checked) {
-		url = url + "&insecure=true";
-	}
-	//alert("connect to "+server+" on port "+port+" using "+encoding);
 	window.location = url;
 }
 
@@ -352,8 +341,6 @@ $(document).ready(function() {
 
 	var encoding = window.location.getParameter("encoding") || "jpeg";
 	document.getElementById('encoding').value = encoding;
-	var debug = window.location.getParameter("debug");
-	document.getElementById("debug").checked = debug;
 
 	var keyboard_layout = window.location.getParameter("keyboard_layout");
 	if (!keyboard_layout) {
@@ -383,19 +370,17 @@ $(document).ready(function() {
 	if(exit_with_client=="true") {
 		$('input#exit_with_client').prop("checked", exit_with_client);
 	}
-	var sound = window.location.getParameter("sound") || "";
-	if(sound=="true") {
-		$('input#sound').prop("checked", sound);
-	}
-	var normal_fullscreen = window.location.getParameter("normal_fullscreen") || "";
-	if(normal_fullscreen=="true") {
-		$('input#normal_fullscreen').prop("checked", normal_fullscreen);
+
+	var bool_props = ["exit_with_children", "exit_with_client", "sharing", "normal_fullscreen", "debug", "insecure"];
+	for (var i = 0; i < bool_props.length; i++) {
+		var prop = bool_props[i];
+		var value = window.location.getParameter(prop);
+		document.getElementById(prop).checked = value;
 	}
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
 	});
-
 });
 
 </script>

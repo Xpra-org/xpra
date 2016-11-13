@@ -107,6 +107,7 @@
 				var start = getparam("start");
 				var exit_with_children = getparam("exit_with_children") || "";
 				var exit_with_client = getparam("exit_with_client") || "";
+				var sharing = getparam("sharing") || "";
 				var normal_fullscreen = getparam("normal_fullscreen") || null;
 				var debug = getparam("debug") || false;
 				var insecure = getparam("insecure") || null;
@@ -114,6 +115,9 @@
 				// create the client
 				var client = new XpraClient('screen');
 				client.debug = debug;
+				if(sharing) {
+					client.sharing = true;
+				}
 
 				// the primary encoding can be set
 				if(encoding) {
@@ -181,32 +185,26 @@
 				    			message = reason;
 				    		}
 				    		var url = "/connect.html?disconnect="+message;
-				    		if (username) {
-				    			url += "&username="+encodeData(username);
-				    		}
-				    		if (password) {
-				    			url += "&password="+encodeData(password);
-				    		}
-				    		if (encoding) {
-				    			url += "&encoding="+encodeData(encoding);
-				    		}
-				    		if (keyboard_layout) {
-				    			url += "&keyboard_layout="+encodeData(keyboard_layout);
-				    		}
-				    		if (action) {
-				    			url += "&action="+encodeData(action);
-				    		}
-				    		if (sound) {
-				    			url += "&sound="+encodeData(sound);
-				    		}
-				    		if (exit_with_children) {
-				    			url += "&exit_with_children="+encodeData(exit_with_children);
-				    		}
-				    		if (exit_with_client) {
-				    			url += "&exit_with_client="+encodeData(exit_with_client);
-				    		}
-				    		if (normal_fullscreen) {
-				    			url += "&normal_fullscreen="+encodeData(normal_fullscreen);
+				    		var props = {
+				    				"username"			: username,
+				    				"password"			: password,
+				    				"encoding"			: encoding,
+				    				"keyboard_layout"	: keyboard_layout,
+				    				"action"			: action,
+				    				"sound"				: sound,
+				    				"audio_codec"		: audio_codec,
+				    				"exit_with_children": exit_with_children,
+				    				"exit_with_client"	: exit_with_client,
+				    				"sharing"			: sharing,
+				    				"normal_fullscreen"	: normal_fullscreen,
+				    				"debug"				: debug,
+				    				"insecure"			: insecure,
+				    				}
+				    		for (var name in props) {
+				    			var value = props[name];
+				    			if(value) {
+					    			url += "&"+name+"="+encodeData(value);
+				    			}
 				    		}
 				    		window.location=url;
 				    	} else {

@@ -21,6 +21,7 @@ function XpraClient(container) {
 	this.port = null;
 	this.ssl = null;
 	this.debug = false;
+	this.sharing = false;
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
@@ -552,6 +553,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"platform.processor"		: Utilities.getPlatformProcessor(),
 		"platform.platform"			: navigator.appVersion,
 		"namespace"			 		: true,
+		"share"						: this.sharing,
 		"client_type"		   		: "HTML5",
 		"encoding.generic" 			: true,
 		"username" 					: this.username,
@@ -595,7 +597,6 @@ XpraClient.prototype._make_hello_base = function() {
 
 XpraClient.prototype._make_hello = function() {
 	this._update_capabilities({
-		"share"						: false,
 		"auto_refresh_delay"		: 500,
 		"randr_notify"				: true,
 		"sound.server_driven"		: true,
@@ -621,8 +622,10 @@ XpraClient.prototype._make_hello = function() {
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
-		"encoding.full_csc_modes"	: {"h264" : ["YUV420P"]},
-		"encoding.x264.YUV420P.profile"	: "baseline",
+		"encoding.full_csc_modes"	: {
+			"h264"		: ["YUV420P"],
+		},
+		"encoding.x264.YUV420P.profile"		: "baseline",
 		//sound (not yet):
 		"sound.receive"				: true,
 		"sound.send"				: false,

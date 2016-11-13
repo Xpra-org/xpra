@@ -18,7 +18,9 @@ canvas {
 }
 #pasteboard {
 	position: fixed;
-	top: -30px;
+	top: -40px;
+	width: 100px;
+	height: 30px;
 	left: 1px;
 }
 .undecorated {
