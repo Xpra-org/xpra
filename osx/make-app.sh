@@ -133,6 +133,9 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 		cp "$python_executable" "$target"
 	fi
 done
+#fix for:
+# dyld: Library not loaded: @executable_path/../Resources/lib/libgstreamer-1.0.0.dylib
+ln -sf . $RSCDIR
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
 cp ./Helpers/Launcher ${MACOS_DIR}
@@ -210,6 +213,8 @@ if [ "$STRIP_NUMPY" == "1" ]; then
 	done
 	popd
 fi
+#unused py2app scripts:
+rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh ${RSCDIR}/client_launcher.py
 
 
 if [ "$STRIP_SOURCE" == "1" ]; then
