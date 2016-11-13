@@ -106,7 +106,7 @@ CODEC_OPTIONS = [
         (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
         (OPUS       , "opusenc",        None,           "opusparse ! opusdec",          None),
         #this can cause "could not link opusenc0 to webmmux0"
-        (OPUS_MKA  , "opusenc",        "webmmux",      "opusdec",                       "matroskademux"),
+        (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux"),
         (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux"),
         (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",    None),
         (AAC_MPEG4  , "faac",           "mp4mux",       "faad",                         "qtdemux"),
@@ -148,9 +148,12 @@ ENCODER_DEFAULT_OPTIONS_COMMON = {
                                "quality"    : 0,        #"fast"
                                },
             "avenc_aac"     : {
-                               "compliance" : -2,       #allows experimental
+                               "compliance" : 1,       #allows experimental
+                               "perfect-timestamp"  : 1,
                                },
-            #"faac"          : {"perfect-timestamp" : 1},
+            "faac"          : {
+                               "perfect-timestamp"  : 1,
+                               },
             #"vorbisenc"     : {"perfect-timestamp" : 1},
                            }
 ENCODER_DEFAULT_OPTIONS = {
@@ -178,13 +181,13 @@ MUXER_DEFAULT_OPTIONS = {
             "webmmux"       : {
                                "writing-app"        : "Xpra",
                                "streamable"         : 1,
-                               "min-index-interval" : 100000000,
+                               #"min-index-interval" : 0,
                                },
             "mp4mux"        : {
                                "faststart"          : 1,
                                "streamable"         : 1,
-                               "fragment-duration"  : 1,
-                               "presentation-time"  : 0,
+                               #"fragment-duration"  : 20,
+                               #"presentation-time"  : 0,
                                }
            }
 
