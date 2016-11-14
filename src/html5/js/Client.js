@@ -31,6 +31,15 @@ function XpraClient(container) {
 	this.start_new_session = null;
 	this.username = "";
 	this.disconnect_reason = null;
+	// audio
+	this.audio_enabled = false;
+	this.audio_mediasource_enabled = MediaSourceUtil.MediaSourceClass!=null;
+	this.audio_aurora_enabled = AV!=null && AV.Decoder!=null && AV.Player.fromXpraSource!=null;
+	this.audio_codecs = [];
+	this.audio_framework = null;
+	this.audio_aurora_ctx = null;
+	this.audio_codec = null;
+	this.audio_context = Utilities.getAudioContext();
 	// encryption
 	this.encryption = false;
 	this.encryption_key = null;
@@ -47,11 +56,6 @@ function XpraClient(container) {
 	this.ping_timer = null;
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
-
-	this.init_sound()
-	this.init_packet_handlers()
-	this.init_clipboard()
-	this.init_keyboard()
 
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
@@ -76,15 +80,67 @@ function XpraClient(container) {
 	this.protocol = null;
 }
 
-XpraClient.prototype.init_sound = function() {
-	// audio stuff
-	this.audio_enabled = false;
-	this.audio_ctx = null;
-	try {
-		this.audio_context = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
-	} catch(e) {
-		this.audio_context = null;
+
+XpraClient.prototype.init = function() {
+	this.init_audio();
+	this.init_packet_handlers();
+	this.init_clipboard();
+	this.init_keyboard();
+}
+
+XpraClient.prototype.init_audio = function() {
+	console.log("init_audio() enabled="+this.audio_enabled+", mediasource enabled="+this.audio_mediasource_enabled+", aurora enabled="+this.audio_aurora_enabled);
+	if(!this.audio_enabled) {
+		return;
 	}
+	var mediasource_codecs = {};
+	if(this.audio_mediasource_enabled) {
+		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs();
+		for (var codec_option in mediasource_codecs) {
+			this.audio_codecs[codec_option] = mediasource_codecs[codec_option];
+		}
+	}
+	var aurora_codecs = {};
+	if(this.audio_aurora_enabled) {
+		aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
+		for (var codec_option in aurora_codecs) {
+			if(codec_option in this.audio_codecs) {
+				//we already have native MediaSource support!
+				continue;
+			}
+			this.audio_codecs[codec_option] = aurora_codecs[codec_option];
+		}
+	}
+	if(this.audio_codecs) {
+		if(!(this.audio_codec in this.audio_codecs)) {
+			if(this.audio_codec) {
+				console.warn("invalid audio codec: "+this.audio_codec);
+			}
+			this.audio_codec = MediaSourceUtil.getDefaultAudioCodec(this.audio_codecs);
+			if(this.audio_codec) {
+				if(this.audio_codec in mediasource_codecs) {
+					this.audio_framework = "mediasource";
+				}
+				else {
+					this.audio_framework = "aurora";
+				}
+				console.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
+			}
+			else {
+				console.warn("no valid audio codec found");
+				this.audio_enabled = false;
+			}
+		}
+		else {
+			console.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
+		}
+	}
+	else {
+		this.audio_codec = null;
+		this.audio_enabled = false;
+		console.warn("no valid audio codecs found");
+	}
+	console.log("audio codecs: "+Object.keys(this.audio_codecs));
 }
 
 XpraClient.prototype.init_clipboard = function() {
@@ -622,14 +678,29 @@ XpraClient.prototype._make_hello = function() {
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
+<<<<<<< .mine
+		"encoding.full_csc_modes"	: {
+			"h264" 		: ["YUV420P"],
+			//"mpeg4+mp4"	: ["YUV420P"],
+			//"h264+mp4"	: ["YUV420P"],
+			//"vp8+webm"	: ["YUV420P"],
+		},
+		//"encoding.h264+mp4.YUV420P.profile" : "main",
+		//"encoding.h264+mp4.YUV420P.level" 	: "3.0",
+||||||| .r14390
+		"encoding.full_csc_modes"	: {"h264" : ["YUV420P"]},
+		"encoding.x264.YUV420P.profile"	: "baseline",
+		//sound (not yet):
+=======
 		"encoding.full_csc_modes"	: {
 			"h264"		: ["YUV420P"],
 		},
 		"encoding.x264.YUV420P.profile"		: "baseline",
 		//sound (not yet):
+>>>>>>> .r14411
 		"sound.receive"				: true,
 		"sound.send"				: false,
-		"sound.decoders"			: ["wav"],
+		"sound.decoders"			: Object.keys(this.audio_codecs),
 		// encoding stuff
 		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
@@ -779,16 +850,150 @@ XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequenc
 	this.protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
 }
 
+
 XpraClient.prototype._sound_start_receiving = function() {
 	try {
-		this.audio_ctx = AV.Player.fromXpraSource();
-	} catch(e) {
-		console.error('Could not start audio player:', e);
-		return;
+		if(this.audio_framework=="mediasource") {
+			this._sound_start_mediasource();
+		}
+		else {
+			this._sound_start_aurora();
+		}
 	}
-	this.audio_ctx.play();
-	this.protocol.send(["sound-control", "start", "wav"]);
+	catch(e) {
+		console.error('error starting audio player:', e);
+	}
 }
+
+
+XpraClient.prototype._send_sound_start = function() {
+	console.log("audio: requesting "+this.audio_codec+" stream from the server");
+	this.protocol.send(["sound-control", "start", this.audio_codec]);
+}
+
+XpraClient.prototype._sound_start_aurora = function() {
+	this.audio_aurora_ctx = AV.Player.fromXpraSource();
+	this.audio_aurora_ctx.play();
+	this._send_sound_start();
+}
+
+XpraClient.prototype._sound_start_mediasource = function() {
+	var me = this;
+
+	function audio_error(event) {
+		if(me.audio) {
+			console.error(event+" error: "+me.audio.error);
+			if(me.audio.error) {
+				console.error(MediaSourceConstants.ERROR_CODE[me.audio.error.code]);
+			}
+		}
+		else {
+			console.error(event+" error");
+		}
+		me._close_audio();
+	}
+
+	//Create a MediaSource:
+	this.media_source = MediaSourceUtil.MediaSource();
+	if(this.debug) {
+		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "audio");
+	}
+	this.media_source.addEventListener('error', 	function(e) {audio_error("audio source"); });
+
+	//Create an <audio> element:
+	this.audio = document.createElement("audio");
+	this.audio.setAttribute('autoplay', true);
+	if(this.debug) {
+		MediaSourceUtil.addMediaElementEventDebugListeners(this.audio, "audio");
+	}
+	this.audio.addEventListener('play', 			function() { console.log("audio play!"); });
+	this.audio.addEventListener('error', 			function() { audio_error("audio"); });
+	document.body.appendChild(this.audio);
+
+	//attach the MediaSource to the <audio> element:
+	this.audio.src = window.URL.createObjectURL(this.media_source);
+	this.audio_buffers = []
+	this.audio_buffers_count = 0;
+	this.audio_source_ready = false;
+	console.log("audio waiting for source open event on "+this.media_source);
+	this.media_source.addEventListener('sourceopen', function() {
+		console.log("audio media source open");
+		if (me.audio_source_ready) {
+			console.warn("ignoring: source already open");
+			return;
+		}
+		//ie: codec_string = "audio/mp3";
+		var codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
+		if(codec_string==null) {
+			console.error("invalid codec '"+me.audio_codec+"'");
+			me._close_audio();
+			return;
+		}
+		console.log("using audio codec string for "+me.audio_codec+": "+codec_string);
+
+		//Create a SourceBuffer:
+		var asb = null;
+		try {
+			asb = me.media_source.addSourceBuffer(codec_string);
+		} catch (e) {
+			console.error("audio setup error for '"+codec_string+"':", e);
+			me._close_audio();
+			return;
+		}
+		me.audio_source_buffer = asb;
+		asb.mode = "sequence";
+		if (this.debug) {
+			MediaSourceUtil.addSourceBufferEventDebugListeners(asb, "audio");
+		}
+		asb.addEventListener('error', 				function(e) { audio_error("audio buffer"); });
+		me.audio_source_ready = true;
+		me._send_sound_start();
+	});
+}
+
+XpraClient.prototype._close_audio = function() {
+	this.protocol.send(["sound-control", "stop"]);
+	if(this.audio_framework=="mediasource") {
+		this._close_audio_mediasource();
+	}
+	else {
+		this._close_audio_aurora();
+	}
+}
+
+XpraClient.prototype._close_audio_aurora = function() {
+	if(this.audio_aurora_ctx) {
+		//this.audio_aurora_ctx.close();
+		this.audio_aurora_ctx = null;
+	}
+}
+
+XpraClient.prototype._close_audio_mediasource = function() {
+	console.log("close_audio: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
+	this.audio_source_ready = false;
+	if(this.audio) {
+		this.protocol.send(["sound-control", "stop"]);
+		if(this.media_source) {
+			try {
+				if(this.audio_source_buffer) {
+					this.media_source.removeSourceBuffer(this.audio_source_buffer);
+					this.audio_source_buffer = null;
+				}
+				if(this.media_source.readyState=="open") {
+					this.media_source.endOfStream();
+				}
+			} catch(e) {
+				console.warn("audio media source EOS error:", e);
+			}
+			this.media_source = null;
+		}
+		this.audio.src = "";
+		this.audio.load();
+		document.body.removeChild(this.audio);
+		this.audio = null;
+	}
+}
+
 
 /*
  * packet processing functions start here
@@ -810,6 +1015,7 @@ XpraClient.prototype._process_error = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_close = function(packet, ctx) {
+	ctx._close_audio();
 	// terminate the worker
 	ctx.protocol.terminate();
 	// call the client's close callback
@@ -1005,7 +1211,9 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 	var wid = packet[1],
 		metadata = packet[2],
 		win = ctx.id_to_window[wid];
-	win.update_metadata(metadata);
+	if (win!=null) {
+		win.update_metadata(metadata);
+	}
 }
 
 XpraClient.prototype._process_lost_window = function(packet, ctx) {
@@ -1199,11 +1407,75 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_sound_data = function(packet, ctx) {
+	if(packet[1]!=ctx.audio_codec) {
+		console.error("invalid audio codec '"+packet[1]+"' (expected "+ctx.audio_codec+"), stopping audio stream");
+		ctx._close_audio();
+		return;
+	}
+	try {
+		if(ctx.audio_framework=="mediasource") {
+			ctx._process_sound_data_mediasource(packet);
+		}
+		else {
+			ctx._process_sound_data_aurora(packet);
+		}
+	}
+	catch(e) {
+		console.error('error processing audio data:', e);
+		ctx._close_audio();
+	}
+}
+
+XpraClient.prototype._process_sound_data_aurora = function(packet) {
 	if(packet[3]["start-of-stream"] == 1) {
-		console.log("start of stream");
-	} else {
-		ctx.audio_ctx.asset.source._on_data(packet[2]);
-		//console.log(ctx.audio_ctx.format);
+		console.log("audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
+		return;
+	}
+	var buf = packet[2];
+	if(this.debug) {
+		console.debug("audio aurora context: adding "+buf.length+" bytes of "+this.audio_codec+" data");
+	}
+	this.audio_aurora_ctx.asset.source._on_data(buf);
+}
+
+XpraClient.prototype._process_sound_data_mediasource = function(packet) {
+	if(!this.audio) {
+		return;
+	}
+	if(packet[3]["start-of-stream"] == 1) {
+		console.log("audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
+		this.audio.play();
+		return;
+	}
+	try {
+		if (this.debug) {
+			console.debug("sound-data: "+packet[1]+", "+packet[2].length+" bytes, state="+MediaSourceConstants.READY_STATE[this.audio.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
+			console.debug("audio paused="+this.audio.paused+", queue size="+this.audio_buffers.length+", source ready="+this.audio_source_ready+", source buffer updating="+this.audio_source_buffer.updating);
+		}
+		var MAX_BUFFERS = 250;
+		if(this.audio_buffers.length>=MAX_BUFFERS) {
+			console.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
+			this._close_audio();
+			return;
+		}
+		var buf = packet[2];
+		this.audio_buffers.push(buf);
+		var asb = this.audio_source_buffer;
+		var ab = this.audio_buffers;
+		//not needed for all codecs / browsers!
+		var MIN_START_BUFFERS = 4;
+		if(ab.length >= MIN_START_BUFFERS || this.audio_buffers_count>0){
+			if(asb && !asb.updating) {
+				var buffers = ab.splice(0, 200);
+				var buffer = [].concat.apply([], buffers);
+				asb.appendBuffer(new Uint8Array(buffer).buffer);
+				this.audio_buffers_count += 1;
+			}
+		}
+	}
+	catch(e) {
+		console.error("audio failed:", e);
+		this._close_audio();
 	}
 }
 
@@ -1226,7 +1498,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		selection = packet[2],
 		target = packet[3];
 
-	if(this.clipboard_buffer == "") {
+	if(ctx.clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
 		var packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", ctx.clipboard_buffer];
