@@ -44,6 +44,15 @@ var MediaSourceConstants = {
 			"opus+ogg"		: 'audio/ogg; codecs="opus"',
 		},
 
+		PREFERRED_CODEC_ORDER : [
+			"opus+mka", "vorbis+mka",
+			"opus+ogg", "vorbis+ogg",
+			"opus", "vorbis",
+			"speex+ogg", "flac+ogg",
+			"aac+mpeg4", "mp3+mpeg4",
+			"mp3", "flac", "wav", "wave",
+		],
+
 		READY_STATE : {
 			0	: "NOTHING",
 			1	: "METADATA",
@@ -157,6 +166,13 @@ var MediaSourceUtil = {
 		getDefaultAudioCodec: function(codecs) {
 			if(!codecs) {
 				return null;
+			}
+			var codec_options = Object.keys(codecs);
+			for (var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
+				var codec_option = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
+				if(codec_options.indexOf(codec_option)>=0) {
+					return codec_option;
+				}
 			}
 			return Object.keys(codecs)[0];
 		},

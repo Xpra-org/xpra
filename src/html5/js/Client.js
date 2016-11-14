@@ -678,7 +678,6 @@ XpraClient.prototype._make_hello = function() {
 		//video stuff we may handle later:
 		"encoding.video_reinit"		: false,
 		"encoding.video_scaling"	: false,
-<<<<<<< .mine
 		"encoding.full_csc_modes"	: {
 			"h264" 		: ["YUV420P"],
 			//"mpeg4+mp4"	: ["YUV420P"],
@@ -687,17 +686,6 @@ XpraClient.prototype._make_hello = function() {
 		},
 		//"encoding.h264+mp4.YUV420P.profile" : "main",
 		//"encoding.h264+mp4.YUV420P.level" 	: "3.0",
-||||||| .r14390
-		"encoding.full_csc_modes"	: {"h264" : ["YUV420P"]},
-		"encoding.x264.YUV420P.profile"	: "baseline",
-		//sound (not yet):
-=======
-		"encoding.full_csc_modes"	: {
-			"h264"		: ["YUV420P"],
-		},
-		"encoding.x264.YUV420P.profile"		: "baseline",
-		//sound (not yet):
->>>>>>> .r14411
 		"sound.receive"				: true,
 		"sound.send"				: false,
 		"sound.decoders"			: Object.keys(this.audio_codecs),

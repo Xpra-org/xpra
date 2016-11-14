@@ -396,12 +396,24 @@ $(document).ready(function() {
 			codecs_supported["aurora:"+codec_option] = "legacy: "+aurora_codecs[codec_option];
 		}
 	}
+	var best_codec = audio_codec;
+	if(!best_codec) {
+		var best_distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.length;
+		for (var codec_option in codecs_supported) {
+			var cs = codec_option.split(":")[1];
+			var distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.indexOf(cs);
+			if(distance>=0 && distance<best_distance) {
+				best_codec = codec_option;
+				best_distance = distance;
+			}
+		}
+	}
 	for (var codec_option in codecs_supported) {
 	    var option = document.createElement("option");
 	    option.value = codec_option;
 	    var description = MediaSourceConstants.CODEC_DESCRIPTION[codec_option] || codecs_supported[codec_option];
 	    option.textContent = description;
-    	option.selected = (audio_codec==codec_option);
+    	option.selected = (codec_option==best_codec);
 	    audio_codec_select.add(option);
 	}
 	if(!codecs_supported) {
