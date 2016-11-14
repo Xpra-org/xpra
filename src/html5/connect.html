@@ -21,6 +21,10 @@
 	<link rel="icon" type="image/png" href="favicon.png">
 
 	<script type="text/javascript" src="js/lib/jquery.min.js"></script>
+	<script type="text/javascript" src="js/Utilities.js"></script>
+	<script type="text/javascript" src="js/MediaSourceUtil.js"></script>
+	<script type="text/javascript" src="js/lib/aurora/aurora.js"></script>
+	<script type="text/javascript" src="js/lib/aurora/mp3.js"></script>
 </head>
 
 <body>
@@ -52,10 +56,10 @@
 			  <ul class="list-style-none action">
 				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect</li>
 				<li><input type="radio" name="action" class="radiobox" value="start" id="action_start" checked="checked"> Start Command:
-					 <input title="command" type="text" class="form-control" id="start_command" placeholder="Command" size="16" maxlength="256">
+					 <input title="command" type="text" class="form-control command" id="start_command" placeholder="Command" size="16" maxlength="256">
 				</li>
 				<li><input type="radio" name="action" class="radiobox" value="start-desktop" id="action_start_desktop" checked="checked"> Start Desktop:
-					 <input title="desktop command" type="text" class="form-control" id="start_desktop_command" placeholder="Desktop Command" size="16" maxlength="256">
+					 <input title="desktop command" type="text" class="form-control command" id="start_desktop_command" placeholder="Desktop Command" size="16" maxlength="256">
 				</li>
 				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked"> Shadow</li>
 			  </ul>
@@ -181,7 +185,9 @@
 				  </li>
 
 				  <li class="list-group-item sound">
-					<input type="checkbox" id="sound"> <span>Experimental sound support</span>
+					<input type="checkbox" id="sound"> <span>Audio forwarding, codec: </span>
+					<select id="audio_codec">
+				  	</select>
 				  </li>
 				  <li class="list-group-item exit_with_children">
 				  	<input type="checkbox" id="exit_with_children"> <span>Terminate server when command exits</span>
@@ -242,6 +248,17 @@ if (!window.location.getParameter ) {
 	};
 }
 
+function getparam(name) {
+	return window.location.getParameter(name);
+}
+function getboolparam(name, default_value) {
+	var v = window.location.getParameter(name);
+	if(v==null) {
+		return default_value;
+	}
+	return ["true", "on", "1"].indexOf(String(v).toLowerCase())>=0;
+}
+
 function encodeData(s) {
 	return encodeURIComponent(s);
 }
@@ -260,6 +277,13 @@ function doConnect() {
 	if (password.length>0)
 		url += "&password="+encodeData(password);
 
+	var sound = document.getElementById("sound").checked;
+	if(sound) {
+		var audio_codec = document.getElementById("audio_codec");
+		if(audio_codec) {
+			url = url + "&audio_codec="+encodeData(audio_codec.value);
+		}
+	}
 	var start = null;
 	if (document.getElementById("action_connect").checked) {
 		//default action
@@ -307,7 +331,7 @@ $(document).ready(function() {
 	var username = window.location.getParameter("username") || "";
 	document.getElementById("username").value = username;
 
-	var action = window.location.getParameter("action") || "";
+	var action = getparam("action") || "";
 	if(action=="shadow") {
 		document.getElementById("action_shadow").checked = true;
 	}
@@ -336,46 +360,66 @@ $(document).ready(function() {
 		set_exit_actions(action=="connect");
 	}
 	$(document).on('click', '[name="action"]', on_action_change);
-	var action = window.location.getParameter("action") || "connect";
 	$('input:radio[value='+action+']').click();
 
-	var encoding = window.location.getParameter("encoding") || "jpeg";
+	var encoding = getparam("encoding") || "jpeg";
 	document.getElementById('encoding').value = encoding;
 
-	var keyboard_layout = window.location.getParameter("keyboard_layout");
-	if (!keyboard_layout) {
-		//IE:
-		//navigator.systemLanguage
-		//navigator.browserLanguage
-		var v = window.navigator.userLanguage || window.navigator.language;
-		var keyboard_layout = "";
-		//ie: v="en_GB";
-		v = v.split(",")[0];
-		var l = v.split("-", 2);
-		if (l.length==1)
-			l = v.split("_", 2);
-		if (l.length==1)
-			//ie: "en"
-			keyboard_layout = l[0];
-		else
-			keyboard_layout = l[1].toLowerCase();
-	}
+	var keyboard_layout = Utilities.getKeyboardLayout();
 	document.getElementById('keyboard_layout').value = keyboard_layout;
 
-	var exit_with_children = window.location.getParameter("exit_with_children") || "";
-	if(exit_with_children=="true") {
+	var exit_with_children = getboolparam("exit_with_children");
+	if(exit_with_children) {
 	   	$('input#exit_with_children').prop("checked", exit_with_children);
 	}
-	var exit_with_client = window.location.getParameter("exit_with_client") || "";
-	if(exit_with_client=="true") {
+	var exit_with_client = getparam("exit_with_client");
+	if(exit_with_client) {
 		$('input#exit_with_client').prop("checked", exit_with_client);
 	}
+
+	var audio_codec = getparam("audio_codec") || "";
+	var audio_codec_select = document.getElementById("audio_codec");
+	var codecs_supported = [];
+	if(getboolparam("mediasource", true)) {
+		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs();
+		for (var codec_option in mediasource_codecs) {
+			codecs_supported["mediasource:"+codec_option] = MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
+		}
+	}
+	if(getboolparam("aurora", true)) {
+		var aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
+		for (var codec_option in aurora_codecs) {
+			if(codec_option in codecs_supported) {
+				//we already have native MediaSource support!
+				continue;
+			}
+			codecs_supported["aurora:"+codec_option] = "legacy: "+aurora_codecs[codec_option];
+		}
+	}
+	for (var codec_option in codecs_supported) {
+	    var option = document.createElement("option");
+	    option.value = codec_option;
+	    var description = MediaSourceConstants.CODEC_DESCRIPTION[codec_option] || codecs_supported[codec_option];
+	    option.textContent = description;
+    	option.selected = (audio_codec==codec_option);
+	    audio_codec_select.add(option);
+	}
+	if(!codecs_supported) {
+	   	$('input#sound').prop("disabled", true);
+	}
+	else {
+		//enable sound checkbox if the codec is changed:
+		audio_codec_select.onchange = function() {
+			document.getElementById("sound").checked = true;
+		};
+	}
+	var sound = getboolparam("sound");
+	$('input#sound').prop("checked", sound && codecs_supported.length>0);
 
 	var bool_props = ["exit_with_children", "exit_with_client", "sharing", "normal_fullscreen", "debug", "insecure"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
-		var value = window.location.getParameter(prop);
-		document.getElementById(prop).checked = value;
+		document.getElementById(prop).checked = getparam(prop);
 	}
 
 	$("#expandopts").click(function() {

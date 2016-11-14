@@ -36,6 +36,7 @@
 		<script type="text/javascript" src="js/Window.js"></script>
 		<script type="text/javascript" src="js/Notifications.js"></script>
 		<script type="text/javascript" src="js/Utilities.js"></script>
+		<script type="text/javascript" src="js/MediaSourceUtil.js"></script>
 		<script type="text/javascript" src="js/Client.js"></script>
 	</head>
 
@@ -85,6 +86,13 @@
 			function getparam(name) {
 				return window.location.getParameter(name);
 			}
+			function getboolparam(name, default_value) {
+				var v = window.location.getParameter(name);
+				if(v==null) {
+					return default_value;
+				}
+				return ["true", "on", "1"].indexOf(String(v).toLowerCase())>=0;
+			}
 
 			function encodeData(s) {
 				return encodeURIComponent(s);
@@ -96,6 +104,7 @@
 				var username = getparam("username") || null;
 				var password = getparam("password") || null;
 				var sound = getparam("sound") || null;
+				var audio_codec = getparam("audio_codec") || null;
 				var encoding = getparam("encoding") || null;
 				var action = getparam("action") || "connect";
 				var submit = getparam("submit") || null;
@@ -109,8 +118,8 @@
 				var exit_with_client = getparam("exit_with_client") || "";
 				var sharing = getparam("sharing") || "";
 				var normal_fullscreen = getparam("normal_fullscreen") || null;
-				var debug = getparam("debug") || false;
-				var insecure = getparam("insecure") || null;
+				var debug = getboolparam("debug");
+				var insecure = getboolparam("insecure");
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -149,6 +158,14 @@
 			    // experimental sound support
 			    if(sound) {
 			    	client.audio_enabled = true;
+			    	console.log("sound enabled, audio codec string: "+audio_codec);
+			    	if(audio_codec && audio_codec.indexOf(":")>0) {
+				    	var acparts = audio_codec.split(":");
+				    	client.audio_framework = acparts[0];
+				    	client.audio_codec = acparts[1];
+			    	}
+			    	client.audio_mediasource_enabled = getboolparam("mediasource", true);
+			    	client.audio_aurora_enabled = getboolparam("aurora", true);
 			    }
 
 			    // insecure passwords
@@ -213,6 +230,7 @@
 					    }
 				    }
 				}
+			    client.init();
 
 			    // and connect
 			    client.connect(server, port, false);
