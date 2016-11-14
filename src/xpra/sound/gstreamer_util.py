@@ -186,8 +186,8 @@ MUXER_DEFAULT_OPTIONS = {
             "mp4mux"        : {
                                "faststart"          : 1,
                                "streamable"         : 1,
-                               #"fragment-duration"  : 20,
-                               #"presentation-time"  : 0,
+                               "fragment-duration"  : 20,
+                               "presentation-time"  : 0,
                                }
            }
 
