@@ -78,6 +78,7 @@ var MediaSourceConstants = {
 		AURORA_CODECS : {
 			"wave"	: "wave",
 			"mp3"	: "mp3",
+			"flac"	: "flac",
 		}
 };
 
