@@ -112,7 +112,7 @@ var MediaSourceUtil = {
 			return new ms();
 		},
 
-		getAuroraAudioCodecs() {
+		getAuroraAudioCodecs : function() {
 			var codecs_supported = {};
 			if(AV && AV.Decoder && AV.Decoder.find) {
 				for (var codec_option in MediaSourceConstants.AURORA_CODECS) {
@@ -130,7 +130,7 @@ var MediaSourceUtil = {
 			return codecs_supported;
 		},
 
-		getMediaSourceAudioCodecs: function() {
+		getMediaSourceAudioCodecs : function() {
 			var media_source_class = MediaSourceUtil.MediaSourceClass();
 			if(!media_source_class) {
 				console.error("audio forwarding failure: no media source API support");
@@ -166,7 +166,7 @@ var MediaSourceUtil = {
 			return codecs_supported;
 		},
 
-		getSupportedAudioCodecs: function() {
+		getSupportedAudioCodecs : function() {
 			var codecs_supported = MediaSourceUtil.getMediaSourceAudioCodecs();
 			var aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
 			for (var codec_option in aurora_codecs) {
@@ -179,7 +179,7 @@ var MediaSourceUtil = {
 			return codecs_supported;
 		},
 
-		getDefaultAudioCodec: function(codecs) {
+		getDefaultAudioCodec : function(codecs) {
 			if(!codecs) {
 				return null;
 			}
@@ -193,7 +193,7 @@ var MediaSourceUtil = {
 			return Object.keys(codecs)[0];
 		},
 
-		addMediaSourceEventDebugListeners(media_source, source_type) {
+		addMediaSourceEventDebugListeners : function(media_source, source_type) {
 			function debug_source_event(event) {
 				var msg = ""+source_type+" source "+event;
 				try {
@@ -210,7 +210,7 @@ var MediaSourceUtil = {
 			media_source.addEventListener('error', 			function(e) { debug_source_event('error'); });
 		},
 
-		addMediaElementEventDebugListeners(media_element, element_type) {
+		addMediaElementEventDebugListeners : function(media_element, element_type) {
 			function debug_me_event(event) {
 				console.debug(""+element_type+" "+event);
 			}
@@ -225,7 +225,7 @@ var MediaSourceUtil = {
 			media_element.addEventListener('play', 			function() { debug_me_event("play"); });
 		},
 
-		addSourceBufferEventDebugListeners(source_buffer, element_type) {
+		addSourceBufferEventDebugListeners : function(source_buffer, element_type) {
 			function debug_buffer_event(event) {
 				var msg = ""+element_type+" buffer "+event;
 				console.debug(msg);
