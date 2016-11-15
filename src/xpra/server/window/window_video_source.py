@@ -1632,16 +1632,16 @@ class WindowVideoSource(WindowSource):
                 for k,v in csce.get_info().items():
                     log.error("   %-20s: %s", k, v)
             return None
+        finally:
+            if image!=csc_image:
+                self.free_image_wrapper(csc_image)
+            del csc_image
         if ret is None:
             if not self.is_cancelled():
-                videolog.error("video_encode: ouch, %s compression failed", encoding)
+                videolog.error("Error: %s video compression failed", encoding)
             return None
         data, client_options = ret
         end = time.time()
-
-        if csc_image!=image:
-            self.free_image_wrapper(csc_image)
-            del csc_image
 
         #populate client options:
         frame = client_options.get("frame", 0)
@@ -1673,9 +1673,10 @@ class WindowVideoSource(WindowSource):
                     self.start_video_frame = delayed
                     return self.video_fallback(image, options, order=FAST_ORDER)
                 return None
+        actual_encoding = ve.get_encoding()
         videolog("video_encode %s encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
-                            ve.get_type(), encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
-        return ve.get_encoding(), Compressed(encoding, data), client_options, width, height, 0, 24
+                            ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
+        return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
 
     def cancel_video_encoder_flush(self):
         self.cancel_video_encoder_flush_timer()
