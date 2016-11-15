@@ -9,7 +9,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
-from xpra.util import nonl, envint, envbool, AtomicInteger
+from xpra.util import nonl, envint, envbool, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
@@ -155,6 +155,7 @@ cdef extern from "x264.h":
         int         i_mv_range          # maximum length of a mv (in pixels). -1 = auto, based on level */
         int         i_mv_range_thread   # minimum space between threads. -1 = auto, based on number of threads. */
         int         i_subpel_refine     # subpixel motion estimation quality */
+        int         i_weighted_pred     # weighting for P-frames
 
     ctypedef struct x264_param_t:
         unsigned int cpu
@@ -191,6 +192,11 @@ cdef extern from "x264.h":
         int b_bluray_compat
         #older x264 builds do not support this:
         #int b_opencl            #use OpenCL when available
+
+        int b_cabac
+        int b_deblocking_filter
+        int b_interlaced
+        int b_constrained_intra
 
         rc  rc                  #rate control
         analyse analyse
@@ -511,7 +517,7 @@ cdef class Encoder:
         #return "animation"
         return "zerolatency"
 
-    cdef init_encoder(self, options={}):
+    cdef init_encoder(self, options_dict={}):
         cdef x264_param_t param
         cdef const char *preset
         preset = get_preset_names()[self.preset]
@@ -525,15 +531,24 @@ cdef class Encoder:
         x264_param_apply_profile(&param, self.profile)
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
+        #client can tune these options:
+        options = typedict(options_dict)
+        param.b_open_gop =options.boolget("h264.open-gop", param.b_open_gop)
+        param.b_deblocking_filter = options.boolget("h264.deblocking-filter", param.b_deblocking_filter)
+        param.b_bluray_compat = options.boolget("h264.bluray-compat", param.b_bluray_compat)
+        param.b_cabac = options.boolget("h264.cabac", param.b_cabac)
+
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
         log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
         log(" preset=%s, profile=%s, tune=%s", preset, self.profile, self.tune)
-        #print_nested_dict(options, " ", print_fn=log.error)
-        log(" me=%s, me_range=%s, mv_range=%s, b-frames=%i, max delayed frames=%i",
-                    ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, self.b_frames, maxd)
+        log(" me=%s, me_range=%s, mv_range=%s, weighted-pred=%i",
+                    ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, param.analyse.i_weighted_pred)
+        log(" b-frames=%i, max delayed frames=%i", self.b_frames, maxd)
         log(" vfr-input=%s, lookahead=%i, sync-lookahead=%i, mb-tree=%s, bframe-adaptive=%s",
-                    param.b_vfr_input, param.rc.i_lookahead, param.i_sync_lookahead, param.rc.b_mb_tree, ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive))
+                    bool(param.b_vfr_input), param.rc.i_lookahead, param.i_sync_lookahead, bool(param.rc.b_mb_tree), ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive))
+        log(" open-gop=%s, bluray-compat=%s, cabac=%s, deblocking-filter=%s", bool(param.b_open_gop), bool(param.b_bluray_compat), bool(param.b_cabac), bool(param.b_deblocking_filter))
+        log(" intra-refresh=%s, interlaced=%s, constrained_intra=%s", bool(param.b_intra_refresh), bool(param.b_interlaced), bool(param.b_constrained_intra))
         log(" threads=%s, sliced-threads=%s",
                     {0 : "auto"}.get(param.i_threads, param.i_threads), bool(param.b_sliced_threads))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
@@ -666,6 +681,7 @@ cdef class Encoder:
         #use the environment as default if present:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
         #now see if the client has requested a different value:
+        profile = options.get("h264.%s.profile" % csc_mode, profile)
         return options.get("x264.%s.profile" % csc_mode, profile)
 
 
@@ -751,13 +767,18 @@ cdef class Encoder:
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
         log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i", self.src_format, self.frames, slice_type, i_nals, self.tune, frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
-        if LOG_NALS:
-            for i in range(i_nals):
+        bnals = []
+        for i in range(i_nals):
+            out = <char *>nals[i].p_payload
+            cdata = out[:nals[i].i_payload]
+            bnals.append(cdata)
+            if LOG_NALS:
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
                          i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <unsigned long> nals[i].p_payload, nals[i].i_payload)
-            #log.info("x264 nal %s: %s", i, (<char *>nals[i].p_payload)[:64])
-        out = <char *>nals[0].p_payload
-        cdata = out[:frame_size]
+        cdata = b"".join(bnals)
+        if len(cdata)!=frame_size:
+            log.warn("Warning: h264 nals do not match frame size")
+            log.warn(" expected %i bytes, but got %i nals and %i bytes", frame_size, len(bnals), len(cdata))
         self.bytes_out += frame_size
         #info for client:
         client_options = {
