@@ -1184,6 +1184,13 @@ class WindowSource(object):
         elapsed = int(1000.0 * (time.time() - region_time))
         log.warn("Warning: delayed region timeout")
         log.warn(" region is %i seconds old, will retry - bad connection?", elapsed/1000)
+        dap = dict(self.statistics.damage_ack_pending)
+        if dap:
+            log.warn(" %i late responses:", len(dap))
+            now = time.time()
+            for seq in sorted(dap.keys()):
+                ack_data = dap[seq]
+                log.warn(" %4i %s: %is", seq, ack_data[1], now-ack_data[3])
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
         self.cancel_expire_timer()
@@ -1643,20 +1650,21 @@ class WindowSource(object):
         #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
         width = packet[4]
         height = packet[5]
+        coding = packet[6]
         damage_packet_sequence = packet[8]
         actual_batch_delay = process_damage_time-damage_time
         def start_send(bytecount):
             now = time.time()
-            self.statistics.damage_ack_pending[damage_packet_sequence] = [now, bytecount, 0, 0, width*height]
+            self.statistics.damage_ack_pending[damage_packet_sequence] = [now, coding, bytecount, 0, 0, width*height]
         def damage_packet_sent(bytecount):
             now = time.time()
             stats = self.statistics.damage_ack_pending.get(damage_packet_sequence)
             #if we timed it out, it may be gone already:
             if stats:
                 start_send_time = stats[0]
-                start_bytecount = stats[1]
-                stats[2] = now
-                stats[3] = bytecount
+                start_bytecount = stats[2]
+                stats[3] = now
+                stats[4] = bytecount
                 if damage_time>0:
                     damage_out_latency = now-process_damage_time
                     self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
@@ -1688,7 +1696,7 @@ class WindowSource(object):
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
         if decode_time>0:
-            start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
+            start_send_at, _, start_bytes, end_send_at, end_bytes, pixels = pending
             bytecount = end_bytes-start_bytes
             #it is possible, though very unlikely,
             #that we get the ack before we've had a chance to call
