@@ -681,7 +681,6 @@ XpraWindow.prototype._init_broadway = function(width, height) {
 	});
 	console.log("broadway decoder initialized: "+this.broadway_decoder);
 	this.broadway_paint_location = [0, 0];
-	this.broadway_decode_callbacks = [];
 	this.broadway_decoder.onPictureDecoded = function(buffer, width, height, infos) {
 		if(this.debug) {
 			console.debug("broadway picture decoded: ", buffer.length, "bytes, size ", width, "x", height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
@@ -694,25 +693,10 @@ XpraWindow.prototype._init_broadway = function(width, height) {
 		var x = me.broadway_paint_location[0];
 		var y = me.broadway_paint_location[1];
 		me.offscreen_canvas_ctx.putImageData(img, x, y);
-		try {
-			var cb = me.broadway_decode_callbacks.shift();
-			cb();
-		}
-		catch (e) {
-			console.error("video broadway no callback found for frame");
-		}
 	};
 };
 
 XpraWindow.prototype._close_broadway = function() {
-	var bdcs = this.broadway_decode_callbacks;
-	this.broadway_decode_callbacks = [];
-	if(bdcs) {
-		for(var i=0,j=bdcs.length;i<j;++i) {
-			var cb = bdcs[i];
-			cb();
-		}
-	}
 	this.broadway_decoder = null;
 }
 
@@ -922,13 +906,13 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		if(!this.broadway_decoder) {
 			this._init_broadway(width, height);
 		}
-		this.broadway_decode_callbacks.push(function() {
-			decode_callback(me.client);
-		});
 		this.broadway_paint_location = [x, y];
 		// we can pass a buffer full of NALs to decode() directly
 		// as long as they are framed properly with the NAL header
 		this.broadway_decoder.decode(new Uint8Array(img_data));
+		// broadway decoding is synchronous:
+		// (and already painted via the onPictureDecoded callback)
+		decode_callback(this.client);
 	}
 	else if (coding=="h264+mp4" || coding=="vp8+webm" || coding=="mpeg4+mp4") {
 		var frame = options["frame"] || -1;
