@@ -100,7 +100,6 @@
 			}
 
 			$(document).ready(function() {
-
 				// look at url parameters
 				var username = getparam("username") || null;
 				var password = getparam("password") || null;
@@ -118,6 +117,7 @@
 				var exit_with_children = getparam("exit_with_children") || "";
 				var exit_with_client = getparam("exit_with_client") || "";
 				var sharing = getparam("sharing") || "";
+				var mediasource_video = getboolparam("mediasource_video");
 				var normal_fullscreen = getparam("normal_fullscreen") || null;
 				var debug = getboolparam("debug");
 				var insecure = getboolparam("insecure");
@@ -129,8 +129,12 @@
 					client.sharing = true;
 				}
 
-				// the primary encoding can be set
-				if(encoding) {
+			    // mediasource video
+			    if(mediasource_video) {
+			    	client.supported_encodings.push("vp8+webm", "h264+mp4", "mpeg4+mp4");
+			    }
+			    else if(encoding) {
+					// the primary encoding can be set
 					client.enable_encoding(encoding);
 				}
 			    // encodings can be disabled like so
@@ -156,7 +160,7 @@
 			    	client.normal_fullscreen_mode = true;
 			    }
 
-			    // experimental sound support
+			    // sound support
 			    if(sound) {
 			    	client.audio_enabled = true;
 			    	console.log("sound enabled, audio codec string: "+audio_codec);
@@ -215,6 +219,7 @@
 				    				"exit_with_client"	: exit_with_client,
 				    				"sharing"			: sharing,
 				    				"normal_fullscreen"	: normal_fullscreen,
+				    				"mediasource_video"	: mediasource_video,
 				    				"debug"				: debug,
 				    				"insecure"			: insecure,
 				    				}

@@ -12,6 +12,8 @@
  *   jQueryUI
  */
 
+"use strict";
+
 /**
  * This is the class representing a window we draw on the canvas.
  * It has a geometry, it may have borders and a top bar.
@@ -19,7 +21,6 @@
  * when we receive pixels from the server.
  */
 function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties, geometry_cb, mouse_move_cb, mouse_click_cb, set_focus_cb, window_closed_cb, htmldiv) {
-	"use strict";
 	// use me in jquery callbacks as we lose 'this'
 	var me = this;
 	this.debug = false;
@@ -35,10 +36,6 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
-
-	// h264 video stuff
-	this.avc = null;
-	this.glcanvas = null;
 
 	//callbacks start null until we finish init:
 	this.geometry_cb = null;
@@ -159,9 +156,6 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.updateCSSGeometry();
 	//show("placing new window at "+this.x+","+this.y);
 
-	//create the image holding the pixels (the "backing"):
-	this.create_image_backing();
-
 	// now read all metadata
 	this.update_metadata(metadata);
 };
@@ -251,8 +245,6 @@ XpraWindow.prototype.updateFocus = function() {
 }
 
 XpraWindow.prototype.getMouse = function(e) {
-	"use strict";
-
 	// get mouse position take into account scroll
 	var mx = e.clientX + jQuery(document).scrollLeft();
 	var my = e.clientY + jQuery(document).scrollTop();
@@ -346,26 +338,7 @@ XpraWindow.prototype.on_mousescroll = function(e) {
  * toString allows us to identify windows by their unique window id.
  */
 XpraWindow.prototype.toString = function() {
-	"use strict";
 	return "Window("+this.wid+")";
-};
-
-/**
- * Allocates the image object containing the window's pixels.
- */
-XpraWindow.prototype.create_image_backing = function() {
-	"use strict";
-	var previous_image = this.image;
-	var img_geom = this.get_internal_geometry();
-	//show("createImageData: "+img_geom.toSource());
-	// this should draw to the offscreen canvas
-	//this.image = this.offscreen_canvas.getContext('2d').createImageData(img_geom.w, img_geom.h);
-	//if (previous_image) {
-		//copy previous pixels to new image, ignoring bit gravity
-	//	this.offscreen_canvas.getContext('2d').putImageData(previous_image, 0, 0);
-	//}
-
-	// this should copy canvas pixel data since a canvas is the backing!
 };
 
 /**
@@ -373,7 +346,6 @@ XpraWindow.prototype.create_image_backing = function() {
  * then call set_metadata with these new key-values.
  */
 XpraWindow.prototype.update_metadata = function(metadata, safe) {
-	"use strict";
 	//update our metadata cache with new key-values:
 	for (var attrname in metadata) {
 		this.metadata[attrname] = metadata[attrname];
@@ -389,7 +361,6 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
  * Apply only metadata settings that are safe before window is drawn
  */
 XpraWindow.prototype.set_metadata_safe = function(metadata) {
-	"use strict";
 	if ("title" in metadata) {
 		this.title = metadata["title"];
 		jQuery('#title' + this.wid).html(this.title);
@@ -424,8 +395,6 @@ XpraWindow.prototype.set_metadata = function(metadata) {
  * (ie: when un-maximizing or un-fullscreening)
  */
 XpraWindow.prototype.save_geometry = function() {
-	"use strict";
-
 	this.saved_geometry = {
 			"x" : this.x,
 			"y"	: this.y,
@@ -436,8 +405,6 @@ XpraWindow.prototype.save_geometry = function() {
  * Restores the saved geometry (if it exists).
  */
 XpraWindow.prototype.restore_geometry = function() {
-	"use strict";
-
 	if (this.saved_geometry==null) {
 		return;
 	}
@@ -455,7 +422,6 @@ XpraWindow.prototype.restore_geometry = function() {
  * Maximize / unmaximizes the window.
  */
 XpraWindow.prototype.set_maximized = function(maximized) {
-	"use strict";
 	//show("set_maximized("+maximized+")");
 	if (this.maximized==maximized) {
 		return;
@@ -488,11 +454,8 @@ XpraWindow.prototype.toggle_maximized = function() {
  * Fullscreen / unfullscreen the window.
  */
 XpraWindow.prototype.set_fullscreen = function(fullscreen) {
-	"use strict";
 	/*
-
 	TODO
-
 	//show("set_fullscreen("+fullscreen+")");
 	if (this.fullscreen==fullscreen) {
 		return;
@@ -510,7 +473,6 @@ XpraWindow.prototype.set_fullscreen = function(fullscreen) {
  * - or restore the geometry
  */
 XpraWindow.prototype.max_save_restore = function(use_all_space) {
-	"use strict";
 	if (use_all_space) {
 		this.save_geometry();
 		this.fill_screen();
@@ -524,7 +486,6 @@ XpraWindow.prototype.max_save_restore = function(use_all_space) {
  * Use up all the available screen space
  */
 XpraWindow.prototype.fill_screen = function() {
-	"use strict";
 	// should be as simple as this
 	// in future we may have a taskbar for minimized windows
 	// which should be subtracted from screen size
@@ -558,7 +519,6 @@ XpraWindow.prototype.undecorate = function() {
  * - fire the geometry_cb
  */
 XpraWindow.prototype.handle_resized = function(e) {
-	"use strict";
 	// this function is called on local resize only,
 	// remote resize will call this.resize()
 	// need to update the internal geometry
@@ -568,7 +528,6 @@ XpraWindow.prototype.handle_resized = function(e) {
 	}
 	// then update CSS and redraw backing
 	this.updateCSSGeometry();
-	this.create_image_backing();
 	// send geometry callback
 	this.geometry_cb(this);
 };
@@ -578,7 +537,6 @@ XpraWindow.prototype.handle_resized = function(e) {
  * store internal geometry, external is always in CSS left and top
  */
 XpraWindow.prototype.handle_moved = function(e) {
-	"use strict";
 	// add on padding to the event position so that
 	// it reflects the internal geometry of the canvas
 	this.x = Math.round(e.position.left) + this.leftoffset;
@@ -594,8 +552,6 @@ XpraWindow.prototype.handle_moved = function(e) {
  * if it is fullscreen or maximized.
  */
 XpraWindow.prototype.screen_resized = function() {
-	"use strict";
-
 	if (this.fullscreen || this.maximized) {
 		this.fill_screen();
 		this.handle_resized();
@@ -607,7 +563,6 @@ XpraWindow.prototype.screen_resized = function() {
  */
 
 XpraWindow.prototype.move_resize = function(x, y, w, h) {
-	"use strict";
 	// only do it if actually changed!
 	if(!(this.w == w) || !(this.h == h) || !(this.x == x) || !(this.y == y)) {
 		this.w = w;
@@ -620,17 +575,14 @@ XpraWindow.prototype.move_resize = function(x, y, w, h) {
 			this.geometry_cb(this);
 		}
 		this.updateCSSGeometry();
-		this.create_image_backing();
 	}
 };
 
 XpraWindow.prototype.move = function(x, y) {
-	"use strict";
 	this.move_resize(x, y, this.w, this.h);
 };
 
 XpraWindow.prototype.resize = function(w, h) {
-	"use strict";
 	this.move_resize(this.x, this.y, w, h);
 };
 
@@ -639,7 +591,6 @@ XpraWindow.prototype.resize = function(w, h) {
  * the inner window geometry (without any borders or top bar).
  */
 XpraWindow.prototype.get_internal_geometry = function() {
-	"use strict";
 	/* we store the internal geometry only
 	 * and work out external geometry on the fly whilst
 	 * updating CSS
@@ -655,7 +606,6 @@ XpraWindow.prototype.get_internal_geometry = function() {
  * then we fire "mouse_click_cb" (if it is set).
  */
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
-	"use strict";
 	if (this.debug)
 		console.log("got mouse click at ", mx, my)
 	// mouse click event is from canvas just for this window so no need to check
@@ -668,14 +618,11 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
  * then we fire "mouse_move_cb" (if it is set).
  */
 XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
-	"use strict";
 	this.mouse_move_cb(this, mx, my, modifiers, buttons);
 };
 
 
 XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
-	"use strict";
-
 	if (encoding=="png") {
 		jQuery('#windowicon' + String(this.wid)).attr('src', "data:image/"+encoding+";base64," + this._arrayBufferToBase64(img_data));
 	}
@@ -683,14 +630,10 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 
 
 XpraWindow.prototype.reset_cursor = function() {
-	"use strict";
-
 	jQuery("#"+String(this.wid)).css("cursor", 'default');
 };
 
 XpraWindow.prototype.set_cursor = function(encoding, w, h, img_data) {
-	"use strict";
-
 	if (encoding=="png") {
 		var cursor_url = "url('data:image/"+encoding+";base64," + window.btoa(img_data) + "'),default";
 		jQuery("#"+String(this.wid)).css("cursor", cursor_url);
@@ -706,7 +649,6 @@ XpraWindow.prototype.set_cursor = function(encoding, w, h, img_data) {
  * framerate e.g if the browser window/tab is not visible.
  */
 XpraWindow.prototype.draw = function() {
-	"use strict";
 	//pass the 'buffer' canvas directly to visible canvas context
 	this.canvas_ctx.drawImage(this.offscreen_canvas, 0, 0);
 };
@@ -729,20 +671,176 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
 }
 
 /**
- * The following function inits the h264 decoder
+ * The following function inits the Broadway h264 decoder
  */
-XpraWindow.prototype._init_avc = function() {
+XpraWindow.prototype._init_broadway = function(width, height) {
 	var me = this;
-	// configure the AVC decoder
-	this.avc = new Decoder({
-		rgb: true
+	this.broadway_decoder = new Decoder({
+		"rgb": 	true,
+		"size": { "width" : width, "height" : height },
 	});
-	this.avc.onPictureDecoded = function(buffer, bufWidth, bufHeight) {
-		var img = me.offscreen_canvas_ctx.createImageData(bufWidth, bufHeight);
+	console.log("broadway decoder initialized: "+this.broadway_decoder);
+	this.broadway_paint_location = [0, 0];
+	this.broadway_decode_callbacks = [];
+	this.broadway_decoder.onPictureDecoded = function(buffer, width, height, infos) {
+		if(this.debug) {
+			console.debug("broadway picture decoded: ", buffer.length, "bytes, size ", width, "x", height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
+		}
+		if(!me.broadway_decoder) {
+			return;
+		}
+		var img = me.offscreen_canvas_ctx.createImageData(width, height);
 		img.data.set(buffer);
-		me.offscreen_canvas_ctx.putImageData(img, 0, 0);
+		var x = me.broadway_paint_location[0];
+		var y = me.broadway_paint_location[1];
+		me.offscreen_canvas_ctx.putImageData(img, x, y);
+		try {
+			var cb = me.broadway_decode_callbacks.shift();
+			cb();
+		}
+		catch (e) {
+			console.error("video broadway no callback found for frame");
+		}
 	};
 };
+
+XpraWindow.prototype._close_broadway = function() {
+	var bdcs = this.broadway_decode_callbacks;
+	this.broadway_decode_callbacks = [];
+	if(bdcs) {
+		for(var i=0,j=bdcs.length;i<j;++i) {
+			var cb = bdcs[i];
+			cb();
+		}
+	}
+	this.broadway_decoder = null;
+}
+
+
+XpraWindow.prototype._close_video = function() {
+	console.log("close_video: video_source_buffer="+this.video_source_buffer+", media_source="+this.media_source+", video="+this.video);
+	this.video_source_ready = false;
+	if(this.video) {
+		if(this.media_source) {
+			try {
+				if(this.video_source_buffer) {
+					this.media_source.removeSourceBuffer(this.video_source_buffer);
+				}
+				this.media_source.endOfStream();
+			} catch(e) {
+				console.warn("video media source EOS error: "+e);
+			}
+			this.video_source_buffer = null;
+			this.media_source = null;
+		}
+		this.video.remove();
+		this.video = null;
+	}
+}
+
+XpraWindow.prototype._push_video_buffers = function() {
+	if(this.debug) {
+		console.debug("_push_video_buffers()");
+	}
+	var vsb = this.video_source_buffer;
+	var vb = this.video_buffers;
+	if(!vb || !vsb || !this.video_source_ready) {
+		return;
+	}
+	if(vb.length==0 && this.video_buffers_count==0) {
+		return;
+	}
+	while(vb.length>0 && !vsb.updating) {
+		var buffers = vb.splice(0, 20);
+		var buffer = [].concat.apply([], buffers);
+		vsb.appendBuffer(new Uint8Array(buffer).buffer);
+		/*
+		 * one at a time:
+		var img_data = vb.shift();
+        var array = new Uint8Array(img_data);
+	    vsb.appendBuffer(array.buffer);
+		 */
+	    this.video_buffers_count += buffers.length;
+	}
+	if(vb.length>0) {
+		setTimeout(this._push_video_buffers, 25);
+	}
+}
+
+XpraWindow.prototype._init_video = function(width, height, coding, profile, level) {
+	var me = this;
+	this.media_source = MediaSourceUtil.MediaSource();
+	if(this.debug) {
+		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "video");
+	}
+	//<video> element:
+	this.video = document.createElement("video");
+	this.video.setAttribute('autoplay', true);
+	this.video.setAttribute('muted', true);
+	this.video.setAttribute('width', width);
+	this.video.setAttribute('height', height);
+	this.video.style.position = "absolute";
+	this.video.style.zIndex = "1";
+	this.video.style.left  = ""+this.leftoffset+"px";
+	this.video.style.top = ""+this.topoffset+"px";
+	if(this.debug) {
+		MediaSourceUtil.addMediaElementEventDebugListeners(this.video, "video");
+		this.video.setAttribute('controls', "controls");
+	}
+	this.video.addEventListener('error', 			function() { console.error("video error"); });
+	this.video.src = window.URL.createObjectURL(this.media_source);
+	//this.video.src = "https://html5-demos.appspot.com/static/test.webm"
+	this.video_buffers = []
+	this.video_buffers_count = 0;
+	this.video_source_ready = false;
+
+	var codec_string = "";
+	if(coding=="h264+mp4" || coding=="mpeg4+mp4") {
+		//ie: 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"'
+		codec_string = 'video/mp4; codecs="avc1.' + MediaSourceConstants.H264_PROFILE_CODE[profile] + MediaSourceConstants.H264_LEVEL_CODE[level]+'"';
+	}
+	else if(coding=="vp8+webm") {
+		codec_string = 'video/webm;codecs="vp8"';
+	}
+	else if(coding=="vp9+webm") {
+		codec_string = 'video/webm;codecs="vp9"';
+	}
+	else {
+		throw Exception("invalid encoding: "+coding);
+	}
+	console.log("video codec string: "+codec_string+" for "+coding+" profile '"+profile+"', level '"+level+"'");
+	this.media_source.addEventListener('sourceopen', function() {
+		console.log("video media source open");
+		var vsb = me.media_source.addSourceBuffer(codec_string);
+	    vsb.mode = "sequence";
+		me.video_source_buffer = vsb;
+		if(this.debug) {
+			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
+		}
+		vsb.addEventListener('error', 			function(e) { console.error("video source buffer error"); });
+		vsb.addEventListener('waiting', function() {
+			me._push_video_buffers();
+		});
+		//push any buffers that may have accumulated since we initialized the video element:
+		me._push_video_buffers();
+		me.video_source_ready = true;
+	});
+	this.canvas.parentElement.appendChild(this.video);
+};
+
+XpraWindow.prototype._non_video_paint = function(coding) {
+	if(this.video && this.video.style.zIndex!="-1") {
+		if(this.debug) {
+			console.debug("bringing canvas above video for "+coding+" paint event");
+		}
+		//push video under the canvas:
+		this.video.style.zIndex = "-1";
+		//copy video to canvas:
+		var width = this.video.getAttribute("width");
+		var height = this.video.getAttribute("height");
+        this.offscreen_canvas_ctx.drawImage(this.video, 0, 0, width, height);
+	}
+}
 
 
 /**
@@ -751,15 +849,16 @@ XpraWindow.prototype._init_avc = function() {
  * The image is painted into off-screen canvas.
  */
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
-	"use strict";
  	if (this.debug)
  		console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
+	var me = this;
+
+	if(this.offscreen_canvas_mode!='2d') {
+		this._init_2d_canvas();
+	}
 
 	if (coding=="rgb32") {
-		// create image data
-		if(this.offscreen_canvas_mode!='2d') {
-			this._init_2d_canvas();
-		}
+		this._non_video_paint(coding);
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
 		//if the pixel data is not in an array buffer already, convert it:
 		//(this happens with inlined pixel data)
@@ -803,40 +902,69 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		}
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
-		// send decode callback once we actually decoded
 		decode_callback(this.client);
 	}
 	else if (coding=="jpeg" || coding=="png") {
-		// create image data
-		if(this.offscreen_canvas_mode!='2d') {
-			this._init_2d_canvas();
-		}
+		this._non_video_paint(coding);
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
-		// decode image
 		var j = new Image();
-		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
-		var me = this;
 		j.onload = function () {
 			me.offscreen_canvas_ctx.drawImage(j, x, y);
-			// send decode callback once we actually decoded
 			decode_callback(me.client);
 		};
+		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
 	}
 	else if (coding=="h264") {
-		if(!this.avc) {
-			this._init_avc();
+		var frame = options["frame"] || -1;
+		if(frame==0) {
+			this._close_broadway();
 		}
-		// we can pass a buffer full of NALs to avc.decode directly
+		if(!this.broadway_decoder) {
+			this._init_broadway(width, height);
+		}
+		this.broadway_decode_callbacks.push(function() {
+			decode_callback(me.client);
+		});
+		this.broadway_paint_location = [x, y];
+		// we can pass a buffer full of NALs to decode() directly
 		// as long as they are framed properly with the NAL header
-		this.avc.decode(new Uint8Array(img_data));
-		// how do we know when the avc has finished decoding?!
-		decode_callback(this.client);
-		//this._h264_process_raw(img_data);
+		this.broadway_decoder.decode(new Uint8Array(img_data));
+	}
+	else if (coding=="h264+mp4" || coding=="vp8+webm" || coding=="mpeg4+mp4") {
+		var frame = options["frame"] || -1;
+		if(frame==0) {
+			this._close_video();
+		}
+		if(!this.video) {
+			var profile = options["profile"] || "baseline";
+			var level  = options["level"] || "3.0";
+			this._init_video(width, height, coding, profile, level);
+		}
+		else if (this.video.style.zIndex != "1"){
+			//make sure video is on the top layer:
+			this.video.style.zIndex = "1";
+		}
+		if(img_data.length>0) {
+			if(this.debug) {
+				console.debug("video state="+MediaSourceConstants.READY_STATE[this.video.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.video.networkState]);
+				console.debug("video paused="+this.video.paused+", video buffers="+this.video_buffers.length);
+			}
+			this.video_buffers.push(img_data);
+			if(this.video.paused) {
+				this.video.play();
+			}
+			this._push_video_buffers();
+			//try to throttle input:
+			var delay = Math.max(10, 50*(this.video_buffers.length-25));
+			var me = this;
+			setTimeout(function() {
+				decode_callback(me.client);
+			}, delay);
+			//console.debug("video queue: ", this.video_buffers.length);
+		}
 	}
 	else if (coding=="scroll") {
-		if(this.offscreen_canvas_mode!='2d') {
-			this._init_2d_canvas();
-		}
+		this._non_video_paint(coding);
 		for(var i=0,j=img_data.length;i<j;++i) {
 			var scroll_data = img_data[i];
 			var sx = scroll_data[0],
@@ -845,8 +973,9 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 				sh = scroll_data[3],
 				xdelta = scroll_data[4],
 				ydelta = scroll_data[5];
-            this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, y+ydelta, sw, sh);
+			this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, y+ydelta, sw, sh);
 		}
+		decode_callback(this.client);
 	}
 	else {
 		throw "unsupported coding " + coding;
@@ -857,7 +986,8 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
  * Close the window and free all resources
  */
 XpraWindow.prototype.destroy = function destroy() {
-	"use strict";
 	// remove div
-	this.div.remove()
+	this._close_broadway();
+	this._close_video();
+	this.div.remove();
 };

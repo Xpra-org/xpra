@@ -4,6 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os
+import time
+import errno
 import weakref
 from xpra.log import Logger
 log = Logger("encoder", "ffmpeg")
@@ -12,16 +14,17 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.util import AtomicInteger, csv, print_nested_dict, envint
+from xpra.util import AtomicInteger, csv, print_nested_dict, envint, envbool
 from xpra.os_util import bytestostr
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
 THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
+AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
 
 
-from libc.stdint cimport uint8_t, int64_t
+from libc.stdint cimport uint8_t, int64_t, uint32_t
 
 cdef extern from "../../inline.h":
     pass
@@ -52,6 +55,7 @@ cdef extern from "libavcodec/version.h":
 #why can't we define this inside the avcodec.h section? (beats me)
 ctypedef unsigned int AVCodecID
 ctypedef long AVPixelFormat
+ctypedef long AVSampleFormat
 ctypedef int AVPictureType
 
 
@@ -65,6 +69,11 @@ cdef extern from "libavutil/avutil.h":
     int AV_PICTURE_TYPE_SP
     int AV_PICTURE_TYPE_BI
 
+cdef extern from "libavutil/dict.h":
+    int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags)
+    int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags)
+    void av_dict_free(AVDictionary **m)
+
 cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_NONE
     AVPixelFormat AV_PIX_FMT_YUV420P
@@ -77,10 +86,60 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_BGRA
     AVPixelFormat AV_PIX_FMT_GBRP
 
+cdef extern from "libavutil/samplefmt.h":
+    AVSampleFormat AV_SAMPLE_FMT_S16
+    AVSampleFormat AV_SAMPLE_FMT_FLTP
+
+
+cdef extern from "libavformat/avio.h":
+    ctypedef int AVIODataMarkerType
+    int AVIO_FLAG_WRITE
+
+    ctypedef struct AVIOContext:
+        const AVClass *av_class
+        unsigned char *buffer       #Start of the buffer
+        int buffer_size             #Maximum buffer size
+        unsigned char *buf_ptr      #Current position in the buffer
+        unsigned char *buf_end      #End of the data, may be less than
+                                    #buffer+buffer_size if the read function returned
+                                    #less data than requested, e.g. for streams where
+                                    #no more data has been received yet.
+        int64_t     pos             #position in the file of the current buffer
+        int         must_flush      #true if the next seek should flush
+        int         error           #contains the error code or 0 if no error happened
+        int         seekable
+        int64_t     maxsize
+        int         direct
+        int64_t     bytes_read
+
+    AVIOContext *avio_alloc_context(unsigned char *buffer, int buffer_size, int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence))
+
 
 cdef extern from "libavcodec/avcodec.h":
     int FF_THREAD_SLICE     #allow more than one thread per frame
     int FF_THREAD_FRAME     #Decode more than one frame at once
+
+    int FF_PROFILE_H264_CONSTRAINED
+    int FF_PROFILE_H264_INTRA
+    int FF_PROFILE_H264_BASELINE
+    int FF_PROFILE_H264_CONSTRAINED_BASELINE
+    int FF_PROFILE_H264_MAIN
+    int FF_PROFILE_H264_EXTENDED
+    int FF_PROFILE_H264_HIGH
+    int FF_PROFILE_H264_HIGH_10
+    int FF_PROFILE_H264_HIGH_10_INTRA
+    int FF_PROFILE_H264_MULTIVIEW_HIGH
+    int FF_PROFILE_H264_HIGH_422
+    int FF_PROFILE_H264_HIGH_422_INTRA
+    int FF_PROFILE_H264_STEREO_HIGH
+    int FF_PROFILE_H264_HIGH_444
+    int FF_PROFILE_H264_HIGH_444_PREDICTIVE
+    int FF_PROFILE_H264_HIGH_444_INTRA
+    int FF_PROFILE_H264_CAVLC_444
 
     int CODEC_FLAG_UNALIGNED
     int CODEC_FLAG_QSCALE
@@ -157,6 +216,7 @@ cdef extern from "libavcodec/avcodec.h":
         int den
 
     ctypedef struct AVCodecContext:
+        const AVClass *av_class
         int width
         int height
         AVPixelFormat pix_fmt
@@ -174,12 +234,71 @@ cdef extern from "libavcodec/avcodec.h":
         AVRational time_base
         unsigned int codec_tag
         int64_t bit_rate
+        AVSampleFormat sample_fmt
+        int sample_rate
+        int channels
+        int profile
+        int level
+
+    ctypedef struct AVFormatContext:
+        const AVClass   *av_class
+        AVOutputFormat  *oformat
+        void            *priv_data
+        AVIOContext     *pb
+        int             ctx_flags
+        unsigned int    nb_streams
+        AVStream        **streams
+        int64_t         start_time
+        int64_t         duration
+        int             bit_rate
+        unsigned int    packet_size
+        int             max_delay
+        int             flags
+        unsigned int    probesize
+        int             max_analyze_duration
+        AVCodecID       video_codec_id
+        AVCodecID       audio_codec_id
+        AVCodecID       subtitle_codec_id
+        unsigned int    max_index_size
+        unsigned int    max_picture_buffer
+        unsigned int    nb_chapters
+        AVDictionary    *metadata
+        int64_t         start_time_realtime
+        int             strict_std_compliance
+        int flush_packets
+
+    ctypedef int AVFieldOrder
+    ctypedef int AVColorRange
+    ctypedef int AVColorPrimaries
+    ctypedef int AVColorTransferCharacteristic
+    ctypedef int AVColorSpace
+    ctypedef int AVChromaLocation
+    ctypedef struct AVCodecParameters:
+        AVCodecID       codec_id
+        uint32_t        codec_tag
+        int64_t         bit_rate
+        int             bits_per_coded_sample
+        int             bits_per_raw_sample
+        int             profile
+        int             level
+        int             width
+        int             height
+        AVFieldOrder    field_order
+        AVColorRange    color_range
+        AVColorPrimaries    color_primaries
+        AVColorTransferCharacteristic color_trc
+        AVColorSpace        color_space
+        AVChromaLocation    chroma_location
+        int             sample_rate
+        int             frame_size
 
     AVCodecID AV_CODEC_ID_H264
     AVCodecID AV_CODEC_ID_H265
     AVCodecID AV_CODEC_ID_VP8
     AVCodecID AV_CODEC_ID_VP9
     AVCodecID AV_CODEC_ID_MPEG4
+
+    AVCodecID AV_CODEC_ID_AAC
 
     #init and free:
     void avcodec_register_all()
@@ -189,9 +308,11 @@ cdef extern from "libavcodec/avcodec.h":
     int avcodec_send_frame(AVCodecContext *avctx,const AVFrame *frame) nogil
     int avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt) nogil
 
+    int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     AVFrame* av_frame_alloc()
     void av_frame_free(AVFrame **frame)
     int avcodec_close(AVCodecContext *avctx)
+    void av_frame_unref(AVFrame *frame) nogil
     void av_init_packet(AVPacket *pkt) nogil
     void av_packet_unref(AVPacket *pkt) nogil
 
@@ -231,6 +352,7 @@ cdef extern from "libavutil/opt.h":
     void *av_opt_child_next(void *obj, void *prev)
     int av_opt_set_int(void *obj, const char *name, int64_t val, int search_flags)
     int av_opt_get_int(void *obj, const char *name, int search_flags, int64_t *out_val)
+    int av_opt_set_dict(void *obj, AVDictionary **options)
 
 
 cdef extern from "libavutil/log.h":
@@ -246,6 +368,101 @@ cdef extern from "libavutil/log.h":
         #AVClassCategory category                #Category used for visualization (like color) This is only set if the category is equal for all objects using this class.
         #AVClassCategory (*get_category)(void *ctx)
 
+
+cdef extern from "libavformat/avformat.h":
+    int AVFMTCTX_NOHEADER           #signal that no header is present
+
+    int AVFMT_FLAG_GENPTS           #Generate missing pts even if it requires parsing future frames
+    int AVFMT_FLAG_IGNIDX           #Ignore index
+    int AVFMT_FLAG_NONBLOCK         #Do not block when reading packets from input
+    int AVFMT_FLAG_IGNDTS           #Ignore DTS on frames that contain both DTS & PTS
+    int AVFMT_FLAG_NOFILLIN         #Do not infer any values from other values, just return what is stored in the container
+    int AVFMT_FLAG_NOPARSE          #Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
+    int AVFMT_FLAG_NOBUFFER         #Do not buffer frames when possible
+    int AVFMT_FLAG_CUSTOM_IO        #The caller has supplied a custom AVIOContext, don't avio_close() it
+    int AVFMT_FLAG_DISCARD_CORRUPT  #Discard frames marked corrupted
+    int AVFMT_FLAG_FLUSH_PACKETS    #Flush the AVIOContext every packet
+    int AVFMT_FLAG_BITEXACT
+    int AVFMT_FLAG_MP4A_LATM        #Enable RTP MP4A-LATM payload
+    int AVFMT_FLAG_SORT_DTS         #try to interleave outputted packets by dts (using this flag can slow demuxing down)
+    int AVFMT_FLAG_PRIV_OPT         #Enable use of private options by delaying codec open (this could be made default once all code is converted)
+    int AVFMT_FLAG_KEEP_SIDE_DATA   #Don't merge side data but keep it separate.
+    int AVFMT_FLAG_FAST_SEEK        #Enable fast, but inaccurate seeks for some formats
+
+    int AVFMT_NOFILE                #Demuxer will use avio_open, no opened file should be provided by the caller
+    int AVFMT_NEEDNUMBER            #Needs '%d' in filename
+    int AVFMT_SHOW_IDS              #Show format stream IDs numbers
+    int AVFMT_RAWPICTURE            #Format wants AVPicture structure for raw picture data. @deprecated Not used anymore
+    int AVFMT_GLOBALHEADER          #Format wants global header
+    int AVFMT_NOTIMESTAMPS          #Format does not need / have any timestamps
+    int AVFMT_GENERIC_INDEX         #Use generic index building code
+    int AVFMT_TS_DISCONT            #Format allows timestamp discontinuities. Note, muxers always require valid (monotone) timestamps
+    int AVFMT_VARIABLE_FPS          #Format allows variable fps
+    int AVFMT_NODIMENSIONS          #Format does not need width/height
+    int AVFMT_NOSTREAMS             #Format does not require any streams
+    int AVFMT_NOBINSEARCH           #Format does not allow to fall back on binary search via read_timestamp
+    int AVFMT_NOGENSEARCH           #Format does not allow to fall back on generic search
+    int AVFMT_NO_BYTE_SEEK          #Format does not allow seeking by bytes
+    int AVFMT_ALLOW_FLUSH           #Format allows flushing. If not set, the muxer will not receive a NULL packet in the write_packet function
+    int AVFMT_TS_NONSTRICT          #Format does not require strictly increasing timestamps, but they must still be monotonic
+    int AVFMT_TS_NEGATIVE           #Format allows muxing negative timestamps.
+    int AVFMT_SEEK_TO_PTS           #Seeking is based on PTS
+
+    ctypedef struct AVStream:
+        int         index           #stream index in AVFormatContext
+        int         id
+        AVCodecContext *codec
+        AVRational  time_base
+        int64_t     start_time
+        int64_t     duration
+        int64_t     nb_frames       #number of frames in this stream if known or 0
+        #AVDiscard   discard         #Selects which packets can be discarded at will and do not need to be demuxed.
+        AVRational  avg_frame_rate
+        AVCodecParameters *codecpar
+
+    ctypedef struct AVOutputFormat:
+        const char  *name
+        const char  *long_name
+        const char  *mime_type
+        const char  *extensions
+        AVCodecID   audio_codec
+        AVCodecID   video_codec
+        AVCodecID   subtitle_codec
+        int         flags       #AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_GLOBALHEADER, AVFMT_NOTIMESTAMPS, AVFMT_VARIABLE_FPS, AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS, AVFMT_ALLOW_FLUSH, AVFMT_TS_NONSTRICT, AVFMT_TS_NEGATIVE More...
+        int         (*query_codec)(AVCodecID id, int std_compliance)
+
+    void av_register_all()
+    AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
+    int avformat_alloc_output_context2(AVFormatContext **ctx, AVOutputFormat *oformat, const char *format_name, const char *filename)
+    void avformat_free_context(AVFormatContext *s)
+
+    int avcodec_parameters_from_context(AVCodecParameters *par, const AVCodecContext *codec)
+    AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
+    int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+    int av_write_trailer(AVFormatContext *s)
+    int av_write_frame(AVFormatContext *s, AVPacket *pkt)
+
+
+H264_PROFILE_NAMES = {
+    FF_PROFILE_H264_CONSTRAINED             : "constrained",
+    FF_PROFILE_H264_INTRA                   : "intra",
+    FF_PROFILE_H264_BASELINE                : "baseline",
+    FF_PROFILE_H264_CONSTRAINED_BASELINE    : "constrained baseline",
+    FF_PROFILE_H264_MAIN                    : "main",
+    FF_PROFILE_H264_EXTENDED                : "extended",
+    FF_PROFILE_H264_HIGH                    : "high",
+    FF_PROFILE_H264_HIGH_10                 : "high10",
+    FF_PROFILE_H264_HIGH_10_INTRA           : "high10 intra",
+    FF_PROFILE_H264_MULTIVIEW_HIGH          : "multiview high",
+    FF_PROFILE_H264_HIGH_422                : "high422",
+    FF_PROFILE_H264_HIGH_422_INTRA          : "high422 intra",
+    FF_PROFILE_H264_STEREO_HIGH             : "stereo high",
+    FF_PROFILE_H264_HIGH_444                : "high444",
+    FF_PROFILE_H264_HIGH_444_PREDICTIVE     : "high444 predictive",
+    FF_PROFILE_H264_HIGH_444_INTRA          : "high444 intra",
+    FF_PROFILE_H264_CAVLC_444               : "cavlc 444",
+    }
+H264_PROFILES = dict((v,k) for k,v in H264_PROFILE_NAMES.items())
 
 AV_OPT_TYPES = {
                 AV_OPT_TYPE_FLAGS       : "FLAGS",
@@ -274,6 +491,10 @@ PKT_FLAGS = {
              AV_PKT_FLAG_CORRUPT    : "CORRUPT",
              }
 
+AVFMTCTX = {
+            AVFMTCTX_NOHEADER       : "NOHEADER",
+            }
+
 CODEC_FLAGS = {
                CODEC_FLAG_UNALIGNED         : "UNALIGNED",
                CODEC_FLAG_QSCALE            : "QSCALE",
@@ -297,6 +518,47 @@ CODEC_FLAGS = {
 CODEC_FLAGS2 = {
                 CODEC_FLAG2_FAST : "FAST",
                 }
+
+FMT_FLAGS = {
+             AVFMT_FLAG_GENPTS          : "GENPTS",
+             AVFMT_FLAG_IGNIDX          : "IGNIDX",
+             AVFMT_FLAG_NONBLOCK        : "NONBLOCK",
+             AVFMT_FLAG_IGNDTS          : "IGNDTS",
+             AVFMT_FLAG_NOFILLIN        : "NOFILLIN",
+             AVFMT_FLAG_NOPARSE         : "NOPARSE",
+             AVFMT_FLAG_NOBUFFER        : "NOBUFFER",
+             AVFMT_FLAG_CUSTOM_IO       : "CUSTOM_IO",
+             AVFMT_FLAG_DISCARD_CORRUPT : "DISCARD_CORRUPT",
+             AVFMT_FLAG_FLUSH_PACKETS   : "FLUSH_PACKETS",
+             AVFMT_FLAG_BITEXACT        : "BITEXACT",
+             AVFMT_FLAG_MP4A_LATM       : "MP4A_LATM",
+             AVFMT_FLAG_SORT_DTS        : "SORT_DTS",
+             AVFMT_FLAG_PRIV_OPT        : "PRIV_OPT",
+             AVFMT_FLAG_KEEP_SIDE_DATA  : "KEEP_SIDE_DATA",
+             AVFMT_FLAG_FAST_SEEK       : "FAST_SEEK",
+             }
+
+AVFMT = {
+         AVFMT_NOFILE           : "NOFILE",
+         AVFMT_NEEDNUMBER       : "NEEDNUMBER",
+         AVFMT_SHOW_IDS         : "SHOW_IDS",
+         AVFMT_RAWPICTURE       : "RAWPICTURE",
+         AVFMT_GLOBALHEADER     : "GLOBALHEADER",
+         AVFMT_NOTIMESTAMPS     : "NOTIMESTAMPS",
+         AVFMT_GENERIC_INDEX    : "GENERIC_INDEX",
+         AVFMT_TS_DISCONT       : "TS_DISCONT",
+         AVFMT_VARIABLE_FPS     : "VARIABLE_FPS",
+         AVFMT_NODIMENSIONS     : "NODIMENSIONS",
+         AVFMT_NOSTREAMS        : "NOSTREAMS",
+         AVFMT_NOBINSEARCH      : "NOBINSEARCH",
+         AVFMT_NOGENSEARCH      : "NOGENSEARCH",
+         AVFMT_NO_BYTE_SEEK     : "NO_BYTE_SEEK",
+         AVFMT_ALLOW_FLUSH      : "ALLOW_FLUSH",
+         AVFMT_TS_NONSTRICT     : "TS_NONSTRICT",
+         AVFMT_TS_NEGATIVE      : "TS_NEGATIVE",
+         AVFMT_SEEK_TO_PTS      : "SEEK_TO_PTS",
+         }
+
 
 CAPS = {
         CODEC_CAP_DRAW_HORIZ_BAND       : "DRAW_HORIZ_BAND",
@@ -356,21 +618,48 @@ print_nested_dict(ENUM_TO_FORMAT, print_fn=log.debug)
 def flagscsv(flag_dict, value=0):
     return csv([v for k,v in flag_dict.items() if k&value])
 
+
+def get_muxer_formats():
+    av_register_all()
+    cdef AVOutputFormat *fmt = NULL
+    formats = {}
+    while True:
+        fmt = av_oformat_next(fmt)
+        if fmt==NULL:
+            break
+        name = fmt.name
+        long_name = fmt.long_name
+        formats[name] = long_name
+    return formats
+log("AV Output Formats:")
+print_nested_dict(get_muxer_formats(), print_fn=log.debug)
+
+cdef AVOutputFormat* get_av_output_format(name):
+    cdef AVOutputFormat *fmt = NULL
+    while True:
+        fmt = av_oformat_next(fmt)
+        if fmt==NULL:
+            break
+        if name==fmt.name:
+            return fmt
+    return NULL
+
+
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 avcodec_register_all()
 CODECS = []
 if avcodec_find_encoder(AV_CODEC_ID_H264)!=NULL:
-    CODECS.append("h264")
-#if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
-#    CODECS.append("vp8")
+    CODECS.append("h264+mp4")
+if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
+    CODECS.append("vp8+webm")
 #if avcodec_find_encoder(AV_CODEC_ID_VP9)!=NULL:
-#    CODECS.append("vp9")
+#    CODECS.append("vp9+webm")
 #if avcodec_find_encoder(AV_CODEC_ID_H265)!=NULL:
 #    CODECS.append("h265")
 if avcodec_find_encoder(AV_CODEC_ID_MPEG4)!=NULL:
-    CODECS.append("mpeg4")
+    CODECS.append("mpeg4+mp4")
 log("enc_ffmpeg CODECS=%s", csv(CODECS))
 
 cdef av_error_str(int errnum):
@@ -382,7 +671,7 @@ cdef av_error_str(int errnum):
         return bytestostr(err_str[:i])
     return "error %s" % errnum
 
-DEF EAGAIN = -11
+DEF DEFAULT_BUF_LEN = 64*1024
 
 
 def init_module():
@@ -405,6 +694,7 @@ def get_info():
     return  {
              "version"      : get_version(),
              "encodings"    : get_encodings(),
+             "muxers"       : get_muxer_formats(),
              "buffer_api"   : get_buffer_api_version(),
              "formats"      : f,
              "generation"   : generation.get(),
@@ -423,6 +713,38 @@ def get_output_colorspaces(encoding, csc):
     return ["YUV420P"]
 
 
+GEN_TO_ENCODER = weakref.WeakValueDictionary()
+
+
+cdef list_options(void *obj, const AVClass *av_class):
+    if av_class==NULL:
+        return
+    cdef const AVOption *option = <const AVOption*> av_class.option
+    options = []
+    while option!=NULL:
+        oname = option.name
+        options.append(oname)
+        option = av_opt_next(obj, option)
+    log("%s options: %s", av_class.class_name, csv(options))
+    cdef void *child = NULL
+    cdef const AVClass *child_class = NULL
+    while True:
+        child = av_opt_child_next(obj, child)
+        if child==NULL:
+            return
+        child_class = (<AVClass**> child)[0]
+        list_options(child, child_class)
+
+
+cdef int write_packet(void *opaque, uint8_t *buf, int buf_size):
+    global GEN_TO_ENCODER
+    encoder = GEN_TO_ENCODER.get(<unsigned long> opaque)
+    #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <unsigned long> opaque, <unsigned long> buf, buf_size, type(encoder))
+    if not encoder:
+        log.error("Error: write_packet called for unregistered encoder %i!", <unsigned long> opaque)
+        return -1
+    return encoder.write_packet(<unsigned long> buf, buf_size)
+
 MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
@@ -437,18 +759,29 @@ cdef class Encoder(object):
     """
         This wraps the AVCodecContext and its configuration,
     """
-    cdef AVCodecID codec_id
-    cdef AVCodec *codec
-    cdef AVCodecContext *codec_ctx
+    #muxer:
+    cdef AVFormatContext *muxer_ctx
+    cdef unsigned char *buffer
+    cdef object buffers
+    cdef int64_t offset
+    cdef object muxer_format
+    cdef object file
+    #video:
+    cdef AVCodec *video_codec
+    cdef AVStream *video_stream
+    cdef AVCodecContext *video_ctx
     cdef AVPixelFormat pix_fmt
     cdef object src_format
     cdef AVFrame *av_frame
-    #this is the actual number of images we have returned
     cdef unsigned long frames
     cdef unsigned int width
     cdef unsigned int height
     cdef object encoding
-    cdef object file
+    cdef object profile
+    #audio:
+    cdef AVCodec *audio_codec
+    cdef AVStream *audio_stream
+    cdef AVCodecContext *audio_ctx
 
     cdef object __weakref__
 
@@ -458,74 +791,194 @@ cdef class Encoder(object):
         assert encoding in CODECS
         assert src_format in get_input_colorspaces(encoding), "invalid colorspace: %s" % src_format
         self.encoding = encoding
+        self.muxer_format = encoding.split("+")[1]  #ie: "mp4"   #"mov", "f4v"
+        assert self.muxer_format in ("mp4", "webm")
         self.width = width
         self.height = height
         self.src_format = src_format
         self.pix_fmt = FORMAT_TO_ENUM.get(src_format, AV_PIX_FMT_NONE)
         if self.pix_fmt==AV_PIX_FMT_NONE:
             raise Exception("invalid pixel format: %s", src_format)
+        self.buffers = []
 
+        codec = self.encoding.split("+")[0]
         avcodec_register_all()
-        if self.encoding=="h264":
-            self.codec_id = AV_CODEC_ID_H264
-        elif self.encoding=="h265":
-            self.codec_id = AV_CODEC_ID_H265
-        elif self.encoding=="vp8":
-            self.codec_id = AV_CODEC_ID_VP8
-        elif self.encoding=="vp9":
-            self.codec_id = AV_CODEC_ID_VP9
-        elif self.encoding=="mpeg4":
-            self.codec_id = AV_CODEC_ID_MPEG4
+        cdef AVCodecID video_codec_id
+        if codec=="h264":
+            video_codec_id = AV_CODEC_ID_H264
+        elif codec=="h265":
+            video_codec_id = AV_CODEC_ID_H265
+        elif codec=="vp8":
+            video_codec_id = AV_CODEC_ID_VP8
+        elif codec=="vp9":
+            video_codec_id = AV_CODEC_ID_VP9
+        elif codec=="mpeg4":
+            video_codec_id = AV_CODEC_ID_MPEG4
         else:
             raise Exception("invalid codec; %s" % self.encoding)
-        self.codec = avcodec_find_encoder(self.codec_id)
-        if self.codec==NULL:
+        self.video_codec = avcodec_find_encoder(video_codec_id)
+        if self.video_codec==NULL:
             raise Exception("codec %s not found!" % self.encoding)
-        log("%s: \"%s\", codec flags: %s", self.codec.name, self.codec.long_name, flagscsv(CAPS, self.codec.capabilities))
+        log("%s: \"%s\", codec flags: %s", self.video_codec.name, self.video_codec.long_name, flagscsv(CAPS, self.video_codec.capabilities))
 
-        cdef int b_frames = 0   #int(options.get("b-frames"))
+        #ie: client side as: "encoding.h264+mpeg4.YUV420P.profile" : "main"
+        profile = options.get("%s.%s.profile" % (self.encoding, src_format), "main")
         try:
-            self.init_encoder(b_frames)
+            self.init_encoder(profile)
         except Exception as e:
-            log("init_encoder(%i) failed", b_frames, exc_info=True)
+            log("init_encoder(%s) failed", profile, exc_info=True)
             self.clean()
             raise
         else:
             log("enc_ffmpeg.Encoder.init_context(%s, %s, %s) self=%s", self.width, self.height, self.src_format, self.get_info())
 
-    def init_encoder(self, int b_frames):
+    def init_encoder(self, profile):
+        cdef AVDictionary *opts = NULL
+        cdef AVDictionary *muxer_opts = NULL
+        global GEN_TO_ENCODER
+        cdef AVOutputFormat *oformat = get_av_output_format(self.muxer_format)
+        if oformat==NULL:
+            raise Exception("libavformat does not support %s" % self.muxer_format)
+        log("init_encoder() AVOutputFormat(%s)=%#x, flags=%s", self.muxer_format, <unsigned long> oformat, flagscsv(AVFMT, oformat.flags))
+        if oformat.flags & AVFMT_ALLOW_FLUSH==0:
+            raise Exception("AVOutputFormat(%s) does not support flushing!" % self.muxer_format)
+        r = avformat_alloc_output_context2(&self.muxer_ctx, oformat, self.muxer_format, NULL)
+        if r!=0:
+            msg = av_error_str(r)
+            raise Exception("libavformat cannot allocate context: %s" % msg)
+        log("init_encoder() avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s", r, self.muxer_format, <unsigned long> self.muxer_ctx,
+            flagscsv(FMT_FLAGS, self.muxer_ctx.flags), flagscsv(AVFMTCTX, self.muxer_ctx.ctx_flags))
+        list_options(self.muxer_ctx, self.muxer_ctx.av_class)
+
+        cdef int64_t v = 0
+        movflags = ""
+        if self.muxer_format=="mp4":
+            #movflags = "empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof"
+            movflags = "empty_moov+frag_keyframe+default_base_moof+faststart"
+        elif self.muxer_format=="webm":
+            movflags = "dash+live"
+        if movflags:
+            r = av_dict_set(&muxer_opts, "movflags", movflags, 0)
+            if r!=0:
+                msg = av_error_str(r)
+                raise Exception("failed to set %s muxer 'movflags' options '%s': %s" % (self.muxer_format, movflags, msg))
+
         cdef unsigned long gen = generation.increase()
+        GEN_TO_ENCODER[gen] = self
+        self.buffer = <unsigned char*> av_malloc(DEFAULT_BUF_LEN)
+        if self.buffer==NULL:
+            raise Exception("failed to allocate %iKB of memory" % (DEFAULT_BUF_LEN//1024))
+        self.muxer_ctx.pb = avio_alloc_context(self.buffer, DEFAULT_BUF_LEN, 1, <void *> gen, NULL, write_packet, NULL)
+        if self.muxer_ctx.pb==NULL:
+            raise Exception("libavformat failed to allocate io context")
+        log("init_encoder() saving %s stream to bitstream buffer %#x", self.encoding, <unsigned long> self.buffer)
+        self.muxer_ctx.flush_packets = 1
+        self.muxer_ctx.bit_rate = 250000
+        self.muxer_ctx.start_time = 0
+        #self.muxer_ctx.duration = 999999
+        self.muxer_ctx.start_time_realtime = int(time.time()*1000)
+        self.muxer_ctx.strict_std_compliance = 1
 
-        self.codec_ctx = avcodec_alloc_context3(self.codec)
-        if self.codec_ctx==NULL:
-            raise Exception("failed to allocate codec context!")
+        self.video_stream = avformat_new_stream(self.muxer_ctx, NULL)    #self.video_codec
+        self.video_stream.id = 0
+        log("init_encoder() video: avformat_new_stream=%#x, nb streams=%i", <unsigned long> self.video_stream, self.muxer_ctx.nb_streams)
 
+        self.video_ctx = avcodec_alloc_context3(self.video_codec)
+        if self.video_ctx==NULL:
+            raise Exception("failed to allocate video codec context!")
+        list_options(self.video_ctx, self.video_ctx.av_class)
+
+        cdef int b_frames = 0
         #we need a framerate.. make one up:
-        self.codec_ctx.framerate.num = 1
-        self.codec_ctx.framerate.den = 25
-        self.codec_ctx.time_base.num = 1
-        self.codec_ctx.time_base.den = 25
-        self.codec_ctx.refcounted_frames = 1
-        self.codec_ctx.max_b_frames = b_frames*1
-        self.codec_ctx.has_b_frames = b_frames
-        self.codec_ctx.delay = 0
-        self.codec_ctx.gop_size = 1
-        self.codec_ctx.width = self.width
-        self.codec_ctx.height = self.height
-        self.codec_ctx.bit_rate = 500000
-        self.codec_ctx.pix_fmt = self.pix_fmt
-        self.codec_ctx.thread_safe_callbacks = 1
-        self.codec_ctx.thread_type = THREAD_TYPE
-        self.codec_ctx.thread_count = THREAD_COUNT     #0=auto
-        self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
-        #av_opt_set(c->priv_data, "preset", "slow", 0)
-        log("init_encoder() b-frames=%i, thread-type=%i, thread-count=%i", b_frames, THREAD_TYPE, THREAD_COUNT)
-        log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.codec_ctx.flags))
-        log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.codec_ctx.flags2))
+        self.video_ctx.framerate.num = 1
+        self.video_ctx.framerate.den = 25
+        self.video_ctx.time_base.num = 1
+        self.video_ctx.time_base.den = 25
+        self.video_ctx.refcounted_frames = 1
+        self.video_ctx.max_b_frames = b_frames*1
+        self.video_ctx.has_b_frames = b_frames
+        self.video_ctx.delay = 0
+        self.video_ctx.gop_size = 1
+        self.video_ctx.width = self.width
+        self.video_ctx.height = self.height
+        self.video_ctx.bit_rate = 2500000
+        self.video_ctx.pix_fmt = self.pix_fmt
+        self.video_ctx.thread_safe_callbacks = 1
+        self.video_ctx.thread_type = THREAD_TYPE
+        self.video_ctx.thread_count = THREAD_COUNT     #0=auto
+        #if oformat.flags & AVFMT_GLOBALHEADER:
+        self.video_ctx.flags |= CODEC_FLAG_GLOBAL_HEADER
+        self.video_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
+        if self.encoding.startswith("h264") and profile:
+            r = av_dict_set(&opts, "vprofile", profile, 0)
+            log("av_dict_set vprofile=%s returned %i", profile, r)
+            if r==0:
+                self.profile = profile
+            r = av_dict_set(&opts, "tune", "zerolatency", 0)
+            log("av_dict_set tune=zerolatency returned %i", r)
+            r = av_dict_set(&opts, "preset","ultrafast", 0)
+            log("av_dict_set preset=ultrafast returned %i", r)
+        elif self.encoding.startswith("vp"):
+            for k,v in {
+                        "lag-in-frames"     : 0,
+                        "realtime"          : 1,
+                        "rc_lookahead"      : 0,
+                        "error_resilient"   : 0,
+                        }.items():
+                r = av_dict_set_int(&opts, k, v, 0)
+                if r!=0:
+                    log.error("Error: failed to set video context option '%s' to %i:", k, v)
+                    log.error(" %s", av_error_str(r))
+        log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
+        log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.video_ctx.flags))
+        log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.video_ctx.flags2))
 
-        r = avcodec_open2(self.codec_ctx, self.codec, NULL)   #NULL, NULL)
+        r = avcodec_open2(self.video_ctx, self.video_codec, &opts)
+        av_dict_free(&opts)
         if r!=0:
             raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
+
+        r = avcodec_parameters_from_context(self.video_stream.codecpar, self.video_ctx)
+        if r<0:
+            raise Exception("could not copy video context parameters %#x: %s" % (<unsigned long> self.video_stream.codecpar, av_error_str(r)))
+
+        if AUDIO:
+            self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
+            if self.audio_codec==NULL:
+                raise Exception("cannot find audio codec!")
+            log("init_encoder() audio_codec=%#x", <unsigned long> self.audio_codec)
+            self.audio_stream = avformat_new_stream(self.muxer_ctx, NULL)
+            self.audio_stream.id = 1
+            log("init_encoder() audio: avformat_new_stream=%#x, nb streams=%i", <unsigned long> self.audio_stream, self.muxer_ctx.nb_streams)
+            self.audio_ctx = avcodec_alloc_context3(self.audio_codec)
+            log("init_encoder() audio_context=%#x", <unsigned long> self.audio_ctx)
+            self.audio_ctx.sample_fmt = AV_SAMPLE_FMT_FLTP
+            self.audio_ctx.time_base.den = 25
+            self.audio_ctx.time_base.num = 1
+            self.audio_ctx.bit_rate = 64000
+            self.audio_ctx.sample_rate = 44100
+            self.audio_ctx.channels = 2
+            #if audio_codec.capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE:
+            #    pass
+            #cdef AVDictionary *opts = NULL
+            #av_dict_set(&opts, "strict", "experimental", 0)
+            #r = avcodec_open2(audio_ctx, audio_codec, &opts)
+            #av_dict_free(&opts)
+            r = avcodec_open2(self.audio_ctx, self.audio_codec, NULL)
+            if r!=0:
+                raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
+            if r!=0:
+                raise Exception("could not open %s encoder context: %s" % ("aac", av_error_str(r)))
+            r = avcodec_parameters_from_context(self.audio_stream.codecpar, self.audio_ctx)
+            if r<0:
+                raise Exception("could not copy audio context parameters %#x: %s" % (<unsigned long> self.audio_stream.codecpar, av_error_str(r)))
+
+        log("init_encoder() writing %s header", self.muxer_format)
+        r = avformat_write_header(self.muxer_ctx, &muxer_opts)
+        av_dict_free(&muxer_opts)
+        if r!=0:
+            msg = av_error_str(r)
+            raise Exception("libavformat failed to write header: %s" % msg)
 
         self.av_frame = av_frame_alloc()
         if self.av_frame==NULL:
@@ -533,9 +986,9 @@ cdef class Encoder(object):
         self.frames = 0
 
         if SAVE_TO_FILE is not None:
-            filename = SAVE_TO_FILE+"-"+str(gen)+".%s" % self.encoding
+            filename = SAVE_TO_FILE+"-"+self.encoding+"-"+str(gen)+".%s" % self.muxer_format
             self.file = open(filename, 'wb')
-            log.info("saving stream to %s", filename)
+            log.info("saving %s stream to %s", self.encoding, filename)
 
 
     def clean(self):
@@ -543,7 +996,8 @@ cdef class Encoder(object):
             self.clean_encoder()
         except:
             log.error("cleanup failed", exc_info=True)
-        self.codec = NULL
+        self.video_codec = NULL
+        self.audio_codec = NULL
         self.pix_fmt = 0
         self.src_format = ""
         self.av_frame = NULL                        #should be redundant
@@ -551,6 +1005,7 @@ cdef class Encoder(object):
         self.width = 0
         self.height = 0
         self.encoding = ""
+        self.buffers = []
         f = self.file
         if f:
             self.file = None
@@ -562,14 +1017,36 @@ cdef class Encoder(object):
         if self.av_frame!=NULL:
             log("clean_encoder() freeing AVFrame: %#x", <unsigned long> self.av_frame)
             av_frame_free(&self.av_frame)
-        log("clean_encoder() freeing AVCodecContext: %#x", <unsigned long> self.codec_ctx)
-        if self.codec_ctx!=NULL:
-            r = avcodec_close(self.codec_ctx)
+        if self.muxer_ctx!=NULL:
+            if self.frames>0:
+                log("clean_encoder() writing trailer to stream")
+                av_write_trailer(self.muxer_ctx)
+                if self.muxer_ctx.pb!=NULL:
+                    av_free(self.muxer_ctx.pb)
+                    self.muxer_ctx.pb = NULL
+            log("clean_encoder() freeing av format context %#x", <unsigned long> self.muxer_ctx)
+            avformat_free_context(self.muxer_ctx)
+            self.muxer_ctx = NULL
+            log("clean_encoder() freeing bitstream buffer %#x", <unsigned long> self.buffer)
+            if self.buffer!=NULL:
+                av_free(self.buffer)
+                self.buffer = NULL
+        cdef unsigned long ctx_key          #@DuplicatedSignature
+        log("clean_encoder() freeing AVCodecContext: %#x", <unsigned long> self.video_ctx)
+        if self.video_ctx!=NULL:
+            r = avcodec_close(self.video_ctx)
             if r!=0:
-                log.error("Error: failed to close encoder context %#x", <unsigned long> self.codec_ctx)
+                log.error("Error: failed to close video encoder context %#x", <unsigned long> self.video_ctx)
                 log.error(" %s", av_error_str(r))
-            av_free(self.codec_ctx)
-            self.codec_ctx = NULL
+            av_free(self.video_ctx)
+            self.video_ctx = NULL
+        if self.audio_ctx!=NULL:
+            r = avcodec_close(self.audio_ctx)
+            if r!=0:
+                log.error("Error: failed to close audio encoder context %#x", <unsigned long> self.audio_ctx)
+                log.error(" %s", av_error_str(r))
+            av_free(self.audio_ctx)
+            self.audio_ctx = NULL
         log("clean_encoder() done")
 
     def __repr__(self):                      #@DuplicatedSignature
@@ -581,26 +1058,30 @@ cdef class Encoder(object):
         info = {
                 "version"   : get_version(),
                 "encoding"  : self.encoding,
+                "muxer"     : self.muxer_format,
                 "formats"   : get_input_colorspaces(self.encoding),
                 "type"      : self.get_type(),
                 "frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
                 }
-        if self.codec:
-            info["codec"] = self.codec.name[:]
-            info["description"] = self.codec.long_name[:]
+        if self.video_codec:
+            info["video-codec"] = self.video_codec.name[:]
+            info["video-description"] = self.video_codec.long_name[:]
+        if self.audio_codec:
+            info["audio-codec"] = self.audio_codec.name[:]
+            info["audio-description"] = self.audio_codec.long_name[:]
         if self.src_format:
             info["src_format"] = self.src_format
         if not self.is_closed():
-            info["encoder_width"] = self.codec_ctx.width
-            info["encoder_height"] = self.codec_ctx.height
+            info["encoder_width"] = self.video_ctx.width
+            info["encoder_height"] = self.video_ctx.height
         else:
             info["closed"] = True
         return info
 
     def is_closed(self):
-        return self.codec_ctx==NULL
+        return self.video_ctx==NULL
 
     def __dealloc__(self):                          #@DuplicatedSignature
         self.clean()
@@ -645,8 +1126,8 @@ cdef class Encoder(object):
         cdef int ret
         cdef AVPacket avpkt
         cdef AVFrame *frame
-        assert self.codec_ctx!=NULL, "no codec context! (not initialized or already closed)"
-        assert self.codec!=NULL
+        assert self.video_ctx!=NULL, "no codec context! (not initialized or already closed)"
+        assert self.video_codec!=NULL, "no video codec!"
 
         if image:
             assert image.get_pixel_format()==self.src_format, "invalid input format %s, expected %s" % (image.get_pixel_format, self.src_format)
@@ -672,7 +1153,8 @@ cdef class Encoder(object):
             self.av_frame.coded_picture_number = self.frames+1
             self.av_frame.display_picture_number = self.frames+1
             #if self.frames==0:
-            #    self.av_frame.pict_type = AV_PICTURE_TYPE_I
+            self.av_frame.pict_type = AV_PICTURE_TYPE_I
+            #self.av_frame.key_frame = 1
             #else:
             #    self.av_frame.pict_type = AV_PICTURE_TYPE_P
             #self.av_frame.quality = 1
@@ -682,7 +1164,7 @@ cdef class Encoder(object):
             frame = NULL
 
         with nogil:
-            ret = avcodec_send_frame(self.codec_ctx, frame)
+            ret = avcodec_send_frame(self.video_ctx, frame)
         if ret!=0:
             self.log_av_error(image, ret, options)
             raise Exception(av_error_str(ret))
@@ -692,20 +1174,18 @@ cdef class Encoder(object):
         avpkt.data = <uint8_t *> xmemalign(buf_len)
         avpkt.size = buf_len
         assert ret==0
-        bufs = []
         client_options = {}
         while ret==0:
             with nogil:
-                ret = avcodec_receive_packet(self.codec_ctx, &avpkt)
-            if ret==EAGAIN:
-                client_options["delayed"] = 1
-                log("ffmpeg EAGAIN: delayed picture")
+                ret = avcodec_receive_packet(self.video_ctx, &avpkt)
+            if ret==-errno.EAGAIN:
+                log("ffmpeg avcodec_receive_packet EAGAIN")
                 break
-            if ret!=0 and bufs:
-                log("avcodec_receive_packet returned error '%s' for image %s, returning existing buffer", av_error_str(ret), image)
-                break
-            if ret!=0 and not image:
-                log("avcodec_receive_packet returned error '%s' for flush request", av_error_str(ret))
+            if ret!=0:
+                if not image:
+                    log("avcodec_receive_packet returned error '%s' for flush request", av_error_str(ret))
+                else:
+                    log("avcodec_receive_packet returned error '%s' for image %s, returning existing buffer", av_error_str(ret), image)
                 break
             if ret<0:
                 free(avpkt.data)
@@ -720,15 +1200,39 @@ cdef class Encoder(object):
                 free(avpkt.data)
                 self.log_error(image, "packet", options, "av packet is corrupt")
                 raise Exception("av packet is corrupt")
-            packet_data = avpkt.data[:avpkt.size]
-            bufs.append(packet_data)
+
+            avpkt.stream_index = self.video_stream.index
+            r = av_write_frame(self.muxer_ctx, &avpkt)
+            log("av_write_frame packet returned %i", r)
+            if ret<0:
+                free(avpkt.data)
+                self.log_av_error(image, ret, options)
+                raise Exception(av_error_str(ret))
+            while True:
+                r = av_write_frame(self.muxer_ctx, NULL)
+                log("av_write_frame flush returned %i", r)
+                if r==1:
+                    break
+                if ret<0:
+                    free(avpkt.data)
+                    self.log_av_error(image, ret, options)
+                    raise Exception(av_error_str(ret))
         av_packet_unref(&avpkt)
         free(avpkt.data)
+        if self.frames==0 and self.profile:
+            client_options["profile"] = self.profile
+            client_options["level"] = "3.0"
+        client_options["frame"] = int(self.frames)
+        if self.frames==0:
+            log("%s client options for first frame: %s", self.encoding, client_options)
         self.frames += 1
-        data = b"".join(bufs)
-        log("compress_image(%s) %5i bytes (%i buffers) for %4s frame %-3i, client options: %s", image, len(data), len(bufs), self.encoding, self.frames, client_options)
-        if data and self.file:
-            self.file.write(data)
+        data = b"".join(self.buffers)
+        log("compress_image(%s) %5i bytes (%i buffers) for %4s frame %-3i, client options: %s", image, len(data), len(self.buffers), self.encoding, self.frames, client_options)
+        if self.buffers and self.file:
+            for x in self.buffers:
+                self.file.write(x)
+            self.file.flush()
+        self.buffers = []
         return data, client_options
 
     def flush(self, delayed):
@@ -736,6 +1240,13 @@ cdef class Encoder(object):
         #ffmpeg context cannot be re-used after a flush..
         self.clean()
         return v
+
+    def write_packet(self, unsigned long buf, int buf_size):
+        log("write_packet(%#x, %#x)", <unsigned long> buf, buf_size)
+        cdef uint8_t *cbuf = <uint8_t*> buf
+        buffer = cbuf[:buf_size]
+        self.buffers.append(buffer)
+        return buf_size
 
 
 def selftest(full=False):
@@ -746,4 +1257,5 @@ def selftest(full=False):
         suspend_nonfatal_logging()
         CODECS = testencoder(encoder, full)
     finally:
+        pass
         resume_nonfatal_logging()

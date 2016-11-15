@@ -200,6 +200,9 @@
 				  	<input type="checkbox" id="sharing"> <span>Share session</span>
 				  </li>
 				  <li class="list-group-item">
+				  	<input type="checkbox" id="mediasource_video"> <span>Native video (experimental)</span>
+				  </li>
+				  <li class="list-group-item">
 				  	<input type="checkbox" id="normal_fullscreen"> <span>Normal fullscreen windows</span>
 				  </li>
 				  <li class="list-group-item">
@@ -304,7 +307,7 @@ function doConnect() {
 		url = url + "&start="+encodeData(start);
 	}
 
-	var bool_props = ["sound", "exit_with_children", "exit_with_client", "sharing", "normal_fullscreen", "debug", "insecure"];
+	var bool_props = ["sound", "exit_with_children", "exit_with_client", "sharing", "mediasource_video", "normal_fullscreen", "debug", "insecure"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
 		if(document.getElementById(prop).checked) {
@@ -429,7 +432,7 @@ $(document).ready(function() {
 	var sound = getboolparam("sound");
 	$('input#sound').prop("checked", sound && codecs_supported.length>0);
 
-	var bool_props = ["exit_with_children", "exit_with_client", "sharing", "normal_fullscreen", "debug", "insecure"];
+	var bool_props = ["exit_with_children", "exit_with_client", "sharing", "mediasource_video", "normal_fullscreen", "debug", "insecure"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
 		document.getElementById(prop).checked = getparam(prop);

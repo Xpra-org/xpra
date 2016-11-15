@@ -10,6 +10,8 @@
 'use strict';
 
 var Utilities = {
+	VERSION	: "1.0",
+
 	getHexUUID: function() {
 		var s = [];
 		var hexDigits = "0123456789abcdef";

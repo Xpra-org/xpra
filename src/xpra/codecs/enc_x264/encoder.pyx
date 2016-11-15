@@ -465,6 +465,7 @@ cdef class Encoder:
     cdef int speed
     cdef int b_frames
     cdef int delayed_frames
+    cdef int export_nals
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
     cdef object last_frame_times
@@ -496,6 +497,7 @@ cdef class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
         self.profile = self._get_profile(options, self.src_format)
+        self.export_nals = typedict(options).intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
             self.profile = None
@@ -768,10 +770,14 @@ cdef class Encoder:
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
         log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i", self.src_format, self.frames, slice_type, i_nals, self.tune, frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
         bnals = []
+        nal_indexes = []
+        cdef unsigned int index = 0
         for i in range(i_nals):
             out = <char *>nals[i].p_payload
             cdata = out[:nals[i].i_payload]
             bnals.append(cdata)
+            index += nals[i].i_payload
+            nal_indexes.append(index)
             if LOG_NALS:
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
                          i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <unsigned long> nals[i].p_payload, nals[i].i_payload)
@@ -789,6 +795,8 @@ cdef class Encoder:
                 "type"      : slice_type}
         if self.delayed_frames>0:
             client_options["delayed"] = self.delayed_frames
+        if self.export_nals:
+            client_options["nals"] = nal_indexes
         #accounting:
         end = time.time()
         self.time += end-start

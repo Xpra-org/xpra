@@ -53,6 +53,21 @@ var MediaSourceConstants = {
 			"mp3", "flac", "wav", "wave",
 		],
 
+		H264_PROFILE_CODE : {
+				//"baseline"	: "42E0",
+				"baseline"	: "42C0",
+				"main"		: "4D40",
+				"high"		: "6400",
+				"extended"	: "58A0",
+		},
+
+		H264_LEVEL_CODE : {
+				"3.0"		: "1E",
+				"3.1"		: "1F",
+				"4.1"		: "29",
+				"5.1"		: "33",
+		},
+
 		READY_STATE : {
 			0	: "NOTHING",
 			1	: "METADATA",

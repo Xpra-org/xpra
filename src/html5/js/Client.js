@@ -8,11 +8,13 @@
  *
  * requires:
  *	Protocol.js
- *  Window.js
- *  Keycodes.js
+ *	Window.js
+ *	Keycodes.js
  */
 
-XPRA_CLIENT_FORCE_NO_WORKER = false;
+"use strict";
+
+var XPRA_CLIENT_FORCE_NO_WORKER = false;
 
 function XpraClient(container) {
 	// state
@@ -25,7 +27,7 @@ function XpraClient(container) {
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
-	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//, "h264"];
+	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"vp8+webm", "h264+mp4", "mpeg4+mp4", "h264"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
 	this.start_new_session = null;
@@ -519,10 +521,10 @@ XpraClient.prototype._get_screen_sizes = function() {
 XpraClient.prototype._get_encodings = function() {
 	if(this.enabled_encodings.length == 0) {
 		// return all supported encodings
-		console.log("return all encodings");
+		console.log("return all encodings: ", this.supported_encodings);
 		return this.supported_encodings;
 	} else {
-		console.log("return just enabled encoding");
+		console.log("return just enabled encodings: ", this.enabled_encodings);
 		return this.enabled_encodings;
 	}
 }
@@ -603,14 +605,14 @@ XpraClient.prototype._make_hello_base = function() {
 	this.capabilities = {};
 	this._update_capabilities({
 		// version and platform
-		"version"					: "1.0",
+		"version"					: Utilities.VERSION,
 		"platform"					: Utilities.getPlatformName(),
 		"platform.name"				: Utilities.getPlatformName(),
 		"platform.processor"		: Utilities.getPlatformProcessor(),
 		"platform.platform"			: navigator.appVersion,
 		"namespace"			 		: true,
 		"share"						: this.sharing,
-		"client_type"		   		: "HTML5",
+		"client_type"				: "HTML5",
 		"encoding.generic" 			: true,
 		"username" 					: this.username,
 		"uuid"						: Utilities.getHexUUID(),
@@ -663,29 +665,30 @@ XpraClient.prototype._make_hello = function() {
 		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
 		"encoding.icons.max_size"	: [30, 30],
-		//rgb24 is not efficient in HTML so don't use it:
-		//png and jpeg will need extra code
-		//"encodings.core"			: ["rgb24", "rgb32", "png", "jpeg"],
 		"encodings.core"			: this.supported_encodings,
 		"encodings.rgb_formats"	 	: this.RGB_FORMATS,
 		"encodings.window-icon"		: ["png"],
 		"encodings.cursor"			: ["png"],
-		"encoding.generic"	  		: true,
+		"encoding.generic"			: true,
 		"encoding.transparency"		: true,
 		"encoding.client_options"	: true,
 		"encoding.csc_atoms"		: true,
 		"encoding.scrolling"		: true,
-		//video stuff we may handle later:
-		"encoding.video_reinit"		: false,
+		//video stuff:
 		"encoding.video_scaling"	: false,
 		"encoding.full_csc_modes"	: {
-			"h264" 		: ["YUV420P"],
-			//"mpeg4+mp4"	: ["YUV420P"],
-			//"h264+mp4"	: ["YUV420P"],
-			//"vp8+webm"	: ["YUV420P"],
+			//"h264" 		: ["YUV420P"],
+			"mpeg4+mp4"	: ["YUV420P"],
+			"h264+mp4"	: ["YUV420P"],
+			"vp8+webm"	: ["YUV420P"],
 		},
-		//"encoding.h264+mp4.YUV420P.profile" : "main",
-		//"encoding.h264+mp4.YUV420P.level" 	: "3.0",
+		//"encoding.x264.YUV420P.profile"		: "baseline",
+		//"encoding.h264.YUV420P.profile"		: "baseline",
+		//"encoding.h264.YUV420P.level"		: "2.1",
+		//"encoding.h264.cabac"				: false,
+		//"encoding.h264.deblocking-filter"	: false,
+		"encoding.h264+mp4.YUV420P.profile"	: "main",
+		"encoding.h264+mp4.YUV420P.level"	: "3.0",
 		"sound.receive"				: true,
 		"sound.send"				: false,
 		"sound.decoders"			: Object.keys(this.audio_codecs),
@@ -712,7 +715,6 @@ XpraClient.prototype._make_hello = function() {
 		"system_tray"				: true,
 		//we cannot handle this (GTK only):
 		"named_cursors"				: false,
-		"argv"						: [window.location.href],
 		// printing
 		"file-transfer" 			: true,
 		"printing" 					: true,
@@ -1064,7 +1066,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					for (var index in keys) {
 						var key=keys[index];
 						if (key=="Num_Lock") {
-							this.num_lock_mod = modifier;
+							ctx.num_lock_mod = modifier;
 						}
 					}
 				}
@@ -1372,25 +1374,29 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 	var win = ctx.id_to_window[wid];
 	var decode_time = -1;
 	if (win) {
-		// win.paint draws the update to the window's off-screen buffer and returns true if it
-		// was changed.
 		win.paint(x, y,
 			width, height,
 			coding, data, packet_sequence, rowstride, options,
 			function (ctx) {
+				var flush = options["flush"] || 0;
+				if(flush==0) {
+					// request that drawing to screen takes place at next available opportunity if possible
+					if(requestAnimationFrame) {
+						requestAnimationFrame(function() {
+							win.draw();
+						});
+					} else {
+						// requestAnimationFrame is not available, draw immediately
+						win.draw();
+					}
+				}
 				decode_time = new Date().getTime() - start;
+				if(ctx.debug) {
+					console.debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
+				}
 				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
 			}
 		);
-		// request that drawing to screen takes place at next available opportunity if possible
-		if(requestAnimationFrame) {
-			requestAnimationFrame(function() {
-				win.draw();
-			});
-		} else {
-			// requestAnimationFrame is not available, draw immediately
-			win.draw();
-		}
 	}
 }
 
@@ -1513,8 +1519,8 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 			console.log("got some data to print");
 			var b64data = btoa(uintToString(data));
 			window.open(
-			  'data:application/pdf;base64,'+b64data,
-			  '_blank'
+					'data:application/pdf;base64,'+b64data,
+					'_blank'
 			);
 		}
 	}
