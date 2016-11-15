@@ -394,7 +394,7 @@ $(document).ready(function() {
 				//we already have native MediaSource support!
 				continue;
 			}
-			codecs_supported["aurora:"+codec_option] = "legacy: "+aurora_codecs[codec_option];
+			codecs_supported["aurora:"+codec_option] = "legacy: "+MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
 		}
 	}
 	var best_codec = audio_codec;

@@ -76,7 +76,7 @@ var MediaSourceConstants = {
 		},
 
 		AURORA_CODECS : {
-			"wave"	: "wave",
+			"wav"	: "lpcm",
 			"mp3"	: "mp3",
 			"flac"	: "flac",
 		}
@@ -102,7 +102,7 @@ var MediaSourceUtil = {
 			if(AV && AV.Decoder && AV.Decoder.find) {
 				for (var codec_option in MediaSourceConstants.AURORA_CODECS) {
 					var codec_string = MediaSourceConstants.AURORA_CODECS[codec_option];
-					var decoder = AV.Decoder.find(codec_option);
+					var decoder = AV.Decoder.find(codec_string);
 					if(decoder) {
 						console.log("audio codec aurora OK  '"+codec_option+"' / '"+codec_string+"'");
 						codecs_supported[codec_option] = codec_string;
