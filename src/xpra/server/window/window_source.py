@@ -215,7 +215,7 @@ class WindowSource(object):
         self._rgb_auto_threshold = MAX_PIXELS_PREFER_RGB
 
         self.init_encoders()
-        self.update_encoding_selection(encoding, init=True)
+        self.update_encoding_selection(encoding, [], init=True)
         log("initial encoding for %s: %s", self.wid, self.encoding)
 
     def __repr__(self):
@@ -639,7 +639,7 @@ class WindowSource(object):
             #remove rgb formats with alpha
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
         self.rgb_formats = rgb_formats
-        self.update_encoding_selection(self.encoding)
+        self.update_encoding_selection(self.encoding, [])
 
     def set_auto_refresh_delay(self, d):
         self.auto_refresh_delay = d
