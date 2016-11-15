@@ -224,6 +224,23 @@ class VideoSubregion(object):
         self.fps = 0
         self.damaged = 0
 
+    def excluded_rectangles(self, rect, ww, wh):
+        rects = [rect]
+        if self.exclusion_zones:
+            for e in self.exclusion_zones:
+                new_rects = []
+                for r in rects:
+                    ex, ey, ew, eh = e.get_geometry()
+                    if ex<0 or ey<0:
+                        #negative values are relative to the width / height of the window:
+                        if ex<0:
+                            ex = max(0, ww-ew)
+                        if ey<0:
+                            ey = max(0, wh-eh)
+                    new_rects += r.substract(ex, ey, ew, eh)
+                rects = new_rects
+        return rects
+
     def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0):
         if not self.enabled or not self.supported:
             self.novideoregion("disabled")
@@ -280,21 +297,7 @@ class VideoSubregion(object):
         #count how many times we see each area, each width/height and where,
         #after removing any exclusion zones:
         for _,x,y,w,h in lde:
-            r = rectangle(x,y,w,h)
-            rects = [r]
-            if self.exclusion_zones:
-                for e in self.exclusion_zones:
-                    new_rects = []
-                    for r in rects:
-                        ex, ey, ew, eh = e.get_geometry()
-                        if ex<0 or ey<0:
-                            #negative values are relative to the width / height of the window:
-                            if ex<0:
-                                ex = max(0, ww-ew)
-                            if ey<0:
-                                ey = max(0, wh-eh)
-                        new_rects += r.substract(ex, ey, ew, eh)
-                    rects = new_rects
+            rects = self.excluded_rectangles(rectangle(x,y,w,h), ww, wh)
             for r in rects:
                 dec.setdefault(r, MutableInteger()).increase()
                 if w>=MIN_W:
@@ -374,6 +377,18 @@ class VideoSubregion(object):
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
         def setnewregion(rect, msg="", *args):
+            rects = self.excluded_rectangles(rect, ww, wh)
+            if len(rects)==0:
+                self.novideoregion("no match after removing excluded regions")
+                return
+            if len(rects)==1:
+                rect = rects[0]
+            else:
+                #use the biggest one of what remains:
+                def get_rect_size(rect):
+                    return -rect.width * rect.height
+                biggest_rects = sorted(rects, key=get_rect_size)
+                rect = biggest_rects[0]
             if not self.rectangle or self.rectangle!=rect:
                 sslog("setting new region %s: "+msg, rect, *args)
                 self.set_at = damage_events_count
@@ -433,7 +448,7 @@ class VideoSubregion(object):
             for x,regions in d.items():
                 if len(regions)>=2:
                     #merge regions of width w at x
-                    min_count = max(2, len(regions)/25)
+                    min_count = max(2, len(regions)//25)
                     keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
                     sslog("vertical regions of width %i at %i with at least %i hits: %s", w, x, min_count, keep)
                     if keep:
@@ -443,7 +458,7 @@ class VideoSubregion(object):
             for y,regions in d.items():
                 if len(regions)>=2:
                     #merge regions of height h at y
-                    min_count = max(2, len(regions)/25)
+                    min_count = max(2, len(regions)//25)
                     keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
                     sslog("horizontal regions of height %i at %i with at least %i hits: %s", h, y, min_count, keep)
                     if keep:
