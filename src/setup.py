@@ -1660,6 +1660,10 @@ if WIN32:
             add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
                          ["avcodec", "avutil"])
+        if "avformat" in pkgs_options[0]:
+            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
+                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
+                         ["avformat", "avutil"])
         elif "swscale" in pkgs_options[0]:
             add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
@@ -2411,7 +2415,7 @@ if vpx_ENABLED:
 
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 if enc_ffmpeg_ENABLED:
-    ffmpeg_pkgconfig = pkgconfig("libavcodec")
+    ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
                 ["xpra/codecs/enc_ffmpeg/encoder.pyx"]+membuffers_c,
                 **ffmpeg_pkgconfig))
