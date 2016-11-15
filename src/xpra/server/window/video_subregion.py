@@ -389,6 +389,9 @@ class VideoSubregion(object):
                     return -rect.width * rect.height
                 biggest_rects = sorted(rects, key=get_rect_size)
                 rect = biggest_rects[0]
+                if rect.width<MIN_W or rect.height<MIN_H:
+                    self.novideoregion("match is too small after removing excluded regions")
+                    return
             if not self.rectangle or self.rectangle!=rect:
                 sslog("setting new region %s: "+msg, rect, *args)
                 self.set_at = damage_events_count
