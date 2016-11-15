@@ -3106,7 +3106,7 @@ Resampler.prototype.initialize = function () {
         this.tailExists = false;
         this.lastWeight = 0;
       }
-      
+
       var outputBufferSize = (Math.ceil(this.inputBufferLength * this.toSampleRate / this.fromSampleRate / this.channels * 1.01) * this.channels) + this.channels;
       this.outputBuffer = new Float32Array(outputBufferSize);
       this.lastOutput = new Float32Array(this.channels);
@@ -3149,7 +3149,7 @@ Resampler.prototype.compileLinearInterpolationFunction = function () {
       toCompile += "this.lastWeight = weight % 1;\
     }\
     return this.outputBuffer;";
-    
+
   this.resampler = Function("buffer", toCompile);
 };
 
@@ -3215,7 +3215,7 @@ Resampler.prototype.compileMultiTapFunction = function () {
       } while (actualPosition < bufferLength);\
     }\
     return this.outputBuffer;";
-  
+
   this.resampler = Function("buffer", toCompile);
 };
 
