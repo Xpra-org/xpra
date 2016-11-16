@@ -338,7 +338,13 @@ class SoundPipeline(gobject.GObject):
             self.gstlogwarn("pipeline warning: %s", w[0].message)
             for x in w[1:]:
                 for l in x.split(":"):
-                    self.gstlogwarn("                  %s", l)
+                    if l:
+                        if l.startswith("\n"):
+                            l = l.strip("\n")+" "
+                            for lp in l.split(". "):
+                                self.gstlogwarn(" %s", lp.strip())
+                        else:
+                            self.gstlogwarn("                  %s", l.strip("\n\r"))
         else:
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()

@@ -154,10 +154,10 @@ class AvahiPublisher:
             self.stop()
         elif state == avahi.SERVER_RUNNING:
             self.add_service()
-            return True
-        return False
 
     def add_service(self):
+        if not self.group:
+            return
         try:
             args = (self.interface, avahi.PROTO_UNSPEC, dbus.UInt32(0),
                          self.name, self.stype, self.domain, self.host,
@@ -171,16 +171,16 @@ class AvahiPublisher:
             #use try+except as older versions may not have those modules?
             message = e.get_dbus_message()
             dbus_error_name = e.get_dbus_name()
+            log.error("Error starting publisher %s", self.get_info())
             if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
-                log.error("error starting publisher %s: another instance already claims this dbus name: %s, message: %s", self, e, message)
+                log.error(" another instance already claims this dbus name")
+                log.error(" %s", e)
+                log.error(" %s", message)
                 return
-            log.warn("Warning: failed to start Avahi publisher for %s", self.get_info())
             for l in str(e).splitlines():
                 for x in l.split(":", 1):
                     if x:
-                        log.warn(" %s", x)
-            return False
-        return True
+                        log.error(" %s", x)
 
     def stop(self):
         group = self.group
@@ -192,6 +192,7 @@ class AvahiPublisher:
             except Exception as e:
                 log.error("Error stopping avahi publisher %s:", self)
                 log.error(" %s", e)
+        self.server = None
 
 
 def main():
