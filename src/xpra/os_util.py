@@ -179,19 +179,25 @@ def get_user_uuid():
     return u.hexdigest()
 
 
-def is_Ubuntu():
+def is_Debian_Variant(variant=b"Debian"):
     if os.name!="posix":
         return False
     try:
-        if get_linux_distribution()[0]=="Ubuntu":
+        if get_linux_distribution()[0]==variant:
             return True
     except:
         pass
     try:
         v = load_binary_file("/etc/issue")
-        return v.find(b"Ubuntu")>=0
+        return v.find(variant)>=0
     except:
         return False
+
+def is_Ubuntu():
+    return is_Debian_Variant(b"Ubuntu")
+
+def is_Debian():
+    return is_Debian_Variant(b"Debian")
 
 def is_Fedora():
     if os.name!="posix":
