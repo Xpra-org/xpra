@@ -180,6 +180,7 @@ def sanity_checks():
 
 class Compressed(object):
     def __init__(self, datatype, data, can_inline=False):
+        assert data is not None, "compressed data cannot be set to None"
         self.datatype = datatype
         self.data = data
         self.can_inline = can_inline

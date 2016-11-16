@@ -1400,6 +1400,7 @@ class ServerBase(ServerCore):
             capabilities["clipboard"] = clipboard
             clipboardlog("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s", self._clipboard_helper, self._clipboard_client, server_source, clipboard)
             capabilities["remote-logging"] = self.remote_logging
+            capabilities["remote-logging.multi-line"] = True
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases
         if server_cipher:
@@ -1414,7 +1415,9 @@ class ServerBase(ServerCore):
             return
         level, msg = packet[1:3]
         prefix = "client %i: " % ss.counter
-        for x in msg.splitlines():
+        if not isinstance(msg, (tuple, list)):
+            msg = msg.splitlines()
+        for x in msg:
             clientlog.log(level, prefix+x)
 
     def _process_printers(self, proto, packet):

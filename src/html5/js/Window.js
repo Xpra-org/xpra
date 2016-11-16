@@ -26,6 +26,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.debug = false;
 	// there might be more than one client
 	this.client = client;
+	this.log = function() { client.log.apply(client, arguments); };
+	this.warn = function() { client.warn.apply(client, arguments); };
+	this.error = function() { client.error.apply(client, arguments); };
 	//keep reference both the internal canvas and screen drawn canvas:
 	this.canvas = canvas_state;
 	this.canvas_ctx = this.canvas.getContext('2d');
@@ -374,7 +377,6 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
  * Apply new metadata settings.
  */
 XpraWindow.prototype.set_metadata = function(metadata) {
-	"use strict";
 	if ("fullscreen" in metadata) {
 		this.set_fullscreen(metadata["fullscreen"]==1);
 	}
@@ -441,7 +443,6 @@ XpraWindow.prototype.set_maximized = function(maximized) {
  * Toggle maximized state
  */
 XpraWindow.prototype.toggle_maximized = function() {
-	"use strict";
 	//show("set_maximized("+maximized+")");
 	if (this.maximized==true) {
 		this.set_maximized(false);
@@ -606,8 +607,9 @@ XpraWindow.prototype.get_internal_geometry = function() {
  * then we fire "mouse_click_cb" (if it is set).
  */
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
-	if (this.debug)
-		console.log("got mouse click at ", mx, my)
+	if (this.debug) {
+		console.debug("got mouse click at ", mx, my)
+	}
 	// mouse click event is from canvas just for this window so no need to check
 	// internal geometry anymore
 	this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
@@ -679,7 +681,7 @@ XpraWindow.prototype._init_broadway = function(width, height) {
 		"rgb": 	true,
 		"size": { "width" : width, "height" : height },
 	});
-	console.log("broadway decoder initialized: "+this.broadway_decoder);
+	this.log("broadway decoder initialized");
 	this.broadway_paint_location = [0, 0];
 	this.broadway_decoder.onPictureDecoded = function(buffer, width, height, infos) {
 		if(this.debug) {
@@ -702,7 +704,7 @@ XpraWindow.prototype._close_broadway = function() {
 
 
 XpraWindow.prototype._close_video = function() {
-	console.log("close_video: video_source_buffer="+this.video_source_buffer+", media_source="+this.media_source+", video="+this.video);
+	this.log("close_video: video_source_buffer="+this.video_source_buffer+", media_source="+this.media_source+", video="+this.video);
 	this.video_source_ready = false;
 	if(this.video) {
 		if(this.media_source) {
@@ -712,7 +714,7 @@ XpraWindow.prototype._close_video = function() {
 				}
 				this.media_source.endOfStream();
 			} catch(e) {
-				console.warn("video media source EOS error: "+e);
+				this.warn("video media source EOS error: "+e);
 			}
 			this.video_source_buffer = null;
 			this.media_source = null;
@@ -763,6 +765,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.video.setAttribute('muted', true);
 	this.video.setAttribute('width', width);
 	this.video.setAttribute('height', height);
+	this.video.style.pointerEvents = "all";
 	this.video.style.position = "absolute";
 	this.video.style.zIndex = "1";
 	this.video.style.left  = ""+this.leftoffset+"px";
@@ -771,7 +774,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		MediaSourceUtil.addMediaElementEventDebugListeners(this.video, "video");
 		this.video.setAttribute('controls', "controls");
 	}
-	this.video.addEventListener('error', 			function() { console.error("video error"); });
+	this.video.addEventListener('error', 			function() { me.error("video error"); });
 	this.video.src = window.URL.createObjectURL(this.media_source);
 	//this.video.src = "https://html5-demos.appspot.com/static/test.webm"
 	this.video_buffers = []
@@ -792,16 +795,16 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	else {
 		throw Exception("invalid encoding: "+coding);
 	}
-	console.log("video codec string: "+codec_string+" for "+coding+" profile '"+profile+"', level '"+level+"'");
+	this.log("video codec string: "+codec_string+" for "+coding+" profile '"+profile+"', level '"+level+"'");
 	this.media_source.addEventListener('sourceopen', function() {
-		console.log("video media source open");
+		me.log("video media source open");
 		var vsb = me.media_source.addSourceBuffer(codec_string);
 	    vsb.mode = "sequence";
 		me.video_source_buffer = vsb;
 		if(this.debug) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
 		}
-		vsb.addEventListener('error', 			function(e) { console.error("video source buffer error"); });
+		vsb.addEventListener('error', 			function(e) { me.error("video source buffer error"); });
 		vsb.addEventListener('waiting', function() {
 			me._push_video_buffers();
 		});
@@ -833,8 +836,9 @@ XpraWindow.prototype._non_video_paint = function(coding) {
  * The image is painted into off-screen canvas.
  */
 XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
- 	if (this.debug)
- 		console.log("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
+ 	if (this.debug) {
+ 		console.debug("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
+ 	}
 	var me = this;
 
 	if(this.offscreen_canvas_mode!='2d') {
@@ -879,10 +883,11 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		}
 		// set the imagedata rgb32 method
 		if(img_data.length > img.data.length) {
-			console.error("data size mismatch: wanted",img.data.length,", got",img_data.length, ", stride",rowstride);
+			this.error("data size mismatch: wanted",img.data.length,", got",img_data.length, ", stride",rowstride);
 		} else {
-			if (this.debug)
-				console.log("got ",img_data.length,"to paint with stride",rowstride);
+			if (this.debug) {
+				console.debug("got ",img_data.length,"to paint with stride",rowstride);
+			}
 		}
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);

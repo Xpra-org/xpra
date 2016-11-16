@@ -119,11 +119,11 @@ var MediaSourceUtil = {
 					var codec_string = MediaSourceConstants.AURORA_CODECS[codec_option];
 					var decoder = AV.Decoder.find(codec_string);
 					if(decoder) {
-						console.log("audio codec aurora OK  '"+codec_option+"' / '"+codec_string+"'");
+						Utilities.log("audio codec aurora OK  '"+codec_option+"' / '"+codec_string+"'");
 						codecs_supported[codec_option] = codec_string;
 					}
 					else {
-						console.log("audio codec aurora NOK '"+codec_option+"' / '"+codec_string+"'");
+						Utilities.log("audio codec aurora NOK '"+codec_option+"' / '"+codec_string+"'");
 					}
 				}
 			}
@@ -133,7 +133,7 @@ var MediaSourceUtil = {
 		getMediaSourceAudioCodecs : function() {
 			var media_source_class = MediaSourceUtil.MediaSourceClass();
 			if(!media_source_class) {
-				console.error("audio forwarding failure: no media source API support");
+				Utilities.error("audio forwarding failure: no media source API support");
 				return [];
 			}
 			var codecs_supported = [];
@@ -141,7 +141,7 @@ var MediaSourceUtil = {
 				var codec_string = MediaSourceConstants.CODEC_STRING[codec_option];
 				try {
 					if(!media_source_class.isTypeSupported(codec_string)) {
-						console.log("audio codec MediaSource NOK: '"+codec_option+"' / '"+codec_string+"'");
+						Utilities.log("audio codec MediaSource NOK: '"+codec_option+"' / '"+codec_string+"'");
 						//add whitelisting here?
 						continue;
 					}
@@ -153,14 +153,14 @@ var MediaSourceUtil = {
 						blacklist = ["aac+mpeg4"];
 					}
 					if(blacklist.indexOf(codec_option)>=0) {
-						console.log("audio codec MediaSource '"+codec_option+"' / '"+codec_string+"' is blacklisted for "+navigator.userAgent);
+						Utilities.log("audio codec MediaSource '"+codec_option+"' / '"+codec_string+"' is blacklisted for "+navigator.userAgent);
 						continue;
 					}
 					codecs_supported[codec_option] = codec_string;
-					console.log("audio codec MediaSource OK  '"+codec_option+"' / '"+codec_string+"'");
+					Utilities.log("audio codec MediaSource OK  '"+codec_option+"' / '"+codec_string+"'");
 				}
 				catch (e) {
-					console.error("audio error probing codec '"+codec_string+"' / '"+codec_string+"': "+e);
+					Utilities.error("audio error probing codec '"+codec_string+"' / '"+codec_string+"': "+e);
 				}
 			}
 			return codecs_supported;

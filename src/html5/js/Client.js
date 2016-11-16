@@ -24,9 +24,13 @@ function XpraClient(container) {
 	this.ssl = null;
 	this.debug = false;
 	this.sharing = false;
+	this.remote_logging = true;
+	this.server_remote_logging = false;
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
+	//for broadway:
+	//this.supported_encodings = ["jpeg", "png", "rgb", "rgb32", "h264"];
 	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"vp8+webm", "h264+mp4", "mpeg4+mp4", "h264"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
@@ -37,7 +41,7 @@ function XpraClient(container) {
 	this.audio_enabled = false;
 	this.audio_mediasource_enabled = MediaSourceUtil.MediaSourceClass!=null;
 	this.audio_aurora_enabled = AV!=null && AV.Decoder!=null && AV.Player.fromXpraSource!=null;
-	this.audio_codecs = [];
+	this.audio_codecs = {};
 	this.audio_framework = null;
 	this.audio_aurora_ctx = null;
 	this.audio_codec = null;
@@ -83,6 +87,39 @@ function XpraClient(container) {
 }
 
 
+XpraClient.prototype.send_log = function(level, args) {
+	if(this.remote_logging && this.server_remote_logging) {
+		try {
+			var sargs = [];
+			for(var i = 0; i < args.length; i++) {
+				sargs.push(String(args[i]));
+			}
+			this.protocol.send(["logging", level, sargs]);
+		} catch (e) {
+			console.error("remote logging failed: "+e);
+			for(var i = 0; i < args.length; i++) {
+				console.log(" argument", i, typeof args[i], ":", "'"+args[i]+"'");
+			}
+		}
+	}
+}
+XpraClient.prototype.error = function() {
+	//logging.ERROR = 40
+	this.send_log(40, arguments);
+	console.error.apply(console, arguments);
+}
+XpraClient.prototype.warn = function() {
+	//logging.WARN = 30
+	this.send_log(30, arguments);
+	console.log.apply(console, arguments);
+}
+XpraClient.prototype.log = function() {
+	//logging.INFO = 20
+	this.send_log(20, arguments);
+	console.log.apply(console, arguments);
+}
+
+
 XpraClient.prototype.init = function() {
 	this.init_audio();
 	this.init_packet_handlers();
@@ -91,7 +128,9 @@ XpraClient.prototype.init = function() {
 }
 
 XpraClient.prototype.init_audio = function() {
-	console.log("init_audio() enabled="+this.audio_enabled+", mediasource enabled="+this.audio_mediasource_enabled+", aurora enabled="+this.audio_aurora_enabled);
+	if(this.debug) {
+		console.debug("init_audio() enabled="+this.audio_enabled+", mediasource enabled="+this.audio_mediasource_enabled+", aurora enabled="+this.audio_aurora_enabled);
+	}
 	if(!this.audio_enabled) {
 		return;
 	}
@@ -113,36 +152,35 @@ XpraClient.prototype.init_audio = function() {
 			this.audio_codecs[codec_option] = aurora_codecs[codec_option];
 		}
 	}
-	if(this.audio_codecs) {
-		if(!(this.audio_codec in this.audio_codecs)) {
-			if(this.audio_codec) {
-				console.warn("invalid audio codec: "+this.audio_codec);
-			}
-			this.audio_codec = MediaSourceUtil.getDefaultAudioCodec(this.audio_codecs);
-			if(this.audio_codec) {
-				if(this.audio_codec in mediasource_codecs) {
-					this.audio_framework = "mediasource";
-				}
-				else {
-					this.audio_framework = "aurora";
-				}
-				console.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
+	if(!this.audio_codecs) {
+		this.audio_codec = null;
+		this.audio_enabled = false;
+		this.warn("no valid audio codecs found");
+		return;
+	}
+	if(!(this.audio_codec in this.audio_codecs)) {
+		if(this.audio_codec) {
+			this.warn("invalid audio codec: "+this.audio_codec);
+		}
+		this.audio_codec = MediaSourceUtil.getDefaultAudioCodec(this.audio_codecs);
+		if(this.audio_codec) {
+			if(this.audio_codec in mediasource_codecs) {
+				this.audio_framework = "mediasource";
 			}
 			else {
-				console.warn("no valid audio codec found");
-				this.audio_enabled = false;
+				this.audio_framework = "aurora";
 			}
+			this.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
 		}
 		else {
-			console.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
+			this.warn("no valid audio codec found");
+			this.audio_enabled = false;
 		}
 	}
 	else {
-		this.audio_codec = null;
-		this.audio_enabled = false;
-		console.warn("no valid audio codecs found");
+		this.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
 	}
-	console.log("audio codecs: "+Object.keys(this.audio_codecs));
+	this.log("audio codecs: ", Object.keys(this.audio_codecs));
 }
 
 XpraClient.prototype.init_clipboard = function() {
@@ -597,6 +635,16 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 		}
 	}
 	console.log("hello capabilities: "+this.capabilities);
+	// verify:
+	for (var key in this.capabilities) {
+	    var value = this.capabilities[key];
+	    if(key==null) {
+	    	throw "invalid null key in hello packet data";
+	    }
+	    else if(value==null) {
+	    	throw "invalid null value for key "+key+" in hello packet data";
+	    }
+	}
 	// send the packet
 	this.protocol.send(["hello", this.capabilities]);
 }
@@ -773,7 +821,7 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 	if (wid in this.id_to_window)
 		throw "we already have a window " + wid;
 	if (w<=0 || h<=0) {
-		console.error("window dimensions are wrong: "+w+"x"+h);
+		this.error("window dimensions are wrong: "+w+"x"+h);
 		w, h = 1, 1;
 	}
 	var client_properties = {}
@@ -851,13 +899,13 @@ XpraClient.prototype._sound_start_receiving = function() {
 		}
 	}
 	catch(e) {
-		console.error('error starting audio player:', e);
+		this.error('error starting audio player: '+e);
 	}
 }
 
 
 XpraClient.prototype._send_sound_start = function() {
-	console.log("audio: requesting "+this.audio_codec+" stream from the server");
+	this.log("audio: requesting "+this.audio_codec+" stream from the server");
 	this.protocol.send(["sound-control", "start", this.audio_codec]);
 }
 
@@ -872,13 +920,13 @@ XpraClient.prototype._sound_start_mediasource = function() {
 
 	function audio_error(event) {
 		if(me.audio) {
-			console.error(event+" error: "+me.audio.error);
+			me.error(event+" error: "+me.audio.error);
 			if(me.audio.error) {
-				console.error(MediaSourceConstants.ERROR_CODE[me.audio.error.code]);
+				me.error(MediaSourceConstants.ERROR_CODE[me.audio.error.code]);
 			}
 		}
 		else {
-			console.error(event+" error");
+			me.error(event+" error");
 		}
 		me._close_audio();
 	}
@@ -907,26 +955,26 @@ XpraClient.prototype._sound_start_mediasource = function() {
 	this.audio_source_ready = false;
 	console.log("audio waiting for source open event on "+this.media_source);
 	this.media_source.addEventListener('sourceopen', function() {
-		console.log("audio media source open");
+		me.log("audio media source open");
 		if (me.audio_source_ready) {
-			console.warn("ignoring: source already open");
+			me.warn("ignoring: source already open");
 			return;
 		}
 		//ie: codec_string = "audio/mp3";
 		var codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
 		if(codec_string==null) {
-			console.error("invalid codec '"+me.audio_codec+"'");
+			me.error("invalid codec '"+me.audio_codec+"'");
 			me._close_audio();
 			return;
 		}
-		console.log("using audio codec string for "+me.audio_codec+": "+codec_string);
+		me.log("using audio codec string for "+me.audio_codec+": "+codec_string);
 
 		//Create a SourceBuffer:
 		var asb = null;
 		try {
 			asb = me.media_source.addSourceBuffer(codec_string);
 		} catch (e) {
-			console.error("audio setup error for '"+codec_string+"':", e);
+			me.error("audio setup error for '"+codec_string+"':", e);
 			me._close_audio();
 			return;
 		}
@@ -959,7 +1007,7 @@ XpraClient.prototype._close_audio_aurora = function() {
 }
 
 XpraClient.prototype._close_audio_mediasource = function() {
-	console.log("close_audio: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
+	this.log("close_audio: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
 	this.audio_source_ready = false;
 	if(this.audio) {
 		this.protocol.send(["sound-control", "stop"]);
@@ -973,7 +1021,7 @@ XpraClient.prototype._close_audio_mediasource = function() {
 					this.media_source.endOfStream();
 				}
 			} catch(e) {
-				console.warn("audio media source EOS error:", e);
+				me.warn("audio media source EOS error:", e);
 			}
 			this.media_source = null;
 		}
@@ -1034,7 +1082,7 @@ XpraClient.prototype._process_disconnect = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {
-	console.log("startup complete");
+	ctx.log("startup complete");
 }
 
 XpraClient.prototype._process_hello = function(packet, ctx) {
@@ -1045,6 +1093,14 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.hello_timer = null;
 	}
 	var hello = packet[1];
+	ctx.server_remote_logging = hello["remote-logging.multi-line"];
+	if(ctx.server_remote_logging && ctx.remote_logging) {
+		//hook remote logging:
+		Utilities.log = function() { ctx.log.apply(ctx, arguments); };
+		Utilities.warn = function() { ctx.warn.apply(ctx, arguments); };
+		Utilities.error = function() { ctx.error.apply(ctx, arguments); };
+	}
+	
 	// check for server encryption caps update
 	if(ctx.encryption) {
 		ctx.cipher_out_caps = {
@@ -1092,7 +1148,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.close();
 		return;
 	}
-	console.log("got hello: server version "+version+" accepted our connection");
+	ctx.log("got hello: server version "+version+" accepted our connection");
 	//figure out "alt" and "meta" keys:
 	if ("modifier_keycodes" in hello) {
 		var modifier_keycodes = hello["modifier_keycodes"];
@@ -1116,7 +1172,39 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	//show("alt="+alt_modifier+", meta="+meta_modifier);
 	// stuff that must be done after hello
 	if(ctx.audio_enabled) {
-		ctx._sound_start_receiving();
+		if(!(hello["sound.send"])) {
+			ctx.error("server does not support speaker forwarding");
+			ctx.audio_enabled = false;
+		}
+		else {
+			ctx.server_audio_codecs = hello["sound.decoders"];
+			if(!ctx.server_audio_codecs) {
+				ctx.error("audio codecs missing on the server");
+				ctx.audio_enabled = false;
+			}
+			else {
+				ctx.log("audio codecs supported by the server:", ctx.server_audio_codecs);
+				if(ctx.server_audio_codecs.indexOf(ctx.audio_codec)<0) {
+					ctx.warn("audio codec "+ctx.audio_codec+" is not supported by the server");
+					ctx.audio_codec = null;
+					//find the best one we can use:
+					for(var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
+						var codec = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
+						if ((codec in ctx.audio_codecs) && (ctx.server_audio_codecs.indexOf(codec)>=0)){
+							ctx.audio_codec = codec;
+							break;
+						}
+					}
+					if(!ctx.audio_codec) {
+						ctx.warn("audio codec: no matches found");
+						ctx.audio_enabled = false;
+					}
+				}
+			}
+			if (ctx.audio_enabled) {
+				ctx._sound_start_receiving();
+			}
+		}
 	}
 	if (hello["printing"]!=0) {
 		// send our printer definition
@@ -1332,7 +1420,7 @@ XpraClient.prototype._process_cursor = function(packet, ctx) {
 	//we require a png encoded cursor packet:
 	var encoding = packet[1];
 	if (encoding!="png") {
-		console.log("invalid cursor encoding: "+encoding);
+		ctx.warn("invalid cursor encoding: "+encoding);
 		return;
 	}
 	var w = packet[4];
@@ -1350,7 +1438,9 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 	var h = packet[3];
 	var encoding = packet[4];
 	var img_data = packet[5];
-	console.log("window-icon: "+encoding+" size "+w+"x"+h);
+	if(ctx.debug) {
+		console.debug("window-icon: "+encoding+" size "+w+"x"+h);
+	}
 	var win = ctx.id_to_window[wid];
 	if (win) {
 		win.update_icon(w, h, encoding, img_data);
@@ -1402,7 +1492,7 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 
 XpraClient.prototype._process_sound_data = function(packet, ctx) {
 	if(packet[1]!=ctx.audio_codec) {
-		console.error("invalid audio codec '"+packet[1]+"' (expected "+ctx.audio_codec+"), stopping audio stream");
+		ctx.error("invalid audio codec '"+packet[1]+"' (expected "+ctx.audio_codec+"), stopping audio stream");
 		ctx._close_audio();
 		return;
 	}
@@ -1415,19 +1505,19 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		}
 	}
 	catch(e) {
-		console.error('error processing audio data:', e);
+		ctx.error('error processing audio data:', e);
 		ctx._close_audio();
 	}
 }
 
 XpraClient.prototype._process_sound_data_aurora = function(packet) {
 	if(packet[3]["start-of-stream"] == 1) {
-		console.log("audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
+		this.log("audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
 		return;
 	}
 	var buf = packet[2];
 	if(this.debug) {
-		console.debug("audio aurora context: adding "+buf.length+" bytes of "+this.audio_codec+" data");
+		this.debug("audio aurora context: adding "+buf.length+" bytes of "+this.audio_codec+" data");
 	}
 	this.audio_aurora_ctx.asset.source._on_data(buf);
 }
@@ -1437,18 +1527,18 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 		return;
 	}
 	if(packet[3]["start-of-stream"] == 1) {
-		console.log("audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
+		this.log("audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
 		this.audio.play();
 		return;
 	}
 	try {
 		if (this.debug) {
-			console.debug("sound-data: "+packet[1]+", "+packet[2].length+" bytes, state="+MediaSourceConstants.READY_STATE[this.audio.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
-			console.debug("audio paused="+this.audio.paused+", queue size="+this.audio_buffers.length+", source ready="+this.audio_source_ready+", source buffer updating="+this.audio_source_buffer.updating);
+			this.debug("sound-data: "+packet[1]+", "+packet[2].length+" bytes, state="+MediaSourceConstants.READY_STATE[this.audio.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
+			this.debug("audio paused="+this.audio.paused+", queue size="+this.audio_buffers.length+", source ready="+this.audio_source_ready+", source buffer updating="+this.audio_source_buffer.updating);
 		}
 		var MAX_BUFFERS = 250;
 		if(this.audio_buffers.length>=MAX_BUFFERS) {
-			console.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
+			this.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
 			this._close_audio();
 			return;
 		}
@@ -1468,7 +1558,7 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 		}
 	}
 	catch(e) {
-		console.error("audio failed:", e);
+		this.error("audio failed:", e);
 		this._close_audio();
 	}
 }
@@ -1484,7 +1574,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
-	console.warn("server set clipboard state to "+packet[1]+" reason was: "+packet[2]);
+	this.log("server set clipboard state to "+packet[1]+" reason was: "+packet[2]);
 }
 
 XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
@@ -1508,15 +1598,15 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 	var data = packet[6];
 
 	if(mimetype != "application/pdf") {
-		console.warn("Received unsupported print data: "+mimetype);
+		this.warn("Received unsupported print data: "+mimetype);
 	} else if (!printit) {
-		console.warn("Received non printed file data");
+		this.warn("Received non printed file data");
 	} else {
 		// check the data size for file
 		if(data.length != datasize) {
-			console.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
+			this.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
 		} else {
-			console.log("got some data to print");
+			this.log("got some data to print");
 			var b64data = btoa(uintToString(data));
 			window.open(
 					'data:application/pdf;base64,'+b64data,

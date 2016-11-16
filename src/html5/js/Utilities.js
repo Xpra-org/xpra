@@ -12,6 +12,16 @@
 var Utilities = {
 	VERSION	: "1.0",
 
+	error : function() {
+		console.error.apply(console, arguments);
+	},
+	warn : function() {
+		console.log.apply(console, arguments);
+	},
+	log : function() {
+		console.log.apply(console, arguments);
+	},
+
 	getHexUUID: function() {
 		var s = [];
 		var hexDigits = "0123456789abcdef";

@@ -116,18 +116,19 @@
 				var start = getparam("start");
 				var exit_with_children = getparam("exit_with_children") || "";
 				var exit_with_client = getparam("exit_with_client") || "";
-				var sharing = getparam("sharing") || "";
-				var mediasource_video = getboolparam("mediasource_video");
-				var normal_fullscreen = getparam("normal_fullscreen") || null;
-				var debug = getboolparam("debug");
-				var insecure = getboolparam("insecure");
+				var sharing = getboolparam("sharing", false);
+				var mediasource_video = getboolparam("mediasource_video", false);
+				var normal_fullscreen = getboolparam("normal_fullscreen", false);
+				var remote_logging = getboolparam("remote_logging", true);
+				var debug = getboolparam("debug", false);
+				var insecure = getboolparam("insecure", false);
 
 				// create the client
 				var client = new XpraClient('screen');
 				client.debug = debug;
-				if(sharing) {
-					client.sharing = true;
-				}
+				client.remote_logging = remote_logging;
+				client.sharing = sharing;
+		    	client.insecure = insecure;
 
 			    // mediasource video
 			    if(mediasource_video) {
@@ -173,11 +174,6 @@
 			    	client.audio_aurora_enabled = getboolparam("aurora", true);
 			    }
 
-			    // insecure passwords
-			    if(insecure) {
-			    	client.insecure = true;
-			    }
-			    
 			    if(keyboard_layout) {
 			    	client.keyboard_layout = keyboard_layout;
 			    }
@@ -221,6 +217,7 @@
 				    				"normal_fullscreen"	: normal_fullscreen,
 				    				"mediasource_video"	: mediasource_video,
 				    				"debug"				: debug,
+				    				"remote_logging"	: remote_logging,
 				    				"insecure"			: insecure,
 				    				}
 				    		for (var name in props) {

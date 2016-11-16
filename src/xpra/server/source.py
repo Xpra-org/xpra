@@ -1097,7 +1097,12 @@ class ServerSource(FileTransferHandler):
         soundlog("sound_control(%s, %s)", action, args)
         if action=="stop":
             if len(args)>0:
-                sequence = int(args[0])
+                try:
+                    sequence = int(args[0])
+                except ValueError:
+                    msg = "sound sequence number '%s' is invalid" % args[0]
+                    log.warn(msg)
+                    return msg
                 if sequence!=self.sound_source_sequence:
                     log.warn("sound sequence mismatch: %i vs %i", sequence, self.sound_source_sequence)
                     return "not stopped"

@@ -278,6 +278,8 @@ class SoundPipeline(gobject.GObject):
             self.pipeline.set_state(gst.STATE_NULL)
             err, details = message.parse_error()
             gstlog.error("pipeline error: %s", err)
+            if self.pipeline_str:
+                gstlog.error(" %s", self.pipeline_str)
             try:
                 #prettify (especially on win32):
                 p = details.find("\\Source\\")
@@ -285,7 +287,8 @@ class SoundPipeline(gobject.GObject):
                     details = details[p+len("\\Source\\"):]
                 for d in details.split(": "):
                     for dl in d.splitlines():
-                        gstlog.error(" %s", dl.strip())
+                        if dl.strip():
+                            gstlog.error(" %s", dl.strip())
             except:
                 gstlog.error(" %s", details)
             self.update_state("error")
