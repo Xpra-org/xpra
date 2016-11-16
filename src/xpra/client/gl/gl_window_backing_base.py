@@ -432,13 +432,21 @@ class GLWindowBackingBase(GTKWindowBacking):
             if self.textures is None:
                 self.gl_init_textures()
 
+            def clear_fbo():
+                try:
+                    glClear(GL_COLOR_BUFFER_BIT)
+                except Exception as e:
+                    log("glClear error", exc_info=True)
+                    log.warn("Warning: failed to clear FBO")
+                    log.warn(" %r", e)
+
             # Define empty tmp FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
             set_texture_level()
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
-            glClear(GL_COLOR_BUFFER_BIT)
+            clear_fbo()
 
             # Define empty FBO texture and set rendering to FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
@@ -447,7 +455,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
-            glClear(GL_COLOR_BUFFER_BIT)
+            clear_fbo()
 
             # Create and assign fragment programs
             if not self.shaders:
