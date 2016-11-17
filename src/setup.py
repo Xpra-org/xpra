@@ -31,32 +31,50 @@ print(" ".join(sys.argv))
 # build options, these may get modified further down..
 #
 import xpra
-setup_options = {}
-setup_options["name"] = "xpra"
-setup_options["author"] = "Antoine Martin"
-setup_options["author_email"] = "antoine@devloop.org.uk"
-setup_options["version"] = xpra.__version__
-setup_options["url"] = "http://xpra.org/"
-setup_options["download_url"] = "http://xpra.org/src/"
-setup_options["description"] = "Xpra: multi-platform screen and application forwarding system"
-
-xpra_desc = "Xpra is a multi platform persistent remote display server and client for " + \
-            "forwarding applications and desktop screens. Also known as 'screen for X11'."
-setup_options["long_description"] = xpra_desc
 data_files = []
-setup_options["data_files"] = data_files
 modules = []
-setup_options["py_modules"] = modules
 packages = []       #used by py2app and py2exe
 excludes = []       #only used by py2exe on win32
 ext_modules = []
 cmdclass = {}
 scripts = []
+description = "multi-platform screen and application forwarding system"
+long_description = "Xpra is a multi platform persistent remote display server and client for " + \
+            "forwarding applications and desktop screens. Also known as 'screen for X11'."
+url = "http://xpra.org/"
 
+setup_options = {
+                 "name"             : "xpra",
+                 "version"          : xpra.__version__,
+                 "license"          : "GPLv2+",
+                 "author"           : "Antoine Martin",
+                 "author_email"     : "antoine@devloop.org.uk",
+                 "url"              : url,
+                 "download_url"     : "http://xpra.org/src/",
+                 "description"      : description,
+                 "long_description" : long_description,
+                 "data_files"       : data_files,
+                 "py_modules"       : modules,
+                 }
 
 WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
 OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0] == 3
+
+
+if "pkg-info" in sys.argv:
+    with open("PKG-INFO", "wb") as f:
+        pkg_info_values = setup_options.copy()
+        pkg_info_values.update({
+                                "metadata_version"  : "1.1",
+                                "summary"           :  description,
+                                "home_page"         : url,
+                                })
+        for k in ("Metadata-Version", "Name", "Version", "Summary", "Home-page",
+                  "Author", "Author-email", "License", "Download-URL", "Description"):
+            v = pkg_info_values[k.lower().replace("-", "_")]
+            f.write(b"%s: %s\n" % (k, v))
+    sys.exit(0)
 
 
 from xpra import __version__
