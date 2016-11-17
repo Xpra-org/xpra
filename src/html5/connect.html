@@ -53,6 +53,10 @@
 			<label class="sr-only" for="password">Password</label>
 			<input title="Password" type="password" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
 			<br>
+			<div class="password-warning-box">
+			  	<input type="checkbox" id="insecure"> <span>Insecure plain-text passwords</span>
+			</div>
+
 			<div class="panel-group">
 			  <ul class="list-style-none action">
 				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect</li>
@@ -208,9 +212,6 @@
 				  <li class="list-group-item">
 				  	<input type="checkbox" id="debug"> <span>Debugging</span>
 				  </li>
-				  <li class="list-group-item">
-				  	<input type="checkbox" id="insecure"> <span>Insecure passwords - Dangerous!</span>
-				  </li>
 				</ul>
 			  </div>
 			</div>
@@ -319,6 +320,7 @@ function doConnect() {
 
 $(document).ready(function() {
 
+	var ssl = document.location.protocol=="https:";
 	var disconnect_reason = window.location.getParameter("disconnect") || null;
 
 	if(disconnect_reason) {
@@ -334,6 +336,16 @@ $(document).ready(function() {
 	document.getElementById("port").value = link.port;
 	var username = window.location.getParameter("username") || "";
 	document.getElementById("username").value = username;
+	if(ssl) {
+	   	$('div.password-warning-box').hide();
+	}
+	else {
+	   	$('input#password').prop("disabled", true);
+		var insecure_input = document.getElementById("insecure");
+		insecure_input.onchange = function() {
+   			$('input#password').prop("disabled", !insecure_input.checked);
+		};
+	}
 
 	var action = getparam("action") || "";
 	if(action=="shadow") {
@@ -364,7 +376,7 @@ $(document).ready(function() {
 		set_exit_actions(action=="connect");
 	}
 	$(document).on('click', '[name="action"]', on_action_change);
-	$('input:radio[value='+action+']').click();
+	$('input:radio[value="'+action+'"]').click();
 
 	var encoding = getparam("encoding") || "jpeg";
 	document.getElementById('encoding').value = encoding;
