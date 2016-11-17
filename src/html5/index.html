@@ -117,6 +117,7 @@
 				var exit_with_children = getparam("exit_with_children") || "";
 				var exit_with_client = getparam("exit_with_client") || "";
 				var sharing = getboolparam("sharing", false);
+				var video = getboolparam("video", false);
 				var mediasource_video = getboolparam("mediasource_video", false);
 				var normal_fullscreen = getboolparam("normal_fullscreen", false);
 				var remote_logging = getboolparam("remote_logging", true);
@@ -131,8 +132,11 @@
 		    	client.insecure = insecure;
 
 			    // mediasource video
-			    if(mediasource_video) {
-			    	client.supported_encodings.push("vp8+webm", "h264+mp4", "mpeg4+mp4");
+			    if(video) {
+			    	client.supported_encodings.push("h264");
+				    if(mediasource_video) {
+				    	client.supported_encodings.push("vp8+webm", "h264+mp4", "mpeg4+mp4");
+				    }
 			    }
 			    else if(encoding) {
 					// the primary encoding can be set
@@ -215,6 +219,7 @@
 				    				"exit_with_client"	: exit_with_client,
 				    				"sharing"			: sharing,
 				    				"normal_fullscreen"	: normal_fullscreen,
+				    				"video"				: video,
 				    				"mediasource_video"	: mediasource_video,
 				    				"debug"				: debug,
 				    				"remote_logging"	: remote_logging,

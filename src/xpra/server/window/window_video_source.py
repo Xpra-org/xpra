@@ -1090,9 +1090,10 @@ class WindowVideoSource(WindowSource):
                         scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
                         continue
                     scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
+                    client_score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
                     score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
                                                     target_q, min_q, target_s, min_s,
-                                                    self._csc_encoder, self._video_encoder)
+                                                    self._csc_encoder, self._video_encoder, client_score_delta)
                     if score_data:
                         scores.append(score_data)
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:

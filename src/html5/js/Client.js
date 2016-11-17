@@ -29,9 +29,7 @@ function XpraClient(container) {
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
-	//for broadway:
-	//this.supported_encodings = ["jpeg", "png", "rgb", "rgb32", "h264"];
-	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"vp8+webm", "h264+mp4", "mpeg4+mp4", "h264"];
+	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
 	this.enabled_encodings = [];
 	this.normal_fullscreen_mode = false;
 	this.start_new_session = null;
@@ -723,20 +721,26 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.csc_atoms"		: true,
 		"encoding.scrolling"		: true,
 		//video stuff:
-		"encoding.video_scaling"	: false,
+		"encoding.video_scaling"	: true,
 		"encoding.full_csc_modes"	: {
-			//"h264" 		: ["YUV420P"],
+			"h264" 		: ["YUV420P"],
 			"mpeg4+mp4"	: ["YUV420P"],
 			"h264+mp4"	: ["YUV420P"],
 			"vp8+webm"	: ["YUV420P"],
 		},
-		//"encoding.x264.YUV420P.profile"		: "baseline",
-		//"encoding.h264.YUV420P.profile"		: "baseline",
-		//"encoding.h264.YUV420P.level"		: "2.1",
-		//"encoding.h264.cabac"				: false,
-		//"encoding.h264.deblocking-filter"	: false,
+		"encoding.x264.YUV420P.profile"		: "baseline",
+		"encoding.h264.YUV420P.profile"		: "baseline",
+		"encoding.h264.YUV420P.level"		: "2.1",
+		"encoding.h264.cabac"				: false,
+		"encoding.h264.deblocking-filter"	: false,
 		"encoding.h264+mp4.YUV420P.profile"	: "main",
 		"encoding.h264+mp4.YUV420P.level"	: "3.0",
+		//prefer native video in mp4/webm container to broadway plain h264:
+		"encoding.h264.score-delta"			: -20,
+		"encoding.h264+mp4.score-delta"		: 50,
+		"encoding.mpeg4+mp4.score-delta"	: 50,
+		"encoding.vp8+webm.score-delta"		: 50,
+
 		"sound.receive"				: true,
 		"sound.send"				: false,
 		"sound.decoders"			: Object.keys(this.audio_codecs),
