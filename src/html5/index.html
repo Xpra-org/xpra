@@ -17,9 +17,9 @@
 		<link rel="stylesheet" href="css/client.css">
 		<link rel="stylesheet" href="css/spinner.css">
 
-		<script type="text/javascript" src="js/lib/jquery.min.js"></script>
-		<script type="text/javascript" src="js/lib/jqueryui.min.js"></script>
-		<script type="text/javascript" src="js/lib/jquery.throttle-debounce.min.js"></script>
+		<script type="text/javascript" src="js/lib/jquery.js"></script>
+		<script type="text/javascript" src="js/lib/jquery-ui.js"></script>
+		<script type="text/javascript" src="js/lib/jquery.ba-throttle-debounce.js"></script>
 
 		<script type="text/javascript" src="js/lib/bencode.js"></script>
 		<script type="text/javascript" src="js/lib/zlib.js"></script>
@@ -236,7 +236,7 @@
 			    client.init();
 
 			    // and connect
-			    var ssl = document.location.protocol=="https:";
+				var ssl = document.location.protocol=="https:";
 			    client.connect(server, port, ssl);
 
 			    // attach a callback for paste on the screen
