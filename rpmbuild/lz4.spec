@@ -1,15 +1,14 @@
 %global _hardened_build 1
-%global commit d86dc916771c126afb797637dda9f6421c0cb998
 
 Name:           lz4
-Version:        r131
-Release:        2%{?dist}
+Version:        1.7.3
+Release:        1%{?dist}
 Summary:        Extremely fast compression algorithm
 
 Group:          Applications/System
 License:        GPLv2+ and BSD
 URL:            https://code.google.com/p/lz4/
-Source0:        https://github.com/Cyan4973/%{name}/archive/%{commit}/%{name}-%{commit}.tar.gz
+Source0:        https://github.com/%{name}/%{name}/archive/v%{version}.tar.gz
 
 %if 0%{?rhel}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
@@ -42,7 +41,7 @@ LZ4 is an extremely fast loss-less compression algorithm. This package
 contains static libraries for static linking of applications.
 
 %prep
-%setup -q -n %{name}-%{commit}
+%setup -q -n %{name}-%{version}
 echo '#!/bin/sh' > ./configure
 chmod +x ./configure
 
@@ -85,6 +84,10 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
+* Thu Nov 17 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.3-1
+- new upstream release
+- new version naming scheme
+
 * Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> - r131-2
 - use hardened build option
 
