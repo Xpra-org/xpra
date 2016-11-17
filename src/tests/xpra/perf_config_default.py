@@ -5,28 +5,28 @@ import os.path
 HOME = os.path.expanduser("~/")
 
 #the glx tests:
-GLX_SPHERES = ["/usr/bin/glxspheres"]
+GLX_SPHERES = ["/usr/bin/glxspheres64"]
 GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 
 #the plain X11 tests:
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
-FAKE_CONSOLE_USER_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "PYTHONPATH=`pwd` ./tests/xpra/simulate_console_user.py"]
+FAKE_CONSOLE_USER_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "PYTHONPATH=`pwd` ./tests/xpra/test_apps/simulate_console_user.py"]
 
 #the screensaver tests:
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
 
 #games
 NEXUIZ_TEST = ["/usr/bin/nexuiz-glx", "-benchmark", "demos/demo1", "-nosound"]
-XONOTIC_TEST = ["/opt/Xonotic/xonotic-linux64-glx", "-basedir", "/opt/Xonotic", "-benchmark", "demos/the-big-keybench"]
+XONOTIC_TEST = ["/usr/bin/xonotic-glx", "-benchmark", "demos/the-big-keybench"]
 
 VLC_BIN = "/usr/bin/vlc"
 MPLAYER_BIN = "/usr/bin/mplayer"
 GTKPERF_TEST = "bash -c 'while true; do gtkperf -a; done'"
-MPLAYER_SOUND_LOOP_TEST = "while true; do %s ./test.mp3; done" % MPLAYER_BIN
+MPLAYER_SOUND_LOOP_TEST = "%s -loop 0 ./test.mp3" % MPLAYER_BIN
 VLC_SOUND_TEST = (VLC_BIN, "-L", "--audio-visual=visual", "./test.mp3")
 VLC_VIDEO_TEST = (VLC_BIN, "-L", "./test.avi")
-MPLAYER_VIDEO_TEST = "while true; do %s test.avi; done" % MPLAYER_BIN
+MPLAYER_VIDEO_TEST = "%s -loop 0 ./test.avi" % MPLAYER_BIN
 
 #ugly code duplicated from setup.py!
 def get_xorg_bin():
