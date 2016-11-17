@@ -36,6 +36,10 @@ body {
 	padding-top:8px;
 }
 
+.form-signin .password-warning-box {
+	padding-left:10em;
+}
+
 .form-signin .list-group-item {
 	padding: 6px 10px;
 }
