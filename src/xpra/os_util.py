@@ -179,7 +179,7 @@ def get_user_uuid():
     return u.hexdigest()
 
 
-def is_Debian_Variant(variant=b"Debian"):
+def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
     if os.name!="posix":
         return False
     try:
@@ -188,32 +188,23 @@ def is_Debian_Variant(variant=b"Debian"):
     except:
         pass
     try:
-        v = load_binary_file("/etc/issue")
-        return v.find(variant)>=0
+        v = load_binary_file(os_file)
+        return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith("NAME="))
     except:
         return False
 
 def is_Ubuntu():
-    return is_Debian_Variant(b"Ubuntu")
+    return is_distribution_variant(b"Ubuntu")
 
 def is_Debian():
-    return is_Debian_Variant(b"Debian")
+    return is_distribution_variant(b"Debian")
 
 def is_Fedora():
-    if os.name!="posix":
-        return False
-    try:
-        if os.path.exists("/etc/fedora-release"):
-            return True
-        try:
-            if get_linux_distribution()[0]=="Fedora":
-                return True
-        except:
-            pass
-        v = load_binary_file("/etc/issue")
-        return v.find(b"Fedora")>=0
-    except:
-        return False
+    return is_distribution_variant(b"Fedora")
+
+def is_Arch():
+    return is_distribution_variant(b"Arch")
+
 
 _linux_distribution = None
 def get_linux_distribution():
