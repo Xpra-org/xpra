@@ -43,7 +43,7 @@ var Utilities = {
 		}
 		var s = '';
 		while (s.length<l) {
-			s += getHexUUID();
+			s += Utilities.getHexUUID();
 		}
 		return s.slice(0, l);
 	},
