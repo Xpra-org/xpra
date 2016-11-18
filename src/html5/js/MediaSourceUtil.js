@@ -133,7 +133,7 @@ var MediaSourceUtil = {
 		getMediaSourceAudioCodecs : function() {
 			var media_source_class = MediaSourceUtil.MediaSourceClass();
 			if(!media_source_class) {
-				Utilities.error("audio forwarding failure: no media source API support");
+				Utilities.log("audio forwarding: no media source API support");
 				return [];
 			}
 			var codecs_supported = [];

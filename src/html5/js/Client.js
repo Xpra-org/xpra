@@ -914,6 +914,7 @@ XpraClient.prototype._send_sound_start = function() {
 }
 
 XpraClient.prototype._sound_start_aurora = function() {
+	this.audio_buffers_count = 0;
 	this.audio_aurora_ctx = AV.Player.fromXpraSource();
 	this.audio_aurora_ctx.play();
 	this._send_sound_start();
@@ -1008,6 +1009,7 @@ XpraClient.prototype._close_audio_aurora = function() {
 		//this.audio_aurora_ctx.close();
 		this.audio_aurora_ctx = null;
 	}
+	this.audio_buffers_count = 0;
 }
 
 XpraClient.prototype._close_audio_mediasource = function() {
@@ -1521,8 +1523,13 @@ XpraClient.prototype._process_sound_data_aurora = function(packet) {
 	}
 	var buf = packet[2];
 	if(this.debug) {
-		this.debug("audio aurora context: adding "+buf.length+" bytes of "+this.audio_codec+" data");
+		console.debug("audio aurora context: adding "+buf.length+" bytes of "+this.audio_codec+" data");
 	}
+	if(!this.audio_aurora_ctx) {
+		this.warn("audio aurora context is closed already, dropping sound buffer");
+		return;
+	}
+	this.audio_buffers_count += 1;
 	this.audio_aurora_ctx.asset.source._on_data(buf);
 }
 
@@ -1537,8 +1544,8 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 	}
 	try {
 		if (this.debug) {
-			this.debug("sound-data: "+packet[1]+", "+packet[2].length+" bytes, state="+MediaSourceConstants.READY_STATE[this.audio.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
-			this.debug("audio paused="+this.audio.paused+", queue size="+this.audio_buffers.length+", source ready="+this.audio_source_ready+", source buffer updating="+this.audio_source_buffer.updating);
+			console.debug("sound-data: "+packet[1]+", "+packet[2].length+" bytes, state="+MediaSourceConstants.READY_STATE[this.audio.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
+			console.debug("audio paused="+this.audio.paused+", queue size="+this.audio_buffers.length+", source ready="+this.audio_source_ready+", source buffer updating="+this.audio_source_buffer.updating);
 		}
 		var MAX_BUFFERS = 250;
 		if(this.audio_buffers.length>=MAX_BUFFERS) {
@@ -1556,8 +1563,8 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 			if(asb && !asb.updating) {
 				var buffers = ab.splice(0, 200);
 				var buffer = [].concat.apply([], buffers);
-				asb.appendBuffer(new Uint8Array(buffer).buffer);
 				this.audio_buffers_count += 1;
+				asb.appendBuffer(new Uint8Array(buffer).buffer);
 			}
 		}
 	}
