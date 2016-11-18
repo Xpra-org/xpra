@@ -675,26 +675,30 @@ XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
 /**
  * The following function inits the Broadway h264 decoder
  */
-XpraWindow.prototype._init_broadway = function(width, height) {
+XpraWindow.prototype._init_broadway = function(enc_width, enc_height, width, height) {
 	var me = this;
 	this.broadway_decoder = new Decoder({
 		"rgb": 	true,
-		"size": { "width" : width, "height" : height },
+		"size": { "width" : enc_width, "height" : enc_height },
 	});
 	this.log("broadway decoder initialized");
 	this.broadway_paint_location = [0, 0];
-	this.broadway_decoder.onPictureDecoded = function(buffer, width, height, infos) {
+	this.broadway_decoder.onPictureDecoded = function(buffer, p_width, p_height, infos) {
 		if(this.debug) {
-			console.debug("broadway picture decoded: ", buffer.length, "bytes, size ", width, "x", height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
+			console.debug("broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
 		}
 		if(!me.broadway_decoder) {
 			return;
 		}
-		var img = me.offscreen_canvas_ctx.createImageData(width, height);
+		var img = me.offscreen_canvas_ctx.createImageData(p_width, p_height);
 		img.data.set(buffer);
 		var x = me.broadway_paint_location[0];
 		var y = me.broadway_paint_location[1];
 		me.offscreen_canvas_ctx.putImageData(img, x, y);
+		if(enc_width!=width || enc_height!=height) {
+			//scale it:
+			me.offscreen_canvas_ctx.drawImage(me.offscreen_canvas, x, y, p_width, p_height, x, y, width, height);
+		}
 	};
 };
 
@@ -774,7 +778,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		MediaSourceUtil.addMediaElementEventDebugListeners(this.video, "video");
 		this.video.setAttribute('controls', "controls");
 	}
-	this.video.addEventListener('error', 			function() { me.error("video error"); });
+	this.video.addEventListener('error', function() { me.error("video error"); });
 	this.video.src = window.URL.createObjectURL(this.media_source);
 	//this.video.src = "https://html5-demos.appspot.com/static/test.webm"
 	this.video_buffers = []
@@ -804,7 +808,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		if(this.debug) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
 		}
-		vsb.addEventListener('error', 			function(e) { me.error("video source buffer error"); });
+		vsb.addEventListener('error', function(e) { me.error("video source buffer error"); });
 		vsb.addEventListener('waiting', function() {
 			me._push_video_buffers();
 		});
@@ -843,6 +847,13 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 
 	if(this.offscreen_canvas_mode!='2d') {
 		this._init_2d_canvas();
+	}
+	var enc_width = width;
+	var enc_height = height;
+	var scaled_size = options["scaled_size"];
+	if(scaled_size) {
+		enc_width = scaled_size[0];
+		enc_height = scaled_size[1];
 	}
 
 	if (coding=="rgb32") {
@@ -909,7 +920,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			this._close_broadway();
 		}
 		if(!this.broadway_decoder) {
-			this._init_broadway(width, height);
+			this._init_broadway(enc_width, enc_height, width, height);
 		}
 		this.broadway_paint_location = [x, y];
 		// we can pass a buffer full of NALs to decode() directly
