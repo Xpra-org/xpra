@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import struct
 import binascii
 
@@ -93,6 +94,7 @@ def _get_X11_window_property(xid, name, req_type):
             log("_get_X11_window_property(%#x, %s, %s): %s", xid, name, req_type, e)
     except Exception as e:
         log.warn("failed to get X11 window property %s on window %#x: %s", name, xid, e)
+        log("get_X11_window_property%s", (xid, name, req_type), exc_info=True)
     return None
 def _get_X11_root_property(name, req_type):
     try:
@@ -224,6 +226,32 @@ def get_ydpi():
     if dpi>0:
         return dpi
     return _get_randr_dpi()[1]
+
+
+def get_icc_info():
+    try:
+        data = _get_X11_root_property("_ICC_PROFILE", "CARDINAL")
+        if data:
+            screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
+            #repack the data as a binary string of 8-bit data:
+            #(instead of a string made of CARD32 values containing just 8-bit)
+            assert len(data)%4==0, "_ICC_PROFILE CARD32 data length is not a multiple of 4!"
+            card32 = struct.unpack("=%iI" % (len(data)//4), data)
+            bin_data = b"".join(struct.pack("=B", x) for x in card32)
+            version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
+            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", version, binascii.hexlify(bin_data))
+            icc = {
+                    "source"    : "_ICC_PROFILE",
+                    "data"      : bin_data,
+                    }
+            if version:
+                icc["version"] = version
+            return icc
+    except Exception as e:
+        screenlog.error("Error: cannot access _ICC_PROFILE X11 window property")
+        screenlog.error(" %s", e)
+        screenlog("get_icc_info()", exc_info=True)
+    return {}
 
 
 def get_antialias_info():
@@ -630,3 +658,17 @@ class ClientExtras(object):
             self.client.desktops_changed("from %s event" % self._root_props_watcher)
         else:
             log.error("unknown property %s", prop)
+
+
+def main():
+    try:
+        from xpra.x11.gtk2 import gdk_display_source
+        assert gdk_display_source
+    except:
+        pass
+    from xpra.platform.gui import main
+    main()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

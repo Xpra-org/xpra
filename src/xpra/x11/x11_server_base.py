@@ -560,9 +560,9 @@ class X11ServerBase(GTKServerBase):
         import binascii
         screenlog("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], binascii.hexlify(data or ""), len(data or ""))
         from xpra.x11.gtk_x11.prop import prop_set
-        #long byte data as CARDINAL and numbers as strings - wth?
+        #each CARD32 contains just one 8-bit value - don't ask me why
         prop_set(self.root_window, "_ICC_PROFILE", ["u32"], [ord(x) for x in data])
-        prop_set(self.root_window, "_ICC_PROFILE_IN_X_VERSION", "latin1", u"4")  #0.4 -> 0*100+4*1
+        prop_set(self.root_window, "_ICC_PROFILE_IN_X_VERSION", "u32", 0*100+4) #0.4 -> 0*100+4*1
 
     def reset_icc_profile(self):
         screenlog("reset_icc_profile()")

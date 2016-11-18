@@ -301,32 +301,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             return  None
 
 
-    def get_icc_info(self):
-        try:
-            from xpra.x11.gtk_x11.prop import prop_get
-        except ImportError:
-            pass
-        else:
-            root = self.get_root_window()
-            data = prop_get(root, "_ICC_PROFILE", ["u32"], ignore_errors=True)
-            screenlog("_ICC_PROFILE=%s", data)
-            if data:
-                #repack the data as a binary string:
-                #(prop_get gives us an array of Integers..)
-                import struct
-                bin_data = "".join(struct.pack("=I", x) for x in data)
-                import binascii
-                v = prop_get(root, "_ICC_PROFILE_IN_X_VERSION", "latin1", ignore_errors=True)
-                screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", v, binascii.hexlify(bin_data))
-                return {
-                        "source"    : "_ICC_PROFILE",
-                        "data"      : bin_data,
-                        }
-        return UIXpraClient.get_icc_info(self)
-    #def get_display_icc_info(self):
-    #TODO
-
-
     def request_frame_extents(self, window):
         from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
         from xpra.gtk_common.error import xsync
