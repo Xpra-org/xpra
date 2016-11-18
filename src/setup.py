@@ -1678,7 +1678,7 @@ if WIN32:
             add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
                          ["avcodec", "avutil"])
-        if "avformat" in pkgs_options[0]:
+        elif "avformat" in pkgs_options[0]:
             add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
                          [libffmpeg_lib_dir, libffmpeg_bin_dir],
                          ["avformat", "avutil"])
