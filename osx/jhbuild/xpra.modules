@@ -14,7 +14,7 @@
   <repository type="tarball" name="ffmpeg.org" href="http://ffmpeg.org"/>
   <repository type="tarball" name="www.libsdl.org" href="http://www.libsdl.org"/>
   <repository type="tarball" name="gstreamer.freedesktop.org" href="http://gstreamer.freedesktop.org"/>
-  <repository type="tarball" name="ftp.gmplib.org" href="ftp://ftp.gmplib.org"/>
+  <repository type="tarball" name="gmplib.org" href="http://gmplib.org/"/>
   <repository type="tarball" name="www.mpfr.org" href="http://www.mpfr.org"/>
   <repository type="tarball" name="pypi.python.org" href="http://pypi.python.org"/>
   <repository type="tarball" name="pypi.douban.com" href="http://pypi.douban.com/"/>
@@ -322,11 +322,11 @@
   </autotools>
 
   <autotools id="gmplib" autogen-sh="configure">
-	<branch module="/pub/gmp-6.1.0/gmp-6.1.0.tar.xz"
-		version="6.1.0"
-		hash="md5:a9868ef2556ad6a2909babcd1428f3c7"
-		checkoutdir="gmp-6.1.0"
-		repo="ftp.gmplib.org"/>
+	<branch module="/download/gmp/gmp-6.1.1.tar.xz"
+		version="6.1.1"
+		hash="sha256:d36e9c05df488ad630fff17edb50051d6432357f9ce04e34a09b3d818825e831"
+		checkoutdir="gmp-6.1.1"
+		repo="gmplib.org"/>
   </autotools>
 
   <autotools id="mpfr" autogen-sh="configure">
