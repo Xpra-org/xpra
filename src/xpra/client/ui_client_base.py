@@ -2787,6 +2787,7 @@ class UIXpraClient(XpraClientBase):
         if window is None:
             windowlog.warn("no more options.. this window will not be shown, sorry")
             return None
+        windowlog("make_new_window(..) window(%i)=%s", wid, window)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()

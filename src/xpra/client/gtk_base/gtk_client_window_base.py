@@ -1096,7 +1096,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._client_properties = {}
         self._window_state = {}
         workspace = self.get_window_workspace()
-        workspacelog("process_map_event() workspace=%s, been_mapped=%s", workspace, self._been_mapped)
+        workspacelog("process_map_event() wid=%i, workspace=%s, been_mapped=%s", self._id, workspace, self._been_mapped)
         if self._been_mapped:
             screen = self.get_screen().get_number()
             if screen!=self._screen:
