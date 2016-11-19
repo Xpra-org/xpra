@@ -620,6 +620,7 @@ class ApplicationWindow:
             self.set_info_color(True)
 
     def do_connect_builtin(self, display_desc):
+        log("do_connect_builtin(%s)", display_desc)
         self.exit_code = None
         self.current_error = None
         self.set_info_text("Connecting.")
@@ -645,6 +646,11 @@ class ApplicationWindow:
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
         self.client.setup_connection(conn)
+        #we have already initialized it,
+        #but calling client.init will do it again - so we have to clear it:
+        from xpra.codecs.video_helper import getVideoHelper
+        getVideoHelper().cleanup()
+        self.client.init(self.config)
         self.client.init_ui(self.config)
         log("start_XpraClient() client initialized")
 
@@ -864,6 +870,10 @@ def main():
         except Exception:
             exception_dialog("Error parsing command line")
             return 1
+
+        #allow config to be debugged:
+        from xpra.scripts import config
+        config.debug = log.debug
 
         try:
             app = ApplicationWindow()
