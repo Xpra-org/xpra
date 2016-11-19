@@ -766,15 +766,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._set_client_properties(proto, wid, window, packet[6])
         if not self.ui_driver:
             self.ui_driver = ss.uuid
-        elif self.ui_driver!=ss.uuid:
-            return
-        if self._desktop_manager.is_shown(window):
-            return
-        if len(packet)>=8:
-            self._set_window_state(proto, wid, window, packet[7])
-        ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
-        self._desktop_manager.configure_window(window, ax, ay, aw, ah)
-        self._desktop_manager.show_window(window)
+        if self.ui_driver==ss.uuid or not self._desktop_manager.is_shown(window):
+            if len(packet)>=8:
+                self._set_window_state(proto, wid, window, packet[7])
+            ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
+            self._desktop_manager.configure_window(window, ax, ay, aw, ah)
+            self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, w, h)
 
 
@@ -842,39 +839,44 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._set_client_properties(proto, wid, window, cprops)
         if not self.ui_driver:
             self.ui_driver = ss.uuid
-        elif self.ui_driver!=ss.uuid and self._desktop_manager.is_shown(window):
-            return
-        if len(packet)>=13:
-            pwid = packet[10]
-            pointer = packet[11]
-            modifiers = packet[12]
-            #only update modifiers if the window is in focus:
-            if self._has_focus==wid:
-                self._update_modifiers(proto, wid, modifiers)
-            self._process_mouse_common(proto, pwid, pointer)
-        damage = False
-        if window.is_tray():
-            assert self._tray
-            if not skip_geometry:
-                traylog("tray %s configured to: %s", window, (x, y, w, h))
-                self._tray.move_resize(window, x, y, w, h)
+        shown = self._desktop_manager.is_shown(window)
+        if self.ui_driver==ss.uuid or not shown:
+            damage = False
+            if len(packet)>=13:
+                pwid = packet[10]
+                pointer = packet[11]
+                modifiers = packet[12]
+                #only update modifiers if the window is in focus:
+                if self._has_focus==wid:
+                    self._update_modifiers(proto, wid, modifiers)
+                self._process_mouse_common(proto, pwid, pointer)
+            if window.is_tray():
+                assert self._tray
+                if not skip_geometry:
+                    traylog("tray %s configured to: %s", window, (x, y, w, h))
+                    self._tray.move_resize(window, x, y, w, h)
+                    damage = True
+            else:
+                assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
+                self.last_client_configure_event = time.time()
+                if len(packet)>=9:
+                    changes = self._set_window_state(proto, wid, window, packet[8])
+                    damage |= len(changes)>0
+                if not skip_geometry:
+                    resize_counter = 0
+                    if len(packet)>=8:
+                        resize_counter = packet[7]
+                    owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
+                    geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+                    ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
+                    self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
+                    damage |= owx!=ax or owy!=ay or oww!=aw or owh!=ah
+            if not shown:
+                self._desktop_manager.show_window(window)
                 damage = True
+            self.repaint_root_overlay()
         else:
-            assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
-            self.last_client_configure_event = time.time()
-            if len(packet)>=9:
-                changes = self._set_window_state(proto, wid, window, packet[8])
-                damage = len(changes)>0
-            if not skip_geometry:
-                resize_counter = 0
-                if len(packet)>=8:
-                    resize_counter = packet[7]
-                owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
-                geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-                ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
-                self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
-                damage |= owx!=ax or owy!=ay or oww!=aw or owh!=ah
-        self.repaint_root_overlay()
+            damage = True
         if damage:
             self.schedule_configure_damage(wid)
 
