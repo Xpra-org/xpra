@@ -343,11 +343,12 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         returns a dict with values as strings and arrays of strings.
     """
     files = conf_files(conf_dir, xpra_conf_filename)
-    if files:
-        return {}
+    debug("read_xpra_conf(%s,%s) conf files: %s" % (conf_dir, xpra_conf_filename, files))
     d = {}
     for f in files:
-        d.update(read_config(f))
+        cd = read_config(f)
+        debug("config(%s)=%s" % (f, cd))
+        d.update(cd)
     return d
 
 def read_xpra_defaults():
