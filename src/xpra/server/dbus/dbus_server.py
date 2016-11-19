@@ -129,8 +129,8 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='sb')
     def ToggleFeature(self, feature, state):
-        self.log(".StartChild(%s)", command)
-        self.server.do_control_command_start(False, ns(command))
+        self.log(".ToggleFeature(%s, %s)", feature, state)
+        self.server.control_command_toggle_feature(feature, state)
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
