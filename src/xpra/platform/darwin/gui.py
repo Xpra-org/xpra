@@ -146,11 +146,33 @@ def get_workareas():
         return []
     workareas = []
     screens = NSScreen.screens()
+    #use the same code as GTK's "gdk_screen_quartz_calculate_layout",
+    #since that's what we use to send the geometry
+    min_x, min_y, max_x, max_y = 0, 0, 0, 0
+    for screen in screens:
+        rect = screen.frame()
+        min_x = min(min_x, rect.origin.x)
+        min_y = min(min_y, rect.origin.y)
+        max_x = max(max_x, rect.origin.x + rect.size.width)
+        max_y = max(max_y, rect.origin.y + rect.size.height)
+    width = max_x-min_x
+    height = max_y-min_y
+    log("get_workareas() min coords=%i,%i max coords=%i,%i size=%ix%i", min_x, min_y, max_x, max_y, width, height)
     for screen in screens:
         log("get_workareas() testing screen %s", screen)
         log(" frame=%s", screen.frame())
+        try:
+            #10.7 onwards:
+            log(" backingScaleFactor=%s", screen.backingScaleFactor())
+        except:
+            pass
         log(" visibleFrame=%s", screen.visibleFrame())
-        workareas.append(_recttotuple(screen.visibleFrame()))
+        rect = screen.visibleFrame()
+        x = rect.origin.x - min_x
+        y = height - (rect.origin.y + rect.size.height) + min_y
+        w = rect.size.width
+        h = rect.size.height
+        workareas.append((x, y, w, h))
     log("get_workareas()=%s", workareas)
     return workareas
 
