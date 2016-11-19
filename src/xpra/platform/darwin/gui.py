@@ -168,10 +168,10 @@ def get_workareas():
             pass
         log(" visibleFrame=%s", screen.visibleFrame())
         rect = screen.visibleFrame()
-        x = rect.origin.x - min_x
-        y = height - (rect.origin.y + rect.size.height) + min_y
-        w = rect.size.width
-        h = rect.size.height
+        x = int(rect.origin.x - min_x)
+        y = int(height - (rect.origin.y + rect.size.height) + min_y)
+        w = int(rect.size.width)
+        h = int(rect.size.height)
         workareas.append((x, y, w, h))
     log("get_workareas()=%s", workareas)
     return workareas
