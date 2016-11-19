@@ -135,7 +135,9 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 done
 #fix for:
 # dyld: Library not loaded: @executable_path/../Resources/lib/libgstreamer-1.0.0.dylib
-ln -sf . $RSCDIR
+pushd $RSCDIR
+ln -sf . Resources
+popd
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
 cp ./Helpers/Launcher ${MACOS_DIR}
