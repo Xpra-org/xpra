@@ -124,16 +124,21 @@ def setloghandler(lh):
     logging.root.handlers = []
     logging.root.addHandler(lh)
 
-def enable_color(to=sys.stdout, formatter=NOPREFIX_FORMAT):
+def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT):
     if not hasattr(to, "fileno"):
         #on win32 sys.stdout can be a "Blackhole",
         #which does not have a fileno
         return
     from xpra.colorstreamhandler import ColorStreamHandler
-    from logging import Formatter
     csh = ColorStreamHandler(to)
-    csh.setFormatter(Formatter(formatter))
+    csh.setFormatter(logging.Formatter(format_string))
     setloghandler(csh)
+
+def enable_format(format_string):
+    try:
+        logging.root.handlers[0].formatter = logging.Formatter(format_string)
+    except:
+        pass
 
 
 #the order will be preserved with Python 2.7 onwards:
