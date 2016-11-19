@@ -127,6 +127,11 @@ class DBUS_Server(dbus.service.Object):
         self.log(".StartChild(%s)", command)
         self.server.do_control_command_start(False, ns(command))
 
+    @dbus.service.method(INTERFACE, in_signature='sb')
+    def ToggleFeature(self, feature, state):
+        self.log(".StartChild(%s)", command)
+        self.server.do_control_command_start(False, ns(command))
+
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def KeyPress(self, keycode):

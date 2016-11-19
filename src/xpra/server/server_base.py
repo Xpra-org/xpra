@@ -779,6 +779,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
             ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),
             ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
+            ArgsControlCommand("toggle-feature",        "toggle a server feature on or off", min_args=2, validation=[str, parse_boolean_value]),
             #network and transfers:
             ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=3),
             ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3, ),
@@ -1490,6 +1491,17 @@ class ServerBase(ServerCore):
         if not proc:
             raise ControlError("failed to start new child command %s" % str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
+
+    def control_command_toggle_feature(self, feature, state):
+        if feature not in ("bell", "sharing", "randr", "cursors", "notifications", "dbus-proxy", "clipboard"):
+            msg = "invalid feature '%s'" % feature
+            commandlog.warn(msg)
+            return msg
+        cur = getattr(self, feature, None)
+        assert cur is not None, "feature '%s' is set to None!"
+        setattr(self, feature, state)
+        return "%s set to %s" % (feature, state)
+
 
     def _control_get_sources(self, client_uuids_str, attr=None):
         #find the client uuid specified as a string:
