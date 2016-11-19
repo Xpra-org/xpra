@@ -87,7 +87,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def screen_refresh_callback(self, count, rects, info):
         #log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped_at)
-        if not self.mapped_at:
+        if not self.mapped:
             return
         self.refresh_count += 1
         rlist = []
@@ -118,22 +118,19 @@ class ShadowServer(GTKShadowServerBase):
             self.refresh_registered = True
 
     def stop_refresh(self):
-        log("stop_refresh() mapped_at=%s, timer=%s", self.mapped_at, self.timer)
+        log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.timer)
         if self.refresh_registered:
-            self.mapped_at = None
             try:
                 err = CG.CGUnregisterScreenRefreshCallback(self.screen_refresh_callback, None)
                 log("CGUnregisterScreenRefreshCallback(%s)=%s", self.screen_refresh_callback, err)
                 if err:
                     log.warn(" unregistering the existing one returned %s", {0 : "OK"}.get(err, err))
-                else:
-                    self.refresh_registered = False
             except ValueError as e:
                 log.warn("Error unregistering screen refresh callback:")
                 log.warn(" %s", e)
-        else:
-            #may stop the timer fallback:
-            GTKShadowServerBase.stop_refresh(self)
+            self.refresh_registered = False
+        #may stop the timer fallback:
+        GTKShadowServerBase.stop_refresh(self)
 
 
     def do_process_mouse_common(self, proto, wid, pointer):
