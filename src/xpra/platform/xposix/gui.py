@@ -233,16 +233,11 @@ def get_icc_info():
         data = _get_X11_root_property("_ICC_PROFILE", "CARDINAL")
         if data:
             screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
-            #repack the data as a binary string of 8-bit data:
-            #(instead of a string made of CARD32 values containing just 8-bit)
-            assert len(data)%4==0, "_ICC_PROFILE CARD32 data length is not a multiple of 4!"
-            card32 = struct.unpack("=%iI" % (len(data)//4), data)
-            bin_data = b"".join(struct.pack("=B", x) for x in card32)
             version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
-            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", version, binascii.hexlify(bin_data))
+            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", version, binascii.hexlify(data))
             icc = {
                     "source"    : "_ICC_PROFILE",
-                    "data"      : bin_data,
+                    "data"      : data,
                     }
             if version:
                 icc["version"] = version
