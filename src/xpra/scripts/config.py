@@ -311,29 +311,43 @@ def read_config(conf_file):
             d[name] = value
     return  d
 
-def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
+
+def conf_files(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
     """
-        Reads an <xpra_conf_filename> file from the given directory,
-        returns a dict with values as strings and arrays of strings.
+        Returns all the config file paths found in the config directory
+        ie: ["/etc/xpra/conf.d/15_features.conf", ..., "/etc/xpra/xpra.conf"]
     """
-    debug("read_xpra_conf(%s, %s)", conf_dir, xpra_conf_filename)
+    d = []
     cdir = os.path.expanduser(conf_dir)
-    d = {}
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         debug("invalid config directory: %s", cdir)
-        return  d
-    #look for conf.d:
+        return d
+    #look for conf.d subdirectory:
     conf_d_dir = os.path.join(cdir, "conf.d")
     if os.path.exists(conf_d_dir) and os.path.isdir(conf_d_dir):
         for f in os.listdir(conf_d_dir):
             if f.endswith(".conf"):
                 conf_file = os.path.join(conf_d_dir, f)
-                d.update(read_config(conf_file))
+                if os.path.isfile(conf_file):
+                    d.append(conf_file)
     conf_file = os.path.join(cdir, xpra_conf_filename)
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         debug("config file does not exist: %s", conf_file)
-        return  d
-    d.update(read_config(conf_file))
+    else:
+        d.append(conf_file)
+    return d
+
+def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
+    """
+        Reads an <xpra_conf_filename> file from the given directory,
+        returns a dict with values as strings and arrays of strings.
+    """
+    files = conf_files(conf_dir, xpra_conf_filename)
+    if files:
+        return {}
+    d = {}
+    for f in files:
+        d.update(read_config(f))
     return d
 
 def read_xpra_defaults():
@@ -367,7 +381,45 @@ def read_xpra_defaults():
             continue
         defaults.update(read_xpra_conf(ad))
         debug("read_xpra_defaults: updated defaults with %s", ad)
+    may_create_user_config()
     return defaults
+
+def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
+    from xpra.platform.paths import get_user_conf_dirs
+    #save a user config template:
+    udirs = get_user_conf_dirs()
+    if udirs:
+        has_user_conf = None
+        for d in udirs:
+            if conf_files(d):
+                has_user_conf = d
+                break
+        if not has_user_conf:
+            debug("no user configuration file found, trying to create one")
+            for d in udirs:
+                ad = os.path.expanduser(d)
+                conf_file = os.path.join(ad, xpra_conf_filename)
+                try:
+                    if not os.path.exists(d):
+                        os.makedirs(d, int('700', 8))
+                    with open(conf_file, 'wb') as f:
+                        f.write("# xpra user configuration file\n")
+                        f.write("# place your custom settings in this file\n")
+                        f.write("# they will take precedence over the system default ones.\n")
+                        f.write("\n")
+                        f.write("# Examples:\n")
+                        f.write("# speaker=off\n")
+                        f.write("# dpi=144\n")
+                        f.write("\n")
+                        f.write("# For more information on the file format,\n")
+                        f.write("# see the xpra manual at:\n")
+                        f.write("# https://xpra.org/manual.html\n")
+                        f.write("\n")
+                        f.flush()
+                    debug("created default config in "+d)
+                    break
+                except Exception as e:
+                    debug("failed to create default config in '%s': %s" % (conf_file, e))
 
 
 OPTIONS_VALIDATION = {}
