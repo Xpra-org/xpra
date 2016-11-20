@@ -119,6 +119,7 @@ class WindowVideoSource(WindowSource):
         self.encode_from_queue_timer = None
         self.encode_from_queue_due = 0
         self.scroll_data = None
+        self.last_scroll_time = 0
 
     def set_auto_refresh_delay(self, d):
         WindowSource.set_auto_refresh_delay(self, d)
@@ -465,6 +466,7 @@ class WindowVideoSource(WindowSource):
         self.free_encode_queue_images()
         self.video_subregion.cancel_refresh_timer()
         self.scroll_data = None
+        self.last_scroll_time = 0
         WindowSource.cancel_damage(self)
         #we must clean the video encoder to ensure
         #we will resend a key frame because we may be missing a frame
@@ -480,6 +482,7 @@ class WindowVideoSource(WindowSource):
                 #keep the region, but cancel the refresh:
                 self.video_subregion.cancel_refresh_timer()
         self.scroll_data = None
+        self.last_scroll_time = 0
         if self.non_video_encodings:
             #refresh the whole window in one go:
             damage_options["novideo"] = True
@@ -1130,6 +1133,7 @@ class WindowVideoSource(WindowSource):
         q = self._current_quality
         s = self._current_speed
         actual_scaling = self.scaling
+        now = time.time()
         def get_min_required_scaling():
             if width<=max_w and height<=max_h:
                 return (1, 1)       #no problem
@@ -1152,7 +1156,8 @@ class WindowVideoSource(WindowSource):
         elif actual_scaling is None and (width>max_w or height>max_h):
             #most encoders can't deal with that!
             actual_scaling = get_min_required_scaling()
-        elif actual_scaling is None and not self.is_shadow and self.statistics.damage_events_count>50 and (time.time()-self.statistics.last_resized)>0.5:
+        elif actual_scaling is None and not self.is_shadow and self.statistics.damage_events_count>50 \
+             and (now-self.statistics.last_resized>0.5) and (now-self.last_scroll_time)>5:
             #no scaling window attribute defined, so use heuristics to enable:
             if self.matches_video_subregion(width, height):
                 ffps = self.video_subregion.fps
@@ -1162,11 +1167,10 @@ class WindowVideoSource(WindowSource):
                 else:
                     sc = (self.scaling_control+25)
             else:
-                #no the video region, so much less aggressive scaling:
+                #not the video region, so much less aggressive scaling:
                 sc = max(0, (self.scaling_control-50)//2)
                 #calculate full frames per second (measured in pixels vs window size):
                 ffps = 0
-                now = time.time()
                 stime = now-5           #only look at the last 5 seconds max
                 lde = [x for x in list(self.statistics.last_damage_events) if x[0]>stime]
                 if len(lde)>10:
@@ -1409,7 +1413,7 @@ class WindowVideoSource(WindowSource):
 
     def get_video_encoder_options(self, encoding, width, height):
         #tweaks for "real" video:
-        if self.matches_video_subregion(width, height) and self.subregion_is_video():
+        if self.matches_video_subregion(width, height) and self.subregion_is_video() and (time.time()-self.last_scroll_time)>5:
             return {
                        "source"     : "video",
                        #could take av-sync into account here to choose the number of b-frames:
@@ -1418,8 +1422,47 @@ class WindowVideoSource(WindowSource):
         return {}
 
 
+    def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options={}):
+        #overriden so we can invalidate the scroll data:
+        #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
+        packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options)
+        lsd = self.scroll_data
+        if lsd and coding!="scroll":
+            dec, sx, sy, sw, sh, csums = lsd
+            if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
+                #don't scroll low quality content, better to refresh it
+                self.scroll_data = None
+            #if the image contents have actually changed since we collected the checksums
+            #(skip other parts of the same damage event, and refresh via timer):
+            elif dec<self.statistics.damage_events_count:
+                self.scroll_data[0] = self.statistics.damage_events_count
+                #quick check: does the vertical position of the two rectangles intersect at all?
+                if y<sy<(y+h) or y<sy+sh<(y+h):
+                    #quick check: same for horizontal
+                    if x<sx<(x+w) or x<sx+sw<(x+w):
+                        #it definitey intersects
+                        #remove any lines that have been updated
+                        #by zeroing out their checksums
+                        rem = 0
+                        assert len(csums)==sh
+                        for i in range(sh):
+                            if y<sy+i<y+h:
+                                rem += 1
+                                csums[i] = 0
+                        nonzero = len([True for v in csums if v!=0])
+                        scrolllog("removed %i lines checksums from intersection of scroll area %i+%i and draw packet %i+%i, remains %i out of %i", rem, sy, sh, y, h, nonzero, sh)
+                        #if less then half has been invalidated.. drop it
+                        if nonzero<=sh//2:
+                            self.scroll_data = None
+        return packet
+
+
     def encode_scrolling(self, image, distances, old_csums, csums, options):
         tstart = time.time()
+        try:
+            del options["av-sync"]
+        except:
+            pass
         scrolllog("encode_scrolling(%s, {..}, [], [], %s) window-dimensions=%s", image, options, self.window_dimensions)
         x, y, w, h = image.get_geometry()[:4]
         yscroll_values = []
@@ -1458,7 +1501,8 @@ class WindowVideoSource(WindowSource):
                 #things have actually moved
                 #aggregate consecutive lines into rectangles:
                 cl = consecutive_lines(lines)
-                scrolllog(" scroll groups for distance=%i : %s=%s", s, lines, cl)
+                #scrolllog(" scroll groups for distance=%i : %s=%s", s, lines, cl)
+                scrolllog(" scroll groups for distance=%i : %s", s, cl)
                 for start,count in cl:
                     #new rectangle
                     scrolls.append((x, y+start-s, w, count, 0, s))
@@ -1502,6 +1546,7 @@ class WindowVideoSource(WindowSource):
                 self.free_image_wrapper(sub)
             scrolllog("non-scroll encoding took %ims", (time.time()-non_start)*1000)
         assert flush==0
+        self.last_scroll_time = time.time()
         return None
 
     def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
@@ -1536,22 +1581,25 @@ class WindowVideoSource(WindowSource):
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
-        #check for scrolling, unless there's already a b-frame pending, or in strict mode:
-        # or when a true video region exists and detection is turned off
-        if self.supports_scrolling and not self.b_frame_flush_timer and not STRICT_MODE and (self.video_subregion.detection or not self.subregion_is_video()):
+        test_scrolling = self.supports_scrolling and not STRICT_MODE
+        if test_scrolling and self.b_frame_flush_timer:
+            scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
+            test_scrolling = False
+            self.scroll_data = None
+        else:
+            lsd = self.scroll_data
             try:
                 start = time.time()
-                lsd = self.scroll_data
                 pixels = image.get_pixels()
                 stride = image.get_rowstride()
                 width = image.get_width()
                 height = image.get_height()
                 csums = CRC_Image(pixels, width, height, stride)
                 if csums:
-                    self.scroll_data = (width, height, csums)
-                    scrolllog("updated scroll data")
+                    self.scroll_data = [self.statistics.damage_events_count, x, y, width, height, csums]
+                    scrolllog("updated scroll data, previously set: %s", bool(lsd))
                 if lsd and csums:
-                    lw, lh, lcsums = lsd
+                    lw, lh, lcsums = lsd[-3:]
                     if lw!=width or lh!=height:
                         scrolllog("scroll data size mismatch: %ix%i vs %ix%i", lw, lh, width, height)
                     else:
@@ -1743,7 +1791,7 @@ class WindowVideoSource(WindowSource):
             client_options["scaled_size"] = scaled_size
         client_options["flush-encoder"] = True
         videolog("do_flush_video_encoder %s : (%s %s bytes, %s)", flush_data, len(data or ()), type(data), client_options)
-        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options)
+        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options, {})
         self.queue_damage_packet(packet)
         #check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0)>0:

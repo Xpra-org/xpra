@@ -17,6 +17,11 @@ OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX", 0)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 
+SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
+if SAVE_BUFFERS not in ("png", "jpeg"):
+    log.warn("invalid value for XPRA_OPENGL_SAVE_BUFFERS: must be 'png' or 'jpeg'")
+    SAVE_BUFFERS = None
+
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 
 
@@ -439,6 +444,8 @@ class GLWindowBackingBase(GTKWindowBacking):
                     log("glClear error", exc_info=True)
                     log.warn("Warning: failed to clear FBO")
                     log.warn(" %r", e)
+                    if getattr(e, "err", None)==1286:
+                        raise Exception("OpenGL error '%r' likely caused by buggy drivers" % e)
 
             # Define empty tmp FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
@@ -609,6 +616,9 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.do_present_fbo()
 
     def do_present_fbo(self):
+        bw, bh = self.size
+        ww, wh = self.render_size
+
         self.gl_marker("Presenting FBO on screen")
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -623,8 +633,6 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
-        bw, bh = self.size
-        ww, wh = self.render_size
 
         rect_count = len(self.pending_fbo_paint)
         if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
@@ -643,6 +651,33 @@ class GLWindowBackingBase(GTKWindowBacking):
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+
+        if SAVE_BUFFERS:
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
+            glViewport(0, 0, bw, bh)
+            from OpenGL.GL import glGetTexImage
+            size = bw*bh*4
+            import numpy
+            data = numpy.empty(size)
+            img_data = glGetTexImage(GL_TEXTURE_RECTANGLE_ARB, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
+            from PIL import Image, ImageOps
+            img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
+            img = ImageOps.flip(img)
+            kwargs = {}
+            if SAVE_BUFFERS=="jpeg":
+                kwargs = {
+                          "quality"     : 0,
+                          "optimize"    : False,
+                          }
+            t = time.time()
+            tstr = time.strftime("%H-%M-%S", time.localtime(t))
+            filename = "./W%i-FBO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_BUFFERS)
+            log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", bw, bh, size, filename)
+            img.save(filename, SAVE_BUFFERS, **kwargs)
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
 
         #viewport for painting to window:
         glViewport(0, 0, ww, wh)
@@ -854,7 +889,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             fire_paint_callbacks(callbacks)
         except Exception as e:
             log("Error in %s paint of %i bytes, options=%s)", rgb_format, len(img_data), options)
-            fire_paint_callbacks(callbacks, False, "opengl %s paint error: %s" % (rgb_format, e))
+            fire_paint_callbacks(callbacks, False, "OpenGL %s paint error: %s" % (rgb_format, e))
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)
@@ -890,9 +925,9 @@ class GLWindowBackingBase(GTKWindowBacking):
             fire_paint_callbacks(callbacks, True)
             return
         except GLError as e:
-            message = "gl_paint_planar error: %r" % e
+            message = "OpenGL %s paint error: %r" % (encoding, e)
         except Exception as e:
-            message = "gl_paint_planar error: %s" % e
+            message = "OpenGL %s paint error: %s" % (encoding, e)
         log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
 

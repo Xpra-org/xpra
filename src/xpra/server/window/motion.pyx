@@ -87,7 +87,7 @@ def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
     cdef size_t asize = l*(sizeof(int64_t))
     cdef int64_t *a1 = NULL
     cdef int64_t *a2 = NULL
-    cdef int64_t a1v = 0
+    cdef int64_t a2v = 0
     cdef int32_t *distances = NULL
     #print("calculate_distances(%s, %s, %i, %i)" % (array1, array2, elen, min_score))
     try:
@@ -102,18 +102,20 @@ def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
         assert distances!=NULL
         with nogil:
             memset(<void*> distances, 0, 2*l*sizeof(int32_t))
-            for y1 in range(l):
-                miny = max(0, y1-max_distance)
-                maxy = min(l, y1+max_distance)
-                a1v = a1[y1]
-                for y2 in range(miny, maxy):
-                    if a1v==a2[y2]:
+            for y2 in range(l):
+                miny = max(0, y2-max_distance)
+                maxy = min(l, y2+max_distance)
+                a2v = a2[y2]
+                if a2v==0:
+                    continue
+                for y1 in range(miny, maxy):
+                    if a1[y1]==a2v:
                         #distance = y1-y2
                         distances[l+y1-y2] += 1
         r = {}
         for i in range(2*l):
             d = distances[i]
-            if min_score<=0 or abs(d)>=min_score:
+            if abs(d)>=min_score:
                 r[i-l] = d
         return r
     finally:

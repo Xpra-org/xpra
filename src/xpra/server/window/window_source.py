@@ -1633,10 +1633,12 @@ class WindowSource(object):
         self.damage(0, 0, w, h, options=new_options)
 
     def get_refresh_options(self):
-        return {"optimize"      : False,
+        return {
+                "optimize"      : False,
                 "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
                 "quality"       : AUTO_REFRESH_QUALITY,
-                "speed"         : AUTO_REFRESH_SPEED}
+                "speed"         : AUTO_REFRESH_SPEED,
+                }
 
     def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0):
         """
