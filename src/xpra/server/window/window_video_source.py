@@ -13,7 +13,7 @@ from math import sqrt
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
-from xpra.server.window.region import merge_all            #@UnresolvedImport
+from xpra.server.window.region import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import match_distance, consecutive_lines, calculate_distances, CRC_Image #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
@@ -1428,38 +1428,35 @@ class WindowVideoSource(WindowSource):
         return {}
 
 
-    def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options={}):
+    def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options={}, options={}):
         #overriden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options)
         lsd = self.scroll_data
-        if lsd and coding!="scroll":
-            dec, sx, sy, sw, sh, csums = lsd
+        if lsd and not options.get("scroll"):
+            rect, csums = lsd
             if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
                 #don't scroll low quality content, better to refresh it
+                scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)", coding, client_options.get("scaled_size"), client_options.get("quality", 100))
                 self.scroll_data = None
-            #if the image contents have actually changed since we collected the checksums
-            #(skip other parts of the same damage event, and refresh via timer):
-            elif dec<self.statistics.damage_events_count:
-                self.scroll_data[0] = self.statistics.damage_events_count
-                #quick check: does the vertical position of the two rectangles intersect at all?
-                if y<sy<(y+h) or y<sy+sh<(y+h):
-                    #quick check: same for horizontal
-                    if x<sx<(x+w) or x<sx+sw<(x+w):
-                        #it definitey intersects
-                        #remove any lines that have been updated
-                        #by zeroing out their checksums
-                        rem = 0
-                        assert len(csums)==sh
-                        for i in range(sh):
-                            if y<sy+i<y+h:
-                                rem += 1
-                                csums[i] = 0
-                        nonzero = len([True for v in csums if v!=0])
-                        scrolllog("removed %i lines checksums from intersection of scroll area %i+%i and draw packet %i+%i, remains %i out of %i", rem, sy, sh, y, h, nonzero, sh)
-                        #if less then half has been invalidated.. drop it
-                        if nonzero<=sh//2:
-                            self.scroll_data = None
+            else:
+                #do they intersect?
+                inter = rect.intersection(x, y, w, h)
+                if inter:
+                    #remove any lines that have been updated
+                    #by zeroing out their checksums:
+                    assert len(csums)==rect.height
+                    assert inter.y>=rect.y and inter.y+inter.height<=rect.y+rect.height
+                    #the array indexes are relative to rect.y:
+                    start_y = inter.y-rect.y
+                    for iy in range(start_y, start_y+inter.height):
+                        csums[iy] = 0
+                    nonzero = len([True for v in csums if v!=0])
+                    scrolllog("removed %i lines checksums from intersection of scroll area %s and %s draw packet %s, remains %i", inter.height, rect, coding, (x, y, w, h), nonzero)
+                    #if more than half has already been invalidated, drop it completely:
+                    if nonzero<=rect.height//2:
+                        scrolllog("invalidating whole scroll data as only %i of it remains valid", 100*nonzero//rect.height)
+                        self.scroll_data = None
         return packet
 
 
@@ -1469,6 +1466,7 @@ class WindowVideoSource(WindowSource):
             del options["av-sync"]
         except:
             pass
+        #tells make_data_packet not to invalidate the scroll data:
         scrolllog("encode_scrolling(%s, {..}, [], [], %s) window-dimensions=%s", image, options, self.window_dimensions)
         x, y, w, h = image.get_geometry()[:4]
         yscroll_values = []
@@ -1531,7 +1529,7 @@ class WindowVideoSource(WindowSource):
                 client_options["flush"] = flush
             coding = "scroll"
             end = time.time()
-            packet = self.make_draw_packet(x, y, w, h, coding, LargeStructure(coding, scrolls), 0, client_options)
+            packet = self.make_draw_packet(x, y, w, h, coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet)
             compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s as %3i rectangles  (%5iKB)           , sequence %5i, client_options=%s",
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
@@ -1551,7 +1549,7 @@ class WindowVideoSource(WindowSource):
                 client_options = options.copy()
                 if flush>0 and self.supports_flush:
                     client_options["flush"] = flush
-                packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options)
+                packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
                 self.queue_damage_packet(packet)
                 self.free_image_wrapper(sub)
                 psize = w*sh*4
@@ -1613,7 +1611,7 @@ class WindowVideoSource(WindowSource):
                           }
             t = time.time()
             tstr = time.strftime("%H-%M-%S", time.localtime(t))
-            filename = "./V%i-FBO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_VIDEO_FRAMES)
+            filename = "./W%i-VDO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_VIDEO_FRAMES)
             videolog("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
@@ -1629,15 +1627,16 @@ class WindowVideoSource(WindowSource):
                 img_data = img_data or image.get_pixels()
                 csums = CRC_Image(img_data, w, h, stride)
                 if csums:
-                    self.scroll_data = [self.statistics.damage_events_count, x, y, w, h, csums]
+                    self.scroll_data = rectangle(x, y, w, h), csums
+                    options["scroll"] = True
                     scrolllog("updated scroll data, previously set: %s", bool(lsd))
                 if lsd and csums:
-                    lx, ly, lw, lh, lcsums = lsd[-5:]
-                    if lx!=x or ly!=y:
+                    rect, lcsums = lsd
+                    if rect.x!=x or rect.y!=y:
                         #TODO: just adjust the scrolling packet for this offset
-                        scrolllog("scroll data position mismatch: %i,%i vs %i,%i", lx, ly, x, y)
-                    elif lw!=w or lh!=h:
-                        scrolllog("scroll data size mismatch: %ix%i vs %ix%i", lw, lh, w, h)
+                        scrolllog("scroll data position mismatch: %s vs %i,%i", rect, x, y)
+                    elif rect.width!=w or rect.height!=h:
+                        scrolllog("scroll data size mismatch: %s vs %ix%i", rect, w, h)
                     else:
                         #same size, try to find scrolling value
                         assert len(csums)==len(lcsums), "mismatch between checksums lists: %i vs %i items!" % (len(csums), len(lcsums))
