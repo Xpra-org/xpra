@@ -18,7 +18,7 @@ SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 
 SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
-if SAVE_BUFFERS not in ("png", "jpeg"):
+if SAVE_BUFFERS not in ("png", "jpeg", None):
     log.warn("invalid value for XPRA_OPENGL_SAVE_BUFFERS: must be 'png' or 'jpeg'")
     SAVE_BUFFERS = None
 
