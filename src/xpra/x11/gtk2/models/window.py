@@ -6,6 +6,7 @@
 
 
 import gtk
+from gtk import gdk
 import cairo
 
 from xpra.util import envint
@@ -173,12 +174,12 @@ class WindowModel(BaseWindowModel):
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(x, y, w, h)
-        self.corral_window = gtk.gdk.Window(self.parking_window,
-                                            x=x, y=y, width=w, height=h,
-                                            window_type=gtk.gdk.WINDOW_CHILD,
-                                            wclass=gtk.gdk.INPUT_OUTPUT,
-                                            event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
-                                            title = "CorralWindow-%#x" % self.xid)
+        self.corral_window = gdk.Window(self.parking_window,
+                                        x=x, y=y, width=w, height=h,
+                                        window_type=gdk.WINDOW_CHILD,
+                                        wclass=gdk.INPUT_OUTPUT,
+                                        event_mask=gdk.PROPERTY_CHANGE_MASK,
+                                        title = "CorralWindow-%#x" % self.xid)
         log("setup() corral_window=%#x", self.corral_window.xid)
         prop_set(self.corral_window, "_NET_WM_NAME", "utf8", u"Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(self.corral_window.xid)
@@ -302,7 +303,7 @@ class WindowModel(BaseWindowModel):
                 for prop in WindowModel.SCRUB_PROPERTIES:
                     X11Window.XDeleteProperty(self.xid, prop)
             if self.client_reparented:
-                self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
+                self.client_window.reparent(gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
             self.client_window.set_events(self.client_window_saved_events)
             #it is now safe to destroy the corral window:
@@ -635,7 +636,7 @@ class WindowModel(BaseWindowModel):
         if surf is not None:
             # FIXME: There is no Pixmap.new_for_display(), so this isn't
             # actually display-clean.  Oh well.
-            pixmap = gtk.gdk.Pixmap(None, surf.get_width(), surf.get_height(), 32)
+            pixmap = gdk.Pixmap(None, surf.get_width(), surf.get_height(), 32)
             screen = get_display_for(pixmap).get_default_screen()
             pixmap.set_colormap(screen.get_rgba_colormap())
             cr = pixmap.cairo_create()
@@ -689,7 +690,7 @@ class WindowModel(BaseWindowModel):
         #to make it consistent with the "icon" property,
         #return a cairo surface..
         surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, p.get_width(), p.get_height())
-        gc = gtk.gdk.CairoContext(cairo.Context(surf))
+        gc = gdk.CairoContext(cairo.Context(surf))
         gc.set_source_pixbuf(p, 0, 0)
         gc.paint()
         iconlog("get_default_window_icon()=%s", surf)
@@ -725,7 +726,7 @@ class WindowModel(BaseWindowModel):
         # genuine race conditions here (e.g. suppose the client does not
         # actually get around to requesting the focus until after we have
         # already changed our mind and decided to give it to someone else).
-        now = gtk.gdk.x11_get_server_time(self.corral_window)
+        now = gdk.x11_get_server_time(self.corral_window)
         # ICCCM 4.1.7 *claims* to describe how we are supposed to give focus
         # to a window, but it is completely opaque.  From reading the
         # metacity, kwin, gtk+, and qt code, it appears that the actual rules

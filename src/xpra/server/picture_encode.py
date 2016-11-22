@@ -8,7 +8,7 @@ import time
 from math import sqrt
 
 from xpra.log import Logger
-log = Logger("window", "compress")
+log = Logger("window", "encoding")
 
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgb    #@UnresolvedImport

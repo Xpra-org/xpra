@@ -10,7 +10,7 @@ import os
 import time
 
 try:
-    import gtk.gdk
+    from gtk import gdk
 except Exception as e:
     from xpra.scripts.main import InitException
     raise InitException(e)
@@ -64,7 +64,7 @@ def window_info(window):
 
 from xpra.x11.gtk2.gdk_bindings import get_children #@UnresolvedImport
 def dump_windows():
-    root = gtk.gdk.get_default_root_window()
+    root = gdk.get_default_root_window()
     log("root window: %s" % root)
     children = get_children(root)
     log("%s windows" % len(children))
@@ -80,8 +80,8 @@ class X11ServerBase(GTKServerBase):
     """
 
     def __init__(self):
-        self.screen_number = gtk.gdk.display_get_default().get_default_screen().get_number()
-        self.root_window = gtk.gdk.get_default_root_window()
+        self.screen_number = gdk.display_get_default().get_default_screen().get_number()
+        self.root_window = gdk.get_default_root_window()
         self.last_mouse_user = None
         GTKServerBase.__init__(self)
 
@@ -117,7 +117,7 @@ class X11ServerBase(GTKServerBase):
             #since we don't support adding them on the fly yet
             self.randr = False
         if self.randr:
-            display = gtk.gdk.display_get_default()
+            display = gdk.display_get_default()
             i=0
             while i<display.get_n_screens():
                 screen = display.get_screen(i)
@@ -364,7 +364,7 @@ class X11ServerBase(GTKServerBase):
         if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
             cursorlog("get_cursor_data(): default cursor - clearing it")
             cursor_data = None
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         return (cursor_data, cursor_sizes)
 
@@ -648,7 +648,7 @@ class X11ServerBase(GTKServerBase):
         if not self.bell:
             return
         wid = 0
-        if event.window!=gtk.gdk.get_default_root_window() and event.window_model is not None:
+        if event.window!=gdk.get_default_root_window() and event.window_model is not None:
             try:
                 wid = self._window_to_id[event.window_model]
             except:
@@ -662,7 +662,7 @@ class X11ServerBase(GTKServerBase):
         #maybe this should be in all cases (it is in desktop_server):
         #model = self._id_to_window.get(wid)
         #return model.client_window.get_screen().get_number()
-        #return gtk.gdk.display_get_default().get_default_screen().get_number()
+        #return gdk.display_get_default().get_default_screen().get_number()
         #-1 uses the current screen
         return -1
 

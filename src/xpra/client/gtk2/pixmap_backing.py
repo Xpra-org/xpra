@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import time
 from gtk import gdk
 import cairo
 
@@ -40,10 +41,6 @@ class PixmapBacking(GTK2WindowBacking):
 
     HAS_ALPHA = False
     RGB_MODES = PIXMAP_RGB_MODES
-
-    def __init__(self, *args):
-        self.paint_scaling = 1, 1
-        GTK2WindowBacking.__init__(self, *args)
 
     def __repr__(self):
         return "PixmapBacking(%s)" % self._backing
@@ -175,6 +172,22 @@ class PixmapBacking(GTK2WindowBacking):
             context.set_source_pixmap(drawable, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
+            if self.pointer_overlay:
+                x, y, size, start_time = self.pointer_overlay[2:]
+                elapsed = time.time()-start_time
+                if elapsed<6:
+                    alpha = max(0, (5.0-elapsed)/5.0)
+                    log("cairo_draw_from_drawable(%s, %s) drawing pointer with cairo at %s with alpha=%s", context, drawable, self.pointer_overlay, alpha)
+                    context.set_source_rgba(0, 0, 0, alpha)
+                    context.set_line_width(1)
+                    context.move_to(x-size, y)
+                    context.line_to(x+size, y)
+                    context.stroke()
+                    context.move_to(x, y-size)
+                    context.line_to(x, y+size)
+                    context.stroke()
+                else:
+                    self.pointer_overlay = None
             return True
         except KeyboardInterrupt:
             raise
