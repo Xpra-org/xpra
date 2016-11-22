@@ -1981,11 +1981,7 @@ else:
         #Linux init service:
         from xpra.os_util import is_Fedora
         if os.path.exists("/bin/systemctl"):
-            if is_Fedora():
-                add_data_files("/lib/systemd/system/", ["service/xpra.service"])
-            else:
-                #arch, etc:
-                add_data_files("/usr/lib/systemd/system/", ["service/xpra.service"])
+            add_data_files("/usr/lib/systemd/system/", ["service/xpra.service"])
         else:
             add_data_files("/etc/init.d/", ["service/xpra"])
         if is_Fedora() or os.path.exists("/etc/redhat-release"):

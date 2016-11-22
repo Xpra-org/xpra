@@ -434,7 +434,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %if 0%{?systemd}
-/lib/systemd/system/xpra.service
+/usr/lib/systemd/system/xpra.service
 %else
 %{_sysconfdir}/init.d/xpra
 %endif
