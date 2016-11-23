@@ -425,7 +425,8 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 	protocol.is_worker = true;
 	// we create a custom packet handler which posts packet as a message
 	protocol.set_packet_handler(function (packet, ctx) {
-		postMessage({'c': 'p', 'p': packet}, packet[0] === 'draw' ? [packet[7].buffer] : []);
+		var raw_draw_buffer = packet[0] === 'draw' && packet[6] !== 'scroll';
+		postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 	}, null);
 	// attach listeners from main thread
 	self.addEventListener('message', function(e) {
