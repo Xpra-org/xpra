@@ -1,14 +1,14 @@
 %global _hardened_build 1
 
 Name:           lz4
-Version:        1.7.3
-Release:        1%{?dist}
+Version:        1.7.4
+Release:        2%{?dist}
 Summary:        Extremely fast compression algorithm
 
 Group:          Applications/System
 License:        GPLv2+ and BSD
 URL:            https://code.google.com/p/lz4/
-Source0:        https://github.com/%{name}/%{name}/archive/v%{version}.tar.gz
+Source0:        https://github.com/%{name}/%{name}/archive/v%{version}.2.tar.gz
 
 %if 0%{?rhel}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
@@ -41,13 +41,14 @@ LZ4 is an extremely fast loss-less compression algorithm. This package
 contains static libraries for static linking of applications.
 
 %prep
-%setup -q -n %{name}-%{version}
+%setup -q -n %{name}-%{version}.2
 echo '#!/bin/sh' > ./configure
 chmod +x ./configure
 
 %build
 %configure
-make %{?_smp_mflags}
+env
+make
 
 
 %install
@@ -84,6 +85,12 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
+* Wed Nov 23 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.4-2
+- PIE build fix
+
+* Tue Nov 22 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.4-1
+- new upstream release
+
 * Thu Nov 17 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.3-1
 - new upstream release
 - new version naming scheme
