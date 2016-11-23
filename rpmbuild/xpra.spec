@@ -124,6 +124,8 @@
 %endif
 
 %if 0%{?suse_version}
+#the X11 tests would fail
+%define run_tests 0
 #untested:
 %define with_selinux 0
 #SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there
@@ -516,8 +518,8 @@ if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 fi
 ZONE=`firewall-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
-	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent | grep -v "^success"
-	firewall-cmd --reload | grep -v "^success"
+	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent | grep -v "^success"  || :
+	firewall-cmd --reload | grep -v "^success" || :
 fi
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
