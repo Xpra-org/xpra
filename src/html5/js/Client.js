@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015-2016 Spikes, Inc.
  * Licensed under MPL 2.0
@@ -60,6 +61,11 @@ function XpraClient(container) {
 	this.ping_timer = null;
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
+    //packet handling
+    this.queue_draw_packets = true;
+    this.dQ = [];
+    this.dQ_interval_id = null;
+    this.process_interval = 4;
 
 	// the container div is the "screen" on the HTML page where we
 	// are able to draw our windows in.
@@ -1106,7 +1112,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		Utilities.warn = function() { ctx.warn.apply(ctx, arguments); };
 		Utilities.error = function() { ctx.error.apply(ctx, arguments); };
 	}
-	
+
 	// check for server encryption caps update
 	if(ctx.encryption) {
 		ctx.cipher_out_caps = {
@@ -1454,7 +1460,32 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_draw = function(packet, ctx) {
-	var start = new Date().getTime(),
+    if(ctx.queue_draw_packets){
+        if (ctx.dQ_interval_id === null) {
+            ctx.dQ_interval_id = setInterval(function(){
+                ctx._process_draw_queue(null, ctx);
+            }, ctx.process_interval);
+        }
+
+        ctx.dQ[ctx.dQ.length] = packet;
+    } else {
+        ctx._process_draw_queue(packet, ctx);
+    }
+}
+
+XpraClient.prototype._process_draw_queue = function(packet, ctx){
+    if(!packet && ctx.queue_draw_packets){
+        packet = ctx.dQ.shift();
+        if(!packet){
+            return;
+        }
+    }
+    if(!packet){
+        //no valid draw packet, likely handle errors for that here
+        return;
+    }
+
+    var start = new Date().getTime(),
 		wid = packet[1],
 		x = packet[2],
 		y = packet[3],

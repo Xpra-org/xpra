@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015 Spikes, Inc.
  * Portions based on websock.js by Joel Martin
@@ -80,6 +81,7 @@ XpraProtocolWorkerHost.prototype.set_cipher_out = function(caps, key) {
 The main Xpra wire protocol
 */
 function XpraProtocol() {
+	this.is_worker = false;
 	this.packet_handler = null;
 	this.packet_ctx = null;
 	this.websocket = null;
@@ -87,11 +89,18 @@ function XpraProtocol() {
 	this.cipher_in = null;
 	this.cipher_in_block_size = null;
 	this.cipher_out = null;
-	this.mode = 'binary';  	// Current WebSocket mode: 'binary', 'base64'
-	this.rQ = [];		  	// Receive queue
-	this.rQi = 0;		  	// Receive queue index
+	this.mode = 'binary';	// Current WebSocket mode: 'binary', 'base64'
+	this.rQ = [];			// Receive queue
+	this.rQi = 0;			// Receive queue index
 	this.rQmax = 10000;		// Max receive queue size before compacting
-	this.sQ = [];		  	// Send queue
+	this.sQ = [];			// Send queue
+	this.mQ = [];			// Worker message queue
+
+	//Queue processing via intervals
+	this.process_interval = 4;  //milliseconds
+	this.rQ_interval_id = null;
+	this.sQ_interval_id = null;
+	this.mQ_interval_id = null;
 }
 
 XpraProtocol.prototype.open = function(uri) {
@@ -120,98 +129,67 @@ XpraProtocol.prototype.open = function(uri) {
 			me.rQ.push(u8[i]);
 		}
 		// wait for 8 bytes
-		if (me.rQ.length >= 8) {
-			me._process();
-		}
+		//if (me.rQ.length >= 8) {
+			//me._process();
+		//}
 	};
+	this.start_processing();
 }
 
 XpraProtocol.prototype.close = function() {
+	this.stop_processing();
 	this.websocket.close();
 }
 
 XpraProtocol.prototype.terminate = function() {
+	this.stop_processing();
 	// if this is called here we are not in a worker, so
 	// do nothing
 	return;
 }
 
-
-XpraProtocol.prototype.send = function(packet) {
-	//debug("send worker:"+packet);
-	var bdata = bencode(packet);
-	var proto_flags = 0;
-	var payload_size = bdata.length;
-	// encryption
-	if(this.cipher_out) {
-		proto_flags = 0x2;
-		var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
-		for (var i = padding_size - 1; i >= 0; i--) {
-			bdata += String.fromCharCode(padding_size);
-		};
-		this.cipher_out.update(forge.util.createBuffer(bdata));
-		bdata = this.cipher_out.output.getBytes();
+XpraProtocol.prototype.start_processing = function() {
+	var me = this;
+	if(this.rQ_interval_id === null){
+		this.rQ_interval_id = setInterval(function(){
+			if (me.rQ.length >= 8) {
+				me.process_receive_queue();
+			}
+		}, this.process_interval);
 	}
-	var actual_size = bdata.length;
-	//convert string to a byte array:
-	var cdata = [];
-	for (var i=0; i<bdata.length; i++)
-		cdata.push(ord(bdata[i]));
-	var level = 0;
-	/*
-	var use_zlib = false;		//does not work...
-	if (use_zlib) {
-		cdata = new Zlib.Deflate(cdata).compress();
-		level = 1;
-	}*/
-	//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-	var header = ["P".charCodeAt(0), proto_flags, level, 0];
-	for (var i=3; i>=0; i--)
-		header.push((payload_size >> (8*i)) & 0xFF);
-	//concat data to header, saves an intermediate array which may or may not have
-	//been optimised out by the JS compiler anyway, but it's worth a shot
-	header = header.concat(cdata);
-	//debug("send("+packet+") "+cdata.length+" bytes in packet for: "+bdata.substring(0, 32)+"..");
-	// put into buffer before send
-	this.websocket.send((new Uint8Array(header)).buffer);
+
+	if(this.sQ_interval_id === null){
+		this.sQ_interval_id = setInterval(function(){
+			if(me.sQ.length > 0){
+				me.process_send_queue();
+			}
+		}, this.process_interval);
+	}
+
+	if(this.mQ_interval_id === null){
+		this.mQ_interval_id = setInterval(function(){
+			if(me.mQ.length > 0){
+				me.process_message_queue();
+			}
+		}, this.process_interval);
+	}
+}
+XpraProtocol.prototype.stop_processing = function() {
+	clearInterval(this.rQ_interval_id);
+	this.rQ_interval_id = null;
+
+	clearInterval(this.sQ_interval_id);
+	this.sQ_interval_id = null;
+
+	clearInterval(this.mQ_interval_id);
+	this.mQ_interval_id = null;
 }
 
-XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
-	this.packet_handler = callback;
-	this.packet_ctx = ctx;
-}
-
-XpraProtocol.prototype.set_cipher_in = function(caps, key) {
-	this.cipher_in_block_size = 32;
-	// stretch the password
-	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_in_block_size);
-	// start the cipher
-	this.cipher_in = forge.cipher.createDecipher('AES-CBC', secret);
-	this.cipher_in.start({iv: caps['cipher.iv']});
-}
-
-XpraProtocol.prototype.set_cipher_out = function(caps, key) {
-	this.cipher_out_block_size = 32;
-	// stretch the password
-	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_out_block_size);
-	// start the cipher
-	this.cipher_out = forge.cipher.createCipher('AES-CBC', secret);
-	this.cipher_out.start({iv: caps['cipher.iv']});
-}
-
-XpraProtocol.prototype._buffer_peek = function(bytes) {
-	return this.rQ.slice(0, 0+bytes);
-}
-
-XpraProtocol.prototype._buffer_shift = function(bytes) {
-	return this.rQ.splice(0, 0+bytes);;
-}
-
-XpraProtocol.prototype._process = function() {
+XpraProtocol.prototype.process_receive_queue = function() {
 	// peek at first 8 bytes of buffer
 	var buf = this._buffer_peek(8);
 
-	if (buf[0]!=ord("P")) {
+	if (buf[0] !== ord("P")) {
 		msg = "invalid packet header format: " + buf[0];
 		if (buf.length>1) {
 			msg += ": ";
@@ -309,7 +287,15 @@ XpraProtocol.prototype._process = function() {
 			}
 			this.raw_packets = {}
 			// pass to our packet handler
-			this.packet_handler(packet, this.packet_ctx);
+
+			if(packet[0] === 'draw' && packet[6] !== 'scroll'){
+				packet[7] = new Uint8Array(packet[7]);
+			}
+			if(this.is_worker){
+				this.mQ[this.mQ.length] = packet;
+			} else {
+				this.packet_handler(packet, this.packet_ctx);
+			}
 		}
 		catch (e) {
 			console.error("error processing packet " + e)
@@ -319,9 +305,106 @@ XpraProtocol.prototype._process = function() {
 
 	// see if buffer still has unread packets
 	if (this.rQ.length >= 8) {
-		this._process();
+		this.process_receive_queue();
+	}
+}
+
+XpraProtocol.prototype.process_send_queue = function() {
+	if(this.sQ.length === 0){
+		return;
 	}
 
+	var packet = this.sQ.shift();
+
+	if(!packet){
+		return;
+	}
+
+	//debug("send worker:"+packet);
+	var bdata = bencode(packet);
+	var proto_flags = 0;
+	var payload_size = bdata.length;
+	// encryption
+	if(this.cipher_out) {
+		proto_flags = 0x2;
+		var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
+		for (var i = padding_size - 1; i >= 0; i--) {
+			bdata += String.fromCharCode(padding_size);
+		};
+		this.cipher_out.update(forge.util.createBuffer(bdata));
+		bdata = this.cipher_out.output.getBytes();
+	}
+	var actual_size = bdata.length;
+	//convert string to a byte array:
+	var cdata = [];
+	for (var i=0; i<bdata.length; i++)
+		cdata.push(ord(bdata[i]));
+	var level = 0;
+	/*
+	var use_zlib = false;		//does not work...
+	if (use_zlib) {
+		cdata = new Zlib.Deflate(cdata).compress();
+		level = 1;
+	}*/
+	//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
+	var header = ["P".charCodeAt(0), proto_flags, level, 0];
+	for (var i=3; i>=0; i--)
+		header.push((payload_size >> (8*i)) & 0xFF);
+	//concat data to header, saves an intermediate array which may or may not have
+	//been optimised out by the JS compiler anyway, but it's worth a shot
+	header = header.concat(cdata);
+	//debug("send("+packet+") "+cdata.length+" bytes in packet for: "+bdata.substring(0, 32)+"..");
+	// put into buffer before send
+	this.websocket.send((new Uint8Array(header)).buffer);
+}
+
+XpraProtocol.prototype.process_message_queue = function() {
+	if(this.mQ.length === 0){
+		return;
+	}
+
+	var packet = this.mQ.shift();
+
+	if(!packet){
+		return;
+	}
+
+	postMessage({'c': 'p', 'p': packet}, packet[0] === 'draw' ? [packet[7].buffer] : []);
+}
+
+XpraProtocol.prototype.send = function(packet) {
+	this.sQ[this.sQ.length] = packet;
+}
+
+XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
+	this.packet_handler = callback;
+	this.packet_ctx = ctx;
+}
+
+XpraProtocol.prototype.set_cipher_in = function(caps, key) {
+	this.cipher_in_block_size = 32;
+	// stretch the password
+	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_in_block_size);
+	// start the cipher
+	this.cipher_in = forge.cipher.createDecipher('AES-CBC', secret);
+	this.cipher_in.start({iv: caps['cipher.iv']});
+}
+
+XpraProtocol.prototype.set_cipher_out = function(caps, key) {
+	this.cipher_out_block_size = 32;
+	// stretch the password
+	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_out_block_size);
+	// start the cipher
+	this.cipher_out = forge.cipher.createCipher('AES-CBC', secret);
+	this.cipher_out.start({iv: caps['cipher.iv']});
+}
+
+XpraProtocol.prototype._buffer_peek = function(bytes) {
+	return this.rQ.slice(0, 0+bytes);
+}
+
+XpraProtocol.prototype._buffer_shift = function(bytes) {
+	return this.rQ.splice(0, 0+bytes);;
 }
 
 
@@ -338,9 +421,10 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 		'lib/forge.js');
 	// make protocol instance
 	var protocol = new XpraProtocol();
+	protocol.is_worker = true;
 	// we create a custom packet handler which posts packet as a message
 	protocol.set_packet_handler(function (packet, ctx) {
-		postMessage({'c': 'p', 'p': packet});
+		postMessage({'c': 'p', 'p': packet}, packet[0] === 'draw' ? [packet[7].buffer] : []);
 	}, null);
 	// attach listeners from main thread
 	self.addEventListener('message', function(e) {
