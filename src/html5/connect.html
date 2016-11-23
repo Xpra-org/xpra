@@ -347,6 +347,7 @@ $(document).ready(function() {
 		insecure_input.onchange = function() {
    			$('input#password').prop("disabled", !insecure_input.checked);
 		};
+		$('input#password').prop("disabled", !insecure_input.checked);
 	}
 
 	var action = getparam("action") || "";
