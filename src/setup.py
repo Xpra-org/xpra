@@ -1979,12 +1979,11 @@ else:
         pkgconfig = osx_pkgconfig
     else:
         #Linux init service:
-        from xpra.os_util import is_Fedora
         if os.path.exists("/bin/systemctl"):
             add_data_files("/usr/lib/systemd/system/", ["service/xpra.service"])
         else:
             add_data_files("/etc/init.d/", ["service/xpra"])
-        if is_Fedora() or os.path.exists("/etc/redhat-release"):
+        if os.path.exists("/etc/sysconfig"):
             add_data_files("/etc/sysconfig/", ["etc/sysconfig/xpra"])
         elif os.path.exists("/etc/default"):
             add_data_files("/etc/default/", ["etc/sysconfig/xpra"])
