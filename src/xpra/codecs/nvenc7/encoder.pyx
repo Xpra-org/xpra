@@ -2678,7 +2678,11 @@ def cleanup_module():
     reset_state()
 
 def selftest(full=False):
-    get_nvidia_module_version(True)
+    v = get_nvidia_module_version(True)
+    if v and v<[375, 10]:
+        NVENC_UNSUPPORTED_DRIVER_VERSION = envbool("XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION", False)
+        if not NVENC_UNSUPPORTED_DRIVER_VERSION:
+            raise ImportError("unsupported NVidia driver version %s\nuse XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION=1 to force enable it" % pver(v))
     #this is expensive, so don't run it unless "full" is set:
     if full:
         from xpra.codecs.codec_checks import get_encoder_max_sizes

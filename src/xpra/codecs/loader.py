@@ -74,7 +74,8 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
                             selftest(FULL_SELFTEST)
                         except Exception as e:
                             log.warn("Warning: %s failed its self test", name)
-                            log.warn(" %s", e)
+                            for x in str(e).splitlines():
+                                log.warn(" %s", x)
                             log("%s failed", selftest, exc_info=True)
                             continue
                 finally:
