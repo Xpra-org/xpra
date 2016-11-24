@@ -354,6 +354,7 @@ class UIXpraClient(XpraClientBase):
                 from PIL import Image
                 assert cv2 and Image
             except ImportError as e:
+                webcamlog("init webcam failure", exc_info=True)
                 webcamlog.warn("Warning: failed to import opencv:")
                 webcamlog.warn(" %s", e)
                 webcamlog.warn(" webcam forwarding is disabled")

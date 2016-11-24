@@ -2012,6 +2012,12 @@ class ServerSource(FileTransferHandler):
             return
         self.send("window-move-resize", wid, x, y, ww, wh, resize_counter)
 
+    def resize_window(self, wid, window, ww, wh, resize_counter=0):
+        if not self.can_send_window(window):
+            return
+        self.send("window-resized", wid, ww, wh, resize_counter)
+
+
     def cancel_damage(self, wid):
         """
         Use this method to cancel all currently pending and ongoing

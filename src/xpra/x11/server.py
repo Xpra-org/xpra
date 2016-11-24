@@ -57,6 +57,7 @@ from xpra.x11.x11_server_base import X11ServerBase, mouselog
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
+SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 
 
 class DesktopManager(gtk.Widget):
@@ -839,10 +840,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._set_client_properties(proto, wid, window, cprops)
         if not self.ui_driver:
             self.ui_driver = ss.uuid
+        is_ui_driver = self.ui_driver==ss.uuid
         shown = self._desktop_manager.is_shown(window)
-        if self.ui_driver==ss.uuid or not shown:
+        owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
+        size_changed = not skip_geometry and (oww!=w or owh!=h)
+        if is_ui_driver or size_changed or not shown:
             damage = False
-            if len(packet)>=13:
+            if is_ui_driver and len(packet)>=13:
                 pwid = packet[10]
                 pointer = packet[11]
                 modifiers = packet[12]
@@ -859,18 +863,24 @@ class XpraServer(gobject.GObject, X11ServerBase):
             else:
                 assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
                 self.last_client_configure_event = time.time()
-                if len(packet)>=9:
+                if is_ui_driver and len(packet)>=9:
                     changes = self._set_window_state(proto, wid, window, packet[8])
                     damage |= len(changes)>0
                 if not skip_geometry:
                     resize_counter = 0
                     if len(packet)>=8:
                         resize_counter = packet[7]
-                    owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                     geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
                     ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                     self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
-                    damage |= owx!=ax or owy!=ay or oww!=aw or owh!=ah
+                    resized = oww!=aw or owh!=ah
+                    if resized and SHARING_SYNC_SIZE:
+                        #try to ensure this won't trigger a resizing loop:
+                        counter = max(0, resize_counter-1)
+                        for s in self._server_sources.values():
+                            if s!=ss:
+                                s.resize_window(wid, window, aw, ah, resize_counter=counter)
+                    damage |= owx!=ax or owy!=ay or resized
             if not shown:
                 self._desktop_manager.show_window(window)
                 damage = True

@@ -44,12 +44,13 @@ cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
 gllog = Logger("screen", "opengl")
 
-from xpra.util import iround
+from xpra.util import iround, envbool, envint
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
 
-MAX_CONCURRENT_CONNECTIONS = 20
+MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 20)
+ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
 
 def window_name(window):
@@ -625,7 +626,7 @@ class X11ServerBase(GTKServerBase):
         if not wid:
             return
         for ss in self._server_sources.values():
-            if self.last_mouse_user is None or self.last_mouse_user!=ss.uuid:
+            if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user!=ss.uuid:
                 ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
 
 
