@@ -113,6 +113,10 @@ var MediaSourceUtil = {
 		},
 
 		getAuroraAudioCodecs : function() {
+			//IE is totally useless:
+			if(navigator.userAgent.indexOf("MSIE") != -1) {
+				return {};
+			}
 			var codecs_supported = {};
 			if(AV && AV.Decoder && AV.Decoder.find) {
 				for (var codec_option in MediaSourceConstants.AURORA_CODECS) {
@@ -136,6 +140,10 @@ var MediaSourceUtil = {
 				Utilities.log("audio forwarding: no media source API support");
 				return [];
 			}
+			//IE is totally useless:
+			if(navigator.userAgent.indexOf("MSIE") != -1) {
+				return [];
+			}
 			var codecs_supported = [];
 			for (var codec_option in MediaSourceConstants.CODEC_STRING) {
 				var codec_string = MediaSourceConstants.CODEC_STRING[codec_option];
@@ -148,6 +156,10 @@ var MediaSourceUtil = {
 					var blacklist = [];
 					if (navigator.userAgent.toLowerCase().indexOf('firefox') >= 0) {
 						blacklist = ["opus+mka", "vorbis+mka"];
+						if (window.navigator.userAgent.indexOf("Windows NT") >= 0 || window.navigator.platform.indexOf("Win") >= 0) {
+							//those don't seem to work on win32:
+							blacklist += ["aac+mpeg4", "mp3+mpeg4"];
+						}
 					}
 					else if (navigator.userAgent.toLowerCase().indexOf('chrome') >= 0) {
 						blacklist = ["aac+mpeg4"];
