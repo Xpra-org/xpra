@@ -1,22 +1,20 @@
-%define tarball xf86-video-dummy
-%define moduledir %(pkg-config xorg-server --variable=moduledir )
-%define driverdir	%{moduledir}/drivers
+%global tarball xf86-video-dummy
+%global moduledir %(pkg-config xorg-server --variable=moduledir )
+%global driverdir %{moduledir}/drivers
 
 %undefine _hardened_build
 
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
-Version:   0.3.6
-Release:   26.xpra3%{?dist}
+Version:   0.3.7
+Release:   1.xpra1%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
 
 Source0:   ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
-Patch0:    0001-Remove-mibstore.h.patch
 Patch1:    0002-Constant-DPI.patch
 Patch2:    0003-fix-pointer-limits.patch
-Patch3:    0004-honour-dac.patch
 Patch4:    0005-support-for-30-bit-depth-in-dummy-driver.patch
 Patch5:    0006-remove-dead-code-in-dummy-driver.patch
 Patch8:    0008-change-window-property.patch
@@ -34,18 +32,16 @@ X.Org X11 dummy video driver.
 
 %prep
 %setup -q -n %{tarball}-%{version}
-%patch0 -p1 -b .mibstore
 %patch1 -p1
 %patch2 -p1
-%patch3 -p1
 %patch4 -p1
 %patch5 -p1
 %patch8 -p1
+autoreconf -vif
 
 %build
-autoreconf -vif
 %configure --disable-static
-make
+%make_build
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -56,14 +52,18 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # should be fixed in upstream Makefile.am or whatever.
 find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files
-%defattr(-,root,root,-)
+%doc README
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Thu Nov 24 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.7-1.xpra1
+- merge upstream updates
+
+* Wed Nov  9 2016 Hans de Goede <hdegoede@redhat.com> - 0.3.7-1
+- New upstream release 0.7.3
+- Fix undefined symbol error with xserver-1.19 (rhbz#1393114)
+
 * Sun Oct 30 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-26.xpra3
 - force rebuild against updated headers
 
