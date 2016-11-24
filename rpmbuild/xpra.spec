@@ -516,10 +516,16 @@ if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem" 2> /dev/null
 	umask $umask
 fi
-ZONE=`firewall-cmd --get-default-zone 2> /dev/null`
+ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
-	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent | grep -v "^success"  || :
-	firewall-cmd --reload | grep -v "^success" || :
+	set +e
+	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent 2> /dev/null
+	if [ $? == "0" ]; then
+		firewall-cmd --reload | grep -v "^success"
+	else
+		firewall-offline-cmd --add-port=14500/tcp | grep -v "^success"
+	fi
+	set -e
 fi
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
@@ -551,10 +557,16 @@ if [ $1 -ge 1 ] ; then
         /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
 fi
 %endif
-ZONE=`firewall-cmd --get-default-zone 2> /dev/null`
+ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
-	firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent | grep -v "^success"
-	firewall-cmd --reload | grep -v "^success"
+	set +e
+	firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent 2> /dev/null
+	if [ $? == "0" ]; then
+		firewall-cmd --reload | grep -v "^success"
+	else
+		firewall-offline-cmd --add-port=14500/tcp | grep -v "^success"
+	fi
+	set -e
 fi
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :

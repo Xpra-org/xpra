@@ -47,7 +47,6 @@ chmod +x ./configure
 
 %build
 %configure
-env
 make
 
 
