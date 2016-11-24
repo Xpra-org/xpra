@@ -7,7 +7,7 @@
 %if 0%{?suse_version}
 Name:		python-Cython
 %else
-Name:		Cython
+Name:		python2-Cython
 %endif
 
 Version:	0.25.1
@@ -20,6 +20,13 @@ URL:		http://www.cython.org
 Source:		http://www.cython.org/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
+%if 0%{?suse_version}
+#no conflicts?
+%else
+Conflicts:	Cython
+Obsoletes:	Cython < %{version}-%{release}
+Provides: 	Cython = %{version}-%{release}
+%endif
 
 BuildRequires:	python-devel python-setuptools
 %if %{with_python3}
