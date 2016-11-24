@@ -152,8 +152,13 @@ class AvahiPublisher:
             if error:
                 log.error(" %s", error)
             self.stop()
+            return False
         elif state == avahi.SERVER_RUNNING:
             self.add_service()
+            return True
+        else:
+            log.warn("Warning: unknown avahi server state '%s'", state)
+            return False
 
     def add_service(self):
         if not self.group:
