@@ -310,67 +310,62 @@ XpraProtocol.prototype.process_receive_queue = function() {
 }
 
 XpraProtocol.prototype.process_send_queue = function() {
-	if(this.sQ.length === 0){
-		return;
-	}
+	while(this.sQ.length !== 0) {
+		var packet = this.sQ.shift();
+		if(!packet){
+			return;
+		}
 
-	var packet = this.sQ.shift();
-
-	if(!packet){
-		return;
+		//debug("send worker:"+packet);
+		var bdata = bencode(packet);
+		var proto_flags = 0;
+		var payload_size = bdata.length;
+		// encryption
+		if(this.cipher_out) {
+			proto_flags = 0x2;
+			var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
+			for (var i = padding_size - 1; i >= 0; i--) {
+				bdata += String.fromCharCode(padding_size);
+			};
+			this.cipher_out.update(forge.util.createBuffer(bdata));
+			bdata = this.cipher_out.output.getBytes();
+		}
+		var actual_size = bdata.length;
+		//convert string to a byte array:
+		var cdata = [];
+		for (var i=0; i<bdata.length; i++)
+			cdata.push(ord(bdata[i]));
+		var level = 0;
+		/*
+		var use_zlib = false;		//does not work...
+		if (use_zlib) {
+			cdata = new Zlib.Deflate(cdata).compress();
+			level = 1;
+		}*/
+		//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
+		var header = ["P".charCodeAt(0), proto_flags, level, 0];
+		for (var i=3; i>=0; i--)
+			header.push((payload_size >> (8*i)) & 0xFF);
+		//concat data to header, saves an intermediate array which may or may not have
+		//been optimised out by the JS compiler anyway, but it's worth a shot
+		header = header.concat(cdata);
+		//debug("send("+packet+") "+cdata.length+" bytes in packet for: "+bdata.substring(0, 32)+"..");
+		// put into buffer before send
+		this.websocket.send((new Uint8Array(header)).buffer);
 	}
-
-	//debug("send worker:"+packet);
-	var bdata = bencode(packet);
-	var proto_flags = 0;
-	var payload_size = bdata.length;
-	// encryption
-	if(this.cipher_out) {
-		proto_flags = 0x2;
-		var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
-		for (var i = padding_size - 1; i >= 0; i--) {
-			bdata += String.fromCharCode(padding_size);
-		};
-		this.cipher_out.update(forge.util.createBuffer(bdata));
-		bdata = this.cipher_out.output.getBytes();
-	}
-	var actual_size = bdata.length;
-	//convert string to a byte array:
-	var cdata = [];
-	for (var i=0; i<bdata.length; i++)
-		cdata.push(ord(bdata[i]));
-	var level = 0;
-	/*
-	var use_zlib = false;		//does not work...
-	if (use_zlib) {
-		cdata = new Zlib.Deflate(cdata).compress();
-		level = 1;
-	}*/
-	//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-	var header = ["P".charCodeAt(0), proto_flags, level, 0];
-	for (var i=3; i>=0; i--)
-		header.push((payload_size >> (8*i)) & 0xFF);
-	//concat data to header, saves an intermediate array which may or may not have
-	//been optimised out by the JS compiler anyway, but it's worth a shot
-	header = header.concat(cdata);
-	//debug("send("+packet+") "+cdata.length+" bytes in packet for: "+bdata.substring(0, 32)+"..");
-	// put into buffer before send
-	this.websocket.send((new Uint8Array(header)).buffer);
 }
 
 XpraProtocol.prototype.process_message_queue = function() {
-	if(this.mQ.length === 0){
-		return;
+	while(this.mQ.length !== 0){
+		var packet = this.mQ.shift();
+
+		if(!packet){
+			return;
+		}
+
+		var raw_draw_buffer = packet[0] === 'draw' && packet[6] !== 'scroll';
+		postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 	}
-
-	var packet = this.mQ.shift();
-
-	if(!packet){
-		return;
-	}
-
-	var raw_draw_buffer = packet[0] === 'draw' && packet[6] !== 'scroll';
-	postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 }
 
 XpraProtocol.prototype.send = function(packet) {
