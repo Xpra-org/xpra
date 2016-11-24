@@ -743,7 +743,7 @@ class WindowSource(object):
         elif self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
             return self.get_strict_encoding
-        elif self.strict:
+        elif self.strict and self.encoding!="auto":
             #honour strict flag
             if self.encoding=="rgb":
                 #choose between rgb32 and rgb24 already
@@ -774,6 +774,8 @@ class WindowSource(object):
 
     def get_best_encoding_impl_default(self):
         #stick to what is specified or use rgb for small regions:
+        if self.encoding=="auto":
+            return self.get_auto_encoding
         return self.get_current_or_rgb
 
     def encoding_is_mmap(self, *args):
@@ -799,11 +801,18 @@ class WindowSource(object):
                 return x
         return self.common_encodings[0]
 
-    def get_current_or_rgb(self, pixel_count, ww, wh, *args):
+    def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
-        if self.encoding=="auto":
-            return self.common_encodings[0]
+        if "png" in self.common_encodings and quality>=80 and speed<80:
+            return "png"
+        if "jpeg" in self.common_encodings:
+            return "jpeg"
+        return self.common_encodings[0]
+
+    def get_current_or_rgb(self, pixel_count, ww, wh, speed, quality, *args):
+        if pixel_count<self._rgb_auto_threshold:
+            return "rgb24"
         return self.encoding
 
 

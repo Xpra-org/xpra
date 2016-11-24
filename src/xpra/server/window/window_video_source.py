@@ -86,6 +86,7 @@ class WindowVideoSource(WindowSource):
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
+        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
 
         #those two instances should only ever be modified or accessed from the encode thread:
         self._csc_encoder = None
@@ -117,6 +118,7 @@ class WindowVideoSource(WindowSource):
 
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.video_encodings = []
+        self.common_video_encodings = []
         self.non_video_encodings = []
         self.edge_encoding = None
         self.start_video_frame = 0
@@ -193,6 +195,7 @@ class WindowVideoSource(WindowSource):
         addcinfo("encoder", self._video_encoder)
         info.setdefault("encodings", {}).update({
                                                  "non-video"    : self.non_video_encodings,
+                                                 "video"        : self.common_video_encodings,
                                                  "edge"         : self.edge_encoding or "",
                                                  })
         einfo = {
@@ -329,7 +332,9 @@ class WindowVideoSource(WindowSource):
             properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
-        return self.get_best_encoding_video
+        if self.common_video_encodings:
+            return self.get_best_encoding_video
+        return WindowSource.get_best_encoding_impl_default(self)
 
 
     def get_best_encoding_video(self, pixel_count, ww, wh, speed, quality, current_encoding):
@@ -350,6 +355,8 @@ class WindowVideoSource(WindowSource):
 
         if not self.non_video_encodings:
             return current_encoding
+        if not self.common_video_encodings:
+            return nonvideo()
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
@@ -364,7 +371,7 @@ class WindowVideoSource(WindowSource):
         if pixel_count<=rgbmax:
             return lossless("low pixel count")
 
-        if current_encoding!="auto" and current_encoding not in self.video_encodings:
+        if current_encoding!="auto" and current_encoding not in self.common_video_encodings:
             #not doing video, bail out:
             return nonvideo()
 
@@ -914,9 +921,10 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         WindowSource.update_encoding_options(self, force_reload)
-        log("update_encoding_options(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
-        if (self.encoding!="auto" and self.encoding not in self.video_encodings) or \
-            self.full_frames_only or STRICT_MODE or not self.non_video_encodings or \
+        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
+        log("update_encoding_options(%s) common_video_encodings=%s, csc_encoder=%s, video_encoder=%s", force_reload, self.common_video_encodings, self._csc_encoder, self._video_encoder)
+        if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
+            self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
             (self._mmap and self._mmap_size>0):
             #cannot use video subregions
             #FIXME: small race if a refresh timer is due when we change encoding - meh
@@ -962,10 +970,10 @@ class WindowVideoSource(WindowSource):
             return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
         #which video encodings to evaluate:
         if self.encoding=="auto":
-            eval_encodings = self.video_encodings
+            eval_encodings = self.common_video_encodings
         else:
-            if self.encoding not in self.video_encodings:
-                return checknovideo("non-video encoding: %s", self.encoding)
+            if self.encoding not in self.common_video_encodings:
+                return checknovideo("non-video / unsupported encoding: %s", self.encoding)
             eval_encodings = [self.encoding]
         ww, wh = self.window_dimensions
         w = ww & self.width_mask
@@ -1229,7 +1237,7 @@ class WindowVideoSource(WindowSource):
             Runs in the 'encode' thread.
         """
         if encoding=="auto":
-            encodings = [x for x in self.video_encodings if x in self.common_encodings]
+            encodings = self.common_video_encodings
         else:
             encodings = [encoding]
         if self.do_check_pipeline(encodings, width, height, src_format):
