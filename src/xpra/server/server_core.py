@@ -715,6 +715,8 @@ class ServerCore(object):
         try:
             sock = conn._socket
             sock.settimeout(self._ws_timeout)
+            if os.name=="posix":
+                sock.setblocking(True)
             def new_websocket_client(wsh):
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
@@ -737,6 +739,7 @@ class ServerCore(object):
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo))
             wslog.error(" %s", e)
         except Exception as e:
+            wslog("", exc_info=True)
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
         try:
             conn.close()

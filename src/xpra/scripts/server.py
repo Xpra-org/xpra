@@ -265,7 +265,7 @@ def write_pidfile(pidfile):
     try:
         with open(pidfile, "w") as f:
             os.fchmod(f.fileno(), 0o600)
-            f.write(pidstr)
+            f.write("%s\n" % pidstr)
             try:
                 inode = os.fstat(f.fileno()).st_ino
             except:
