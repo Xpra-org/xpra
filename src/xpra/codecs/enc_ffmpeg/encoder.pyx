@@ -15,7 +15,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, envint, envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
@@ -836,13 +836,13 @@ cdef class Encoder(object):
         cdef AVDictionary *opts = NULL
         cdef AVDictionary *muxer_opts = NULL
         global GEN_TO_ENCODER
-        cdef AVOutputFormat *oformat = get_av_output_format(self.muxer_format)
+        cdef AVOutputFormat *oformat = get_av_output_format(strtobytes(self.muxer_format))
         if oformat==NULL:
             raise Exception("libavformat does not support %s" % self.muxer_format)
         log("init_encoder() AVOutputFormat(%s)=%#x, flags=%s", self.muxer_format, <unsigned long> oformat, flagscsv(AVFMT, oformat.flags))
         if oformat.flags & AVFMT_ALLOW_FLUSH==0:
             raise Exception("AVOutputFormat(%s) does not support flushing!" % self.muxer_format)
-        r = avformat_alloc_output_context2(&self.muxer_ctx, oformat, self.muxer_format, NULL)
+        r = avformat_alloc_output_context2(&self.muxer_ctx, oformat, strtobytes(self.muxer_format), NULL)
         if r!=0:
             msg = av_error_str(r)
             raise Exception("libavformat cannot allocate context: %s" % msg)
@@ -851,14 +851,14 @@ cdef class Encoder(object):
         list_options(self.muxer_ctx, self.muxer_ctx.av_class)
 
         cdef int64_t v = 0
-        movflags = ""
+        movflags = b""
         if self.muxer_format=="mp4":
             #movflags = "empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof"
-            movflags = "empty_moov+frag_keyframe+default_base_moof+faststart"
+            movflags = b"empty_moov+frag_keyframe+default_base_moof+faststart"
         elif self.muxer_format=="webm":
-            movflags = "dash+live"
+            movflags = b"dash+live"
         if movflags:
-            r = av_dict_set(&muxer_opts, "movflags", movflags, 0)
+            r = av_dict_set(&muxer_opts, b"movflags", movflags, 0)
             if r!=0:
                 msg = av_error_str(r)
                 raise Exception("failed to set %s muxer 'movflags' options '%s': %s" % (self.muxer_format, movflags, msg))
@@ -910,7 +910,7 @@ cdef class Encoder(object):
         self.video_ctx.flags |= CODEC_FLAG_GLOBAL_HEADER
         self.video_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         if self.encoding.startswith("h264") and profile:
-            r = av_dict_set(&opts, "vprofile", profile, 0)
+            r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
             log("av_dict_set vprofile=%s returned %i", profile, r)
             if r==0:
                 self.profile = profile
@@ -925,7 +925,7 @@ cdef class Encoder(object):
                         "rc_lookahead"      : 0,
                         "error_resilient"   : 0,
                         }.items():
-                r = av_dict_set_int(&opts, k, v, 0)
+                r = av_dict_set_int(&opts, strtobytes(k), v, 0)
                 if r!=0:
                     log.error("Error: failed to set video context option '%s' to %i:", k, v)
                     log.error(" %s", av_error_str(r))
