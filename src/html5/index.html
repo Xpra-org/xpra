@@ -140,7 +140,7 @@
 				    	client.supported_encodings.push("vp8+webm", "h264+mp4", "mpeg4+mp4");
 				    }
 			    }
-			    else if(encoding) {
+			    else if(encoding !== "auto") {
 					// the primary encoding can be set
 					client.enable_encoding(encoding);
 				}

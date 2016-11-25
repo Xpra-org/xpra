@@ -88,6 +88,7 @@
 
 				  <li class="list-group-item">
 					<select id="encoding">
+					  <option value="auto">Automatic</option>
 					  <option value="jpeg">JPEG</option>
 					  <option value="png">PNG</option>
 					  <option value="rgb">Raw RGB</option>
@@ -380,7 +381,7 @@ $(document).ready(function() {
 	});
 	$('input:radio[value="'+action+'"]').click();
 
-	var encoding = getparam("encoding") || "jpeg";
+	var encoding = getparam("encoding") || "auto";
 	document.getElementById('encoding').value = encoding;
 
 	var keyboard_layout = Utilities.getKeyboardLayout();

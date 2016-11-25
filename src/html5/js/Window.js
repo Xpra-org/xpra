@@ -859,15 +859,6 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	if (coding=="rgb32") {
 		this._non_video_paint(coding);
 		var img = this.offscreen_canvas_ctx.createImageData(width, height);
-		//if the pixel data is not in an array buffer already, convert it:
-		//(this happens with inlined pixel data)
-		if (typeof img_data==='string') {
-			var uint = new Uint8Array(img_data.length);
-			for(var i=0,j=img_data.length;i<j;++i) {
-				uint[i] = img_data.charCodeAt(i);
-			}
-			img_data = uint;
-		}
 		//show("options="+(options).toSource());
 		if (options!=null && options["zlib"]>0) {
 			//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
