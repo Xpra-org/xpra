@@ -204,9 +204,9 @@
   </autotools>
 
   <autotools id="x264" autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s" autogenargs="--enable-pic --enable-shared --enable-static" autogen-sh="configure">
-	<branch module="/pub/x264/snapshots/x264-snapshot-20160927-2245-stable.tar.bz2"
-		version="20160927-2245-stable"
-		hash="sha256:17f3eeecc1fde4c1714fa08e5c683a39ce005d7e6e493472fba88e0ba1dad2a1"
+	<branch module="/pub/x264/snapshots/x264-snapshot-20161126-2245-stable.tar.bz2"
+		version="20161126-2245-stable"
+		hash="sha256:77bcb5e2cfc9dd6c8a80e150a4902fb3be5af05ad8131b1fe12a7780fea2afc8"
 		repo="download.videolan.org"/>
 	<dependencies>
 		<dep package="yasm"/>
@@ -244,9 +244,9 @@
 					--disable-programs --disable-avfilter --disable-doc
 					--disable-audiotoolbox --disable-videotoolbox"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.2.tar.bz2"
-		version="3.2"
-		hash="sha256:76d6cd9f5e64463a5b9940736da8a515c990bcbbe506a722e2040916cb366d74"
+	<branch module="/releases/ffmpeg-3.2.1.tar.bz2"
+		version="3.2.1"
+		hash="sha256:72abc55bea5ff5397ac82320fa5c4843a05f527d0d7912d66784c92fdfbd12fb"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -458,9 +458,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/6c/c5/7fc1f8384443abd2d71631ead026eb59863a58cad0149b94b89f08c8002f/cryptography-1.5.3.tar.gz"
-		hash="sha256:cf82ddac919b587f5e44247579b433224cc2e03332d2ea4d89aa70d7e6b64ae5"
-		version="1.5.3"/>
+		module="/packages/d7/a2/b90736c37fd720db425c5e48d69da75a6eff6609b22d2123762f1ae8c5f5/cryptography-1.6.tar.gz"
+		hash="sha256:4d0d86d2c8d3fc89133c3fa0d164a688a458b6663ab6fa965c80d6c2cdaf9b3f"
+		version="1.6"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>

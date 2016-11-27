@@ -1,7 +1,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     3.2
-Release:     2%{?dist}
+Version:     3.2.1
+Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -140,6 +140,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Nov 27 2016 Antoine Martin <antoine@devloop.org.uk> 3.2.1-1
+- new upstream release
+
 * Fri Nov 04 2016 Antoine Martin <antoine@devloop.org.uk> 3.2-2
 - add aac encoder for html5 client
 
