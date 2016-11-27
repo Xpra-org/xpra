@@ -76,7 +76,7 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
-* Sun Noc 27 2016 Antoine Martin <antoine@devloop.org.uk> 20161126
+* Sun Nov 27 2016 Antoine Martin <antoine@devloop.org.uk> 20161126
 - new upstream release
 
 * Wed Sep 07 2016 Antoine Martin <antoine@devloop.org.uk> 20160906
