@@ -7,7 +7,8 @@
 # later version. See the file COPYING for details.
 
 import os
-import gtk.gdk
+import gtk
+from gtk import gdk
 import glib
 import gobject
 import time
@@ -167,7 +168,6 @@ class DesktopManager(gtk.Widget):
                      "%sx%s vs %sx%s", w0, h0, w, h)
         return x, y
 
-
 gobject.type_register(DesktopManager)
 
 
@@ -209,12 +209,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._focus_history = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
-        root = gtk.gdk.get_default_root_window()
-        root.set_events(root.get_events() | gtk.gdk.SUBSTRUCTURE_MASK)
-        root.property_change(gtk.gdk.atom_intern("XPRA_SERVER", False),
-                            gtk.gdk.atom_intern("STRING", False),
+        root = gdk.get_default_root_window()
+        root.set_events(root.get_events() | gdk.SUBSTRUCTURE_MASK)
+        root.property_change(gdk.atom_intern("XPRA_SERVER", False),
+                            gdk.atom_intern("STRING", False),
                             8,
-                            gtk.gdk.PROP_MODE_REPLACE,
+                            gdk.PROP_MODE_REPLACE,
                             xpra.__version__)
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
@@ -397,7 +397,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for window in self._wm.get_property("windows"):
             self._add_new_window(window)
 
-        root = gtk.gdk.get_default_root_window()
+        root = gdk.get_default_root_window()
         for window in get_children(root):
             xid = get_xwindow(window)
             if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
@@ -534,9 +534,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self.root_overlay and self.root_overlay==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
+        if raw_window.get_window_type()==gdk.WINDOW_TEMP:
             #ignoring one of gtk's temporary windows
-            #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
+            #all the windows we manage should be gdk.WINDOW_FOREIGN
             windowlog("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
@@ -842,8 +842,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.ui_driver = ss.uuid
         is_ui_driver = self.ui_driver==ss.uuid
         shown = self._desktop_manager.is_shown(window)
-        owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
-        size_changed = not skip_geometry and (oww!=w or owh!=h)
+        if window.is_OR() or skip_geometry:
+            size_changed = False
+        else:
+            oww, owh = self._desktop_manager.window_size(window)
+            size_changed = oww!=w or owh!=h
         if is_ui_driver or size_changed or not shown:
             damage = False
             if is_ui_driver and len(packet)>=13:
@@ -867,6 +870,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     changes = self._set_window_state(proto, wid, window, packet[8])
                     damage |= len(changes)>0
                 if not skip_geometry:
+                    owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                     resize_counter = 0
                     if len(packet)>=8:
                         resize_counter = packet[7]
@@ -969,7 +973,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self.update_root_overlay(window, x, y, image)
 
     def update_root_overlay(self, window, x, y, image):
-        overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
+        overlaywin = gdk.window_foreign_new(self.root_overlay)
         gc = overlaywin.new_gc()
         wx, wy = window.get_property("geometry")[:2]
         #FIXME: we should paint the root overlay directly
@@ -992,7 +996,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         if has_alpha:
             import cairo
-            pixbuf = gtk.gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
+            pixbuf = gdk.pixbuf_new_from_data(img_data, gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
             cr = overlaywin.cairo_create()
             cr.new_path()
             cr.rectangle(wx+x, wy+y, width, height)
@@ -1001,7 +1005,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             cr.set_operator(cairo.OPERATOR_OVER)
             cr.paint()
         else:
-            overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data, rowstride)
+            overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         image.free()
 
     def repaint_root_overlay(self):
@@ -1019,7 +1023,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def do_repaint_root_overlay(self):
         self.repaint_root_overlay_timer = None
         root_width, root_height = self.get_root_window_size()
-        overlaywin = gtk.gdk.window_foreign_new(self.root_overlay)
+        overlaywin = gdk.window_foreign_new(self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
         def fill_grey_rect(shade, x, y, w, h):
@@ -1331,7 +1335,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                         log.warn("error setting double click distance from %s: %s", double_click_distance, e)
 
             if k not in old_settings or v != old_settings[k]:
-                root = gtk.gdk.get_default_root_window()
+                root = gdk.get_default_root_window()
                 def root_set(p):
                     settingslog("server_settings: setting %s to %s", nonl(p), nonl(v))
                     prop_set(root, p, "latin1", v.decode("utf-8"))
