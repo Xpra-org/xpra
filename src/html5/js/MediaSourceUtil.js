@@ -154,11 +154,14 @@ var MediaSourceUtil = {
 						continue;
 					}
 					var blacklist = [];
-					if (navigator.userAgent.toLowerCase().indexOf('firefox') >= 0) {
-						blacklist = ["opus+mka", "vorbis+mka"];
-						if (window.navigator.userAgent.indexOf("Windows NT") >= 0 || window.navigator.platform.indexOf("Win") >= 0) {
-							//those don't seem to work on win32:
-							blacklist += ["aac+mpeg4", "mp3+mpeg4"];
+					var ua = navigator.userAgent.toLowerCase();
+					var is_safari = ua.indexOf("safari") >= 0 && ua.indexOf('chrome') < 0;
+					var is_firefox = ua.indexOf("firefox") >= 0;
+					if (is_firefox || is_safari) {
+						blacklist += ["opus+mka", "vorbis+mka", "aac+mpeg4", "mp3+mpeg4"];
+						if (is_safari) {
+							//this crashes Safari!
+							blacklist += ["wav"];
 						}
 					}
 					else if (navigator.userAgent.toLowerCase().indexOf('chrome') >= 0) {
