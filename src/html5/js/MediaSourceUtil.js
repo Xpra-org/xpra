@@ -161,7 +161,7 @@ var MediaSourceUtil = {
 						blacklist += ["opus+mka", "vorbis+mka", "aac+mpeg4", "mp3+mpeg4"];
 						if (is_safari) {
 							//this crashes Safari!
-							blacklist += ["wav"];
+							blacklist += ["wav", "mp3"];
 						}
 					}
 					else if (navigator.userAgent.toLowerCase().indexOf('chrome') >= 0) {
