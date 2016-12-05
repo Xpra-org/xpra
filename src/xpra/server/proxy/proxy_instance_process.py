@@ -181,6 +181,8 @@ class ProxyInstanceProcess(Process):
         self.server_protocol.large_packets.append("keymap-changed")
         self.server_protocol.large_packets.append("server-settings")
         if self.caps.boolget("file-transfer"):
+            self.client_protocol.large_packets.append("send-file")
+            self.client_protocol.large_packets.append("send-file-chunk")
             self.server_protocol.large_packets.append("send-file")
             self.server_protocol.large_packets.append("send-file-chunk")
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
@@ -612,6 +614,12 @@ class ProxyInstanceProcess(Process):
                     self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
+        elif packet_type=="send-file":
+            if packet[6]:
+                packet[6] = Compressed("file-data", packet[6])
+        elif packet_type=="send-file-chunk":
+            if packet[3]:
+                packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type=="challenge":
             from xpra.net.crypto import get_salt
             #client may have already responded to the challenge,
