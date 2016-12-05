@@ -781,8 +781,8 @@ class ServerBase(ServerCore):
             ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
             ArgsControlCommand("toggle-feature",        "toggle a server feature on or off", min_args=2, validation=[str, parse_boolean_value]),
             #network and transfers:
-            ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=3),
-            ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=3, ),
+            ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=1),
+            ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=1, max_args=4),
             ArgsControlCommand("send-notification",     "sends a notification to the client(s)",  min_args=4, max_args=5, validation=[int]),
             ArgsControlCommand("close-notification",    "send the request to close an existing notification to the client(s)", min_args=1, max_args=2, validation=[int]),
             ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
@@ -1549,11 +1549,11 @@ class ServerBase(ServerCore):
         return msg
 
 
-    def control_command_send_file(self, filename, openit, client_uuids, maxbitrate=0):
+    def control_command_send_file(self, filename, openit="open", client_uuids="*", maxbitrate=0):
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 
-    def control_command_print(self, filename, printer, client_uuids, maxbitrate=0, title="", *options_strs):
+    def control_command_print(self, filename, printer="", client_uuids="*", maxbitrate=0, title="", *options_strs):
         #parse options into a dict:
         options = {}
         for arg in options_strs:
