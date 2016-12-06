@@ -590,35 +590,38 @@ fi
 
 
 %changelog
-* Wed Sep 21 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
-- support all current versions of Ubuntu and Debian using a private ffmpeg library
-- proxy server can start new sessions on demand
-- SSH start server support on OSX < 10.11
-- support SSH password in connection dialog on all platforms
-- desktop mode for forwarding a full desktop (similar to VNC)
-- multi-monitor geometry fixes
-- increased webcam framerate, better UI integration
-- drag and drop support within applications
-- SSL support
-- built-in support for websocket transport, both client and server
-- keyboard and mouse grabbing support
-- window focus fixes
-- html improvements: bell support, num lock, cursors, window icons, osx shadow server, etc.
-- clipboard direction restrictions: to client, to server, both or disabled
-- client-side emulation for X11 window move and resize requests messages
-- 30-bit colour modes with patched Xdummy
-- automatic video encoder tuning, support for B-frames with x264
-- chunking for file transfers, higher file size limits
-- more efficient sound subprocess communication channel
-- new sound stream compression options, including aac and mpeg4 audio container
-- more dynamic video encoding automatic selection
-- much faster forwarding of scrolling content
-- more picture codecs and sound information shown on session info
-- support for arbitrary mmap file locations
-- split configuration file in /etc/xpra/conf.d/
-- support pam sessions
-- try harder to exit cleanly
-- build cleanups
+* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
+- SSL socket support
+- IANA assigned default port 14500 (so specifying the TCP port is now optional)
+- include a system-wide proxy server service on our default port, using system authentication
+- MS Windows users can start a shadow server from the start menu, which is also accessible via http
+- list all local network sessions exposed via mdns using xpra list-mdns
+- the proxy servers can start new sessions on demand
+- much faster websocket / http server for the HTML5 client, with SSL support
+- much improved HTML client, including support for native video decoding
+- VNC-like desktop support: "xpra start-desktop"
+- pointer grabs using Shift+Menu, keyboard grabs using Control+Menu
+- window scrolling detection for much faster compression
+- server-side support for 10-bit colours
+- better automatic encoding selection and video tuning, support H264 b-frames
+- file transfer improvements
+- SSH password input support on all platforms in launcher
+- client applications can trigger window move and resize with MS Windows and Mac OS X clients
+- geometry handling improvements, multi-monitor, fullscreen
+- drag and drop support between application windows
+- colour management synchronisation (and DPI, workspace, etc)
+- the configuration file is now split into multiple logical parts, see /etc/xpra/conf.d
+- more configuration options for printers
+- clipboard direction restrictions
+- webcam improvements: better framerate, device selection menu
+- audio codec improvements, new codecs, mpeg audio
+- reliable video support for all Debian and Ubuntu versions via private ffmpeg libraries
+- use XDG_RUNTIME_DIR if possible, move more files to /run (sockets, log file)
+- build and packaging improvements: minify during build: rpm "python2", netbsd v4l
+- selinux policy for printing
+- Mac OS X PKG installer now sets up ".xpra" file and "xpra:" URL associations
+- Mac OS X remote shadow start support (though not all versions are supported)
+
 
 * Mon Apr 18 2016 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1
 - GStreamer 1.6.x on MS Windows and OSX
