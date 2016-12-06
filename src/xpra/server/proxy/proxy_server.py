@@ -33,7 +33,7 @@ from xpra.make_thread import start_thread
 
 
 PROXY_SOCKET_TIMEOUT = float(os.environ.get("XPRA_PROXY_SOCKET_TIMEOUT", "0.1"))
-PROXY_WS_TIMEOUT = float(os.environ.get("XPRA_PROXY_WS_TIMEOUT", "0.0"))
+PROXY_WS_TIMEOUT = float(os.environ.get("XPRA_PROXY_WS_TIMEOUT", "1.0"))
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 
 
@@ -201,10 +201,10 @@ class ProxyServer(ServerCore):
             authlog.error(" %s", e)
             disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
             return
+        authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         if sessions is None:
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
-        authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         uid, gid, displays, env_options, session_options = sessions
         if os.name=="posix":
             if uid==0 or gid==0:
@@ -230,6 +230,7 @@ class ProxyServer(ServerCore):
         display = None
         proc = None
         sns = c.dictget("start-new-session")
+        authlog("start_proxy: displays=%s, start-new-session=%s", displays, bool(sns))
         if len(displays)==0 or sns:
             if self._start_sessions:
                 #start a new session

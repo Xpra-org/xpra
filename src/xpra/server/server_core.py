@@ -715,8 +715,6 @@ class ServerCore(object):
         try:
             sock = conn._socket
             sock.settimeout(self._ws_timeout)
-            if os.name=="posix":
-                sock.setblocking(True)
             def new_websocket_client(wsh):
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
