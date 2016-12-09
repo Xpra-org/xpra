@@ -22,7 +22,6 @@ from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_non
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int get_buffer_api_version()
 
 cdef extern from "../../buffers/memalign.h":
     int pad(int size) nogil
@@ -219,7 +218,6 @@ def get_version():
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {"version"   : get_version(),
-            "buffer_api": get_buffer_api_version(),
             "formats"   : COLORSPACES,
             "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
             }

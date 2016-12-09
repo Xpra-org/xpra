@@ -31,7 +31,6 @@ cdef extern from "string.h":
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int get_buffer_api_version()
 
 
 cdef extern from *:
@@ -254,8 +253,9 @@ def get_type():
 
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
-    return {"version"   : get_version(),
-            "buffer_api": get_buffer_api_version()}
+    return {
+            "version"   : get_version(),
+            }
 
 def get_input_colorspaces():
     return  ["YUV420P"]     #,"YUV422P"

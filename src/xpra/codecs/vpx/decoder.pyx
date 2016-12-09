@@ -47,7 +47,6 @@ cdef extern from "../../buffers/memalign.h":
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int get_buffer_api_version()
 
 cdef extern from "vpx/vpx_codec.h":
     ctypedef const void *vpx_codec_iter_t
@@ -162,11 +161,12 @@ def get_output_colorspace(encoding, csc):
 
 def get_info():
     global CODECS
-    info = {"version"       : get_version(),
+    info = {
+            "version"       : get_version(),
             "encodings"     : CODECS,
-            "buffer_api"    : get_buffer_api_version(),
             "abi_version"   : get_abi_version(),
-            "build_config"  : vpx_codec_build_config()}
+            "build_config"  : vpx_codec_build_config(),
+            }
     for k,v in COLORSPACES.items():
         info["%s.colorspaces" % k] = v
     return info

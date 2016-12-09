@@ -37,7 +37,6 @@ cdef extern from "../../buffers/memalign.h":
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int get_buffer_api_version()
 
 
 cdef extern from "libavutil/mem.h":
@@ -695,7 +694,6 @@ def get_info():
              "version"      : get_version(),
              "encodings"    : get_encodings(),
              "muxers"       : get_muxer_formats(),
-             "buffer_api"   : get_buffer_api_version(),
              "formats"      : f,
              "generation"   : generation.get(),
              }

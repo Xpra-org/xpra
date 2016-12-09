@@ -7,10 +7,6 @@
 
 #include "Python.h"
 
-int get_buffer_api_version(void) {
-    return 1;
-}
-
 //Before Python 3.3, use PyMemoryView_FromBuffer
 //MAJOR<<24 + MINOR<<16 + MICRO<<8
 #if PY_VERSION_HEX<=0x3030000

@@ -198,8 +198,7 @@ if WIN32:
 else:
     nvenc7_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc7")
 
-memoryview_ENABLED      = sys.version>='2.7'
-csc_libyuv_ENABLED      = DEFAULT and memoryview_ENABLED and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
+csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
 #Cython / gcc / packaging build options:
 annotate_ENABLED        = True
@@ -219,7 +218,6 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
             "csc_libyuv",
-            "memoryview",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
             "server", "client", "dbus", "x11", "gtk_x11",
@@ -312,9 +310,6 @@ if "clean" not in sys.argv:
         print("Warning: you probably want to build at least the client or server!")
     if DEFAULT and not pillow_ENABLED:
         print("Warning: including Python Pillow is VERY STRONGLY recommended")
-    if memoryview_ENABLED and sys.version<"2.7":
-        print("Error: memoryview support requires Python version 2.7 or greater")
-        exit(1)
     if minify_ENABLED:
         r = get_status_output(["uglifyjs", "--version"])[0]
         if r==0:
@@ -1965,12 +1960,7 @@ if annotate_ENABLED:
 
 #*******************************************************************************
 #which file to link against (new-style buffers or old?):
-if memoryview_ENABLED:
-    bmod = "new"
-else:
-    assert not PYTHON3
-    bmod = "old"
-buffers_c = "xpra/buffers/%s_buffers.c" % bmod
+buffers_c = "xpra/buffers/new_buffers.c"
 inline_c = "xpra/inline.c"
 memalign_c = "xpra/buffers/memalign.c"
 #convenience grouping for codecs:

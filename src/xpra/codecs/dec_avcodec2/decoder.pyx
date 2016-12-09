@@ -22,7 +22,6 @@ ctypedef unsigned char uint8_t
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int get_buffer_api_version()
 
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num) nogil
@@ -192,7 +191,6 @@ def get_info():
         f["formats.%s" % e] = get_input_colorspaces(e)
     return  {"version"      : get_version(),
              "encodings"    : get_encodings(),
-             "buffer_api"   : get_buffer_api_version(),
              "formats"      : f,
              }
 
