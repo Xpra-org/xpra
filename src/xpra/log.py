@@ -141,12 +141,7 @@ def enable_format(format_string):
         pass
 
 
-#the order will be preserved with Python 2.7 onwards:
-try:
-    from collections import OrderedDict
-except:
-    OrderedDict = dict
-
+from collections import OrderedDict
 STRUCT_KNOWN_FILTERS = OrderedDict([
     ("Client", OrderedDict([
                 ("client"       , "All client code"),

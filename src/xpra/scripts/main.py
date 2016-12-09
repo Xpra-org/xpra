@@ -2569,11 +2569,8 @@ def run_list_mdns(error_cb, opts, extra_args):
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
     loop_init()
-    try:
-        import collections
-        found = collections.OrderedDict()
-    except:
-        found = {}
+    import collections
+    found = collections.OrderedDict()
     shown = set()
     def show_new_found():
         new_found = [x for x in found.keys() if x not in shown]
