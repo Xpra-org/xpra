@@ -10,7 +10,7 @@ log = Logger("sound")
 gstlog = Logger("gstreamer")
 
 #must be done before importing gobject!
-from xpra.sound.gstreamer_util import import_gst, gst_major_version
+from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
 MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
 from xpra.sound.gstreamer_util import gst_version       #must be done after import_gst()
@@ -309,11 +309,10 @@ class SoundPipeline(gobject.GObject):
                 pass
         elif t == gst.MESSAGE_STREAM_START:
             log("stream start: %s", message)
-            if gst_major_version>0:
-                #with gstreamer 1.x, we don't always get the "audio-codec" message..
-                #so print the codec from here instead (and assume gstreamer is using what we told it to)
-                #after a delay, just in case we do get the real "audio-codec" message!
-                self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
+            #with gstreamer 1.x, we don't always get the "audio-codec" message..
+            #so print the codec from here instead (and assume gstreamer is using what we told it to)
+            #after a delay, just in case we do get the real "audio-codec" message!
+            self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
         elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
             gstlog("%s", message)
         elif t == gst.MESSAGE_STATE_CHANGED:
@@ -324,14 +323,7 @@ class SoundPipeline(gobject.GObject):
                 self.update_state(state)
                 self.idle_emit("state-changed", state)
         elif t == gst.MESSAGE_DURATION:
-            if gst_major_version==0:
-                d = message.parse_duration()
-                try:
-                    v = d[1]
-                    if v>0:
-                        gstlog("duration changed: %s", v)
-                except:
-                    gstlog("duration changed: %s", d)
+            gstlog("duration changed: %s", message)
         elif t == gst.MESSAGE_LATENCY:
             gstlog("latency message from %s: %s", message.src, message)
         elif t == gst.MESSAGE_INFO:

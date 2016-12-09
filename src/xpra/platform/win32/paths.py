@@ -129,11 +129,8 @@ def do_get_app_dir():
     return default_get_app_dir()
 
 def do_get_sound_command():
-    from xpra.sound.gstreamer_util import GSTREAMER1
-    if GSTREAMER1:
-        from xpra.platform.paths import get_app_dir
-        app_dir = get_app_dir()
-        #is there a python3 bundled sound subdirectory
-        sound_exe = os.path.join(app_dir, "Sound", "xpra_cmd.exe")
-        return [sound_exe]
-    return ["xpra_cmd.exe"]
+    from xpra.platform.paths import get_app_dir
+    app_dir = get_app_dir()
+    #is there a python3 bundled sound subdirectory
+    sound_exe = os.path.join(app_dir, "Sound", "xpra_cmd.exe")
+    return [sound_exe]

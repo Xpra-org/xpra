@@ -30,12 +30,8 @@ SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync"    : False,
                                   "qos"     : True
                                   }
 
-SINK_DEFAULT_ATTRIBUTES = {0 : {
-                                "pulsesink"  : {"client" : "Xpra"}
-                               },
-                           1 : {
-                                "pulsesink"  : {"client-name" : "Xpra"}
-                               },
+SINK_DEFAULT_ATTRIBUTES = {
+                           "pulsesink"  : {"client-name" : "Xpra"},
                           }
 
 QUEUE_SILENT = envbool("XPRA_QUEUE_SILENT", False)
@@ -123,11 +119,10 @@ class SoundSink(SoundPipeline):
                                           "max-size-time=%s" % QUEUE_TIME,
                                           "leaky=%s" % QUEUE_LEAK]))
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
-        from xpra.sound.gstreamer_util import gst_major_version, get_gst_version
+        from xpra.sound.gstreamer_util import get_gst_version
         #anything older than this may cause problems (ie: centos 6.x)
         #because the attributes may not exist
-        if get_gst_version()>=(0, 10, 36):
-            sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(gst_major_version, {}).get(sink_type, {}))
+        sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(sink_type, {}))
         get_options_cb = DEFAULT_SINK_PLUGIN_OPTIONS.get(sink_type.replace("sink", ""))
         if get_options_cb:
             v = get_options_cb()
@@ -141,29 +136,14 @@ class SoundSink(SoundPipeline):
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
         self.queue  = self.pipeline.get_by_name("queue")
-        if get_gst_version()<(1, ):
-            self.add_data = self.add_data0
-        else:
-            self.add_data = self.add_data1
         if self.queue:
-            if not QUEUE_SILENT:
-                if get_gst_version()<(1, ):
-                    self.queue.connect("overrun", self.queue_overrun0)
-                    self.queue.connect("underrun", self.queue_underrun0)
-                    self.queue.connect("running", self.queue_running0)
-                    self.queue.connect("pushing", self.queue_pushing0)
-                else:
-                    self.queue.connect("overrun", self.queue_overrun1)
-                    self.queue.connect("underrun", self.queue_underrun1)
-                    self.queue.connect("running", self.queue_running1)
-                    self.queue.connect("pushing", self.queue_pushing1)
+            if QUEUE_SILENT:
+                self.queue.set_property("silent", False)
             else:
-                #older versions may not have the "silent" attribute,
-                #in which case we will emit the signals for nothing
-                try:
-                    self.queue.set_property("silent", False)
-                except Exception as e:
-                    log("cannot silence the queue %s: %s", self.queue, e)
+                self.queue.connect("overrun", self.queue_overrun)
+                self.queue.connect("underrun", self.queue_underrun)
+                self.queue.connect("running", self.queue_running)
+                self.queue.connect("pushing", self.queue_pushing)
 
     def __repr__(self):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
@@ -203,27 +183,12 @@ class SoundSink(SoundPipeline):
         return True
 
 
-    def _queue_pushing(self, *args):
-        self.queue_state = "pushing"
+    def queue_pushing(self, *args):
+        gstlog("queue_pushing")
         self.emit_info()
         return True
 
-    def queue_pushing0(self, *args):
-        gstlog("queue_pushing0")
-        return self._queue_pushing()
-
-    def queue_pushing1(self, *args):
-        gstlog("queue_pushing1")
-        return self._queue_pushing()
-
-
-    def queue_running0(self, *args):
-        gstlog("queue_running")
-        self.queue_state = "running"
-        self.emit_info()
-        return True
-
-    def queue_running1(self, *args):
+    def queue_running(self, *args):
         gstlog("queue_running")
         self.queue_state = "running"
         self.set_min_level()
@@ -231,39 +196,12 @@ class SoundSink(SoundPipeline):
         self.emit_info()
         return True
 
-    def queue_underrun0(self, *args):
-        now = time.time()
-        gstlog("queue_underrun0")
-        self.queue_state = "underrun"
-        self.last_underrun = now
-        clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        mintt = self.queue.get_property("min-threshold-time")//MS_TO_NS
-        gstlog("underrun: clt=%s mintt=%s state=%s", clt, mintt, self.state)
-        if clt==0 and mintt==0 and self.state in ("running", "active"):
-            if self.last_data:
-                self.add_data(self.last_data)
-                #this is going to cause scratchy sound,
-                #temporarily lower the volume:
-                def fadeout():
-                    gstlog("fadeout")
-                    self.target_volume = 0.0
-                    self.start_adjust_volume(1)
-                def fadein():
-                    gstlog("fadein")
-                    self.target_volume = self.normal_volume
-                    self.start_adjust_volume(10)
-                fadeout()
-                glib.timeout_add(300, fadein)
-                return 1
-        self.emit_info()
-        return 1
-
-    def queue_underrun1(self, *args):
+    def queue_underrun(self, *args):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
-        gstlog("queue_underrun1")
+        gstlog("queue_underrun")
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
             self.last_underrun = now
@@ -281,16 +219,7 @@ class SoundSink(SoundPipeline):
             return maxl-minl
         return 0
 
-    def queue_overrun0(self, *args):
-        clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        log("queue_overrun0 level=%ims", clt)
-        now = time.time()
-        self.last_overrun = now
-        self.overrun_events.append(now)
-        self.overruns += 1
-        return 1
-
-    def queue_overrun1(self, *args):
+    def queue_overrun(self, *args):
         now = time.time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
@@ -422,41 +351,7 @@ class SoundSink(SoundPipeline):
         return v
 
 
-    def add_data0(self, data, metadata=None, packet_metadata=()):
-        if not self.can_push_buffer():
-            return
-        self.last_data = data
-        data = self.uncompress_data(data, metadata)
-        now = time.time()
-        clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        delta = QUEUE_TIME//MS_TO_NS-clt
-        gstlog("add_data current-level-time=%s, QUEUE_TIME=%s, delta=%s", clt, QUEUE_TIME//MS_TO_NS, delta)
-        def fade():
-            #this is going to cause scratchy sound,
-            #temporarily lower the volume:
-            def fadeout():
-                gstlog("fadeout")
-                self.target_volume = 0.0
-                self.start_adjust_volume(10)
-            def fadein():
-                gstlog("fadein")
-                self.target_volume = self.normal_volume
-                self.start_adjust_volume(10)
-            glib.timeout_add(max(0, clt-100), fadeout)
-            glib.timeout_add(clt+300, fadein)
-        if now-self.last_overrun<QUEUE_TIME//MS_TO_NS//2//1000:
-            gstlog("dropping sample to try to stop overrun")
-            return
-        if delta<50:
-            gstlog("dropping sample to try to avoid overrun")
-            return
-        for x in packet_metadata:
-            self.do_add_data(x)
-        if self.do_add_data(data, metadata):
-            self.rec_queue_level(data)
-        self.emit_info()
-
-    def add_data1(self, data, metadata=None, packet_metadata=()):
+    def add_data(self, data, metadata=None, packet_metadata=()):
         if not self.can_push_buffer():
             return
         data = self.uncompress_data(data, metadata)
@@ -471,7 +366,7 @@ class SoundSink(SoundPipeline):
 
     def do_add_data(self, data, metadata=None):
         #having a timestamp causes problems with the queue and overruns:
-        log("add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
+        log("do_add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         buf = gst.new_buffer(data)
         if metadata:
             #having a timestamp causes problems with the queue and overruns:

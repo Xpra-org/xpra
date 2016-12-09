@@ -45,7 +45,6 @@ WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
-GSTREAMER1 = envbool("XPRA_GSTREAMER1", True)
 PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
 def force_enabled(codec_name):
@@ -96,7 +95,6 @@ CODEC_OPTIONS = [
         (FLAC       , "flacenc",        None,           "flacparse ! flacdec",          None),
         #this only works in gstreamer 0.10 and is filtered out during initialization:
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
-        (MP3        , "lamemp3enc",     None,           "mp3parse ! mad",               None),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",         None),
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mp3parse ! mad",               "qtdemux"),
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
@@ -157,20 +155,12 @@ ENCODER_DEFAULT_OPTIONS_COMMON = {
             #"vorbisenc"     : {"perfect-timestamp" : 1},
                            }
 ENCODER_DEFAULT_OPTIONS = {
-                            0       : {
-                                       "opusenc"       : {
-                                                          "cbr"            : 0,
-                                                          "complexity"     : 0
-                                                          },
-                                       },
-                            1      :   {
-                                        #FIXME: figure out when it is safe to apply the "bitrate-type" setting:
-                                        "opusenc"       : {
-                                                           #only available with 1.6 onwards?
-                                                           #"bitrate-type"   : 2,      #constrained vbr
-                                                           "complexity"     : 0
-                                                           },
-                                        },
+                                #FIXME: figure out when it is safe to apply the "bitrate-type" setting:
+                                "opusenc"       : {
+                                                   #only available with 1.6 onwards?
+                                                   #"bitrate-type"   : 2,      #constrained vbr
+                                                   "complexity"     : 0
+                                                   },
                            }
 #we may want to review this if/when we implement UDP transport:
 MUXER_DEFAULT_OPTIONS = {
@@ -209,7 +199,6 @@ CODEC_ORDER = [OPUS_OGG, VORBIS_MKA, FLAC_OGG, MP3, AAC_MPEG4, WAV_LZ4, WAV_LZO,
 
 gst = None
 has_gst = None
-gst_major_version = None
 gst_vinfo = None
 
 pygst_version = ""
@@ -255,120 +244,54 @@ def import_gst1():
     pygst_version = Gst.get_pygst_version()
     return Gst
 
-def import_gst0_10():
-    log("import_gst0_10()")
-    global gst_version, pygst_version
-    import pygst
-    log("import_gst0_10() pygst=%s", pygst)
-    pygst.require("0.10")
-    #initializing gstreamer parses sys.argv
-    #which interferes with our own command line arguments
-    #so we temporarily hide it,
-    #also import with stderr redirection in place
-    #to avoid gobject warnings:
-    from xpra.os_util import HideStdErr, HideSysArgv
-    with HideStdErr():
-        with HideSysArgv():
-            import gst
-    gst_version = gst.gst_version
-    pygst_version = gst.pygst_version
-    gst.new_buffer = gst.Buffer
-    if not hasattr(gst, 'MESSAGE_STREAM_START'):
-        #a None value is better than nothing:
-        #(our code can assume it exists - just never matches)
-        gst.MESSAGE_STREAM_START = None
-    return gst
-
-
-def get_version_str(version):
-    if version==1:
-        return "1.0"
-    else:
-        return "0.10"
-
 def import_gst():
-    global gst, has_gst, gst_vinfo, gst_major_version
+    global gst, has_gst, gst_vinfo
     if has_gst is not None:
         return gst
 
-    PYTHON3 = sys.version_info[0]>=3
-    if PYTHON3:
-        imports = [ (import_gst1,       1) ]
-    elif GSTREAMER1:
-        imports = [
-                    (import_gst1,       1),
-                    (import_gst0_10,    0),
-                  ]
-    else:
-        imports = [
-                    (import_gst0_10,    0),
-                    (import_gst1,       1),
-                  ]
-    errs = {}
-    saved_sys_path = sys.path[:]
-    saved_os_environ = os.environ.copy()
-    for import_function, MV in imports:
-        #restore os.environ and sys.path
-        sys.path = saved_sys_path[:]
-        os.environ.clear()
-        os.environ.update(saved_os_environ)
-        vstr = get_version_str(MV)
-        #hacks to locate gstreamer plugins on win32 and osx:
-        if WIN32:
-            frozen = hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True)
-            log("gstreamer_util: frozen=%s", frozen)
-            if frozen:
-                #on win32, we keep separate trees
-                #because GStreamer 0.10 and 1.x were built using different and / or incompatible version of the same libraries:
-                from xpra.platform.paths import get_app_dir
-                gst_dir = os.path.join(get_app_dir(), "gstreamer-%s" % vstr)     #ie: C:\Program Files\Xpra\gstreamer-0.10
-                os.environ["GST_PLUGIN_PATH"] = gst_dir
-                if MV==1:
-                    gst_bin_dir = os.path.join(gst_dir, "bin")                       #ie: C:\Program Files\Xpra\gstreamer-0.10\bin
-                    os.environ["PATH"] = os.pathsep.join(x for x in (gst_bin_dir, os.environ.get("PATH", "")) if x)
-                    sys.path.insert(0, gst_bin_dir)
-                    scanner = os.path.join(gst_bin_dir, "gst-plugin-scanner.exe")
-                    if os.path.exists(scanner):
-                        os.environ["GST_PLUGIN_SCANNER"]    = scanner
-                    gi_dir = os.path.join(get_app_dir(), "girepository-%s" % vstr)
-                    os.environ["GI_TYPELIB_PATH"]       = gi_dir
-        elif OSX:
-            bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
-            log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
-            if bundle_contents:
-                os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-%s" % vstr)
-                os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Resources", "bin", "gst-plugin-scanner-%s" % vstr)
-                if MV==1:
-                    gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-%s" % vstr)
-                    os.environ["GI_TYPELIB_PATH"]       = gi_dir
-        if MV<1:
-            #we should not be loading the gi bindings
-            try:
-                del os.environ["GI_TYPELIB_PATH"]
-            except:
-                pass
-        log("GStreamer %s environment: %s", vstr, dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
-        log("GStreamer %s sys.path=%s", vstr, csv(sys.path))
+    #hacks to locate gstreamer plugins on win32 and osx:
+    if WIN32:
+        frozen = hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True)
+        log("gstreamer_util: frozen=%s", frozen)
+        if frozen:
+            #on win32, we keep separate trees
+            #because GStreamer 0.10 and 1.x were built using different and / or incompatible version of the same libraries:
+            from xpra.platform.paths import get_app_dir
+            gst_dir = os.path.join(get_app_dir(), "gstreamer-1.0")     #ie: C:\Program Files\Xpra\gstreamer-0.10
+            os.environ["GST_PLUGIN_PATH"] = gst_dir
+            if MV==1:
+                gst_bin_dir = os.path.join(gst_dir, "bin")                       #ie: C:\Program Files\Xpra\gstreamer-0.10\bin
+                os.environ["PATH"] = os.pathsep.join(x for x in (gst_bin_dir, os.environ.get("PATH", "")) if x)
+                sys.path.insert(0, gst_bin_dir)
+                scanner = os.path.join(gst_bin_dir, "gst-plugin-scanner.exe")
+                if os.path.exists(scanner):
+                    os.environ["GST_PLUGIN_SCANNER"]    = scanner
+                gi_dir = os.path.join(get_app_dir(), "girepository-1.0")
+                os.environ["GI_TYPELIB_PATH"]       = gi_dir
+    elif OSX:
+        bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
+        log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
+        if bundle_contents:
+            os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-1.0")
+            os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Resources", "bin", "gst-plugin-scanner-1.0")
+            if MV==1:
+                gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-1.0")
+                os.environ["GI_TYPELIB_PATH"]       = gi_dir
+    log("GStreamer 1.x environment: %s", dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
+    log("GStreamer 1.x sys.path=%s", csv(sys.path))
 
-        try:
-            log("trying to import GStreamer %s using %s", get_version_str(MV), import_function)
-            _gst = import_function()
-            v = _gst.version()
-            if v[-1]==0:
-                v = v[:-1]
-            gst_vinfo = ".".join((str(x) for x in v))
-            gst_major_version = MV
-            gst = _gst
-            break
-        except Exception as e:
-            log("Warning failed to import GStreamer %s", vstr, exc_info=True)
-            errs[vstr] = e
-    if gst:
-        log("Python GStreamer version %s for Python %s.%s", gst_vinfo, sys.version_info[0], sys.version_info[1])
-    else:
-        log.warn("Warning: failed to import GStreamer:")
-        for vstr,e in errs.items():
-            log.warn(" GStreamer %s: %s", vstr, e)
+    try:
+        _gst = import_gst1()
+        v = _gst.version()
+        if v[-1]==0:
+            v = v[:-1]
+        gst_vinfo = ".".join((str(x) for x in v))
+        gst = _gst
+    except Exception as e:
+        log("Warning failed to import GStreamer 1.x", exc_info=True)
+        log.warn("Warning: failed to import GStreamer 1.x:")
+        log.warn(" %s", e)
+        return None
     has_gst = gst is not None
     return gst
 
@@ -413,11 +336,11 @@ def has_plugins(*names):
     return len(missing)==0
 
 def get_encoder_default_options(encoder):
-    global gst_major_version, ENCODER_DEFAULT_OPTIONS_COMMON, ENCODER_DEFAULT_OPTIONS
+    global ENCODER_DEFAULT_OPTIONS_COMMON, ENCODER_DEFAULT_OPTIONS
     #strip the muxer:
     enc = encoder.split("+")[0]
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
-    options.update(ENCODER_DEFAULT_OPTIONS.get(gst_major_version).get(enc, {}))
+    options.update(ENCODER_DEFAULT_OPTIONS.get(enc, {}))
     return options
 
 
@@ -436,7 +359,7 @@ def get_decoders():
     return DECODERS
 
 def init_codecs():
-    global CODECS, ENCODERS, DECODERS, gst_major_version
+    global CODECS, ENCODERS, DECODERS
     if CODECS is not None or not has_gst:
         return CODECS or {}
     #populate CODECS:
@@ -496,21 +419,10 @@ def validate_encoding(elements):
         #and we have no way of knowing what version they have at this point, so just disable those:
         log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
         return False
-    elif encoding.startswith(FLAC):
-        #flac problems:
-        if WIN32 and gst_major_version==0:
-            #the gstreamer 0.10 builds on win32 use the outdated oss build,
-            #which includes outdated flac libraries with known CVEs,
-            #so avoid using those:
-            log("avoiding outdated flac module (likely buggy on win32 with gstreamer 0.10)")
-            return False
     elif WIN32 and encoding in (SPEEX_OGG, ):
         log("skipping %s on win32", encoding)
         return False
     elif encoding.startswith(OPUS):
-        if gst_major_version<1:
-            log("skipping %s with GStreamer 0.10", encoding)
-            return False
         if encoding==OPUS_MKA and get_gst_version()<(1, 8):
             #this causes "could not link opusenc0 to webmmux0"
             #(not sure which versions are affected, but 1.8.x is not)

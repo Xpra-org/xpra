@@ -115,52 +115,36 @@ class SoundSource(SoundPipeline):
                 self.queue.set_property("silent", True)
             except Exception as e:
                 log("cannot make queue silent: %s", e)
-        try:
-            if get_gst_version()<(1,0):
-                self.sink.set_property("enable-last-buffer", False)
-            else:
-                self.sink.set_property("enable-last-sample", False)
-        except Exception as e:
-            log("failed to disable last buffer: %s", e)
+        self.sink.set_property("enable-last-sample", False)
         self.skipped_caps = set()
         if JITTER>0:
             self.jitter_queue = Queue()
-        try:
-            #Gst 1.0:
-            self.sink.connect("new-sample", self.on_new_sample)
-            self.sink.connect("new-preroll", self.on_new_preroll1)
-        except:
-            #Gst 0.10:
-            self.sink.connect("new-buffer", self.on_new_buffer)
-            self.sink.connect("new-preroll", self.on_new_preroll0)
+        #Gst 1.0:
+        self.sink.connect("new-sample", self.on_new_sample)
+        self.sink.connect("new-preroll", self.on_new_preroll)
         self.src = self.pipeline.get_by_name("src")
-        try:
-            for x in ("actual-buffer-time", "actual-latency-time"):
-                #don't comment this out, it is used to verify the attributes are present:
-                gstlog("initial %s: %s", x, self.src.get_property(x))
-            self.buffer_latency = True
-        except Exception as e:
-            log.info("source %s does not support 'buffer-time' or 'latency-time':", self.src_type)
-            log.info(" %s", e)
-        else:
-            #if the env vars have been set, try to honour the settings:
-            global BUFFER_TIME, LATENCY_TIME
-            if BUFFER_TIME>0:
-                if BUFFER_TIME<LATENCY_TIME:
-                    log.warn("Warning: latency (%ims) must be lower than the buffer time (%ims)", LATENCY_TIME, BUFFER_TIME)
-                else:
-                    log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i", src_type, BUFFER_TIME, LATENCY_TIME)
-                    def settime(attr, v):
-                        try:
-                            cval = self.src.get_property(attr)
-                            gstlog("default: %s=%i", attr, cval//1000)
-                            if v>=0:
-                                self.src.set_property(attr, v*1000)
-                                gstlog("overriding with: %s=%i", attr, v)
-                        except Exception as e:
-                            log.warn("source %s does not support '%s': %s", self.src_type, attr, e)
-                    settime("buffer-time", BUFFER_TIME)
-                    settime("latency-time", LATENCY_TIME)
+        for x in ("actual-buffer-time", "actual-latency-time"):
+            #don't comment this out, it is used to verify the attributes are present:
+            gstlog("initial %s: %s", x, self.src.get_property(x))
+        self.buffer_latency = True
+        #if the env vars have been set, try to honour the settings:
+        global BUFFER_TIME, LATENCY_TIME
+        if BUFFER_TIME>0:
+            if BUFFER_TIME<LATENCY_TIME:
+                log.warn("Warning: latency (%ims) must be lower than the buffer time (%ims)", LATENCY_TIME, BUFFER_TIME)
+            else:
+                log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i", src_type, BUFFER_TIME, LATENCY_TIME)
+                def settime(attr, v):
+                    try:
+                        cval = self.src.get_property(attr)
+                        gstlog("default: %s=%i", attr, cval//1000)
+                        if v>=0:
+                            self.src.set_property(attr, v*1000)
+                            gstlog("overriding with: %s=%i", attr, v)
+                    except Exception as e:
+                        log.warn("source %s does not support '%s': %s", self.src_type, attr, e)
+                settime("buffer-time", BUFFER_TIME)
+                settime("latency-time", LATENCY_TIME)
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
             parts = codec.split("+")
@@ -197,17 +181,17 @@ class SoundSource(SoundPipeline):
         return info
 
 
-    def on_new_preroll1(self, appsink):
+    def on_new_preroll(self, appsink):
         sample = appsink.emit('pull-preroll')
-        gstlog('new preroll1: %s', sample)
-        return self.emit_buffer1(sample)
+        gstlog('new preroll: %s', sample)
+        return self.emit_buffer(sample)
 
     def on_new_sample(self, bus):
         #Gst 1.0
         sample = self.sink.emit("pull-sample")
-        return self.emit_buffer1(sample)
+        return self.emit_buffer(sample)
 
-    def emit_buffer1(self, sample):
+    def emit_buffer(self, sample):
         buf = sample.get_buffer()
         #info = sample.get_info()
         size = buf.get_size()
@@ -224,65 +208,12 @@ class SoundSource(SoundPipeline):
         if pts==-1 and duration==-1 and BUNDLE_METADATA and len(self.pending_metadata)<10:
             self.pending_metadata.append(data)
             return 0
-        return self.emit_buffer(data, {
+        return self._emit_buffer(data, {
                                        "timestamp"  : pts,
                                        "duration"   : duration,
                                        })
 
-
-    def on_new_preroll0(self, appsink):
-        buf = appsink.emit('pull-preroll')
-        gstlog('new preroll0: %s bytes', len(buf))
-        return self.emit_buffer0(buf)
-
-    def on_new_buffer(self, bus):
-        #pygst 0.10
-        buf = self.sink.emit("pull-buffer")
-        return self.emit_buffer0(buf)
-
-
-    def caps_to_dict(self, caps):
-        if not caps:
-            return {}
-        d = {}
-        try:
-            for cap in caps:
-                name = cap.get_name()
-                capd = {}
-                for k in cap.keys():
-                    v = cap[k]
-                    if type(v) in (str, int):
-                        capd[k] = cap[k]
-                    elif k not in self.skipped_caps:
-                        log("skipping %s cap key %s=%s of type %s", name, k, v, type(v))
-                d[name] = capd
-        except Exception as e:
-            log.error("Error parsing '%s':", caps)
-            log.error(" %s", e)
-        return d
-
-    def emit_buffer0(self, buf):
-        """ convert pygst structure into something more generic for the wire """
-        #none of the metadata is really needed at present, but it may be in the future:
-        #metadata = {"caps"      : buf.get_caps().to_string(),
-        #            "size"      : buf.size,
-        #            "timestamp" : buf.timestamp,
-        #            "duration"  : buf.duration,
-        #            "offset"    : buf.offset,
-        #            "offset_end": buf.offset_end}
-        log("emit buffer: %s bytes, timestamp=%s", len(buf.data), buf.timestamp//MS_TO_NS)
-        metadata = {
-                   "timestamp" : normv(buf.timestamp),
-                   "duration"  : normv(buf.duration)
-                   }
-        d = self.caps_to_dict(buf.get_caps())
-        if not self.caps or self.caps!=d:
-            self.caps = d
-            self.info["caps"] = self.caps
-            metadata["caps"] = self.caps
-        return self.emit_buffer(buf.data, metadata)
-
-    def emit_buffer(self, data, metadata={}):
+    def _emit_buffer(self, data, metadata={}):
         if self.stream_compressor and data:
             data = compressed_wrapper("sound", data, level=9, zlib=False, lz4=(self.stream_compressor=="lz4"), lzo=(self.stream_compressor=="lzo"), can_inline=True)
             #log("compressed using %s from %i bytes down to %i bytes", self.stream_compressor, len(odata), len(data))
@@ -312,6 +243,28 @@ class SoundSource(SoundPipeline):
             return 0
         log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
         return self.do_emit_buffer(data, metadata)
+
+
+    def caps_to_dict(self, caps):
+        if not caps:
+            return {}
+        d = {}
+        try:
+            for cap in caps:
+                name = cap.get_name()
+                capd = {}
+                for k in cap.keys():
+                    v = cap[k]
+                    if type(v) in (str, int):
+                        capd[k] = cap[k]
+                    elif k not in self.skipped_caps:
+                        log("skipping %s cap key %s=%s of type %s", name, k, v, type(v))
+                d[name] = capd
+        except Exception as e:
+            log.error("Error parsing '%s':", caps)
+            log.error(" %s", e)
+        return d
+
 
     def flush_jitter_queue(self):
         while not self.jitter_queue.empty():
