@@ -37,8 +37,8 @@ IF EXIST "%ProgramFiles(x86)%\MSI Wrapper\MsiWrapper.exe" (
 IF EXIST "E:\Xpra-Build-Libs\" (
 	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs\
 )
-IF EXIST "E:\Xpra-Build-Libs-v0.17.x\" (
-	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs-v0.17.x\
+IF EXIST "E:\Xpra-Build-Libs-v1.0.x\" (
+	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs-v1.0.x\
 )
 
 SET PYTHON_EXE=%PYTHON%\python.exe
@@ -93,17 +93,6 @@ IF NOT EXIST "%TORTOISEPLINK%" (
 ECHO Win7 onwards copy of TortoisePlink found in %TORTOISEPLINK%
 COPY /Y %TORTOISEPLINK%\TortoisePlink.exe %DIST%\Plink.exe > NUL
 COPY /Y %TORTOISEPLINK%\*.dll %DIST%\ > NUL
-SET TORTOISEPLINK_XP="%XPRA_WIN32_BUILD_LIB_PREFIX%\TortoisePlink-XP"
-IF NOT EXIST "%TORTOISEPLINK_XP%" (
-	ECHO Error: '%TORTOISEPLINK_XP%' does not exist!
-	GOTO ERROR
-)
-ECHO XP version of TortoisePlink found in %TORTOISEPLINK_XP%
-MKDIR %DIST%\TortoisePlink-XP
-COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcr110.dll" %DIST%\TortoisePlink-XP\ > NUL
-COPY /B /Y /V "%TORTOISEPLINK_XP%\msvcp110.dll" %DIST%\TortoisePlink-XP\ > NUL
-COPY /B /Y /V "%TORTOISEPLINK_XP%\TortoisePlink.exe" %DIST%\TortoisePlink-XP\Plink.exe > NUL
-COPY /B /Y /V "%TORTOISEPLINK_XP%\Putty-LICENSE.txt" %DIST%\ > NUL
 
 ECHO ****** Adding OpenSSL
 SET OPENSSL="%XPRA_WIN32_BUILD_LIB_PREFIX%\OpenSSL"
