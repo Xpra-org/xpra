@@ -74,10 +74,8 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int y_chroma_shift
 
 cdef extern from "vpx/vp8dx.h":
-    IF ENABLE_VP8:
-        const vpx_codec_iface_t *vpx_codec_vp8_dx()
-    IF ENABLE_VP9:
-        const vpx_codec_iface_t *vpx_codec_vp9_dx()
+    const vpx_codec_iface_t *vpx_codec_vp8_dx()
+    const vpx_codec_iface_t *vpx_codec_vp9_dx()
 
 cdef extern from "vpx/vpx_decoder.h":
     ctypedef struct vpx_codec_enc_cfg_t:
@@ -107,23 +105,19 @@ cdef extern from "vpx/vpx_decoder.h":
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = {}
-CODECS = []
-IF ENABLE_VP8:
-    CODECS.append("vp8")
-    COLORSPACES["vp8"] = ["YUV420P"]
-IF ENABLE_VP9:
-    CODECS.append("vp9")
-    vp9_cs = ["YUV420P"]
-    #this is the ABI version with libvpx 1.4.0:
-    if VPX_DECODER_ABI_VERSION>=9:
-        vp9_cs.append("YUV444P")
+CODECS = ["vp8", "vp9"]
+COLORSPACES["vp8"] = ["YUV420P"]
+vp9_cs = ["YUV420P"]
+#this is the ABI version with libvpx 1.4.0:
+if VPX_DECODER_ABI_VERSION>=9:
+    vp9_cs.append("YUV444P")
+else:
+    if sys.platform.startswith("darwin"):
+        pass        #cannot build libvpx 1.4 on osx... so skip warning
     else:
-        if sys.platform.startswith("darwin"):
-            pass        #cannot build libvpx 1.4 on osx... so skip warning
-        else:
-            log.warn("Warning: libvpx ABI version %s is too old:", VPX_DECODER_ABI_VERSION)
-            log.warn(" disabling YUV444P support with VP9")
-    COLORSPACES["vp9"] = vp9_cs
+        log.warn("Warning: libvpx ABI version %s is too old:", VPX_DECODER_ABI_VERSION)
+        log.warn(" disabling YUV444P support with VP9")
+COLORSPACES["vp9"] = vp9_cs
 
 
 def init_module():
@@ -173,12 +167,10 @@ def get_info():
 
 
 cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
-    IF ENABLE_VP8:
-        if encoding=="vp8":
-            return vpx_codec_vp8_dx()
-    IF ENABLE_VP9:
-        if encoding=="vp9":
-            return vpx_codec_vp9_dx()
+    if encoding=="vp8":
+        return vpx_codec_vp8_dx()
+    if encoding=="vp9":
+        return vpx_codec_vp9_dx()
     raise Exception("unsupported encoding: %s" % encoding)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):

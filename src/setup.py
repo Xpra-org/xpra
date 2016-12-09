@@ -2326,9 +2326,7 @@ toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     #try both vpx and libvpx as package names:
     kwargs = {
-              "LIBVPX14"    : pkg_config_version("1.4", "vpx") or pkg_config_version("1.4", "libvpx"),
-              "ENABLE_VP8"  : True,
-              "ENABLE_VP9"  : pkg_config_version("1.3", "vpx") or pkg_config_version("1.3", "libvpx"),
+              "LIBVPX14"    : pkg_config_version("1.4", "vpx"),
               }
     make_constants("xpra", "codecs", "vpx", "constants", **kwargs)
     vpx_pkgconfig = pkgconfig("vpx")

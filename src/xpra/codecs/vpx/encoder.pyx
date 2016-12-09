@@ -33,9 +33,7 @@ cdef inline int roundup(int n, int m):
 
 include "constants.pxi"
 
-cdef int ENABLE_VP9_YUV444 = False
-IF ENABLE_VP9:
-    ENABLE_VP9_YUV444 = envbool("XPRA_VP9_YUV444", True)
+cdef int ENABLE_VP9_YUV444 = envbool("XPRA_VP9_YUV444", True)
 cdef int ENABLE_VP9_TILING = envbool("XPRA_VP9_TILING", False)
 
 
@@ -89,8 +87,7 @@ cdef extern from "vpx/vpx_codec.h":
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
-    IF ENABLE_VP9:
-        cdef int VPX_IMG_FMT_I444
+    cdef int VPX_IMG_FMT_I444
     ctypedef struct vpx_image_t:
         unsigned int w
         unsigned int h
@@ -104,10 +101,8 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int y_chroma_shift
 
 cdef extern from "vpx/vp8cx.h":
-    IF ENABLE_VP8:
-        const vpx_codec_iface_t *vpx_codec_vp8_cx()
-    IF ENABLE_VP9:
-        const vpx_codec_iface_t *vpx_codec_vp9_cx()
+    const vpx_codec_iface_t *vpx_codec_vp8_cx()
+    const vpx_codec_iface_t *vpx_codec_vp9_cx()
 
 cdef extern from "vpx/vpx_encoder.h":
     int VPX_ENCODER_ABI_VERSION
@@ -122,8 +117,7 @@ cdef extern from "vpx/vpx_encoder.h":
     IF LIBVPX14:
         #function to enable/disable periodic Q boost:
         int VP9E_SET_FRAME_PERIODIC_BOOST
-    IF ENABLE_VP9:
-        int VP9E_SET_LOSSLESS
+    int VP9E_SET_LOSSLESS
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -219,20 +213,17 @@ PACKET_KIND = {
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = {}
 
-CODECS = []
-IF ENABLE_VP8:
-    CODECS.append("vp8")
-    COLORSPACES["vp8"] = ["YUV420P"]
-IF ENABLE_VP9:
-    CODECS.append("vp9")
-    vp9_cs = ["YUV420P"]
-    #this is the ABI version with libvpx 1.4.0:
-    if ENABLE_VP9_YUV444:
-        if VPX_ENCODER_ABI_VERSION>=10:
-            vp9_cs.append("YUV444P")
-        else:
-            log("encoder abi is too low to enable YUV444P: %s", VPX_ENCODER_ABI_VERSION)
-    COLORSPACES["vp9"] = vp9_cs
+CODECS = ["vp8", "vp9"]
+COLORSPACES["vp8"] = ["YUV420P"]
+CODECS.append("vp9")
+vp9_cs = ["YUV420P"]
+#this is the ABI version with libvpx 1.4.0:
+if ENABLE_VP9_YUV444:
+    if VPX_ENCODER_ABI_VERSION>=10:
+        vp9_cs.append("YUV444P")
+    else:
+        log("encoder abi is too low to enable YUV444P: %s", VPX_ENCODER_ABI_VERSION)
+COLORSPACES["vp9"] = vp9_cs
 
 
 def init_module():
@@ -291,12 +282,10 @@ def get_info():
 
 
 cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
-    IF ENABLE_VP8:
-        if encoding=="vp8":
-            return vpx_codec_vp8_cx()
-    IF ENABLE_VP9:
-        if encoding=="vp9":
-            return vpx_codec_vp9_cx()
+    if encoding=="vp8":
+        return vpx_codec_vp8_cx()
+    if encoding=="vp9":
+        return vpx_codec_vp9_cx()
     raise Exception("unsupported encoding: %s" % encoding)
 
 
@@ -338,9 +327,8 @@ def get_spec(encoding, colorspace):
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
     if colorspace=="YUV420P":
         return VPX_IMG_FMT_I420
-    IF ENABLE_VP9:
-        if colorspace=="YUV444P" and ENABLE_VP9_YUV444:
-            return VPX_IMG_FMT_I444
+    if colorspace=="YUV444P" and ENABLE_VP9_YUV444:
+        return VPX_IMG_FMT_I444
     raise Exception("invalid colorspace %s" % colorspace)
 
 def get_error_string(int err):
@@ -443,16 +431,15 @@ cdef class Encoder:
             raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, bytestostr(vpx_codec_error(self.context))))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         cdef vpx_codec_err_t ctrl
-        IF ENABLE_VP9:
-            if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
-                tile_columns = 0
-                if width>=256:
-                    tile_columns = 1
-                elif width>=512:
-                    tile_columns = 2
-                elif width>=1024:
-                    tile_columns = 3
-                self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
+        if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
+            tile_columns = 0
+            if width>=256:
+                tile_columns = 1
+            elif width>=512:
+                tile_columns = 2
+            elif width>=1024:
+                tile_columns = 3
+            self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
         IF LIBVPX14:
             if encoding=="vp9":
                 #disable periodic Q boost which causes latency spikes:
@@ -703,10 +690,9 @@ cdef class Encoder:
     cdef do_set_encoding_quality(self, int pct):
         self.update_cfg()
         cdef int lossless = 0
-        IF ENABLE_VP9:
-            if self.encoding=="vp9":
-                if self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100):
-                    lossless = 1
+        if self.encoding=="vp9":
+            if self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100):
+                lossless = 1
         self.lossless = lossless
         cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
