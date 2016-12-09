@@ -96,10 +96,6 @@ if STRICT_ENCODINGS:
     os.environ["XPRA_MAX_PIXELS_PREFER_RGB"] = "0"
     os.environ["XPRA_MAX_NONVIDEO_PIXELS"] = "0"
 
-#webp leaks - don't test it:
-#if XPRA_VERSION_NO>=[0, 7]:
-#    config.XPRA_TEST_ENCODINGS.append("webp")
-
 XPRA_SPEAKER_OPTIONS = [None]
 XPRA_MICROPHONE_OPTIONS = [None]
 if config.TEST_SOUND:

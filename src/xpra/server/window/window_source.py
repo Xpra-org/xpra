@@ -60,7 +60,7 @@ from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import webp_encode, rgb_encode, mmap_send
+from xpra.server.picture_encode import rgb_encode, mmap_send
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
@@ -231,8 +231,6 @@ class WindowSource(object):
                 if x in self.server_core_encodings:
                     self._encoders[x] = self.pillow_encode
         #prefer this one over PIL supplied version:
-        if "webp" in self.server_core_encodings:
-            self._encoders["webp"] = self.webp_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
 
@@ -719,7 +717,7 @@ class WindowSource(object):
             are = self.client_refresh_encodings
         else:
             #sane defaults:
-            ropts = set(("png", "webp", "rgb24", "rgb32", "webp"))      #default encodings for auto-refresh
+            ropts = set(("png", "rgb24", "rgb32"))          #default encodings for auto-refresh
             if AUTO_REFRESH_QUALITY<100:
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
@@ -796,7 +794,7 @@ class WindowSource(object):
             return "rgb32"
         if "png" in self.common_encodings and quality>75:
             return "png"
-        for x in ("rgb32", "png", "webp", "rgb32"):
+        for x in ("rgb32", "png", "rgb32"):
             if x in self.common_encodings:
                 return x
         return self.common_encodings[0]
@@ -1743,7 +1741,6 @@ class WindowSource(object):
 
             * 'mmap' will use 'mmap_encode'
             * 'jpeg' and 'png' are handled by 'pillow_encode'
-            * 'webp' uses 'webp_encode'
             * 'h264', 'h265', 'vp8' and 'vp9' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode'
         """
@@ -1889,11 +1886,6 @@ class WindowSource(object):
         #log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
-
-    def webp_encode(self, coding, image, options):
-        q = options.get("quality") or self.get_quality(coding)
-        s = options.get("speed") or self.get_speed(coding)
-        return webp_encode(coding, image, self.rgb_formats, self.supports_transparency, q, s, options)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed

@@ -55,9 +55,6 @@ class XpraClient(GTKXpraClient):
 
     def do_get_core_encodings(self):
         cencs = GTKXpraClient.do_get_core_encodings(self)
-        for x in ("webp", ):
-            if x in cencs:
-                cencs.remove(x)
         #for some reason, the cairo_workaround does not work for ARGB32
         #cencs.append("rgb32")
         return cencs

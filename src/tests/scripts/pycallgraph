@@ -43,7 +43,7 @@ damage = [
           'xpra.server.source_stats.*',
           'xpra.server.window_stats.*']
 codecs = ['xpra.codecs.*.<module>',
-          'xpra.codecs.x264.*', 'xpra.codecs.vpx.*', 'xpra.codecs.webp.*',
+          'xpra.codecs.x264.*', 'xpra.codecs.vpx.*',
           'xpra.codecs.xor.*',
           "PIL.*",
           ]

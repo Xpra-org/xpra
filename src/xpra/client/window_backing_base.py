@@ -24,7 +24,7 @@ INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 
 #ie:
-#CSC_OPTIONS = { "YUV420P" : {"RGBX" : [opencl.spec, swscale.spec], "BGRX" : ...} }
+#CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
 CSC_OPTIONS = None
 def load_csc_options():
     global CSC_OPTIONS
@@ -245,21 +245,6 @@ class WindowBackingBase(object):
         paint_options["rgb_format"] = rgb_format
         self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         return False
-
-    def paint_webp(self, img_data, x, y, width, height, options, callbacks):
-        dec_webp = get_codec("dec_webp")
-        if not dec_webp or WEBP_PILLOW:
-            #if webp is enabled, then Pillow should be able to take care of it:
-            return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
-        has_alpha = options.get("has_alpha", False)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.get("rgb_format"))
-        #replace with the actual rgb format we get from the decoder:
-        options["rgb_format"] = rgb_format
-        def free_buffer(*args):
-            buffer_wrapper.free()
-        callbacks.append(free_buffer)
-        data = buffer_wrapper.get_pixels()
-        return self.paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):
         """ can be called from a non-UI thread
@@ -491,8 +476,6 @@ class WindowBackingBase(object):
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
-            elif coding == "webp":
-                self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "scroll":

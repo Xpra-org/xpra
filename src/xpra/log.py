@@ -205,8 +205,6 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("csc"          , "Colourspace conversion codecs"),
                 ("cuda"         , "CUDA device access (nvenc)"),
                 ("cython"       , "Cython CSC module"),
-                ("opencl"       , "OpenCL CSC module"),
-                ("opencv"       , "OpenCV CSC module"),
                 ("swscale"      , "swscale CSC module"),
                 ("libyuv"       , "libyuv CSC module"),
                 ("decoder"      , "All decoders"),
@@ -219,8 +217,6 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("nvenc"        , "nvenc encoder (all versions)"),
                 ("x264"         , "libx264 encoder"),
                 ("x265"         , "libx265 encoder"),
-                ("xvid"         , "Xvid encoder"),
-                ("webp"         , "libwebp encoder and decoder"),
                 ("webcam"       , "webcam access"),
                 ])),
     ("Pointer", OrderedDict([

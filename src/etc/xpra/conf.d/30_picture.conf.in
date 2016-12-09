@@ -3,7 +3,7 @@
 
 # Encodings allowed:
 # (not all encodings may be available in your environment):
-#encodings = h264, vp8, png, png/P, png/L, webp, rgb, jpeg, h265, vp9
+#encodings = h264, vp8, png, png/P, png/L, rgb, jpeg, h265, vp9
 #encodings = all
 #encodings = rgb
 encodings = all
@@ -15,7 +15,6 @@ encodings = all
 #encoding = png
 #encoding = jpeg
 #encoding = rgb
-#encoding = webp
 
 # Used by the server to encode video:
 # video-encoders = x264, vpx, nvenc

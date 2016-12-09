@@ -119,19 +119,6 @@ def pkg_config_version(req_version, pkgname, **kwargs):
     from distutils.version import LooseVersion
     return LooseVersion(out)>=LooseVersion(req_version)
 
-def check_pyopencl_AMD():
-    try:
-        import pyopencl
-        opencl_platforms = pyopencl.get_platforms()         #@UndefinedVariable
-        for platform in opencl_platforms:
-            if platform.name.startswith("AMD"):
-                print("WARNING: AMD OpenCL icd found, refusing to build OpenCL by default!")
-                print(" you must use --with-csc_opencl to force enable it, then deal with the bugs it causes yourself")
-                return False
-    except:
-        pass
-    return True
-
 def is_RH():
     try:
         with open("/etc/redhat-release", mode='rb') as f:
@@ -182,9 +169,7 @@ mdns_ENABLED            = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
-enc_xvid_ENABLED        = DEFAULT and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
-webp_ENABLED            = False
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
@@ -202,7 +187,6 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 csc_cython_ENABLED      = DEFAULT
-csc_opencv_ENABLED      = DEFAULT and not OSX
 if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
     nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
@@ -216,7 +200,6 @@ else:
     nvenc7_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc7")
 
 memoryview_ENABLED      = sys.version>='2.7'
-csc_opencl_ENABLED      = DEFAULT and pkg_config_ok("--exists", "OpenCL") and check_pyopencl_AMD()
 csc_libyuv_ENABLED      = DEFAULT and memoryview_ENABLED and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
 #Cython / gcc / packaging build options:
@@ -231,12 +214,12 @@ tests_ENABLED           = False
 rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
+SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "nvenc7",
-            "vpx", "webp", "pillow",
+            "vpx", "pillow",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
-            "csc_opencl", "csc_cython", "csc_opencv", "csc_libyuv",
+            "csc_cython", "csc_libyuv",
             "memoryview",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
@@ -955,12 +938,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
-                   "xpra/codecs/enc_xvid/encoder.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/libav_common/av_log.c",
-                   "xpra/codecs/webp/encode.c",
-                   "xpra/codecs/webp/decode.c",
                    "xpra/codecs/dec_avcodec2/decoder.c",
                    "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
@@ -1157,13 +1137,6 @@ if WIN32:
             if os.path.exists(t):
                 GNOME_DIR = t
             t = os.path.join(x, "include")
-            if os.path.exists(t):
-                webp_include_dir = t
-        #webp:
-        webp_path       = GNOME_DIR
-        webp_bin_dir    = GNOME_DIR
-        webp_lib_dir    = GNOME_DIR
-        webp_lib_names      = ["libwebp"]
     else:
         gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
         python_include_path = "C:\\Python27\\include"
@@ -1175,13 +1148,6 @@ if WIN32:
         glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
         pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
         gtk2_include_dir        = os.path.join(GTK_INCLUDE_DIR, "gtk-2.0")
-
-        #webp:
-        webp_path = WIN32_BUILD_LIB_PREFIX + "libwebp-windows-x86"
-        webp_include_dir    = webp_path+"\\include"
-        webp_lib_dir        = webp_path+"\\lib"
-        webp_bin_dir        = webp_path+"\\bin"
-        webp_lib_names      = ["libwebp"]
 
     atk_include_dir         = os.path.join(GTK_INCLUDE_DIR, "atk-1.0")
     gdkpixbuf_include_dir   = os.path.join(GTK_INCLUDE_DIR, "gdk-pixbuf-2.0")
@@ -1496,9 +1462,6 @@ if WIN32:
                })
             add_data_files('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*'))
             add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
-            if webp_ENABLED and not PYTHON3:
-                #add the webp DLL to the output:
-                add_data_files('',      [webp_bin_dir+"\\libwebp.dll"])
             if enc_x264_ENABLED:
                 add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
                 #find pthread DLL...
@@ -1703,10 +1666,6 @@ if WIN32:
             add_keywords([vpx_bin_dir], [vpx_include_dir],
                          [vpx_lib_dir],
                          vpx_lib_names, nocmt=True)
-        elif "webp" in pkgs_options[0]:
-            add_keywords([webp_bin_dir], [webp_include_dir],
-                         [webp_lib_dir],
-                         webp_lib_names, nocmt=True)
         elif "libyuv" in pkgs_options[0]:
             add_keywords([libyuv_bin_dir], [libyuv_include_dir],
                          [libyuv_lib_dir],
@@ -2337,38 +2296,9 @@ if enc_x265_ENABLED:
                 ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
                 **x265_pkgconfig))
 
-toggle_packages(enc_xvid_ENABLED, "xpra.codecs.enc_xvid")
-if enc_xvid_ENABLED:
-    xvid_pkgconfig = pkgconfig("xvid")
-    cython_add(Extension("xpra.codecs.enc_xvid.encoder",
-                ["xpra/codecs/enc_xvid/encoder.pyx", buffers_c],
-                **xvid_pkgconfig))
-
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 if pillow_ENABLED:
     external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
-
-toggle_packages(webp_ENABLED, "xpra.codecs.webp")
-if webp_ENABLED:
-    if WIN32 and PYTHON3:
-        #python3 gi has webp already, but our codecs somehow end up linking against the mingw version,
-        #and at runtime requesting "libwebp-4.dll", which does not exist anywhere!?
-        #the installer already bundles a "libwebp-5.dll", so we just duplicate it and hope for the best!
-        #TODO: make it link against the gnome-gi one and remove this ugly hack:
-        libwebp5 = os.path.join(webp_path, "libwebp-5.dll")
-        libwebp4 = os.path.join(webp_path, "libwebp-4.dll")
-        if not os.path.exists(libwebp4):
-            shutil.copy(libwebp5, libwebp4)
-        add_data_files('', [libwebp4, libwebp5])
-
-    webp_pkgconfig = pkgconfig("webp")
-    if not OSX:
-        cython_add(Extension("xpra.codecs.webp.encode",
-                    ["xpra/codecs/webp/encode.pyx", buffers_c],
-                    **webp_pkgconfig))
-    cython_add(Extension("xpra.codecs.webp.decode",
-                ["xpra/codecs/webp/decode.pyx"]+membuffers_c,
-                **webp_pkgconfig))
 
 #swscale and avcodec2 use libav_common/av_log:
 libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
@@ -2388,7 +2318,6 @@ if dec_avcodec2_ENABLED:
                 **avcodec2_pkgconfig))
 
 
-toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
@@ -2410,8 +2339,6 @@ if csc_cython_ENABLED:
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
                 ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
                 **csc_cython_pkgconfig))
-
-toggle_packages(csc_opencv_ENABLED, "xpra.codecs.csc_opencv")
 
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")

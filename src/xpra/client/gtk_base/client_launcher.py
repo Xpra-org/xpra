@@ -473,7 +473,7 @@ class ApplicationWindow:
 
     def encoding_changed(self, *args):
         encoding = self.get_selected_encoding()
-        uses_quality_option = encoding in ["jpeg", "webp", "h264", "auto"]
+        uses_quality_option = encoding in ["jpeg", "h264", "auto"]
         log("encoding_changed(%s) uses_quality_option(%s)=%s", args, encoding, uses_quality_option)
         if uses_quality_option:
             self.quality_combo.show()

@@ -29,7 +29,7 @@
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define systemd 0
-%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_opencv --without-enc_xvid
+%define build_args --with-Xdummy --without-enc_x265
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , %{py2prefix}-lzo
@@ -197,7 +197,6 @@ Requires: libwebp
 Requires: libyuv
 %endif
 Requires: x264-xpra
-#Requires: xvidcore
 Requires: ffmpeg-xpra
 Requires: python2-pynvml
 Requires: %{numpy}
@@ -243,7 +242,6 @@ BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
 %endif
 BuildRequires: x264-xpra-devel
-#BuildRequires: xvidcore-devel
 BuildRequires: ffmpeg-xpra-devel
 BuildRequires: desktop-file-utils
 %if 0%{?run_tests}

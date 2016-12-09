@@ -325,12 +325,6 @@ class ServerBase(ServerCore):
         if enc_pillow:
             pil_encs = enc_pillow.get_encodings()
             add_encodings(pil_encs)
-            #Note: webp will only be enabled if we have a Python-PIL fallback
-            #(either "webp" or "png")
-            if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
-                add_encodings(["webp"])
-                if "webp" not in self.lossless_mode_encodings:
-                    self.lossless_mode_encodings.append("webp")
         #look for video encodings with lossless mode:
         for e in ve:
             for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
@@ -343,7 +337,7 @@ class ServerBase(ServerCore):
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
-        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
+        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
         pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
         if pref:
             self.default_encoding = pref[0]
@@ -2042,7 +2036,7 @@ class ServerBase(ServerCore):
              "lossless"             : self.lossless_encodings,
              "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
              "with_speed"           : list(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L"))),
-             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
+             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings}
 
     def get_keyboard_info(self):

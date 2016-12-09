@@ -44,7 +44,7 @@ class TestChangeSettings(CommandConnectClient):
         self.queue = []
         for i in range(10):
             self.queue.append(("command_request", "auto-refresh", "%.4f" % (i/100)))
-            for encoding in ("rgb", "png", "jpeg", "h264", "vp8", "webp"):
+            for encoding in ("rgb", "png", "jpeg", "h264", "vp8"):
                 self.queue.append(("command_request", "encoding", encoding, "strict"))
                 self.queue.append(("command_request", "quality", "*", 1))
                 self.queue.append(("command_request", "quality", "*", 100))

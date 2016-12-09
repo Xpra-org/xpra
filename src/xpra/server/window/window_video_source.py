@@ -447,20 +447,9 @@ class WindowVideoSource(WindowSource):
                 #assume that we have "turbojpeg",
                 #which beats everything in terms of efficiency for lossy compression:
                 return "jpeg"
-            #avoid large areas (too slow), especially at low speed and high quality:
-            if "webp" in options and pixel_count>16384:
-                max_webp = 1024*1024 * (200-quality)/100 * speed/100
-                if speed>30 and pixel_count<max_webp:
-                    return "webp"
         else:
             #lossless options:
-            #webp: don't enable it for "true" lossless (q>99) unless speed is high enough
-            #because webp forces speed=100 for true lossless mode
-            #also avoid very small and very large areas (both slow)
-            if "webp" in options and (quality<100 or speed>=50) and pixel_count>16384:
-                max_webp = 1024*1024 * (200-quality)/100 * speed/100
-                if pixel_count<max_webp:
-                    return "webp"
+            #avoid very small and very large areas (both slow)
             if speed>75:
                 if "rgb24" in options:
                     return "rgb24"

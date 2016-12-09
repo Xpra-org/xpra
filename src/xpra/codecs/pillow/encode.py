@@ -96,12 +96,12 @@ def encode(coding, image, quality, speed, supports_transparency):
     buf = BytesIOClass()
     client_options = {}
     #only optimize with Pillow>=2.2 and when speed is zero
-    if coding in ("jpeg", "webp"):
+    if coding=="jpeg":
         q = int(min(99, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
         client_options["quality"] = q
-        if coding=="jpeg" and PIL_can_optimize and speed<70:
+        if PIL_can_optimize and speed<70:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
             client_options["optimize"] = True

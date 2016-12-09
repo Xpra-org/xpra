@@ -216,18 +216,6 @@
 	</after>
   </autotools>
 
-  <autotools id="libwebp" autogenargs="" autogen-sh="configure">
-	<branch module="/releases/webp/libwebp-0.5.1.tar.gz"
-		version="0.5.1"
-		hash="sha256:6ad66c6fcd60a023de20b6856b03da8c7d347269d76b1fd9c3287e8b5e8813df"
-		repo="downloads.webmproject.org"/>
-	<dependencies>
-		<dep package="libjpeg"/>
-		<dep package="libpng"/>
-		<dep package="libtiff"/>
-	</dependencies>
-  </autotools>
-
   <autotools id="ffmpeg"
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
 		autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
@@ -922,7 +910,6 @@
       <!--  dep package="libvpx-13"/-->
       <!--  dep package="libvpx-16"/-->
       <dep package="x264"/>
-      <dep package="libwebp"/>
       <dep package="ffmpeg"/>
       <!--
       sdl doesn't build with newer versions of osx because of missing X header files

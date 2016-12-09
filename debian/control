@@ -74,13 +74,6 @@ Recommends:
 #trusty:        ,libx264-142
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
-        ,libxvidcore4
-#webp
-#jessie:        ,libwebp5
-#stretch:        ,libwebp5
-#trusty:        ,libwebp5
-#xenial:        ,libwebp5
-#yakkety:        ,libwebp5
 #AES encryption:
 #precise:        ,python-crypto
 #wheezy:        ,python-crypto
@@ -148,8 +141,6 @@ Recommends:
 #for using SSH passwords from the GUI launcher:
         ,sshpass
 Suggests: openssh-server
-# optional - only really useful with GPU opencl implementations:
-        ,python-pyopencl
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils

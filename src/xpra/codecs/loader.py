@@ -22,7 +22,7 @@ if sys.version > '3':
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc7", "opencl", "opencv"]
+NOWARN = ["nvenc7", ]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -151,9 +151,6 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
         add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
 
-        codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
-        add_codec_version("enc_webp", "xpra.codecs.webp.encode")
-
         if not sys.platform.startswith("darwin"):
             #causes crashes with osx shadow servers, disabled in setup.py:
             codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
@@ -169,9 +166,6 @@ def load_codecs(encoders=True, decoders=True, csc=True):
             codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
             add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
 
-        codec_import_check("enc_xvid", "xvid encoder", "xpra.codecs.enc_xvid", "xpra.codecs.enc_xvid.encoder", "Encoder")
-        add_codec_version("xvid", "xpra.codecs.enc_xvid.encoder")
-
         codec_import_check("enc_ffmpeg", "ffmpeg encoder", "xpra.codecs.enc_ffmpeg", "xpra.codecs.enc_ffmpeg.encoder", "Encoder")
         add_codec_version("ffmpeg", "xpra.codecs.enc_ffmpeg.encoder")
 
@@ -183,22 +177,13 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("csc_cython", "cython colorspace conversion", "xpra.codecs.csc_cython", "xpra.codecs.csc_cython.colorspace_converter", "ColorspaceConverter")
         add_codec_version("cython", "xpra.codecs.csc_cython.colorspace_converter")
 
-        codec_import_check("csc_opencl", "OpenCL colorspace conversion", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
-        add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter")
-
         codec_import_check("csc_libyuv", "libyuv colorspace conversion", "xpra.codecs.csc_libyuv", "xpra.codecs.csc_libyuv.colorspace_converter", "ColorspaceConverter")
         add_codec_version("libyuv", "xpra.codecs.csc_libyuv.colorspace_converter")
-
-        codec_import_check("csc_opencv", "OpenCV colorspace conversion", "xpra.codecs.csc_opencv", "xpra.codecs.csc_opencv.colorspace_converter", "ColorspaceConverter")
-        add_codec_version("opencv", "xpra.codecs.csc_opencv.colorspace_converter")
 
     if decoders:
         show += list(DECODER_CODECS)
         codec_import_check("dec_pillow", "Pillow decoder", "xpra.codecs.pillow", "xpra.codecs.pillow.decode", "decode")
         add_codec_version("dec_pillow", "xpra.codecs.pillow.decode")
-
-        codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
-        add_codec_version("dec_webp", "xpra.codecs.webp.decode")
 
         codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
         add_codec_version("vpx", "xpra.codecs.vpx.encoder")
@@ -241,17 +226,17 @@ def has_codec(name):
     return name in codecs
 
 
-CSC_CODECS = "csc_swscale", "csc_cython", "csc_opencl", "csc_libyuv", "csc_opencv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc7", "enc_xvid", "enc_ffmpeg"
-DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2"
+CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_x264", "enc_x265", "nvenc7", "enc_ffmpeg"
+DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "mpeg4+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "mpeg4+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
 #encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
+EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "png/P", "png/L", "rgb"]
 
 
 from xpra.net import compression
@@ -269,7 +254,6 @@ ENCODINGS_TO_NAME = {
       "png"     : "PNG (24/32bpp)",
       "png/P"   : "PNG (8bpp colour)",
       "png/L"   : "PNG (8bpp grayscale)",
-      "webp"    : "WebP",
       "jpeg"    : "JPEG",
       "rgb"     : " + ".join(RGB_COMP_OPTIONS) + " (24/32bpp)",
     }
@@ -284,12 +268,11 @@ ENCODINGS_HELP = {
       "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
       "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
       "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
-      "webp"    : "WebP compression (lossless or lossy)",
       "jpeg"    : "JPEG lossy compression",
       "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
       }
 
-HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
+HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "rgb", "jpeg")
 
 #those are currently so useless that we don't want the user to select them by mistake
 PROBLEMATIC_ENCODINGS = ("h265", )
