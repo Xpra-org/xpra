@@ -20,8 +20,8 @@ from distutils.command.build import build
 from distutils.command.install_data import install_data
 import shutil
 
-if sys.version<'2.6':
-    raise Exception("xpra no longer supports Python versions older than 2.6")
+if sys.version<'2.7':
+    raise Exception("xpra no longer supports Python versions older than 2.7")
 
 from hashlib import md5
 

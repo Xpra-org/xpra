@@ -19,10 +19,8 @@ log = Logger("server", "util")
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)
 # or when the user requests it with the env var:
-BUGGY_PYTHON = sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
-USE_PROCESS_POLLING = os.name!="posix" or envbool("XPRA_USE_PROCESS_POLLING") or BUGGY_PYTHON
+USE_PROCESS_POLLING = os.name!="posix" or envbool("XPRA_USE_PROCESS_POLLING")
 POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
-POLL_WARNING = envbool("XPRA_POLL_WARNING", True)
 
 
 singleton = None
@@ -65,11 +63,7 @@ class ChildReaper(object):
         self._quit = quit_cb
         self._proc_info = []
         if USE_PROCESS_POLLING:
-            if POLL_WARNING and BUGGY_PYTHON and exit_with_children:
-                log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
-                log.warn(" switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
-            else:
-                log("using process polling every %s seconds", POLL_DELAY)
+            log("using process polling every %s seconds", POLL_DELAY)
             self.glib.timeout_add(POLL_DELAY*1000, self.poll)
         else:
             #with a less buggy python, we can just check the list of pids
@@ -191,9 +185,13 @@ class ChildReaper(object):
 
     def get_info(self):
         iv = list(self._proc_info)
-        info = {"children"  : {"total"      : len(iv),
+        info = {
+                "children"  : {
+                               "total"      : len(iv),
                                "dead"       : len([x for x in iv if x.dead]),
-                               "ignored"    : len([x for x in iv if x.ignore])}}
+                               "ignored"    : len([x for x in iv if x.ignore]),
+                               }
+                }
         pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
         cinfo = {}
         for i, procinfo in enumerate(pi):
