@@ -16,7 +16,7 @@ def test_push():
     H = 640
     p.init_context(W, H, W, "YUV420P", "/dev/video1")
     print("actual dimensions: %s - requested=%s" % ((p.get_width(), p.get_height()), (W, H)))
-    from xpra.codecs.csc_cython.colorspace_converter import ColorspaceConverter #@UnresolvedImport
+    from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter #@UnresolvedImport
     csc = ColorspaceConverter()
     csc.init_context(W, H, "BGRX", W, H, "YUV420P")
     print("csc=%s" % csc)

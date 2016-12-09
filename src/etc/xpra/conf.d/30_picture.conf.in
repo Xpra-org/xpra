@@ -23,7 +23,7 @@ encodings = all
 video-encoders = all
 
 # Used by both the client and server for colourspace conversion:
-# csc-modules = swscale, cython, opencl
+# csc-modules = swscale, libyuv
 # csc-modules = none
 # csc-modules = all
 csc-modules = all

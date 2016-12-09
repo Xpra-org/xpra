@@ -174,9 +174,6 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
         add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
 
-        codec_import_check("csc_cython", "cython colorspace conversion", "xpra.codecs.csc_cython", "xpra.codecs.csc_cython.colorspace_converter", "ColorspaceConverter")
-        add_codec_version("cython", "xpra.codecs.csc_cython.colorspace_converter")
-
         codec_import_check("csc_libyuv", "libyuv colorspace conversion", "xpra.codecs.csc_libyuv", "xpra.codecs.csc_libyuv.colorspace_converter", "ColorspaceConverter")
         add_codec_version("libyuv", "xpra.codecs.csc_libyuv.colorspace_converter")
 
@@ -226,7 +223,7 @@ def has_codec(name):
     return name in codecs
 
 
-CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
+CSC_CODECS = "csc_swscale", "csc_libyuv"
 ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_x264", "enc_x265", "nvenc7", "enc_ffmpeg"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_avcodec2"
 

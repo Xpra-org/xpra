@@ -186,7 +186,6 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
-csc_cython_ENABLED      = DEFAULT
 if WIN32:
     WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
     nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
@@ -219,7 +218,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "vpx", "pillow",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
-            "csc_cython", "csc_libyuv",
+            "csc_libyuv",
             "memoryview",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
@@ -944,7 +943,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/dec_avcodec2/decoder.c",
                    "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
-                   "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
@@ -2333,18 +2331,12 @@ if csc_swscale_ENABLED:
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"]+membuffers_c,
                 **swscale_pkgconfig))
 
-toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
-if csc_cython_ENABLED:
-    csc_cython_pkgconfig = pkgconfig(optimize=3)
-    cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
-                ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
-                **csc_cython_pkgconfig))
-
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     #try both vpx and libvpx as package names:
-    kwargs = {"LIBVPX14"    : pkg_config_version("1.4", "vpx") or pkg_config_version("1.4", "libvpx"),
+    kwargs = {
+              "LIBVPX14"    : pkg_config_version("1.4", "vpx") or pkg_config_version("1.4", "libvpx"),
               "ENABLE_VP8"  : True,
               "ENABLE_VP9"  : pkg_config_version("1.3", "vpx") or pkg_config_version("1.3", "libvpx"),
               }

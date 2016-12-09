@@ -548,7 +548,7 @@ def usage(msg=None):
     print("#profile server:")
     print("%s -i '*' -e ALL -- start :10" % cmd)
     print("#profile client:")
-    print("%s -i '*' -e ALL -- attach  :10 --opengl=no --csc-module=cython" % cmd)
+    print("%s -i '*' -e ALL -- attach  :10 --opengl=no --csc-module=libyuv" % cmd)
     print("#profile the client's draw thread:")
     print("%s -t draw -i '*' -e ALL -- attach  :10" % cmd)
     print("#profile the client's write thread without logging for 10 seconds, xpra runs without mmap and with x264 as primary encoding:")

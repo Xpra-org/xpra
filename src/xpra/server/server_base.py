@@ -2984,12 +2984,8 @@ class ServerBase(ServerCore):
                 csc_mod = "csc_swscale"
                 from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
             except ImportError:
-                try:
-                    csc_mod = "csc_cython"
-                    from xpra.codecs.csc_cython.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-                except ImportError as e:
-                    ss.send_webcam_stop(device, "no csc module")
-                    return
+                ss.send_webcam_stop(device, "no csc module")
+                return
             try:
                 assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
                 assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
