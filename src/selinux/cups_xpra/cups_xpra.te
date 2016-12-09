@@ -1,4 +1,4 @@
-policy_module(cups_xpra, 1.0)
+policy_module(cups_xpra, 2.0)
 
 require {
 	type user_tmp_t;

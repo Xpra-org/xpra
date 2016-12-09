@@ -5,8 +5,8 @@ SETLOCAL EnableExtensions EnableDelayedExpansion
 IF EXIST "E:\Xpra-Build-Libs\" (
 	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs\
 )
-IF EXIST "E:\Xpra-Build-Libs-v1.0.x\" (
-	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs-v1.0.x\
+IF EXIST "E:\Xpra-Build-Libs-v2.0.x\" (
+	SET XPRA_WIN32_BUILD_LIB_PREFIX=E:\Xpra-Build-Libs-v2.0.x\
 )
 REM support double-click on BAT file, so run from parent directory:
 IF EXIST "BUILD.BAT" CD ..

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0
+%define version 2.0
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -590,6 +590,9 @@ fi
 
 
 %changelog
+* Fri Dec 09 2016 Antoine Martin <antoine@devloop.org.uk> 2.0-1
+- TODO
+
 * Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
 - SSL socket support
 - IANA assigned default port 14500 (so specifying the TCP port is now optional)
