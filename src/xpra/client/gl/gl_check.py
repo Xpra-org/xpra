@@ -66,7 +66,7 @@ VISUAL_TYPES = {
                 MSB_FIRST   : "MSB",
                 }
 
-from xpra.client.gl.gtk_compat import MODE_RGBA, MODE_ALPHA, MODE_RGB, MODE_DOUBLE, MODE_SINGLE
+from xpra.client.gl.gtk_compat import MODE_RGBA, MODE_ALPHA, MODE_RGB, MODE_DOUBLE, MODE_SINGLE, MODE_DEPTH
 
 
 def get_visual_name(visual):
