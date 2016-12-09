@@ -212,9 +212,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     log("rgb_reformat: converting %s from %s to %s using PIL", image, input_format, target_format)
     img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
-    #use tobytes() if present, fallback to tostring():
-    data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
-    data = data_fn("raw", target_format)
+    data = img.tobytes("raw", target_format)
     assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
     image.set_pixels(data)
     image.set_rowstride(rowstride)

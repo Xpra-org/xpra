@@ -62,8 +62,7 @@ def selftest(full=False):
             buf = BytesIOClass(cdata)
             img = PIL.Image.open(buf)
             assert img, "failed to open image data"
-            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
-            raw_data = data_fn("raw", img.mode)
+            raw_data = img.tobytes("raw", img.mode)
             assert raw_data
             #now try with junk:
             cdata = binascii.unhexlify("ABCD"+hexdata)

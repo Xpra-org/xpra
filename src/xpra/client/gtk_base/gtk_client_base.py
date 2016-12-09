@@ -533,8 +533,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             from PIL import Image
             buf = BytesIOClass(pixels)
             img = Image.open(buf)
-            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
-            pixels = data_fn("raw", "BGRA")
+            pixels = img.tobytes("raw", "BGRA")
             cursorlog("used PIL to convert png cursor to raw")
         elif encoding!="raw":
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)

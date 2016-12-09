@@ -122,8 +122,7 @@ class win32NotifyIcon(object):
             img = img.resize((size, size), Image.ANTIALIAS)
         if has_alpha:
             #extract alpha channel as mask into an inverted "L" channel image:
-            data_fn = getattr(img, "tobytes", getattr(img, "tostring", None))
-            alpha = data_fn("raw", "A")
+            alpha = img.tobytes("raw", "A")
             from_fn = getattr(Image, "frombytes", getattr(Image, "fromstring", None))
             mask = from_fn("L", img.size, alpha)
             mask = ImageOps.invert(mask)
