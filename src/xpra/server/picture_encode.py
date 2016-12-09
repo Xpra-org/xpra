@@ -13,7 +13,7 @@ log = Logger("window", "encoding")
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgb    #@UnresolvedImport
 from xpra.codecs.loader import get_codec
-from xpra.os_util import memoryview_to_bytes, _memoryview
+from xpra.os_util import memoryview_to_bytes
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
 try:
@@ -207,7 +207,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     w = image.get_width()
     h = image.get_height()
     #PIL cannot use the memoryview directly:
-    if _memoryview and isinstance(pixels, _memoryview):
+    if isinstance(pixels, memoryview):
         pixels = pixels.tobytes()
     log("rgb_reformat: converting %s from %s to %s using PIL", image, input_format, target_format)
     img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())

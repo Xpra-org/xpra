@@ -5,17 +5,12 @@
 # later version. See the file COPYING for details.
 
 import time
+from xpra.os_util import memoryview_to_bytes
 
-try:
-    #python 2.7 onwards have memoryview:
-    assert memoryview
-    def clone_plane(plane):
-        if type(plane)==memoryview:
-            return plane.tobytes()
-        return plane[:]
-except:
-    def clone_plane(plane):
-        return plane[:]
+def clone_plane(plane):
+    if isinstance(plane, memoryview):
+        return plane.tobytes()
+    return plane[:]
 
 
 class ImageWrapper(object):
@@ -154,7 +149,6 @@ class ImageWrapper(object):
         if y+h>self.height:
             raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
         assert self.planes==0, "cannot sub-divide planar images!"
-        from xpra.os_util import memoryview_to_bytes
         #copy to local variables:
         pixels = self.pixels
         oldstride = self.rowstride

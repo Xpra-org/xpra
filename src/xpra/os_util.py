@@ -26,7 +26,6 @@ try:
     import builtins                     #@UnresolvedImport @UnusedImport (python3)
 except:
     import __builtin__ as builtins      #@Reimport @UnusedImport
-_memoryview = builtins.__dict__.get("memoryview")
 _buffer = builtins.__dict__.get("buffer")
 
 
@@ -71,7 +70,7 @@ else:
 def memoryview_to_bytes(v):
     if type(v)==bytes:
         return v
-    if _memoryview and isinstance(v, _memoryview):
+    if isinstance(v, memoryview):
         return v.tobytes()
     if _buffer and isinstance(v, _buffer):
         return bytes(v)

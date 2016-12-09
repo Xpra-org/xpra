@@ -28,8 +28,8 @@ ALPHA = {
 #ensure that picture_encode can deal with pixels as NSCFData:
 def patch_picture_encode():
     from CoreFoundation import CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
-    from xpra.os_util import memoryview_to_bytes, _memoryview, _buffer
-    btypes = [x for x in (str, bytes, _memoryview, _buffer, bytearray) if x is not None]
+    from xpra.os_util import memoryview_to_bytes, _buffer
+    btypes = [x for x in (str, bytes, memoryview, _buffer, bytearray) if x is not None]
     def pixels_to_bytes(v):
         if type(v) in btypes:
             return memoryview_to_bytes(v)

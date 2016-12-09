@@ -31,7 +31,7 @@ from xpra.gtk_common.error import XError, xswallow, xsync, trap
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
-from xpra.os_util import StringIOClass, _memoryview
+from xpra.os_util import StringIOClass
 from xpra.net.compression import Compressed
 
 
@@ -735,7 +735,7 @@ class X11ServerBase(GTKServerBase):
             w = img.get_width()
             h = img.get_height()
             #PIL cannot use the memoryview directly:
-            if _memoryview and isinstance(pixels, _memoryview):
+            if isinstance(pixels, memoryview):
                 pixels = pixels.tobytes()
             try:
                 window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())

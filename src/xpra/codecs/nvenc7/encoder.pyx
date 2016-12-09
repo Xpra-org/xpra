@@ -14,7 +14,6 @@ from collections import deque
 from pycuda import driver
 
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
-from xpra.os_util import _memoryview
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
@@ -2072,7 +2071,7 @@ cdef class Encoder:
 
         #copy to input buffer:
         cdef object buf
-        if _memoryview and isinstance(pixels, _memoryview):
+        if isinstance(pixels, memoryview):
             #copy memoryview to inputBuffer directly:
             buf = self.inputBuffer
         else:

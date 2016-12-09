@@ -11,7 +11,6 @@ import zlib
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
-from xpra.os_util import _memoryview
 
 
 MAX_SIZE = 256*1024*1024
@@ -218,7 +217,7 @@ class Compressible(LargeStructure):
 
 
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
-    if _memoryview and isinstance(data, _memoryview):
+    if isinstance(data, memoryview):
         data = data.tobytes()
     size = len(data)
     if size>MAX_SIZE:

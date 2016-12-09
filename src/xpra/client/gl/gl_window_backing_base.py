@@ -164,10 +164,6 @@ except:
     OpenGL_accelerate = None
 zerocopy_upload = bool(OpenGL_accelerate) and envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True) and is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
 try:
-    memoryview_type = memoryview
-except:
-    memoryview_type = None
-try:
     buffer_type = buffer
 except:
     #not defined in py3k..
@@ -800,14 +796,14 @@ class GLWindowBackingBase(GTKWindowBacking):
     def pixels_for_upload(self, img_data):
         #prepare the pixel buffer for upload:
         t = type(img_data)
-        if t==memoryview_type:
+        if t==memoryview:
             if not zerocopy_upload:
                 #not safe, make a copy :(
                 return "copy:memoryview.tobytes", img_data.tobytes()
             return "zerocopy:memoryview", img_data
         elif t in (str, buffer_type) and zerocopy_upload:
             #we can zerocopy if we wrap it:
-            return "zerocopy:buffer-as-memoryview", memoryview_type(img_data)
+            return "zerocopy:buffer-as-memoryview", memoryview(img_data)
         elif t!=str:
             if hasattr(img_data, "raw"):
                 return "zerocopy:mmap", img_data.raw

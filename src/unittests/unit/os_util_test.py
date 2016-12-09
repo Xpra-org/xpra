@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.os_util import strtobytes, bytestostr, _memoryview, memoryview_to_bytes, OSEnvContext
+from xpra.os_util import strtobytes, bytestostr, memoryview_to_bytes, OSEnvContext
 
 
 class TestOSUtil(unittest.TestCase):
@@ -17,9 +17,9 @@ class TestOSUtil(unittest.TestCase):
         s = bytestostr(b)
         assert s
         assert s==str_value
-        if not _memoryview:
+        if not memoryview:
             return
-        mv = _memoryview(b)
+        mv = memoryview(b)
         mvb = memoryview_to_bytes(mv)
         mvs = bytestostr(mvb)
         assert mvs==str_value
