@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Antoine Martin <antoine@devloop.org.uk>
 Build-Depends: debhelper (>= 8)
               ,quilt
-              ,cython (>= 0.16)
+              ,cython (>= 0.24)
               ,ffmpeg-xpra
               ,libx11-dev
               ,libvpx-dev
@@ -31,10 +31,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
 #we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
-#wheezy:        ,xserver-xorg-video-dummy
 #jessie:        ,xserver-xorg-video-dummy
 #stretch:        ,xserver-xorg-video-dummy
-#precise:        ,xvfb
 #trusty:        ,xvfb
 #xenial:        ,xvfb
 #yakkety:        ,xserver-xorg-video-dummy
@@ -53,62 +51,47 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-rencode
 # fast hashing:
         ,python-xxhash
-#depend on lz4 for those that have it, lzo otherwise:
+# depend on lz4 for those that have it, lzo otherwise:
 #wheezy:        ,python-lzo
 #jessie:        ,python-lz4
 #stretch:        ,python-lz4
 #trusty:        ,python-lzo
 #xenial:        ,python-lz4
 #yakkety:        ,python-lz4
-#if you use Ubuntu, you will "want" this mess:
-#precise:		,python-appindicator
+# if you use Ubuntu, you will "want" this mess:
 #trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
 #yakkety:        ,python-appindicator
 Recommends:
-#x264
-#precise:        ,libx264-120
-#wheezy:        ,libx264-123
+# x264:
 #jessie:        ,libx264-142
 #stretch:        ,libx264-146
-#trusty:        ,libx264-142
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
-#AES encryption:
-#precise:        ,python-crypto
-#wheezy:        ,python-crypto
+# AES encryption:
 #jessie:        ,python-cryptography
 #stretch:        ,python-cryptography
-#trusty:        ,python-crypto
 #xenial:        ,python-cryptography
 #yakkety:        ,python-cryptography
 # audio-related:
-#precise:        ,gstreamer0.10-plugins-base
-#wheezy:        ,gstreamer0.10-plugins-base
 #jessie:        ,gstreamer1.0-plugins-base
 #stretch:        ,gstreamer1.0-plugins-base
 #trusty:        ,gstreamer1.0-plugins-base
 #xenial:        ,gstreamer1.0-plugins-base
 #yakkety:        ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
-#precise:        ,gstreamer0.10-plugins-good
-#wheezy:        ,gstreamer0.10-plugins-good
 #jessie:        ,gstreamer1.0-plugins-good
 #stretch:        ,gstreamer1.0-plugins-good
 #trusty:        ,gstreamer1.0-plugins-good
 #xenial:        ,gstreamer1.0-plugins-good
 #yakkety:        ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
-#precise:        ,gstreamer0.10-plugins-ugly
-#wheezy:        ,gstreamer0.10-plugins-ugly
 #jessie:        ,gstreamer1.0-plugins-ugly
 #stretch:        ,gstreamer1.0-plugins-ugly
 #trusty:        ,gstreamer1.0-plugins-ugly
 #xenial:        ,gstreamer1.0-plugins-ugly
 #yakkety:        ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-#precise:        ,python-gst-0.10
-#wheezy:        ,python-gst-0.10
 #jessie:        ,python-gst-1.0
 #stretch:        ,python-gst-1.0
 #trusty:        ,python-gst-1.0
@@ -126,9 +109,6 @@ Recommends:
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):
-#precise:        ,python-lzo
-#precise:        ,python-lz4
-#wheezy:        ,python-lz4
 #jessie:        ,python-lzo
 #stretch:        ,python-lzo
 #trusty:        ,python-lz4
