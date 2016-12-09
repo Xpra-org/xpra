@@ -232,9 +232,9 @@
 					--disable-programs --disable-avfilter --disable-doc
 					--disable-audiotoolbox --disable-videotoolbox"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.2.1.tar.bz2"
-		version="3.2.1"
-		hash="sha256:72abc55bea5ff5397ac82320fa5c4843a05f527d0d7912d66784c92fdfbd12fb"
+	<branch module="/releases/ffmpeg-3.2.2.tar.bz2"
+		version="3.2.2"
+		hash="sha256:0b129a56d1b8d06101b1fcbfaa9f4f5eee3182d1ad6e44f511a84c12113a366b"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -499,9 +499,9 @@
 
   <distutils id="python-cython">
 	<branch repo="pypi.python.org"
-		module="/packages/2f/ae/0bb6ca970b949d97ca622641532d4a26395322172adaf645149ebef664eb/Cython-0.25.1.tar.gz"
-		hash="sha256:e0941455769335ec5afb17dee36dc3833b7edc2ae20a8ed5806c58215e4b6669"
-		version="0.25.1"/>
+		module="/packages/b7/67/7e2a817f9e9c773ee3995c1e15204f5d01c8da71882016cac10342ef031b/Cython-0.25.2.tar.gz"
+		hash="sha256:f141d1f9c27a07b5a93f7dc5339472067e2d7140d1c5a9e20112a5665ca60306"
+		version="0.25.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -682,9 +682,9 @@
 
   <distutils id="python-pyobjc-core">
 	<branch repo="pypi.python.org"
-		module="/packages/source/p/pyobjc-core/pyobjc-core-3.1.1.tar.gz"
-		hash="md5:e071bc40a3341a97d2c91c49fc3783cb"
-		version="3.1.1"/>
+		module="/packages/ae/19/6a7175932fa0674771423dd7fb970335f2b7e6e941ad55b0787ace72c6f2/pyobjc-core-3.2.tar.gz"
+		hash="sha256:a35efecfad5a65df8c763b9c16b8fc3ba750b2b692ceab604e4b41f352528784"
+		version="3.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -695,9 +695,9 @@
 
   <distutils id="python-pyobjc-framework-cocoa">
 	<branch repo="pypi.python.org"
-		module="/packages/source/p/pyobjc-framework-Cocoa/pyobjc-framework-Cocoa-3.1.1.tar.gz"
-		hash="md5:2832205d33d88ea53289563bd61771cf"
-		version="3.1.1"/>
+		module="/packages/43/ab/b3b7b0f5ccd2963d7f63b223224bc05a4803a0705a85337b4783c44cb1da/pyobjc-framework-Cocoa-3.2.tar.gz#md5=f79e1ff39fd9056523702a243b3ace4e"
+		hash="sha256:4c2b3e194b290a34b0cf230afbe794606d12a96eceeb45370b480c9a4baaeaa1"
+		version="3.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -708,9 +708,9 @@
 
   <distutils id="python-pyobjc-framework-quartz">
 	<branch repo="pypi.python.org"
-		module="/packages/source/p/pyobjc-framework-Quartz/pyobjc-framework-Quartz-3.1.1.tar.gz"
-		hash="md5:fadebaecc17338bad9aa1ae45c7fae77"
-		version="3.1.1"/>
+		module="/packages/39/9b/4e8a568a321adda4bc1565edfc0a90d22d0d18ce1943501442c30a3d2d83/pyobjc-framework-Quartz-3.2.tar.gz"
+		hash="sha256:295b8a4c576bee4939b92587d8a403f6fcab4bc483a096c569fc80928a0a3e13"
+		version="3.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
