@@ -389,19 +389,6 @@
         </after>
   </distutils>
 
-  <distutils id="python-pycrypto">
-	<branch repo="pypi.python.org"
-		module="/packages/source/p/pycrypto/pycrypto-2.6.1.tar.gz"
-		hash="md5:55a61a054aa66812daf5161a0d5d7eda"
-		version="2.6.1"/>
-        <dependencies>
-                <dep package="python"/>
-        </dependencies>
-        <after>
-                <dep package="python"/>
-        </after>
-  </distutils>
-
   <distutils id="pycparser">
 	<branch repo="pypi.python.org"
 		module="/packages/source/p/pycparser/pycparser-2.14.tar.gz"
@@ -925,7 +912,6 @@
       <dep package="setuptools"/>
       <dep package="python-netifaces"/>
       <dep package="python-pam"/>
-      <dep package="python-pycrypto"/>
       <dep package="python-pyasn1"/>
       <dep package="python-pillow"/>
       <dep package="python-py2app"/>

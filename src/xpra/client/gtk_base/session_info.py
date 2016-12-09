@@ -798,9 +798,7 @@ class SessionInfo(gtk.Window):
                 info += " (%s)" % c.socktype
             ncaps = get_network_caps()
             backend = ncaps.get("backend")
-            if backend=="pycrypto":
-                info += " / pycrypto %s fastmath" % ["with", "without"][int(ncaps.get("pycrypto.fastmath", False))]
-            elif backend=="python-cryptography":
+            if backend=="python-cryptography":
                 info += " / python-cryptography"
             label.set_text(info)
         enclabel(self.input_encryption_label, p.cipher_in_name)

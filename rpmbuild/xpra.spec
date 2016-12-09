@@ -64,7 +64,7 @@
 %define run_tests 1
 
 # any centos / rhel supported:
-%if 0%{?el6}%{?el7}
+%if 0%{?el7}
 #not available:
 %define requires_websockify %{nil}
 %define requires_lzo %{nil}
@@ -74,25 +74,6 @@
 %define py3requires_sound %{nil}
 #don't have python3 by default:
 %define with_python3 0
-%endif
-
-%if 0%{?el6}
-#needs fixing:
-%define with_selinux 0
-#cups-pdf and cups-filters are not in the regular repos:
-%define requires_printing , python-cups
-#can't run the tests with python 2.6 which is too old:
-%define run_tests 0
-#no python cryptography:
-%define requires_crypto %{py2prefix}-crypto
-#no python-inotify:
-%define requires_webcam %{nil}
-#no pycups available in repos:
-%define requires_printing %{nil}
-#don't try to support opengl with anything older than 6.5:
-%if %(egrep -q 'release 6.0|release 6.1|release 6.2|release 6.3|release 6.4' /etc/redhat-release && echo 1 || echo 0)
-%define requires_opengl %{nil}
-%endif
 %endif
 
 %if 0%{?el7}
@@ -152,8 +133,8 @@
 %define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
 %define requires_opengl , python-opengl, python-opengl-accelerate, python-gtkglext
 %define py3requires_opengl , python3-opengl, python3-opengl-accelerate
-%define requires_crypto python-pycrypto
-%define py3requires_crypto python3-pycrypto
+%define requires_crypto python-cryptography
+%define py3requires_crypto python-cryptography
 #different naming prefix ("python-") for pygtkglext:
 %define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext
 %endif
@@ -170,7 +151,6 @@ Packager: Antoine Martin <antoine@devloop.org.uk>
 Vendor: http://xpra.org/
 
 Source: xpra-%{version}.tar.bz2
-Patch0: centos-ignore-invalid-gcc-warning.patch
 Patch1: centos7-buffer-fill-fix.patch
 Patch2: gstreamer010.patch
 Patch3: selinux-homesocket.patch
@@ -201,7 +181,7 @@ Requires: ffmpeg-xpra
 Requires: python2-pynvml
 Requires: %{numpy}
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-%if 0%{?el6}%{?el7}
+%if 0%{?el7}
 #sshpass is not available!
 %else
 Requires: sshpass
@@ -330,9 +310,6 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 pushd $RPM_BUILD_DIR/xpra-%{version}
-%if 0%{?el6}
-%patch0 -p1
-%endif
 #workaround old gstreamer gi bindings on centos < 7.2:
 %if "%{?dist}"==".el7_0"
 %patch1 -p1
@@ -351,10 +328,6 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
 %if %{with_python3}
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python3 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
-%if 0%{?el6}
-cd $RPM_BUILD_DIR/xpra-%{version}
-%patch0 -p1
-%endif
 mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 %endif
 
