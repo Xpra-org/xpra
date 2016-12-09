@@ -49,38 +49,50 @@ CAN_DOUBLE_BUFFER = True
 DEFAULT_DOUBLE_BUFFERED = sys.platform.startswith("win") and CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
 
+from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR
+VISUAL_NAMES = {
+                STATIC_GRAY      : "STATIC_GRAY",
+                GRAYSCALE        : "GRAYSCALE",
+                STATIC_COLOR     : "STATIC_COLOR",
+                PSEUDO_COLOR     : "PSEUDO_COLOR",
+                TRUE_COLOR       : "TRUE_COLOR",
+                DIRECT_COLOR     : "DIRECT_COLOR",
+                }
+
+from xpra.gtk_common.gtk_util import LSB_FIRST, MSB_FIRST
+
+VISUAL_TYPES = {
+                LSB_FIRST   : "LSB",
+                MSB_FIRST   : "MSB",
+                }
+
+from xpra.client.gl.gtk_compat import MODE_RGBA, MODE_ALPHA, MODE_RGB, MODE_DOUBLE, MODE_SINGLE
+
 
 def get_visual_name(visual):
-    from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR
     if not visual:
         return ""
-    return {
-           STATIC_GRAY      : "STATIC_GRAY",
-           GRAYSCALE        : "GRAYSCALE",
-           STATIC_COLOR     : "STATIC_COLOR",
-           PSEUDO_COLOR     : "PSEUDO_COLOR",
-           TRUE_COLOR       : "TRUE_COLOR",
-           DIRECT_COLOR     : "DIRECT_COLOR"}.get(visual.type, "unknown")
+    global VISUAL_NAMES
+    return VISUAL_NAMES.get(visual.type, "unknown")
 
 def get_visual_byte_order(visual):
-    from xpra.gtk_common.gtk_util import LSB_FIRST, MSB_FIRST
     if not visual:
         return ""
-    return {
-            LSB_FIRST   : "LSB",
-            MSB_FIRST   : "MSB"}.get(visual.byte_order, "unknown")
+    global VISUAL_TYPES
+    return VISUAL_TYPES.get(visual.byte_order, "unknown")
 
 def visual_to_str(visual):
     if not visual:
         return ""
-    d = {"type"         : get_visual_name(visual),
-         "byte_order"   : get_visual_byte_order(visual)}
+    d = {
+         "type"         : get_visual_name(visual),
+         "byte_order"   : get_visual_byte_order(visual),
+         }
     for k in ("bits_per_rgb", "depth"):
         d[k] = getattr(visual, k)
     return str(d)
 
 def get_DISPLAY_MODE(want_alpha=GL_ALPHA_SUPPORTED):
-    from xpra.client.gl.gtk_compat import MODE_RGBA, MODE_ALPHA, MODE_RGB, MODE_DOUBLE, MODE_SINGLE
     #MODE_DEPTH
     if want_alpha:
         mode = MODE_RGBA | MODE_ALPHA
@@ -92,15 +104,18 @@ def get_DISPLAY_MODE(want_alpha=GL_ALPHA_SUPPORTED):
         mode = mode | MODE_SINGLE
     return mode
 
+FRIENDLY_MODE_NAMES = {
+                       MODE_RGB         : "RGB",
+                       MODE_RGBA        : "RGBA",
+                       MODE_ALPHA       : "ALPHA",
+                       MODE_DEPTH       : "DEPTH",
+                       MODE_DOUBLE      : "DOUBLE",
+                       MODE_SINGLE      : "SINGLE",
+                       }
+
 def get_MODE_names(mode):
-    from xpra.client.gl.gtk_compat import MODE_RGB, MODE_RGBA, MODE_ALPHA, MODE_DEPTH, MODE_DOUBLE, MODE_SINGLE
-    friendly_mode_names = {MODE_RGB         : "RGB",
-                           MODE_RGBA        : "RGBA",
-                           MODE_ALPHA       : "ALPHA",
-                           MODE_DEPTH       : "DEPTH",
-                           MODE_DOUBLE      : "DOUBLE",
-                           MODE_SINGLE      : "SINGLE"}
-    friendly_modes = [v for k,v in friendly_mode_names.items() if k>0 and (k&mode)==k]
+    global FRIENDLY_MODE_NAMES
+    friendly_modes = [v for k,v in FRIENDLY_MODE_NAMES.items() if k>0 and (k&mode)==k]
     #special case for single (value is zero!)
     if not (mode&MODE_DOUBLE==MODE_DOUBLE):
         friendly_modes.append("SINGLE")
@@ -118,9 +133,6 @@ _version_warning_shown = False
 def is_pyopengl_memoryview_safe(pyopengl_version, accel_version):
     if accel_version is not None and pyopengl_version!=accel_version:
         #mismatch is not safe!
-        return False
-    if sys.version_info[:2]<(2,7):
-        #memoryview type requires python 2.7
         return False
     vsplit = pyopengl_version.split('.')
     if vsplit[:2]<['3','1']:
@@ -222,16 +234,9 @@ def do_check_GL_support(force_enable):
                 _version_warning_shown = True
         vsplit = pyopengl_version.split('.')
         #we now require PyOpenGL 3.1 or later
-        if vsplit[:3]<['3','0','1'] and not force_enable:
+        if vsplit[:3]<['3','1'] and not force_enable:
             gl_check_error("PyOpenGL version %s is too old and buggy" % pyopengl_version)
             return {}
-        if vsplit[:2]<['3','1']:
-            l = log.warn
-            if force_enable:
-                l = log.info
-            l("Warning: PyOpenGL version 3.1 or later is strongly recommended")
-            l(" (found version %s)" % pyopengl_version)
-
         props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(pyopengl_version, accel_version)
 
         try:
@@ -493,10 +498,12 @@ def check_support(force_enable=False, check_colormap=False):
         glconfig = Config_new_by_mode(display_mode)
     if not glconfig:
         gl_check_error("cannot setup an OpenGL context")
-    props["display_mode"] = get_MODE_names(display_mode)
-    props["glconfig"] = glconfig
-    props["has_alpha"] = glconfig.has_alpha()
-    props["rgba"] = glconfig.is_rgba()
+    props.update({
+                  "display_mode"    : get_MODE_names(display_mode),
+                  "glconfig"        : glconfig,
+                  "has_alpha"       : glconfig.has_alpha(),
+                  "rgba"            : glconfig.is_rgba(),
+                  })
     log("GL props=%s", props)
     from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
     gtk = import_gtk()
