@@ -33,7 +33,6 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
 #jessie:        ,xserver-xorg-video-dummy
 #stretch:        ,xserver-xorg-video-dummy
-#trusty:        ,xvfb
 #xenial:        ,xvfb
 #yakkety:        ,xserver-xorg-video-dummy
 # for opengl support:
@@ -52,14 +51,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # fast hashing:
         ,python-xxhash
 # depend on lz4 for those that have it, lzo otherwise:
-#wheezy:        ,python-lzo
-#jessie:        ,python-lz4
-#stretch:        ,python-lz4
-#trusty:        ,python-lzo
-#xenial:        ,python-lz4
-#yakkety:        ,python-lz4
+        ,python-lz4
 # if you use Ubuntu, you will "want" this mess:
-#trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
 #yakkety:        ,python-appindicator
 Recommends:
@@ -69,34 +62,15 @@ Recommends:
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
 # AES encryption:
-#jessie:        ,python-cryptography
-#stretch:        ,python-cryptography
-#xenial:        ,python-cryptography
-#yakkety:        ,python-cryptography
+        ,python-cryptography
 # audio-related:
-#jessie:        ,gstreamer1.0-plugins-base
-#stretch:        ,gstreamer1.0-plugins-base
-#trusty:        ,gstreamer1.0-plugins-base
-#xenial:        ,gstreamer1.0-plugins-base
-#yakkety:        ,gstreamer1.0-plugins-base
+        ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
-#jessie:        ,gstreamer1.0-plugins-good
-#stretch:        ,gstreamer1.0-plugins-good
-#trusty:        ,gstreamer1.0-plugins-good
-#xenial:        ,gstreamer1.0-plugins-good
-#yakkety:        ,gstreamer1.0-plugins-good
+        ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
-#jessie:        ,gstreamer1.0-plugins-ugly
-#stretch:        ,gstreamer1.0-plugins-ugly
-#trusty:        ,gstreamer1.0-plugins-ugly
-#xenial:        ,gstreamer1.0-plugins-ugly
-#yakkety:        ,gstreamer1.0-plugins-ugly
+        ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-#jessie:        ,python-gst-1.0
-#stretch:        ,python-gst-1.0
-#trusty:        ,python-gst-1.0
-#xenial:        ,python-gst-1.0
-#yakkety:        ,python-gst-1.0
+        ,python-gst-1.0
 #for printer forwarding:
         ,cups-filters
         ,cups-common
@@ -109,11 +83,7 @@ Recommends:
         ,openssh-client
         ,ssh-askpass
 #recommend the alternative (those that recommend lz4 usually don't have it available at all):
-#jessie:        ,python-lzo
-#stretch:        ,python-lzo
-#trusty:        ,python-lz4
-#xenial:        ,python-lzo
-#yakkety:        ,python-lzo
+        ,python-lzo
 #for html5 support:
         ,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)

@@ -22,6 +22,9 @@ import shutil
 
 if sys.version<'2.7':
     raise Exception("xpra no longer supports Python versions older than 2.7")
+#we don't support versions of Python without the new ssl code:
+import ssl.SSLContext
+assert ssl.SSLContext
 
 from hashlib import md5
 
