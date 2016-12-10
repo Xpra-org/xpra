@@ -19,20 +19,12 @@
 %define CFLAGS -O2 -fno-strict-aliasing
 %endif
 
-%define py2prefix python
-%define no_xdg_runtime_dir 1
-%if 0%{?fedora}>=24
-%define py2prefix python2
-%define no_xdg_runtime_dir 0
-%endif
-
-
 #some of these dependencies may get turned off (empty) on some platforms:
 %define systemd 0
 %define build_args --with-Xdummy --without-enc_x265
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
-%define requires_lzo , %{py2prefix}-lzo
+%define requires_lzo , python2-lzo
 %define numpy numpy
 %define xvfb xorg-x11-server-Xvfb
 %define requires_webcam , python-inotify
@@ -41,13 +33,13 @@
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
 %define requires_dbus dbus-python dbus-x11
-%define requires_crypto %{py2prefix}-cryptography
+%define requires_crypto python2-cryptography
 %define py3requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
-%define requires_opengl , %{py2prefix}-pyopengl, pygtkglext
+%define requires_opengl , python2-pyopengl, pygtkglext
 %define py3requires_opengl , python3-pyopengl
-%define requires_printing , %{py2prefix}-cups, cups-filters, cups-pdf
+%define requires_printing , python2-cups, cups-filters, cups-pdf
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly
@@ -74,9 +66,6 @@
 %define py3requires_sound %{nil}
 #don't have python3 by default:
 %define with_python3 0
-%endif
-
-%if 0%{?el7}
 %define systemd 1
 #cups-pdf is not in the regular repos, so remove it from dependencies:
 %define requires_printing , python-cups, cups-filters
@@ -98,10 +87,6 @@
 %define py3requires_printing , python3-cups
 #note: probably not working since we don't have gtkglext for Python3?
 %define py3requires_opengl , python3-pyopengl
-%endif
-%if 0%{?fedora}>=23
-#Fedora 23 has libvpx 1.4, no need for our own libvpx-xpra packages:
-%define libvpx libvpx
 %endif
 
 %if 0%{?suse_version}
@@ -151,21 +136,18 @@ Packager: Antoine Martin <antoine@devloop.org.uk>
 Vendor: http://xpra.org/
 
 Source: xpra-%{version}.tar.bz2
-Patch1: centos7-buffer-fill-fix.patch
-Patch2: gstreamer010.patch
-Patch3: selinux-homesocket.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
-Requires: %{py2prefix}-lz4
+Requires: python2-lz4
 Requires: %{requires_pygtk2}
 Requires: %{requires_dbus}
 Requires: %{requires_crypto}
 #used for locating the Xorg binary:
 Requires: which
-Requires: %{py2prefix}-netifaces
-Requires: %{py2prefix}-rencode
-Requires: %{py2prefix}-pillow
+Requires: python2-netifaces
+Requires: python2-rencode
+Requires: python2-pillow
 Requires: python2-xxhash
 Requires: libfakeXinerama
 Requires: gtk2-immodule-xim
@@ -196,7 +178,7 @@ Recommends: cups-filters
 BuildRequires: pkgconfig
 BuildRequires: %{requires_cython}
 BuildRequires: %{requires_pygtk2}-devel
-BuildRequires: python, %{py2prefix}-setuptools
+BuildRequires: python, python2-setuptools
 BuildRequires: %{requires_pygobject2}-devel
 BuildRequires: libxkbfile-devel
 BuildRequires: libXtst-devel
@@ -310,17 +292,13 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
 pushd $RPM_BUILD_DIR/xpra-%{version}
-#workaround old gstreamer gi bindings on centos < 7.2:
 %if "%{?dist}"==".el7_0"
-%patch1 -p1
-%patch2 -p1
+echo CentOS 7.0 is no longer supported
+exit 1
 %endif
 %if "%{?dist}"==".el7_1"
-%patch1 -p1
-%patch2 -p1
-%endif
-%if 0%{no_xdg_runtime_dir}
-%patch3 -p1
+echo CentOS 7.1 is no longer supported
+exit 1
 %endif
 
 popd
