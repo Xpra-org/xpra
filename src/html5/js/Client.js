@@ -1639,16 +1639,17 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 	var datasize = packet[5];
 	var data = packet[6];
 
-	if(mimetype != "application/pdf") {
-		this.warn("Received unsupported print data: "+mimetype);
-	} else if (!printit) {
-		this.warn("Received non printed file data");
+	if (!printit) {
+		ctx.warn("Received non printed file data");
+	}
+	else if(mimetype != "application/pdf") {
+		ctx.warn("Received unsupported print data mimetype: "+mimetype);
 	} else {
 		// check the data size for file
 		if(data.length != datasize) {
-			this.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
+			ctx.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
 		} else {
-			this.log("got some data to print");
+			ctx.log("got some data to print");
 			var b64data = btoa(uintToString(data));
 			window.open(
 					'data:application/pdf;base64,'+b64data,
