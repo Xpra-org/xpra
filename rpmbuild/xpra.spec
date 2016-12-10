@@ -70,16 +70,6 @@
 #cups-pdf is not in the regular repos, so remove it from dependencies:
 %define requires_printing , python-cups, cups-filters
 %endif
-%if "%{?dist}"==".el7_0"
-#no python cryptography:
-%define requires_crypto python-crypto
-%define requires_webcam %{nil}
-%endif
-%if "%{?dist}"==".el7_1"
-#no python cryptography:
-%define requires_crypto python-crypto
-%endif
-
 
 %if 0%{?fedora}
 %define systemd 1
@@ -87,6 +77,7 @@
 %define py3requires_printing , python3-cups
 #note: probably not working since we don't have gtkglext for Python3?
 %define py3requires_opengl , python3-pyopengl
+%define requires_webcam , python-inotify, opencv-python
 %endif
 
 %if 0%{?suse_version}
