@@ -31,7 +31,6 @@ from xpra.scripts.config import OPTION_TYPES, \
 
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
-USE_SSL_CONTEXT = envbool("XPRA_USE_SSL_CONTEXT", True)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 
@@ -1818,7 +1817,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
 
 
 def ssl_wrap_socket_fn(opts, server_side=True):
-    #deal with older versions of python without SSLContext:
     if server_side and not opts.ssl_cert:
         raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
     import ssl
@@ -1854,105 +1852,69 @@ def ssl_wrap_socket_fn(opts, server_side=True):
               "do_handshake_on_connect" : True,
               "suppress_ragged_eofs"    : True,
               }
-    SSLContext = getattr(ssl, "SSLContext", None)
-    if USE_SSL_CONTEXT and SSLContext:
-        #parse ssl-verify-flags as CSV:
-        ssl_verify_flags = 0
-        for x in opts.ssl_verify_flags.split(","):
-            x = x.strip()
-            if not x:
-                continue
-            v = getattr(ssl, "VERIFY_"+x.upper(), None)
-            if v is None:
-                raise InitException("invalid ssl verify-flag: %s" % x)
-            ssl_verify_flags |= v
-        #parse ssl-options as CSV:
-        ssl_options = 0
-        for x in opts.ssl_options.split(","):
-            x = x.strip()
-            if not x:
-                continue
-            v = getattr(ssl, "OP_"+x.upper(), None)
-            if v is None:
-                raise InitException("invalid ssl option: %s" % x)
-            ssl_options |= v
+    #parse ssl-verify-flags as CSV:
+    ssl_verify_flags = 0
+    for x in opts.ssl_verify_flags.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        v = getattr(ssl, "VERIFY_"+x.upper(), None)
+        if v is None:
+            raise InitException("invalid ssl verify-flag: %s" % x)
+        ssl_verify_flags |= v
+    #parse ssl-options as CSV:
+    ssl_options = 0
+    for x in opts.ssl_options.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        v = getattr(ssl, "OP_"+x.upper(), None)
+        if v is None:
+            raise InitException("invalid ssl option: %s" % x)
+        ssl_options |= v
 
-        context = SSLContext(ssl_protocol)
-        context.set_ciphers(opts.ssl_ciphers)
-        context.verify_mode = ssl_cert_reqs
-        context.verify_flags = ssl_verify_flags
-        context.options = ssl_options
-        if opts.ssl_cert:
-            context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
-        if ssl_cert_reqs!=ssl.CERT_NONE:
-            if server_side:
-                purpose = ssl.Purpose.CLIENT_AUTH   #@UndefinedVariable
-            else:
-                purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
-                context.check_hostname = opts.ssl_check_hostname
-                if context.check_hostname:
-                    if not opts.ssl_server_hostname:
-                        raise InitException("ssl error: check-hostname is set but server-hostname is not")
-                    kwargs["server_hostname"] = opts.ssl_server_hostname
-            context.load_default_certs(purpose)
-
-            ssl_ca_certs = opts.ssl_ca_certs
-            if not ssl_ca_certs or ssl_ca_certs.lower()=="default":
-                context.set_default_verify_paths()
-            elif not os.path.exists(ssl_ca_certs):
-                raise InitException("invalid ssl-ca-certs file or directory: %s" % ssl_ca_certs)
-            elif os.path.isdir(ssl_ca_certs):
-                context.load_verify_locations(capath=ssl_ca_certs)
-            else:
-                assert os.path.isfile(ssl_ca_certs), "'%s' is not a valid ca file" % ssl_ca_certs
-                context.load_verify_locations(cafile=ssl_ca_certs)
-            #handle cadata:
-            if cadata:
-                #PITA: because of a bug in the ssl module, we can't pass cadata,
-                #so we use a temporary file instead:
-                import tempfile
-                f = tempfile.NamedTemporaryFile(prefix='cadata')
-                f.file.write(cadata)
-                f.file.flush()
-                context.load_verify_locations(cafile=f.name)
-                f.close()
-
-        elif opts.ssl_check_hostname and not server_side:
-            raise InitException("cannot check hostname with verify mode %s" % verify_mode)
-        wrap_socket = context.wrap_socket
-    else:
-        ignored = ["ssl-verify-flags", "ssl-options"]
-        if sys.version_info[:2]<(2, 7):
-            ignored.append("ciphers")
+    context = ssl.SSLContext(ssl_protocol)
+    context.set_ciphers(opts.ssl_ciphers)
+    context.verify_mode = ssl_cert_reqs
+    context.verify_flags = ssl_verify_flags
+    context.options = ssl_options
+    if opts.ssl_cert:
+        context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
+    if ssl_cert_reqs!=ssl.CERT_NONE:
+        if server_side:
+            purpose = ssl.Purpose.CLIENT_AUTH   #@UndefinedVariable
         else:
-            kwargs["ciphers"] = opts.ssl_ciphers
-        from xpra.log import Logger
-        netlog = Logger("network")
-        netlog.warn("Warning: weak SSL settings for outdated Python version %i.%i.%i", *sys.version_info[:3])
-        netlog.warn(" the following options will be ignored:")
-        netlog.warn(" %s", csv("'ssl-%s'" % x for x in ignored))
+            purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
+            context.check_hostname = opts.ssl_check_hostname
+            if context.check_hostname:
+                if not opts.ssl_server_hostname:
+                    raise InitException("ssl error: check-hostname is set but server-hostname is not")
+                kwargs["server_hostname"] = opts.ssl_server_hostname
+        context.load_default_certs(purpose)
+
+        ssl_ca_certs = opts.ssl_ca_certs
+        if not ssl_ca_certs or ssl_ca_certs.lower()=="default":
+            context.set_default_verify_paths()
+        elif not os.path.exists(ssl_ca_certs):
+            raise InitException("invalid ssl-ca-certs file or directory: %s" % ssl_ca_certs)
+        elif os.path.isdir(ssl_ca_certs):
+            context.load_verify_locations(capath=ssl_ca_certs)
+        else:
+            assert os.path.isfile(ssl_ca_certs), "'%s' is not a valid ca file" % ssl_ca_certs
+            context.load_verify_locations(cafile=ssl_ca_certs)
+        #handle cadata:
         if cadata:
-            f = tempfile.NamedTemporaryFile(prefix='cadata', delete=False)
+            #PITA: because of a bug in the ssl module, we can't pass cadata,
+            #so we use a temporary file instead:
+            import tempfile
+            f = tempfile.NamedTemporaryFile(prefix='cadata')
             f.file.write(cadata)
             f.file.flush()
+            context.load_verify_locations(cafile=f.name)
             f.close()
-            ssl_ca_certs = f.name
-            del f
-            def delcadatafile():
-                try:
-                    os.unlink(ssl_ca_certs)
-                except:
-                    print("Error: failed to delete temporary cadata file '%s'", ssl_ca_certs)
-            import atexit
-            atexit.register(delcadatafile)
-        kwargs.update({
-                       "cert_reqs"      : ssl_cert_reqs,
-                       "ssl_version"    : ssl_protocol,
-                       "ca_certs"       : ssl_ca_certs,
-                       "keyfile"        : opts.ssl_key or None,
-                       "certfile"       : opts.ssl_cert or None,
-                       })
-        wrap_socket = ssl.wrap_socket
+    elif opts.ssl_check_hostname and not server_side:
+        raise InitException("cannot check hostname with verify mode %s" % verify_mode)
+    wrap_socket = context.wrap_socket
     del opts
     def do_wrap_socket(tcp_socket):
         try:
