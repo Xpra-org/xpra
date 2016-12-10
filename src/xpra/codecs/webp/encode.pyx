@@ -8,7 +8,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
-from xpra.util envbool
+from xpra.util import envbool
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int USE_THREADS = envbool("XPRA_WEBP_THREADING", True)
 
