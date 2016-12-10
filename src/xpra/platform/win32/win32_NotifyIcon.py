@@ -123,8 +123,7 @@ class win32NotifyIcon(object):
         if has_alpha:
             #extract alpha channel as mask into an inverted "L" channel image:
             alpha = img.tobytes("raw", "A")
-            from_fn = getattr(Image, "frombytes", getattr(Image, "fromstring", None))
-            mask = from_fn("L", img.size, alpha)
+            mask = Image.frombytes("L", img.size, alpha)
             mask = ImageOps.invert(mask)
             #strip alpha from pixels:
             img = img.convert("RGB")
