@@ -244,7 +244,7 @@ class ServerBase(ServerCore):
         if opts.exec_wrapper:
             import shlex
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
-        self.child_reaper = getChildReaper(self.reaper_exit, exit_with_children=opts.exit_with_children)
+        self.child_reaper = getChildReaper(self.reaper_exit)
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.start_env = parse_env(opts.start_env)
         self.send_pings = opts.pings

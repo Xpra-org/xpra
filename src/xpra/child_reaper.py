@@ -24,10 +24,10 @@ POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
 
 
 singleton = None
-def getChildReaper(quit_cb=None, exit_with_children=False):
+def getChildReaper(quit_cb=None):
     global singleton
     if singleton is None:
-        singleton = ChildReaper(quit_cb, exit_with_children)
+        singleton = ChildReaper(quit_cb)
     return singleton
 
 
@@ -56,7 +56,7 @@ class ProcInfo(object):
 # https://github.com/gevent/gevent/issues/622
 class ChildReaper(object):
     #note: the quit callback will fire only once!
-    def __init__(self, quit_cb=None, exit_with_children=False):
+    def __init__(self, quit_cb=None):
         log("ChildReaper(%s)", quit_cb)
         from xpra.gtk_common.gobject_compat import import_glib
         self.glib = import_glib()
