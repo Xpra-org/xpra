@@ -24,10 +24,10 @@ POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
 
 
 singleton = None
-def getChildReaper(quit_cb=None):
+def getChildReaper():
     global singleton
     if singleton is None:
-        singleton = ChildReaper(quit_cb)
+        singleton = ChildReaper()
     return singleton
 
 
@@ -111,6 +111,9 @@ class ChildReaper(object):
             if not procinfo.dead and process and process.poll() is not None:
                 self.add_dead_process(procinfo)
         return True
+
+    def set_quit_callback(self, cb):
+        self._quit = cb
 
     def check(self):
         #see if we are meant to exit-with-children
