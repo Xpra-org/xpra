@@ -50,7 +50,6 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
                 raise
         else:
             import tempfile
-            from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
             mmap_dir = os.getenv("TMPDIR", "/tmp")
             if not os.path.exists(mmap_dir):
                 raise Exception("TMPDIR %s does not exist!" % mmap_dir)
@@ -68,6 +67,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
             fd = temp.file.fileno()
         #set the group permissions and gid if the mmap-group option is specified
         if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
+            from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
             s = os.stat(socket_filename)
             os.fchown(fd, -1, s.st_gid)
             os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
