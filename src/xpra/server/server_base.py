@@ -45,9 +45,9 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
-from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.scripts.main import sound_option
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.net.file_transfer import FileTransferAttributes
 if sys.version > '3':
@@ -221,7 +221,11 @@ class ServerBase(ServerCore):
         self.init_options(opts)
 
     def init_options(self, opts):
-        self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
+        #from now on, use the logger for parsing errors:
+        from xpra.scripts import config
+        config.warn = log.warn
+        
+        self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
         self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
 
