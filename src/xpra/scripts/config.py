@@ -122,22 +122,17 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
             warn("Warning: Xorg binary not found, assuming the wrapper is needed!")
             use_wrapper = True
         else:
-            #Fedora 21+ workaround:
-            if os.path.exists("/usr/libexec/Xorg.wrap"):
-                #we need our own wrapper to bypass all the scripts and wrappers Fedora uses
+            #auto-detect
+            import stat
+            xorg_stat = os.stat(xorg_bin)
+            if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+                if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                    warn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                    return get_Xvfb_command()
+                debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
                 use_wrapper = True
             else:
-                #auto-detect
-                import stat
-                xorg_stat = os.stat(xorg_bin)
-                if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-                    if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                        warn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
-                        return get_Xvfb_command()
-                    debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
-                    use_wrapper = True
-                else:
-                    use_wrapper = False
+                use_wrapper = False
         xorg_conf = os.path.join(conf_dir, "xorg.conf")
         if use_wrapper:
             xorg_cmd = "xpra_Xdummy"
@@ -145,7 +140,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
             xorg_cmd = xorg_bin or "Xorg"
         #so we can run from install dir:
         if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
-            if bin_dir not in ("/usr/bin", "/bin"):
+            if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
                 xorg_cmd = os.path.join(bin_dir, xorg_cmd)
         return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf)
 
