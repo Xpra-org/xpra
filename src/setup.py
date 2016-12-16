@@ -971,6 +971,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/cystats.c",
                    "xpra/server/window/region.c",
+                   "xpra/server/window/motion.c",
                    "xpra/server/pam.c",
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra conf files in build (see #891):
