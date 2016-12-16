@@ -172,10 +172,9 @@ except:
 
 def set_texture_level():
     #only really needed with some drivers (NVidia)
-    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
     #may cause errors with older drivers:
     try:
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     except:
         pass
 
