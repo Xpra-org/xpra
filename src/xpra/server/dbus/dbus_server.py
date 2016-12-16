@@ -39,7 +39,7 @@ class DBUS_Server(dbus.service.Object):
         name = BUS_NAME
         path = PATH
         if extra:
-            name += extra
+            name += extra.replace(".", "_")
         bus_name = dbus.service.BusName(name, session_bus)
         dbus.service.Object.__init__(self, bus_name, path)
         self.log("(%s)", server)
