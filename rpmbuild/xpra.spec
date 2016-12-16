@@ -154,6 +154,7 @@ Requires: ffmpeg-xpra
 Requires: python2-pynvml
 Requires: %{numpy}
 Requires: xpra-common = %{version}-%{build_no}%{dist}
+Requires: xpra-html5
 %if 0%{?el7}
 #sshpass is not available!
 %else
@@ -235,7 +236,17 @@ This package contains the files which are common to both the Python 2 and Python
 getent group xpra > /dev/null || groupadd -r xpra
 
 
-#optional python3 package:
+%package html5
+Summary: Xpra HTML5 client
+Group: Networking
+BuildArch: noarch
+Conflicts: xpra < 2.0
+
+%description html5
+This package contains Xpra's HTML5 client.
+
+
+s#optional python3 package:
 %if %{with_python3}
 %package -n python3-xpra
 Summary: Xpra gives you "persistent remote applications" for X.
@@ -265,6 +276,7 @@ Requires: libyuv
 Requires: x264-xpra
 Requires: ffmpeg-xpra
 Requires: xpra-common = %{build_no}%{dist}
+Requires: xpra-html5
 #for running the tests:
 BuildRequires: %{py3requires_crypto}
 %if 0%{?fedora}
@@ -364,6 +376,10 @@ rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+
+%files html5
+%defattr(-,root,root)
+%{_datadir}/xpra/www
 
 %files common
 %defattr(-,root,root)
