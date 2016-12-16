@@ -34,6 +34,7 @@
 %define requires_pygtk2 pygtk2
 %define requires_dbus dbus-python dbus-x11
 %define requires_crypto python2-cryptography
+%define requires_setuptools python2-setuptools
 %define py3requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
@@ -57,6 +58,7 @@
 
 # any centos / rhel supported:
 %if 0%{?el7}
+%define requires_setuptools python-setuptools
 #not available:
 %define requires_websockify %{nil}
 %define requires_lzo %{nil}
@@ -170,7 +172,7 @@ Recommends: cups-filters
 BuildRequires: pkgconfig
 BuildRequires: %{requires_cython}
 BuildRequires: %{requires_pygtk2}-devel
-BuildRequires: python, python2-setuptools
+BuildRequires: python, %{requires_setuptools}
 BuildRequires: %{requires_pygobject2}-devel
 BuildRequires: libxkbfile-devel
 BuildRequires: libXtst-devel
