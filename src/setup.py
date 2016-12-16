@@ -711,10 +711,12 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 eifd = ["-Werror",
                         #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
                         #"-Wno-error=uninitialized",
-                        #needed on Debian and Ubuntu to avoid this error:
-                        #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
-                        #"-Wno-error=strict-prototypes",
                         ]
+                from xpra.os_util import is_Ubuntu, is_Debian
+                if is_Debian() or is_Ubuntu():
+                    #needed on Debian and Ubuntu to avoid this error:
+                    #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
+                    eifd.append("-Wno-error=strict-prototypes")
                 if sys.platform.startswith("netbsd"):
                     #see: http://trac.cython.org/ticket/395
                     eifd += ["-fno-strict-aliasing"]
