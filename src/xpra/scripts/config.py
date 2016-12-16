@@ -56,10 +56,10 @@ def has_sound_support():
 
 def get_xorg_bin():
     # Detect Xorg Binary
-    for p in ("/usr/libexec/Xorg.bin",          #fedora 21?
-              "/usr/libexec/Xorg",              #fedora 22
-              "/usr/lib/xorg-server/Xorg"       #arch linux
-              "/usr/X11/bin/X"                  #OSX
+    for p in (
+              "/usr/libexec/Xorg",              #fedora 22+
+              "/usr/lib/xorg-server/Xorg",      #arch linux
+              "/usr/X11/bin/X",                 #OSX
               ):
         if os.path.exists(p):
             return p
@@ -142,7 +142,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
         if use_wrapper:
             xorg_cmd = "xpra_Xdummy"
         else:
-            xorg_cmd = "Xorg"
+            xorg_cmd = xorg_bin or "Xorg"
         #so we can run from install dir:
         if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
             if bin_dir not in ("/usr/bin", "/bin"):
