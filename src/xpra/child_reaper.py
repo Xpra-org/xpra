@@ -26,10 +26,10 @@ POLL_WARNING = envbool("XPRA_POLL_WARNING", True)
 
 
 singleton = None
-def getChildReaper(quit_cb=None, exit_with_children=False):
+def getChildReaper():
     global singleton
     if singleton is None:
-        singleton = ChildReaper(quit_cb, exit_with_children)
+        singleton = ChildReaper()
     return singleton
 
 
@@ -58,7 +58,7 @@ class ProcInfo(object):
 # https://github.com/gevent/gevent/issues/622
 class ChildReaper(object):
     #note: the quit callback will fire only once!
-    def __init__(self, quit_cb=None, exit_with_children=False):
+    def __init__(self, quit_cb=None):
         log("ChildReaper(%s)", quit_cb)
         from xpra.gtk_common.gobject_compat import import_glib
         self.glib = import_glib()
@@ -117,6 +117,9 @@ class ChildReaper(object):
             if not procinfo.dead and process and process.poll() is not None:
                 self.add_dead_process(procinfo)
         return True
+
+    def set_quit_callback(self, cb):
+        self._quit = cb
 
     def check(self):
         #see if we are meant to exit-with-children
