@@ -50,11 +50,9 @@ class TestCrypto(unittest.TestCase):
         assert secret is not None
         #test creation of encryptors and decryptors:
         iv = DEFAULT_IV
-        encryptors = []
-        decryptors = []
         args = secret, iv
         enc = self.backend.get_encryptor(*args)
-        log("%s%s=%s" % (b.get_encryptor, args, enc))
+        log("%s%s=%s" % (self.backend.get_encryptor, args, enc))
         assert enc is not None
         dec = self.backend.get_decryptor(*args)
         log("%s%s=%s" % (self.backend.get_decryptor, args, dec))
