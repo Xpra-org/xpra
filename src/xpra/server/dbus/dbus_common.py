@@ -16,6 +16,9 @@ def dbus_exception_wrap(fn, info="setting up server dbus instance"):
         if str(e).find("org.freedesktop.DBus.Error.NoServer")<0:
             log.error("dbus server error", exc_info=True)
         log.error("Error %s:", info)
-        for x in str(e).split(":"):
-            log.error("  %s", x.strip())
+        #split on ":" unless it is quoted:
+        tmp = "-XX-"*10
+        msg = str(e).replace("':'", tmp)
+        for x in msg.split(":"):
+            log.error("  %s", x.replace(tmp, "':'").strip())
     return None
