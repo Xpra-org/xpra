@@ -750,7 +750,10 @@ class GTKTrayMenuBase(object):
         if self.quality:
             can_use = not self.client.mmap_enabled and (self.client.encoding in self.client.server_encodings_with_quality or self.client.encoding=="auto")
             set_sensitive(self.quality, can_use)
-            if not can_use:
+            if self.client.mmap_enabled:
+                self.quality.set_tooltip_text("Speed is always 100% with mmap")
+                return
+            elif not can_use:
                 self.quality.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
                 return
             self.quality.set_tooltip_text("Minimum picture quality")
