@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.buffers.membuf cimport getbuf, MemBuf
 
 cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 
 def xor_str(buf, xor):
@@ -17,12 +18,9 @@ def xor_str(buf, xor):
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
     assert object_as_buffer(xor, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(xor), xor)
     assert cbuf_len == xbuf_len, "python or cython bug? buffers don't have the same length?"
-    out_bytes = bytearray(cbuf_len)
-    cdef unsigned char * obuf                 #@DuplicatedSignature
-    cdef Py_ssize_t obuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(out_bytes, <const void**> &obuf, &obuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(obuf), obuf)
-    assert obuf_len==cbuf_len
+    cdef MemBuf out_buf = getbuf(cbuf_len)
+    cdef unsigned char *obuf = <unsigned char*> out_buf.get_mem()
     cdef int i                                      #@DuplicatedSignature
     for 0 <= i < cbuf_len:
         obuf[i] = cbuf[i] ^ xbuf[i]
-    return out_bytes
+    return memoryview(out_buf)

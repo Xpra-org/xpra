@@ -3,9 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os, sys
+import os
+import sys
+import time
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.buffers.membuf cimport padbuf, MemBuf
 from xpra.os_util import bytestostr
 from xpra.util import envint
 
@@ -177,42 +180,13 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     return VPX_IMG_FMT_I420
 
 
-class VPXImageWrapper(ImageWrapper):
-
-    def __init__(self, *args, **kwargs):
-        ImageWrapper.__init__(self, *args, **kwargs)
-        self.buffers = []
-
-    def _cn(self):                          #@DuplicatedSignature
-        return "VPXImageWrapper"
-
-    def add_buffer(self, ptr):
-        self.buffers.append(ptr)
-
-    def clone_pixel_data(self):
-        ImageWrapper.clone_pixel_data(self)
-        self.free_buffers()
-
-    def free(self):
-        ImageWrapper.free(self)
-        self.free_buffers()
-
-    def free_buffers(self):
-        cdef void *ptr
-        if self.buffers:
-            for x in self.buffers:
-                #cython magic:
-                ptr = <void *> (<unsigned long> x)
-                free(ptr)
-            self.buffers = []
-
-
 cdef class Decoder:
 
     cdef vpx_codec_ctx_t *context
     cdef unsigned int width
     cdef unsigned int height
     cdef unsigned int max_threads
+    cdef unsigned long frames
     cdef vpx_img_fmt_t pixfmt
     cdef object dst_format
     cdef object encoding
@@ -250,10 +224,12 @@ cdef class Decoder:
         return "vpx.Decoder(%s)" % self.encoding
 
     def get_info(self):                 #@DuplicatedSignature
-        return {"type"      : self.get_type(),
+        return {
+                "type"      : self.get_type(),
                 "width"     : self.get_width(),
                 "height"    : self.get_height(),
                 "encoding"  : self.encoding,
+                "frames"    : self.frames,
                 "colorspace": self.get_colorspace(),
                 "max_threads" : self.max_threads,
                 }
@@ -299,13 +275,15 @@ cdef class Decoder:
         cdef vpx_codec_err_t ret
         cdef int i = 0
         cdef object image
-        cdef void *padded_buf
+        cdef MemBuf output_buf
+        cdef void *output
         cdef Py_ssize_t plane_len = 0
         cdef uint8_t dx, dy
         cdef unsigned int height
         cdef int stride
         assert self.context!=NULL
 
+        start = time.time()
         assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
 
         with nogil:
@@ -321,7 +299,6 @@ cdef class Decoder:
         strides = []
         pixels = []
         divs = get_subsampling_divs(self.get_colorspace())
-        image = VPXImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 3)
         for i in range(3):
             _, dy = divs[i]
             if dy==1:
@@ -334,16 +311,18 @@ cdef class Decoder:
             strides.append(stride)
 
             plane_len = height * stride
+            
             #add one extra line of padding:
-            padded_buf = xmemalign(plane_len + stride)
-            memcpy(padded_buf, <void *>img.planes[i], plane_len)
-            memset(<void *>((<char *>padded_buf)+plane_len), 0, stride)
+            output_buf = padbuf(plane_len, stride)
+            output = <void *>output_buf.get_mem()
+            memcpy(output, <void *>img.planes[i], plane_len)
+            memset(<void *>((<char *>output)+plane_len), 0, stride)
 
-            pixels.append(memory_as_pybuffer(padded_buf, plane_len, True))
-
-            image.add_buffer(<unsigned long> padded_buf)
-        log("vpx returning decoded %s image %s with colorspace=%s", self.encoding, image, image.get_pixel_format())
-        return image
+            pixels.append(memoryview(output_buf))
+        self.frames += 1
+        elapsed = 1000*(time.time()-start)
+        log("%s frame %4i decoded in %3ims", self.encoding, self.frames, elapsed)
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 3)
 
 
 def selftest(full=False):

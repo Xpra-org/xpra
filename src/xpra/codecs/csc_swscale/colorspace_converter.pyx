@@ -17,18 +17,11 @@ from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
+from xpra.buffers.membuf cimport padbuf, MemBuf
 
 
 cdef extern from "../../buffers/buffers.h":
-    object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
-cdef extern from "../../buffers/memalign.h":
-    int pad(int size) nogil
-    void *xmemalign(size_t size) nogil
-
-cdef extern from "stdlib.h":
-    void free(void *ptr)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "../../inline.h":
     pass
@@ -261,49 +254,6 @@ if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO
         COLORSPACES = []
 
 
-cdef class CSCImage:
-    """
-        Allows us to call free_csc_image
-        when this object is garbage collected
-    """
-    cdef uint8_t *buf[4]
-    cdef int freed
-
-    cdef set_plane(self, int plane, uint8_t *buf):
-        assert plane in (0, 1, 2, 3)
-        self.buf[plane] = buf
-
-    def __repr__(self):
-        return "CSCImage(%#x, freed=%s)" % (<unsigned long> self.buf, self.freed)
-
-    def __dealloc__(self):
-        #log("CSCImage.__dealloc__()")
-        self.free()
-
-    def free(self):
-        #log("CSCImage.free() freed=%s", bool(self.freed))
-        if self.freed==0:
-            self.freed = 1
-            if self.buf[0]==NULL:
-                raise Exception("buffer is already freed!?")
-            free(self.buf[0])
-            for i in range(4):
-                self.buf[i] = NULL
-
-
-class CSCImageWrapper(ImageWrapper):
-
-    def free(self):                             #@DuplicatedSignature
-        log("CSCImageWrapper.free() csc_image=%s", self.csc_image)
-        ImageWrapper.free(self)
-        if self.csc_image:
-            self.csc_image.free()
-            self.csc_image = None
-
-    def _cn(self):
-        return "CSCImageWrapper"
-
-
 cdef class ColorspaceConverter:
     cdef int src_width
     cdef int src_height
@@ -322,7 +272,6 @@ cdef class ColorspaceConverter:
     cdef int out_height[4]
     cdef int out_stride[4]
     cdef unsigned long out_size[4]
-    cdef unsigned long buffer_size
 
     cdef object __weakref__
 
@@ -344,19 +293,13 @@ cdef class ColorspaceConverter:
         self.dst_format = dst_format
         self.dst_format_enum = dst.av_enum
         #pre-calculate plane heights:
-        self.buffer_size = 0
         cdef int subsampling = False
         for i in range(4):
             self.out_height[i] = (int) (dst_height * dst.height_mult[i])
             self.out_stride[i] = roundup((int) (dst_width * dst.width_mult[i]), 16)
             if i!=3 and (dst.height_mult[i]!=1.0 or dst.width_mult[i]!=1.0):
                 subsampling = True
-            #add one extra line to height so we can read a full rowstride
-            #no matter where we start to read on the last line.
-            #MEMALIGN may be redundant here but it is very cheap
-            self.out_size[i] = pad(self.out_stride[i] * (self.out_height[i]+1))
-            self.buffer_size += self.out_size[i]
-        log("buffer size=%s", self.buffer_size)
+            self.out_size[i] = self.out_stride[i] * self.out_height[i]
 
         self.src_width = src_width
         self.src_height = src_height
@@ -447,7 +390,6 @@ cdef class ColorspaceConverter:
             self.out_height[i] = 0
             self.out_stride[i] = 0
             self.out_size[i] = 0
-        self.buffer_size = 0
 
     def is_closed(self):
         return self.context!=NULL
@@ -464,7 +406,7 @@ cdef class ColorspaceConverter:
         cdef int height
         cdef int stride
         cdef int result
-        cdef Py_buffer *py_buffer
+        cdef size_t pad
         start = time.time()
         iplanes = image.get_planes()
         pixels = image.get_pixels()
@@ -477,6 +419,10 @@ cdef class ColorspaceConverter:
             iplanes = 1
         else:
             planes = pixels
+        if self.dst_format.endswith("P"):
+            pad = self.dst_width
+        else:
+            pad = self.dst_width * 4
         #print("convert_image(%s) input=%s, strides=%s" % (image, len(input), strides))
         assert pixels, "failed to get pixels from %s" % image
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
@@ -493,45 +439,38 @@ cdef class ColorspaceConverter:
                 #(so we just copy the last valid plane in the remaining slots - ugly!)
                 input_stride[i] = input_stride[iplanes-1]
                 input_image[i] = input_image[iplanes-1]
+
+        #allocate the output buffer(s):
+        output_buf = []
+        cdef MemBuf mb
+        for i in range(3):
+            if self.out_size[i]>0:
+                mb = padbuf(self.out_size[i], pad)
+                output_buf.append(mb)
+                output_image[i] = <uint8_t *> mb.get_mem()
+            else:
+                #the buffer may not be used, but is not allowed to be NULL:
+                output_image[i] = output_image[0]
         with nogil:
-            output_image[0] = <uint8_t*> xmemalign(self.buffer_size)
-            for i in range(3):
-                output_image[1+i] = output_image[i] + self.out_size[i]
             result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
         assert result!=0, "sws_scale failed!"
         assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)
         #now parse the output:
-        csci = CSCImage()           #keep a reference to memory for cleanup
-        for i in range(4):
-            csci.set_plane(i, NULL)
         if self.dst_format.endswith("P"):
             #planar mode, assume 3 planes:
             oplanes = ImageWrapper._3_PLANES
-            out = []
-            strides = []
-            for i in range(3):
-                if self.out_stride[i]>0 and output_image[i]!=NULL:
-                    stride = self.out_stride[i]
-                    plane = memory_as_pybuffer(<void *>output_image[i], self.out_height[i] * self.out_stride[i], True)
-                else:
-                    stride = 0
-                    plane = None
-                csci.set_plane(i, output_image[i])
-                out.append(plane)
-                strides.append(stride)
+            out = [memoryview(output_buf[i]) for i in range(3)]
+            strides = [self.out_stride[i] for i in range(3)]
         else:
             #assume no planes, plain RGB packed pixels:
             oplanes = ImageWrapper.PACKED
             strides = self.out_stride[0]
-            out = memory_as_pybuffer(<void *>output_image[0], self.out_height[0] * self.out_stride[0], True)
-            csci.set_plane(0, output_image[0])
+            out = memoryview(output_buf[0])
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, oplanes)
-        out_image.csc_image = csci
-        return out_image
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, oplanes)
 
 
 def selftest(full=False):

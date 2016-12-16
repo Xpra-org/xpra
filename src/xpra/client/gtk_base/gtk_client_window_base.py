@@ -1375,7 +1375,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             data = unpremultiply_argb(data)
-            rgba = memoryview_to_bytes(bgra_to_rgba(data))
+            rgba = memoryview_to_bytes(memoryview(bgra_to_rgba(data)))
             pixbuf = get_pixbuf_from_data(rgba, True, width, height, width*4)
         else:
             loader = PixbufLoader()

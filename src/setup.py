@@ -1970,11 +1970,17 @@ if annotate_ENABLED:
 
 #*******************************************************************************
 #which file to link against (new-style buffers or old?):
-buffers_c = "xpra/buffers/new_buffers.c"
+buffers_c = "xpra/buffers/buffers.c"
 inline_c = "xpra/inline.c"
 memalign_c = "xpra/buffers/memalign.c"
 #convenience grouping for codecs:
 membuffers_c = [memalign_c, inline_c, buffers_c]
+
+
+add_packages("xpra.buffers")
+buffers_pkgconfig = pkgconfig()
+cython_add(Extension("xpra.buffers.membuf",
+            ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")

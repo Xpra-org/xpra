@@ -1,15 +1,16 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
+from xpra.buffers.membuf cimport getbuf, MemBuf
 
 cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int    object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num)
@@ -23,6 +24,16 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
+cdef as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
+    cdef size_t l
+    if isinstance(obj, MemBuf):
+        buffer[0] = <const void*> (<MemBuf> obj).get_mem()
+        l = len(obj)
+        buffer_len[0] = <Py_ssize_t> l
+        return 0
+    return object_as_buffer(obj, buffer, buffer_len)
+
+
 cdef inline unsigned char clamp(int v):
     if v>255:
         return 255
@@ -34,14 +45,15 @@ def r210_to_rgba(buf):
     # buf is a Python buffer object
     cdef const unsigned int* cbuf = <const unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return r210data_to_rgba(cbuf, cbuf_len)
 
 cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
     if r210_len <= 0:
         return None
     assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
-    rgba = bytearray(r210_len)
+    cdef MemBuf output_buf = getbuf(r210_len)
+    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()    
     #number of pixels:
     cdef int i = 0
     cdef unsigned int v
@@ -52,7 +64,7 @@ cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
         rgba[i+2] = (v&0x3ff00000) >> 22
         rgba[i+3] = ((v&(<unsigned int>0xc0000000)) >> 30)*85
         i = i + 4
-    return rgba
+    return output_buf
 
 
 def r210_to_rgb(buf):
@@ -60,14 +72,15 @@ def r210_to_rgb(buf):
     # buf is a Python buffer object
     cdef const unsigned int* cbuf = <const unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return r210data_to_rgb(cbuf, cbuf_len)
 
 cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
     if r210_len <= 0:
         return None
     assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
-    rgb = bytearray(r210_len//4*3)
+    cdef MemBuf output_buf = getbuf(r210_len//4*3)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()    
     #number of pixels:
     cdef int s = 0
     cdef int d = 0
@@ -79,7 +92,7 @@ cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
         rgb[d+2] = (v&0x3ff00000) >> 22
         s += 1
         d += 3
-    return rgb
+    return output_buf
 
 
 def argb_to_rgba(buf):
@@ -87,14 +100,15 @@ def argb_to_rgba(buf):
     # buf is a Python buffer object
     cdef const unsigned char * cbuf = <unsigned char *> 0
     cdef Py_ssize_t cbuf_len = 0
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgba(cbuf, cbuf_len)
 
 cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
     if argb_len <= 0:
         return None
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    rgba = bytearray(argb_len)
+    cdef MemBuf output_buf = getbuf(argb_len)
+    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()    
     #number of pixels:
     cdef int i = 0
     while i < argb_len:
@@ -103,14 +117,14 @@ cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
         rgba[i+2]  = argb[i+3]              #B
         rgba[i+3]  = argb[i]                #A
         i = i + 4
-    return rgba
+    return output_buf
 
 def argb_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
     cdef unsigned char * cbuf = <unsigned char *> 0     #@DuplicateSignature
     cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return argbdata_to_rgb(cbuf, cbuf_len)
 
 cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
@@ -120,7 +134,8 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
     #number of pixels:
     cdef unsigned int mi = argb_len//4                #@DuplicateSignature
     #3 bytes per pixel:
-    rgb = bytearray(mi*3)
+    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()    
     cdef int i = 0, di = 0                          #@DuplicateSignature
     while i < argb_len:
         rgb[di]   = argb[i+1]               #R
@@ -128,7 +143,7 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
         rgb[di+2] = argb[i+3]               #B
         di += 3
         i += 4
-    return rgb
+    return output_buf
 
 
 def bgra_to_rgb(buf):
@@ -136,7 +151,7 @@ def bgra_to_rgb(buf):
     # buf is a Python buffer object
     cdef unsigned char * bgra_buf = NULL    #@DuplicateSignature
     cdef Py_ssize_t bgra_buf_len = 0        #@DuplicateSignature
-    assert object_as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgb(bgra_buf, bgra_buf_len)
 
 cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
@@ -146,7 +161,8 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4                #@DuplicateSignature
     #3 bytes per pixel:
-    rgb = bytearray(mi*3)
+    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()    
     cdef int di = 0, si = 0                  #@DuplicateSignature
     while si < bgra_len:
         rgb[di]   = bgra[si+2]              #R
@@ -154,7 +170,7 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
         rgb[di+2] = bgra[si]                #B
         di += 3
         si += 4
-    return rgb
+    return output_buf
 
 
 def bgra_to_rgba(buf):
@@ -162,7 +178,7 @@ def bgra_to_rgba(buf):
     # buf is a Python buffer object
     cdef unsigned char * bgra_buf2 = NULL
     cdef Py_ssize_t bgra_buf_len2 = 0
-    assert object_as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0, "cannot convert %s to a readable buffer" % type(buf)
     return bgradata_to_rgba(bgra_buf2, bgra_buf_len2)
 
 cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
@@ -170,7 +186,8 @@ cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
         return None
     assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #same number of bytes:
-    rgba = bytearray(bgra_len)
+    cdef MemBuf output_buf = getbuf(bgra_len)
+    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()    
     cdef int i = 0                      #@DuplicateSignature
     while i < bgra_len:
         rgba[i]   = bgra[i+2]           #R
@@ -178,7 +195,7 @@ cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
         rgba[i+2] = bgra[i]             #B
         rgba[i+3] = bgra[i+3]           #A
         i += 4
-    return rgba
+    return output_buf
 
 
 def premultiply_argb_in_place(buf):
@@ -243,7 +260,7 @@ def unpremultiply_argb(buf):
     cdef Py_ssize_t argb_len = 0                    #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert object_as_buffer(buf, <const void **>&argb, &argb_len)==0
+    assert as_buffer(buf, <const void **>&argb, &argb_len)==0
     return do_unpremultiply_argb(argb, argb_len)
 
 
@@ -263,7 +280,8 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     cdef unsigned int argb                      #@DuplicateSignature
     assert sizeof(int) == 4
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    argb_out = bytearray(argb_len)
+    cdef MemBuf output_buf = getbuf(argb_len)
+    cdef unsigned char* argb_out = <unsigned char*> output_buf.get_mem()    
     cdef int i                                  #@DuplicateSignature
     for 0 <= i < argb_len // 4:
         argb = argb_in[i]
@@ -286,4 +304,4 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
         argb_out[i*4+G] = g
         argb_out[i*4+R] = r
         argb_out[i*4+A] = a
-    return argb_out
+    return output_buf
