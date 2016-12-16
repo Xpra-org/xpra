@@ -19,7 +19,7 @@ from xpra.log import Logger
 log = Logger("server")
 netlog = Logger("network")
 httplog = Logger("http")
-wslog = Logger("ws")
+wslog = Logger("websocket")
 proxylog = Logger("proxy")
 commandlog = Logger("command")
 authlog = Logger("auth")
