@@ -51,6 +51,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef CARD32 XID
 
     ctypedef int Bool
+    ctypedef int Status
     ctypedef CARD32 Atom
     ctypedef XID Window
     ctypedef XID KeySym
@@ -99,6 +100,8 @@ cdef extern from "X11/extensions/XKB.h":
     unsigned long XkbUseCoreKbd
     unsigned long XkbDfltXIId
     unsigned long XkbBellNotifyMask
+    unsigned long XkbMapNotifyMask
+    unsigned long XkbStateNotifyMask
     unsigned int XkbGBN_AllComponentsMask
     unsigned int XkbGBN_GeometryMask
 
@@ -114,6 +117,10 @@ cdef extern from "X11/extensions/XKBstr.h":
     ctypedef struct XkbDescRec:
         pass
     ctypedef XkbDescRec* XkbDescPtr
+    ctypedef struct _XkbStateRec:
+        unsigned char   group
+    ctypedef _XkbStateRec XkbStateRec
+    ctypedef _XkbStateRec *XkbStatePtr
 
 
 cdef extern from "X11/extensions/XKBrules.h":
@@ -155,6 +162,8 @@ cdef extern from "X11/XKBlib.h":
 
     XkbDescPtr XkbGetKeyboardByName(Display *display, unsigned int deviceSpec, XkbComponentNamesPtr names,
                                     unsigned int want, unsigned int need, Bool load)
+    Status XkbGetState(Display *dpy, unsigned int deviceSpec, XkbStatePtr statePtr)
+    Bool   XkbLockGroup(Display *dpy, unsigned int deviceSpec, unsigned int group)
 
 
 cdef extern from "X11/extensions/XTest.h":
@@ -347,6 +356,16 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             log("X11 keymap property updated: %s", self.getXkbProperties())
         return True
 
+    def set_layout_group(self, grp):
+        log("setting XKB layout group `%s`", grp)
+        if not XkbLockGroup(self.display, XkbUseCoreKbd, grp):
+            log.warn("Warning: cannot lock on keyboard layout group '%s'", grp)
+        return self.get_layout_group()
+
+    def get_layout_group(self):
+        cdef XkbStateRec xkb_state = XkbStateRec()
+        XkbGetState(self.display, XkbUseCoreKbd, &xkb_state)
+        return xkb_state.group
 
     def hasXkb(self):
         if self.Xkb_checked:

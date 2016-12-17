@@ -224,7 +224,7 @@ class ServerBase(ServerCore):
         #from now on, use the logger for parsing errors:
         from xpra.scripts import config
         config.warn = log.warn
-        
+
         self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
         self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
@@ -2575,15 +2575,19 @@ class ServerBase(ServerCore):
         modifiers = props.get("modifiers", [])
         ss.make_keymask_match(modifiers)
 
+    def set_keyboard_layout_group(self, grp):
+        #only actually implemented in X11ServerBase
+        pass
+
     def _process_key_action(self, proto, packet):
         if self.readonly:
             return
-        wid, keyname, pressed, modifiers, keyval, _, client_keycode = packet[1:8]
-        #group = packet[8] #unused!
+        wid, keyname, pressed, modifiers, keyval, _, client_keycode, group = packet[1:9]
         ss = self._server_sources.get(proto)
         if ss is None:
             return
         self.ui_driver = ss.uuid
+        self.set_keyboard_layout_group(group)
         keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
         log("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]

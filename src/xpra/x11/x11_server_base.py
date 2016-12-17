@@ -192,9 +192,19 @@ class X11ServerBase(GTKServerBase):
 
     def init_keyboard(self):
         GTKServerBase.init_keyboard(self)
+        self.current_keyboard_group = None
         #clear all modifiers
         clean_keyboard_state()
 
+    def set_keyboard_layout_group(self, grp):
+        if self.current_keyboard_group!=grp and X11Keyboard.hasXkb():
+            try:
+                with xsync:
+                    self.current_keyboard_group = X11Keyboard.set_layout_group(grp)
+            except Exception as e:
+                keylog("set_keyboard_layout_group(%s)", grp, exc_info=True)
+                keylog.error("Error: failed to set keyboard layout group '%s'", grp)
+                keylog.error(" %s", e)
 
     def init_packet_handlers(self):
         GTKServerBase.init_packet_handlers(self)
@@ -251,12 +261,14 @@ class X11ServerBase(GTKServerBase):
         if self.opengl_props:
             info["opengl"] = self.opengl_props
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
-        info.setdefault("keyboard", {}).update({
-                                                "state"           : {
-                                                                     "keys_pressed"   : list(self.keys_pressed.keys())
-                                                                     },
-                                                "fast-switching"  : True,
-                                                })
+        with xsync:
+            info.setdefault("keyboard", {}).update({
+                                                    "state"             : {
+                                                                           "keys_pressed"   : list(self.keys_pressed.keys())
+                                                                           },
+                                                    "fast-switching"    : True,
+                                                    "layout-group"      : X11Keyboard.get_layout_group(),
+                                                    })
         sinfo = info.setdefault("server", {})
         sinfo.update({"type"                : "Python/gtk/x11",
                       "fakeXinerama"        : self.fake_xinerama and bool(self.libfakeXinerama_so),

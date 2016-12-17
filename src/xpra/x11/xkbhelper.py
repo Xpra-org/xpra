@@ -182,13 +182,24 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     def filter_mappings(mappings, drop_extra_keys=False):
         filtered = {}
         invalid_keysyms = set()
+        def estr(entries):
+            try:
+                return csv(list(set(x[0] for x in entries)))
+            except:
+                return csv(list(entries))
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
             if len(mods)>1:
-                log.warn("Warning: keymapping removed an invalid keycode entry:")
+                log.warn("Warning: keymapping changed:")
                 log.warn(" keycode %s points to %i modifiers: %s", keycode, len(mods), csv(list(mods)))
-                log.warn(" from definition: %s", csv(list(entries)))
-                continue
+                log.warn(" from definition: %s", estr(entries))
+                for mod in mods:
+                    emod = [entry for entry in entries if modifiers_for([entry])]
+                    log.warn(" %s: %s", mod, estr(emod))
+                #keep just the first one:
+                mods = list(mods)[:1]
+                entries = [entry for entry in entries if mods[0] in modifiers_for([entry])]
+                log.warn(" keeping: %s for %s", estr(entries), mods[0])
             #now remove entries for keysyms we don't have:
             f_entries = set([(keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None])
             for keysym, _ in entries:
@@ -204,7 +215,8 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                     continue
             filtered[keycode] = f_entries
         if invalid_keysyms:
-            log.warn("the following keysyms are invalid and have not been mapped: %s", ", ".join((str(x) for x in invalid_keysyms)))
+            log.warn("Warning: the following keysyms are invalid and have not been mapped")
+            log.warn(" %s", csv(invalid_keysyms))
         return filtered
 
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
