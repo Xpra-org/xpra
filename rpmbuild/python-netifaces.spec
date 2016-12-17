@@ -24,12 +24,12 @@ URL: http://winswitch.org/
 Source: netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python-devel, python-setuptools
-Provides: netifaces
-Provides: python-netifaces
+Provides: netifaces = %{version}-%{release}
+Provides: python-netifaces = %{version}-%{release}
 Obsoletes: netifaces
 Obsoletes: python-netifaces
-Conflicts: netifaces
-Conflicts: python-netifaces
+Conflicts: netifaces < %{version}
+Conflicts: python-netifaces < %{version}
 
 %description
 Getting network addresses from Python
