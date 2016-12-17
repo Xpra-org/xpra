@@ -1,0 +1,6 @@
+xserver-xorg-video-dummy (1:0.3.8-2) UNRELEASED; urgency=low
+
+  * DPI fixes for xpra
+  * 30-bit display support
+
+ -- Antoine Martin <antoine@devloop.org.uk>  Sat, 17 Dec 2016 17:03:38 +0700

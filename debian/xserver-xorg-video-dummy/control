@@ -1,0 +1,35 @@
+Source: xserver-xorg-video-dummy
+Section: x11
+Priority: optional
+Maintainer: Antoine Martin <antoine@nagafix.co.uk>
+Uploaders: Antoine Martin <antoine@nagafix.co.uk>
+Build-Depends:
+ debhelper,
+ quilt,
+ pkg-config,
+ xserver-xorg-dev,
+ x11proto-video-dev,
+ x11proto-xf86dga-dev,
+ x11proto-core-dev,
+ x11proto-fonts-dev,
+ x11proto-randr-dev,
+ x11proto-render-dev,
+ xutils-dev
+Standards-Version: 3.9.8
+
+Package: xserver-xorg-video-dummy
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ ${xviddriver:Depends},
+Provides:
+ ${xviddriver:Provides}
+Description: X.Org X server -- dummy display driver
+ This package provides a 'dummy' display driver, which does not actually
+ display anything.
+ .
+ More information about X.Org can be found at:
+ <URL:https://www.X.org>
+ .
+ This package is built from the X.org xf86-video-dummy driver module.
