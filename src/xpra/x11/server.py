@@ -746,7 +746,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def get_window_position(self, window):
         #used to adjust the pointer position with multiple clients
-        if window is None or window.is_OR():
+        if window is None or window.is_OR() or window.is_tray():
             return None
         return self._desktop_manager.window_position(window)
 
@@ -842,7 +842,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.ui_driver = ss.uuid
         is_ui_driver = self.ui_driver==ss.uuid
         shown = self._desktop_manager.is_shown(window)
-        if window.is_OR() or skip_geometry:
+        if window.is_OR() or window.is_tray() or skip_geometry:
             size_changed = False
         else:
             oww, owh = self._desktop_manager.window_size(window)
@@ -1173,7 +1173,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
                 continue
             item = (wid, x, y, img)
-            if window.is_OR():
+            if window.is_OR() or window.is_tray():
                 OR_regions.append(item)
             elif self._has_focus==wid:
                 #window with focus first (drawn last)
