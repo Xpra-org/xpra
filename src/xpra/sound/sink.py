@@ -119,7 +119,6 @@ class SoundSink(SoundPipeline):
                                           "max-size-time=%s" % QUEUE_TIME,
                                           "leaky=%s" % QUEUE_LEAK]))
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
-        from xpra.sound.gstreamer_util import get_gst_version
         #anything older than this may cause problems (ie: centos 6.x)
         #because the attributes may not exist
         sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(sink_type, {}))

@@ -259,24 +259,22 @@ def import_gst():
             from xpra.platform.paths import get_app_dir
             gst_dir = os.path.join(get_app_dir(), "gstreamer-1.0")     #ie: C:\Program Files\Xpra\gstreamer-0.10
             os.environ["GST_PLUGIN_PATH"] = gst_dir
-            if MV==1:
-                gst_bin_dir = os.path.join(gst_dir, "bin")                       #ie: C:\Program Files\Xpra\gstreamer-0.10\bin
-                os.environ["PATH"] = os.pathsep.join(x for x in (gst_bin_dir, os.environ.get("PATH", "")) if x)
-                sys.path.insert(0, gst_bin_dir)
-                scanner = os.path.join(gst_bin_dir, "gst-plugin-scanner.exe")
-                if os.path.exists(scanner):
-                    os.environ["GST_PLUGIN_SCANNER"]    = scanner
-                gi_dir = os.path.join(get_app_dir(), "girepository-1.0")
-                os.environ["GI_TYPELIB_PATH"]       = gi_dir
+            gst_bin_dir = os.path.join(gst_dir, "bin")                       #ie: C:\Program Files\Xpra\gstreamer-0.10\bin
+            os.environ["PATH"] = os.pathsep.join(x for x in (gst_bin_dir, os.environ.get("PATH", "")) if x)
+            sys.path.insert(0, gst_bin_dir)
+            scanner = os.path.join(gst_bin_dir, "gst-plugin-scanner.exe")
+            if os.path.exists(scanner):
+                os.environ["GST_PLUGIN_SCANNER"]    = scanner
+            gi_dir = os.path.join(get_app_dir(), "girepository-1.0")
+            os.environ["GI_TYPELIB_PATH"]       = gi_dir
     elif OSX:
         bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
         log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
         if bundle_contents:
             os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-1.0")
             os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Resources", "bin", "gst-plugin-scanner-1.0")
-            if MV==1:
-                gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-1.0")
-                os.environ["GI_TYPELIB_PATH"]       = gi_dir
+            gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-1.0")
+            os.environ["GI_TYPELIB_PATH"]       = gi_dir
     log("GStreamer 1.x environment: %s", dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
 
