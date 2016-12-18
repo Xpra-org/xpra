@@ -777,6 +777,7 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
     #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
     dirs = (install_dir or sys.prefix).split(os.path.sep)
     if install_dir and stripbuildroot:
+        pkgdir = os.environ.get("pkgdir")
         if "debian" in dirs and "tmp" in dirs:
             #ugly fix for stripping the debian tmp dir:
             #ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
@@ -786,6 +787,9 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             #strip rpm style build root:
             #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
             dirs = dirs[dirs.index("BUILDROOT")+2:]
+        elif pkgdir and install_dir.startswith(pkgdir):
+            #arch build dir:
+            dirs = install_dir.lstrip(pkgdir).split(os.path.sep)
         elif "usr" in dirs:
             #ie: ["some", "path", "to", "usr"] -> ["usr"]
             #assume "/usr" or "/usr/local" is the build root
