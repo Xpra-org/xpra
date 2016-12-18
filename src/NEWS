@@ -1,4 +1,19 @@
-v1.0 (2016-09-21)
+v1.0.1 (2016-12-18)
+======================
+	-- fix xvfb example syntax in config file
+	-- fix syntax error in webp codec
+	-- fix html5 printer forwarding
+	-- fix mmap-group option
+	-- fix Xorg and config path detection with Arch Linux
+	-- fix exit-with-children option
+	-- fix file left over after running clean build target
+	-- fix duplicated websocket logging category
+	-- fix dbus server errors with display names containing dots
+	-- fix encoding quality tray tooltip message when disabled by mmap
+	-- fix systray forwarding window position
+
+
+v1.0 (2016-12-06)
 ======================
 	-- support all current versions of Ubuntu and Debian using a private ffmpeg library
 	-- proxy server can start new sessions on demand

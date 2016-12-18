@@ -1,3 +1,18 @@
+xpra (1.0.1-1) UNRELEASED; urgency=low
+  * fix xvfb example syntax in config file
+  * fix syntax error in webp codec
+  * fix html5 printer forwarding
+  * fix mmap-group option
+  * fix Xorg and config path detection with Arch Linux
+  * fix exit-with-children option
+  * fix file left over after running clean build target
+  * fix duplicated websocket logging category
+  * fix dbus server errors with display names containing dots
+  * fix encoding quality tray tooltip message when disabled by mmap
+  * fix systray forwarding window position
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 18 Dec 2016 22:08:04 +0100
+
 xpra (1.0-1) UNRELEASED; urgency=low
   * support all current versions of Ubuntu and Debian
     using a private ffmpeg library
@@ -31,7 +46,7 @@ xpra (1.0-1) UNRELEASED; urgency=low
   * try harder to exit cleanly
   * build cleanups
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 21 Sep 2016 18:13:59 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Dec 2016 18:13:59 +0700
 
 
 xpra (0.17.0-1) UNRELEASED; urgency=low

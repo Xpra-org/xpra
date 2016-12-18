@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0
+%define version 1.0.1
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -590,7 +590,20 @@ fi
 
 
 %changelog
-* Wed Sep 21 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
+* Sun Dec 18 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.1-1
+- fix xvfb example syntax in config file
+- fix syntax error in webp codec
+- fix html5 printer forwarding
+- fix mmap-group option
+- fix Xorg and config path detection with Arch Linux
+- fix exit-with-children option
+- fix file left over after running clean build target
+- fix duplicated websocket logging category
+- fix dbus server errors with display names containing dots
+- fix encoding quality tray tooltip message when disabled by mmap
+- fix systray forwarding window position
+
+* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
 - support all current versions of Ubuntu and Debian using a private ffmpeg library
 - proxy server can start new sessions on demand
 - SSH start server support on OSX < 10.11
