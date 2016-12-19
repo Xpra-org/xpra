@@ -363,8 +363,10 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return self.get_layout_group()
 
     def get_layout_group(self):
-        cdef XkbStateRec xkb_state = XkbStateRec()
-        XkbGetState(self.display, XkbUseCoreKbd, &xkb_state)
+        cdef XkbStateRec xkb_state
+        if not XkbGetState(self.display, XkbUseCoreKbd, &xkb_state):
+            log.warn("Warning: cannot get keyboard layout group")
+            return ""
         return xkb_state.group
 
     def hasXkb(self):
