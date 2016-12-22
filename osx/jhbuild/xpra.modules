@@ -433,7 +433,7 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/82/f7/d6dfd7595910a20a563a83a762bf79a253c4df71759c3b228accb3d7e5e4/cryptography-1.7.1.tar.gz#md5=2f63dee6ace602d1d20d1995f8538015"
+		module="/packages/82/f7/d6dfd7595910a20a563a83a762bf79a253c4df71759c3b228accb3d7e5e4/cryptography-1.7.1.tar.gz"
 		hash="sha256:953fef7d40a49a795f4d955c5ce4338abcec5dea822ed0414ed30348303fdb4c"
 		version="1.7.1"/>
 	<dependencies>
