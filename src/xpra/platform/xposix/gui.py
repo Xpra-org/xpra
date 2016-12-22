@@ -22,6 +22,8 @@ from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
 device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
+RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
+XSETTINGS_DPI = envbool("XSETTINGS_DPI", True)
 
 
 def get_native_system_tray_classes():
@@ -187,32 +189,34 @@ def _get_xsettings_dict():
 
 
 def _get_xsettings_dpi():
-    from xpra.x11.xsettings_prop import XSettingsTypeInteger
-    d = _get_xsettings_dict()
-    for k,div in {"Xft.dpi"         : 1,
-                  "Xft/DPI"         : 1024,
-                  "gnome.Xft/DPI"   : 1024,
-                  #"Gdk/UnscaledDPI" : 1024, ??
-                  }.items():
-        if k in d:
-            value_type, value = d.get(k)
-            if value_type==XSettingsTypeInteger:
-                screenlog("_get_xsettings_dpi() found %s=%s", k, value)
-                return max(10, min(1000, value/div))
+    if XSETTINGS_DPI:
+        from xpra.x11.xsettings_prop import XSettingsTypeInteger
+        d = _get_xsettings_dict()
+        for k,div in {"Xft.dpi"         : 1,
+                      "Xft/DPI"         : 1024,
+                      "gnome.Xft/DPI"   : 1024,
+                      #"Gdk/UnscaledDPI" : 1024, ??
+                      }.items():
+            if k in d:
+                value_type, value = d.get(k)
+                if value_type==XSettingsTypeInteger:
+                    screenlog("_get_xsettings_dpi() found %s=%s", k, value)
+                    return max(10, min(1000, value/div))
     return -1
 
 def _get_randr_dpi():
-    try:
-        from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-        randr_bindings = RandRBindings()
-        wmm, hmm = randr_bindings.get_screen_size_mm()
-        w, h =  randr_bindings.get_screen_size()
-        dpix = iround(w * 25.4 / wmm)
-        dpiy = iround(h * 25.4 / hmm)
-        screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
-        return dpix, dpiy
-    except Exception as e:
-        screenlog.warn("failed to get dpi: %s", e)
+    if RANDR_DPI:
+        try:
+            from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+            randr_bindings = RandRBindings()
+            wmm, hmm = randr_bindings.get_screen_size_mm()
+            w, h =  randr_bindings.get_screen_size()
+            dpix = iround(w * 25.4 / wmm)
+            dpiy = iround(h * 25.4 / hmm)
+            screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
+            return dpix, dpiy
+        except Exception as e:
+            screenlog.warn("failed to get dpi: %s", e)
     return -1, -1
 
 def get_xdpi():
