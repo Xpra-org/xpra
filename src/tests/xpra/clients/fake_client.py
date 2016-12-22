@@ -1,21 +1,56 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
 log = Logger()
+from xpra.net.file_transfer import FileTransferHandler
 
 
-class FakeClient(object):
+class FakeClient(FileTransferHandler):
     def __init__(self):
+        FileTransferHandler.__init__(self)
         self.supports_mmap = False
         self.mmap = None
         self.mmap_enabled = False
+        self.session_name = ""
         self._focused = None
         self.readonly = False
+        self.windows_enabled = True
+        self.can_scale = True
+        self.start_new_commands = True
+        self.server_supports_bell = True
+        self.client_supports_bell = True
+        self.notifications_enabled = True
+        self.client_supports_notifications = True
+        self.cursors_enabled = True
+        self.server_supports_cursors = True
+        self.client_supports_cursors = True
+        self.server_supports_clipboard = True
+        self.client_supports_clipboard = True
+        self.client_clipboard_direction = "both"
+        self.quality = 80
+        self.speed = 80
+        self.encoding = "png"
+        self.server_encodings_with_quality = []
+        self.server_encodings_with_speed = []
+        self.speaker_allowed = True
+        self.speaker_enabled = True
+        self.microphone_allowed = True
+        self.microphone_enabled = True
+        self.server_sound_send = True
+        self.server_sound_receive = True
+        self.server_readonly = False
+        self.bell_enabled = True
+        self.webcam_forwarding = True
+        self.webcam_device = None
+        self.server_virtual_video_devices = 0
+        self.client_supports_opengl = False
         self.title = "test"
+        self.keyboard_helper = None
+        self.clipboard_helper = None
         self._id_to_window = {}
         self._window_to_id = {}
         self.server_window_decorations = False
@@ -26,10 +61,34 @@ class FakeClient(object):
         self.xscale = 1
         self.yscale = 1
         self.log_events = True
+        self.handshake_callbacks = []
 
     def log(self, *args):
         if self.log_events:
             log.info(*args)
+
+    def connect(self, *args):
+        pass
+
+    def get_image(self, *args):
+        return None
+
+    def get_encodings(self):
+        return ["png"]
+
+    def show_start_new_command(self):
+        pass
+    def show_file_upload(self):
+        pass
+
+    def after_handshake(self, cb):
+        self.handshake_callbacks.append(cb)
+
+    def fire_handshake_callbacks(self):
+        cbs = self.handshake_callbacks
+        self.handshake_callbacks = []
+        for x in cbs:
+            x()
 
     def send_refresh(self, *args):
         self.log("send_refresh(%s)", args)
