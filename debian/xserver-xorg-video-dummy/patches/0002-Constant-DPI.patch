@@ -48,7 +48,7 @@
  
      if (device->videoRam != 0) {
  	pScrn->videoRam = device->videoRam;
-@@ -639,10 +650,47 @@
+@@ -639,10 +650,45 @@
      return TRUE;
  }
  
@@ -78,8 +78,6 @@
  DUMMYSwitchMode(SWITCH_MODE_ARGS_DECL)
  {
 +    SCRN_INFO_PTR(arg);
-+    if (!dummyModeInit(pScrn, mode))
-+        return FALSE;
 +#ifdef RANDR
 +    DUMMYPtr dPtr = DUMMYPTR(pScrn);
 +    if (dPtr->constantDPI) {
