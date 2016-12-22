@@ -1,8 +1,8 @@
-xserver-xorg-video-dummy (1:0.3.8-3) UNRELEASED; urgency=low
+xserver-xorg-video-dummy (1:0.3.8-4) UNRELEASED; urgency=low
 
   * packaging file path fix
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 22 Dec 2016 16:53:21 +0700
+ -- Antoine Martin <antoine@devloop.org.uk>  Thu, 22 Dec 2016 18:59:20 +0700
 
 xserver-xorg-video-dummy (1:0.3.8-2) UNRELEASED; urgency=low
 
