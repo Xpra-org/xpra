@@ -93,7 +93,7 @@ cdef extern from "X11/Xlib.h":
     int XUngrabKey(Display * display, int keycode, unsigned int modifiers,
                    Window grab_window)
     int XQueryKeymap(Display * display, char [32] keys_return)
-
+    int XFlush(Display *dpy)
 
 
 cdef extern from "X11/extensions/XKB.h":
@@ -356,17 +356,20 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             log("X11 keymap property updated: %s", self.getXkbProperties())
         return True
 
-    def set_layout_group(self, grp):
+    def set_layout_group(self, int grp):
         log("setting XKB layout group `%s`", grp)
-        if not XkbLockGroup(self.display, XkbUseCoreKbd, grp):
+        if XkbLockGroup(self.display, XkbUseCoreKbd, grp):
+            XFlush(self.display)
+        else:
             log.warn("Warning: cannot lock on keyboard layout group '%s'", grp)
         return self.get_layout_group()
 
     def get_layout_group(self):
         cdef XkbStateRec xkb_state
-        if not XkbGetState(self.display, XkbUseCoreKbd, &xkb_state):
+        cdef Status r = XkbGetState(self.display, XkbUseCoreKbd, &xkb_state)
+        if r:
             log.warn("Warning: cannot get keyboard layout group")
-            return ""
+            return 0
         return xkb_state.group
 
     def hasXkb(self):
