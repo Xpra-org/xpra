@@ -145,6 +145,7 @@ So basically it's screen for remote X apps.
 %package -n python2-xpra
 Summary: python2 build of xpra
 Group: Networking
+Conflicts: xpra < 2.0
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
 Requires: python2-lz4
