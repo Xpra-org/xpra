@@ -1549,7 +1549,7 @@ if WIN32:
         add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
         #build minified html5 client in temporary build dir:
-        if "clean" not in sys.argv:
+        if "clean" not in sys.argv and html5_ENABLED:
             install_html5("build/www")
             for k,v in glob_recurse("build/www").items():
                 if (k!=""):
@@ -1819,7 +1819,8 @@ else:
     class install_data_override(install_data):
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
-            install_html5(os.path.join(self.install_dir, "share/xpra/www"))
+            if html5_ENABLED:
+                install_html5(os.path.join(self.install_dir, "share/xpra/www"))
             install_data.run(self)
 
             etc_prefix = self.install_dir
