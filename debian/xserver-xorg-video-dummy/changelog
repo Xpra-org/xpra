@@ -1,3 +1,9 @@
+xserver-xorg-video-dummy (1:0.3.8-5) UNRELEASED; urgency=low
+
+  * add fix pointer limits patch
+
+ -- Antoine Martin <antoine@devloop.org.uk>  Fri, 23 Dec 2016 12:15:18 +0700
+
 xserver-xorg-video-dummy (1:0.3.8-4) UNRELEASED; urgency=low
 
   * packaging file path fix
