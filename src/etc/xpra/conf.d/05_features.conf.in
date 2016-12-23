@@ -29,8 +29,11 @@ system-tray = yes
 #debug =
 #debug = keyboard,clipboard,tray
 
-# Send ping packets more regularly (every second):
-pings = no
+# Send ping packets:
+# pings = no
+# send every second:
+# pings = 1
+pings = 5
 
 # Allow the client to forward its log output to the server:
 #remote-logging = yes

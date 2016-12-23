@@ -500,6 +500,7 @@ OPTION_TYPES = {
                     "ssl-server-hostname" : str,
                     "ssl-options"       : str,
                     #int options:
+                    "pings"             : int,
                     "quality"           : int,
                     "min-quality"       : int,
                     "speed"             : int,
@@ -524,7 +525,6 @@ OPTION_TYPES = {
                     "mmap-group"        : bool,
                     "readonly"          : bool,
                     "keyboard-sync"     : bool,
-                    "pings"             : bool,
                     "cursors"           : bool,
                     "bell"              : bool,
                     "notifications"     : bool,
@@ -764,7 +764,7 @@ def get_defaults():
                     "microphone"        : ["disabled", "off"][has_sound_support()],
                     "readonly"          : False,
                     "keyboard-sync"     : True,
-                    "pings"             : False,
+                    "pings"             : 5,
                     "cursors"           : True,
                     "bell"              : True,
                     "notifications"     : True,
@@ -1010,6 +1010,21 @@ def fixup_socketdirs(options, defaults):
         assert type(options.socket_dirs) in (list, tuple)
         options.socket_dirs = [v for x in options.socket_dirs for v in x.split(os.path.pathsep)]
 
+def fixup_pings(options):
+    #pings used to be a boolean, True mapped to "5"
+    if type(options.pings)==int:
+        return
+    try:
+        pings = str(options.pings).lower()
+        if pings in TRUE_OPTIONS:
+            options.pings = 5
+        elif pings in FALSE_OPTIONS:
+            options.pings = 0
+        else:
+            options.pings = int(options.pings)
+    except:
+        options.pings = 5
+
 def fixup_encodings(options):
     from xpra.codecs.loader import PREFERED_ENCODING_ORDER
     RENAME = {"jpg" : "jpeg"}
@@ -1102,6 +1117,7 @@ def abs_paths(options):
             setattr(options, f, os.path.abspath(v))
 
 def fixup_options(options, defaults={}):
+    fixup_pings(options)
     fixup_encodings(options)
     fixup_compression(options)
     fixup_packetencoding(options)

@@ -1932,10 +1932,8 @@ class UIXpraClient(XpraClientBase):
             self.clipboard_toggled()
         self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
-        if self.pings:
-            self.timeout_add(1000, self.send_ping)
-        else:
-            self.timeout_add(10*1000, self.send_ping)
+        if self.pings>0:
+            self.timeout_add(1000*self.pings, self.send_ping)
 
     def parse_logging_capabilities(self):
         c = self.server_capabilities

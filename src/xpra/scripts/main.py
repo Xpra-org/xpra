@@ -855,10 +855,10 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({"mmap-group"            : False,
                 "socket-permissions"    : defaults.socket_permissions})
 
-    replace_option("--enable-pings", "--pings=yes")
+    replace_option("--enable-pings", "--pings=5")
     group.add_option("--pings", action="store", metavar="yes|no",
                       dest="pings", default=defaults.pings,
-                      help="Send ping packets every second to gather latency statistics. Default: %s." % enabled_str(defaults.pings))
+                      help="How often to send ping packets (in seconds, use zero to disable). Default: %s." % defaults.pings)
     group.add_option("--clipboard-filter-file", action="store",
                       dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
                       help="Name of a file containing regular expressions of clipboard contents that must be filtered out")
