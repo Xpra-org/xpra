@@ -20,8 +20,8 @@ paml = find_library("pam")
 if paml:
     LIBPAM = CDLL(paml)
 else:
-    import sys
-    if sys.platform.startswith("darwin"):
+    from xpra.os_util import OSX
+    if OSX:
         LIBPAM = cdll.LoadLibrary("/usr/lib/libpam.dylib")
     else:
         #solaris doesn't find much on its own...

@@ -8,6 +8,7 @@
 import sys
 import logging
 from xpra.util import envbool
+from xpra.os_util import OSX, WIN32
 from xpra.log import Logger, CaptureHandler
 log = Logger("opengl")
 
@@ -35,18 +36,18 @@ if False:
     BLACKLIST["vendor"].append("NVIDIA Corporation")
     WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
 
-    if sys.platform.startswith("darwin"):
+    if OSX:
         #frequent crashes on osx with GT 650M: (see ticket #808)
         GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
 
 
 #alpha requires gtk3 or *nix only for gtk2:
-DEFAULT_ALPHA = sys.version>'3' or (not sys.platform.startswith("win") and not sys.platform.startswith("darwin"))
+DEFAULT_ALPHA = sys.version>'3' or (not WIN32 and not OSX)
 GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_ALPHA)
 #not working with gtk3 yet?
 CAN_DOUBLE_BUFFER = True
 #needed on win32?:
-DEFAULT_DOUBLE_BUFFERED = sys.platform.startswith("win") and CAN_DOUBLE_BUFFER
+DEFAULT_DOUBLE_BUFFERED = WIN32 and CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
 
 from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR

@@ -7,6 +7,7 @@
 import sys
 import os.path
 
+from xpra.os_util import OSX
 from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("codec", "loader")
@@ -151,7 +152,7 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
         add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
 
-        if not sys.platform.startswith("darwin"):
+        if not OSX:
             #causes crashes with osx shadow servers, disabled in setup.py:
             codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
             add_codec_version("vpx", "xpra.codecs.vpx.decoder")

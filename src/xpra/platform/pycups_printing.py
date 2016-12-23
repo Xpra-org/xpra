@@ -14,6 +14,7 @@ import shlex
 import urllib
 from threading import Lock
 
+from xpra.os_util import OSX
 from xpra.util import engs, envint, envbool
 from xpra.log import Logger
 log = Logger("printing")
@@ -45,7 +46,7 @@ if ADD_LOCAL_PRINTERS:
     PRINTER_PREFIX = "Xpra:"
 PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 
-DEFAULT_CUPS_DBUS = int(not sys.platform.startswith("darwin"))
+DEFAULT_CUPS_DBUS = int(not OSX)
 CUPS_DBUS = envint("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)
 POLLING_DELAY = envint("XPRA_CUPS_POLLING_DELAY", 60)
 log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
@@ -331,7 +332,7 @@ def init_dbus_listener():
             log("system_bus.add_signal_receiver(..)=%s", sig_match)
             dbus_init = True
         except Exception:
-            if sys.platform.startswith("darwin"):
+            if OSX:
                 log("no dbus on osx")
             else:
                 log.error("failed to initialize dbus cups event listener", exc_info=True)

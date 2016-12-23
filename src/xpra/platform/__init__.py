@@ -131,9 +131,10 @@ def do_get_username():
 
 
 def platform_import(where, pm, required, *imports):
+    from xpra.os_util import OSX
     if os.name == "nt":
         p = "win32"
-    elif sys.platform.startswith("darwin"):
+    elif OSX:
         p = "darwin"
     elif os.name == "posix":
         p = "xposix"

@@ -10,7 +10,7 @@ gtk = import_gtk()
 glib = import_glib()
 
 from xpra.util import CLIENT_EXIT, iround, envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, OSX
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
@@ -27,7 +27,7 @@ clipboardlog = Logger("menu", "clipboard")
 webcamlog = Logger("menu", "webcam")
 
 
-HIDE_DISABLED_MENU_ENTRIES = sys.platform.startswith("darwin")
+HIDE_DISABLED_MENU_ENTRIES = OSX
 
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
@@ -84,7 +84,7 @@ def ll(m):
         return str(m)
 
 def set_sensitive(widget, sensitive):
-    if sys.platform.startswith("darwin"):
+    if OSX:
         if sensitive:
             widget.show()
         else:
@@ -231,7 +231,7 @@ class GTKTrayMenuBase(object):
 
     def build(self):
         if self.menu is None:
-            show_close = True #or sys.platform.startswith("win")
+            show_close = True #or WIN32
             self.menu = self.setup_menu(show_close)
         return self.menu
 

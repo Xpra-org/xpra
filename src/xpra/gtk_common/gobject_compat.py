@@ -47,7 +47,8 @@ def _try_import(import_method_gtk3, import_method_gtk2):
     return imported
 
 def try_import_GdkX11():
-    if os.name=="posix" and not sys.platform.startswith("darwin"):
+    from xpra.os_util import OSX
+    if os.name=="posix" and not OSX:
         #try to ensure that we can call get_xid() on Gdk windows later,
         #this is a workaround for this GTK bug:
         #https://bugzilla.gnome.org/show_bug.cgi?id=656314

@@ -12,6 +12,7 @@ from xpra.sound.common import FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OG
                                 VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
                                 MPEG4, MKA, OGG
 
+from xpra.os_util import WIN32, OSX
 from xpra.util import csv, engs, parse_simple_dict, envint, envbool
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
@@ -40,9 +41,6 @@ def get_queue_time(default_value=450, prefix=""):
     queue_time = max(0, queue_time)
     return queue_time
 
-
-WIN32 = sys.platform.startswith("win")
-OSX = sys.platform.startswith("darwin")
 
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
 PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
@@ -544,9 +542,9 @@ def get_source_plugins():
 
 def get_sink_plugins():
     SINKS = []
-    if sys.platform.startswith("darwin"):
+    if OSX:
         SINKS.append("osxaudiosink")
-    elif sys.platform.startswith("win"):
+    elif WIN32:
         SINKS.append("directsoundsink")
     SINKS.append("autoaudiosink")
     try:

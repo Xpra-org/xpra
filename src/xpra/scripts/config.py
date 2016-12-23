@@ -12,6 +12,7 @@ import os
 import platform as python_platform
 assert python_platform
 from xpra.util import AdHocStruct
+from xpra.os_util import WIN32, OSX
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -37,8 +38,6 @@ DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
 
 POSIX = os.name=="posix"
-WIN32 = sys.platform.startswith("win")
-OSX = sys.platform.startswith("darwin")
 PYTHON3 = sys.version_info[0]>=3
 
 

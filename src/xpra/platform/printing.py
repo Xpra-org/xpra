@@ -8,6 +8,7 @@ import sys, os
 
 #default implementation uses pycups
 from xpra.util import envbool
+from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("printing")
 
@@ -77,7 +78,7 @@ def get_info():
 
 #default implementation uses pycups:
 from xpra.platform import platform_import
-if not sys.platform.startswith("win"):
+if not WIN32:
     #pycups is not available on win32
     try:
         from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info

@@ -7,7 +7,7 @@
 # A tray implemented using gtk.StatusIcon
 
 import os
-import sys
+from xpra.os_util import WIN32, OSX
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
@@ -22,7 +22,7 @@ if not is_gtk3():
     ORIENTATION[gtk.ORIENTATION_HORIZONTAL] = "HORIZONTAL"
     ORIENTATION[gtk.ORIENTATION_VERTICAL]   = "VERTICAL"
 
-GUESS_GEOMETRY = sys.platform.startswith("win") or sys.platform.startswith("darwin")
+GUESS_GEOMETRY = WIN32 or OSX
 GUESS_GEOMETRY = envbool("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)
 log("tray GUESS_GEOMETRY=%s", GUESS_GEOMETRY)
 

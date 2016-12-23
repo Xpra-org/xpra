@@ -11,6 +11,7 @@ from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, fo
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
+from xpra.os_util import WIN32, OSX
 from xpra.util import AdHocStruct, typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
@@ -27,10 +28,10 @@ BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
 def get_sound_wrapper_env():
     env = {}
-    if sys.platform.startswith("win"):
+    if WIN32:
         #disable bencoder to skip warnings with the py3k Sound subapp
         env["XPRA_USE_BENCODER"] = "0"
-    elif os.name=="posix" and not sys.platform.startswith("darwin"):
+    elif os.name=="posix" and not OSX:
         try:
             from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
             add_audio_tagging_env(env)

@@ -5,7 +5,6 @@
 
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 
-import sys
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gtk                   #@UnresolvedImport
 
@@ -15,10 +14,9 @@ from gi.repository import Gtk                   #@UnresolvedImport
 
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gtk3.tray_menu import GTK3TrayMenu
+from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("gtk", "client")
-
-WIN32 = sys.platform.startswith("win")
 
 
 class XpraClient(GTKXpraClient):
@@ -70,7 +68,7 @@ class XpraClient(GTKXpraClient):
 
     def set_windows_cursor(self, windows, cursor_data):
         #avoid buggy win32 version:
-        if not sys.platform.startswith("win"):
+        if not WIN32:
             GTKXpraClient.set_windows_cursor(self, windows, cursor_data)
 
     def get_mouse_position(self):

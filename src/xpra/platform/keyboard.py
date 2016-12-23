@@ -13,6 +13,7 @@ platform_import(globals(), "keyboard", True,
 
 def main():
     import sys
+    from xpra.os_util import WIN32
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color
@@ -25,7 +26,7 @@ def main():
             log = Logger("keyboard")
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv or \
-            (sys.platform.startswith("win") and not ("-q" in sys.argv or "--quiet")):
+            (WIN32 and not ("-q" in sys.argv or "--quiet")):
             log.enable_debug()
 
         #naughty, but how else can I hook this up?

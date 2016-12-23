@@ -15,6 +15,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net import ConnectionClosedException
 from xpra.util import envint, envbool
+from xpra.os_util import WIN32
 
 
 TCP_NODELAY = envbool("XPRA_TCP_NODELAY", True)
@@ -59,7 +60,7 @@ for x in ("STREAM", "DGRAM", "RAW", "RDM", "SEQPACKET"):
         pass
 
 
-if sys.platform.startswith("win"):
+if WIN32:
     #on win32, we have to deal with a few more odd error codes:
     CONTINUE[errno.WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"       #@UndefinedVariable
 

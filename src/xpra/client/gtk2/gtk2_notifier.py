@@ -17,13 +17,13 @@
 #
 #You should have received a copy of the GNU Lesser General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import sys
 import gtk
 import glib
 
+from xpra.os_util import OSX
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
-if sys.platform.startswith("darwin"):
+if OSX:
     #black on white fits better with osx
     DEFAULT_FG_COLOUR = gtk.gdk.Color("black")
     DEFAULT_BG_COLOUR = gtk.gdk.Color(62000, 62000, 62000)

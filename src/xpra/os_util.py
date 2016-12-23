@@ -52,6 +52,11 @@ except:
         from io import StringIO as StringIOClass        #@Reimport @UnusedImport
 
 
+WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
+LINUX = sys.platform.startswith("linux")
+
+
 if sys.version_info[0] < 3:
     def strtobytes(x):
         return str(x)
@@ -106,7 +111,7 @@ def get_groups(username):
 
 
 def platform_release(release):
-    if sys.platform.startswith("darwin"):
+    if OSX:
         try:
             import plistlib
             pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
@@ -208,7 +213,7 @@ def is_Arch():
 _linux_distribution = None
 def get_linux_distribution():
     global _linux_distribution
-    if sys.platform.startswith("linux") and not _linux_distribution:
+    if LINUX and not _linux_distribution:
         #linux_distribution is deprecated in Python 3.5 and it causes warnings,
         #so use our own code first:
         import subprocess
@@ -340,7 +345,7 @@ def disable_stdout_buffering():
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 def setbinarymode(fd):
-    if sys.platform.startswith("win"):
+    if WIN32:
         #turn on binary mode:
         try:
             import msvcrt
@@ -430,7 +435,7 @@ def main():
     log = Logger("util")
     sp = sys.platform
     log.info("platform_name(%s)=%s", sp, platform_name(sp, ""))
-    if sys.platform.startswith("linux"):
+    if LINUX:
         log.info("linux_distribution=%s", get_linux_distribution())
         log.info("Ubuntu=%s", is_Ubuntu())
         if is_Ubuntu():

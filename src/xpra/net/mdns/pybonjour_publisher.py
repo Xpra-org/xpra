@@ -6,11 +6,11 @@
 
 # taken from the code I wrote for winswitch
 
-import sys
 from xpra.log import Logger
 log = Logger("network", "mdns")
 
 from xpra.util import csv
+from xpra.os_util import WIN32
 from xpra.net.net_util import if_indextoname, if_nametoindex, get_iface
 try:
     from xpra.net.mdns import pybonjour
@@ -28,7 +28,6 @@ def get_interface_index(host):
     if host=="127.0.0.1" or host=="::1":
         return pybonjour.kDNSServiceInterfaceIndexLocalOnly
     if not if_nametoindex:
-        WIN32 = sys.platform.startswith("win")
         if not WIN32:
             log.error("Error: cannot convert interface to index (if_nametoindex is missing)")
             log.error(" pybonjour will publish on ALL interfaces")

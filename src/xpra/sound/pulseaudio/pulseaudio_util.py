@@ -7,6 +7,7 @@
 import sys
 import os.path
 
+from xpra.os_util import WIN32, OSX
 from xpra.log import Logger
 log = Logger("sound")
 
@@ -36,7 +37,7 @@ def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
 
 try:
     #use "none" on win32 and osx:
-    if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+    if WIN32 or OSX:
         from xpra.sound.pulseaudio import pulseaudio_none_util as _pulseaudio_util
     else:
         from xpra.sound.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util

@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os
 import struct
 import re
@@ -23,6 +22,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
+from xpra.os_util import WIN32
 from xpra.util import csv, envint, envbool
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -465,7 +465,7 @@ class ClipboardProxy(gtk.Invisible):
         self._enabled = True
         self._have_token = False
         #this workaround is only needed on win32 AFAIK:
-        self._strip_nullbyte = sys.platform.startswith("win")
+        self._strip_nullbyte = WIN32
         #clients that need a new token for every owner-change: (ie: win32 and osx)
         #(forces the client to request new contents - prevents stale clipboard data)
         self._greedy_client = False

@@ -11,7 +11,8 @@ log = Logger("sound")
 
 
 def get_x11_property(atom_name):
-    if sys.platform.startswith("darwin") or sys.platform.startswith("win"):
+    from xpra.os_util import WIN32, OSX
+    if WIN32 or OSX:
         return ""
     try:
         from gtk import gdk

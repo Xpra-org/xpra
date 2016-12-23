@@ -9,7 +9,7 @@ import time
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport padbuf, MemBuf
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, OSX
 from xpra.util import envint
 
 from xpra.log import Logger
@@ -115,7 +115,7 @@ vp9_cs = ["YUV420P"]
 if VPX_DECODER_ABI_VERSION>=9:
     vp9_cs.append("YUV444P")
 else:
-    if sys.platform.startswith("darwin"):
+    if OSX:
         pass        #cannot build libvpx 1.4 on osx... so skip warning
     else:
         log.warn("Warning: libvpx ABI version %s is too old:", VPX_DECODER_ABI_VERSION)

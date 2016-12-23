@@ -5,13 +5,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os
+import os
 
 from xpra.log import Logger
 log = Logger("x11", "server", "x11")
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import find_lib, find_lib_ldconfig
+from xpra.os_util import find_lib, find_lib_ldconfig, LINUX
 
 
 fakeXinerama_config_files = [
@@ -22,7 +22,7 @@ fakeXinerama_config_files = [
            ]
 
 def find_libfakeXinerama():
-    if sys.platform.startswith("linux"):
+    if LINUX:
         try:
             libpath = find_lib_ldconfig("fakeXinerama")
             if libpath:

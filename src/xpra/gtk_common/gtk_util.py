@@ -4,12 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os.path
-
 import array
 from xpra.util import iround
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, WIN32
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -25,7 +23,6 @@ screenlog = Logger("gtk", "screen")
 
 
 SHOW_ALL_VISUALS = False
-WIN32 = sys.platform.startswith("win")
 
 GTK_VERSION_INFO = {}
 def get_gtk_version_info():

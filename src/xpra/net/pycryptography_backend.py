@@ -42,7 +42,8 @@ def patch_crypto_be_discovery():
 
 def init():
     import sys
-    if getattr(sys, 'frozen', False) or sys.platform.startswith("darwin"):
+    from xpra.os_util import OSX
+    if getattr(sys, 'frozen', False) or OSX:
         patch_crypto_be_discovery()
     global backend, ENCRYPTION_CIPHERS
     import cryptography

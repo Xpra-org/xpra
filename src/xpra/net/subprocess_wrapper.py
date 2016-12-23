@@ -15,7 +15,7 @@ from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net import ConnectionClosedException
 from xpra.net.protocol import Protocol
-from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr
+from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, WIN32
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
 log = Logger("util")
@@ -277,7 +277,7 @@ class subprocess_callee(object):
 def exec_kwargs():
     if os.name=="posix":
         return {"close_fds" : True}
-    elif sys.platform.startswith("win"):
+    elif WIN32:
         if not WIN32_SHOWWINDOW:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW

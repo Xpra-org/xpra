@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, DEFAULT_PORT
-from xpra.os_util import getuid, getgid
+from xpra.os_util import getuid, getgid, WIN32, OSX
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -33,9 +33,6 @@ from xpra.scripts.config import OPTION_TYPES, \
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
-
-WIN32 = sys.platform.startswith("win")
-OSX = sys.platform.startswith("darwin")
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -1329,7 +1326,6 @@ def parse_display_name(error_cb, opts, display_name):
         full_ssh = ssh
 
         #maybe restrict to win32 only?
-        #sys.platform.startswith("win")
         ssh_cmd = ssh[0].lower()
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         desc["is_putty"] = is_putty

@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import time
 import math
 
@@ -25,7 +26,7 @@ menulog = Logger("menu")
 grablog = Logger("grab")
 
 
-from xpra.os_util import memoryview_to_bytes, bytestostr
+from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX
 from xpra.util import (AdHocStruct, typedict, envint, envbool,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
@@ -116,8 +117,6 @@ UNDECORATED_TYPE_HINTS = set((
                     "COMBO",
                     "DND"))
 
-import sys
-WIN32 = sys.platform.startswith("win")
 PYTHON3 = sys.version_info[0] == 3
 if PYTHON3:
     unicode = str           #@ReservedAssignment
@@ -1349,7 +1348,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def get_mouse_event_wid(self, x, y):
         #on OSX, the mouse events are reported against the wrong window by GTK,
         #so we may have to patch this and use the currently focused window:
-        if sys.platform.startswith("darwin") and OSX_FOCUS_WORKAROUND:
+        if OSX and OSX_FOCUS_WORKAROUND:
             focused = self._client._focused
             w = self._client._id_to_window.get(focused)
             focuslog("get_mouse_event_wid(%s, %s) focused=%s vs id=%i, window=%s", x, y, focused, self._id, w)

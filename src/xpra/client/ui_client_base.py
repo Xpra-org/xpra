@@ -58,7 +58,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, WIN32, OSX
 from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -99,7 +99,6 @@ SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 
 PYTHON3 = sys.version_info[0] == 3
-WIN32 = sys.platform.startswith("win")
 
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
@@ -472,7 +471,7 @@ class UIXpraClient(XpraClientBase):
                     from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path
                     set_icon_path(tray_icon_filename)
                 except ImportError as e:
-                    if os.name=="posix" and not sys.platform.startswith("darwin"):
+                    if os.name=="posix" and not OSX:
                         log.warn("Warning: failed to set pulseaudio tagging icon:")
                         log.warn(" %s", e)
 

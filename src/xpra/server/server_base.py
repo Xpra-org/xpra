@@ -38,7 +38,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, OSX
 from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
@@ -439,7 +439,7 @@ class ServerBase(ServerCore):
 
     def init_virtual_video_devices(self):
         webcamlog("init_virtual_video_devices")
-        if os.name!="posix" or sys.platform.startswith("darwin"):
+        if os.name!="posix" or OSX:
             return 0
         try:
             from xpra.codecs.v4l2.pusher import Pusher
@@ -462,7 +462,7 @@ class ServerBase(ServerCore):
 
     def init_notification_forwarder(self):
         log("init_notification_forwarder() enabled=%s", self.notifications)
-        if self.notifications and os.name=="posix" and not sys.platform.startswith("darwin"):
+        if self.notifications and os.name=="posix" and not OSX:
             try:
                 from xpra.dbus.notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
@@ -578,7 +578,7 @@ class ServerBase(ServerCore):
                 self.sound_properties.update(get_pa_info())
                 set_icon_path(get_icon_filename("xpra.png"))
             except ImportError as e:
-                if os.name=="posix" and not sys.platform.startswith("darwin"):
+                if os.name=="posix" and not OSX:
                     log.warn("Warning: failed to set pulseaudio tagging icon:")
                     log.warn(" %s", e)
         soundlog("init_sound_options speaker: supported=%s, encoders=%s", self.supports_speaker, csv(self.speaker_codecs))

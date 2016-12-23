@@ -13,6 +13,7 @@ from collections import deque
 
 from pycuda import driver
 
+from xpra.os_util import WIN32, OSX
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -971,7 +972,7 @@ cuCtxGetCurrent = None
 
 def init_nvencode_library():
     global NvEncodeAPICreateInstance, cuCtxGetCurrent
-    if sys.platform.startswith("win"):
+    if WIN32:
         load = ctypes.WinDLL
         nvenc_libname = "nvencodeapi.dll"
         cuda_libname = "nvcuda.dll"
@@ -1276,7 +1277,7 @@ def get_info():
     v = get_nvidia_module_version(False)
     if v:
         info["kernel_module_version"] = v
-    if sys.platform.startswith("linux"):
+    if LINUX:
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
     if last_context_failure>0:

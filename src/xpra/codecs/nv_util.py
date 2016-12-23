@@ -8,6 +8,7 @@ import sys
 import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
+from xpra.os_util import WIN32
 from xpra.util import pver, print_nested_dict, engs, envbool
 
 
@@ -53,7 +54,7 @@ def get_proc_driver_version():
 
 def identify_nvidia_module_version():
     if os.name!="posix":
-        if not sys.platform.startswith("win"):
+        if not WIN32:
             log.warn("Warning: unable to identify the NVidia driver version on this platform")
             return None
         #try the nvapi call:

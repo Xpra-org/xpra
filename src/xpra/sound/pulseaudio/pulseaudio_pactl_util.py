@@ -9,7 +9,7 @@ import os.path
 
 from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import nonl, print_nested_dict
-from xpra.os_util import which
+from xpra.os_util import which, WIN32, OSX
 
 from xpra.log import Logger
 log = Logger("sound")
@@ -21,7 +21,7 @@ has_pulseaudio = None
 def get_pactl_bin():
     global pactl_bin
     if pactl_bin is None:
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+        if WIN32 or OSX:
             pactl_bin = ""
         else:
             pactl_bin = which("pactl")
@@ -121,7 +121,7 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     Same goes for monitors (False|True|None)
     Returns the a dict() with the PulseAudio name as key and a description as value
     """
-    if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+    if WIN32 or OSX:
         return {}
     status, out, _ = pactl_output(False, "list")
     if status!=0 or not out:

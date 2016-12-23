@@ -170,9 +170,10 @@ def get_iface(ip):
 # http://code.activestate.com/recipes/442490/
 if_nametoindex = None
 if_indextoname = None
-if not sys.platform.startswith("win"):
+from xpra.os_util import WIN32, OSX
+if not WIN32:
 	library = "libc.so.6"
-	if sys.platform.startswith("darwin"):
+	if OSX:
 		library = "/usr/lib/libc.dylib"
 	elif sys.platform.startswith("sunos"):
 		library = "libsocket.so.1"

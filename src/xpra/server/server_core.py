@@ -32,7 +32,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, SIGNAMES
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, SIGNAMES, WIN32
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
@@ -293,7 +293,7 @@ class ServerCore(object):
             auth_options = parse_simple_dict(parts[1])
         if auth=="sys":
             #resolve virtual "sys" auth:
-            if sys.platform.startswith("win"):
+            if WIN32:
                 auth = "win32"
             else:
                 auth = "pam"
@@ -314,7 +314,7 @@ class ServerCore(object):
             AUTH_MODULES["pam"] = pam_auth
         except Exception as e:
             authlog("cannot load pam auth: %s", e)
-        if sys.platform.startswith("win"):
+        if WIN32:
             try:
                 from xpra.server.auth import win32_auth
                 AUTH_MODULES["win32"] = win32_auth

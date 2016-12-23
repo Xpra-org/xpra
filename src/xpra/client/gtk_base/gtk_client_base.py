@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os, sys
+import os
 import weakref
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -26,7 +26,7 @@ filelog = Logger("gtk", "client", "file")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, DEFAULT_METADATA_SUPPORTED
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.simple_stats import std_unit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
@@ -451,7 +451,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self._set_window_menu:
             ms += ["menu"]
         #figure out if we can handle the "global menu" stuff:
-        if os.name=="posix" and not sys.platform.startswith("darwin"):
+        if os.name=="posix" and not OSX:
             try:
                 from xpra.dbus.helper import DBusHelper
                 assert DBusHelper
@@ -850,7 +850,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
         self._ref_to_group_leader[refkey] = group_leader_window
         #avoid warning on win32...
-        if not sys.platform.startswith("win"):
+        if not WIN32:
             #X11 spec says window should point to itself:
             group_leader_window.set_group(group_leader_window)
         log("new hidden group leader window %s for ref=%s", group_leader_window, refkey)

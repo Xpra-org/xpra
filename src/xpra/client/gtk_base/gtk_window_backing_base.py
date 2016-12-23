@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 
 #pygtk3 vs pygtk2 (sigh)
 from xpra.gtk_common.gobject_compat import import_glib, import_cairo, is_gtk3
@@ -12,6 +11,7 @@ glib = import_glib()
 cairo   = import_cairo()
 
 from xpra.util import envbool
+from xpra.os_util import WIN32, OSX
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.log import Logger
 log = Logger("paint")
@@ -19,7 +19,7 @@ log = Logger("paint")
 #transparency with GTK:
 # - on MS Windows: not supported
 # - on OSX: only with gtk3
-DEFAULT_HAS_ALPHA = not sys.platform.startswith("win") and (not sys.platform.startswith("darwin") or is_gtk3())
+DEFAULT_HAS_ALPHA = not WIN32 and (not OSX or is_gtk3())
 GTK_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_HAS_ALPHA)
 
 

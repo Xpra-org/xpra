@@ -20,13 +20,9 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups
+from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, WIN32, OSX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
-
-
-WIN32 = sys.platform.startswith("win")
-OSX = sys.platform.startswith("darwin")
 
 
 # use process polling with python versions older than 2.7 and 3.0, (because SIGCHLD support is broken)

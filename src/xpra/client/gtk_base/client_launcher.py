@@ -39,7 +39,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.util import DEFAULT_PORT
-from xpra.os_util import thread
+from xpra.os_util import thread, WIN32, OSX
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.gtk_common.about import about
@@ -445,7 +445,7 @@ class ApplicationWindow:
                 self.port_entry.set_text("%s" % self.config.port)
         can_use_password = not ssh
         if ssh:
-            if sys.platform.startswith("win"):
+            if WIN32:
                 #plink can use password
                 pass
             else:
@@ -460,7 +460,7 @@ class ApplicationWindow:
             self.password_label.hide()
             self.password_entry.hide()
         self.validate()
-        if mode=="ssl" or (mode=="ssh" and not sys.platform.startswith("win")):
+        if mode=="ssl" or (mode=="ssh" and not WIN32):
             self.nostrict_host_check.show()
         else:
             self.nostrict_host_check.hide()
@@ -582,7 +582,7 @@ class ApplicationWindow:
             if self.nostrict_host_check.get_active():
                 full_ssh += ["-o", "StrictHostKeyChecking=no"]
             if str(self.config.ssh_port)!="22":
-                if sys.platform.startswith("win"):
+                if WIN32:
                     full_ssh += ["-P", str(self.config.ssh_port)]
                 else:
                     full_ssh += ["-p", str(self.config.ssh_port)]
@@ -925,7 +925,7 @@ def main():
                 #to get the NSApplicationOpneFile signal,
                 #so we end up duplicating some of the logic from just above
                 #maybe we should always run this code from the main loop instead
-                if sys.platform.startswith("darwin"):
+                if OSX:
                     #wait a little bit for the "openFile" signal
                     app.__osx_open_signal = False
                     def do_open_file(filename):
