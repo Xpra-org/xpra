@@ -83,6 +83,11 @@ class Win32Hooks(object):
                 fw, fh = 0, 0
             w = width + fw*2
             h = height + self.caption_height + fh*2
+            for v in (info.ptMaxSize, info.ptMaxTrackSize):
+                if v and v.x>0:
+                    w = min(w, v.x)
+                if v and v.y>0:
+                    h = min(h, v.y)
             point  = POINT(w, h)
             info.ptMaxSize       = point
             info.ptMaxTrackSize  = point
