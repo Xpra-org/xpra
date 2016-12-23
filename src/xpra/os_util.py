@@ -209,6 +209,12 @@ def is_Fedora():
 def is_Arch():
     return is_distribution_variant(b"Arch")
 
+def is_CentOS():
+    return is_distribution_variant(b"CentOS")
+
+def is_RedHat():
+    return is_distribution_variant(b"RedHat")
+
 
 _linux_distribution = None
 def get_linux_distribution():

@@ -121,15 +121,30 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{?dist}
 Summary: Xpra gives you "persistent remote applications" for X.
-
 Group: Networking
 License: GPL
 URL: http://xpra.org/
 Packager: Antoine Martin <antoine@devloop.org.uk>
 Vendor: http://xpra.org/
-
 Source: xpra-%{version}.tar.bz2
+#rpm falls over itself if we try to make the top-level package noarch:
+#BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
+
+Requires: xpra-common = %{version}-%{build_no}%{dist}
+Requires: python2-xpra = %{version}-%{build_no}%{dist}
+Requires: python3-xpra = %{version}-%{build_no}%{dist}
+Requires: xpra-html5
+
+%description
+Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
+
+So basically it's screen for remote X apps.
+
+
+%package -n python2-xpra
+Summary: python2 build of xpra
+Group: Networking
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
 Requires: python2-lz4
@@ -156,7 +171,6 @@ Requires: ffmpeg-xpra
 Requires: python2-pynvml
 Requires: %{numpy}
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-Requires: xpra-html5
 %if 0%{?el7}
 #sshpass is not available!
 %else
@@ -209,21 +223,9 @@ Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 Requires: %{requires_crypto}
 
-%if %{with_python3}
-BuildRequires: python3-devel
-BuildRequires: python3-Cython
-BuildRequires: python3-numpy
-BuildRequires: gtk3-devel
-BuildRequires: python3-gobject
-BuildRequires: gobject-introspection-devel
-BuildRequires: python3-rencode
-%endif
+%description -n python2-xpra
+This package contains the python2 build of xpra.
 
-
-%description
-Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
-
-So basically it's screen for remote X apps.
 
 #package containing the common bits:
 %package common
@@ -272,26 +274,28 @@ Requires: xorg-x11-drv-dummy
 Requires: %{requires_xorg}
 Requires: %{libvpx}
 %if 0%{?fedora}
+BuildRequires: libwebp-devel
+BuildRequires: libyuv-devel
 Requires: libwebp
 Requires: libyuv
 %endif
 Requires: x264-xpra
 Requires: ffmpeg-xpra
-Requires: xpra-common = %{build_no}%{dist}
-Requires: xpra-html5
+Requires: xpra-common = %{version}-%{build_no}%{dist}
 #for running the tests:
 BuildRequires: %{py3requires_crypto}
-%if 0%{?fedora}
-BuildRequires: libwebp-devel
-BuildRequires: libyuv-devel
-%endif
+BuildRequires: python3-devel
+BuildRequires: python3-Cython
+BuildRequires: python3-numpy
+BuildRequires: gtk3-devel
+BuildRequires: python3-gobject
+BuildRequires: gobject-introspection-devel
+BuildRequires: python3-rencode
 
 %description -n python3-xpra
-Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
+This package contains the python3 build of xpra.
 
-So basically it's screen for remote X apps.
 %endif
-
 
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
@@ -378,6 +382,7 @@ rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%files
 
 %files html5
 %defattr(-,root,root)
@@ -425,7 +430,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/cups_xpra.pp
 %endif
 
-%files
+%files -n python2-xpra
 %{python2_sitearch}/xpra
 %{python2_sitearch}/xpra-*.egg-info
 

@@ -8,6 +8,10 @@ import os.path
 import sys
 import site
 
+from xpra.util import envbool
+from xpra.os_util import is_Fedora, is_CentOS, is_RedHat
+SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", is_Fedora() or is_CentOS() or is_RedHat())
+
 
 def do_get_install_prefix():
     #special case for "user" installations, ie:
@@ -99,3 +103,9 @@ def do_get_default_log_dirs():
     if v:
         return [v, "~/.xpra", "/tmp"]
     return ["~/.xpra", "/tmp"]
+
+def do_get_sound_command():
+    from xpra.platform.paths import get_xpra_command
+    if SOUND_PYTHON3:
+        return ["python3"]+get_xpra_command()
+    return get_xpra_command()
