@@ -2273,16 +2273,21 @@ if nvenc7_ENABLED:
     if WIN32:
         CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
-    if nvenc7_ENABLED:
-        nvencmodule = "nvenc7"
-        nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
-        #don't link against libnvidia-encode, we load it dynamically:
-        libraries = nvenc_pkgconfig.get("libraries", [])
-        if "nvidia-encode" in libraries:
-            libraries.remove("nvidia-encode")
-        cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
-                             ["xpra/codecs/%s/encoder.pyx" % nvencmodule, buffers_c],
-                             **nvenc_pkgconfig))
+    nvencmodule = "nvenc7"
+    nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
+    #don't link against libnvidia-encode, we load it dynamically:
+    libraries = nvenc_pkgconfig.get("libraries", [])
+    if "nvidia-encode" in libraries:
+        libraries.remove("nvidia-encode")
+    if PYTHON3 and get_gcc_version()>=[6, 2]:
+        #with gcc 6.2 on Fedora:
+        #xpra/codecs/nvenc7/encoder.c: In function '__Pyx_PyInt_LshiftObjC':
+        #xpra/codecs/nvenc7/encoder.c:45878:34: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+        #    if (unlikely(!(b < sizeof(long)*8 && a == x >> b)) && a) {
+        add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-sign-compare")
+    cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
+                         ["xpra/codecs/%s/encoder.pyx" % nvencmodule, buffers_c],
+                         **nvenc_pkgconfig))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:

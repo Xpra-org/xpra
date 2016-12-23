@@ -13,7 +13,7 @@ from collections import deque
 
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, LINUX
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
