@@ -1,23 +1,6 @@
-From 210d6aff1eba0709da1dbd0ec0fdb89503315421 Mon Sep 17 00:00:00 2001
-From: Antoine Martin <antoine@nagafix.co.uk>
-Date: Tue, 20 Sep 2016 22:34:57 +0700
-Subject: [PATCH] support for 30 bit depth in dummy driver
-
-This patch makes it possible to start the server using the dummy
-driver with a 30 bit depth.
-The colormap size is changed from 256 to 1024 to prevent crashes.
-
-Signed-off-by: Antoine Martin <antoine@nagafix.co.uk>
----
- src/dummy.h        | 2 +-
- src/dummy_driver.c | 7 ++++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/src/dummy.h b/src/dummy.h
-index c3fdd6e..0dd8906 100644
---- a/src/dummy.h
-+++ b/src/dummy.h
-@@ -68,7 +68,7 @@ typedef struct dummyRec
+--- a/src/dummy.h	2016-12-17 23:33:33.279533389 +0100
++++ b/src/dummy.h	2016-12-17 23:33:56.695739166 +0100
+@@ -69,7 +69,7 @@
      int overlay_offset;
      int videoKey;
      int interlace;
@@ -26,11 +9,9 @@ index c3fdd6e..0dd8906 100644
      pointer* FBBase;
      Bool        (*CreateWindow)() ;     /* wrapped CreateWindow */
      Bool prop;
-diff --git a/src/dummy_driver.c b/src/dummy_driver.c
-index 737f11c..c84000f 100644
---- a/src/dummy_driver.c
-+++ b/src/dummy_driver.c
-@@ -313,6 +313,7 @@ DUMMYPreInit(ScrnInfoPtr pScrn, int flags)
+--- a/src/dummy_driver.c	2016-12-17 23:33:47.446657886 +0100
++++ b/src/dummy_driver.c	2016-12-17 23:33:56.696739175 +0100
+@@ -317,6 +317,7 @@
  	case 15:
  	case 16:
  	case 24:
@@ -38,7 +19,7 @@ index 737f11c..c84000f 100644
  	    break;
  	default:
  	    xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-@@ -327,8 +328,8 @@ DUMMYPreInit(ScrnInfoPtr pScrn, int flags)
+@@ -331,8 +332,8 @@
  	pScrn->rgbBits = 8;
  
      /* Get the depth24 pixmap format */
@@ -49,7 +30,7 @@ index 737f11c..c84000f 100644
  
      /*
       * This must happen after pScrn->display has been set because
-@@ -637,7 +638,7 @@ DUMMYScreenInit(SCREEN_INIT_ARGS_DECL)
+@@ -623,7 +624,7 @@
      if(!miCreateDefColormap(pScreen))
  	return FALSE;
  
@@ -58,6 +39,3 @@ index 737f11c..c84000f 100644
                           DUMMYLoadPalette, NULL, 
                           CMAP_PALETTED_TRUECOLOR 
  			     | CMAP_RELOAD_ON_MODE_SWITCH))
--- 
-2.7.4
-

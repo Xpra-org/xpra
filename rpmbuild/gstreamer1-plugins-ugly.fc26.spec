@@ -1,12 +1,12 @@
 %define majorminor 1.0
 %define gstreamer gstreamer1
 
-%define gst_minver 1.4
-%define gstpb_minver 1.4
+%define gst_minver 1.9
+%define gstpb_minver 1.9
 
 Summary: GStreamer streaming media framework "ugly" plug-ins
 Name: gstreamer1-plugins-ugly
-Version: 1.4.5
+Version: 1.9.2
 Release: 1%{?dist}
 License: LGPL
 Group: Applications/Multimedia
@@ -78,5 +78,11 @@ libtool --finish %{buildroot}%{_libdir}/gstreamer-%{majorminor}
 %doc %{_datarootdir}/gtk-doc/html/gst-plugins-ugly-plugins-%{majorminor}
 
 %changelog
+* Wed Nov 02 2016 Antoine Martin <antoine@devloop.org.uk> 1.9.2-1
+- Fedora 25 version bump: uses unstable 1.9.2?
+
+* Wed Nov 02 2016 Antoine Martin <antoine@devloop.org.uk> 1.8.3-1
+- Fedora 25 rebuild
+
 * Thu Sep 10 2015 Antoine Martin <antoine@devloop.org.uk> 1.4.5-1
 - initial xpra package

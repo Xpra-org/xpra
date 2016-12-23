@@ -6,18 +6,16 @@
 
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
-Version:   0.3.7
+Version:   0.3.8
 Release:   1.xpra1%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
 
 Source0:   ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
-Patch1:    0002-Constant-DPI.patch
-Patch2:    0003-fix-pointer-limits.patch
-Patch4:    0005-support-for-30-bit-depth-in-dummy-driver.patch
-Patch5:    0006-remove-dead-code-in-dummy-driver.patch
-Patch8:    0008-change-window-property.patch
+Patch2:    0002-Constant-DPI.patch
+Patch3:    0003-fix-pointer-limits.patch
+Patch5:    0005-support-for-30-bit-depth-in-dummy-driver.patch
 
 ExcludeArch: s390 s390x
 
@@ -32,11 +30,9 @@ X.Org X11 dummy video driver.
 
 %prep
 %setup -q -n %{tarball}-%{version}
-%patch1 -p1
 %patch2 -p1
-%patch4 -p1
+%patch3 -p1
 %patch5 -p1
-%patch8 -p1
 autoreconf -vif
 
 %build
@@ -57,6 +53,9 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Fri Dec 23 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.8-1.xpra1
+- new upstream release
+
 * Thu Nov 24 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.7-1.xpra1
 - merge upstream updates
 
