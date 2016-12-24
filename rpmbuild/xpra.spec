@@ -20,7 +20,6 @@
 %endif
 
 #some of these dependencies may get turned off (empty) on some platforms:
-%define systemd 0
 %define build_args --with-Xdummy --without-enc_x265
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
@@ -68,13 +67,11 @@
 %define py3requires_sound %{nil}
 #don't have python3 by default:
 %define with_python3 0
-%define systemd 1
 #cups-pdf is not in the regular repos, so remove it from dependencies:
 %define requires_printing , python-cups, cups-filters
 %endif
 
 %if 0%{?fedora}
-%define systemd 1
 #the only distro to provide py3k cups bindings:
 %define py3requires_printing , python3-cups
 #note: probably not working since we don't have gtkglext for Python3?
@@ -400,11 +397,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
-%if 0%{?systemd}
 /usr/lib/systemd/system/xpra.service
-%else
-%{_sysconfdir}/init.d/xpra
-%endif
 /usr/lib/cups/backend/xpraforwarder
 %config /usr/lib/tmpfiles.d/xpra.conf
 %config %{_sysconfdir}/pam.d/xpra
@@ -468,11 +461,9 @@ popd
 
 
 %post
-%if 0%{?systemd}
 if [ $1 -eq 1 ]; then
         /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
-%endif
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
 	umask 077
@@ -508,20 +499,16 @@ restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
 
 %preun
-%if 0%{?systemd}
 if [ $1 -eq 0 ] ; then
         /bin/systemctl disable xpra.service > /dev/null 2>&1 || :
         /bin/systemctl stop xpra.service > /dev/null 2>&1 || :
 fi
-%endif
 
 %postun
-%if 0%{?systemd}
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -ge 1 ] ; then
         /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
 fi
-%endif
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
