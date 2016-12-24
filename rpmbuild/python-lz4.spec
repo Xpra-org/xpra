@@ -18,7 +18,7 @@
 
 Name:           python2-lz4
 Version:        0.8.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 URL:            https://github.com/steeve/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -32,7 +32,8 @@ BuildRequires:  lz4-devel
 %endif
 Requires: 		lz4
 Provides:		python-lz4
-Obsoletes:      python-lz4 < 0.8.2-2
+Obsoletes:      python-lz4 < 0.8.2-3
+Conflicts:		python-lz4 < 0.8.2-3
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
@@ -95,6 +96,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Dec 24 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-3
+- conflict with old package name
+
 * Mon Jul 18 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-2
 - new package name, obsolete the old one
 
