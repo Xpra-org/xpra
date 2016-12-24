@@ -95,6 +95,7 @@
 %global __requires_exclude typelib\\(.*\\)
 %define numpy python-numpy
 %define xvfb xorg-x11-server
+%define requires_setuptools python-setuptools
 %define requires_shadow shadow
 %define requires_xorg xauth, xf86-video-dummy
 %define requires_webcam , python-pyinotify
