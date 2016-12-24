@@ -43,7 +43,8 @@ class DBUS_Server(dbus.service.Object):
         bus_name = dbus.service.BusName(name, session_bus)
         dbus.service.Object.__init__(self, bus_name, path)
         self.log("(%s)", server)
-        self._properties = {"idle-timeout"          : ("idle_timeout",          ni),
+        self._properties = {
+                            "idle-timeout"          : ("idle_timeout",          ni),
                             "server-idle-timeout"   : ("server_idle_timeout",   ni),
                             "name"                  : ("session_name",          ns),
                             "sharing"               : ("sharing",               nb),
@@ -60,6 +61,11 @@ class DBUS_Server(dbus.service.Object):
 
     def log(self, fmt, *args):
         log("%s"+fmt, INTERFACE, *args)
+
+
+    @dbus.service.signal(INTERFACE+".event", signature='sas')
+    def Event(self, event, args):
+        self.log(".Event(%s, %s)", event, args);
 
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='v')

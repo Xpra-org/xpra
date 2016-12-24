@@ -899,6 +899,7 @@ class ServerBase(ServerCore):
 
 
     def do_cleanup(self, *args):
+        self.server_event("exit")
         if self.notifications_forwarder:
             thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None
@@ -1280,6 +1281,8 @@ class ServerBase(ServerCore):
     def server_event(self, *args):
         for s in self._server_sources.values():
             s.send_server_event(*args)
+        if self.dbus_helper:
+            self.dbus_server.Event(str(args[0]), [str(x) for x in args[1:]])
 
 
     def update_all_server_settings(self, reset=False):
