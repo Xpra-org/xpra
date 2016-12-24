@@ -124,6 +124,7 @@
 %endif
 
 %if 0%{?suse_version}
+%define systemd 1
 #the X11 tests would fail
 %define run_tests 0
 #untested:
