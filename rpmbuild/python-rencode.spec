@@ -13,13 +13,14 @@
 
 Name:           python2-rencode
 Version:        1.0.5
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
 Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
 Provides:		python-rencode
 Obsoletes:		python-rencode
+Conflicts:		python-rencode
 
 
 %if 0%{?suse_version}
@@ -117,13 +118,16 @@ popd
 %endif
 
 %changelog
-* Sat Jul 16 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-2
+- try harder to supersede the old package name
+
+* Sat Jul 16 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-1
 - new upstream release
 
-* Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
+* Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.4-1
 - new upstream release
 
-* Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
+* Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> - 1.0.3-1
 - Preparing for xpra unbundling, support builds without python3 (ie: CentOS)
 
 * Sun Aug 17 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.0.2-6.20121209svn33

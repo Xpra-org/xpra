@@ -2,7 +2,7 @@
 
 Name:           python2-pytools
 Version:        2016.2.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
@@ -12,6 +12,7 @@ Source0:        http://pypi.python.org/packages/source/p/pytools/pytools-%{versi
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python-pytools
 Obsoletes:		python-pytools
+Conflicts:		python-pytools
 
 BuildArch:      noarch
 BuildRequires:  python-devel python-setuptools
@@ -58,6 +59,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.2.1-3
+- try harder to supersede the old package name
+
 * Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 2016.2.1-2
 - rename and obsolete old python package name
 

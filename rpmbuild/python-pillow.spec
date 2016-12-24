@@ -43,7 +43,7 @@
 
 Name:           python2-pillow
 Version:        3.4.2
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -52,6 +52,7 @@ URL:            http://python-imaging.github.com/Pillow/
 Source:         https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
 Provides:       python-pillow
 Obsoletes:      python-pillow
+Conflicts:      python-pillow
 
 %if 0%{?suse_version}
 BuildRequires:  python-devel
@@ -297,6 +298,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.2-2
+- try harder to supersede the old package name
+
 * Wed Oct 19 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.2-1
 - new upstream release
 

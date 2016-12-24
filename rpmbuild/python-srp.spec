@@ -18,7 +18,7 @@
 
 Name:           python2-srp
 Version:        1.0.5
-Release:        1%{?dist}
+Release:        2%{?dist}
 URL:            http://pythonhosted.org/srp/
 Summary:        Secure Remote Password for python
 License:        MIT
@@ -31,6 +31,7 @@ BuildRequires:  python-setuptools
 Requires:       openssl
 Provides:       python-srp
 Obsoletes:      python-srp
+Conflicts:      python-srp
 Patch0:         python-srp-py3k.patch
 
 %description
@@ -87,6 +88,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-2
+- try harder to supersede the old package name
+
 * Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 1.0.5-1
 - rename and obsolete old python package name
 
