@@ -50,10 +50,16 @@ class ClientTray(ClientWidgetBase):
         return self._geometry or ClientTray.DEFAULT_GEOMETRY
 
     def get_tray_geometry(self):
-        return self.tray_widget.get_geometry()
+        tw = self.tray_widget
+        if not tw:
+            return None
+        return tw.get_geometry()
 
     def get_tray_size(self):
-        return self.tray_widget.get_size()
+        tw = self.tray_widget
+        if not tw:
+            return None
+        return tw.get_size()
 
 
     def freeze(self):
@@ -64,14 +70,17 @@ class ClientTray(ClientWidgetBase):
         self.reconfigure(True)
 
     def reconfigure(self, force_send_configure=False):
-        geometry = self.tray_widget.get_geometry()
+        geometry = None
+        tw = self.tray_widget
+        if not tw:
+            geometry = tw.get_geometry()
         log("%s.reconfigure(%s) geometry=%s", self, force_send_configure, geometry)
         if geometry is None:
-            if self._geometry:
+            if self._geometry or not self.tray_widget:
                 geometry = self._geometry
             else:
                 #make one up as best we can - maybe we have the size at least?
-                size = self.tray_widget.get_size()
+                size = tw.get_size()
                 log("%s.reconfigure() guessing location using size=%s", self, size)
                 geometry = ClientTray.DEFAULT_LOCATION + list(size or ClientTray.DEFAULT_SIZE)
         x, y, w, h = geometry
@@ -82,12 +91,13 @@ class ClientTray(ClientWidgetBase):
             self._geometry = geometry
             client_properties = {"encoding.transparency": True,
                                  "encodings.rgb_formats" : ["RGBA", "RGB", "RGBX"]}
-            orientation = self.tray_widget.get_orientation()
-            if orientation:
-                client_properties["orientation"] = orientation
-            screen = self.tray_widget.get_screen()
-            if screen>=0:
-                client_properties["screen"] = screen
+            if tw:
+                orientation = tw.get_orientation()
+                if orientation:
+                    client_properties["orientation"] = orientation
+                screen = tw.get_screen()
+                if screen>=0:
+                    client_properties["screen"] = screen
             #scale to server coordinates
             sx, sy, sw, sh = self._client.crect(x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s", self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
@@ -140,13 +150,16 @@ class ClientTray(ClientWidgetBase):
         enc, w, h, rowstride, pixels = tray_data
         log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, enc, w, h, rowstride, len(pixels))
         has_alpha = enc=="rgb32"
-        self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride)
+        tw = self.tray_widget
+        if tw:
+            tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride)
 
 
     def destroy(self):
-        if self.tray_widget:
-            self.tray_widget.cleanup()
+        tw = self.tray_widget
+        if tw:
             self.tray_widget = None
+            tw.cleanup()
 
     def __repr__(self):
         return "ClientTray(%s)" % self._id
