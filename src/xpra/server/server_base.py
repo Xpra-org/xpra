@@ -154,7 +154,7 @@ class ServerBase(ServerCore):
         self.exec_cwd = None
         self.exec_wrapper = None
         self.child_reaper = None
-        self.send_pings = False
+        self.pings = 0
         self.scaling_control = False
         self.rpc_handlers = {}
         self.webcam_forwarding = False
@@ -255,7 +255,7 @@ class ServerBase(ServerCore):
         self.idle_add(set_reaper_callback)
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.start_env = parse_env(opts.start_env)
-        self.send_pings = opts.pings
+        self.pings = opts.pings
         #printing and file transfer:
         self.file_transfer.init_opts(opts)
         self.lpadmin = opts.lpadmin
@@ -823,10 +823,8 @@ class ServerBase(ServerCore):
 
 
     def run(self):
-        if self.send_pings:
-            self.timeout_add(1000, self.send_ping)
-        else:
-            self.timeout_add(10*1000, self.send_ping)
+        if self.pings>0:
+            self.timeout_add(1000*self.pings, self.send_ping)
         return ServerCore.run(self)
 
 
@@ -1964,8 +1962,10 @@ class ServerBase(ServerCore):
     def get_info(self, proto=None, client_uuids=None, wids=None, *args):
         start = time.time()
         info = ServerCore.get_info(self, proto)
+        server_info = info.setdefault("server", {})
+        server_info["pings"] = self.pings
         if self.mem_bytes:
-            info.setdefault("server", {})["total-memory"] = self.mem_bytes
+            server_info["total-memory"] = self.mem_bytes
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
