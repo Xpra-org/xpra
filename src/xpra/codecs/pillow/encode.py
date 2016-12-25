@@ -97,6 +97,9 @@ def encode(coding, image, quality, speed, supports_transparency):
     client_options = {}
     #only optimize with Pillow>=2.2 and when speed is zero
     if coding=="jpeg":
+        #newer versions of pillow require explicit conversion to non-alpha:
+        if pixel_format.find("A")>=0:
+            im = im.convert("RGB")
         q = int(min(99, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
@@ -107,7 +110,7 @@ def encode(coding, image, quality, speed, supports_transparency):
             client_options["optimize"] = True
         pil_fmt = coding.upper()
     else:
-        assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
+        assert coding in ("png", "png/P", "png/L"), "unsupported encoding: %s" % coding
         if coding in ("png/L", "png/P") and supports_transparency and rgb=="RGBA":
             #grab alpha channel (the last one):
             #we use the last channel because we know it is RGBA,
