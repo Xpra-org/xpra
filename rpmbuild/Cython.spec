@@ -11,7 +11,7 @@ Name:		python2-Cython
 %endif
 
 Version:	0.25.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -26,6 +26,7 @@ Requires:   python
 Conflicts:	Cython
 Obsoletes:	Cython < %{version}-%{release}
 Provides: 	Cython = %{version}-%{release}
+Provides: 	python2-Cython = %{version}-%{release}
 %endif
 
 BuildRequires:	python-devel python-setuptools
@@ -119,6 +120,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Dec 25 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.2-2
+- add provides for python2 package naming
+
 * Fri Dec 09 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.2-1
 - new upstream release
 
