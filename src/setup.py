@@ -59,6 +59,7 @@ setup_options = {
 
 WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
 OSX = sys.platform.startswith("darwin")
+LINUX = sys.platform.startswith("linux")
 PYTHON3 = sys.version_info[0] == 3
 
 
@@ -153,6 +154,7 @@ if "--minimal" in sys.argv:
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3 and DEFAULT       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3 and DEFAULT
+service_ENABLED = LINUX and server_ENABLED
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
@@ -240,7 +242,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_xvid", "enc_ffmpeg",
             "memoryview",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
-            "server", "client", "dbus", "x11", "gtk_x11",
+            "server", "client", "dbus", "x11", "gtk_x11", "service",
             "gtk2", "gtk3",
             "html5", "minify",
             "pam",
@@ -1984,15 +1986,16 @@ else:
 
         pkgconfig = osx_pkgconfig
     else:
-        #Linux init service:
-        if os.path.exists("/bin/systemctl"):
-            add_data_files("/usr/lib/systemd/system/", ["service/xpra.service"])
-        else:
-            add_data_files("/etc/init.d/", ["service/xpra"])
-        if os.path.exists("/etc/sysconfig"):
-            add_data_files("/etc/sysconfig/", ["etc/sysconfig/xpra"])
-        elif os.path.exists("/etc/default"):
-            add_data_files("/etc/default/", ["etc/sysconfig/xpra"])
+        if service_ENABLED:
+            #Linux init service:
+            if os.path.exists("/bin/systemctl"):
+                add_data_files("/usr/lib/systemd/system/", ["service/xpra.service"])
+            else:
+                add_data_files("/etc/init.d/", ["service/xpra"])
+            if os.path.exists("/etc/sysconfig"):
+                add_data_files("/etc/sysconfig/", ["etc/sysconfig/xpra"])
+            elif os.path.exists("/etc/default"):
+                add_data_files("/etc/default/", ["etc/sysconfig/xpra"])
 
 
 if html5_ENABLED:
