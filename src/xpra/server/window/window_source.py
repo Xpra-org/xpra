@@ -395,7 +395,7 @@ class WindowSource(object):
             info["mapped-at"] = ma
         now = time.time()
         cutoff = now-5
-        lde = [x for x in self.statistics.last_damage_events if x[0]>=cutoff]
+        lde = [x for x in list(self.statistics.last_damage_events) if x[0]>=cutoff]
         dfps = 0
         if lde:
             dfps = len(lde) // 5
