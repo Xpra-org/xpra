@@ -1,4 +1,12 @@
 xpra (1.0.1-1) UNRELEASED; urgency=low
+  * fix multi-monitor maximize with MS Windows clients
+  * fix system tray clenup race condition error
+  * fix suse RPM packaging
+  * fix missing shell expansion in "env" command line options
+  * fix transparency warning with newer versions of Pillow
+  * fix firewall messages during RPM post (un)install
+  * fix html5 build flag not being honoured
+  * fix installations without the service files
   * fix xvfb example syntax in config file
   * fix syntax error in webp codec
   * fix html5 printer forwarding
@@ -11,7 +19,7 @@ xpra (1.0.1-1) UNRELEASED; urgency=low
   * fix encoding quality tray tooltip message when disabled by mmap
   * fix systray forwarding window position
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 18 Dec 2016 22:08:04 +0100
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 26 Dec 2016 11:21:02 +0700
 
 xpra (1.0-1) UNRELEASED; urgency=low
   * support all current versions of Ubuntu and Debian

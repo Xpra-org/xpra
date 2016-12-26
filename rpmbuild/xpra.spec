@@ -592,7 +592,15 @@ fi
 
 
 %changelog
-* Sun Dec 18 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.1-1
+* Mon Dec 26 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.1-1
+- fix multi-monitor maximize with MS Windows clients
+- fix system tray clenup race condition error
+- fix suse RPM packaging
+- fix missing shell expansion in "env" command line options
+- fix transparency warning with newer versions of Pillow
+- fix firewall messages during RPM post (un)install
+- fix html5 build flag not being honoured
+- fix installations without the service files
 - fix xvfb example syntax in config file
 - fix syntax error in webp codec
 - fix html5 printer forwarding
