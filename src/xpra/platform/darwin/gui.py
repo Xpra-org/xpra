@@ -548,6 +548,16 @@ def register_URL_handler(handler):
 from AppKit import NSApplication, NSWorkspace, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 import objc         #@UnresolvedImport
 
+def delegate_cb(delegate, name):
+    #find the named callback and call it
+    callback = getattr(delegate, name, None)
+    log("delegate_cb(%s)=%s", name, callback)
+    if callback:
+        try:
+            callback()
+        except:
+            log.error("Error in %s callback %s", name, callback, exc_info=True)
+
 class Delegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
         log("applicationDidFinishLaunching_(%s)", notification)
@@ -566,26 +576,16 @@ class Delegate(NSObject):
     @objc.signature('B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
         log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
-        self.cb("deiconify_callback")
+        delegate_cb(self, "deiconify_callback")
         return True
 
     def receiveSleepNotification_(self, aNotification):
         log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
-        self.cb("sleep_callback")
+        delegate_cb(self, "sleep_callback")
 
     def receiveWakeNotification_(self, aNotification):
         log("receiveWakeNotification_(%s)", aNotification)
-        self.cb("wake_callback")
-
-    def cb(self, name):
-        #find the named callback and call it
-        callback = getattr(self, name, None)
-        log("cb(%s)=%s", name, callback)
-        if callback:
-            try:
-                callback()
-            except:
-                log.error("Error in %s callback %s", name, callback, exc_info=True)
+        delegate_cb(self, "wake_callback")
 
 
 class ClientExtras(object):
