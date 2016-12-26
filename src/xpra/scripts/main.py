@@ -1108,13 +1108,25 @@ def configure_network(options):
     if not packet_encoding.get_enabled_encoders():
         raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
 
+def parse_env(env):
+    d = {}
+    for ev in env:
+        try:
+            if ev.startswith("#"):
+                continue
+            v = ev.split("=", 1)
+            if len(v)!=2:
+                warn("Warning: invalid environment option '%s'", ev)
+                continue
+            d[v[0]] = os.path.expandvars(v[1])
+        except Exception as e:
+            warn("Warning: cannot parse environment option '%s':", ev)
+            warn(" %s", e)
+    return d
+
 def configure_env(options):
     if options.env:
-        for s in options.env:
-            v = s.split("=", 1)
-            if len(v)!=2:
-                continue
-            os.environ[v[0]] = v[1]
+        os.environ.update(parse_env(options.env))
 
 
 def systemd_run_wrap(mode, args, systemd_run_args):

@@ -46,7 +46,7 @@ from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.scripts.main import sound_option
+from xpra.scripts.main import sound_option, parse_env
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.net.file_transfer import FileTransferAttributes
@@ -57,27 +57,6 @@ if sys.version > '3':
 DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
-
-
-def parse_env(env):
-    d = {}
-    try:
-        for ev in env:
-            try:
-                if ev.startswith("#"):
-                    continue
-                v = ev.split("=", 1)
-                if len(v)!=2:
-                    log.warn("Warning: invalid environment option '%s'", ev)
-                    continue
-                d[v[0]] = os.path.expandvars(v[1])
-            except Exception as e:
-                log.error("Error parsing child environment '%s':", ev)
-                log.error(" %s", e)
-    except Exception as e:
-        log.error("Error parsing child environment '%s':", env)
-        log.error(" %s", e)
-    return d
 
 
 class ServerBase(ServerCore):
