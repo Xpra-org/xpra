@@ -520,7 +520,7 @@ fi
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
-	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent 2> /dev/null
+	firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent >> /dev/null 2>&1
 	if [ $? == "0" ]; then
 		firewall-cmd --reload | grep -v "^success"
 	else
@@ -561,7 +561,7 @@ fi
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
-	firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent 2> /dev/null
+	firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent >> /dev/null 2>&1
 	if [ $? == "0" ]; then
 		firewall-cmd --reload | grep -v "^success"
 	else
