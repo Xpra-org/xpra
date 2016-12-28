@@ -177,20 +177,7 @@
 		repo="downloads.xiph.org"/>
   </autotools>
 
-  <autotools id="libvpx-13"
-             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
-             autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --target=x86-darwin13-gcc --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
-             autogen-sh="configure">
-    <branch module="/files/libvpx-v1.3.0.tar.bz2"
-		version="1.3.0"
-		hash="md5:14783a148872f2d08629ff7c694eb31f"
-		repo="webm.googlecode.com"/>
-    <dependencies>
-                <dep package="yasm"/>
-    </dependencies>
-  </autotools>
-
-  <autotools id="libvpx-16"
+  <autotools id="libvpx"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv"
              autogen-sh="configure">
@@ -229,8 +216,7 @@
 					--disable-filter=aformat --disable-filter=crop --disable-filter=setpts
 					--disable-filter=anull --disable-filter=format --disable-filter=trim
 					--disable-filter=atrim --disable-filter=null
-					--disable-programs --disable-avfilter --disable-doc
-					--disable-audiotoolbox --disable-videotoolbox"
+					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
 	<branch module="/releases/ffmpeg-3.2.2.tar.bz2"
 		version="3.2.2"
@@ -238,11 +224,11 @@
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
-		<dep package="libvpx-16"/>
+		<dep package="libvpx"/>
 	</dependencies>
 	<after>
 		<dep package="x264"/>
-		<dep package="libvpx-16"/>
+		<dep package="libvpx"/>
 	</after>
   </autotools>
 
@@ -894,8 +880,7 @@
       <dep package="flac"/>
       <dep package="opus"/>
       <dep package="lzo"/>
-      <!--  dep package="libvpx-13"/-->
-      <!--  dep package="libvpx-16"/-->
+      <dep package="libvpx"/>
       <dep package="x264"/>
       <dep package="ffmpeg"/>
       <!--
