@@ -109,6 +109,14 @@ def get_groups(username):
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
     return []
 
+def get_group_id(group):
+    try:
+        import grp      #@UnresolvedImport
+        gr = grp.getgrnam(group)
+        return gr.gr_gid
+    except:
+        return -1
+
 
 def platform_release(release):
     if OSX:

@@ -20,7 +20,7 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, WIN32, OSX
+from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, get_group_id, WIN32, OSX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
@@ -382,6 +382,16 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
         inode = os.stat(sockpath).st_ino
     except:
         inode = -1
+    #set to the "xpra" group if we are a member of it, or if running as root:
+    uid = getuid()
+    username = get_username_for_uid(uid)
+    groups = get_groups(username)
+    if uid==0 or "xpra" in groups:
+        group_id = get_group_id("xpra")
+        if group_id>=0:
+            os.chown(sockpath, -1, group_id)
+            #don't know why this doesn't work:
+            #os.fchown(listener.fileno(), -1, group_id)
     def cleanup_socket():
         from xpra.log import Logger
         log = Logger("network")
