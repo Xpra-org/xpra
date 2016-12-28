@@ -90,6 +90,11 @@ def get_properties(filename):
     return props
 
 
+def get_machineinfo():
+    if platform.uname()[4]:
+        return platform.uname()[4]
+    return "unknown"
+
 def get_cpuinfo():
     if platform.uname()[5]:
         return platform.uname()[5]
@@ -225,6 +230,7 @@ def record_build_info(is_build=True):
         set_prop(props, "BUILT_ON", socket.gethostname())
         set_prop(props, "BUILD_DATE", datetime.date.today().isoformat())
         set_prop(props, "BUILD_TIME", datetime.datetime.now().strftime("%H:%M"))
+        set_prop(props, "BUILD_MACHINE", get_machineinfo())
         set_prop(props, "BUILD_CPU", get_cpuinfo())
         set_prop(props, "BUILD_BIT", platform.architecture()[0])
         set_prop(props, "BUILD_OS", get_platform_name())

@@ -13,12 +13,6 @@ MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RSCDIR="${CONTENTS_DIR}/Resources"
 HELPERS_DIR="${CONTENTS_DIR}/Helpers"
 LIBDIR="${RSCDIR}/lib"
-UNAME_ARCH=`uname -p`
-ARCH="x86"
-if [ "${UNAME_ARCH}" == "powerpc" ]; then
-	ARCH="ppc"
-fi
-export ARCH
 
 
 echo "*******************************************************************************"

@@ -13,9 +13,9 @@ export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
-BUILD_CPU=`python -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_CPU))"`
+BUILD_BIT=`python -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_BIT))"`
 BUILD_INFO=""
-if [ "$BUILD_CPU" != "i386" ]; then
+if [ "$BUILD_BIT" != "32bit" ]; then
 	BUILD_INFO="-x86_64"
 fi
 
