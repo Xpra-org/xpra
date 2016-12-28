@@ -98,26 +98,14 @@
 	</binary>
 
 	<binary>
-		${prefix}/lib/gstreamer-0.10/*.so
-	</binary>
-	<binary>
 		${prefix}/lib/gstreamer-1.0/*.so
 	</binary>
 
-	<binary dest="${bundle}/Contents/Resources/bin/gst-plugin-scanner-0.10">
-		${prefix}/libexec/gstreamer-0.10/gst-plugin-scanner
-	</binary>
 	<binary dest="${bundle}/Contents/Resources/bin/gst-plugin-scanner-1.0">
 		${prefix}/libexec/gstreamer-1.0/gst-plugin-scanner
 	</binary>
-	<binary dest="${bundle}/Contents/Resources/bin/gst-launch-0.10">
-		${prefix}/bin/gst-launch-0.10
-	</binary>
 	<binary dest="${bundle}/Contents/Resources/bin/gst-launch-1.0">
 		${prefix}/bin/gst-launch-1.0
-	</binary>
-	<binary dest="${bundle}/Contents/Resources/bin/gst-inspect-0.10">
-		${prefix}/bin/gst-inspect-0.10
 	</binary>
 	<binary dest="${bundle}/Contents/Resources/bin/gst-inspect-1.0">
 		${prefix}/bin/gst-inspect-1.0
