@@ -38,11 +38,6 @@ def get_OSXApplication():
             pass
     return macapp
 
-try:
-    from Carbon import Snd      #@UnresolvedImport
-except:
-    Snd = None
-
 
 def do_init():
     osxapp = get_OSXApplication()
@@ -75,10 +70,13 @@ def get_native_tray_classes():
     return [OSXTray]
 
 def system_bell(*args):
-    if Snd is None:
+    try:
+        from AppKit import NSBeep   #@UnresolvedImport
+        NSBeep()
+        return True
+    except:
         return False
-    Snd.SysBeep(1)
-    return True
+    
 
 #if there is an easier way of doing this, I couldn't find it:
 try:
