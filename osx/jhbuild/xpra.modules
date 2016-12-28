@@ -239,39 +239,6 @@
 		repo="www.libsdl.org"/>
   </autotools>
 
-  <autotools id="gst-plugins-bad-xpra" autogenargs="--enable-introspection=no --disable-vp8 --disable-sdl --disable-apexsink" autogen-sh="configure">
-	<branch module="/src/gst-plugins-bad/gst-plugins-bad-0.10.22.tar.bz2"
-		version="0.10.22"
-		hash="md5:9a2acee1f386f71247003d0d7090fb1c"
-		repo="gstreamer.freedesktop.org"/>
-  </autotools>
-
-  <autotools id="gst-plugins-ugly-xpra" autogenargs="--enable-introspection=no" autogen-sh="configure">
-	<branch module="/src/gst-plugins-ugly/gst-plugins-ugly-0.10.18.tar.bz2"
-		version="0.10.18"
-		hash="md5:04a7009a4efea2844075949c111f5e4d"
-		repo="gstreamer.freedesktop.org"/>
-	<dependencies>
-		<dep package="x264"/>
-	</dependencies>
-	<after>
-		<dep package="x264"/>
-	</after>
-  </autotools>
-
-  <autotools id="gst-python" autogenargs="" autogen-sh="configure --with-libpython-dir=../Resources/lib">
-	<branch module="/src/gst-python/gst-python-0.10.22.tar.bz2"
-		version="0.10.22"
-		hash="md5:937152fe896241f827689f4b53e79b22"
-		repo="gstreamer.freedesktop.org"/>
-	<dependencies>
-		<dep package="python"/>
-	</dependencies>
-	<after>
-		<dep package="python"/>
-	</after>
-  </autotools>
-
   <!-- HACK: patch after autoreconf is run -->
   <autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s">
 	<branch module="/src/gtkglext-1.2.0.tar.bz2"
@@ -889,7 +856,6 @@
       -->
       <!--dep package="pygobject3"/-->
       <dep package="meta-gstreamer"/>
-      <dep package="meta-gstreamer-1.0"/>
       <dep package="gst-python"/>
       <dep package="gmplib"/>
       <dep package="openssl"/>
