@@ -467,15 +467,8 @@ class XpraClientBase(FileTransferHandler):
 
 
     def glib_init(self):
-        try:
-            glib = import_glib()
-            try:
-                glib.threads_init()
-            except AttributeError:
-                #old versions of glib may not have this method
-                pass
-        except ImportError:
-            pass
+        glib = import_glib()
+        glib.threads_init()
 
     def run(self):
         self._protocol.start()

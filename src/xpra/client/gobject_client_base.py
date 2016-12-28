@@ -70,11 +70,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
             self._packet_handlers[t] = noop
 
     def gobject_init(self):
-        try:
-            gobject.threads_init()
-        except AttributeError:
-            #old versions of gobject may not have this method
-            pass
+        gobject.threads_init()
 
     def connect_with_timeout(self, conn):
         self.setup_connection(conn)
