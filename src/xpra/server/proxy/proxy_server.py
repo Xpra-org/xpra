@@ -9,10 +9,9 @@ import sys
 
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 glib = import_glib()
-try:
-    glib.threads_init()
-except AttributeError:
-    import_gobject().threads_init()
+glib.threads_init()
+gobject = import_gobject()
+gobject.threads_init()
 from multiprocessing import Queue as MQueue, freeze_support
 freeze_support()
 

@@ -8,14 +8,11 @@
 
 import time
 import gtk.gdk
-import gobject
 #most important with win32 servers:
-gobject.threads_init()
 import glib
-try:
-    glib.threads_init()
-except AttributeError:
-    pass
+glib.threads_init()
+import gobject
+gobject.threads_init()
 
 from xpra.log import Logger
 log = Logger("server", "gtk")

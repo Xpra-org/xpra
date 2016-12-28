@@ -945,12 +945,8 @@ def verify_gdk_display(display_name):
     # Now we can safely load gtk and connect:
     no_gtk()
     import gtk.gdk          #@Reimport
-    try:
-        import glib
-        glib.threads_init()
-    except:
-        #old versions do not have this method
-        pass
+    import glib
+    glib.threads_init()
     display = gtk.gdk.Display(display_name)
     manager = gtk.gdk.display_manager_get()
     default_display = manager.get_default_display()

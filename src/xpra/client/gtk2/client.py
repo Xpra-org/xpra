@@ -6,11 +6,7 @@
 # later version. See the file COPYING for details.
 
 import gobject
-try:
-    #we *have to* do this as early as possible on win32..
-    gobject.threads_init()
-except:
-    pass
+gobject.threads_init()
 import gtk
 from gtk import gdk
 gdk.threads_init()

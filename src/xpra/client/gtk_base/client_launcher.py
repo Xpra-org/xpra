@@ -18,14 +18,12 @@ import traceback
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango, import_glib
 glib = import_glib()
+glib.threads_init()
 gobject = import_gobject()
 gobject.threads_init()
 gtk = import_gtk()
 gdk = import_gdk()
-try:
-    gdk.threads_init()
-except:
-    pass
+gdk.threads_init()
 pango = import_pango()
 
 from xpra.platform.gui import init as gui_init
