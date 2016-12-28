@@ -71,7 +71,7 @@
     <branch module="gst-plugins-base/gst-plugins-base-1.8.3.tar.xz" version="1.8.3" repo="gstreamer"
             hash="sha256:114871d4d63606b4af424a8433cd923e4ff66896b244bb7ac97b9da47f71e79e"/>
     <dependencies>
-      <dep package="gstreamer"/>
+      <dep package="gstreamer-1.0"/>
       <dep package="liborc"/>
     </dependencies>
     <after>
