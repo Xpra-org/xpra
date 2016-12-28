@@ -247,27 +247,21 @@ fi
 #only needed with gstreamer 1.x by gstpbutils, get rid of the 0.10 one:
 rm libgstvideo-0.10.*
 echo "removing extra gstreamer plugins:"
-for GST_VERSION in "0.10" "1.0"; do
-	echo " * GStreamer $GST_VERSION"
-	GST_PLUGIN_DIR="./gstreamer-$GST_VERSION"
-	if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
-		KEEP="./gstreamer-$GST_VERSION.keep"
-		mkdir ${KEEP}
-		PLUGINS="app audio coreelements faac faad flac oss osxaudio speex volume vorbis wav lame mad opus ogg gdp isomp4 matroska"
-		if [ $GST_VERSION == "0.10" ]; then
-			#only found in 0.10:
-			PLUGINS="$PLUGINS mpegaudioparse python"
-		fi
-		for x in $PLUGINS; do
-			echo "* keeping "$x
-			mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
-		done
-		rm -fr ${GST_PLUGIN_DIR}
-		mv ${KEEP} ${GST_PLUGIN_DIR}
-	fi
-	echo -n "GStreamer $GST_VERSION plugins shipped: "
-	ls ${GST_PLUGIN_DIR} | xargs
-done
+echo " * GStreamer"
+GST_PLUGIN_DIR="./gstreamer-1.0"
+if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
+	KEEP="./gstreamer-1.0.keep"
+	mkdir ${KEEP}
+	PLUGINS="app audio coreelements faac faad flac oss osxaudio speex volume vorbis wav lame mad opus ogg gdp isomp4 matroska"
+	for x in $PLUGINS; do
+		echo "* keeping "$x
+		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
+	done
+	rm -fr ${GST_PLUGIN_DIR}
+	mv ${KEEP} ${GST_PLUGIN_DIR}
+fi
+echo -n "GStreamer plugins shipped: "
+ls ${GST_PLUGIN_DIR} | xargs
 popd	#${CONTENTS_DIR}
 popd	#"Resources/lib"
 
