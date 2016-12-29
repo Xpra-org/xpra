@@ -1095,6 +1095,8 @@ def fixup_clipboard(options):
         options.clipboard_direction = "to-client"
     elif cd=="both":
         options.clipboard_direction = "both"
+    elif cd=="disabled" or cd=="none":
+        options.clipboard_direction = "disabled"
     else:
         warn("Warning: invalid value for clipboard-direction: '%s'" % options.clipboard_direction)
         warn(" specify 'to-server', 'to-client' or 'both'")
