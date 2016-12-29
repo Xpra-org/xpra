@@ -13,6 +13,7 @@ import sys
 import time
 import datetime
 
+import xpra
 from xpra.os_util import bytestostr, get_linux_distribution
 from xpra.util import prettify_plug_name, typedict, csv, engs
 from xpra.gtk_common.graph import make_graph_pixmap
@@ -140,8 +141,7 @@ class SessionInfo(gtk.Window):
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
         tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
-        from xpra.__init__ import __version__
-        tb.new_row("Xpra", label(__version__), label(self.client._remote_version or "unknown"))
+        tb.new_row("Xpra", label(xpra.__version__), label(self.client._remote_version or "unknown"))
         cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
@@ -283,7 +283,8 @@ class SessionInfo(gtk.Window):
 
         # Connection Table:
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
-        tb.new_row("Server Endpoint", label(self.connection.target))
+        if self.connection:
+            tb.new_row("Server Endpoint", label(self.connection.target))
         if self.client.server_display:
             tb.new_row("Server Display", label(prettify_plug_name(self.client.server_display)))
         hostname = scaps.strget("hostname")
@@ -542,7 +543,7 @@ class SessionInfo(gtk.Window):
         return not self.is_closed
 
     def populate(self, *args):
-        if self.is_closed:
+        if self.is_closed or not self.connection:
             return False
         self.client.send_ping()
         self.last_populate_time = time.time()

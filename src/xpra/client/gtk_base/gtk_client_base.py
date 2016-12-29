@@ -249,7 +249,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         pixbuf = self.get_pixbuf("statistics.png")
         if not pixbuf:
             pixbuf = self.get_pixbuf("xpra.png")
-        self.session_info = SessionInfo(self, self.session_name, pixbuf, self._protocol._conn, self.get_pixbuf)
+        conn = None
+        p = self._protocol
+        if p:
+            conn = p._conn
+        self.session_info = SessionInfo(self, self.session_name, pixbuf, conn, self.get_pixbuf)
         self.session_info.set_args(*args)
         self.session_info.show_all()
 
