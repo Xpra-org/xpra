@@ -13,34 +13,26 @@ from PIL import Image           #@UnresolvedImport
 from io import BytesIO
 
 
-def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg", "rgb"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
-    from xpra.server.picture_encode import PIL_encode, rgb_encode
+def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
+    from xpra.codecs.pillow.encode import encode
     from xpra.codecs.image_wrapper import ImageWrapper
     image = ImageWrapper(0, 0, w, h, rgb_data, "BGRA", 32, w*4, planes=ImageWrapper.PACKED, thread_safe=True)
     #buf = "\0" * (w*h*4)
     #buf = get_source_data(w*h*4)
     for encoding in encodings:
         Q_options = Q
-        if encoding in ("png", "png/P", "png/L", "rgb"):
+        if encoding in ("png", "png/P", "png/L"):
             Q_options = [-1]
         S_options = S
         if encoding in ("jpeg"):
             S_options = [0, -1]
-        elif encoding=="rgb":
-            S_options = [0, 30, 70, 90]
         for q in Q_options:
             for s in S_options:
                 #print("test_encode() quality=%s, speed=%s" % (q, s))
                 coding = encoding
                 start = time.time()
                 for _ in range(N):
-                    if encoding=="rgb":
-                        coding = "rgb24"
-                        if has_alpha:
-                            coding = "rgb32"
-                        data = rgb_encode(coding, image, ["BGRA"], True, speed=s)
-                    else:
-                        data = PIL_encode(coding, image, q, s, True)
+                    data = encode(coding, image, q, s, True)
                 #def compress(pixels, width, height, quality=50, speed=50):
                 end = time.time()
                 mps = w*h*N/(end-start)/1024/1024
