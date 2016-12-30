@@ -330,9 +330,9 @@
   </autotools>
 
   <autotools id="mpfr" autogen-sh="configure">
-	<branch module="/mpfr-current/mpfr-3.1.4.tar.bz2"
-		hash="md5:b8a2f6b0e68bef46e53da2ac439e1cf4"
-		version="3.1.4"
+	<branch module="/mpfr-3.1.5/mpfr-3.1.5.tar.bz2"
+		hash="sha256:015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc"
+		version="3.1.5"
 		repo="www.mpfr.org">
 	</branch>
 	<dependencies>
