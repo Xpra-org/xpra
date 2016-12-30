@@ -53,7 +53,7 @@
   <include href="gtk-osx-themes.modules"/>
   <include href="gtk-osx-unsupported.modules"/>
   <include href="gtk-osx-universal.modules"/>
-  <include href="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra.modules"/> <!--include for simplicity-->
+  <include href="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/xpra.modules"/> <!--include for simplicity-->
   <metamodule id="meta-gtk-osx-core">
     <dependencies>
       <dep package="gtk+"/>
@@ -185,7 +185,7 @@
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk+-2-m4-creation.patch" strip="1"/>
-      <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-fullscreenfix-quartz.patch" strip="1"/>
+      <patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/gtk-fullscreenfix-quartz.patch" strip="1"/>
    </branch>
     <dependencies>
       <dep package="glib"/>
@@ -254,7 +254,7 @@
     <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
             version="2.0.5"
             hash="sha256:6c4ff7501d7ff35e49068052d80fcf76ce494e5953c5f3967e4958b1b0c67b9f">
-      <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
+	    <patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
     </branch>
     <dependencies>
     </dependencies>

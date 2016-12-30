@@ -51,7 +51,7 @@
 		version="2.12"
 		hash="md5:ff2a1d31444049ccdc1deeec1d868585"
 		repo="www.nasm.us">
-    	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
+		<patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
         </branch>
   </autotools>
 
@@ -85,7 +85,7 @@
 		version="0.2-1"
                 checkoutdir="bomutils-debian-0.2-1"
 		repo="github.com">
-        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/bomutils-jhbuild-changeprefix.patch" strip="0" />
+		<patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/bomutils-jhbuild-changeprefix.patch" strip="0" />
         </branch>
   </autotools>
 
@@ -299,12 +299,12 @@
   </autotools>
 
   <!-- HACK: patch after autoreconf is run -->
-  <autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s">
+  <autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s">
 	<branch module="/src/gtkglext-1.2.0.tar.bz2"
 		version="1.2.0"
 		checkoutdir="gtkglext-1.2.0"
 		repo="xpra.org">
-    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/xpra-gtkglext.patch" strip="1"/>
+		<patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/xpra-gtkglext.patch" strip="1"/>
     </branch>
   </autotools>
 
@@ -314,7 +314,7 @@
 		hash="md5:e831e0b84ece7180985b11032bc3706d"
 		checkoutdir="pygtkglext"
 		repo="xpra.org">
-	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
+		<patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
 	</branch>
 	<dependencies>
 		<dep package="gtkglext"/>
@@ -350,7 +350,7 @@
     <branch module="/pub/gnome/sources/gtk-mac-bundler/0.7/gtk-mac-bundler-0.7.3.tar.xz"
             version="0.7.3"
             repo="ftp.gnome.org">
-    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pathfix.patch" strip="1"/>
+	    <patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/gtk-mac-bundler-pathfix.patch" strip="1"/>
     </branch>
   </autotools>
 
@@ -628,7 +628,7 @@
 	        module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
 	        hash="md5:b5cd60498474dab58c1ea2385adfa7bd"
 	        version="1.11">
-    	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
+		<patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
 	</branch>
 	<dependencies>
                 <dep package="python"/>

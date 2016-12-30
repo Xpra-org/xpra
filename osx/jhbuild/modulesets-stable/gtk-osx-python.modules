@@ -193,7 +193,7 @@
     <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
             version="2.0.5"
             hash="sha256:e6de70da740b452f18c113a7ebb6772936a0fb9873137514090849820e296eb7">
-       <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
+	    <patch file="http://xpra.org/svn/Xpra/tags/v1.0.x/osx/jhbuild/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
     </branch>
     <dependencies>
     </dependencies>
