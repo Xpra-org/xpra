@@ -184,17 +184,15 @@ modules = [ "python", "libxml2", "itstool", "gtk-doc",
 "libcroco", "librsvg",
 "meta-gtk-osx-python", "meta-gtk-osx-themes",
 "gtk-quartz-engine", "gtk-mac-integration-python", 
-"gstreamer", "gst-plugins-base", "gst-plugins-good",
+"gstreamer-1.0", "gst-plugins-base-1.0", "gst-plugins-good-1.0",
 "meta-osx-xpra-deps" ]
 
 #use system libiconv
-skip.append("libiconv")
+#skip.append("libiconv")
 
 #change some configure opions
 module_autogenargs['cairo'] = '--enable-ft=no'
-append_autogenargs('gstreamer', '--enable-introspection=no')
-append_autogenargs('gst-plugins-base', '--enable-introspection=no')
-append_autogenargs('gst-plugins-good', '--enable-introspection=no --disable-deinterlace')
+#append_autogenargs('gst-plugins-good', '--enable-introspection=no --disable-deinterlace')
 
 #change moduleset
 moduleset="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/modulesets-stable/gtk-osx.modules"
