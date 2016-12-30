@@ -121,6 +121,13 @@
     </dependencies>
   </autotools>
 
+  <autotools id="speex" autogen-sh="configure">
+    <branch module="/releases/speex/speex-1.2.0.tar.gz"
+		version="1.2.0"
+		hash="sha256:eaae8af0ac742dc7d542c9439ac72f1f385ce838392dc849cae4536af9210094"
+		repo="downloads.xiph.org"/>
+  </autotools>
+
   <autotools id="lame" autogenargs="" autogen-sh="configure">
     <branch module="/src/lame-3.99.5.tar.gz"
 		version="3.99.5"
@@ -839,6 +846,7 @@
       <dep package="libogg"/>
       <dep package="libtheora"/>
       <dep package="libvorbis"/>
+      <dep package="speex"/>
       <dep package="lame"/>
       <dep package="twolame"/>
       <dep package="libmad"/>
