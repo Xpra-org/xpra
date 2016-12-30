@@ -854,7 +854,7 @@
       sdl doesn't build with newer versions of osx because of missing X header files
       <dep package="sdl"/>
       -->
-      <dep package="pygobject3"/>
+      <!-- dep package="pygobject3"/ -->
       <dep package="meta-gstreamer"/>
       <dep package="gst-python"/>
       <dep package="gmplib"/>
