@@ -855,7 +855,7 @@
       <dep package="sdl"/>
       -->
       <!-- dep package="pygobject3"/ -->
-      <dep package="meta-gstreamer"/>
+      <dep package="meta-gstreamer-1.0"/>
       <dep package="gst-python"/>
       <dep package="gmplib"/>
       <dep package="openssl"/>
