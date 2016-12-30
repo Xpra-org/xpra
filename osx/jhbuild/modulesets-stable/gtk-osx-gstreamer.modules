@@ -101,7 +101,7 @@
 
   <metamodule id="meta-gstreamer-1.0">
     <dependencies>
-      <dep package="gstreamer"/>
+      <dep package="gstreamer-1.0"/>
       <dep package="gst-plugins-base-1.0"/>
       <dep package="gst-plugins-good-1.0"/>
       <dep package="gst-plugins-ugly-1.0"/>
