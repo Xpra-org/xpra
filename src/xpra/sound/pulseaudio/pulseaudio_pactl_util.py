@@ -58,7 +58,7 @@ def pactl_output(log_errors=True, *pactl_args):
 def is_pa_installed():
     pactl_bin = get_pactl_bin()
     log("is_pa_installed() pactl_bin=%s", pactl_bin)
-    return len(pactl_bin)>0
+    return pactl_bin and len(pactl_bin)>0
 
 def has_pa():
     global has_pulseaudio
