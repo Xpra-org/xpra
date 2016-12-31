@@ -1348,7 +1348,7 @@ def parse_display_name(error_cb, opts, display_name):
         if username:
             opts.username = username
             full_ssh += ["-l", username]
-        if ssh_port:
+        if ssh_port and ssh_port!=22:
             #grr why bother doing it different?
             if is_putty:
                 #special env used by plink:
