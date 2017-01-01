@@ -337,10 +337,6 @@ if "clean" not in sys.argv:
 
 external_includes = ["hashlib",
                      "ctypes", "platform"]
-if DEFAULT:
-    external_includes += ["Crypto", "Crypto.Cipher"]
-else:
-    excludes += ["Crypto", "Crypto.Cipher"]
 
 
 if gtk3_ENABLED or (sound_ENABLED and PYTHON3):
