@@ -2353,7 +2353,7 @@ if vpx_ENABLED:
 
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 if enc_ffmpeg_ENABLED:
-    ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat")
+    ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
                 ["xpra/codecs/enc_ffmpeg/encoder.pyx"]+membuffers_c,
                 **ffmpeg_pkgconfig))
