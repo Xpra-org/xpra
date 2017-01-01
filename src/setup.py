@@ -1217,7 +1217,9 @@ if WIN32:
             def add_DLLs(*dll_names):
                 try:
                     do_add_DLLs(*dll_names)
-                except:
+                except Exception as e:
+                    print("Error: failed to add DLLs: %s" % (dll_names, ))
+                    print(" %s" % e)
                     sys.exit(1)
 
             def do_add_DLLs(*dll_names):
