@@ -90,10 +90,11 @@ print("Xpra version %s" % __version__)
 #*******************************************************************************
 from xpra.os_util import get_status_output
 
+MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
 #we don't support building with "pkg-config" on win32 with python2:
-if PKG_CONFIG and (PYTHON3 or not WIN32):
+if PKG_CONFIG and (PYTHON3 or MINGW_PREFIX or not WIN32):
     pkg_config_version = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = pkg_config_version[0]==0 and pkg_config_version[1]
     if has_pkg_config:
@@ -1168,8 +1169,7 @@ if WIN32:
     if "build_ext" not in sys.argv:
         #with py2exe and cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
-        external_includes += ["win32con", "win32gui", "win32process", "win32api"]
-        if PYTHON3:
+        if PYTHON3 or MINGW_PREFIX:
             from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
 
             #cx_freeze doesn't use "data_files"...
@@ -1223,35 +1223,40 @@ if WIN32:
                     sys.exit(1)
 
             def do_add_DLLs(*dll_names):
-                print("adding DLLs %s" % ", ".join(dll_names))
                 dll_names = list(dll_names)
                 dll_files = []
                 import re
                 version_re = re.compile("\-[0-9\.\-]+$")
-                for x in os.listdir(gnome_include_path):
-                    pathname = os.path.join(gnome_include_path, x)
-                    x = x.lower()
-                    if os.path.isdir(pathname) or not x.startswith("lib") or not x.endswith(".dll"):
+                dirs = os.environ.get("PATH").split(os.path.pathsep)
+                if os.path.exists(gnome_include_path):
+                    dirs.insert(0, gnome_include_path)
+                for d in dirs:
+                    if not os.path.exists(d):
                         continue
-                    nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
-                    m = version_re.search(nameversion)          #look for version part of filename
-                    if m:
-                        dll_version = m.group(0)                #found it, ie: "-1.0-0"
-                        dll_name = nameversion[:-len(dll_version)]  #ie: "atk"
-                        dll_version = dll_version.lstrip("-")   #ie: "1.0-0"
-                    else:
-                        dll_version = ""                        #no version
-                        dll_name = nameversion                  #ie: "libzzz.dll" -> "zzz"
-                    if dll_name in dll_names:
-                        #this DLL is on our list
-                        print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
-                        dll_files.append(x)
-                        dll_names.remove(dll_name)
+                    for x in os.listdir(d):
+                        dll_path = os.path.join(d, x)
+                        x = x.lower()
+                        if os.path.isdir(dll_path) or not x.startswith("lib") or not x.endswith(".dll"):
+                            continue
+                        nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
+                        m = version_re.search(nameversion)          #look for version part of filename
+                        if m:
+                            dll_version = m.group(0)                #found it, ie: "-1.0-0"
+                            dll_name = nameversion[:-len(dll_version)]  #ie: "atk"
+                            dll_version = dll_version.lstrip("-")   #ie: "1.0-0"
+                        else:
+                            dll_version = ""                        #no version
+                            dll_name = nameversion                  #ie: "libzzz.dll" -> "zzz"
+                        if dll_name in dll_names:
+                            #this DLL is on our list
+                            print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
+                            dll_files.append(dll_path)
+                            dll_names.remove(dll_name)
                 if len(dll_names)>0:
-                    print("some DLLs could not be found in '%s':" % gnome_include_path)
+                    print("some DLLs could not be found in '%s':" % (dirs, ))
                     for x in dll_names:
                         print(" - lib%s*.dll" % x)
-                add_data_files("", [os.path.join(gnome_include_path, dll) for dll in dll_files])
+                add_data_files("", dll_files)
 
             #list of DLLs we want to include, without the "lib" prefix, or the version and extension
             #(ie: "libatk-1.0-0.dll" -> "atk")
@@ -1336,7 +1341,7 @@ if WIN32:
 
             if client_ENABLED:
                 #pillow links against zlib, but expects the DLL to be named z.dll:
-                data_files.append((os.path.join(gnome_include_path, "libzzz.dll"), "z.dll"))
+                add_DLLs('zzz', 'z')
 
             if server_ENABLED:
                 #used by proxy server:
