@@ -1756,15 +1756,8 @@ if WIN32:
         remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
 
-    if sound_ENABLED:
-        if not PYTHON3:
-            external_includes += ["pygst", "gst", "gst.extend"]
-            add_data_files('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path))
-        else:
-            #python3: this is part of "gi"?
-            pass
-    else:
-        remove_packages("pygst", "gst", "gst.extend")
+    #make sure we don't include the gstreamer 0.10 "pygst" bindings:
+    remove_packages("pygst", "gst", "gst.extend")
 
     #deal with opengl workaround (as long as we're not just building the extensions):
     if opengl_ENABLED and "build_ext" not in sys.argv:
