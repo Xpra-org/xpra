@@ -256,18 +256,21 @@ if HELP:
     print("  --rpath=PATH")
     sys.exit(0)
 
+install = "dist"
 rpath = None
 ssl_cert = None
 ssl_key = None
 filtered_args = []
 for arg in sys.argv:
     matched = False
-    for x in ("rpath", "ssl-cert", "ssl-key"):
+    for x in ("rpath", "ssl-cert", "ssl-key", "install"):
         varg = "--%s=" % x
         if arg.startswith(varg):
             value = arg[len(varg):]
             globals()[x.replace("-", "_")] = value
-            matched = True
+            #remove these arguments from sys.argv,
+            #except for --install=PATH
+            matched = x!="install"
             break
     if matched:
         continue
@@ -1767,17 +1770,17 @@ if WIN32:
     remove_packages("pygst", "gst", "gst.extend")
 
     #deal with opengl workaround (as long as we're not just building the extensions):
-    if opengl_ENABLED and "build_ext" not in sys.argv:
+    if opengl_ENABLED:
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
         import OpenGL, OpenGL_accelerate        #@UnresolvedImport
-        print("*** copy PyOpenGL modules ***")
+        print("*** copying PyOpenGL modules to %s ***" % install)
         for module_name, module in {"OpenGL" : OpenGL, "OpenGL_accelerate" : OpenGL_accelerate}.items():
             module_dir = os.path.dirname(module.__file__ )
             try:
                 shutil.copytree(
-                    module_dir, os.path.join("dist", module_name),
+                    module_dir, os.path.join(install, module_name),
                     ignore = shutil.ignore_patterns("Tk", "AGL", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
                 )
             except Exception as e:
