@@ -55,9 +55,13 @@ def do_get_icon_dir():
 def do_get_script_bin_dirs():
     #versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
-    runtime_dir = _get_xpra_runtime_dir()
-    if runtime_dir:
-        script_bin_dirs.append(runtime_dir)
+    from xpra.os_util import getUbuntuVersion
+    if getUbuntuVersion()!=[14,4]:
+        #XDG_RUNTIME_DIR is mounted noexec on Ubuntu 14.04,
+        #we cannot use it
+        runtime_dir = _get_xpra_runtime_dir()
+        if runtime_dir:
+            script_bin_dirs.append(runtime_dir)
     script_bin_dirs.append("~/.xpra")
     return script_bin_dirs
 
