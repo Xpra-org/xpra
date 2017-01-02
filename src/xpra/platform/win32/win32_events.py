@@ -7,9 +7,11 @@
 try:
     import win32ts          #@UnresolvedImport
     import win32gui         #@UnresolvedImport
+    import win32api
 except ImportError:
     win32ts = None
     win32gui = None
+    win32api = None
 
 from xpra.log import Logger
 log = Logger("events", "win32")
@@ -150,9 +152,10 @@ class Win32EventListener(object):
             #http://msdn.microsoft.com/en-us/library/aa383828.aspx
             win32ts.WTSRegisterSessionNotification(self.hwnd, win32ts.NOTIFY_FOR_THIS_SESSION)
             #catch all events: http://wiki.wxpython.org/HookingTheWndProc
-            self.old_win32_proc = win32api.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
+            self.old_win32_proc = win32gui.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
         except Exception as e:
-            log.error("failed to hook session notifications: %s", e)
+            log.error("Error: failed to hook session notifications")
+            log.error(" %s", e)
 
     def MyWndProc(self, hWnd, msg, wParam, lParam):
         callbacks = self.event_callbacks.get(msg)
