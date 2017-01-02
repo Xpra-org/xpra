@@ -73,8 +73,10 @@
 
   <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
              supports-non-srcdir-builds="no">
-    <branch repo="sourceforge" version="1.2.8"
-            module="libpng/zlib-1.2.8.tar.xz"/>
+    <branch repo="sourceforge" version="1.2.9"
+            module="libpng/zlib-1.2.9.tar.xz"
+            hash="sha256:03d9c7f67976cf1389589782de46f45011053ea7f4222c2fb8c2cf9fd813bb68"
+            />
   </autotools>
 
   <!-- Building with p11-kit support breaks g-ir-scanner, for some weird reason. -->
