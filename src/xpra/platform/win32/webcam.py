@@ -1,19 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
 log = Logger("webcam")
 
-
-try:
-    from win32con import WM_DEVICECHANGE
-    from xpra.platform.win32.win32_events import get_win32_event_listener
-except ImportError as e:
-    WM_DEVICECHANGE = 7
-    get_win32_event_listener = None
-    log("cannot watch for device changes: %s", e)
+from xpra.platform.win32.constants import WM_DEVICECHANGE
+from xpra.platform.win32.win32_events import get_win32_event_listener
 
 
 def get_all_video_devices(capture_only=True):

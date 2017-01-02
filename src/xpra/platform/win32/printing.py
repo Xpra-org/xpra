@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,9 +8,13 @@ log = Logger("printing")
 
 import os.path
 import subprocess
-import win32print       #@UnresolvedImport
-import win32con         #@UnresolvedImport
-
+try:
+    import win32print       #@UnresolvedImport
+except ImportError as e:
+    log.warn("Warning: no printing support")
+    log.warn(" %s", e)
+    win32print = None
+from xpra.platform.win32 import constants as win32con
 from xpra.util import csv, envint
 
 
@@ -20,13 +24,14 @@ SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Docume
 
 PRINTER_ENUM_VALUES = {}
 PRINTER_ENUM_NAMES = {}
-for k in ("LOCAL", "NAME", "SHARED", "CONNECTIONS",
-          "NETWORK", "REMOTE", "CATEGORY_3D", "CATEGORY_ALL"):
-    v = getattr(win32print, "PRINTER_ENUM_%s" % k, None)
-    if v is not None:
-        PRINTER_ENUM_VALUES[k] = v
-        PRINTER_ENUM_NAMES[v] = k
-log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
+if win32print:
+    for k in ("LOCAL", "NAME", "SHARED", "CONNECTIONS",
+              "NETWORK", "REMOTE", "CATEGORY_3D", "CATEGORY_ALL"):
+        v = getattr(win32print, "PRINTER_ENUM_%s" % k, None)
+        if v is not None:
+            PRINTER_ENUM_VALUES[k] = v
+            PRINTER_ENUM_NAMES[v] = k
+    log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
 PRINTER_LEVEL = envint("XPRA_WIN32_PRINTER_LEVEL", 1)
 #DEFAULT_PRINTER_FLAGS = "LOCAL"
@@ -89,6 +94,9 @@ def on_devmodechange(wParam, lParam):
 def get_printers():
     global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL, GSVIEW_DIR
     printers = {}
+    if not win32print:
+        log("get_printers() no printing support")
+        return printers
     if not GSVIEW_DIR:
         #without gsprint, we can't handle printing!
         log("get_printers() gsview is missing, not querying any printers")

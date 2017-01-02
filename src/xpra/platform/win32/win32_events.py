@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import win32ts          #@UnresolvedImport
-import win32con         #@UnresolvedImport
-import win32api         #@UnresolvedImport
-import win32gui         #@UnresolvedImport
+try:
+    import win32ts          #@UnresolvedImport
+    import win32gui         #@UnresolvedImport
+except ImportError:
+    win32ts = None
+    win32gui = None
 
 from xpra.log import Logger
 log = Logger("events", "win32")
 
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
+from xpra.platform.win32 import constants as win32con
 
 #no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE        = 0x02b1
@@ -64,7 +67,7 @@ for x in dir(win32con):
 singleton = None
 def get_win32_event_listener(create=True):
     global singleton
-    if not singleton and create:
+    if not singleton and create and win32gui:
         singleton = Win32EventListener()
     return singleton
 
@@ -117,13 +120,14 @@ class Win32EventListener(object):
                 log.error(" %s", e)
 
     def stop_win32_session_events(self):
-        log("stop_win32_session_events() old win32 proc=%s", self.old_win32_proc)
-        if not self.old_win32_proc:
+        owp = self.old_win32_proc
+        log("stop_win32_session_events() restoring old win32 proc=%s", owp)
+        if not owp:
             return
         try:
             if self.hwnd:
-                win32api.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.old_win32_proc)
                 self.old_win32_proc = None
+                win32api.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, owp)
                 win32ts.WTSUnRegisterSessionNotification(self.hwnd)
             else:
                 log.warn("stop_win32_session_events() missing handle!")
@@ -146,7 +150,7 @@ class Win32EventListener(object):
             #http://msdn.microsoft.com/en-us/library/aa383828.aspx
             win32ts.WTSRegisterSessionNotification(self.hwnd, win32ts.NOTIFY_FOR_THIS_SESSION)
             #catch all events: http://wiki.wxpython.org/HookingTheWndProc
-            self.old_win32_proc = win32gui.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
+            self.old_win32_proc = win32api.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
         except Exception as e:
             log.error("failed to hook session notifications: %s", e)
 

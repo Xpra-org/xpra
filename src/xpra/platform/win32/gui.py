@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,8 @@
 
 import sys
 import types
+import ctypes
+
 from xpra.log import Logger
 log = Logger("win32")
 grablog = Logger("win32", "grab")
@@ -15,16 +17,26 @@ screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
 mouselog = Logger("win32", "mouse")
 
-from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
-import ctypes
+
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM
 
-import win32con     #@UnresolvedImport
-import win32api     #@UnresolvedImport
-import win32gui     #@UnresolvedImport
+try:
+    import win32api     #@UnresolvedImport
+    import win32gui     #@UnresolvedImport
+except:
+    log.warn("Warning: pywin32 not present")
+    win32api = None
+    win32gui = None
+
+user32 = ctypes.windll.user32
+GetSystemMetrics = user32.GetSystemMetrics
+SetWindowLong = user32.SetWindowLongW
+GetWindowLong = user32.GetWindowLongW
+
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
@@ -73,7 +85,7 @@ def init_dpi():
         screenlog("SetProcessDPIAware: %s()=%s", SetProcessDPIAware, dpiaware)
         assert dpiaware!=0
     except Exception as e:
-        screenlog("SetProcessDPIAware() failed: %s", e)
+        screenlog.warn("SetProcessDPIAware() failed: %s", e)
     if DPI_AWARENESS<=0:
         screenlog.warn("SetProcessDPIAwareness not set due to environment override")
         return
@@ -92,12 +104,13 @@ def init_dpi():
 
 
 def get_native_notifier_classes():
-    try:
-        from xpra.platform.win32.win32_notifier import Win32_Notifier
-        return [Win32_Notifier]
-    except:
-        log.warn("cannot load native win32 notifier", exc_info=True)
-        return []
+    if win32api:
+        try:
+            from xpra.platform.win32.win32_notifier import Win32_Notifier
+            return [Win32_Notifier]
+        except:
+            log.warn("cannot load native win32 notifier", exc_info=True)
+    return []
 
 def get_native_tray_classes():
     try:
@@ -115,7 +128,7 @@ def get_native_system_tray_classes(*args):
 def gl_check():
     #This is supposed to help py2exe
     #(must be done after we setup the sys.path in platform.win32.paths):
-    from OpenGL.platform import win32   #@UnusedImport
+    from OpenGL.platform import win32   #@UnresolvedImport @UnusedImport
     from xpra.platform.win32 import is_wine
     if is_wine():
         return "disabled when running under wine"
@@ -273,12 +286,12 @@ def pointer_grab(window, *args):
         grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd, (rect.left, rect.top, rect.right, rect.bottom))
     except WindowsError as e:           #@UndefinedVariable
         grablog("no DwmGetWindowAttribute: %s", e)
-    bx = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
-    by = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
+    bx = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
+    by = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
     top = by
-    style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
+    style = GetWindowLong(hwnd, win32con.GWL_STYLE)
     if style & win32con.WS_CAPTION:
-        top += win32api.GetSystemMetrics(win32con.SM_CYCAPTION)
+        top += GetSystemMetrics(win32con.SM_CYCAPTION)
     grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
     clip = (wx1+bx, wy1+top, wx2-bx, wy2-by)
     grablog("ClipCursor%s", clip)
@@ -306,7 +319,7 @@ def fixup_window_style(self, *args):
             #window is not / no longer meant to be decorated
             #(this is what GTK does for modal windows - keep it consistent)
             return
-        cur_style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
+        cur_style = GetWindowLong(hwnd, win32con.GWL_STYLE)
         #re-add taskbar menu:
         style = cur_style
         if cur_style & win32con.WS_CAPTION:
@@ -315,7 +328,7 @@ def fixup_window_style(self, *args):
             style |= win32con.WS_MINIMIZEBOX
             if style!=cur_style:
                 log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s", style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
-                win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style)
+                SetWindowLong(hwnd, win32con.GWL_STYLE, style)
             else:
                 log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
     except:
@@ -588,8 +601,8 @@ def get_mouse_config():
     SM_SWAPBUTTON = 23
     SM_MOUSEWHEELPRESENT = 75
     wheel_info = {
-                  "vertical"   : win32api.GetSystemMetrics(SM_MOUSEWHEELPRESENT),
-                  "horizontal" : win32api.GetSystemMetrics(SM_MOUSEHORIZONTALWHEELPRESENT),
+                  "vertical"   : GetSystemMetrics(SM_MOUSEWHEELPRESENT),
+                  "horizontal" : GetSystemMetrics(SM_MOUSEHORIZONTALWHEELPRESENT),
                   }
     SPI_GETWHEELSCROLLLINES = 104
     SPI_GETWHEELSCROLLCHARS = 0x006C
@@ -598,13 +611,13 @@ def get_mouse_config():
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLLINES, "lines", int, 3)
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLCHARS, "chars", int, 3)
     info = {
-            "present"       : bool(win32api.GetSystemMetrics(SM_MOUSEPRESENT)),
+            "present"       : bool(GetSystemMetrics(SM_MOUSEPRESENT)),
             "wheel"         : wheel_info,
-            "buttons"       : win32api.GetSystemMetrics(SM_CMOUSEBUTTONS),
-            "swap"          : bool(win32api.GetSystemMetrics(SM_SWAPBUTTON)),
+            "buttons"       : GetSystemMetrics(SM_CMOUSEBUTTONS),
+            "swap"          : bool(GetSystemMetrics(SM_SWAPBUTTON)),
             "drag"          : {
-                               "x"  : win32api.GetSystemMetrics(SM_CXDRAG),
-                               "y"  : win32api.GetSystemMetrics(SM_CYDRAG),
+                               "x"  : GetSystemMetrics(SM_CXDRAG),
+                               "y"  : GetSystemMetrics(SM_CYDRAG),
                                }
             }
     _add_SPI(info, SPI_GETMOUSEVANISH, "vanish", bool, False)
@@ -712,15 +725,15 @@ def get_double_click_time():
 
 def get_double_click_distance():
     try:
-        return win32api.GetSystemMetrics(win32con.SM_CXDOUBLECLK), win32api.GetSystemMetrics(win32con.SM_CYDOUBLECLK)
+        return GetSystemMetrics(win32con.SM_CXDOUBLECLK), GetSystemMetrics(win32con.SM_CYDOUBLECLK)
     except Exception as e:
         log.warn("failed to get double click distance: %s", e)
         return -1, -1
 
 def get_fixed_cursor_size():
     try:
-        w = win32api.GetSystemMetrics(win32con.SM_CXCURSOR)
-        h = win32api.GetSystemMetrics(win32con.SM_CYCURSOR)
+        w = GetSystemMetrics(win32con.SM_CXCURSOR)
+        h = GetSystemMetrics(win32con.SM_CYCURSOR)
         return w, h
     except Exception as e:
         log.warn("failed to get window frame size information: %s", e)
@@ -735,20 +748,20 @@ def get_cursor_size():
 def get_window_frame_sizes():
     try:
         #normal resizable windows:
-        rx = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
-        ry = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
+        rx = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
+        ry = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
         #non-resizable windows:
-        fx = win32api.GetSystemMetrics(win32con.SM_CXFIXEDFRAME)
-        fy = win32api.GetSystemMetrics(win32con.SM_CYFIXEDFRAME)
+        fx = GetSystemMetrics(win32con.SM_CXFIXEDFRAME)
+        fy = GetSystemMetrics(win32con.SM_CYFIXEDFRAME)
         #min size:
-        mx = win32api.GetSystemMetrics(win32con.SM_CXMIN)
-        my = win32api.GetSystemMetrics(win32con.SM_CYMIN)
+        mx = GetSystemMetrics(win32con.SM_CXMIN)
+        my = GetSystemMetrics(win32con.SM_CYMIN)
         #size of menu bar:
-        m = win32api.GetSystemMetrics(win32con.SM_CYMENU)
+        m = GetSystemMetrics(win32con.SM_CYMENU)
         #border:
-        b = win32api.GetSystemMetrics(win32con.SM_CYBORDER)
+        b = GetSystemMetrics(win32con.SM_CYBORDER)
         #caption:
-        c = win32api.GetSystemMetrics(win32con.SM_CYCAPTION)
+        c = GetSystemMetrics(win32con.SM_CYCAPTION)
         return {
                 "normal"    : (rx, ry),
                 "fixed"     : (fx, fy),
@@ -765,10 +778,10 @@ def get_window_frame_sizes():
         return None
 
 def get_virtualscreenmetrics():
-    dx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
-    dy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
-    dw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
-    dh = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+    dx = GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+    dy = GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+    dw = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+    dh = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
     return dx, dy, dw, dh
 
 def take_screenshot():
@@ -821,8 +834,10 @@ class ClientExtras(object):
         self.client = client
         self._kh_warning = False
         self._console_handler_registered = self.setup_console_event_listener(True)
+        from xpra.platform.win32.win32_events import get_win32_event_listener
         try:
             el = get_win32_event_listener(True)
+            self._el = el
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP,      self.activateapp)
                 el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
@@ -845,8 +860,9 @@ class ClientExtras(object):
         if self._console_handler_registered:
             self._console_handler_registered = False
             self.setup_console_event_listener(False)
-        el = get_win32_event_listener(False)
+        el = self._el
         if el:
+            self._el = None
             el.cleanup()
         khid = self.keyboard_hook_id
         if khid:
@@ -1014,6 +1030,8 @@ class ClientExtras(object):
             c.resume()
 
     def setup_console_event_listener(self, enable=True):
+        if not win32api:
+            return
         try:
             v = self.handle_console_event
             if not enable:

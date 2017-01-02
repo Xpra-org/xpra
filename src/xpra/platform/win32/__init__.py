@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,9 +10,11 @@ import errno
 import os.path
 import sys
 
-import win32con         #@UnresolvedImport
-import win32api         #@UnresolvedImport
-import win32console     #@UnresolvedImport
+from xpra.platform.win32 import constants as win32con
+try:
+    import win32api         #@UnresolvedImport
+except:
+    win32api = None
 
 #redirect output if we are launched from py2exe's gui mode:
 frozen = getattr(sys, 'frozen', False)
@@ -219,6 +221,7 @@ def set_wait_for_input():
         _wait_for_input = False
         return
     try:
+        import win32console
         handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
         #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
         console_info = handle.GetConsoleScreenBufferInfo()
@@ -238,8 +241,10 @@ def set_wait_for_input():
             #we could also re-use the code above from "not_a_console()"
             pass
         else:
-            print("error accessing console %s: %s" % (errno.errorcode.get(e.errno, e.errno), e))
-
+            try:
+                print("error accessing console %s: %s" % (errno.errorcode.get(e.errno, e.errno), e))
+            except:
+                print("error accessing console: %s" % e)
 
 def do_init():
     if not REDIRECT_OUTPUT:
@@ -272,6 +277,8 @@ class console_event_catcher(object):
         from xpra.log import Logger
         self.log = Logger("win32")
     def __enter__(self):
+        if not win32api:
+            return
         try:
             self.result = win32api.SetConsoleCtrlHandler(self.handle_console_event, 1)
             if self.result == 0:
@@ -279,6 +286,8 @@ class console_event_catcher(object):
         except Exception as e:
             self.log.error("SetConsoleCtrlHandler error: %s", e)
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if not win32api:
+            return
         try:
             win32api.SetConsoleCtrlHandler(None, 0)
         except:

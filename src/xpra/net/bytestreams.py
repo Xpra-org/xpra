@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -69,9 +69,11 @@ if WIN32:
               "WSAENOTCONN", "WSAESHUTDOWN", "WSAETIMEDOUT", "WSAETIMEDOUT",
               "WSAEHOSTUNREACH", "WSAEDISCON"):
         ABORT[getattr(errno, x)] = x
-    import winerror     #@UnresolvedImport
-    ABORT[winerror.ERROR_BROKEN_PIPE] = "BROKENPIPE"
-    ABORT[winerror.ERROR_PIPE_NOT_CONNECTED] = "PIPE_NOT_CONNECTED"
+    #duplicated from winerror module:
+    ERROR_BROKEN_PIPE = 109
+    ERROR_PIPE_NOT_CONNECTED = 233
+    ABORT[ERROR_BROKEN_PIPE] = "BROKENPIPE"
+    ABORT[ERROR_PIPE_NOT_CONNECTED] = "PIPE_NOT_CONNECTED"
     if sys.version[0]<"3":
         #win32 has problems writing more than 32767 characters to stdout!
         #see: http://bugs.python.org/issue11395

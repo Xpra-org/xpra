@@ -146,7 +146,12 @@ def main():
     from xpra.util import csv
     with program_context("Printing", "Printing"):
         enable_color()
-        init_printing()
+        try:
+            init_printing()
+        except Exception as e:
+            print("Error: cannot initialize printing tool")
+            print(" %s" % e)
+            return 1
         if len(sys.argv)<=1:
             dump_printers(get_printers())
             dump_info(get_info())

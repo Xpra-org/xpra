@@ -1,14 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 import sys
 
-import win32api             #@UnresolvedImport
-import win32con             #@UnresolvedImport
+from xpra.platform.win32 import constants as win32con
 
 
 def _get_data_dir():
@@ -69,6 +68,7 @@ def do_get_user_conf_dirs():
 
 
 def get_registry_value(key, reg_path, entry):
+    import win32api             #@UnresolvedImport
     hKey = win32api.RegOpenKey(key, reg_path)
     value, _ = win32api.RegQueryValueEx(hKey, entry)
     win32api.RegCloseKey(hKey)

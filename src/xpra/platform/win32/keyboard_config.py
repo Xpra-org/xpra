@@ -1,15 +1,24 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import ctypes
 
 from xpra.log import Logger
 log = Logger("keyboard", "win32")
 
-import win32con         #@UnresolvedImport
 import win32api         #@UnresolvedImport
+from xpra.platform.win32 import constants as win32con
 from xpra.server.keyboard_config_base import KeyboardConfigBase
+
+user32 = ctypes.windll.user32
+MapVirtualKey = user32.MapVirtualKeyW
+GetAsyncKeyState = user32.GetAsyncKeyState
+VkKeyScan = user32.VkKeyScanW
+VkKeyScan.argtypes = [ctypes.c_wchar]
+keybd_event = user32.keybd_event
 
 
 MAPVK_VK_TO_VSC = 0
@@ -22,7 +31,7 @@ def fake_key(keycode, press):
     if not press:
         flags |= win32con.KEYEVENTF_KEYUP
     #get the scancode:
-    scancode = win32api.MapVirtualKey(keycode, MAPVK_VK_TO_VSC)
+    scancode = MapVirtualKey(keycode, MAPVK_VK_TO_VSC)
     #see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
     log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
     win32api.keybd_event(keycode, scancode, flags, 0)
@@ -44,7 +53,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         log("make_keymask_match%s", (modifier_list, ignored_modifier_keycode, ignored_modifier_keynames))
-        log("keys pressed=%s", ",".join(str(VK_NAMES.get(i, i)) for i in range(256) if win32api.GetAsyncKeyState(i)>0))
+        log("keys pressed=%s", ",".join(str(VK_NAMES.get(i, i)) for i in range(256) if GetAsyncKeyState(i)>0))
         current = set(self.get_current_mask())
         wanted = set(modifier_list or [])
         log("make_keymask_match: current mask=%s, wanted=%s, ignoring=%s/%s", current, wanted, ignored_modifier_keycode, ignored_modifier_keynames)
@@ -73,7 +82,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         continue
                     if v==modifier:
                         #figure out if this is the one that needs toggling:
-                        is_pressed = win32api.GetAsyncKeyState(k)
+                        is_pressed = GetAsyncKeyState(k)
                         log("make_keymask_match: %s pressed=%s", k, is_pressed)
                         if bool(is_pressed)!=press:
                             log("make_keymask_match: using %s to %s %s", VK_NAMES.get(k, k), info, modifier)
@@ -85,7 +94,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def get_current_mask(self):
         mods = set()
         for vk, mod in MOD_KEYS.items():
-            if win32api.GetAsyncKeyState(vk)!=0:
+            if GetAsyncKeyState(vk)!=0:
                 mods.add(mod)
         return list(mods)
 
@@ -408,7 +417,7 @@ for name, char in KEYSYM_DEFS.items():
     if len(char)!=1:
         log.warn("invalid character '%s' : '%s' (len=%i)", name, char, len(char))
         continue
-    v = win32api.VkKeyScan(char)
+    v = VkKeyScan(char)
     vk_code = v & 0xff
     if vk_code>0 and vk_code!=0xff:
         log("KEYCODE[%s]=%i (%s)", char, vk_code, name)

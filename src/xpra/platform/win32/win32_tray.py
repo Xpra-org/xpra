@@ -1,21 +1,27 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
-import win32con         #@UnresolvedImport
+import ctypes
+from ctypes import wintypes
+
 import win32api         #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("tray", "win32")
 
+from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
-from xpra.client.tray_base import TrayBase
 from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.client.tray_base import TrayBase
+
+GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
+GetCursorPos = ctypes.windll.user32.GetCursorPos
 
 
 class Win32Tray(TrayBase):
@@ -86,8 +92,10 @@ class Win32Tray(TrayBase):
 
 
     def move_cb(self, *args):
-        x, y = win32api.GetCursorPos()
-        size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
+        pos = wintypes.POINT()
+        GetCursorPos(ctypes.byref(pos))
+        x, y = pos.x, pos.y
+        size = GetSystemMetrics(win32con.SM_CXSMICON)
         x += self.offset_x
         y += self.offset_y
         log("move_cb%s x=%s, y=%s, size=%s", args, x, y, size)

@@ -1,19 +1,23 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import win32api         #@UnresolvedImport
-import win32con         #@UnresolvedImport
-import win32gui         #@UnresolvedImport
+import ctypes
 
+from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.util import csv, envint, envbool
 from xpra.log import Logger
 log = Logger("keyboard")
+
+user32 = ctypes.windll.user32
+GetKeyState = user32.GetKeyState
+GetKeyboardLayout = user32.GetKeyboardLayout
+
 
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
@@ -56,12 +60,12 @@ class Keyboard(KeyboardBase):
     def mask_to_names(self, mask):
         """ Patch NUMLOCK and AltGr """
         names = KeyboardBase.mask_to_names(self, mask)
-        altgr = win32api.GetKeyState(win32con.VK_RMENU) not in (0, 1)
+        altgr = GetKeyState(win32con.VK_RMENU) not in (0, 1)
         if altgr:
             self.AltGr_modifiers(names)
         if self.num_lock_modifier:
             try:
-                numlock = win32api.GetKeyState(win32con.VK_NUMLOCK)
+                numlock = GetKeyState(win32con.VK_NUMLOCK)
                 if numlock and self.num_lock_modifier not in names:
                     names.append(self.num_lock_modifier)
                 elif not numlock and self.num_lock_modifier in names:
@@ -102,6 +106,7 @@ class Keyboard(KeyboardBase):
         variant = None
         variants = None
         try:
+            import win32api         #@UnresolvedImport
             l = win32api.GetKeyboardLayoutList()
             log("win32api.GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
             for hkl in l:
@@ -114,8 +119,8 @@ class Keyboard(KeyboardBase):
         except Exception as e:
             log.error("Error: failed to detect keyboard layouts: %s", e)
         try:
-            hkl = win32api.GetKeyboardLayout(0)
-            log("win32api.GetKeyboardLayout(0)=%#x", hkl)
+            hkl = GetKeyboardLayout(0)
+            log("GetKeyboardLayout(0)=%#x", hkl)
             kbid = hkl & 0xffff
             if kbid in WIN32_LAYOUTS:
                 code, _, _, _, layout, variants = WIN32_LAYOUTS.get(kbid)
@@ -130,6 +135,7 @@ class Keyboard(KeyboardBase):
 
     def get_keyboard_repeat(self):
         try:
+            import win32gui         #@UnresolvedImport
             _delay = win32gui.SystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
             _speed = win32gui.SystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)
             #now we need to normalize those weird win32 values:
@@ -161,7 +167,7 @@ class Keyboard(KeyboardBase):
         #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         #if we have modifier_mappings
         if EMULATE_ALTGR and self.altgr_modifier and len(self.modifier_mappings)>0:
-            rmenu = win32api.GetKeyState(win32con.VK_RMENU)
+            rmenu = GetKeyState(win32con.VK_RMENU)
             if key_event.keyname=="Control_L":
                 log("process_key_event: %s pressed=%s, with GetKeyState(VK_RMENU)=%s", key_event.keyname, key_event.pressed, rmenu)
                 #AltGr is often preceded by a spurious "Control_L" event
@@ -197,7 +203,7 @@ class Keyboard(KeyboardBase):
         log("send_delayed_key() delayed_event=%s", dk)
         if dk:
             self.delayed_event = None
-            rmenu = win32api.GetKeyState(win32con.VK_RMENU)
+            rmenu = GetKeyState(win32con.VK_RMENU)
             log("send_delayed_key() GetKeyState(VK_RMENU)=%s", rmenu)
             if rmenu not in (0, 1):
                 KeyboardBase.process_key_event(self, *dk)

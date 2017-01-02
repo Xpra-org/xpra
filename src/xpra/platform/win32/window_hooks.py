@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,15 +10,16 @@ from xpra.log import Logger
 log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
 
-import win32con         #@UnresolvedImport
-import win32api         #@UnresolvedImport
 import ctypes
 from ctypes import c_int, c_long
 from ctypes.wintypes import POINT
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
+from xpra.platform.win32 import constants as win32con
 
+GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
 #use ctypes to ensure we call the "W" version:
 SetWindowLong = ctypes.windll.user32.SetWindowLongW
+GetWindowLong = ctypes.windll.user32.GetWindowLongW
 CallWindowProc = ctypes.windll.user32.CallWindowProcW
 WndProcType = ctypes.WINFUNCTYPE(c_int, c_long, c_int, c_int, c_int)
 
@@ -53,9 +54,9 @@ class Win32Hooks(object):
             self.add_window_event_handler(win32con.WM_GETMINMAXINFO, self.on_getminmaxinfo)
         try:
             #we only use this code for resizable windows, so use SM_C?SIZEFRAME:
-            self.frame_width = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
-            self.frame_height = win32api.GetSystemMetrics(win32con.SM_CYSIZEFRAME)
-            self.caption_height = win32api.GetSystemMetrics(win32con.SM_CYCAPTION);
+            self.frame_width = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
+            self.frame_height = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
+            self.caption_height = GetSystemMetrics(win32con.SM_CYCAPTION);
         except:
             self.frame_width = 4
             self.frame_height = 4
@@ -76,7 +77,7 @@ class Win32Hooks(object):
         if self.max_size and lparam:
             info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
             width, height = self.max_size
-            style = win32api.GetWindowLong(hwnd, win32con.GWL_STYLE)
+            style = GetWindowLong(hwnd, win32con.GWL_STYLE)
             if style & win32con.WS_BORDER:
                 fw, fh = self.frame_width, self.frame_height
             else:

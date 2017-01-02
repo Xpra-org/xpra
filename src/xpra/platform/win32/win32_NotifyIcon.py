@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Low level support for the "system tray" on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
+import os
+import sys
+import ctypes
+from ctypes import wintypes
+
 import win32api                    #@UnresolvedImport
 import win32gui                    #@UnresolvedImport
-import win32con                    #@UnresolvedImport
 
-import sys, os
 
+from xpra.platform.win32 import constants as win32con
 from xpra.log import Logger
 log = Logger("tray", "win32")
+
+user32 = ctypes.windll.user32
+GetSystemMetrics = user32.GetSystemMetrics
+GetCursorPos = user32.GetCursorPos
+
 
 #found here:
 #http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
@@ -117,7 +126,7 @@ class win32NotifyIcon(object):
             rgb_format = "RGB"
         img = Image.frombuffer(rgb_format, (w, h), pixels, "raw", rgb_format, 0, 1)
         #apparently, we have to use SM_CXSMICON (small icon) and not SM_CXICON (regular size):
-        size = win32api.GetSystemMetrics(win32con.SM_CXSMICON)
+        size = GetSystemMetrics(win32con.SM_CXSMICON)
         if w!=h or w!=size:
             img = img.resize((size, size), Image.ANTIALIAS)
         if has_alpha:
@@ -281,16 +290,15 @@ NIwc.lpfnWndProc = message_map # could also specify a wndproc.
 NIclassAtom = win32gui.RegisterClass(NIwc)
 
 
-
-
 def main():
     def notify_callback(hwnd):
         menu = win32gui.CreatePopupMenu()
         win32gui.AppendMenu( menu, win32con.MF_STRING, 1024, "Generate balloon")
         win32gui.AppendMenu( menu, win32con.MF_STRING, 1025, "Exit")
-        pos = win32api.GetCursorPos()
+        pos = wintypes.POINT()
+        GetCursorPos(ctypes.byref(pos))
         win32gui.SetForegroundWindow(hwnd)
-        win32gui.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos[0], pos[1], 0, hwnd, None)
+        win32gui.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)
         win32api.PostMessage(hwnd, win32con.WM_NULL, 0, 0)
 
     def command_callback(hwnd, cid):

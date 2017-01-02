@@ -1,16 +1,15 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
-import win32api         #@UnresolvedImport
-import win32con         #@UnresolvedImport
+import ctypes
+
 import win32ui          #@UnresolvedImport
 import win32gui         #@UnresolvedImport
-import win32process     #@UnresolvedImport
 import pywintypes       #@UnresolvedImport
 
 from xpra.log import Logger
@@ -24,11 +23,19 @@ from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.codecs.image_wrapper import ImageWrapper
+
+user32 = ctypes.windll.user32
+GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+GetSystemMetrics = user32.GetSystemMetrics
+SetCursorPos = user32.SetCursorPos
+mouse_event = user32.mouse_event
+
 
 NOEVENT = object()
 BUTTON_EVENTS = {
@@ -113,13 +120,14 @@ class Win32RootWindowModel(RootWindowModel):
             if not win32gui.IsWindowVisible(hwnd):
                 l("skipped invisible window %#x", hwnd)
                 return True
-            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            pid = ctypes.c_int()
+            thread_id = GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
             if pid==ourpid:
                 l("skipped our own window %#x", hwnd)
                 return True
             #skipping IsWindowEnabled check
             window_title = win32gui.GetWindowText(hwnd)
-            l("get_shape_rectangles() found window '%s' with pid=%s", window_title, pid)
+            l("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
             left, top, right, bottom = win32gui.GetWindowRect(hwnd)
             if right<0 or bottom<0:
                 l("skipped offscreen window at %ix%i", right, bottom)
@@ -181,8 +189,8 @@ class Win32RootWindowModel(RootWindowModel):
 
 
     def get_root_window_size(self):
-        w = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
-        h = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+        h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
         return w, h
 
     def get_image(self, x, y, width, height, logger=None):
@@ -322,7 +330,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_mouse_common(self, proto, wid, pointer):
         #adjust pointer position for offset in client:
         try:
-            win32api.SetCursorPos(pointer)
+            SetCursorPos(*pointer)
         except pywintypes.error as e:
             log.error("Error: failed to move the cursor:")
             log("pywintypes.error: %s", e[2])
@@ -344,7 +352,7 @@ class ShadowServer(GTKShadowServerBase):
         elif event is NOEVENT:
             return
         dwFlags, dwData = event
-        win32api.mouse_event(dwFlags, x, y, dwData, 0)
+        mouse_event(dwFlags, x, y, dwData, 0)
 
     def make_hello(self, source):
         capabilities = GTKServerBase.make_hello(self, source)
