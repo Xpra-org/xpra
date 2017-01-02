@@ -167,9 +167,9 @@
   </autotools>
 
   <autotools id="flac" autogenargs="--disable-asm-optimizations" autogen-sh="configure">
-	<branch module="/releases/flac/flac-1.3.1.tar.xz"
-		version="1.3.1"
-		hash="md5:b9922c9a0378c88d3e901b234f852698"
+	<branch module="/releases/flac/flac-1.3.2.tar.xz"
+		version="1.3.2"
+		hash="sha256:e48764f0761beb791a69590f12826fe8cf302c42db2879849c5d10bc7c85db66"
 		repo="downloads.xiph.org"/>
     <dependencies>
                 <dep package="nasm"/>
@@ -561,7 +561,7 @@
   <distutils id="python-lzo">
 	<branch repo="pypi.python.org"
 	        module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
-	        hash="md5:b5cd60498474dab58c1ea2385adfa7bd"
+	        hash="sha256:38a0ea4ceb27cdd8e3526509fe1b7a936e5dfa57c64608fd32085c129e8be386"
 	        version="1.11">
     	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
 	</branch>
