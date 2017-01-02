@@ -251,7 +251,9 @@ class GTKTrayMenuBase(object):
         menu.set_title(self.client.session_name or "Xpra")
         def set_menu_title(*args):
             #set the real name when available:
-            self.menu.set_title(self.client.session_name)
+            m = self.menu
+            if m:
+                m.set_title(self.client.session_name or "Xpra")
         self.client.after_handshake(set_menu_title)
 
         menu.append(self.make_aboutmenuitem())
