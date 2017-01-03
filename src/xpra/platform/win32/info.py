@@ -28,23 +28,12 @@ def get_name():
 
 def get_pywin32_version():
     try:
-        import win32api     #@UnresolvedImport
-        assert win32api
-    except:
-        return None
-    try:
         #the "official" way:
         import distutils.sysconfig
         pth = distutils.sysconfig.get_python_lib(plat_specific=1)
         v = open(os.path.join(pth, "pywin32.version.txt")).read().strip()
         if v:
             return v
-    except:
-        pass
-    try:
-        fixed_file_info = win32api.GetFileVersionInfo(win32api.__file__, '\\')
-        v = fixed_file_info['FileVersionLS'] >> 16
-        return v
     except:
         pass
     return None

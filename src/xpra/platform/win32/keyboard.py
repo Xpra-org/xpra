@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import ctypes
+from ctypes.wintypes import HANDLE, INT
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -18,6 +19,16 @@ user32 = ctypes.windll.user32
 GetKeyState = user32.GetKeyState
 GetKeyboardLayout = user32.GetKeyboardLayout
 
+def GetKeyboardLayoutList():
+    max_items = 32
+    #PHANDLE = ctypes.POINTER(HANDLE)
+    handle_list = (HANDLE*max_items)()
+    user32.GetKeyboardLayoutList.argtypes = [INT, ctypes.POINTER(HANDLE*max_items)]
+    count = user32.GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
+    layouts = []
+    for i in range(count):
+        layouts.append(handle_list[i])
+    return layouts
 
 def GetIntSystemParametersInfo(key):
     rv = ctypes.wintypes.INT()
@@ -113,9 +124,8 @@ class Keyboard(KeyboardBase):
         variant = None
         variants = None
         try:
-            import win32api         #@UnresolvedImport
-            l = win32api.GetKeyboardLayoutList()
-            log("win32api.GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
+            l = GetKeyboardLayoutList()
+            log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
             for hkl in l:
                 kbid = hkl & 0xffff
                 if kbid in WIN32_LAYOUTS:
