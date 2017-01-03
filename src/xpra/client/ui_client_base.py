@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -44,11 +44,11 @@ from xpra.client.client_base import XpraClientBase
 from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE)
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
+from xpra.platform.paths import get_icon_filename
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_display_icc_info, get_double_click_time, show_desktop, get_cursor_size,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_session_type,
                                get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
-from xpra.platform.paths import get_tray_icon_filename
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option, full_version_str
@@ -441,11 +441,10 @@ class UIXpraClient(XpraClientBase):
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
             self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.key_shortcut, opts.keyboard_raw, *overrides)
 
-        tray_icon_filename = get_tray_icon_filename(opts.tray_icon)
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
             def setup_xpra_tray():
-                self.tray = self.setup_xpra_tray(opts.tray_icon)
+                self.tray = self.setup_xpra_tray(opts.tray_icon or "xpra")
                 self.tray.show()
             if opts.delay_tray:
                 self.connect("first-ui-received", setup_xpra_tray)
@@ -460,7 +459,7 @@ class UIXpraClient(XpraClientBase):
             self.client_supports_notifications = self.notifier is not None
 
         #audio tagging:
-        if tray_icon_filename and os.path.exists(tray_icon_filename):
+        if os.name=="posix":
             try:
                 from xpra import sound
                 assert sound
@@ -469,9 +468,10 @@ class UIXpraClient(XpraClientBase):
             else:
                 try:
                     from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path
+                    tray_icon_filename = get_icon_filename(opts.tray_icon or "xpra")
                     set_icon_path(tray_icon_filename)
                 except ImportError as e:
-                    if os.name=="posix" and not OSX:
+                    if not OSX:
                         log.warn("Warning: failed to set pulseaudio tagging icon:")
                         log.warn(" %s", e)
 

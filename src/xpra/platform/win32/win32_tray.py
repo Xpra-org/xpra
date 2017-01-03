@@ -18,6 +18,7 @@ from xpra.platform.win32.gui import EnumDisplayMonitors, GetMonitorInfo
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.client.tray_base import TrayBase
+from xpra.platform.paths import get_icon_filename
 
 GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
 GetCursorPos = ctypes.windll.user32.GetCursorPos
@@ -28,7 +29,8 @@ class Win32Tray(TrayBase):
     def __init__(self, *args):
         TrayBase.__init__(self, *args)
         self.calculate_offset()
-        icon_filename = self.get_tray_icon_filename(self.default_icon_filename)
+        self.default_icon_extension = "ico"
+        icon_filename = get_icon_filename(self.default_icon_filename, "ico")
         self.tray_widget = win32NotifyIcon(self.tooltip, self.move_cb, self.click_cb, self.exit_cb, None, icon_filename)
         get_win32_event_listener().add_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
 
@@ -40,7 +42,6 @@ class Win32Tray(TrayBase):
 
     def hide(self):
         pass
-
 
     def getHWND(self):
         if self.tray_widget is None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -155,23 +155,6 @@ def do_get_icon_dir():
             return idir
     return adir     #better than nothing :(
 
-def get_icon_filename(name):
-    def err(*msg):
-        """ log an error message and return None """
-        from xpra.log import Logger
-        log = Logger("icon")
-        log.error(*msg)
-        return None
-    idir = get_icon_dir()
-    if not idir:
-        return err("cannot find icons directory!")
-    filename = os.path.join(idir, name)
-    if not os.path.exists(filename):
-        return err("icon file %s does not exist", filename)
-    if not os.path.isfile(filename):
-        return err("%s is not a file!", filename)
-    return filename
-
 def get_icon(name):
     filename = get_icon_filename(name)
     if not filename:
@@ -179,20 +162,17 @@ def get_icon(name):
     from xpra.gtk_common.gtk_util import get_icon_from_file
     return get_icon_from_file(filename)
 
-
-def get_default_icon_extension():
-    return "png"
-
-def get_default_tray_icon_name():
-    return "xpra.png"
-
-def get_tray_icon_filename(cmdlineoverride=None):
-    if cmdlineoverride and os.path.exists(cmdlineoverride):
-        return cmdlineoverride
-    f = os.path.join(get_icon_dir(), get_default_tray_icon_name())
-    if os.path.exists(f):
-        return f
-    return None
+def get_icon_filename(basename=None, ext="png"):
+    filename = basename
+    if not os.path.isabs(filename):
+        fext = os.path.splitext(filename)[1]
+        if not fext:
+            filename = "%s.%s" % (filename, ext)
+        icon_dir = get_icon_dir()
+        filename = os.path.join(icon_dir, filename)
+    if not os.path.exists(filename):
+        return None
+    return os.path.abspath(filename)
 
 
 LICENSE_TEXT = None
@@ -245,9 +225,6 @@ platform_import(globals(), "paths", True,
                 "do_get_app_dir",
                 "do_get_icon_dir")
 platform_import(globals(), "paths", False,
-                "get_default_icon_extension",
-                "get_default_tray_icon_name",
-                "get_tray_icon_filename",
                 "do_get_sshpass_command",
                 "do_get_xpra_command",
                 "do_get_sound_command",

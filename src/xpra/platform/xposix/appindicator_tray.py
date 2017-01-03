@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ log = Logger("tray", "posix")
 
 from xpra.os_util import is_unity
 from xpra.client.tray_base import TrayBase
-from xpra.platform.paths import get_icon_dir
+from xpra.platform.paths import get_icon_dir, get_icon_filename
 
 
 _appindicator = False
@@ -40,7 +40,7 @@ class AppindicatorTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
         TrayBase.__init__(self, *args, **kwargs)
-        filename = self.get_tray_icon_filename(self.default_icon_filename)
+        filename = get_icon_filename(self.default_icon_filename)
         self.appindicator = get_appindicator()
         self._has_icon = False
         assert self.appindicator, "appindicator is not available!"
@@ -99,11 +99,9 @@ class AppindicatorTray(TrayBase):
             log("do_set_icon_from_file(%s) setting icon theme path=%s", filename, head)
             self.tray_widget.set_icon_theme_path(head)
         #remove extension (wtf?)
-        dot = icon_name.rfind(".")
-        if dot>0:
-            icon_name = icon_name[:dot]
-        log("do_set_icon_from_file(%s) setting icon=%s", filename, icon_name)
-        self.tray_widget.set_icon(icon_name)
+        noext = os.path.splitext(icon_name)[0]
+        log("do_set_icon_from_file(%s) setting icon=%s", filename, noext)
+        self.tray_widget.set_icon(noext)
         self._has_icon = True
 
 

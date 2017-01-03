@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,9 +37,7 @@ class GTKStatusIconTray(TrayBase):
         self.tray_widget.connect('popup-menu', self.popup_menu)
         if self.size_changed_cb:
             self.tray_widget.connect('size-changed', self.size_changed_cb)
-        filename = self.get_tray_icon_filename(self.default_icon_filename)
-        if filename:
-            self.set_icon_from_file(filename)
+        self.set_icon()
         self.tray_widget.set_visible(True)
 
     def may_guess(self):

@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -779,8 +779,10 @@ def get_icon_from_file(filename):
         loader.write(data)
         loader.close()
     except Exception as e:
-        log.error("get_icon_from_file(%s) %s", filename, e)
-        return    None
+        log("get_icon_from_file(%s)", filename, exc_info=True)
+        log.error("Error: failed to load '%s'", filename)
+        log.error(" %s", e)
+        return None
     pixbuf = loader.get_pixbuf()
     return pixbuf
 
