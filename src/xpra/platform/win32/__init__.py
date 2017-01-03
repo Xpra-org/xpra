@@ -220,13 +220,19 @@ def fix_unicode_out():
     except Exception as e:
         _complain("exception %r while fixing up sys.stdout and sys.stderr" % (e,))
 
+class COORD(ctypes.Structure):
+    _fields_ = [
+        ('X', ctypes.c_short),
+        ('Y', ctypes.c_short)
+        ]
+
 class CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
     _fields_ = [
-        ("dwSize",              POINT),
-        ("dwCursorPosition",    POINT),
+        ("dwSize",              COORD),
+        ("dwCursorPosition",    COORD),
         ("wAttributes",         WORD),
         ("srWindow",            RECT),
-        ("dwMaximumWindowSize", POINT),
+        ("dwMaximumWindowSize", COORD),
         ]
 
 _wait_for_input = False
@@ -244,7 +250,7 @@ def set_wait_for_input():
         GetConsoleScreenBufferInfo(handle, byref(csbi))
         cpos = csbi.dwCursorPosition
         #wait for input if this is a brand new console:
-        _wait_for_input = cpos.x==0 and cpos.y==0
+        _wait_for_input = cpos.X==0 and cpos.Y==0
     except:
         e = sys.exc_info()[1]
         code = -1
