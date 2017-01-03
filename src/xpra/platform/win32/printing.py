@@ -8,12 +8,6 @@ log = Logger("printing")
 
 import os.path
 import subprocess
-try:
-    import win32print       #@UnresolvedImport
-except ImportError as e:
-    log.warn("Warning: no printing support")
-    log.warn(" %s", e)
-    win32print = None
 from xpra.platform.win32 import constants as win32con
 from xpra.util import csv, envint
 
@@ -22,16 +16,27 @@ from xpra.util import csv, envint
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
 
 
-PRINTER_ENUM_VALUES = {}
-PRINTER_ENUM_NAMES = {}
-if win32print:
-    for k in ("LOCAL", "NAME", "SHARED", "CONNECTIONS",
-              "NETWORK", "REMOTE", "CATEGORY_3D", "CATEGORY_ALL"):
-        v = getattr(win32print, "PRINTER_ENUM_%s" % k, None)
-        if v is not None:
-            PRINTER_ENUM_VALUES[k] = v
-            PRINTER_ENUM_NAMES[v] = k
-    log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
+PRINTER_ENUM_VALUES = {
+    "DEFAULT"       : 1,
+    "LOCAL"         : 2,
+    "CONNECTIONS"   : 4,
+    "NAME"          : 8,
+    "REMOTE"        : 16,
+    "SHARED"        : 32,
+    "NETWORK"       : 64,
+    "EXPAND"        : 16384,
+    "CONTAINER"     : 32768,
+    "ICON1"         : 65536*1,
+    "ICON2"         : 65536*2,
+    "ICON3"         : 65536*3,
+    "ICON4"         : 65536*4,
+    "ICON5"         : 65536*5,
+    "ICON6"         : 65536*6,
+    "ICON7"         : 65536*7,
+    "ICON8"         : 65536*8,
+    }
+PRINTER_ENUM_NAMES = dict((v,k) for k,v in PRINTER_ENUM_VALUES.items())
+log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
 PRINTER_LEVEL = envint("XPRA_WIN32_PRINTER_LEVEL", 1)
 #DEFAULT_PRINTER_FLAGS = "LOCAL"
@@ -91,17 +96,59 @@ def on_devmodechange(wParam, lParam):
         printers_modified_callback()
 
 
+def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
+    import ctypes
+    from ctypes.wintypes import BYTE, DWORD, LPCWSTR
+
+    winspool = ctypes.WinDLL('winspool.drv')
+    msvcrt = ctypes.cdll.msvcrt
+
+    class PRINTER_INFO(ctypes.Structure):
+        _fields_ = [
+            ("Flags", DWORD),
+            ("pDescription", LPCWSTR),
+            ("pName", LPCWSTR),
+            ("pComment", LPCWSTR),
+        ]
+
+    # Invoke once with a NULL pointer to get buffer size.
+    info = ctypes.POINTER(BYTE)()
+    pcbNeeded = DWORD(0)
+    pcReturned = DWORD(0)  # the number of PRINTER_INFO_1 structures retrieved
+    r = winspool.EnumPrintersW(DWORD(flags), name, DWORD(level), ctypes.byref(info), DWORD(0), ctypes.byref(pcbNeeded), ctypes.byref(pcReturned))
+    log("EnumPrintersW(..)=%i pcbNeeded=%i", r, pcbNeeded.value)
+    if pcbNeeded.value<=0:
+        log("EnumPrinters probe failed for flags=%i, level=%i, pcbNeeded=%i", flags, level, pcbNeeded.value)
+        return []
+
+    bufsize = pcbNeeded.value
+    buf = msvcrt.malloc(bufsize)
+    if buf==0:
+        log.error("Error: cannot enumerate printers, malloc failed")
+        return []
+
+    r = winspool.EnumPrintersW(DWORD(flags), name, DWORD(level), buf, bufsize, ctypes.byref(pcbNeeded), ctypes.byref(pcReturned))
+    log("EnumPrintersW(..)=%i pcReturned=%i", r, pcReturned.value)
+    if r==0:
+        log.error("Error: EnumPrinters failed")
+        return []
+    info = ctypes.cast(buf, ctypes.POINTER(PRINTER_INFO))
+    printers = []
+    for i in range(pcReturned.value):
+        v = int(info[i].Flags), str(info[i].pDescription), str(info[i].pName), str(info[i].pComment)
+        log("EnumPrintersW(..) [%i]=%s", i, v)
+        printers.append(v)
+    msvcrt.free(buf)
+    return printers
+
 def get_printers():
     global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL, GSVIEW_DIR
     printers = {}
-    if not win32print:
-        log("get_printers() no printing support")
-        return printers
     if not GSVIEW_DIR:
         #without gsprint, we can't handle printing!
         log("get_printers() gsview is missing, not querying any printers")
         return printers
-    #default_printer = win32print.GetDefaultPrinter()
+    #default_printer = GetDefaultPrinter()
     for penum in PRINTER_ENUMS:
         try:
             eprinters = []
@@ -110,7 +157,7 @@ def get_printers():
             log("enum(%s)=%s=%s", penum, "+".join(str(x) for x in enum_values), enum_val)
             assert enum_val is not None, "invalid printer enum %s" % penum
             log("querying %s printers with level=%s", penum, PRINTER_LEVEL)
-            for p in win32print.EnumPrinters(enum_val, None, PRINTER_LEVEL):
+            for p in EnumPrinters(enum_val, None, PRINTER_LEVEL):
                 flags, desc, name, comment = p
                 if name in SKIPPED_PRINTERS:
                     log("skipped printer: %s, %s, %s, %s", flags, desc, name, comment)

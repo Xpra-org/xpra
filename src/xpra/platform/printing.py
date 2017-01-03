@@ -7,7 +7,7 @@
 import sys, os
 
 #default implementation uses pycups
-from xpra.util import envbool
+from xpra.util import envbool, print_nested_dict
 from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("printing")
@@ -71,8 +71,11 @@ def get_mimetypes():
 
 
 def get_info():
-    return {"mimetypes" :   {""         : get_mimetypes(),
-                             "default"  : DEFAULT_MIMETYPES}
+    return {
+            "mimetypes" :   {
+                ""         : get_mimetypes(),
+                "default"  : DEFAULT_MIMETYPES,
+                }
             }
 
 
@@ -130,7 +133,7 @@ def main():
             print("        raw attributes: " % d)
     def dump_info(d):
         print("System Configuration:")
-        dump_dict(d)
+        print_nested_dict(d)
     def dump_printers(d):
         for k in sorted(d.keys()):
             v = d[k]
@@ -149,9 +152,8 @@ def main():
         try:
             init_printing()
         except Exception as e:
-            print("Error: cannot initialize printing tool")
+            print("Error: initializing the printing tool")
             print(" %s" % e)
-            return 1
         if len(sys.argv)<=1:
             dump_printers(get_printers())
             dump_info(get_info())
