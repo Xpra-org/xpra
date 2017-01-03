@@ -22,20 +22,39 @@ from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG
 
 try:
     import win32api     #@UnresolvedImport
-    import win32gui     #@UnresolvedImport
 except:
     log.warn("Warning: pywin32 not present")
     win32api = None
-    win32gui = None
 
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
 SetWindowLong = user32.SetWindowLongW
 GetWindowLong = user32.GetWindowLongW
+ClipCursor = user32.ClipCursor
+GetDC = user32.GetDC
+ReleaseDC = user32.ReleaseDC
+SendMessage = user32.SendMessageA
+FindWindow = user32.FindWindowA
+GetKeyState = user32.GetKeyState
+GetWindowRect = user32.GetWindowRect
+GetDoubleClickTime = user32.GetDoubleClickTime
+
+gdi32 = ctypes.windll.gdi32
+GetDeviceCaps = gdi32.GetDeviceCaps
+
+kernel32 = ctypes.windll.kernel32
+GetModuleHandle = kernel32.GetModuleHandleA
+
+try:
+    dwmapi = ctypes.windll.dwmapi
+    DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
+except:
+    #win XP:
+    DwmGetWindowAttribute = None
 
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
@@ -201,7 +220,7 @@ def get_session_type():
 #alternative code:
 #    try:
 #        # Vista & 7 stuff
-#        hwnd = win32gui.GetDesktopWindow()
+#        hwnd = GetDesktopWindow()
 #        DwmGetWindowAttribute = ctypes.windll.dwmapi.DwmGetWindowAttribute
 #        DWMWA_NCRENDERING_ENABLED = 1
 #        b = BOOL()
@@ -274,18 +293,16 @@ def pointer_grab(window, *args):
     if not hwnd:
         window._client.pointer_grabbed = False
         return
-    wx1,wy1,wx2,wy2 = win32gui.GetWindowRect(hwnd)
-    grablog("GetWindowRect(%i)=%s", hwnd, (wx1,wy1,wx2,wy2))
-    try:
-        DwmGetWindowAttribute = ctypes.windll.dwmapi.DwmGetWindowAttribute
+    wrect = RECT()
+    GetWindowRect(hwnd, byref(wrect))
+    grablog("GetWindowRect(%i)=%s", hwnd, wrect)
+    if DwmGetWindowAttribute:
         # Vista & 7 stuff
-        rect = ctypes.wintypes.RECT()
+        rect = RECT()
         DWMWA_EXTENDED_FRAME_BOUNDS = 9
         DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_EXTENDED_FRAME_BOUNDS), byref(rect), sizeof(rect))
         #wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
         grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd, (rect.left, rect.top, rect.right, rect.bottom))
-    except WindowsError as e:           #@UndefinedVariable
-        grablog("no DwmGetWindowAttribute: %s", e)
     bx = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
     by = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
     top = by
@@ -293,18 +310,17 @@ def pointer_grab(window, *args):
     if style & win32con.WS_CAPTION:
         top += GetSystemMetrics(win32con.SM_CYCAPTION)
     grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
-    clip = (wx1+bx, wy1+top, wx2-bx, wy2-by)
-    grablog("ClipCursor%s", clip)
-    win32api.ClipCursor(clip)
+    clip = RECT(wrect.left+bx, wrect.top+top, wrect.right-bx, wrect.bottom-by)
+    grablog("ClipCursor(%s)", clip)
+    ClipCursor(clip)
     window._client.pointer_grabbed = True
 
 def pointer_ungrab(window, *args):
     hwnd = get_window_handle(window)
     grablog("pointer_ungrab%s window=%s, hwnd=%s", args, window, hwnd)
     if hwnd:
-        rect = (0,0,0,0)
-        grablog("ClipCursor%s", rect)
-        win32api.ClipCursor(rect)
+        grablog("ClipCursor(None)")
+        ClipCursor(None)
     window._client.pointer_grabbed = False
 
 def fixup_window_style(self, *args):
@@ -700,12 +716,11 @@ def get_workareas():
 def _get_device_caps(constant):
     dc = None
     try:
-        gdi32 = ctypes.windll.gdi32
-        dc = win32gui.GetDC(None)
-        return gdi32.GetDeviceCaps(dc, constant)
+        dc = GetDC(None)
+        return GetDeviceCaps(dc, constant)
     finally:
         if dc:
-            win32gui.ReleaseDC(None, dc)
+            ReleaseDC(None, dc)
 
 def get_vrefresh():
     try:
@@ -718,7 +733,7 @@ def get_vrefresh():
 
 def get_double_click_time():
     try:
-        return win32gui.GetDoubleClickTime()
+        return GetDoubleClickTime()
     except Exception as e:
         log.warn("failed to get double click time: %s", e)
         return 0
@@ -800,9 +815,9 @@ def show_desktop(b):
     else:
         v = MIN_ALL_UNDO
     try:
-        root = win32gui.FindWindow("Shell_TrayWnd", None)
+        root = FindWindow("Shell_TrayWnd", None)
         assert root is not None, "cannot find 'Shell_TrayWnd'"
-        win32api.SendMessage(root, win32con.WM_COMMAND, v, 0)
+        SendMessage(root, win32con.WM_COMMAND, v, 0)
     except Exception as e:
         log.warn("failed to call show_desktop(%s): %s", b, e)
 
@@ -926,7 +941,7 @@ class ClientExtras(object):
                                         win32con.VK_CONTROL     : ["Control_L", "Control_R"],
                                         win32con.VK_SHIFT       : ["Shift_L", "Shift_R"],
                                         }.items():
-                        if win32api.GetKeyState(vk):
+                        if GetKeyState(vk):
                             for modkeyname in modkeynames:
                                 mod = modifier_keys.get(modkeyname)
                                 if mod:
@@ -956,14 +971,25 @@ class ClientExtras(object):
         # Convert the Python handler into C pointer.
         pointer = CMPFUNC(low_level_keyboard_handler)
         # Hook both key up and key down events for common keys (non-system).
-        keyboard_hook_id = windll.user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer, win32api.GetModuleHandle(None), 0)
+        keyboard_hook_id = user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer, GetModuleHandle(None), 0)
         # Register to remove the hook when the interpreter exits:
         keylog("init_keyboard_listener() hook_id=%#x", keyboard_hook_id)
+        GetMessage = user32.GetMessageA
+        TranslateMessage = user32.TranslateMessage
+        DispatchMessage = user32.DispatchMessageA
+        msg = MSG()
+        lpmsg = byref(msg)        
         while True:
-            msg = win32gui.GetMessage(None, 0, 0)
-            keylog("init_keyboard_listener: GetMessage()=%s", msg)
-            win32gui.TranslateMessage(byref(msg))
-            win32gui.DispatchMessage(byref(msg))
+            ret = GetMessage(lpmsg, None, 0, 0)
+            keylog("init_keyboard_listener: GetMessage()=%s", ret)
+            if ret==-1:
+                raise ctypes.WinError()
+            elif ret==0:
+                keylog("GetMessage()=0, exiting loop")
+                return
+            else:
+                TranslateMessage(lpmsg)
+                DispatchMessage(lpmsg)
 
 
     def wm_move(self, wParam, lParam):
@@ -1039,7 +1065,7 @@ class ClientExtras(object):
             log("calling win32api.SetConsoleCtrlHandler(%s, %s)", v, enable)
             result = win32api.SetConsoleCtrlHandler(v, int(enable))
             if result == 0:
-                log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
+                log.error("could not SetConsoleCtrlHandler (error %r)", ctypes.GetLastError())
                 return False
             return True
         except Exception as e:

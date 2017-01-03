@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,8 +14,15 @@ def get_username():
 
 def get_name():
     try:
-        import win32api        #@UnresolvedImport
-        return win32api.GetUserName()
+        import ctypes
+        from ctypes.wintypes import DWORD
+        advapi32 = ctypes.windll.advapi32
+        max_len = 256
+        size = DWORD(max_len)
+        buf = ctypes.create_string_buffer(max_len + 1)
+        if not advapi32.GetUserNameA(ctypes.byref(buf), ctypes.byref(size)):
+            raise ctypes.WinError()
+        return buf.value
     except:
         return os.environ.get("USERNAME", "")
 

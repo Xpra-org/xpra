@@ -6,18 +6,24 @@
 
 import os.path
 import sys
+import ctypes
 
 from xpra.platform.win32 import constants as win32con
+
+SHGetFolderPath = ctypes.windll.shell32.SHGetFolderPathW
+
+CSIDL_APPDATA = 26
+CSIDL_COMMON_APPDATA = 35
 
 
 def _get_data_dir():
     #if not running from a binary, return current directory:
     if not getattr(sys, 'frozen', ''):
-        return  os.getcwd()
+        return os.getcwd()
     try:
-        from win32com.shell import shell, shellcon      #@UnresolvedImport
-        appdata = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, None, 0)
-        assert appdata
+        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
+        SHGetFolderPath(0, CSIDL_APPDATA, None, 0, buf)
+        appdata = buf.value
     except:
         #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
         #UAC in vista onwards will not allow us to write where the software is installed,
@@ -50,11 +56,13 @@ def do_get_system_conf_dirs():
     #ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP
     #or: "C:\ProgramData\Xpra" with Vista onwards
     try:
-        from win32com.shell import shell, shellcon      #@UnresolvedImport
-        common_appdata = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, None, 0)
-        return [os.path.join(common_appdata, "Xpra")]
+        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
+        SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
+        if buf.value:
+            return [os.path.join(buf.value, "Xpra")]
     except:
-        return []
+        pass
+    return []
 
 def do_get_default_conf_dirs():
     #ie: C:\Program Files\Xpra\
@@ -67,13 +75,6 @@ def do_get_user_conf_dirs():
     return [_get_data_dir()]
 
 
-def get_registry_value(key, reg_path, entry):
-    import win32api             #@UnresolvedImport
-    hKey = win32api.RegOpenKey(key, reg_path)
-    value, _ = win32api.RegQueryValueEx(hKey, entry)
-    win32api.RegCloseKey(hKey)
-    return    value
-
 def do_get_download_dir():
     #TODO: use "FOLDERID_Downloads":
     # FOLDERID_Downloads = "{374DE290-123F-4565-9164-39C4925E467B}"
@@ -84,6 +85,7 @@ def do_get_download_dir():
     try:
         #use the internet explorer registry key:
         #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
+        from xpra.platform.win32.registry import get_registry_value
         DOWNLOAD_PATH = get_registry_value(win32con.HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer", "Download Directory")
     except:
         #fallback to what the documentation says is the default:

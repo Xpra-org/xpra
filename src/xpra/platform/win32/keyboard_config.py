@@ -9,7 +9,6 @@ import ctypes
 from xpra.log import Logger
 log = Logger("keyboard", "win32")
 
-import win32api         #@UnresolvedImport
 from xpra.platform.win32 import constants as win32con
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 
@@ -34,7 +33,7 @@ def fake_key(keycode, press):
     scancode = MapVirtualKey(keycode, MAPVK_VK_TO_VSC)
     #see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
     log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
-    win32api.keybd_event(keycode, scancode, flags, 0)
+    keybd_event(keycode, scancode, flags, 0)
 
 
 class KeyboardConfig(KeyboardConfigBase):

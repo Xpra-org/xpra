@@ -19,6 +19,13 @@ GetKeyState = user32.GetKeyState
 GetKeyboardLayout = user32.GetKeyboardLayout
 
 
+def GetIntSystemParametersInfo(key):
+    rv = ctypes.wintypes.INT()
+    SystemParametersInfo = ctypes.windll.user32.SystemParametersInfoA
+    SystemParametersInfo(key, 0, ctypes.byref(rv), 0)
+    return rv.value
+
+
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 if EMULATE_ALTGR:
@@ -135,9 +142,8 @@ class Keyboard(KeyboardBase):
 
     def get_keyboard_repeat(self):
         try:
-            import win32gui         #@UnresolvedImport
-            _delay = win32gui.SystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
-            _speed = win32gui.SystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)
+            _delay = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
+            _speed = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)
             #now we need to normalize those weird win32 values:
             #0=250, 3=1000:
             delay = (_delay+1) * 250

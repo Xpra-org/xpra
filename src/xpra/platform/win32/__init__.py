@@ -9,12 +9,33 @@
 import errno
 import os.path
 import sys
+import ctypes
+
+from ctypes import WINFUNCTYPE, windll, POINTER, byref, c_int
+from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, RECT
 
 from xpra.platform.win32 import constants as win32con
-try:
-    import win32api         #@UnresolvedImport
-except:
-    win32api = None
+
+kernel32 = ctypes.windll.kernel32
+SetConsoleTitle = kernel32.SetConsoleTitleA
+SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
+GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
+MessageBox = ctypes.windll.user32
+GetLastError = ctypes.GetLastError
+
+
+GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", windll.kernel32))
+STD_OUTPUT_HANDLE = DWORD(-11)
+STD_ERROR_HANDLE = DWORD(-12)
+GetFileType = WINFUNCTYPE(DWORD, DWORD)(("GetFileType", windll.kernel32))
+FILE_TYPE_CHAR = 0x0002
+FILE_TYPE_REMOTE = 0x8000
+GetConsoleMode = WINFUNCTYPE(BOOL, HANDLE, POINTER(DWORD))(("GetConsoleMode", windll.kernel32))
+INVALID_HANDLE_VALUE = DWORD(-1).value
+STDOUT_FILENO = 1
+STDERR_FILENO = 2
+WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", windll.kernel32))
+
 
 #redirect output if we are launched from py2exe's gui mode:
 frozen = getattr(sys, 'frozen', False)
@@ -38,7 +59,10 @@ if frozen:
 
 def is_wine():
     try:
-        hKey = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
+        from xpra.platform.win32.registry import RegOpenKeyEx, RegCloseKey
+        hKey = RegOpenKeyEx(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
+        if hKey:
+            RegCloseKey(hKey)
         return hKey is not None
     except:
         #no wine key, assume not present and wait for input
@@ -51,7 +75,7 @@ def set_prgname(name):
     global prg_name
     prg_name = name
     try:
-        win32api.SetConsoleTitle(name)
+        SetConsoleTitle(name)
         import glib
         glib.set_prgname(name)
     except:
@@ -62,9 +86,6 @@ def fix_unicode_out():
     #code found here:
     #http://stackoverflow.com/a/3259271/428751
     import codecs
-    from ctypes import WINFUNCTYPE, windll, POINTER, byref, c_int
-    from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID
-
     original_stderr = sys.stderr
 
     # If any exception occurs in this code, we'll probably try to print it on stderr,
@@ -93,15 +114,6 @@ def fix_unicode_out():
         # <http://msdn.microsoft.com/en-us/library/ms683167(VS.85).aspx>
         # BOOL WINAPI GetConsoleMode(HANDLE hConsole, LPDWORD lpMode);
 
-        GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", windll.kernel32))
-        STD_OUTPUT_HANDLE = DWORD(-11)
-        STD_ERROR_HANDLE = DWORD(-12)
-        GetFileType = WINFUNCTYPE(DWORD, DWORD)(("GetFileType", windll.kernel32))
-        FILE_TYPE_CHAR = 0x0002
-        FILE_TYPE_REMOTE = 0x8000
-        GetConsoleMode = WINFUNCTYPE(BOOL, HANDLE, POINTER(DWORD))(("GetConsoleMode", windll.kernel32))
-        INVALID_HANDLE_VALUE = DWORD(-1).value
-
         def not_a_console(handle):
             if handle == INVALID_HANDLE_VALUE or handle is None:
                 return True
@@ -115,8 +127,6 @@ def fix_unicode_out():
         if hasattr(sys.stderr, 'fileno'):
             old_stderr_fileno = sys.stderr.fileno()
 
-        STDOUT_FILENO = 1
-        STDERR_FILENO = 2
         real_stdout = (old_stdout_fileno == STDOUT_FILENO)
         real_stderr = (old_stderr_fileno == STDERR_FILENO)
 
@@ -133,8 +143,6 @@ def fix_unicode_out():
         if real_stdout or real_stderr:
             # BOOL WINAPI WriteConsoleW(HANDLE hOutput, LPWSTR lpBuffer, DWORD nChars,
             #                           LPDWORD lpCharsWritten, LPVOID lpReserved);
-
-            WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", windll.kernel32))
 
             class UnicodeOutput:
                 def __init__(self, hConsole, stream, fileno, name):
@@ -212,6 +220,15 @@ def fix_unicode_out():
     except Exception as e:
         _complain("exception %r while fixing up sys.stdout and sys.stderr" % (e,))
 
+class CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
+    _fields_ = [
+        ("dwSize",              POINT),
+        ("dwCursorPosition",    POINT),
+        ("wAttributes",         WORD),
+        ("srWindow",            RECT),
+        ("dwMaximumWindowSize", POINT),
+        ]
+
 _wait_for_input = False
 def set_wait_for_input():
     global _wait_for_input
@@ -221,13 +238,13 @@ def set_wait_for_input():
         _wait_for_input = False
         return
     try:
-        import win32console
-        handle = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-        #handle.SetConsoleTextAttribute(win32console.FOREGROUND_BLUE)
-        console_info = handle.GetConsoleScreenBufferInfo()
-        cpos = console_info["CursorPosition"]
+        handle = GetStdHandle(STD_OUTPUT_HANDLE)
+        #handle.SetConsoleTextAttribute(FOREGROUND_BLUE)
+        csbi = CONSOLE_SCREEN_BUFFER_INFO()
+        GetConsoleScreenBufferInfo(handle, byref(csbi))
+        cpos = csbi.dwCursorPosition
         #wait for input if this is a brand new console:
-        _wait_for_input = cpos.X==0 and cpos.Y==0
+        _wait_for_input = cpos.x==0 and cpos.y==0
     except:
         e = sys.exc_info()[1]
         code = -1
@@ -277,19 +294,15 @@ class console_event_catcher(object):
         from xpra.log import Logger
         self.log = Logger("win32")
     def __enter__(self):
-        if not win32api:
-            return
         try:
-            self.result = win32api.SetConsoleCtrlHandler(self.handle_console_event, 1)
+            self.result = SetConsoleCtrlHandler(self.handle_console_event, 1)
             if self.result == 0:
-                self.log.error("could not SetConsoleCtrlHandler (error %r)", win32api.GetLastError())
+                self.log.error("could not SetConsoleCtrlHandler (error %r)", GetLastError())
         except Exception as e:
             self.log.error("SetConsoleCtrlHandler error: %s", e)
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if not win32api:
-            return
         try:
-            win32api.SetConsoleCtrlHandler(None, 0)
+            SetConsoleCtrlHandler(None, 0)
         except:
             pass
     def __repr__(self):
@@ -314,7 +327,7 @@ def _show_message(message, uType):
     if SHOW_MESSAGEBOX and GUI_MODE:
         #try to use an alert box since no console output will be shown:
         try:
-            win32api.MessageBox(0, message, prg_name, uType)
+            MessageBox(0, message, prg_name, uType)
             return
         except:
             pass
