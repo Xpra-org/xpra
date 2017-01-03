@@ -7,15 +7,12 @@
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
-
+import struct
 from ctypes import windll
 
-# Try and use XP features, so we get alpha-blending etc.
-try:
-    from winxpgui import NIF_INFO, NIIF_INFO, NIM_MODIFY
-except ImportError:
-    from win32gui import NIF_INFO, NIIF_INFO, NIM_MODIFY
-import struct
+NIF_INFO = 16
+NIIF_INFO = 1
+NIM_MODIFY = 1
 
 
 def visible_command(command, max_len=100, no_nl=True):

@@ -12,9 +12,7 @@ import sys
 import ctypes
 from ctypes import wintypes
 
-import win32api                    #@UnresolvedImport
 import win32gui                    #@UnresolvedImport
-
 
 from xpra.platform.win32 import constants as win32con
 from xpra.log import Logger
@@ -23,7 +21,9 @@ log = Logger("tray", "win32")
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
 GetCursorPos = user32.GetCursorPos
-
+PostMessage = user32.PostMessageA
+kernel32 = ctypes.windll.kernel32
+GetModuleHandle = kernel32.GetModuleHandleA
 
 #found here:
 #http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
@@ -47,6 +47,14 @@ BUTTON_MAP = {
             }
 
 FALLBACK_ICON = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
+
+#constants found in win32gui:
+NIM_ADD = 0
+NIM_MODIFY = 1
+NIM_DELETE = 2
+NIF_ICON = 2
+NIF_MESSAGE = 1
+NIF_TIP = 4
 
 
 class win32NotifyIcon(object):
@@ -77,7 +85,7 @@ class win32NotifyIcon(object):
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, self.hinst, None)
         win32gui.UpdateWindow(self.hwnd)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
+        win32gui.Shell_NotifyIcon(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
     def make_nid(self, flags):
         return (self.hwnd, 0, flags, WM_TRAY_EVENT, self.current_icon, self.title)
@@ -88,7 +96,7 @@ class win32NotifyIcon(object):
         try:
             nid = (self.hwnd, 0)
             log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
-            win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+            win32gui.Shell_NotifyIcon(NIM_DELETE, nid)
         except Exception as e:
             log.error("Error: failed to delete tray window")
             log.error(" %s", e)
@@ -101,19 +109,19 @@ class win32NotifyIcon(object):
 
     def set_tooltip(self, name):
         self.title = name[:127]
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
+        win32gui.Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
 
     def set_icon(self, iconPathName):
         hicon = self.LoadImage(iconPathName)
         self.do_set_icon(hicon)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
+        win32gui.Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
         self.reset_function = (self.set_icon, iconPathName)
 
     def do_set_icon(self, hicon):
         log("do_set_icon(%s)", hicon)
         self.current_icon = hicon
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, self.make_nid(win32gui.NIF_ICON))
+        win32gui.Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
@@ -228,7 +236,7 @@ class win32NotifyIcon(object):
         cb = getattr(instance, "command_callback", None)
         log("OnCommand%s instance=%s, callback=%s", (hwnd, msg, wparam, lparam), instance, cb)
         if cb:
-            cid = win32api.LOWORD(wparam)
+            cid = wparam & 0xFFFF
             cb(hwnd, cid)
 
     @classmethod
@@ -284,7 +292,7 @@ message_map = {
     WM_TRAY_EVENT                       : win32NotifyIcon.OnTaskbarNotify,
 }
 NIwc = win32gui.WNDCLASS()
-NIwc.hInstance = win32api.GetModuleHandle(None)
+NIwc.hInstance = GetModuleHandle(None)
 NIwc.lpszClassName = "win32NotifyIcon"
 NIwc.lpfnWndProc = message_map # could also specify a wndproc.
 NIclassAtom = win32gui.RegisterClass(NIwc)
@@ -299,7 +307,7 @@ def main():
         GetCursorPos(ctypes.byref(pos))
         win32gui.SetForegroundWindow(hwnd)
         win32gui.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)
-        win32api.PostMessage(hwnd, win32con.WM_NULL, 0, 0)
+        PostMessage(hwnd, win32con.WM_NULL, 0, 0)
 
     def command_callback(hwnd, cid):
         if cid == 1024:

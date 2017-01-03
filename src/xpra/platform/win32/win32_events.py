@@ -4,12 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import ctypes
 try:
-    import win32ts          #@UnresolvedImport
     import win32gui         #@UnresolvedImport
     import win32api
 except ImportError:
-    win32ts = None
     win32gui = None
     win32api = None
 
@@ -18,6 +17,14 @@ log = Logger("events", "win32")
 
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
+
+try:
+    wtsapi32 = ctypes.WinDLL("WtsApi32")
+except Exception as e:
+    log.error("Error: cannot load WtsApi2 DLL, session events will not be detected")
+    log.error(" %s", e)
+    wtsapi32 = None
+NOTIFY_FOR_THIS_SESSION = 0
 
 #no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE        = 0x02b1
@@ -130,7 +137,7 @@ class Win32EventListener(object):
             if self.hwnd:
                 self.old_win32_proc = None
                 win32api.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, owp)
-                win32ts.WTSUnRegisterSessionNotification(self.hwnd)
+                wtsapi32.WTSUnRegisterSessionNotification(self.hwnd)
             else:
                 log.warn("stop_win32_session_events() missing handle!")
         except:
@@ -150,7 +157,7 @@ class Win32EventListener(object):
             #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
             #http://msdn.microsoft.com/en-us/library/aa383841.aspx
             #http://msdn.microsoft.com/en-us/library/aa383828.aspx
-            win32ts.WTSRegisterSessionNotification(self.hwnd, win32ts.NOTIFY_FOR_THIS_SESSION)
+            wtsapi32.WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
             #catch all events: http://wiki.wxpython.org/HookingTheWndProc
             self.old_win32_proc = win32gui.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
         except Exception as e:

@@ -21,14 +21,8 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 
-from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG
-
-try:
-    import win32api     #@UnresolvedImport
-except:
-    log.warn("Warning: pywin32 not present")
-    win32api = None
+from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof, c_ulong, c_double
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR
 
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
@@ -42,12 +36,25 @@ FindWindow = user32.FindWindowA
 GetKeyState = user32.GetKeyState
 GetWindowRect = user32.GetWindowRect
 GetDoubleClickTime = user32.GetDoubleClickTime
+MonitorFromWindow = user32.MonitorFromWindow
 
 gdi32 = ctypes.windll.gdi32
 GetDeviceCaps = gdi32.GetDeviceCaps
 
 kernel32 = ctypes.windll.kernel32
 GetModuleHandle = kernel32.GetModuleHandleA
+SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
+
+MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
+
+def EnumDisplayMonitors():
+    results = []
+    def _callback(monitor, dc, rect, data):
+        results.append(monitor)
+        return 1
+    callback = MonitorEnumProc(_callback)
+    user32.EnumDisplayMonitors(0, 0, callback, 0)
+    return results
 
 try:
     dwmapi = ctypes.windll.dwmapi
@@ -56,6 +63,28 @@ except:
     #win XP:
     DwmGetWindowAttribute = None
 
+CCHDEVICENAME = 32
+class MONITORINFOEX(ctypes.Structure):
+    _fields_ = [('cbSize', DWORD),
+                ('rcMonitor', RECT),
+                ('rcWork', RECT),
+                ('dwFlags', DWORD),
+                ('szDevice', WCHAR * CCHDEVICENAME)]
+MONITORINFOEX_size = ctypes.sizeof(MONITORINFOEX)
+def GetMonitorInfo(hmonitor):
+    info = MONITORINFOEX()
+    info.szDevice = ""
+    info.cbSize = MONITORINFOEX_size
+    if not user32.GetMonitorInfoW(hmonitor, byref(info)):
+        raise ctypes.WinError()
+    monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
+    work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
+    return  {
+        "Work"      : work,
+        "Monitor"   : monitor,
+        "Flags"     : info.dwFlags,
+        "Device"    : info.szDevice or "",
+        } 
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
@@ -77,21 +106,17 @@ assert WHEEL_DELTA>0
 
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
-try:
-    for x in dir(win32con):
-        if x.endswith("_EVENT"):
-            v = getattr(win32con, x)
-            KNOWN_EVENTS[v] = x
-        if x.startswith("PBT_"):
-            v = getattr(win32con, x)
-            POWER_EVENTS[v] = x
-except Exception as e:
-    log.warn("error loading pywin32: %s", e)
+for x in dir(win32con):
+    if x.endswith("_EVENT"):
+        v = getattr(win32con, x)
+        KNOWN_EVENTS[v] = x
+    if x.startswith("PBT_"):
+        v = getattr(win32con, x)
+        POWER_EVENTS[v] = x
 
 
 def do_init():
     init_dpi()
-
 
 def init_dpi():
     #tell win32 we handle dpi
@@ -123,21 +148,24 @@ def init_dpi():
 
 
 def get_native_notifier_classes():
-    if win32api:
-        try:
-            from xpra.platform.win32.win32_notifier import Win32_Notifier
-            return [Win32_Notifier]
-        except:
-            log.warn("cannot load native win32 notifier", exc_info=True)
+    try:
+        from xpra.platform.win32.win32_notifier import Win32_Notifier
+        return [Win32_Notifier]
+    except ImportError as e:
+        log("no native notifier", exc_info=True)
+        log.warn("Warning: cannot load native win32 notifier")
+        log.warn(" %s", e)
     return []
 
 def get_native_tray_classes():
     try:
         from xpra.platform.win32.win32_tray import Win32Tray
         return [Win32Tray]
-    except:
-        log.warn("cannot load native win32 tray", exc_info=True)
-        return []
+    except ImportError as e:
+        log("no native tray", exc_info=True)
+        log.warn("Warning: cannot load native win32 tray")
+        log.warn(" %s", e)
+    return []
 
 def get_native_system_tray_classes(*args):
     #Win32Tray cannot set the icon from data
@@ -156,8 +184,8 @@ def gl_check():
 
 def get_monitor_workarea_for_window(handle):
     try:
-        monitor = win32api.MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
-        mi = win32api.GetMonitorInfo(monitor)
+        monitor = MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
+        mi = GetMonitorInfo(monitor)
         screenlog("get_monitor_workarea_for_window(%s) GetMonitorInfo(%s)=%s", handle, monitor, mi)
         #absolute workarea / monitor coordinates:
         #(all relative to 0,0 being top left)
@@ -424,10 +452,12 @@ def add_window_hooks(window):
                 ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
                 ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object]
                 gdkwin_gpointer = ctypes.pythonapi.PyCapsule_GetPointer(gdk_window.__gpointer__, None)
-                gdkdll = ctypes.CDLL ("libgdk-3-0.dll")
+                gdkdll = ctypes.CDLL("libgdk-3-0.dll")
                 handle = gdkdll.gdk_win32_window_get_handle(gdkwin_gpointer)
             except Exception as e:
-                log.warn("failed to get window handle", exc_info=True)
+                log("failed to get window handle", exc_info=True)
+                log.error("Error: failed to access the window handle for %s", gdk_window)
+                log.error(" %s", e)
     if not handle:
         log.warn("Warning: cannot add window hooks without a window handle!")
         return
@@ -639,6 +669,7 @@ def get_mouse_config():
     _add_SPI(info, SPI_GETMOUSEVANISH, "vanish", bool, False)
     return info
 
+
 def get_workarea():
     #this is for x11 servers which can only use a single workarea,
     #calculate the total area:
@@ -646,8 +677,8 @@ def get_workarea():
         #first we need to find the absolute top-left and bottom-right corners
         #so we can make everything relative to 0,0
         monitors = []
-        for m in win32api.EnumDisplayMonitors(None, None):
-            mi = win32api.GetMonitorInfo(m[0])
+        for m in EnumDisplayMonitors():
+            mi = GetMonitorInfo(m)
             mx1, my1, mx2, my2 = mi['Monitor']
             monitors.append((mx1, my1, mx2, my2))
         minmx = min(x[0] for x in monitors)
@@ -657,8 +688,8 @@ def get_workarea():
         screenlog("get_workarea() absolute total monitor area: %s", (minmx, minmy, maxmx, maxmy))
         screenlog(" total monitor dimensions: %s", (maxmx-minmx, maxmy-minmy))
         workareas = []
-        for m in win32api.EnumDisplayMonitors(None, None):
-            mi = win32api.GetMonitorInfo(m[0])
+        for m in EnumDisplayMonitors():
+            mi = GetMonitorInfo(m)
             #absolute workarea / monitor coordinates:
             wx1, wy1, wx2, wy2 = mi['Work']
             workareas.append((wx1, wy1, wx2, wy2))
@@ -686,9 +717,9 @@ MONITORINFOF_PRIMARY = 1
 def get_workareas():
     try:
         workareas = []
-        for m in win32api.EnumDisplayMonitors(None, None):
-            mi = win32api.GetMonitorInfo(m[0])
-            screenlog("get_workareas() GetMonitorInfo(%s)=%s", m[0], mi)
+        for m in EnumDisplayMonitors():
+            mi = GetMonitorInfo(m)
+            screenlog("get_workareas() GetMonitorInfo(%s)=%s", m, mi)
             #absolute workarea / monitor coordinates:
             wx1, wy1, wx2, wy2 = mi['Work']
             mx1, my1, mx2, my2 = mi['Monitor']
@@ -848,7 +879,7 @@ class ClientExtras(object):
     def __init__(self, client, opts):
         self.client = client
         self._kh_warning = False
-        self._console_handler_registered = self.setup_console_event_listener(True)
+        self._console_handler_added = self.setup_console_event_listener(True)
         from xpra.platform.win32.win32_events import get_win32_event_listener
         try:
             el = get_win32_event_listener(True)
@@ -872,8 +903,9 @@ class ClientExtras(object):
 
     def cleanup(self):
         log("ClientExtras.cleanup()")
-        if self._console_handler_registered:
-            self._console_handler_registered = False
+        cha = self._console_handler_added
+        if cha:
+            self._console_handler_added = False
             self.setup_console_event_listener(False)
         el = self._el
         if el:
@@ -1055,15 +1087,11 @@ class ClientExtras(object):
         elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and c:
             c.resume()
 
-    def setup_console_event_listener(self, enable=True):
-        if not win32api:
-            return
+    def setup_console_event_listener(self, enable):
         try:
-            v = self.handle_console_event
-            if not enable:
-                v = None
-            log("calling win32api.SetConsoleCtrlHandler(%s, %s)", v, enable)
-            result = win32api.SetConsoleCtrlHandler(v, int(enable))
+            log("calling SetConsoleCtrlHandler(%s)", enable)
+            handler = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(self.handle_console_event)
+            result = SetConsoleCtrlHandler(handler, int(enable))
             if result == 0:
                 log.error("could not SetConsoleCtrlHandler (error %r)", ctypes.GetLastError())
                 return False

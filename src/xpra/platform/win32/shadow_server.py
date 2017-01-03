@@ -10,7 +10,6 @@ import ctypes
 
 import win32ui          #@UnresolvedImport
 import win32gui         #@UnresolvedImport
-import pywintypes       #@UnresolvedImport
 
 from xpra.log import Logger
 from xpra.util import AdHocStruct, envbool, prettify_plug_name
@@ -331,9 +330,10 @@ class ShadowServer(GTKShadowServerBase):
         #adjust pointer position for offset in client:
         try:
             SetCursorPos(*pointer)
-        except pywintypes.error as e:
+        except Exception as e:
+            log("SetCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
-            log("pywintypes.error: %s", e[2])
+            log.error(" %s", e)
 
     def get_keyboard_config(self, props):
         return KeyboardConfig()

@@ -10,12 +10,11 @@
 import ctypes
 from ctypes import wintypes
 
-import win32api         #@UnresolvedImport
-
 from xpra.log import Logger
 log = Logger("tray", "win32")
 
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.gui import EnumDisplayMonitors, GetMonitorInfo
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.client.tray_base import TrayBase
@@ -61,8 +60,8 @@ class Win32Tray(TrayBase):
         self.offset_x = 0
         self.offset_y = 0
         try:
-            for m in win32api.EnumDisplayMonitors(None, None):
-                mi = win32api.GetMonitorInfo(m[0])
+            for m in EnumDisplayMonitors():
+                mi = GetMonitorInfo(m)
                 mx1, my1, _, _ = mi['Monitor']
                 self.offset_x = max(self.offset_x, -mx1)
                 self.offset_y = max(self.offset_y, -my1)
