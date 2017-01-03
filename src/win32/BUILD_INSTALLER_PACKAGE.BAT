@@ -14,7 +14,7 @@ if "%DO_ZIP%"=="" (
 	SET DO_ZIP=1
 )
 if "%DO_MSI%"=="" (
-	SET DO_MSI=1
+	SET DO_MSI=0
 )
 if "%DIST%"=="" (
 	SET DIST="dist"
