@@ -18,7 +18,6 @@ from xpra.platform.win32 import constants as win32con
 
 kernel32 = ctypes.windll.kernel32
 SetConsoleTitle = kernel32.SetConsoleTitleA
-SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
 GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
 MessageBox = ctypes.windll.user32
 GetLastError = ctypes.GetLastError

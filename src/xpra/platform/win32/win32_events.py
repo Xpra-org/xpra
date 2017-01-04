@@ -5,18 +5,27 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-try:
-    import win32gui         #@UnresolvedImport
-    import win32api
-except ImportError:
-    win32gui = None
-    win32api = None
 
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("events", "win32")
 
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.common import WNDCLASSEX, WNDPROC
+
+user32 = ctypes.windll.user32
+RegisterClassEx = user32.RegisterClassExW
+CreateWindowEx = user32.CreateWindowExA
+DestroyWindow = user32.DestroyWindow
+UnregisterClass = user32.UnregisterClassW
+DefWindowProc = user32.DefWindowProcW
+
+kernel32 = ctypes.windll.kernel32
+GetModuleHandle = kernel32.GetModuleHandleA
+
+gdi32 = ctypes.windll.gdi32
+GetStockObject = gdi32.GetStockObject
 
 try:
     wtsapi32 = ctypes.WinDLL("WtsApi32")
@@ -76,32 +85,84 @@ for x in dir(win32con):
 singleton = None
 def get_win32_event_listener(create=True):
     global singleton
-    if not singleton and create and win32gui:
+    if not singleton and create:
         singleton = Win32EventListener()
     return singleton
+
+WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
 
 class Win32EventListener(object):
 
     def __init__(self):
         assert singleton is None
-        self.wc = win32gui.WNDCLASS()
-        self.wc.lpszClassName = 'XpraEventWindow'
-        self.wc.style =  win32con.CS_GLOBALCLASS|win32con.CS_VREDRAW|win32con.CS_HREDRAW
-        self.wc.hbrBackground = win32con.COLOR_WINDOW
-        #shame we would have to register those in advance:
-        self.wc.lpfnWndProc = {}    #win32con.WM_SOMETHING : OnSomething}
-        win32gui.RegisterClass(self.wc)
-        self.hwnd = win32gui.CreateWindow(self.wc.lpszClassName,
-                        'For events only',
-                        win32con.WS_CAPTION,
-                        100, 100, 900, 900, 0, 0, 0, None)
-        self.old_win32_proc = None
+        self.hwnd = None
         self.event_callbacks = {}
         self.ignore_events = IGNORE_EVENTS
         self.log_events = LOG_EVENTS
-        self.detect_win32_session_events()
-        log("Win32EventListener create with hwnd=%s", self.hwnd)
+
+        if not WINDOW_EVENTS:
+            return
+
+        self.wc = WNDCLASSEX()
+        self.wc.cbSize = ctypes.sizeof(WNDCLASSEX)
+        self.wc.style =  win32con.CS_GLOBALCLASS|win32con.CS_VREDRAW|win32con.CS_HREDRAW
+        self.wc.lpfnWndProc = WNDPROC(self.WndProc)
+        self.wc.cbClsExtra = 0
+        self.wc.cbWndExtra = 0
+        self.wc.hInstance = GetModuleHandle(0)
+        self.wc.hIcon = 0
+        self.wc.hCursor = 0
+        self.wc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
+        self.wc.lpszMenuName = 0
+        self.wc.lpszClassName = u'Xpra-Event-Window'
+        self.wc.hIconSm = 0
+        self.wc.hbrBackground = win32con.COLOR_WINDOW
+        self.wc_atom = RegisterClassEx(ctypes.byref(self.wc))
+        if self.wc_atom==0:
+            raise ctypes.WinError()
+
+        self.hwnd = CreateWindowEx(0, self.wc_atom, u"For xpra event listener only",
+            win32con.WS_CAPTION,
+            0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
+            0, 0, self.wc.hInstance, None)
+        if self.hwnd==0:
+            raise ctypes.WinError()
+
+        if wtsapi32:
+            #register our interest in session events:
+            #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
+            #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
+            #http://msdn.microsoft.com/en-us/library/aa383841.aspx
+            #http://msdn.microsoft.com/en-us/library/aa383828.aspx
+            wtsapi32.WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
+        log("Win32EventListener created with hwnd=%s", self.hwnd)
+
+
+    def cleanup(self):
+        log("Win32EventListener.cleanup()")
+        self.event_callback = {}
+
+        hwnd = self.hwnd
+        if hwnd:
+            if wtsapi32:
+                wtsapi32.WTSUnRegisterSessionNotification(hwnd)
+
+            self.hwnd = None
+            try:
+                DestroyWindow(hwnd)
+            except Exception as e:
+                log.error("Error during cleanup of event window instance:")
+                log.error(" %s", e)
+
+            wc = self.wc
+            self.wc = None
+            try:
+                UnregisterClass(wc.lpszClassName, wc.hInstance)
+            except Exception as e:
+                log.error("Error during cleanup of event window class:")
+                log.error(" %s", e)
+
 
     def add_event_callback(self, event, callback):
         self.event_callbacks.setdefault(event, []).append(callback)
@@ -111,60 +172,8 @@ class Win32EventListener(object):
         if l and callback in l:
             l.remove(callback)
 
-    def cleanup(self):
-        log("Win32EventListener.cleanup()")
-        self.event_callback = {}
-        self.stop_win32_session_events()
-        if self.hwnd:
-            try:
-                win32gui.DestroyWindow(self.hwnd)
-            except Exception as e:
-                log.error("Error during cleanup of event window instance:")
-                log.error(" %s", e)
-            self.hwnd = None
-            try:
-                win32gui.UnregisterClass(self.wc.lpszClassName, None)
-            except Exception as e:
-                log.error("Error during cleanup of event window class:")
-                log.error(" %s", e)
 
-    def stop_win32_session_events(self):
-        owp = self.old_win32_proc
-        log("stop_win32_session_events() restoring old win32 proc=%s", owp)
-        if not owp:
-            return
-        try:
-            if self.hwnd:
-                self.old_win32_proc = None
-                win32api.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, owp)
-                wtsapi32.WTSUnRegisterSessionNotification(self.hwnd)
-            else:
-                log.warn("stop_win32_session_events() missing handle!")
-        except:
-            log.error("stop_win32_session_events", exc_info=True)
-
-    def detect_win32_session_events(self):
-        """
-        Use pywin32 to receive session notification events.
-        """
-        if self.hwnd is None:
-            log.warn("detect_win32_session_events() missing handle!")
-            return
-        try:
-            log("detect_win32_session_events() hwnd=%s", self.hwnd)
-            #register our interest in those events:
-            #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
-            #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
-            #http://msdn.microsoft.com/en-us/library/aa383841.aspx
-            #http://msdn.microsoft.com/en-us/library/aa383828.aspx
-            wtsapi32.WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
-            #catch all events: http://wiki.wxpython.org/HookingTheWndProc
-            self.old_win32_proc = win32gui.SetWindowLong(self.hwnd, win32con.GWL_WNDPROC, self.MyWndProc)
-        except Exception as e:
-            log.error("Error: failed to hook session notifications")
-            log.error(" %s", e)
-
-    def MyWndProc(self, hWnd, msg, wParam, lParam):
+    def WndProc(self, hWnd, msg, wParam, lParam):
         callbacks = self.event_callbacks.get(msg)
         event_name = KNOWN_WM_EVENTS.get(msg, hex(msg))
         log("callbacks for event %s: %s", event_name, callbacks)
@@ -193,10 +202,10 @@ class Win32EventListener(object):
                 else:
                     ut = "/ unexpected"
                 l("unknown %s message: %s / %s / %s", ut, event_name, wParam, lParam)
-        else:
+        elif self.hwnd and hWnd!=None:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
-        # Pass all messages to the original WndProc
-        try:
-            return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)
-        except Exception as e:
-            log.error("error delegating call for %s: %s", event_name, e)
+        if msg==win32con.WM_DESTROY:
+            self.cleanup()
+        r = DefWindowProc(hWnd, msg, wParam, lParam)
+        log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
+        return r

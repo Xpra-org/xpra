@@ -21,8 +21,10 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 
+CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
+
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof, c_ulong, c_double
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, HRESULT, LPCWSTR
 
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
@@ -44,6 +46,47 @@ GetDeviceCaps = gdi32.GetDeviceCaps
 kernel32 = ctypes.windll.kernel32
 GetModuleHandle = kernel32.GetModuleHandleA
 SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
+
+shell32 = ctypes.windll.shell32
+try:
+    from xpra.platform.win32.common import REFIID, IID, GUID
+    SHGetPropertyStoreForWindow = shell32.SHGetPropertyStoreForWindow
+    SHGetPropertyStoreForWindow.restype = HRESULT
+    SHGetPropertyStoreForWindow.argtypes = [HWND, REFIID, ctypes.POINTER(ctypes.c_void_p)]
+
+    class PROPERTYKEY (ctypes.Structure):
+        _fields_ = [
+            ("fmtid",               GUID),
+            ("pid",                 DWORD),
+            ]
+    propsys = ctypes.windll.propsys
+    PSGetPropertyKeyFromName = propsys.PSGetPropertyKeyFromName
+    PSGetPropertyKeyFromName.restype = HRESULT
+    PSGetPropertyKeyFromName.argtypes = [LPCWSTR, ctypes.POINTER(PROPERTYKEY)]
+except:
+    log.warn("Warning: propsys support missing, no window grouping")
+    SetPropertyStoreForWindow = None
+else:
+    def SetPropertyStoreForWindow(hwnd, prop="System.AppUserModel.ID", value=0):
+        iid = IID()
+        ps = ctypes.c_void_p
+        r = SHGetPropertyStoreForWindow(hwnd, ctypes.pointer(iid), ctypes.pointer(ps))
+        if r!=0:
+            log.warn("Warning: cannot access window property store:")
+            log.warn(" SHGetPropertyStoreForWindow returned %i", hwnd, r)
+            return
+        log.info("SHGetPropertyStoreForWindow(%i) propertystore=%#x", hwnd, ps.value)
+        pkey = PROPERTYKEY()
+        r = PSGetPropertyKeyFromName(prop, ctypes.pointer(pkey))
+        if r!=0:
+            log.warn("Warning: cannot find property key for '%s':")
+            log.warn(" PSGetPropertyKeyFromName returned %i", hwnd, r)
+            return
+        #TODO:
+        #value = propsys.PROPVARIANTType(lhandle)
+        #log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
+        #ps.SetValue(key, value)
+    
 
 MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
 
@@ -124,7 +167,7 @@ def init_dpi():
         screenlog.warn("SetProcessDPIAware not set due to environment override")
         return
     try:
-        SetProcessDPIAware = windll.user32.SetProcessDPIAware
+        SetProcessDPIAware = user32.SetProcessDPIAware
         dpiaware = SetProcessDPIAware()
         screenlog("SetProcessDPIAware: %s()=%s", SetProcessDPIAware, dpiaware)
         assert dpiaware!=0
@@ -138,7 +181,7 @@ def init_dpi():
         Process_DPI_Unaware             = 0
         Process_Per_Monitor_DPI_Aware   = 2
         assert DPI_AWARENESS in (Process_System_DPI_Aware, Process_DPI_Unaware, Process_Per_Monitor_DPI_Aware)
-        SetProcessDpiAwarenessInternal = windll.user32.SetProcessDpiAwarenessInternal
+        SetProcessDpiAwarenessInternal = user32.SetProcessDpiAwarenessInternal
         dpiawareness = SetProcessDpiAwarenessInternal(DPI_AWARENESS)
         screenlog("SetProcessDPIAwareness: %s(%s)=%s", SetProcessDpiAwarenessInternal, DPI_AWARENESS, dpiawareness)
         assert dpiawareness==0
@@ -208,19 +251,6 @@ def noop(*args):
     pass
 
 
-_propsys = None
-def get_propsys():
-    global _propsys
-    if _propsys is None:
-        try:
-            from win32com.propsys import propsys    #@UnresolvedImport
-            _propsys = propsys
-        except Exception as e:
-            log("unable to implement group leader: %s", e, exc_info=True)
-            _propsys = False
-    return _propsys
-
-
 def get_window_handle(window):
     """ returns the win32 hwnd from a gtk.Window or gdk.Window """
     gdk_window = window
@@ -276,12 +306,8 @@ def win32_propsys_set_group_leader(self, leader):
     #returns the setter method we can use
     try:
         log("win32 hooks: set_group(%#x)", lhandle)
-        propsys = get_propsys()
-        ps = propsys.SHGetPropertyStoreForWindow(hwnd)
-        key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
-        value = propsys.PROPVARIANTType(lhandle)
-        log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
-        ps.SetValue(key, value)
+        log("SetPropertyStoreForWindow=%s", SetPropertyStoreForWindow)
+        SetPropertyStoreForWindow(hwnd, prop="System.AppUserModel.ID", value=lhandle)
     except Exception as e:
         log.error("failed to set group leader: %s", e)
 
@@ -465,9 +491,8 @@ def add_window_hooks(window):
 
     if GROUP_LEADER:
         #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
-        propsys = get_propsys()
-        log("win32 hooks: propsys=%s", propsys)
-        if propsys:
+        log("win32 hooks: SetPropertyStoreForWindow=%s", SetPropertyStoreForWindow)
+        if SetPropertyStoreForWindow:
             gdk_window.set_group = types.MethodType(win32_propsys_set_group_leader, gdk_window)
             log("hooked group leader override using %s", propsys)
 
@@ -879,7 +904,8 @@ class ClientExtras(object):
     def __init__(self, client, opts):
         self.client = client
         self._kh_warning = False
-        self._console_handler_added = self.setup_console_event_listener(True)
+        if CONSOLE_EVENT_LISTENER:
+            self._console_handler_added = self.setup_console_event_listener(True)
         from xpra.platform.win32.win32_events import get_win32_event_listener
         try:
             el = get_win32_event_listener(True)

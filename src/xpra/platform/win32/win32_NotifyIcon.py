@@ -8,9 +8,10 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 import ctypes
-from ctypes.wintypes import WINFUNCTYPE, HWND, HANDLE, LPCWSTR, WPARAM, LPARAM, UINT, INT, POINT, HICON, BOOL, DWORD, HBITMAP, WCHAR
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, DWORD, HBITMAP, WCHAR
 
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.common import GUID, WNDCLASSEX, WNDPROC
 from xpra.log import Logger
 log = Logger("tray", "win32")
 
@@ -31,6 +32,8 @@ LoadImage = user32.LoadImageW
 CreateIconIndirect = user32.CreateIconIndirect
 GetDC = user32.GetDC
 ReleaseDC = user32.ReleaseDC
+DestroyWindow = user32.DestroyWindow
+PostQuitMessage = user32.PostQuitMessage
 
 kernel32 = ctypes.windll.kernel32
 GetModuleHandle = kernel32.GetModuleHandleA
@@ -41,23 +44,6 @@ CreateCompatibleDC = gdi32.CreateCompatibleDC
 CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
 SelectObject = gdi32.SelectObject
 SetPixelV = gdi32.SetPixelV
-
-#GUID = ctypes.c_ubyte * 16
-class GUID(ctypes.Structure):
-    _fields_ = [
-        ('Data1', ctypes.c_ulong),
-        ('Data2', ctypes.c_ushort),
-        ('Data3', ctypes.c_ushort),
-        ('Data4', ctypes.c_ubyte*8),
-    ]
-    def __str__(self):
-        return "{%08x-%04x-%04x-%s-%s}" % (
-            self.Data1,
-            self.Data2,
-            self.Data3,
-            ''.join(["%02x" % d for d in self.Data4[:2]]),
-            ''.join(["%02x" % d for d in self.Data4[2:]]),
-        )
 
 class ICONINFO(ctypes.Structure):
     __fields__ = [
@@ -117,24 +103,6 @@ NIF_SHOWTIP     = 128
 NOTIFYICON_VERSION = 3
 NOTIFYICON_VERSION_4 = 4
 
-WNDPROC = WINFUNCTYPE(ctypes.c_int, HANDLE, ctypes.c_uint, WPARAM, LPARAM)
-
-class WNDCLASSEX(ctypes.Structure):
-    _fields_ = [
-        ("cbSize",          UINT),
-        ("style",           UINT),
-        ("lpfnWndProc",     WNDPROC),
-        ("cbClsExtra",      INT),
-        ("cbWndExtra",      INT),
-        ("hInstance",       HANDLE),
-        ("hIcon",           HANDLE),
-        ("hCursor",         HANDLE),
-        ("hbrBackground",   HANDLE),
-        ("lpszMenuName",    LPCWSTR),
-        ("lpszClassName",   LPCWSTR),
-        ("hIconSm",         HANDLE),
-    ]
-
 #found here:
 #http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
 WM_XBUTTONDOWN  = 0x020B
@@ -184,6 +152,8 @@ class win32NotifyIcon(object):
         self.hwnd = CreateWindowEx(0, NIclassAtom, window_name, style,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, NIwc.hInstance, None)
+        if self.hwnd==0:
+            raise ctypes.WinError()
         log("hwnd=%#x", self.hwnd)
         UpdateWindow(self.hwnd)
         r = Shell_NotifyIcon(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
@@ -426,6 +396,8 @@ NIwc.lpszClassName = u"win32NotifyIcon"
 NIwc.hIconSm = 0
 
 NIclassAtom = RegisterClassEx(ctypes.byref(NIwc))
+if NIclassAtom==0:
+    raise ctypes.WinError()
 log("RegisterClassEx(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 def main():
@@ -455,12 +427,12 @@ def main():
             notify(hwnd, "hello", "world")
         elif cid == 1025:
             print("Goodbye")
-            user32.DestroyWindow(hwnd)
+            DestroyWindow(hwnd)
         else:
             print("OnCommand for ID=%s" % cid)
 
     def win32_quit():
-        user32.PostQuitMessage(0) # Terminate the app.
+        PostQuitMessage(0) # Terminate the app.
 
     iconPathName = os.path.abspath(os.path.join( sys.prefix, "pyc.ico"))
     tray = win32NotifyIcon("test", move_callbacks=None, click_callback=click_callback, exit_callback=win32_quit, command_callback=command_callback, iconPathName=iconPathName)

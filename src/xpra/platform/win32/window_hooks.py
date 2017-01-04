@@ -11,17 +11,16 @@ log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
 
 import ctypes
-from ctypes import c_int, c_long
 from ctypes.wintypes import POINT
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.common import WNDPROC
 
 GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
 #use ctypes to ensure we call the "W" version:
 SetWindowLong = ctypes.windll.user32.SetWindowLongW
 GetWindowLong = ctypes.windll.user32.GetWindowLongW
 CallWindowProc = ctypes.windll.user32.CallWindowProcW
-WndProcType = ctypes.WINFUNCTYPE(c_int, c_long, c_int, c_int, c_int)
 
 
 class MINMAXINFO(ctypes.Structure):
@@ -70,7 +69,7 @@ class Win32Hooks(object):
 
     def setup(self):
         assert self._oldwndproc is None
-        self._newwndproc = WndProcType(self._wndproc)
+        self._newwndproc = WNDPROC(self._wndproc)
         self._oldwndproc = SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
@@ -107,7 +106,7 @@ class Win32Hooks(object):
             self._oldwndproc = None
             self._hwnd = None
         except:
-            log.error("cleanup", exc_info=True)
+            log.error("Error: window hooks cleanup failure", exc_info=True)
 
     def _wndproc(self, hwnd, msg, wparam, lparam):
         event_name = WNDPROC_EVENT_NAMES.get(msg, msg)
