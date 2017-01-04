@@ -32,7 +32,9 @@ class Win32Tray(TrayBase):
         self.default_icon_extension = "ico"
         icon_filename = get_icon_filename(self.default_icon_filename, "ico")
         self.tray_widget = win32NotifyIcon(self.tooltip, self.move_cb, self.click_cb, self.exit_cb, None, icon_filename)
-        get_win32_event_listener().add_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
+        el = get_win32_event_listener()
+        if el:
+            el.add_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
 
     def ready(self):
         pass
@@ -53,7 +55,9 @@ class Win32Tray(TrayBase):
         if self.tray_widget:
             self.tray_widget.close()
             self.tray_widget = None
-        get_win32_event_listener().remove_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
+        el = get_win32_event_listener()
+        if el:
+            el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
         log("Win32Tray.cleanup() ended")
 
     def calculate_offset(self, *args):

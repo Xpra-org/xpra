@@ -97,7 +97,6 @@ def notify(hwnd, title, message, timeout=5000):
     if timeout<=0:
         timeout = 5000
     nid.uTimeoutOrVersion = timeout
-    #import win32con
     #WM_TRAYICON = win32con.WM_USER + 20
     #nid.uCallbackMessage = WM_TRAYICON
     # Call the Windows function, not the wrapped one
