@@ -194,14 +194,14 @@ def get_platform_name():
     if sys.platform.find("openbsd")>=0:
         return "OpenBSD"
     if sys.platform.startswith("win"):
+        #TODO: use something a bit faster:
         try:
-            import wmi            #@UnresolvedImport
-            c = wmi.WMI()
-            for os in c.Win32_OperatingSystem():
-                eq = os.Caption.find("=")
-                if eq>0:
-                    return (os.Caption[:eq]).strip()
-                return os.Caption
+            o = subprocess.Popen('systeminfo', stdout=subprocess.PIPE).communicate()[0]
+            try:
+                o = str(o, "latin-1")  # Python 3+
+            except:
+                pass  
+            return re.search("OS Name:\s*(.*)", o).group(1).strip()
         except:
             pass
         return "Microsoft Windows"
