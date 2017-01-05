@@ -37,7 +37,8 @@ class GTKStatusIconTray(TrayBase):
         self.tray_widget.connect('popup-menu', self.popup_menu)
         if self.size_changed_cb:
             self.tray_widget.connect('size-changed', self.size_changed_cb)
-        self.set_icon()
+        if self.default_icon_filename:
+            self.set_icon()
         self.tray_widget.set_visible(True)
 
     def may_guess(self):

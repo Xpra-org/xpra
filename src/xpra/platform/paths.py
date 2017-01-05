@@ -163,6 +163,8 @@ def get_icon(name):
     return get_icon_from_file(filename)
 
 def get_icon_filename(basename=None, ext="png"):
+    if not basename:
+        return None
     filename = basename
     if not os.path.isabs(filename):
         fext = os.path.splitext(filename)[1]
