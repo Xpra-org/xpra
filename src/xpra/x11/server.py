@@ -885,7 +885,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                             if s!=ss:
                                 s.resize_window(wid, window, aw, ah, resize_counter=counter)
                     damage |= owx!=ax or owy!=ay or resized
-            if not shown:
+            if not shown and not skip_geometry:
                 self._desktop_manager.show_window(window)
                 damage = True
             self.repaint_root_overlay()
