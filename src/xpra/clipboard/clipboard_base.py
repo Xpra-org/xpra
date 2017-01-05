@@ -232,6 +232,11 @@ class ClipboardProtocolHelperBase(object):
         loop.done({"type": dtype, "format": dformat, "data": data})
 
     def _send_clipboard_token_handler(self, proxy):
+        #send via idle_add so the main loop can run
+        #(prevents tight clipboard loops from completely hogging the main loop)
+        gobject.idle_add(self.do_send_clipboard_token_handler, proxy)
+
+    def do_send_clipboard_token_handler(self, proxy):
         selection = proxy._selection
         log("send clipboard token: %s", selection)
         rsel = self.local_to_remote(selection)
@@ -676,10 +681,12 @@ class ClipboardProxy(gtk.Invisible):
             #not that they want to own the clipboard selection
             return
         self._have_token = True
-        if self._can_receive:
+        if self._can_receive and not self._block_owner_change:
             #if we don't claim the selection (can-receive=False),
             #we will have to send the token back on owner-change!
+            self._block_owner_change = True
             self.claim()
+            glib.idle_add(self.remove_block)
 
     def remove_block(self, *args):
         log("remove_block: %s", self._selection)
