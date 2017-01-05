@@ -904,6 +904,7 @@ class ClientExtras(object):
     def __init__(self, client, opts):
         self.client = client
         self._kh_warning = False
+        self._console_handler_added = False
         if CONSOLE_EVENT_LISTENER:
             self._console_handler_added = self.setup_console_event_listener(True)
         from xpra.platform.win32.win32_events import get_win32_event_listener

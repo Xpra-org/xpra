@@ -414,6 +414,8 @@ else:
             traylog("popup_menu_workaround: adding events callbacks")
             menu.connect("enter-notify-event", enter_menu)
             menu.connect("leave-notify-event", leave_menu)
+        def gtk_main():
+            gtk.main()
 
 GRAB_STATUS_STRING = {
                       GRAB_SUCCESS          : "SUCCESS",

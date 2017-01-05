@@ -23,7 +23,6 @@ gobject = import_gobject()
 gobject.threads_init()
 gtk = import_gtk()
 gdk = import_gdk()
-gdk.threads_init()
 pango = import_pango()
 
 from xpra.platform.gui import init as gui_init

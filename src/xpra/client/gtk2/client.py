@@ -9,7 +9,6 @@ import gobject
 gobject.threads_init()
 import gtk
 from gtk import gdk
-gdk.threads_init()
 
 
 from xpra.gtk_common.gtk_util import gtk_main, color_parse
