@@ -50,7 +50,9 @@ PixbufLoader = import_pixbufloader()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-if os.name=="posix" and envbool("XPRA_SET_WORKSPACE", True):
+USE_X11_BINDINGS = envbool("XPRA_SET_WORKSPACE", True)
+SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
+if os.name=="posix" and USE_X11_BINDINGS:
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
@@ -69,7 +71,7 @@ if os.name=="posix" and envbool("XPRA_SET_WORKSPACE", True):
             #TODO: in theory this is not a proper check, meh - that will do
             root = get_default_root_window()
             supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
-            CAN_SET_WORKSPACE = bool(supported) and "_NET_WM_DESKTOP" in supported
+            CAN_SET_WORKSPACE = SET_WORKSPACE and bool(supported) and "_NET_WM_DESKTOP" in supported
         except Exception as e:
             log.info("failed to setup workspace hooks: %s", e, exc_info=True)
     except ImportError:
@@ -692,10 +694,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.when_realized("xid", do_set_xid)
 
     def xget_u32_property(self, target, name):
-        v = prop_get(target, name, "u32", ignore_errors=True)
-        log("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
-        if type(v)==int:
-            return  v
+        if prop_get:
+            v = prop_get(target, name, "u32", ignore_errors=True)
+            log("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
+            if type(v)==int:
+                return v
         return None
 
     def xset_u32_property(self, target, name, value):
@@ -707,9 +710,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def property_changed(self, widget, event):
         statelog("property_changed(%s, %s) : %s", widget, event, event.atom)
-        if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
+        if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect and self._can_set_workspace:
             self.do_workspace_changed(event)
-        elif event.atom=="_NET_FRAME_EXTENTS":
+        elif event.atom=="_NET_FRAME_EXTENTS" and prop_get:
             v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
             statelog("_NET_FRAME_EXTENTS: %s", v)
             if v:
@@ -730,11 +733,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
                 self._window_state["frame"] = self._client.crect(*v)
                 self.send_configure_event(True)
-        elif event.atom=="XKLAVIER_STATE":
+        elif event.atom=="XKLAVIER_STATE" and prop_get:
             #unused for now, but log it:
             xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
             keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
-        elif event.atom=="_NET_WM_STATE":
+        elif event.atom=="_NET_WM_STATE" and prop_get:
             wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
             #code mostly duplicated from gtk_x11/window.py:
             WM_STATE_NAME = {
@@ -765,7 +768,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def workspace_changed(self):
         #on X11 clients, this fires from the root window property watcher
         ClientWindowBase.workspace_changed(self)
-        self.do_workspace_changed("desktop workspace changed")
+        if self._can_set_workspace:
+            self.do_workspace_changed("desktop workspace changed")
 
     def do_workspace_changed(self, info):
         #call this method whenever something workspace related may have changed
@@ -805,13 +809,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def get_workspace_count(self):
-        if not HAS_X11_BINDINGS:
+        if not self._can_set_workspace:
             return None
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
 
 
     def set_workspace(self, workspace):
         workspacelog("set_workspace(%s)", workspace)
+        if not self._can_set_workspace:
+            return
         if not self._been_mapped:
             #will be dealt with in the map event handler
             #which will look at the window metadata again
