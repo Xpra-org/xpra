@@ -5,45 +5,61 @@
 
 
 import os.path
-from xpra.log import Logger
-log = Logger("webcam", "win32")
 
-from xpra.platform.paths import get_app_dir
+#make it possible to run this file without any xpra dependencies:
+try:
+    from xpra.log import Logger
+    from xpra.platform.paths import get_app_dir
+    tlb_dir = get_app_dir()
+    log = Logger("webcam", "win32")
+except ImportError:
+    tlb_dir = os.getcwd()
+    def log(*args):
+        print(args[0] % args[1:])
 
-#suspend logging during comtypes.client._code_cache and loading of tlb files:
-#also set minimum to INFO for all of comtypes
 import logging
 logging.getLogger("comtypes").setLevel(logging.INFO)
-loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
-saved_levels = [x.getEffectiveLevel() for x in loggers]
-try:
-    for logger in loggers:
-        logger.setLevel(logging.WARNING)
-    import comtypes                                         #@UnresolvedImport
-    from comtypes.client import GetModule, CreateObject     #@UnresolvedImport
-    from comtypes import CoClass, GUID                      #@UnresolvedImport
-    from comtypes.automation import VARIANT                 #@UnresolvedImport
-    from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
-    from ctypes import POINTER
-    comtypes.client._generate.__verbose__ = False
 
-    #load directshow:
-    module_dir = get_app_dir()
-    #so we can run from the source tree:
-    if os.path.exists(os.path.join(module_dir, "win32")):
-        module_dir = os.path.join(module_dir, "win32")
-    directshow_tlb = os.path.join(module_dir, "DirectShow.tlb")
-    log("loading module from %s", directshow_tlb)
-    directshow = GetModule(directshow_tlb)
-    log("directshow=%s", directshow)
-finally:
-    for i, logger in enumerate(loggers):
-        logger.setLevel(saved_levels[i])
+import comtypes                                         #@UnresolvedImport
+from comtypes.automation import VARIANT                 #@UnresolvedImport
+from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
+from ctypes import POINTER
 
 
-CLSID_VideoInputDeviceCategory  = GUID("{860BB310-5D01-11d0-BD3B-00A0C911CE86}")
-CLSID_SystemDeviceEnum          = GUID('{62BE5D10-60EB-11d0-BD3B-00A0C911CE86}')
-class DeviceEnumerator(CoClass):
+def quiet_load_tlb(tlb_filename):
+    log("quiet_load_tlb(%s)", tlb_filename)
+    #suspend logging during comtypes.client._code_cache and loading of tlb files:
+    #also set minimum to INFO for all of comtypes
+    loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
+    saved_levels = [x.getEffectiveLevel() for x in loggers]
+    try:
+        for logger in loggers:
+            logger.setLevel(logging.WARNING)
+        log("loading module from %s", tlb_filename)
+        from comtypes import client                  #@UnresolvedImport
+        client._generate.__verbose__ = False
+        module = client.GetModule(tlb_filename)
+        log("%s=%s", tlb_filename, module)
+        return module
+    finally:
+        for i, logger in enumerate(loggers):
+            logger.setLevel(saved_levels[i])
+
+#load directshow:
+win32_tlb_dir = os.path.join(tlb_dir, "win32")
+if os.path.exists(win32_tlb_dir):
+    tlb_dir = win32_tlb_dir
+directshow_tlb = os.path.join(tlb_dir, "DirectShow.tlb")
+directshow_tlb = os.environ.get("XPRA_DIRECTSHOW_TLB", directshow_tlb)
+log("directshow_tlb=%s", directshow_tlb)
+if not os.path.exists(directshow_tlb):
+    raise ImportError("DirectShow.tlb is missing")
+directshow = quiet_load_tlb(directshow_tlb)
+log("directshow: %s", dir(directshow))
+
+CLSID_VideoInputDeviceCategory  = comtypes.GUID("{860BB310-5D01-11d0-BD3B-00A0C911CE86}")
+CLSID_SystemDeviceEnum          = comtypes.GUID('{62BE5D10-60EB-11d0-BD3B-00A0C911CE86}')
+class DeviceEnumerator(comtypes.CoClass):
     _reg_clsid_ = CLSID_SystemDeviceEnum
     _com_interfaces_ = [directshow.ICreateDevEnum]
     _idlflags_ = []
@@ -72,6 +88,7 @@ def get_device_information(moniker):
     return info
 
 def get_video_devices():
+    from comtypes.client import CreateObject    #@UnresolvedImport
     dev_enum = CreateObject(DeviceEnumerator)
     class_enum = dev_enum.CreateClassEnumerator(CLSID_VideoInputDeviceCategory, 0)
     fetched = True
