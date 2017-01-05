@@ -1,4 +1,15 @@
 xpra (1.0.1-1) UNRELEASED; urgency=low
+  * fix compatibility with newer versions of pyobjc
+  * fix race condition in "xpra info" window handler
+  * fix html5 client ignoring paint errors
+  * fix Mac OS bell with newer OS versions
+  * fix spurious warning: "disabled" is a valid clipboard direction
+  * fix setting of "xpra" group for shared sockets
+  * fix html5 client auto-connect
+  * fix ssh to default port 22: don't specify the port
+  * fix sound error handling cases
+  * fix don't use XDG_RUNTIME_DIR for xpra script on Ubuntu 14.04
+  * fix window minimization with some window managers
   * fix multi-monitor maximize with MS Windows clients
   * fix system tray clenup race condition error
   * fix suse RPM packaging
@@ -19,7 +30,7 @@ xpra (1.0.1-1) UNRELEASED; urgency=low
   * fix encoding quality tray tooltip message when disabled by mmap
   * fix systray forwarding window position
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 26 Dec 2016 11:21:02 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Jan 2017 23:36:03 +0700
 
 xpra (1.0-1) UNRELEASED; urgency=low
   * support all current versions of Ubuntu and Debian
