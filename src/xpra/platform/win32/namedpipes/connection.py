@@ -1,21 +1,28 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (c) 2016 Antoine Martin <antoine@nagafix.co.uk>
+# Copyright (c) 2016-2017 Antoine Martin <antoine@nagafix.co.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #@PydevCodeAnalysisIgnore
 
+import ctypes
 import binascii
-import win32api     #@UnresolvedImport
+
 from xpra.net.bytestreams import Connection
-from win32pipe import DisconnectNamedPipe                                   #@UnresolvedImport
-from win32file import ReadFile, WriteFile, CloseHandle, FlushFileBuffers    #@UnresolvedImport
-from pywintypes import error                                                #@UnresolvedImport
-import winerror     #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("network", "win32")
+
+kernel32 = ctypes.windll.kernel32
+ReadFile = kernel32.ReadFile
+WriteFile = kernel32.WriteFile
+CloseHandle = kernel32.CloseHandle
+DisconnectNamedPipe = kernel32.DisconnectNamedPipe
+FlushFileBuffers = kernel32.FlushFileBuffers
+
+ERROR_PIPE_NOT_CONNECTED = 233
+ERROR_MORE_DATA = 234
 
 
 class NamedPipeConnection(Connection):
@@ -26,19 +33,19 @@ class NamedPipeConnection(Connection):
     def untilConcludes(self, *args):
         try:
             return Connection.untilConcludes(self, *args)
-        except error as e:
-            code = e[0]
-            if code==winerror.ERROR_PIPE_NOT_CONNECTED:
+        except Exception as e:
+            code = ctypes.get_last_error()
+            if code==ERROR_PIPE_NOT_CONNECTED:
                 return None
-            raise IOError("%s: %s" % (code, win32api.FormatMessage(code)))
+            raise IOError("%s: %s" % (e, code))
 
     def read(self, n):
         return self._read(self._pipe_read, n)
 
     def _pipe_read(self, buf):
         data = []
-        hr = winerror.ERROR_MORE_DATA
-        while hr==winerror.ERROR_MORE_DATA:
+        hr = ERROR_MORE_DATA
+        while hr==ERROR_MORE_DATA:
             hr, d = ReadFile(self.pipe_handle, 65536)
             data.append(d)
         s = b"".join(data)
@@ -59,7 +66,7 @@ class NamedPipeConnection(Connection):
         def _close_err(fn, e):
             l = log.error
             code = e[0]
-            if code==winerror.ERROR_PIPE_NOT_CONNECTED:
+            if code==ERROR_PIPE_NOT_CONNECTED:
                 l = log.debug
             l("Error: %s(%s) %i: %s", fn, self.pipe_handle, code, e)
         try:

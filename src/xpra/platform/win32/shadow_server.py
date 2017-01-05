@@ -8,8 +8,7 @@ import os
 import time
 import ctypes
 
-import win32ui          #@UnresolvedImport
-import win32gui         #@UnresolvedImport
+from ctypes.wintypes import RECT, BOOL, HWND, LPARAM
 
 from xpra.log import Logger
 from xpra.util import AdHocStruct, envbool, prettify_plug_name
@@ -30,10 +29,26 @@ from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.codecs.image_wrapper import ImageWrapper
 
 user32 = ctypes.windll.user32
+EnumWindows = ctypes.windll.user32.EnumWindows
+EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
+FindWindow = user32.FindWindowA
+IsWindowVisible = user32.IsWindowVisible
+GetWindowTextLength = user32.GetWindowTextLengthW
+GetWindowText = user32.GetWindowTextW
+GetWindowRect = user32.GetWindowRect
 GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+GetDesktopWindow = user32.GetDesktopWindow
 GetSystemMetrics = user32.GetSystemMetrics
+GetWindowDC = user32.GetWindowDC
 SetCursorPos = user32.SetCursorPos
 mouse_event = user32.mouse_event
+
+gdi32 = ctypes.windll.gdi32
+CreateCompatibleDC = gdi32.CreateCompatibleDC
+CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
+CreateBitmap = gdi32.CreateBitmap
+SelectObject = gdi32.SelectObject
+BitBlt = gdi32.BitBlt
 
 
 NOEVENT = object()
@@ -68,7 +83,7 @@ class Win32RootWindowModel(RootWindowModel):
     def __init__(self, root):
         RootWindowModel.__init__(self, root)
         self.metrics = None
-        self.ddc, self.cdc, self.memdc, self.bitmap = None, None, None, None
+        self.dc, self.memdc, self.bitmap = None, None, None
         if DISABLE_DWM_COMPOSITION:
             try:
                 from ctypes import windll
@@ -111,12 +126,13 @@ class Win32RootWindowModel(RootWindowModel):
         l = log
         if logit or envbool("XPRA_SHAPE_DEBUG", False):
             l = shapelog
-        taskbar = win32gui.FindWindow("Shell_TrayWnd", None)
+        taskbar = FindWindow("Shell_TrayWnd", None)
         l("taskbar window=%#x", taskbar)
         ourpid = os.getpid()
         l("our pid=%i", ourpid)
-        def enum_windows_cb(hwnd, rects):
-            if not win32gui.IsWindowVisible(hwnd):
+        rectangles = []
+        def enum_windows_cb(hwnd, lparam):
+            if not IsWindowVisible(hwnd):
                 l("skipped invisible window %#x", hwnd)
                 return True
             pid = ctypes.c_int()
@@ -125,9 +141,18 @@ class Win32RootWindowModel(RootWindowModel):
                 l("skipped our own window %#x", hwnd)
                 return True
             #skipping IsWindowEnabled check
-            window_title = win32gui.GetWindowText(hwnd)
+            length = GetWindowTextLength(hwnd)
+            buf = ctypes.create_unicode_buffer(length+1)
+            if GetWindowText(hwnd, buf, length+1)>0:
+                window_title = buf.value
+            else:
+                window_title = ''
             l("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
-            left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+            rect = RECT()
+            if GetWindowRect(hwnd, ctypes.byref(rect))==0:
+                l("GetWindowRect failure")
+                return True
+            left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
             if right<0 or bottom<0:
                 l("skipped offscreen window at %ix%i", right, bottom)
                 return True
@@ -171,10 +196,9 @@ class Win32RootWindowModel(RootWindowModel):
             if top<0:
                 top = 0
                 h = bottom
-            rects.append((left, top, w, h))
+            rectangles.append((left, top, w, h))
             return True
-        rectangles = []
-        win32gui.EnumWindows(enum_windows_cb, rectangles)
+        EnumWindows(EnumWindowsProc(enum_windows_cb))
         l("get_shape_rectangles()=%s", rectangles)
         return sorted(rectangles)
 
@@ -194,12 +218,12 @@ class Win32RootWindowModel(RootWindowModel):
 
     def get_image(self, x, y, width, height, logger=None):
         start = time.time()
-        desktop_wnd = win32gui.GetDesktopWindow()
+        desktop_wnd = GetDesktopWindow()
         metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
             self.metrics = metrics
-            self.ddc, self.cdc, self.memdc, self.bitmap = None, None, None, None
+            self.dc, self.memdc, self.bitmap = None, None, None, None
         dx, dy, dw, dh = metrics
         #clamp rectangle requested to the virtual desktop size:
         if x<dx:
@@ -213,22 +237,21 @@ class Win32RootWindowModel(RootWindowModel):
         if height>dh:
             height = dh
         try:
-            if not self.ddc:
-                self.ddc = win32gui.GetWindowDC(desktop_wnd)
-                assert self.ddc, "cannot get a drawing context from the desktop window %s" % desktop_wnd
-                self.cdc = win32ui.CreateDCFromHandle(self.ddc)
-                assert self.cdc, "cannot get a compatible drawing context from the desktop drawing context %s" % self.ddc
-                self.memdc = self.cdc.CreateCompatibleDC()
-                self.bitmap = win32ui.CreateBitmap()
-                self.bitmap.CreateCompatibleBitmap(self.cdc, width, height)
+            if not self.dc:
+                self.dc = GetWindowDC(desktop_wnd)
+                assert self.dc, "cannot get a drawing context from the desktop window %s" % desktop_wnd
+                self.memdc = self.dc.CreateCompatibleDC()
+                self.bitmap = CreateBitmap()
+                self.bitmap.CreateCompatibleBitmap(self.dc, width, height)
             self.memdc.SelectObject(self.bitmap)
             select_time = time.time()
             log("get_image up to SelectObject took %ims", (select_time-start)*1000)
             try:
-                self.memdc.BitBlt((0, 0), (width, height), self.cdc, (x, y), win32con.SRCCOPY)
-            except win32ui.error as e:
+                self.memdc.BitBlt((0, 0), (width, height), self.dc, (x, y), win32con.SRCCOPY)
+            except Exception as e:
+                log("BitBlt error", exc_info=True)
                 log.error("Error: cannot capture screen")
-                log("win32ui.error: %s", e)
+                log.error(" %s", e)
                 return None
             bitblt_time = time.time()
             log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
