@@ -43,9 +43,4 @@ def get_version_info():
     v = get_pywin32_version()
     if v:
         d["pywin32.version"] = v
-    try:
-        import wmi          #@UnresolvedImport
-        d["wmi.version"] = wmi.__VERSION__
-    except:
-        pass
     return d
