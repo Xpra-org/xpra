@@ -1085,7 +1085,6 @@ if WIN32:
     else:
         if csc_swscale_ENABLED:
             libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
-            assert os.path.exists(libffmpeg_path), "no ffmpeg found, cannot use csc_swscale"
     libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
     libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
     libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
