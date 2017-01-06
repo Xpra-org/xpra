@@ -14,6 +14,8 @@ from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
 
+from libc.stdint cimport uintptr_t
+
 
 THREADS = envint("XPRA_X264_THREADS")
 SLICED_THREADS = envint("XPRA_X264_SLICED_THREADS", 1)
@@ -540,7 +542,7 @@ cdef class Encoder:
 
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
-        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <unsigned long> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
+        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <uintptr_t> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
         log(" preset=%s, profile=%s, tune=%s", preset, self.profile, self.tune)
         log(" me=%s, me_range=%s, mv_range=%s, weighted-pred=%i",
                     ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, param.analyse.i_weighted_pred)
@@ -579,7 +581,7 @@ cdef class Encoder:
 
 
     def clean(self):                        #@DuplicatedSignature
-        log("x264 close context %#x", <unsigned long> self.context)
+        log("x264 close context %#x", <uintptr_t> self.context)
         cdef x264_t *context = self.context
         if context!=NULL:
             self.context = NULL
@@ -778,7 +780,7 @@ cdef class Encoder:
             nal_indexes.append(index)
             if LOG_NALS:
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
-                         i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <unsigned long> nals[i].p_payload, nals[i].i_payload)
+                         i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <uintptr_t> nals[i].p_payload, nals[i].i_payload)
         cdata = b"".join(bnals)
         if len(cdata)!=frame_size:
             log.warn("Warning: h264 nals do not match frame size")

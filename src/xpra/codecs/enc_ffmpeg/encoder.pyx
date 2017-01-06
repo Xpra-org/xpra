@@ -17,6 +17,8 @@ from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_non
 from xpra.util import AtomicInteger, csv, print_nested_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes
 
+from libc.stdint cimport uintptr_t
+
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
@@ -736,12 +738,12 @@ cdef list_options(void *obj, const AVClass *av_class):
 
 cdef int write_packet(void *opaque, uint8_t *buf, int buf_size):
     global GEN_TO_ENCODER
-    encoder = GEN_TO_ENCODER.get(<unsigned long> opaque)
-    #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <unsigned long> opaque, <unsigned long> buf, buf_size, type(encoder))
+    encoder = GEN_TO_ENCODER.get(<uintptr_t> opaque)
+    #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <uintptr_t> opaque, <uintptr_t> buf, buf_size, type(encoder))
     if not encoder:
-        log.error("Error: write_packet called for unregistered encoder %i!", <unsigned long> opaque)
+        log.error("Error: write_packet called for unregistered encoder %i!", <uintptr_t> opaque)
         return -1
-    return encoder.write_packet(<unsigned long> buf, buf_size)
+    return encoder.write_packet(<uintptr_t> buf, buf_size)
 
 MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 def get_spec(encoding, colorspace):
@@ -837,14 +839,14 @@ cdef class Encoder(object):
         cdef AVOutputFormat *oformat = get_av_output_format(strtobytes(self.muxer_format))
         if oformat==NULL:
             raise Exception("libavformat does not support %s" % self.muxer_format)
-        log("init_encoder() AVOutputFormat(%s)=%#x, flags=%s", self.muxer_format, <unsigned long> oformat, flagscsv(AVFMT, oformat.flags))
+        log("init_encoder() AVOutputFormat(%s)=%#x, flags=%s", self.muxer_format, <uintptr_t> oformat, flagscsv(AVFMT, oformat.flags))
         if oformat.flags & AVFMT_ALLOW_FLUSH==0:
             raise Exception("AVOutputFormat(%s) does not support flushing!" % self.muxer_format)
         r = avformat_alloc_output_context2(&self.muxer_ctx, oformat, strtobytes(self.muxer_format), NULL)
         if r!=0:
             msg = av_error_str(r)
             raise Exception("libavformat cannot allocate context: %s" % msg)
-        log("init_encoder() avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s", r, self.muxer_format, <unsigned long> self.muxer_ctx,
+        log("init_encoder() avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s", r, self.muxer_format, <uintptr_t> self.muxer_ctx,
             flagscsv(FMT_FLAGS, self.muxer_ctx.flags), flagscsv(AVFMTCTX, self.muxer_ctx.ctx_flags))
         list_options(self.muxer_ctx, self.muxer_ctx.av_class)
 
@@ -861,7 +863,7 @@ cdef class Encoder(object):
                 msg = av_error_str(r)
                 raise Exception("failed to set %s muxer 'movflags' options '%s': %s" % (self.muxer_format, movflags, msg))
 
-        cdef unsigned long gen = generation.increase()
+        cdef uintptr_t gen = generation.increase()
         GEN_TO_ENCODER[gen] = self
         self.buffer = <unsigned char*> av_malloc(DEFAULT_BUF_LEN)
         if self.buffer==NULL:
@@ -869,7 +871,7 @@ cdef class Encoder(object):
         self.muxer_ctx.pb = avio_alloc_context(self.buffer, DEFAULT_BUF_LEN, 1, <void *> gen, NULL, write_packet, NULL)
         if self.muxer_ctx.pb==NULL:
             raise Exception("libavformat failed to allocate io context")
-        log("init_encoder() saving %s stream to bitstream buffer %#x", self.encoding, <unsigned long> self.buffer)
+        log("init_encoder() saving %s stream to bitstream buffer %#x", self.encoding, <uintptr_t> self.buffer)
         self.muxer_ctx.flush_packets = 1
         self.muxer_ctx.bit_rate = 250000
         self.muxer_ctx.start_time = 0
@@ -879,7 +881,7 @@ cdef class Encoder(object):
 
         self.video_stream = avformat_new_stream(self.muxer_ctx, NULL)    #self.video_codec
         self.video_stream.id = 0
-        log("init_encoder() video: avformat_new_stream=%#x, nb streams=%i", <unsigned long> self.video_stream, self.muxer_ctx.nb_streams)
+        log("init_encoder() video: avformat_new_stream=%#x, nb streams=%i", <uintptr_t> self.video_stream, self.muxer_ctx.nb_streams)
 
         self.video_ctx = avcodec_alloc_context3(self.video_codec)
         if self.video_ctx==NULL:
@@ -938,18 +940,18 @@ cdef class Encoder(object):
 
         r = avcodec_parameters_from_context(self.video_stream.codecpar, self.video_ctx)
         if r<0:
-            raise Exception("could not copy video context parameters %#x: %s" % (<unsigned long> self.video_stream.codecpar, av_error_str(r)))
+            raise Exception("could not copy video context parameters %#x: %s" % (<uintptr_t> self.video_stream.codecpar, av_error_str(r)))
 
         if AUDIO:
             self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
             if self.audio_codec==NULL:
                 raise Exception("cannot find audio codec!")
-            log("init_encoder() audio_codec=%#x", <unsigned long> self.audio_codec)
+            log("init_encoder() audio_codec=%#x", <uintptr_t> self.audio_codec)
             self.audio_stream = avformat_new_stream(self.muxer_ctx, NULL)
             self.audio_stream.id = 1
-            log("init_encoder() audio: avformat_new_stream=%#x, nb streams=%i", <unsigned long> self.audio_stream, self.muxer_ctx.nb_streams)
+            log("init_encoder() audio: avformat_new_stream=%#x, nb streams=%i", <uintptr_t> self.audio_stream, self.muxer_ctx.nb_streams)
             self.audio_ctx = avcodec_alloc_context3(self.audio_codec)
-            log("init_encoder() audio_context=%#x", <unsigned long> self.audio_ctx)
+            log("init_encoder() audio_context=%#x", <uintptr_t> self.audio_ctx)
             self.audio_ctx.sample_fmt = AV_SAMPLE_FMT_FLTP
             self.audio_ctx.time_base.den = 25
             self.audio_ctx.time_base.num = 1
@@ -969,7 +971,7 @@ cdef class Encoder(object):
                 raise Exception("could not open %s encoder context: %s" % ("aac", av_error_str(r)))
             r = avcodec_parameters_from_context(self.audio_stream.codecpar, self.audio_ctx)
             if r<0:
-                raise Exception("could not copy audio context parameters %#x: %s" % (<unsigned long> self.audio_stream.codecpar, av_error_str(r)))
+                raise Exception("could not copy audio context parameters %#x: %s" % (<uintptr_t> self.audio_stream.codecpar, av_error_str(r)))
 
         log("init_encoder() writing %s header", self.muxer_format)
         r = avformat_write_header(self.muxer_ctx, &muxer_opts)
@@ -1013,7 +1015,7 @@ cdef class Encoder(object):
         cdef int r
         log("%s.clean_encoder()", self)
         if self.av_frame!=NULL:
-            log("clean_encoder() freeing AVFrame: %#x", <unsigned long> self.av_frame)
+            log("clean_encoder() freeing AVFrame: %#x", <uintptr_t> self.av_frame)
             av_frame_free(&self.av_frame)
         if self.muxer_ctx!=NULL:
             if self.frames>0:
@@ -1022,26 +1024,26 @@ cdef class Encoder(object):
                 if self.muxer_ctx.pb!=NULL:
                     av_free(self.muxer_ctx.pb)
                     self.muxer_ctx.pb = NULL
-            log("clean_encoder() freeing av format context %#x", <unsigned long> self.muxer_ctx)
+            log("clean_encoder() freeing av format context %#x", <uintptr_t> self.muxer_ctx)
             avformat_free_context(self.muxer_ctx)
             self.muxer_ctx = NULL
-            log("clean_encoder() freeing bitstream buffer %#x", <unsigned long> self.buffer)
+            log("clean_encoder() freeing bitstream buffer %#x", <uintptr_t> self.buffer)
             if self.buffer!=NULL:
                 av_free(self.buffer)
                 self.buffer = NULL
         cdef unsigned long ctx_key          #@DuplicatedSignature
-        log("clean_encoder() freeing AVCodecContext: %#x", <unsigned long> self.video_ctx)
+        log("clean_encoder() freeing AVCodecContext: %#x", <uintptr_t> self.video_ctx)
         if self.video_ctx!=NULL:
             r = avcodec_close(self.video_ctx)
             if r!=0:
-                log.error("Error: failed to close video encoder context %#x", <unsigned long> self.video_ctx)
+                log.error("Error: failed to close video encoder context %#x", <uintptr_t> self.video_ctx)
                 log.error(" %s", av_error_str(r))
             av_free(self.video_ctx)
             self.video_ctx = NULL
         if self.audio_ctx!=NULL:
             r = avcodec_close(self.audio_ctx)
             if r!=0:
-                log.error("Error: failed to close audio encoder context %#x", <unsigned long> self.audio_ctx)
+                log.error("Error: failed to close audio encoder context %#x", <uintptr_t> self.audio_ctx)
                 log.error(" %s", av_error_str(r))
             av_free(self.audio_ctx)
             self.audio_ctx = NULL
@@ -1239,8 +1241,8 @@ cdef class Encoder(object):
         self.clean()
         return v
 
-    def write_packet(self, unsigned long buf, int buf_size):
-        log("write_packet(%#x, %#x)", <unsigned long> buf, buf_size)
+    def write_packet(self, uintptr_t buf, int buf_size):
+        log("write_packet(%#x, %#x)", <uintptr_t> buf, buf_size)
         cdef uint8_t *cbuf = <uint8_t*> buf
         buffer = cbuf[:buf_size]
         self.buffers.append(buffer)

@@ -19,6 +19,8 @@ from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@U
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.buffers.membuf cimport padbuf, MemBuf
 
+from libc.stdint cimport uintptr_t
+
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
@@ -315,7 +317,7 @@ cdef class ColorspaceConverter:
         self.context = sws_getContext(self.src_width, self.src_height, self.src_format_enum,
                                       self.dst_width, self.dst_height, self.dst_format_enum,
                                       self.flags, NULL, NULL, NULL)
-        log("sws context=%#x", <unsigned long> self.context)
+        log("sws context=%#x", <uintptr_t> self.context)
         assert self.context!=NULL, "sws_getContext returned NULL"
 
     def get_info(self):         #@DuplicatedSignature
@@ -372,7 +374,7 @@ cdef class ColorspaceConverter:
         #overzealous clean is cheap!
         cdef int i
         if self.context!=NULL:
-            log("swscale.ColorspaceConverter.clean() sws context=%#x", <unsigned long> self.context)
+            log("swscale.ColorspaceConverter.clean() sws context=%#x", <uintptr_t> self.context)
             sws_freeContext(self.context)
             self.context = NULL
         self.src_width = 0

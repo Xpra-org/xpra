@@ -12,6 +12,8 @@ import gobject
 import gtk
 import gtk.gdk
 
+from libc.stdint cimport uintptr_t
+
 from xpra.log import Logger
 log = Logger("gtk")
 
@@ -74,6 +76,6 @@ def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):
     for atom_object in gdk_atom_objects:
         c_gdk_atom = PyGdkAtom_Get(atom_object)
         if c_gdk_atom!=GDK_NONE:
-            gdk_atom_value = <unsigned long> c_gdk_atom
+            gdk_atom_value = <uintptr_t> c_gdk_atom
             atom_array.append(gdk_atom_value)
     return atom_array

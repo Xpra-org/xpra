@@ -14,6 +14,7 @@ from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@U
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.os_util import bytestostr
 
+from libc.stdint cimport uintptr_t
 
 ctypedef unsigned long size_t
 ctypedef unsigned char uint8_t
@@ -225,7 +226,6 @@ cdef void clear_frame(AVFrame *frame):
     for i in range(4):
         frame.data[i] = NULL
 
-
 cdef class AVFrameWrapper:
     """
         Wraps an AVFrame so we can free it
@@ -238,7 +238,7 @@ cdef class AVFrameWrapper:
     cdef set_context(self, AVCodecContext *avctx, AVFrame *frame):
         self.avctx = avctx
         self.frame = frame
-        log("%s.set_context(%#x, %#x)", self, <unsigned long> avctx, <unsigned long> frame)
+        log("%s.set_context(%#x, %#x)", self, <uintptr_t> avctx, <uintptr_t> frame)
 
     def __dealloc__(self):
         #By the time this wrapper is garbage collected,
@@ -248,14 +248,14 @@ cdef class AVFrameWrapper:
     def __repr__(self):
         if self.frame==NULL:
             return "AVFrameWrapper(NULL)"
-        return "AVFrameWrapper(%#x)" % <unsigned long> self.frame
+        return "AVFrameWrapper(%#x)" % <uintptr_t> self.frame
 
     def xpra_free(self):
         log("%s.xpra_free()", self)
         self.free()
 
     cdef free(self):
-        log("%s.free() context=%#x, frame=%#x", self, <unsigned long> self.avctx, <unsigned long> self.frame)
+        log("%s.free() context=%#x, frame=%#x", self, <uintptr_t> self.avctx, <uintptr_t> self.frame)
         if self.avctx!=NULL and self.frame!=NULL:
             av_frame_unref(self.frame)
             self.frame = NULL
@@ -419,16 +419,16 @@ cdef class Decoder:
                     img.clone_pixel_data()
 
         if self.av_frame!=NULL:
-            log("clean_decoder() freeing AVFrame: %#x", <unsigned long> self.av_frame)
+            log("clean_decoder() freeing AVFrame: %#x", <uintptr_t> self.av_frame)
             av_frame_free(&self.av_frame)
             #redundant: self.frame = NULL
 
         cdef unsigned long ctx_key          #@DuplicatedSignature
-        log("clean_decoder() freeing AVCodecContext: %#x", <unsigned long> self.codec_ctx)
+        log("clean_decoder() freeing AVCodecContext: %#x", <uintptr_t> self.codec_ctx)
         if self.codec_ctx!=NULL:
             r = avcodec_close(self.codec_ctx)
             if r!=0:
-                log.error("Error: failed to close decoder context %#x:", <unsigned long> self.codec_ctx)
+                log.error("Error: failed to close decoder context %#x:", <uintptr_t> self.codec_ctx)
                 log.error(" %s", av_error_str(r))
             av_free(self.codec_ctx)
             self.codec_ctx = NULL

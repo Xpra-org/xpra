@@ -6,14 +6,16 @@
 import time
 import os
 
-from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
-LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
-
-
+from xpra.util import envbool
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
+
+from libc.stdint cimport uintptr_t
+
+
+LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -412,11 +414,11 @@ cdef class Encoder:
             assert self.src_format=="YUV444P"
             self.param.internalCsp = X265_CSP_I444
         self.context = x265_encoder_open(self.param)
-        log("init_encoder() x265 context=%#x", <unsigned long> self.context)
+        log("init_encoder() x265 context=%#x", <uintptr_t> self.context)
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     def clean(self):                        #@DuplicatedSignature
-        log("clean() x265 param=%#x, context=%#x", <unsigned long> self.param, <unsigned long> self.context)
+        log("clean() x265 param=%#x, context=%#x", <uintptr_t> self.param, <uintptr_t> self.context)
         if self.param!=NULL:
             x265_param_free(self.param)
             self.param = NULL
@@ -555,7 +557,7 @@ cdef class Encoder:
             out = <char *>nal[i].payload
             if LOG_NALS:
                 log.info(" nal %s type:%10s, payload=%#x, payload size=%#x",
-                         i, NAL_TYPES.get(nal[i].type, nal[i].type), <unsigned long> out, nal_size)
+                         i, NAL_TYPES.get(nal[i].type, nal[i].type), <uintptr_t> out, nal_size)
             frame_size += nal_size
             data.append(out[:nal_size])
         x265_picture_free(pic_out)
