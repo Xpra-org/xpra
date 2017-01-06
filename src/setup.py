@@ -1163,7 +1163,10 @@ if WIN32:
     ###########################################################
 
     #ie: C:\Python3.5\Lib\site-packages\
-    site_dir = site.getsitepackages()[1]
+    try:
+        site_dir = site.getsitepackages()[1]
+    except:
+        site_dir = site.getsitepackages()[0]
     #this is where the win32 gi installer will put things:
     gnome_include_path = os.path.join(site_dir, "gnome")
 
@@ -1585,12 +1588,20 @@ if WIN32:
     #(until someone fixes the win32 builds properly)
     PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
     def pycairo_pkgconfig(*pkgs_options, **ekw):
-        if "pycairo" in pkgs_options:
-            kw = pkgconfig("cairo", **ekw)
-            add_to_keywords(kw, 'include_dirs', PYCAIRO_DIR)
-            checkdirs(PYCAIRO_DIR)
-            return kw
-        return exec_pkgconfig(*pkgs_options, **ekw)
+        try:
+            return exec_pkgconfig(*pkgs_options, **ekw)
+        except:
+            #this is only needed for non-mingw builds:
+            #ugly workaround for building the ugly pycairo workaround on win32:
+            #the win32 py-gi installers don't have development headers for pycairo
+            #so we hardcode them here instead...
+            #(until someone fixes the win32 builds properly)
+            if "pycairo" in pkgs_options:
+                kw = pkgconfig("cairo", **ekw)
+                add_to_keywords(kw, 'include_dirs', PYCAIRO_DIR)
+                checkdirs(PYCAIRO_DIR)
+                return kw
+            raise
 
     #hard-coded pkgconfig replacement for visual studio:
     #(normally used with python2 / py2exe builds)
@@ -1741,10 +1752,6 @@ if WIN32:
         #use the hardcoded version above:
         pkgconfig = VC_pkgconfig
     else:
-        #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
-        #the win32 py-gi installers don't have development headers for pycairo
-        #so we hardcode them here instead...
-        #(until someone fixes the win32 builds properly)
         pkgconfig = pycairo_pkgconfig
 
 
