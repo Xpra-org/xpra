@@ -681,12 +681,13 @@ class ClipboardProxy(gtk.Invisible):
             #not that they want to own the clipboard selection
             return
         self._have_token = True
-        if self._can_receive and not self._block_owner_change:
-            #if we don't claim the selection (can-receive=False),
-            #we will have to send the token back on owner-change!
-            self._block_owner_change = True
+        if self._can_receive:
+            if not self._block_owner_change:
+                #if we don't claim the selection (can-receive=False),
+                #we will have to send the token back on owner-change!
+                self._block_owner_change = True
+                glib.idle_add(self.remove_block)
             self.claim()
-            glib.idle_add(self.remove_block)
 
     def remove_block(self, *args):
         log("remove_block: %s", self._selection)
