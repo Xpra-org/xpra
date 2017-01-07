@@ -785,6 +785,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("video-region-detection","enable video detection",           min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-exclusion-zones","set window regions to exclude from video regions: 'WID,(x,y,w,h),(x,y,w,h),..', ie: '1 (0,10,100,20),(200,300,20,20)'",  min_args=2, max_args=2, validation=[int, parse_4intlist]),
             ArgsControlCommand("video-region",          "set the video region",             min_args=5, max_args=5, validation=[int, int, int, int, int]),
+            ArgsControlCommand("reset-video-region",    "reset video region heuristics",    min_args=1, max_args=1, validation=[int]),
             ArgsControlCommand("lock-batch-delay",      "set a specific batch delay for a window",       min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("unlock-batch-delay",    "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",  min_args=1, max_args=1, validation=[int]),
             ):
@@ -1746,6 +1747,12 @@ class ServerBase(ServerCore):
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_exclusion_zones(zones)
         return "video exclusion zones set to %s for window %i" % (zones, wid)
+
+    def control_command_reset_video_region(self, wid):
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.reset()
+        return "reset video region heuristics for window %i" % wid
+        
 
     def control_command_lock_batch_delay(self, wid, delay):
         for ws in self._control_windowsources_from_args(wid).keys():

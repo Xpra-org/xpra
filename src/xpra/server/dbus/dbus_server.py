@@ -203,6 +203,12 @@ class DBUS_Server(dbus.service.Object):
             nzones.append([ni(x) for x in zone])
         self.server.control_command_video_region_exclusion_zones(ni(wid), nzones)
 
+    @dbus.service.method(INTERFACE, in_signature='ib')
+    def ResetVideoRegion(self, wid):
+        self.log(".SetVideoRegionDetection(%i)", wid)
+        self.server.control_command_reset_video_region(ni(wid))
+
+
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):

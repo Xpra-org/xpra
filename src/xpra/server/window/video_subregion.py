@@ -78,6 +78,7 @@ class VideoSubregion(object):
         self.last_scores = {}
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
+        self.min_time = time.time()
 
     def reset(self):
         self.cancel_refresh_timer()
@@ -148,6 +149,7 @@ class VideoSubregion(object):
                      "rectangle"    : (r.x, r.y, r.width, r.height),
                      "set-at"       : self.set_at,
                      "time"         : int(self.time),
+                     "min-time"     : int(self.min_time),
                      "non-max-wait" : self.non_max_wait,
                      "in-out"       : self.inout,
                      "score"        : self.score,
@@ -284,7 +286,7 @@ class VideoSubregion(object):
             few_damage_events("total", event_count)
             return
 
-        from_time = max(starting_at, time.time()-MAX_TIME)
+        from_time = max(starting_at, time.time()-MAX_TIME, self.min_time)
         #create a list (copy) to work on:
         lde = [x for x in list(last_damage_events) if x[0]>=from_time]
         dc = len(lde)
