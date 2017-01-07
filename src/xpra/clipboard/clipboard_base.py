@@ -23,7 +23,7 @@ from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
 from xpra.os_util import WIN32
-from xpra.util import csv, envint, envbool
+from xpra.util import csv, envint, envbool, repr_ellipsized
 from xpra.platform.features import CLIPBOARD_GREEDY
 
 
@@ -262,7 +262,7 @@ class ClipboardProtocolHelperBase(object):
                     return
                 target = send_now[0]
                 def got_contents(dtype, dformat, data):
-                    log("got_contents for selection %s: %s, %s, %s", selection, dtype, dformat, data)
+                    log("got_contents for selection %s: %s, %s, %s", selection, dtype, dformat, repr_ellipsized(data))
                     #code mostly duplicated from _process_clipboard_request
                     #see there for details
                     if dtype is None or data is None:
@@ -673,7 +673,7 @@ class ClipboardProxy(gtk.Invisible):
                 for text_target in TEXT_TARGETS:
                     if text_target in target_data:
                         text_data = target_data.get(text_target)
-                        log("clipboard %s set to '%s'", self._selection, text_data)
+                        log("clipboard %s set to '%s'", self._selection, repr_ellipsized(text_data))
                         self._clipboard.set_text(text_data)
         if not claim:
             log("token packet without claim, not setting the token flag")
