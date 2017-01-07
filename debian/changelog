@@ -1,4 +1,5 @@
 xpra (1.0.1-1) UNRELEASED; urgency=low
+  * fix mousewheel events position with MS Windows clients
   * fix compatibility with newer versions of pyobjc
   * fix race condition in "xpra info" window handler
   * fix html5 client ignoring paint errors
@@ -30,7 +31,7 @@ xpra (1.0.1-1) UNRELEASED; urgency=low
   * fix encoding quality tray tooltip message when disabled by mmap
   * fix systray forwarding window position
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Jan 2017 23:36:03 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 07 Jan 2017 15:46:53 +0700
 
 xpra (1.0-1) UNRELEASED; urgency=low
   * support all current versions of Ubuntu and Debian

@@ -1,5 +1,6 @@
-v1.0.1 (2017-01-05)
+v1.0.1 (2017-01-07)
 ======================
+	-- fix mousewheel events position with MS Windows clients
 	-- fix compatibility with newer versions of pyobjc
 	-- fix race condition in "xpra info" window handler
 	-- fix html5 client ignoring paint errors

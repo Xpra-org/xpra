@@ -592,7 +592,8 @@ fi
 
 
 %changelog
-* Thu Jan 05 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.1-1
+* Sat Jan 07 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.1-1
+- fix mousewheel events position with MS Windows clients
 - fix compatibility with newer versions of pyobjc
 - fix race condition in "xpra info" window handler
 - fix html5 client ignoring paint errors
