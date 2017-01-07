@@ -539,8 +539,6 @@ def add_window_hooks(window):
         if WHEEL:
             VERTICAL = "vertical"
             HORIZONTAL = "horizontal"
-            class WheelEvent(AdHocStruct):
-                pass
             def handle_wheel(orientation, wParam, lParam):
                 distance = wParam>>16
                 keys = wParam & 0xFFFF
@@ -559,8 +557,9 @@ def add_window_hooks(window):
                         button = 7 - int(units<0)       #6 for LEFT, 7 for RIGHT
                     buttons = []
                     modifiers = client.get_current_modifiers()
+                    pointer = window._pointer(x, y)
                     def send_button(pressed):
-                        client.send_button(wid, button, pressed, (x, y), modifiers, buttons)
+                        client.send_button(wid, button, pressed, pointer, modifiers, buttons)
                     count = 0
                     v = nval
                     while abs(v)>=WHEEL_DELTA:
