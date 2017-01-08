@@ -489,13 +489,16 @@ def parse_bind_vsock(bind_vsock):
 
 
 def normalize_local_display_name(local_display_name):
-    if not local_display_name.startswith(":"):
+    pos = local_display_name.index(":")
+    if pos<0:
+        after_sc = local_display_name
         local_display_name = ":" + local_display_name
-    if "." in local_display_name:
-        local_display_name = local_display_name[:local_display_name.rindex(".")]
-    assert local_display_name.startswith(":")
-    for char in local_display_name[1:]:
-        assert char in "0123456789", "invalid character in display name: %s" % char
+    else:
+        after_sc = local_display_name[pos+1:]
+    #we used to strip the screen from the display string, ie: ":0.0" -> ":0"
+    #but now we allow it.. (untested!)
+    for char in after_sc:
+        assert char in "0123456789.", "invalid character in display name: %s" % char
     return local_display_name
 
 # Same as socket_path, but preps for the server:

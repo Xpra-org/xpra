@@ -37,7 +37,7 @@ class DBUS_Source(dbus.service.Object):
         name = BUS_NAME
         self.path = PATH + str(sequence.increase())
         if extra:
-            name += extra.replace(".", "_")
+            name += extra.replace(".", "_").replace(":", "_")
         bus_name = dbus.service.BusName(name, session_bus)
         dbus.service.Object.__init__(self, bus_name, self.path)
         self.log("(%s)", source)
