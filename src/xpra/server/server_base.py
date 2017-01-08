@@ -1259,7 +1259,7 @@ class ServerBase(ServerCore):
     def server_event(self, *args):
         for s in self._server_sources.values():
             s.send_server_event(*args)
-        if self.dbus_helper:
+        if self.dbus_server:
             self.dbus_server.Event(str(args[0]), [str(x) for x in args[1:]])
 
 
