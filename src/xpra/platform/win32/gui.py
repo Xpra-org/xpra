@@ -541,6 +541,9 @@ def add_window_hooks(window):
             HORIZONTAL = "horizontal"
             def handle_wheel(orientation, wParam, lParam):
                 distance = wParam>>16
+                if distance>2**15:
+                    #ie: 0xFF88 -> 0x78 (120)
+                    distance = distance-2**16
                 keys = wParam & 0xFFFF
                 y = lParam>>16
                 x = lParam & 0xFFFF
