@@ -65,7 +65,7 @@ class ChildReaper(object):
         self._quit = quit_cb
         self._proc_info = []
         if USE_PROCESS_POLLING:
-            if POLL_WARNING and BUGGY_PYTHON and exit_with_children:
+            if POLL_WARNING and BUGGY_PYTHON:
                 log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
                 log.warn(" switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
             else:
