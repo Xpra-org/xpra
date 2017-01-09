@@ -1684,7 +1684,8 @@ class ServerSource(FileTransferHandler):
                         from xpra.codecs.loader import get_codec
                         PIL = get_codec("PIL")
                         assert PIL
-                        img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
+                        from_fn = getattr(PIL.Image, "frombytes", getattr(Image, "fromstring", None))
+                        img = from_fn("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                         buf = BytesIOClass()
                         img.save(buf, "PNG")
                         cpixels = Compressed("png cursor", buf.getvalue(), can_inline=True)
