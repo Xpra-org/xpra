@@ -519,6 +519,11 @@ def cython_add(extension, min_version=(0, 19)):
     global cmdclass
     cmdclass['build_ext'] = build_ext
 
+def insert_into_keywords(kw, key, *args):
+    values = kw.setdefault(key, [])
+    for arg in args:
+        values.insert(0, arg)
+
 def add_to_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
     for arg in args:
@@ -742,7 +747,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
                 add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     if rpath:
-        add_to_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
+        insert_into_keywords(kw, "library_dirs", rpath)
+        insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
