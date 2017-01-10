@@ -205,7 +205,7 @@ class DBUS_Server(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='b')
     def ResetVideoRegion(self, wid):
-        self.log(".SetVideoRegionDetection(%i)", wid)
+        self.log(".ResetVideoRegion(%i)", wid)
         self.server.control_command_reset_video_region(ni(wid))
 
 
