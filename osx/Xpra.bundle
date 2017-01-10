@@ -43,7 +43,7 @@
 		${prefix}/lib/libgdkglext-quartz-*.dylib
 	</binary>
 	<binary>
-		${prefix}/lib/libgtkmacintegration.*.dylib
+		${prefix}/lib/libgtkmacintegration-gtk2*.dylib
 	</binary>
 	<binary>
  		${prefix}/lib/libexpat.*.dylib
