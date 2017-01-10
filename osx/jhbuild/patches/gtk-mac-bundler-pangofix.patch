@@ -1,0 +1,76 @@
+diff --git a/bundler/bundler.py b/bundler/bundler.py
+index ebbe870..65b8cc0 100644
+--- a/bundler/bundler.py
++++ b/bundler/bundler.py
+@@ -68,6 +68,12 @@ def copy_plist(self):
+         self.copy_path(path)
+ 
+     def create_pango_setup(self):
++        if utils.has_pkgconfig_module("pango") and \
++                not utils.has_pkgconfig_variable("pango", "pango_module_version"):
++            # Newer pango (>= 1.38) no longer has modules, skip this
++            # step in that case.
++            return
++
+         # Create a temporary pangorc file just for creating the
+         # modules file with the right modules.
+         module_version = utils.evaluate_pkgconfig_variables("${pkg:pango:pango_module_version}")
+diff --git a/bundler/main.py b/bundler/main.py
+index 6afc2b0..b9b2fc5 100644
+--- a/bundler/main.py
++++ b/bundler/main.py
+@@ -14,5 +14,7 @@ def main(argv):
+ 
+     project = Project(argv[0])
+     bundler = Bundler(project)
+-
+-    bundler.run()
++    try:
++        bundler.run()
++    except Exception as err:
++        print("Bundler encountered an error %s" % str(err))
+diff --git a/bundler/utils.py b/bundler/utils.py
+index 304aedf..76c83d1 100644
+--- a/bundler/utils.py
++++ b/bundler/utils.py
+@@ -15,6 +15,21 @@ def evaluate_environment_variables(string):
+ 
+     return string
+ 
++def has_pkgconfig_module(module):
++    """Returns True if the pkg-config module exists"""
++    f = os.popen("pkg-config --exists " + module)
++    f.read().strip()
++    return f.close() is None
++
++def has_pkgconfig_variable(module, key):
++    """Returns True if the pkg-config variable exists for the given
++    module
++    """
++    f = os.popen("pkg-config --variable=" + key + " " + module)
++    status = bool(f.read().strip())
++    f.close()
++    return status
++
+ def evaluate_pkgconfig_variables(string):
+     p = re.compile("\${pkg:(.*?):(.*?)}")
+     m = p.search(string)
+@@ -24,6 +39,17 @@ def evaluate_pkgconfig_variables(string):
+         f = os.popen("pkg-config --variable=" + key + " " + module)
+         value = f.read().strip()
+         if not value:
++            # pango 1.38 removed modules, try to give a helpful
++            # message in case something tries to reference the no
++            # longer existing variable (most likely from old bundle
++            # xml files) when using a newer pango build.
++            if module == "pango" and key == "pango_module_version":
++                if has_pkgconfig_module("pango"):
++                    raise Exception(
++                        "'%s' got removed in '%s' "
++                        "1.38. Remove any reference to pango "
++                        "modules in your bundle xml." % (
++                            key, module))
+             raise Exception("pkg-config variable '%s %s' is undefined" % (key, module))
+         string = p.sub(value, string, 1)
+         m = p.search(string)
+
