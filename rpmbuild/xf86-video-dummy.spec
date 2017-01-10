@@ -17,16 +17,16 @@
 
 
 Name:           xf86-video-dummy
-Version:        0.3.7
-Release:        4.1.4.xpra1
+Version:        0.3.8
+Release:        1.xpra1
 Summary:        Virtual/offscreen frame buffer video driver for the Xorg X server
 License:        MIT
 Group:          System/X11/Servers/XF86_4
 Url:            http://xorg.freedesktop.org/
 Source0:        http://xorg.freedesktop.org/releases/individual/driver/%{name}-%{version}.tar.bz2
-Patch1:    		0002-Constant-DPI.patch
-Patch2:    		0003-fix-pointer-limits.patch
-Patch3:    		0004-honour-dac.patch
+Patch1:         0002-Constant-DPI.patch
+Patch2:         0003-fix-pointer-limits.patch
+Patch3:         0005-support-for-30-bit-depth-in-dummy-driver.patch
 
 BuildRequires:  pkg-config
 BuildRequires:  pkgconfig(fontsproto)
@@ -67,5 +67,8 @@ find %{buildroot}%{_libdir} -name '*.la' -type f -delete -print
 %{_libdir}/xorg/modules/drivers/dummy_drv.so
 
 %changelog
+* Tue Jan 10 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.3.8.1.xpra1
+- new upstream release
+
 * Mon Nov 30 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.3.7-4.1.4.xpra1
 - initial xpra packaging
