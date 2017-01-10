@@ -66,7 +66,7 @@
   <autotools id="gettext-tools" autogen-sh="configure"
              autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp --with-included-glib">
     <branch repo="ftp.gnu.org" source-subdir="gettext-tools"
-            module="gettext/gettext-0.19.4.tar.xz" version="0.19.4"/>
+            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8"/>
   </autotools>
 
   <!-- cmakes ./configure is picky about invalid flags so we manually set it -->
@@ -89,6 +89,12 @@
       <dep package="xz"/>
       <dep package="m4"/>
     </dependencies>
+  </autotools>
+
+  <autotools id="autoconf-archive" autogen-sh="configure">
+    <branch repo="ftp.gnu.org"
+            module="autoconf-archive/autoconf-archive-2016.09.16.tar.xz"
+            version="2016-09.16"/>
   </autotools>
 
   <autotools id="libtool" autogen-sh="configure" bootstrap="true">
@@ -233,6 +239,7 @@
       <dep package="cmake"/>
       <dep package="m4"/>	<!-- Can be skipped for Leopard and later -->
       <dep package="autoconf" />
+      <dep package="autoconf-archive" />
       <dep package="libtool" />
       <dep package="automake-1.10" />
       <dep package="automake-1.11" />
