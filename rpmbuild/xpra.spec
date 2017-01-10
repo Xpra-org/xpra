@@ -14,7 +14,6 @@
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 %define CFLAGS -O2
-%define LDFLAGS -Wl,-rpath=%{_libdir}/xpra
 %if 0%{?suse_version}
 %define CFLAGS -O2 -fno-strict-aliasing
 %endif
@@ -371,7 +370,10 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python3} setup.py build %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig
+CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
+	%{build_args} \
+	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
+	--rpath=%{_libdir}/xpra
 %{__python3} setup.py build %{build_args}
 popd
 %endif
@@ -379,7 +381,10 @@ popd
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
-CFLAGS="%{CFLAGS}" LDFLAGS="%{LDFLAGS}" %{__python2} setup.py build %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig
+CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
+	%{build_args} \
+	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
+	--rpath=%{_libdir}/xpra
 %if 0%{?with_selinux}
 pushd selinux/cups_xpra
 for selinuxvariant in %{selinux_variants}
