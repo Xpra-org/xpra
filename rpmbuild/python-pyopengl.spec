@@ -6,19 +6,16 @@
 %{!?python2_version: %global python2_version %(%{__python2} -c "import sys; sys.stdout.write(sys.version[:3])")}
 
 #this spec file is for both Fedora and CentOS
-#only Fedora has Python3 at present:
+%define with_python3 1
+%define py2prefix python2
+%define refpy2prefix python2
+%define python2_numpy numpy
+
+%if 0%{?suse_version}
+%define python2_numpy python-numpy
 %define with_python3 0
 %define py2prefix python
 %define refpy2prefix python
-%define python2_numpy numpy
-%if 0%{?suse_version}
-%define python2_numpy python-numpy
-%endif
-%if 0%{?fedora}
-%define with_python3 1
-#create a package named "python2-pyopengl"
-%define py2prefix python2
-%define refpy2prefix python2
 %endif
 
 
@@ -29,9 +26,9 @@
 %global shortname pyopengl
 %endif
 
-Name:           python-%{shortname}
+Name:           %{py2prefix}-%{shortname}
 Version:        3.1.1a1
-Release:        4.1xpra3%{?dist}
+Release:        4.1xpra4%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -41,10 +38,14 @@ Source1:        https://pypi.python.org/packages/source/P/%{srcname}-accelerate/
 %if 0%{?fedora}0%{?suse_version}
 #those distros are handled below using a sub-package
 %else
+%define with_python3 0
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools-devel
 Requires:       %{python2_numpy}
 Requires:       freeglut
+Obsoletes:      pyopengl < 3.1.2
+Provides:       pyopengl = %{version}-%{release}
+Conflicts:		pyopengl
 Obsoletes:      PyOpenGL < 3.1.2
 Provides:       PyOpenGL = %{version}-%{release}
 Conflicts:		PyOpenGL
@@ -219,6 +220,9 @@ popd
 
 
 %changelog
+* Tue Jan 10 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra4
+- also use "python2-opengl" package name on CentOS
+
 * Fri Aug 05 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra3
 - Fedora 23 does not have the python2 renamed packages yet
 - only opensuse calls numpy python-numpy

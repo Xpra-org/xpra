@@ -64,6 +64,7 @@
 #(so it can be installed if desired):
 %define requires_sound %{nil}
 %define py3requires_sound %{nil}
+%define requires_opengl , python-pyopengl, pygtkglext
 #don't have python3 by default:
 %define with_python3 0
 #cups-pdf is not in the regular repos, so remove it from dependencies:
@@ -130,7 +131,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: xpra-common = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
+%if %{with_python3}
 Requires: python3-xpra = %{version}-%{build_no}%{dist}
+%endif
 Requires: xpra-html5
 
 %description
