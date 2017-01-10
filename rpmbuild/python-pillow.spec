@@ -8,12 +8,6 @@
 %global tkinter tkinter
 %global PyQt4 PyQt4
 # none of these RHEL versions have python 3
-%if 0%{?el6}
-	%global with_python3 0
-	%global with_filter 0
-	%global with_webp 0
-	%global lcms %{nil}
-%endif
 %if 0%{?el7}
 	%global with_python3 0
 	%global with_filter 1
@@ -23,11 +17,7 @@
 %if 0%{?fedora}
 	%global with_python3 1
 	%global lcms lcms2
-	%if 0%{?fedora} > 19
-		%global with_filter 1
-	%else
-		%global with_filter 0
-	%endif
+	%global with_filter 1
 	%global with_webp 1
 %endif
 %if 0%{?suse_version}

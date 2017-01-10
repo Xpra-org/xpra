@@ -18,10 +18,7 @@
 %define with_python3 1
 #create a package named "python2-pyopengl"
 %define py2prefix python2
-%if 0%{?fedora}>=24
-#Fedora 23, we must reference packages named "python-XYZ" and not "python2-XYZ"..
 %define refpy2prefix python2
-%endif
 %endif
 
 
