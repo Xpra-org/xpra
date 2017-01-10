@@ -60,7 +60,7 @@
 
   <autotools id="libxml2" autogen-sh="configure"
              autogenargs='--libdir="$JHBUILD_LIBDIR" --with-python'>
-    <branch version="2.9.2" module="libxml2-2.9.2.tar.gz"
+    <branch version="2.9.4" module="libxml2-2.9.4.tar.gz"
 	    repo="xmlsoft.org"/>
     <after>
       <dep package="python"/>
@@ -192,7 +192,7 @@
   <autotools id="gettext-runtime" autogen-sh="configure"
 	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp">
     <branch repo="ftp.gnu.org" source-subdir="gettext-runtime"
-            module="gettext/gettext-0.19.4.tar.xz" version="0.19.4"/>
+            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8"/>
   </autotools>
 
   <autotools id='readline' autogen-sh="configure">

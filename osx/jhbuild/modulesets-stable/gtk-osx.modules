@@ -75,12 +75,16 @@
     </after>
   </metamodule>
 
-  <autotools id="glib" autogen-sh="autoreconf">
-    <branch module="glib/2.44/glib-2.44.1.tar.xz"  version="2.44.1"
-            hash="sha256:8811deacaf8a503d0a9b701777ea079ca6a4277be10e3d730d2112735d5eca07">
+  <autotools id="glib" autogen-sh="autoreconf"
+             autogenargs="--with-pcre=internal">
+    <branch module="glib/2.48/glib-2.48.0.tar.xz"  version="2.48.0"
+            hash="sha256:744be6931ca914c68af98dc38ff6b0cf8381d65e335060faddfbf04c17147c34">
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-g_get_monotonic_time-on-non-Intel-Darwin.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gio-in-reserved-in-gcc-48.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug747146-Build-cocoanotification-only-if-supported.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-gint64-long-long.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-bug-772454-disable-kqueue.patch" strip="1"/>
     </branch>
     <dependencies>
         <dep package="libffi"/>
@@ -92,59 +96,52 @@
 
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
-    <branch module="libffi/libffi-3.0.13.tar.gz" repo="sourceware.org"
-            version="3.0.13" checkoutdir="atgreen-libffi-873d687"/>
-  </autotools><!-- anything higher than this fails on osx 10.5 -->
+    <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
+            version="3.2.1"/>
+  </autotools>
 
   <autotools id="xorg-util-macros">
     <branch repo="freedesktop" version="1.19.0"
             module="xorg/individual/util/util-macros-1.19.0.tar.bz2"/>
   </autotools>
 
-  <!-- There is no stable release yet that works here, so use master -->
+  <!-- There is no stable release yet that works here, but commit
+       06fd4a27 breaks the build for gtk-osx, tag v1.3.1 builds
+       fine. -->
   <autotools id="libepoxy">
-    <branch repo="github" module="anholt/libepoxy"/>
+    <branch repo="github" module="anholt/libepoxy" revision="v1.3.1"/>
     <dependencies>
       <dep package="xorg-util-macros"/>
     </dependencies>
   </autotools>
 
-<!-- This is the latest 0.10 version. Later versions are 1.29 and intended to work with glib 2.29; the minor version of gobject-introspection will track the minor version of glib that it's intended to work with. Note that in the unlikely event you need to introspect Gtk+-2.0, you need to build Glib 1.28 and use this gobject-introspection. The default is to *not* introspect Gtk+-2.0 and to use the latest GLib and Gobject-Introspection with Gtk3 -->
-  <autotools id="gobject-introspection-10" autogen-sh="configure">
-    <branch module="gobject-introspection/0.10/gobject-introspection-0.10.8.tar.bz2"
-            version="0.10.8"
-            hash="sha256:5b1387ff37f03db880a2b1cbd6c6b6dfb923a29468d4d8367c458abf7704c61e">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
-    </branch>
-    <dependencies>
-      <dep package="glib"/>
-      <dep package="cairo"/>
-     <dep package="libffi"/>
-    </dependencies>
-  </autotools>
-
   <autotools id="gobject-introspection" autogen-sh="configure">
-    <branch module="gobject-introspection/1.44/gobject-introspection-1.44.0.tar.xz"
-            version="1.44.0"
-            hash="sha256:6f0c2c28aeaa37b5037acbf21558098c4f95029b666db755d3a12c2f1e1627ad">
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
-      <patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/gobject-introspection-625195-Fix-non-libtool-linker-flags-on-Darwin.patch"
-             strip="1"/>
+    <branch module="gobject-introspection/1.48/gobject-introspection-1.48.0.tar.xz"
+            version="1.48.0"
+            hash="sha256:fa275aaccdbfc91ec0bc9a6fd0562051acdba731e7d584b64a277fec60e75877">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
+            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gi_cairo_library_path.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
       <dep package="cairo"/>
+      <if condition-set='64-bit'>
+        <dep package='python'/>
+      </if>
     </dependencies>
-    <after>
-      <dep package='python'/>
-    </after>
+    <if condition-unset='64-bit'>
+      <after>
+        <dep package='python'/>
+      </after>
+    </if>
   </autotools>
 
  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.36.8" module="pango/1.36/pango-1.36.8.tar.xz"
-            hash="sha256:18dbb51b8ae12bae0ab7a958e7cf3317c9acfc8a1e1103ec2f147164a0fc2d07">
+    <branch version="1.38.1" module="pango/1.38/pango-1.38.1.tar.xz"
+            hash="sha256:1320569f6c6d75d6b66172b2d28e59c56ee864ee9df202b76799c4506a214eb7">
     </branch>
     <dependencies>
+      <dep package="glib"/>
       <dep package="cairo"/>
      </dependencies>
     <after>
@@ -163,17 +160,15 @@
       <dep package="glib"/>
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="gobject-introspection"/>
-      <dep package="gobject-introspection-10"/>
     </after>
   </autotools>
 
   <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.30/gdk-pixbuf-2.30.8.tar.xz" version="2.30.8"
-            hash="sha256:4853830616113db4435837992c0aebd94cbb993c44dc55063cee7f72a7bef8be"/>
+    <branch module="gdk-pixbuf/2.34/gdk-pixbuf-2.34.0.tar.xz" version="2.34.0"
+            hash="sha256:d55e5b383ee219bd0e23bf6ed4427d56a7db5379729a6e3e0a0e0eba9a8d8879"/>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
-      <dep package="gobject-introspection-10"/>
     </after>
   </autotools>
 
@@ -199,13 +194,31 @@
     </after>
   </autotools>
 
+  <autotools id="gtk+-3.14" autogen-sh="autogen.sh"
+             autogenargs="--enable-quartz-backend --enable-quartz-relocation">
+    <branch module="gtk+/3.14/gtk+-3.14.15.tar.xz" version="3.14.15"
+            hash="sha256:3ac87659112ced9e5ee5bd55d055faa881aafd040f26ca40b0d8ba0fa6509c83">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
+      <!-- https://bugzilla.gnome.org/show_bug.cgi?id=763779 -->
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk-quartz-fix-pixelated-image-surfaces-in-retina-hidpi-.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="pango"/>
+      <dep package="atk"/>
+      <dep package="cairo"/>
+      <dep package="gdk-pixbuf"/>
+      <dep package="gobject-introspection"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-bootstrap"/>
+    </after>
+  </autotools>
+
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.16/gtk+-3.16.7.tar.xz" version="3.16.7"
-            hash="sha256:19689d14de54d182fad538153dbff6d41f53841f940aa871585fdea0306c7fba">
-      <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1" -->
-<!-- The following patch is committed and can be removed after release of gtk+-3.16.4. -->
-      <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-DnD-Introspection-on-Quartz-Backend.patch" strip="1" -->
+    <branch module="gtk+/3.20/gtk+-3.20.9.tar.xz" version="3.20.9"
+            hash="sha256:83a609ba2f3424b5509e73967c49c67833af466d6f91081b24ee5c64fce6ac17">
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -222,9 +235,9 @@
 
   <autotools id="pixman" autogenargs="--disable-gtk --disable-mmx"
              autogen-sh="configure">
-    <branch version="0.32.6" module="pixman-0.32.6.tar.gz"
+    <branch version="0.34.0" module="pixman-0.34.0.tar.gz"
             repo="cairographics"
-            hash="sha1:8791343cbf6d99451f4d08e8209d6ac11bf96df2"/>
+            hash="sha1:a1b1683c1a55acce9d928fea1ab6ceb79142ddc7"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
@@ -250,11 +263,10 @@
   </autotools>
 
   <autotools id="gtk-mac-integration" autogen-sh="configure"
-             autogenargs="--disable-python --with-gtk=gtk+-2.0">
-    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.5.tar.xz"
-            version="2.0.5"
-            hash="sha256:6c4ff7501d7ff35e49068052d80fcf76ce494e5953c5f3967e4958b1b0c67b9f">
-      <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-Fix-unhandled-exception-from-attempting-to-access-me.patch" strip="1"/>
+             autogenargs="--disable-python">
+    <branch module="gtk-mac-integration/2.0/gtk-mac-integration-2.0.8.tar.xz"
+            version="2.0.8"
+            hash="sha256:74fce9dbc5efe4e3d07a20b24796be1b1d6c3ac10a0ee6b1f1d685c809071b79">
     </branch>
     <dependencies>
     </dependencies>
