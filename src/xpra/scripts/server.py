@@ -533,11 +533,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         raise InitException("at least one socket directory must be set to use unix domain sockets")
     dotxpra = DotXpra(socket_dir or socket_dirs[0])
-    try:
-        dotxpra.mksockdir()
-        display_name = normalize_local_display_name(display_name)
-    except Exception as e:
-        raise InitException("socket path error: %s" % e)
+    display_name = normalize_local_display_name(display_name)
     from xpra.log import Logger
     defs = []
     sockpaths = set()
@@ -570,6 +566,13 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 if sockpath in sockpaths:
                     log.warn("Warning: skipping duplicate bind path %s", sockpath)
                     continue
+                d = os.path.dirname(sockpath)
+                try:
+                    dotxpra.mksockdir(d)
+                except Exception as e:
+                    log.warn("Warning: failed to create socket directory '%s'", d)
+                    log.warn(" %s", e)
+                    #continue and hope for the best, socket creation is likely to fail..
                 try:
                     if WIN32:
                         from xpra.platform.win32.namedpipes.listener import NamedPipeListener

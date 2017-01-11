@@ -18,7 +18,7 @@ class DotXpra(object):
     def osexpand(self, v):
         return osexpand(v, self.username)
 
-    def mksockdir(self):
+    def mksockdir(self, d):
         #socket-dir is not used by the win32 shadow server
         pass
 
