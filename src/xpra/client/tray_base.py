@@ -71,8 +71,11 @@ class TrayBase(object):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
         raise Exception("override me!")
 
+    def get_icon_filename(self, basename=None):
+        return get_icon_filename(basename or self.default_icon_filename, self.default_icon_extension)
+
     def set_icon(self, basename=None):
-        filename = get_icon_filename(basename or self.default_icon_filename, self.default_icon_extension)
+        filename = self.get_icon_filename(basename)
         if not filename:
             log.error("Error: cannot find icon '%s' for name '%s'", filename, basename)
             return

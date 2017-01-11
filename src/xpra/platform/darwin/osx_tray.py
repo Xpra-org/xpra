@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os.path
-import gtk.gdk
+import gtk
+from gtk import gdk
 
 from xpra.log import Logger
 log = Logger("tray", "osx")
@@ -63,13 +63,13 @@ class OSXTray(TrayBase):
                 self.last_attention_request_id = -1
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
-        tray_icon = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+        tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
 
     def do_set_icon_from_file(self, filename):
         if not self.macapp:
             return
-        pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+        pixbuf = gdk.pixbuf_new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
 
 
@@ -96,12 +96,10 @@ class OSXTray(TrayBase):
         log("OSXTray.set_dock_menu() done")
 
     def set_dock_icon(self):
-        if not self.default_icon_filename:
-            return
-        filename = os.path.abspath(self.default_icon_filename)
-        if not os.path.exists(filename):
-            log.warn("cannot set dock icon, file '%s' not found!", filename)
+        filename = self.get_icon_filename()
+        if not filename:
+            log.warn("Warning: cannot set dock icon, file not found!")
             return
         log("OSXTray.set_dock_icon() loading icon from %s", filename)
-        pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+        pixbuf = gdk.pixbuf_new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
