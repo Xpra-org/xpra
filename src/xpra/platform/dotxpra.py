@@ -43,11 +43,11 @@ class DotXpra(object):
     def __repr__(self):
         return "DotXpra(%s, %s)" % (self._sockdir, self._sockdirs)
 
-    def mksockdir(self):
-        if self._sockdir and not os.path.exists(self._sockdir):
-            os.mkdir(self._sockdir, 0o700)
+    def mksockdir(self, d):
+        if d and not os.path.exists(d):
+            os.mkdir(d, 0o700)
             if self.uid!=os.getuid() or self.gid!=os.getgid():
-                os.chown(self._sockdir, self.uid, self.gid)
+                os.chown(d, self.uid, self.gid)
 
     def socket_expand(self, path):
         return self.osexpand(path, uid=self.uid, gid=self.gid)
