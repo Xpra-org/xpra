@@ -9,7 +9,7 @@
 # we reap the dead pids so that they don't become zombies,
 # also used for implementing --exit-with-children
 
-import os, sys
+import os
 import signal
 
 from xpra.util import envint, envbool
