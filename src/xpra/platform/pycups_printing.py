@@ -345,7 +345,8 @@ def check_printers():
     #fire the callback every time, relying in client_base
     #to notice that nothing has changed and avoid sending the same printers to the server
     log("check_printers() printers_modified_callback=%s", printers_modified_callback)
-    printers_modified_callback()
+    if printers_modified_callback:
+        printers_modified_callback()
     schedule_polling_timer()
 
 _polling_timer = None
