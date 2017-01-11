@@ -203,7 +203,7 @@ class DBUS_Server(dbus.service.Object):
             nzones.append([ni(x) for x in zone])
         self.server.control_command_video_region_exclusion_zones(ni(wid), nzones)
 
-    @dbus.service.method(INTERFACE, in_signature='b')
+    @dbus.service.method(INTERFACE, in_signature='i')
     def ResetVideoRegion(self, wid):
         self.log(".ResetVideoRegion(%i)", wid)
         self.server.control_command_reset_video_region(ni(wid))
