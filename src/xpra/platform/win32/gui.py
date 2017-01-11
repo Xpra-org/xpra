@@ -24,13 +24,14 @@ from xpra.util import AdHocStruct, csv, envint, envbool
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof, c_ulong, c_double
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, HRESULT, LPCWSTR
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, HRESULT, LPCWSTR, POINT
 
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
 SetWindowLong = user32.SetWindowLongW
 GetWindowLong = user32.GetWindowLongW
 ClipCursor = user32.ClipCursor
+GetCursorPos = user32.GetCursorPos
 GetDC = user32.GetDC
 ReleaseDC = user32.ReleaseDC
 SendMessage = user32.SendMessageA
@@ -453,6 +454,17 @@ def apply_geometry_hints(self, hints):
     apply_maxsize_hints(self, hints)
     return self.__apply_geometry_hints(hints)   #call the original saved method
 
+def cache_pointer_offset(self, event):
+    #this overrides the window._get_pointer method
+    #so we can cache the GTK position offset for synthetic wheel events
+    gtk_x, gtk_y = event.x_root, event.y_root
+    pos = POINT()
+    GetCursorPos(ctypes.byref(pos))
+    x, y = pos.x, pos.y
+    self.win32_pointer_offset = gtk_x-x, gtk_y-y
+    return gtk_x, gtk_y
+
+
 def add_window_hooks(window):
     log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s",
             window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, MAX_SIZE_HINT, GEOMETRY)
@@ -514,7 +526,7 @@ def add_window_hooks(window):
         window.pointer_grab = types.MethodType(pointer_grab, window)
         window.pointer_ungrab = types.MethodType(pointer_ungrab, window)
 
-    if MAX_SIZE_HINT or LANGCHANGE:
+    if MAX_SIZE_HINT or LANGCHANGE or WHEEL:
         #glue code for gtk to win32 APIs:
         #add event hook class:
         win32hooks = Win32Hooks(handle)
@@ -536,7 +548,11 @@ def add_window_hooks(window):
                 log("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
+
         if WHEEL:
+            #keep track of the pointer offsets:
+            #(difference between the GTK event values and raw win32 values)
+            window._get_pointer = types.MethodType(cache_pointer_offset, window)
             VERTICAL = "vertical"
             HORIZONTAL = "horizontal"
             def handle_wheel(orientation, wParam, lParam):
@@ -552,7 +568,12 @@ def add_window_hooks(window):
                 units = nval // WHEEL_DELTA
                 client = getattr(window, "_client")
                 wid = getattr(window, "_id", 0)
-                mouselog("mousewheel: orientation=%s distance=%.1f, units=%i, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i", orientation, distance, units, nval, keys, x, y, client, wid)
+                gtk_offset = getattr(window, "win32_pointer_offset", None)
+                if gtk_offset:
+                    dx, dy = gtk_offset
+                    x += dx
+                    y += dy
+                mouselog("mousewheel: orientation=%s distance=%.1f, units=%i, new value=%.1f, keys=%#x, x=%i, y=%i, gtk_offset=%s, client=%s, wid=%i", orientation, distance, units, nval, keys, x, y, gtk_offset, client, wid)
                 if units!=0 and client and wid>0:
                     if orientation==VERTICAL:
                         button = 4 + int(units<0)       #4 for UP, 5 for DOWN
