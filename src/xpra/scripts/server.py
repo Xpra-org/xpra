@@ -1045,15 +1045,19 @@ def show_encoding_help(opts):
 
 def find_log_dir():
     from xpra.platform.paths import get_default_log_dirs
+    errs  = []
     for x in get_default_log_dirs():
         v = osexpand(x)
         if not os.path.exists(v):
             try:
                 os.mkdir(v, 0o700)
             except Exception as e:
-                sys.stderr.write("%s\n" % e)
+                errs.append((v, e))
                 continue
         return v
+    for d, e in errs:
+        sys.stderr.write("Error: cannot create log directory '%s':" % d)
+        sys.stderr.write(" %s\n" % e)
     return None
 
 
