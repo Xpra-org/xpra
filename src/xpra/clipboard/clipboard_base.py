@@ -535,7 +535,7 @@ class ClipboardProxy(gtk.Invisible):
         log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
         if not self._enabled or self._block_owner_change:
             return
-        if (self._can_send and self._greedy_client) or (self._have_token and not self._can_receive):
+        if self._can_send and (self._greedy_client or self._have_token):
             self._block_owner_change = True
             self._have_token = False
             self.emit("send-clipboard-token")
