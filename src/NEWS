@@ -1,3 +1,8 @@
+v1.0.2 (2017-01-12)
+======================
+	-- fix Mac OSX clipboard
+
+
 v1.0.1 (2017-01-07)
 ======================
 	-- fix mousewheel events position with MS Windows clients

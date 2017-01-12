@@ -1,3 +1,8 @@
+xpra (1.0.2-1) UNRELEASED; urgency=low
+  * fix Mac OSX clipboard
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 12 Jan 2017 12:35:19 +0700
+
 xpra (1.0.1-1) UNRELEASED; urgency=low
   * fix mousewheel events position with MS Windows clients
   * fix compatibility with newer versions of pyobjc

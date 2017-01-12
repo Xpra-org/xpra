@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.1
+%define version 1.0.2
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -597,6 +597,9 @@ fi
 
 
 %changelog
+* Thu Jan 12 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.2-1
+- fix Mac OSX clipboard
+
 * Sat Jan 07 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.1-1
 - fix mousewheel events position with MS Windows clients
 - fix compatibility with newer versions of pyobjc
@@ -630,7 +633,7 @@ fi
 - fix encoding quality tray tooltip message when disabled by mmap
 - fix systray forwarding window position
 
-* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
+* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.2
 - support all current versions of Ubuntu and Debian using a private ffmpeg library
 - proxy server can start new sessions on demand
 - SSH start server support on OSX < 10.11
@@ -1017,7 +1020,7 @@ fi
 - fix paint issue with transparent tooltips on OSX and MS Windows
 - fix pixel format typo in OpenGL logging
 
-* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0.2
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
@@ -1547,7 +1550,7 @@ fi
 - per-window update batching auto-tuning, which is fairer
 - windows update batching now takes into account the number of pixels rather than just the number of regions to update
 - support --socket-dir option over ssh
-- IPv6 support using the syntax: ssh/::ffff:192.168.1.100/10 or tcp/::ffff:192.168.1.100/10000
+- IPv6 support using the syntax: ssh/::ffff:192.168.1.1.0.20 or tcp/::ffff:192.168.1.1.0.20000
 - all commands now return a non-zero exit code in case of failure
 - new "xpra info" command to report server statistics
 - prettify some of the logging and error messages
@@ -1565,7 +1568,7 @@ fi
 - show more system version information in session information dialog
 - hide window decorations for openoffice splash screen (workaround)
 
-* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0-1
+* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0.2
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)
