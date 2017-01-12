@@ -19,70 +19,29 @@ change_count = 0
 _initialised = False
 
 
-def get_ctypes_Pasteboard_changeCount():
-    """ a ctypes implementation to access the Pasteboard's changeCount """
-    import ctypes.util
-    appkit = ctypes.cdll.LoadLibrary(ctypes.util.find_library('AppKit'))
-    assert appkit
-    objc = ctypes.cdll.LoadLibrary(ctypes.util.find_library('objc'))
-    objc.objc_getClass.restype = ctypes.c_void_p
-    objc.sel_registerName.restype = ctypes.c_void_p
-    objc.objc_msgSend.restype = ctypes.c_void_p
-    objc.objc_msgSend.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
-    # Without this, it will still work, but it'll leak memory
-    NSAutoreleasePool = objc.objc_getClass('NSAutoreleasePool')
-    NSPasteboard = objc.objc_getClass('NSPasteboard')
-    def get_change_count():
-        pool = objc.objc_msgSend(NSAutoreleasePool, objc.sel_registerName('alloc'))
-        pool = objc.objc_msgSend(pool, objc.sel_registerName('init'))
-        # get the pasteboard class id then an instance:
-        pasteboard = objc.objc_msgSend(NSPasteboard, objc.sel_registerName('generalPasteboard'))
-        if pasteboard is None:
-            log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
-            return None
-        changeCount = objc.objc_msgSend(pasteboard, objc.sel_registerName('changeCount'))
-        objc.objc_msgSend(pool, objc.sel_registerName('release'))
-        return changeCount
-    return get_change_count
-
-
-def get_AppKit_Pasteboard_changeCount():
-    """ PyObjC AppKit implementation to access Pasteboard's changeCount """
-    from AppKit import NSPasteboard      #@UnresolvedImport
-    pasteboard = NSPasteboard.generalPasteboard()
-    if pasteboard is None:
-        log.warn("cannot load Pasteboard, maybe not running from a GUI session?")
-        return None
-
-    def get_change_count():
-        return pasteboard.changeCount()
-    return get_change_count
-
-
 def init_pasteboard():
     global _initialised
     if _initialised:
         return
     _initialised = True
-    #try both implementations, ctypes first
-    for info, init_fn in (("ctypes", get_ctypes_Pasteboard_changeCount),
-                          ("AppKit", get_AppKit_Pasteboard_changeCount)):
-        try:
-            log("init_pasteboard: trying %s using %s", info, init_fn)
-            get_change_count = init_fn()
-            if get_change_count is None:
-                continue
-            #test it (may throw an exception?):
-            v = get_change_count()
-            if v is None:
-                continue
-            log("%s pasteboard access success, current change count=%s, setting up timer to watch for changes", info, v)
-            #good, use it:
-            setup_watcher(get_change_count)
-            return True
-        except:
-            log.error("error initializing %s pasteboard", info, exc_info=True)
-    return False
+    try:
+        from AppKit import NSPasteboard      #@UnresolvedImport
+        pasteboard = NSPasteboard.generalPasteboard()
+        if pasteboard is None:
+            log.warn("Warning: cannot load Pasteboard, maybe not running from a GUI session?")
+            return
+        def get_change_count():
+            return pasteboard.changeCount()
+        #test it (may throw an exception?):
+        v = get_change_count()
+        if v is None:
+            log.warn("Warning: NSPasteboard.changeCount did not return a value")
+            return
+        log("NSPasteboard.changeCount() access success, current value=%s, setting up timer to watch for changes", v)
+        #good, use it:
+        setup_watcher(get_change_count)
+    except:
+        log.error("Error: initializing NSPasteboard", exc_info=True)
 
 def setup_watcher(get_change_count):
     global change_callbacks, update_clipboard_change_count
@@ -110,7 +69,8 @@ def setup_watcher(get_change_count):
     from xpra.platform.ui_thread_watcher import get_UI_watcher
     w = get_UI_watcher()
     if w is None:
-        log.warn("no UI watcher available, cannot watch for clipboard events")
+        log.warn("Warning: no UI watcher instance available")
+        log.warn(" cannot detect clipboard change events")
         return False
     log("UI watcher=%s", w)
     w.add_alive_callback(timer_clipboard_check)
@@ -201,7 +161,7 @@ def main():
 
         log.info("testing pasteboard")
         if not init_pasteboard():
-            log.warn("failed to initialize a pasteboard!")
+            log.error("Error: failed to initialize a pasteboard!")
             return
         assert update_clipboard_change_count is not None, "cannot access clipboard change count"
         cc = update_clipboard_change_count()
