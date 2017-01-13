@@ -1631,7 +1631,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 sys.stdout.write("executing ssh command: %s\n" % (" ".join("\"%s\"" % x for x in cmd)))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError as e:
-            raise InitException("Error running ssh program '%s': %s" % (cmd, e))
+            raise InitException("Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
         def abort_test(action):
             """ if ssh dies, we don't need to try to read/write from its sockets """
             e = child.poll()
@@ -1679,9 +1679,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 #on posix, the tunnel may be shared with other processes
                 #so don't kill it... which may leave it behind after use.
                 #but at least make sure we close all the pipes:
-                for name,fd in {"stdin" : child.stdin,
+                for name,fd in {
+                                "stdin" : child.stdin,
                                 "stdout" : child.stdout,
-                                "stderr" : child.stderr}.items():
+                                "stderr" : child.stderr,
+                                }.items():
                     try:
                         if fd:
                             fd.close()
