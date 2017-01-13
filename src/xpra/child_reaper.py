@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,9 +12,13 @@
 import os
 import signal
 
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.log import Logger
 log = Logger("server", "util")
+
+
+USE_PROCESS_POLLING = os.name!="posix" or envbool("XPRA_USE_PROCESS_POLLING")
+POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
 
 
 singleton = None
@@ -56,22 +60,26 @@ class ChildReaper(object):
         self.glib = import_glib()
         self._quit = quit_cb
         self._proc_info = []
-        #with a less buggy python, we can just check the list of pids
-        #whenever we get a SIGCHLD
-        #however.. subprocess.Popen will no longer work as expected
-        #see: http://bugs.python.org/issue9127
-        #so we must ensure certain things that exec happen first:
-        from xpra.version_util import get_platform_info
-        get_platform_info()
+        if USE_PROCESS_POLLING:
+            log("using process polling every %s seconds", POLL_DELAY)
+            self.glib.timeout_add(POLL_DELAY*1000, self.poll)
+        else:
+            #with a less buggy python, we can just check the list of pids
+            #whenever we get a SIGCHLD
+            #however.. subprocess.Popen will no longer work as expected
+            #see: http://bugs.python.org/issue9127
+            #so we must ensure certain things that exec happen first:
+            from xpra.version_util import get_platform_info
+            get_platform_info()
 
-        signal.signal(signal.SIGCHLD, self.sigchld)
-        # Check once after the mainloop is running, just in case the exit
-        # conditions are satisfied before we even enter the main loop.
-        # (Programming with unix the signal API sure is annoying.)
-        def check_once():
-            self.check()
-            return False # Only call once
-        self.glib.timeout_add(0, check_once)
+            signal.signal(signal.SIGCHLD, self.sigchld)
+            # Check once after the mainloop is running, just in case the exit
+            # conditions are satisfied before we even enter the main loop.
+            # (Programming with unix the signal API sure is annoying.)
+            def check_once():
+                self.check()
+                return False # Only call once
+            self.glib.timeout_add(0, check_once)
 
     def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
         pid = process.pid
