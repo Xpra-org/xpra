@@ -33,6 +33,7 @@ from xpra.scripts.config import OPTION_TYPES, \
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
+SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -1626,6 +1627,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     del display_desc["password"]
             if env:
                 kwargs["env"] = env
+            if SSH_DEBUG:
+                sys.stdout.write("executing ssh command: %s\n" % (" ".join("\"%s\"" % x for x in cmd)))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError as e:
             raise InitException("Error running ssh program '%s': %s" % (cmd, e))
