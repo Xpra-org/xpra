@@ -1421,6 +1421,7 @@ class UIXpraClient(XpraClientBase):
             "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
             "info-namespace"            : True,
+            "mmap_token_index"          : True,
             #window meta data and handling:
             "generic_window_types"      : True,
             "server-window-move-resize" : True,
@@ -1768,8 +1769,9 @@ class UIXpraClient(XpraClientBase):
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = c.intget("mmap_token")
+            mmap_token_index = c.intget("mmap_token_index", 512)
             from xpra.net.mmap_pipe import read_mmap_token
-            token = read_mmap_token(self.mmap)
+            token = read_mmap_token(self.mmap, mmap_token_index)
             if token!=mmap_token:
                 log.error("Error: mmap token verification failed!")
                 log.error(" expected '%s'", mmap_token)

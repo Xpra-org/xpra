@@ -287,6 +287,7 @@ class ServerSource(FileTransferHandler):
         self.mmap = None
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
+        self.mmap_client_token_index = 512
         # mouse echo:
         self.mouse_show = False
         self.mouse_last_position = None
@@ -905,16 +906,25 @@ class ServerSource(FileTransferHandler):
                 from xpra.net.mmap_pipe import init_server_mmap
                 from xpra.os_util import get_int_uuid
                 new_token = get_int_uuid()
-                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token)
+                if c.boolget("mmap_token_index", False):
+                    #we can write anywhere we want and tell the client,
+                    #so write at 128 bytes from the end:
+                    new_token_index = -128
+                else:
+                    #expected default for older versions:
+                    new_token_index = 512
+                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token, new_token_index)
                 mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
                     if self.mmap_size<min_mmap_size:
                         mmaplog.warn("Warning: client supplied mmap area is too small, discarding it")
-                        mmaplog.warn(" we need at least %i bytes and this area is %i", min_mmap_size, self.mmap_size)
+                        mmaplog.warn(" we need at least %iMB and this area is %iMB", min_mmap_size//1024//1024, self.mmap_size//1024//1024)
                         self.mmap = None
                         self.mmap_size = 0
                     else:
                         self.mmap_client_token = new_token
+                        if new_token_index<0:
+                            self.mmap_client_token_index = self.mmap_size + new_token_index
 
         if self.mmap_size>0:
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
@@ -1421,6 +1431,8 @@ class ServerSource(FileTransferHandler):
                          })
         if self.mmap_client_token:
             capabilities["mmap_token"] = self.mmap_client_token
+            capabilities["mmap_token_index"] = self.mmap_client_token_index
+                
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         if self.keyboard_config:

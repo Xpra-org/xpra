@@ -99,7 +99,7 @@ MAX_TOKEN_BYTES = 128
 
 def write_mmap_token(mmap_area, token, index=512):
     #write the 16 byte token one byte at a time - no endianness
-    log("mmap_token=%s", token)
+    log("write_mmap_token(%s, %s, %s)", mmap_area, token, index)
     v = token
     for i in range(0, MAX_TOKEN_BYTES):
         poke = ctypes.c_ubyte.from_buffer(mmap_area, 512+i)
@@ -113,10 +113,11 @@ def read_mmap_token(mmap_area, index=512):
         v = v<<8
         peek = ctypes.c_ubyte.from_buffer(mmap_area, 512+MAX_TOKEN_BYTES-1-i)
         v += peek.value
+    log("read_mmap_token(%s, %s)=%s", mmap_area, index, v)
     return v
 
 
-def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
+def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None, mmap_token_index=512):
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
@@ -148,7 +149,10 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
                 mmap_area.close()
                 return None, 0
             if new_mmap_token:
-                write_mmap_token(mmap_area, new_mmap_token)
+                if mmap_token_index<0:
+                    #negative values mean relative to the end:
+                    mmap_token_index = mmap_size + mmap_token_index
+                write_mmap_token(mmap_area, new_mmap_token, mmap_token_index)
         return mmap_area, mmap_size
     except Exception as e:
         log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)
