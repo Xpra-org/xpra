@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, csv
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
@@ -79,6 +79,31 @@ def validate_backend(try_backend):
     log("validate_backend(%s) decrypted(%s)=%s", try_backend, evs, dv)
     assert dv==message
     log("validate_backend(%s) passed", try_backend)
+
+
+def get_digest_module(digest):
+    if not digest or not digest.startswith("hmac"):
+        return None
+    import hashlib
+    try:
+        digest_module = digest.split("+")[1]        #ie: "hmac+sha512" -> "sha512"
+    except:
+        digest_module = "md5"
+    try:
+        return getattr(hashlib, digest_module)
+    except AttributeError:
+        return None
+
+def choose_digest(options):
+    assert len(options)>0, "no digest options"
+    #prefer stronger hashes:
+    for h in ("sha512", "sha384", "sha256", "sha224", "sha1", "md5"):
+        hname = "hmac+%s" % h
+        if hname in options:
+            return hname
+    if "xor" in options:
+        return "xor"
+    raise Exception("no known digest options found in '%s'" % csv(options))
 
 
 def pad(padding, size):

@@ -70,8 +70,10 @@ def get_network_caps():
         mmap = can_use_mmap()
     except:
         mmap = False
+    import hashlib
+    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms)))]
     caps = {
-                "digest"                : ("hmac", "xor"),
+                "digest"                : digests,
                 "compressors"           : compression.get_enabled_compressors(),
                 "encoders"              : packet_encoding.get_enabled_encoders(),
                 "mmap"                  : mmap,

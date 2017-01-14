@@ -24,7 +24,7 @@ from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, strtobytes, getuid, getgid
+from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
@@ -621,24 +621,25 @@ class ProxyInstanceProcess(Process):
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type=="challenge":
-            from xpra.net.crypto import get_salt
+            from xpra.net.crypto import get_salt, get_digest_module
             #client may have already responded to the challenge,
             #so we have to handle authentication from this end
             salt = packet[1]
             digest = packet[3]
             client_salt = get_salt(len(salt))
             salt = xor_str(salt, client_salt)
-            if digest!=b"hmac":
+            digestmod = get_digest_module(digest)
+            if not digestmod:
                 self.stop("digest mode '%s' not supported", std(digest))
                 return
             password = self.session_options.get("password")
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
                 return
-            import hmac, hashlib
+            import hmac
             password = strtobytes(password)
-            salt = strtobytes(salt)
-            challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+            salt = memoryview_to_bytes(salt)
+            challenge_response = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
             log.info("sending %s challenge response", digest)
             self.send_hello(challenge_response, client_salt)
             return

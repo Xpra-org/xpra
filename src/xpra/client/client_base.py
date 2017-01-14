@@ -24,7 +24,7 @@ from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
-from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, \
+from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, get_digest_module, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
@@ -32,7 +32,7 @@ from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAM
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
-from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT,
+from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
         EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR)
@@ -547,11 +547,16 @@ class XpraClientBase(FileTransferHandler):
         client_salt = get_salt(len(server_salt))
         #TODO: use some key stretching algorigthm? (meh)
         salt = xor(server_salt, client_salt)
-        if digest==b"hmac":
-            import hmac, hashlib
+        if digest.startswith(b"hmac"):
+            import hmac
+            digestmod = get_digest_module(digest)
+            if not digestmod:
+                log("invalid digest module '%s': %s", digest)
+                warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
+                return
             password = strtobytes(password)
             salt = memoryview_to_bytes(salt)
-            challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+            challenge_response = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
             authlog("hmac.HMAC(%s, %s)=%s", binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
         elif digest==b"xor":
             #don't send XORed password unencrypted:

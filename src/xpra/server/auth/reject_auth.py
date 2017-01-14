@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
-from xpra.net.crypto import get_salt
+from xpra.net.crypto import get_salt, choose_digest
 
 def init(opts):
     pass
@@ -17,8 +17,8 @@ class Authenticator(object):
     def requires_challenge(self):
         return True
 
-    def get_challenge(self):
-        return get_salt(), "hmac"
+    def get_challenge(self, digests):
+        return get_salt(), choose_digest(digests)
 
     def get_uid(self):
         return -1

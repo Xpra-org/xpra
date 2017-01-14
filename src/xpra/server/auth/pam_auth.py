@@ -92,6 +92,11 @@ class Authenticator(SysAuthenticator):
             return False
         return check(self.username, password)
 
+    def get_challenge(self, digests):
+        if b"xor" not in digests:
+            raise Exception("pam authenticator requires the 'xor' digest")
+        return SysAuthenticator.get_challenge(self, [b"xor"])
+
     def __repr__(self):
         return "PAM"
 

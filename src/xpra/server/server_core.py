@@ -974,13 +974,14 @@ class ServerCore(object):
                     auth_failed("invalid state, challenge already sent - no response!")
                     return False
                 if proto.authenticator:
-                    challenge = proto.authenticator.get_challenge()
+                    challenge = proto.authenticator.get_challenge(digest_modes)
                     if challenge is None:
                         if proto.authenticator.requires_challenge():
                             auth_failed("invalid state, unexpected challenge response")
                             return False
                         authlog.warn("Warning: authentication module '%s' does not require any credentials", proto.authenticator)
                         authlog.warn(" but the client %s supplied them", proto)
+                        #fake challenge so the client will send the real hello:
                         salt, digest = get_salt(), "hmac"
                     else:
                         salt, digest = challenge

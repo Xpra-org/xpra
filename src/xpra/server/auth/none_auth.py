@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self):
         return False
 
-    def get_challenge(self):
+    def get_challenge(self, digests):
         return None
 
     def get_password(self):

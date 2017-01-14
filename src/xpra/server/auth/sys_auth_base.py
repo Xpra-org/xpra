@@ -1,13 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import hmac, hashlib, binascii
+import hmac, binascii
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
-from xpra.net.crypto import get_salt
+from xpra.net.crypto import get_salt, choose_digest, get_digest_module
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("auth")
@@ -25,6 +25,7 @@ class SysAuthenticator(object):
     def __init__(self, username, **kwargs):
         self.username = username
         self.salt = None
+        self.digest = None
         try:
             import pwd
             self.pw = pwd.getpwnam(username)
@@ -47,13 +48,14 @@ class SysAuthenticator(object):
     def requires_challenge(self):
         return True
 
-    def get_challenge(self, mac="xor"):
+    def get_challenge(self, digests):
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
         self.salt = get_salt()
+        self.digest = choose_digest(digests)
         #we need the raw password, so tell the client to use "xor":
-        return self.salt, mac
+        return self.salt, self.digest
 
     def get_password(self):
         return None
@@ -103,7 +105,12 @@ class SysAuthenticator(object):
             log.error("Error: %s authentication failed", self)
             log.error(" no password defined for '%s'", self.username)
             return False
-        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
+        digestmod = get_digest_module(self.digest)
+        if not digestmod:
+            log.error("Error: %s authentication failed", self)
+            log.error(" digest module '%s' is invalid", self.digest)
+            return False
+        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
         log("%s auth: authenticate(%s) password=%s, hex(salt)=%s, hash=%s", self, challenge_response, password, binascii.hexlify(strtobytes(salt)), verify)
         if not hmac.compare_digest(verify, challenge_response):
             log("expected '%s' but got '%s'", verify, challenge_response)

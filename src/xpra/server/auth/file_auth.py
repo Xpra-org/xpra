@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #authentication from a file containing just the password
 
 import binascii
-import hmac, hashlib
+import hmac
 
 from xpra.os_util import strtobytes
+from xpra.net.crypto import get_digest_module
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init, log
 from xpra.util import xor, nonl
 
@@ -34,7 +35,12 @@ class Authenticator(FileAuthenticatorBase):
             log.error("Error: authentication failed")
             log.error(" no password for '%s' in '%s'", self.username, self.password_filename)
             return False
-        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
+        digestmod = get_digest_module(self.digest)
+        if not digestmod:
+            log.error("Error: %s authentication failed", self)
+            log.error(" digest module '%s' is invalid", self.digest)
+            return False
+        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
         log("file authenticate(%s) password='%s', salt=%s, hash=%s", nonl(challenge_response), nonl(password), binascii.hexlify(strtobytes(salt)), verify)
         if not hmac.compare_digest(verify, challenge_response):
             log("expected '%s' but got '%s'", verify, challenge_response)
