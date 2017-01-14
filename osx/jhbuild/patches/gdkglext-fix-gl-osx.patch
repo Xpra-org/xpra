@@ -1,0 +1,14 @@
+--- gtk/gdkgl/gdkglext.override.orig	2017-01-13 09:44:47.000000000 -0800
++++ gtk/gdkgl/gdkglext.override	2017-01-13 09:45:05.000000000 -0800
+@@ -33,7 +33,11 @@
+ #include <windows.h>
+ #endif
+ 
++#ifdef __APPLE__
++#include <OpenGL/gl.h>
++#else
+ #include <GL/gl.h>
++#endif
+ 
+ /* NoMatches exception in gdkglmodule.c */
+ extern PyObject *pygdkglext_exc_NoMatches;
