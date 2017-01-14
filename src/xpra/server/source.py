@@ -919,11 +919,11 @@ class ServerSource(FileTransferHandler):
                         if c.boolget("mmap_token_index", False):
                             #we can write the token anywhere we want and tell the client,
                             #so write it right at the end:
-                            new_token_index = self.mmap_size-DEFAULT_TOKEN_BYTES
+                            self.mmap_client_token_index = self.mmap_size-DEFAULT_TOKEN_BYTES
                         else:
                             #use the expected default for older versions:
-                            new_token_index = DEFAULT_TOKEN_INDEX
-                        write_mmap_token(self.mmap, self.mmap_client_token, new_token_index, DEFAULT_TOKEN_BYTES)
+                            self.mmap_client_token_index = DEFAULT_TOKEN_INDEX
+                        write_mmap_token(self.mmap, self.mmap_client_token, self.mmap_client_token_index, DEFAULT_TOKEN_BYTES)
 
         if self.mmap_size>0:
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)

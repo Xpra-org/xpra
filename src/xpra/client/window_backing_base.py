@@ -430,7 +430,7 @@ class WindowBackingBase(object):
         """ must be called from UI thread
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
-        data = mmap_read(self.mmap, img_data)
+        data = mmap_read(self.mmap, *img_data)
         rgb_format = options.strget("rgb_format", "RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)

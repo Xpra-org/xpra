@@ -164,7 +164,7 @@ def int_from_buffer(mmap_area, pos):
 
 #descr_data is a list of (offset, length)
 #areas from the mmap region
-def mmap_read(mmap_area, descr_data):
+def mmap_read(mmap_area, *descr_data):
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
