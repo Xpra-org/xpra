@@ -288,6 +288,7 @@ class ServerSource(FileTransferHandler):
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
         self.mmap_client_token_index = 512
+        self.mmap_client_token_bytes = 0
         # mouse echo:
         self.mouse_show = False
         self.mouse_last_position = None
@@ -903,27 +904,38 @@ class ServerSource(FileTransferHandler):
             elif not os.path.exists(mmap_filename):
                 mmaplog("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
             else:
-                from xpra.net.mmap_pipe import init_server_mmap
-                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token)
+                from xpra.net.mmap_pipe import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
+                self.mmap, self.mmap_size = init_server_mmap(mmap_filename)
                 mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
-                    if self.mmap_size<min_mmap_size:
+                    index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX)
+                    count = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES)
+                    v = read_mmap_token(self.mmap, index, count)
+                    mmaplog("mmap_token=%#x, verification=%#x", mmap_token, v)
+                    if v!=mmap_token:
+                        log.warn("Warning: mmap token verification failed, not using mmap area!")
+                        log.warn(" expected '%#x', found '%#x'", mmap_token, v)
+                        self.mmap.close()
+                        self.mmap = None
+                        self.mmap_size = 0
+                    elif self.mmap_size<min_mmap_size:
                         mmaplog.warn("Warning: client supplied mmap area is too small, discarding it")
                         mmaplog.warn(" we need at least %iMB and this area is %iMB", min_mmap_size//1024//1024, self.mmap_size//1024//1024)
+                        self.mmap.close()
                         self.mmap = None
                         self.mmap_size = 0
                     else:
-                        from xpra.net.mmap_pipe import write_mmap_token, DEFAULT_TOKEN_BYTES, DEFAULT_TOKEN_INDEX
                         from xpra.os_util import get_int_uuid
                         self.mmap_client_token = get_int_uuid()
-                        if c.boolget("mmap_token_index", False):
+                        self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
+                        if c.intget("mmap_token_index"):
                             #we can write the token anywhere we want and tell the client,
                             #so write it right at the end:
-                            self.mmap_client_token_index = self.mmap_size-DEFAULT_TOKEN_BYTES
+                            self.mmap_client_token_index = self.mmap_size-self.mmap_client_token_bytes
                         else:
                             #use the expected default for older versions:
                             self.mmap_client_token_index = DEFAULT_TOKEN_INDEX
-                        write_mmap_token(self.mmap, self.mmap_client_token, self.mmap_client_token_index, DEFAULT_TOKEN_BYTES)
+                        write_mmap_token(self.mmap, self.mmap_client_token, self.mmap_client_token_index, self.mmap_client_token_bytes)
 
         if self.mmap_size>0:
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
@@ -1429,8 +1441,11 @@ class ServerSource(FileTransferHandler):
                          "auto_refresh_delay"   : self.auto_refresh_delay,
                          })
         if self.mmap_client_token:
-            capabilities["mmap_token"] = self.mmap_client_token
-            capabilities["mmap_token_index"] = self.mmap_client_token_index
+            capabilities.update({
+                "mmap_token"        : self.mmap_client_token,
+                "mmap_token_index"  : self.mmap_client_token_index,
+                "mmap_token_bytes"  : self.mmap_client_token_bytes,
+                })
                 
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:

@@ -234,6 +234,8 @@ class UIXpraClient(XpraClientBase):
         self.mmap_enabled = False
         self.mmap = None
         self.mmap_token = None
+        self.mmap_token_index = 0
+        self.mmap_token_bytes = 0
         self.mmap_filename = None
         self.mmap_size = 0
         self.mmap_group = None
@@ -1131,15 +1133,24 @@ class UIXpraClient(XpraClientBase):
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
         from xpra.os_util import get_int_uuid
-        from xpra.net.mmap_pipe import init_client_mmap
+        from xpra.net.mmap_pipe import init_client_mmap, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
         #calculate size:
         root_w, root_h = self.cp(*self.get_root_size())
         #at least 256MB, or 8 fullscreen RGBX frames:
         mmap_size = max(256*1024*1024, root_w*root_h*4*8)
         mmap_size = min(1024*1024*1024, mmap_size)
-        self.mmap_token = get_int_uuid()
         self.mmap_enabled, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
-            init_client_mmap(self.mmap_token, mmap_group, socket_filename, mmap_size, self.mmap_filename)
+            init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
+        if self.mmap_enabled:
+            self.mmap_token = get_int_uuid()
+            self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
+            self.mmap_token_index = self.mmap_size - DEFAULT_TOKEN_BYTES
+            #self.mmap_token_index = DEFAULT_TOKEN_INDEX*2
+            #write the token twice:
+            # once at the old default offset for older servers,
+            # and at the offset we want to use with new servers
+            for index in (DEFAULT_TOKEN_INDEX, self.mmap_token_index):
+                write_mmap_token(self.mmap, self.mmap_token, index, self.mmap_token_bytes)
 
     def clean_mmap(self):
         log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
@@ -1386,8 +1397,12 @@ class UIXpraClient(XpraClientBase):
             capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync
             log("keyboard capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("key")])
         if self.mmap_enabled:
-            capabilities["mmap_file"] = self.mmap_filename
-            capabilities["mmap_token"] = self.mmap_token
+            capabilities.update({
+                "mmap_file"         : self.mmap_filename,
+                "mmap_token"        : self.mmap_token,
+                "mmap_token_index"  : self.mmap_token_index,
+                "mmap_token_bytes"  : self.mmap_token_bytes,
+                })
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
         if MMAP_SUPPORTED:
@@ -1421,7 +1436,6 @@ class UIXpraClient(XpraClientBase):
             "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
             "info-namespace"            : True,
-            "mmap_token_index"          : True,
             #window meta data and handling:
             "generic_window_types"      : True,
             "server-window-move-resize" : True,
@@ -1768,14 +1782,15 @@ class UIXpraClient(XpraClientBase):
         self.start_new_commands = c.boolget("start-new-commands")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
+            from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
             mmap_token = c.intget("mmap_token")
-            mmap_token_index = c.intget("mmap_token_index", 512)
-            from xpra.net.mmap_pipe import read_mmap_token
-            token = read_mmap_token(self.mmap, mmap_token_index)
+            mmap_token_index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX)
+            mmap_token_bytes = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES)
+            token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
             if token!=mmap_token:
                 log.error("Error: mmap token verification failed!")
-                log.error(" expected '%s'", mmap_token)
-                log.error(" found '%s'", token)
+                log.error(" expected '%#x'", mmap_token)
+                log.error(" found '%#x'", token)
                 self.mmap_enabled = False
                 self.quit(EXIT_MMAP_TOKEN_FAILURE)
                 return

@@ -21,7 +21,7 @@ def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
 
-def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024*1024, filename=None):
+def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, filename=None):
     """
         Initializes an mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
@@ -33,7 +33,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
     if not can_use_mmap():
         log.error("cannot use mmap: python version is too old?")
         return rerr()
-    log("init_mmap%s", (token, mmap_group, socket_filename, size, filename))
+    log("init_mmap%s", (mmap_group, socket_filename, size, filename))
     try:
         import mmap
         if filename:
@@ -81,7 +81,6 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         assert os.write(fd, b'\x00')
         os.lseek(fd, 0, os.SEEK_SET)
         mmap_area = mmap.mmap(fd, length=mmap_size)
-        write_mmap_token(mmap_area, token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES)
         return True, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
@@ -101,26 +100,26 @@ DEFAULT_TOKEN_BYTES = 128
 def write_mmap_token(mmap_area, token, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BYTES):
     assert count>0
     #write the token one byte at a time - no endianness
-    log("write_mmap_token(%s, %s, %s)", mmap_area, token, index)
+    log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
     v = token
     for i in range(0, count):
-        poke = ctypes.c_ubyte.from_buffer(mmap_area, 512+i)
+        poke = ctypes.c_ubyte.from_buffer(mmap_area, index+i)
         poke.value = v % 256
         v = v>>8
     assert v==0, "token value is too big"
 
-def read_mmap_token(mmap_area, index=512, count=DEFAULT_TOKEN_BYTES):
+def read_mmap_token(mmap_area, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BYTES):
     assert count>0
     v = 0
     for i in range(0, count):
         v = v<<8
-        peek = ctypes.c_ubyte.from_buffer(mmap_area, 512+count-1-i)
+        peek = ctypes.c_ubyte.from_buffer(mmap_area, index+count-1-i)
         v += peek.value
-    log("read_mmap_token(%s, %s)=%s", mmap_area, index, v)
+    log("read_mmap_token(%s, %#x, %#x)=%#x", mmap_area, index, count, v)
     return v
 
 
-def init_server_mmap(mmap_filename, mmap_token=None):
+def init_server_mmap(mmap_filename):
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
@@ -142,15 +141,6 @@ def init_server_mmap(mmap_filename, mmap_token=None):
         import mmap
         mmap_size = os.path.getsize(mmap_filename)
         mmap_area = mmap.mmap(f.fileno(), mmap_size)
-        if mmap_token:
-            #verify the token:
-            v = read_mmap_token(mmap_area)
-            log("mmap_token=%s, verification=%s", mmap_token, v)
-            if v!=mmap_token:
-                log.warn("WARNING: mmap token verification failed, not using mmap area!")
-                log.warn("expected '%s', found '%s'", mmap_token, v)
-                mmap_area.close()
-                return None, 0
         return mmap_area, mmap_size
     except Exception as e:
         log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)
