@@ -263,6 +263,7 @@
 		checkoutdir="pygtkglext"
 		repo="xpra.org">
 	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
+	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-fix-gl-osx.patch" strip="0"/>
 	</branch>
 	<dependencies>
 		<dep package="gtkglext"/>
