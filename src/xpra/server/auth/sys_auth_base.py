@@ -49,7 +49,7 @@ class SysAuthenticator(object):
 
     def get_challenge(self, mac="xor"):
         if self.salt is not None:
-            log.error("challenge already sent!")
+            log.error("Error: authentication challenge already sent!")
             return None
         self.salt = get_salt()
         #we need the raw password, so tell the client to use "xor":
@@ -80,9 +80,9 @@ class SysAuthenticator(object):
         #verify login:
         try :
             ret = self.check(password)
-            log("check(..)=%s", ret)
+            log("authenticate_check(..)=%s", ret)
         except Exception as e:
-            log.error("Error in %s authentication checks:", self)
+            log.error("Error: %s authentication check failed:", self)
             log.error(" %s", e)
             return False
         return ret
@@ -96,6 +96,7 @@ class SysAuthenticator(object):
             salt = self.salt
         else:
             salt = xor(self.salt, client_salt)
+            log("xoring salt: xor(%s, %s)=%s", self.salt, client_salt, binascii.hexlify(salt))
         self.salt = None
         password = self.get_password()
         if not password:
@@ -103,7 +104,7 @@ class SysAuthenticator(object):
             log.error(" no password defined for '%s'", self.username)
             return False
         verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, password, binascii.hexlify(strtobytes(salt)), verify)
+        log("%s auth: authenticate(%s) password=%s, hex(salt)=%s, hash=%s", self, challenge_response, password, binascii.hexlify(strtobytes(salt)), verify)
         if not hmac.compare_digest(verify, challenge_response):
             log("expected '%s' but got '%s'", verify, challenge_response)
             log.error("Error: hmac password challenge for '%s' does not match", self.username)

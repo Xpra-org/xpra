@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr, memoryview_to_bytes
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -531,7 +531,7 @@ class XpraClientBase(FileTransferHandler):
         if not password:
             warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
             return
-        salt = packet[1]
+        server_salt = packet[1]
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet[2])
@@ -544,14 +544,15 @@ class XpraClientBase(FileTransferHandler):
         #all server versions support a client salt,
         #they also tell us which digest to use:
         digest = packet[3]
-        client_salt = get_salt(len(salt))
+        client_salt = get_salt(len(server_salt))
         #TODO: use some key stretching algorigthm? (meh)
-        salt = xor(salt, client_salt)
+        salt = xor(server_salt, client_salt)
         if digest==b"hmac":
             import hmac, hashlib
             password = strtobytes(password)
-            salt = strtobytes(salt)
+            salt = memoryview_to_bytes(salt)
             challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+            authlog("hmac.HMAC(%s, %s)=%s", binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
         elif digest==b"xor":
             #don't send XORed password unencrypted:
             encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type")=="ssl"

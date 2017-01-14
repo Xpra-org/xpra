@@ -137,7 +137,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         fpassword, uid, gid, displays, env_options, session_options = entry
         verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password='%s', hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
+        log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
         if not hmac.compare_digest(verify, challenge_response):
             log("expected '%s' but got '%s'", verify, challenge_response)
             log.error("Error: hmac password challenge for '%s' does not match", self.username)

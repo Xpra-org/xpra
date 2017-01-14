@@ -923,7 +923,7 @@ class ServerCore(object):
                 auth, aclass, options = proto.auth_class
                 ainstance = aclass(username, **options)
                 proto.authenticator = ainstance
-                authlog("%s=%s", auth, ainstance)
+                authlog("authenticator(%s)=%s", auth, ainstance)
             except Exception as e:
                 authlog.error("Error instantiating %s:", proto.auth_class)
                 authlog.error(" %s", e)
@@ -983,8 +983,8 @@ class ServerCore(object):
                         authlog.warn(" but the client %s supplied them", proto)
                         salt, digest = get_salt(), "hmac"
                     else:
-                        authlog("challenge: %s", challenge)
                         salt, digest = challenge
+                        authlog("challenge: %s, %s", salt, nonl(challenge))
                         authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                         authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
                     if digest not in digest_modes:
