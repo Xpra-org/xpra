@@ -81,7 +81,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None, size=128*1024
         assert os.write(fd, b'\x00')
         os.lseek(fd, 0, os.SEEK_SET)
         mmap_area = mmap.mmap(fd, length=mmap_size)
-        write_mmap_token(mmap_area, token)
+        write_mmap_token(mmap_area, token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES)
         return True, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
@@ -95,29 +95,32 @@ def clean_mmap(mmap_filename):
     if mmap_filename and os.path.exists(mmap_filename):
         os.unlink(mmap_filename)
 
-MAX_TOKEN_BYTES = 128
+DEFAULT_TOKEN_INDEX = 512
+DEFAULT_TOKEN_BYTES = 128
 
-def write_mmap_token(mmap_area, token, index=512):
-    #write the 16 byte token one byte at a time - no endianness
+def write_mmap_token(mmap_area, token, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BYTES):
+    assert count>0
+    #write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %s, %s)", mmap_area, token, index)
     v = token
-    for i in range(0, MAX_TOKEN_BYTES):
+    for i in range(0, count):
         poke = ctypes.c_ubyte.from_buffer(mmap_area, 512+i)
         poke.value = v % 256
         v = v>>8
     assert v==0, "token value is too big"
 
-def read_mmap_token(mmap_area, index=512):
+def read_mmap_token(mmap_area, index=512, count=DEFAULT_TOKEN_BYTES):
+    assert count>0
     v = 0
-    for i in range(0, MAX_TOKEN_BYTES):
+    for i in range(0, count):
         v = v<<8
-        peek = ctypes.c_ubyte.from_buffer(mmap_area, 512+MAX_TOKEN_BYTES-1-i)
+        peek = ctypes.c_ubyte.from_buffer(mmap_area, 512+count-1-i)
         v += peek.value
     log("read_mmap_token(%s, %s)=%s", mmap_area, index, v)
     return v
 
 
-def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None, mmap_token_index=512):
+def init_server_mmap(mmap_filename, mmap_token=None):
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
@@ -148,11 +151,6 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None, mmap_t
                 log.warn("expected '%s', found '%s'", mmap_token, v)
                 mmap_area.close()
                 return None, 0
-            if new_mmap_token:
-                if mmap_token_index<0:
-                    #negative values mean relative to the end:
-                    mmap_token_index = mmap_size + mmap_token_index
-                write_mmap_token(mmap_area, new_mmap_token, mmap_token_index)
         return mmap_area, mmap_size
     except Exception as e:
         log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)

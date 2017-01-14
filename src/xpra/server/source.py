@@ -904,16 +904,7 @@ class ServerSource(FileTransferHandler):
                 mmaplog("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
             else:
                 from xpra.net.mmap_pipe import init_server_mmap
-                from xpra.os_util import get_int_uuid
-                new_token = get_int_uuid()
-                if c.boolget("mmap_token_index", False):
-                    #we can write anywhere we want and tell the client,
-                    #so write at 128 bytes from the end:
-                    new_token_index = -128
-                else:
-                    #expected default for older versions:
-                    new_token_index = 512
-                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token, new_token_index)
+                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token)
                 mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
                     if self.mmap_size<min_mmap_size:
@@ -922,9 +913,17 @@ class ServerSource(FileTransferHandler):
                         self.mmap = None
                         self.mmap_size = 0
                     else:
-                        self.mmap_client_token = new_token
-                        if new_token_index<0:
-                            self.mmap_client_token_index = self.mmap_size + new_token_index
+                        from xpra.net.mmap_pipe import write_mmap_token, DEFAULT_TOKEN_BYTES, DEFAULT_TOKEN_INDEX
+                        from xpra.os_util import get_int_uuid
+                        self.mmap_client_token = get_int_uuid()
+                        if c.boolget("mmap_token_index", False):
+                            #we can write the token anywhere we want and tell the client,
+                            #so write it right at the end:
+                            new_token_index = self.mmap_size-DEFAULT_TOKEN_BYTES
+                        else:
+                            #use the expected default for older versions:
+                            new_token_index = DEFAULT_TOKEN_INDEX
+                        write_mmap_token(self.mmap, self.mmap_client_token, new_token_index, DEFAULT_TOKEN_BYTES)
 
         if self.mmap_size>0:
             mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
