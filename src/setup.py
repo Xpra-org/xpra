@@ -633,7 +633,7 @@ def make_constants(*paths, **kwargs):
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
-    if kw.get("optimize"):
+    if "optimize" in kw:
         optimize = kw["optimize"]
         del kw["optimize"]
         if type(optimize)==bool:
