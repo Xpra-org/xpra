@@ -181,7 +181,7 @@ def get_info():
             "devices"       : i,
             "pulseaudio"    : {
                                "wrapper"   : "pactl",
-                               "found"     : has_pa(),
+                               "found"     : bool(has_pa()),
                                "id"        : get_pulse_id(),
                                "server"    : get_pulse_server(False),
                                }
