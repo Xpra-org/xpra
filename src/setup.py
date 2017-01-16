@@ -935,6 +935,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/core_bindings.c",
                    "xpra/x11/bindings/posix_display_source.c",
                    "xpra/x11/bindings/ximage.c",
+                   "xpra/platform/win32/propsys.cpp",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/vsock.c",
                    "xpra/codecs/vpx/encoder.c",
@@ -2121,6 +2122,16 @@ toggle_packages((client_ENABLED and gtk3_ENABLED) or (PYTHON3 and sound_ENABLED)
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
+if client_ENABLED and WIN32 and MINGW_PREFIX:
+    propsys_pkgconfig = pkgconfig()
+    if debug_ENABLED:
+        add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-DDEBUG")
+    add_to_keywords(propsys_pkgconfig, 'extra_link_args', "-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
+    cython_add(Extension("xpra.platform.win32.propsys",
+                ["xpra/platform/win32/propsys.pyx", "xpra/platform/win32/setappid.cpp"],
+                language="c++",
+                **propsys_pkgconfig))
+
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.keyboard")
@@ -2400,6 +2411,8 @@ toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
+    print("pkgconfig=%s" % (pkgconfig,))
+    print("ERR: %s" % (bencode_pkgconfig,))
     cython_add(Extension("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx", buffers_c],
                 **bencode_pkgconfig))

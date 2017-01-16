@@ -24,7 +24,7 @@ from xpra.util import AdHocStruct, csv, envint, envbool
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof, c_ulong, c_double
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, HRESULT, LPCWSTR, POINT
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, POINT
 
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
@@ -50,44 +50,11 @@ SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
 
 shell32 = ctypes.windll.shell32
 try:
-    from xpra.platform.win32.common import REFIID, IID, GUID
-    SHGetPropertyStoreForWindow = shell32.SHGetPropertyStoreForWindow
-    SHGetPropertyStoreForWindow.restype = HRESULT
-    SHGetPropertyStoreForWindow.argtypes = [HWND, REFIID, ctypes.POINTER(ctypes.c_void_p)]
-
-    class PROPERTYKEY (ctypes.Structure):
-        _fields_ = [
-            ("fmtid",               GUID),
-            ("pid",                 DWORD),
-            ]
-    propsys = ctypes.windll.propsys
-    PSGetPropertyKeyFromName = propsys.PSGetPropertyKeyFromName
-    PSGetPropertyKeyFromName.restype = HRESULT
-    PSGetPropertyKeyFromName.argtypes = [LPCWSTR, ctypes.POINTER(PROPERTYKEY)]
+    from xpra.platform.win32.propsys import set_window_group    #@UnresolvedImport
 except:
-    log.warn("Warning: propsys support missing, no window grouping")
-    SetPropertyStoreForWindow = None
-else:
-    def SetPropertyStoreForWindow(hwnd, prop="System.AppUserModel.ID", value=0):
-        iid = IID()
-        ps = ctypes.c_void_p
-        r = SHGetPropertyStoreForWindow(hwnd, ctypes.pointer(iid), ctypes.pointer(ps))
-        if r!=0:
-            log.warn("Warning: cannot access window property store:")
-            log.warn(" SHGetPropertyStoreForWindow returned %i", hwnd, r)
-            return
-        log.info("SHGetPropertyStoreForWindow(%i) propertystore=%#x", hwnd, ps.value)
-        pkey = PROPERTYKEY()
-        r = PSGetPropertyKeyFromName(prop, ctypes.pointer(pkey))
-        if r!=0:
-            log.warn("Warning: cannot find property key for '%s':")
-            log.warn(" PSGetPropertyKeyFromName returned %i", hwnd, r)
-            return
-        #TODO:
-        #value = propsys.PROPVARIANTType(lhandle)
-        #log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
-        #ps.SetValue(key, value)
-    
+    log.warn("propsys missing", exc_info=True)
+    log.warn("Warning: propsys support missing, window grouping is not available")
+    set_window_group = None
 
 MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
 
@@ -299,18 +266,21 @@ def win32_propsys_set_group_leader(self, leader):
     if not hwnd:
         return
     try:
+        log("win32_propsys_set_group_leader(%s)", leader)
         lhandle = leader.handle
     except:
+        log.warn("Warning: no window handle for %s", leader)
+        log.warn(" cannot set window grouping attribute")
         return
     if not lhandle:
         return
-    #returns the setter method we can use
     try:
-        log("win32 hooks: set_group(%#x)", lhandle)
-        log("SetPropertyStoreForWindow=%s", SetPropertyStoreForWindow)
-        SetPropertyStoreForWindow(hwnd, prop="System.AppUserModel.ID", value=lhandle)
+        log("win32 hooks: get_window_handle(%s)=%s, set_group(%#x)", self, hwnd, lhandle)
+        set_window_group(hwnd, lhandle)
     except Exception as e:
-        log.error("failed to set group leader: %s", e)
+        log("set_window_group error", exc_info=True)
+        log.error("Error: failed to set group leader")
+        log.error(" %s", e)
 
 WS_NAMES = {
             win32con.WS_BORDER              : "BORDER",
@@ -503,10 +473,10 @@ def add_window_hooks(window):
 
     if GROUP_LEADER:
         #windows 7 onwards can use AppUserModel to emulate the group leader stuff:
-        log("win32 hooks: SetPropertyStoreForWindow=%s", SetPropertyStoreForWindow)
-        if SetPropertyStoreForWindow:
+        log("win32 hooks: set_window_group=%s", set_window_group)
+        if set_window_group:
             gdk_window.set_group = types.MethodType(win32_propsys_set_group_leader, gdk_window)
-            log("hooked group leader override using %s", propsys)
+            log("hooked group leader override using %s", set_window_group)
 
     if UNDECORATED_STYLE:
         #OR windows never have any decorations or taskbar menu
