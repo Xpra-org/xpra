@@ -143,8 +143,8 @@ if "--minimal" in sys.argv:
     DEFAULT = False
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
-shadow_ENABLED = SHADOW_SUPPORTED and not PYTHON3 and DEFAULT       #shadow servers use some GTK2 code..
-server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not PYTHON3 and DEFAULT
+shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       #shadow servers use some GTK2 code..
+server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
@@ -1174,7 +1174,10 @@ if WIN32:
     except:
         site_dir = site.getsitepackages()[0]
     #this is where the win32 gi installer will put things:
-    gnome_include_path = os.path.join(site_dir, "gnome")
+    if "MINGW_PREFIX" in os.environ:
+        gnome_include_path = os.environ.get("MINGW_PREFIX")
+    else:
+        gnome_include_path = os.path.join(site_dir, "gnome")
 
     #only add the py2exe / cx_freeze specific options
     #if we aren't just building the Cython bits with "build_ext":
@@ -1190,7 +1193,8 @@ if WIN32:
             #one item at a time (no lists)
             #all in its own structure called "include_files" instead of "data_files"...
             def add_data_files(target_dir, files):
-                print("add_data_files(%s, %s)" % (target_dir, files))
+                if verbose_ENABLED:
+                    print("add_data_files(%s, %s)" % (target_dir, files))
                 assert type(target_dir)==str
                 assert type(files) in (list, tuple)
                 for f in files:
@@ -1201,7 +1205,8 @@ if WIN32:
             #of files and directories we do want to include
             #relative to gnome_include_path
             def add_dir(base, defs):
-                print("add_dir(%s, %s)" % (base, defs))
+                if verbose_ENABLED:
+                    print("add_dir(%s, %s)" % (base, defs))
                 if type(defs) in (list, tuple):
                     for sub in defs:
                         if type(sub)==dict:
@@ -1222,7 +1227,8 @@ if WIN32:
 
             #convenience method for adding GI libs and "typelib" and "gir":
             def add_gi(*libs):
-                print("add_gi(%s)" % str(libs))
+                if verbose_ENABLED:
+                    print("add_gi(%s)" % str(libs))
                 add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
                 add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
 
@@ -1242,6 +1248,8 @@ if WIN32:
                 dirs = os.environ.get("PATH").split(os.path.pathsep)
                 if os.path.exists(gnome_include_path):
                     dirs.insert(0, gnome_include_path)
+                if verbose_ENABLED:
+                    print("add_DLLs: looking for %s in %s" % (dll_names, dirs))
                 for d in dirs:
                     if not os.path.exists(d):
                         continue
@@ -1251,6 +1259,8 @@ if WIN32:
                         if os.path.isdir(dll_path) or not x.startswith("lib") or not x.endswith(".dll"):
                             continue
                         nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
+                        if verbose_ENABLED:
+                            print("checking %s: %s" % (x, nameversion))
                         m = version_re.search(nameversion)          #look for version part of filename
                         if m:
                             dll_version = m.group(0)                #found it, ie: "-1.0-0"
@@ -1276,9 +1286,11 @@ if WIN32:
                 add_DLLs('gio', 'girepository', 'glib',
                          'gnutls', 'gobject', 'gthread',
                          'orc', 'stdc++',
-                         'proxy',
                          'winpthread',
-                         'zzz')
+                         #no longer needed with mingw builds?:
+                         'proxy',
+                         'zzz',
+                         )
             if gtk3_ENABLED:
                 add_DLLs('atk',
                          'dbus', 'dbus-glib',
@@ -1290,8 +1302,9 @@ if WIN32:
                          'p11-kit',
                          'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
                 #these are missing in newer aio installers (sigh):
-                do_add_DLLs('javascriptcoregtk',
-                         'gdkglext', 'gtkglext')
+                do_add_DLLs('javascriptcoregtk')
+                if opengl_ENABLED:
+                    do_add_DLLs('gdkglext', 'gtkglext')
             if client_ENABLED and os.environ.get("VCINSTALLDIR"):
                 #Visual Studio may link our avcodec2 module against libiconv...
                 do_add_DLLs("iconv")
@@ -1317,13 +1330,15 @@ if WIN32:
                 add_gi("Atk-1.0",
                        "fontconfig-2.0", "freetype2-2.0",
                        "GDesktopEnums-3.0", "Soup-2.4",
-                       "GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0",
                        "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0"
                        "HarfBuzz-0.0",
                        "Libproxy-1.0", "libxml2-2.0",
                        "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
                        "Rsvg-2.0",
                        "win32-1.0")
+                if opengl_ENABLED:
+                    add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
+                    
                 add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
 
             if sound_ENABLED:
@@ -1337,6 +1352,8 @@ if WIN32:
                           "basecamerabinsrc", "mpegts", "photography",
                           ):
                     add_DLLs('gst%s' % p)
+                #DLLs needed by the plugins:
+                add_DLLs("faac", "faad", "flac", "mad", "mpg123")
                 #add the gstreamer plugins we need:
                 GST_PLUGINS = ("app",
                                #muxers:
@@ -1527,13 +1544,14 @@ if WIN32:
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
+            add_console_exe("scripts/xpra",                     "speaker.ico",      "Xpra_Audio")
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
             add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
-            add_gui_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
+            add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             if os.path.exists("C:\\Program Files (x86)\\Ghostgum\\gsview"):
@@ -1565,7 +1583,7 @@ if WIN32:
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
         #build minified html5 client in temporary build dir:
         if "clean" not in sys.argv and html5_ENABLED:
-            install_html5("build/www")
+            install_html5(os.path.join(install, "www"))
             for k,v in glob_recurse("build/www").items():
                 if (k!=""):
                     k = os.sep+k
@@ -2120,7 +2138,7 @@ if client_ENABLED:
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or (PYTHON3 and sound_ENABLED), "gi")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED, "gi")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
@@ -2413,8 +2431,6 @@ toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
-    print("pkgconfig=%s" % (pkgconfig,))
-    print("ERR: %s" % (bencode_pkgconfig,))
     cython_add(Extension("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx", buffers_c],
                 **bencode_pkgconfig))
