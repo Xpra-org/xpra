@@ -2147,6 +2147,8 @@ if crypto_ENABLED and (OSX or WIN32):
     add_modules("cryptography.hazmat.bindings._padding")
     add_modules("cryptography.hazmat.backends.openssl")
     add_modules("cryptography.fernet")
+    if WIN32:
+        external_includes.append("appdirs")
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
