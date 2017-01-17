@@ -1112,8 +1112,10 @@ class ClientExtras(object):
             log("calling SetConsoleCtrlHandler(%s)", enable)
             handler = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(self.handle_console_event)
             result = SetConsoleCtrlHandler(handler, int(enable))
-            if result == 0:
-                log.error("could not SetConsoleCtrlHandler (error %r)", ctypes.GetLastError())
+            log("SetConsoleCtrlHandler(%s, %s)=%s", handler, enable, result)
+            if result==0 and enable:
+                log.error("Error: could not set console control handler:")
+                log.error(" SetConsoleCtrlHandler: %r", ctypes.GetLastError())
                 return False
             return True
         except Exception as e:
