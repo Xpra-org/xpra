@@ -1782,8 +1782,8 @@ if WIN32:
     #make sure we don't include the gstreamer 0.10 "pygst" bindings:
     remove_packages("pygst", "gst", "gst.extend")
 
-    #deal with opengl workaround (as long as we're not just building the extensions):
-    if opengl_ENABLED:
+    #add subset of PyOpenGL modules (only when installing):
+    if opengl_ENABLED and ("install_exe" in sys.argv or "install" in sys.argv):
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
