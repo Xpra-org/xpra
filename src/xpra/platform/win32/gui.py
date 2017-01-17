@@ -1167,6 +1167,8 @@ def main():
         def resume():
             log.info("resume event")
         fake_client = AdHocStruct()
+        fake_client._focused = False
+        fake_client.keyboard_grabbed = False
         fake_client.window_with_grab = None
         fake_client.suspend = suspend
         fake_client.resume = resume
