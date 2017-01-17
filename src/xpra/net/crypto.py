@@ -51,7 +51,7 @@ def crypto_backend_init():
         log("crypto backend init failure", exc_info=True)
         log.error("Error: cannot import python-cryptography")
     except Exception:
-        log.error("Error: cannot initializing python-cryptography", exc_info=True)
+        log.error("Error: cannot initialize python-cryptography", exc_info=True)
     backend = None
 
 def validate_backend(try_backend):
