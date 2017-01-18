@@ -27,11 +27,13 @@ REVISION=`python -c "x=\"$SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];prin
 FULL_VERSION=${VERSION}-r${REVISION}
 EXTRA_VERSION=""
 BUILD_TYPE=""
+echo
+echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
 if [ "${MSYSTEM_CARCH}" != "i686" ]; then
 	BUILD_TYPE="-${MSYSTEM_CARCH}"
+	echo " (64-bit)"
 fi
 echo
-echo "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
 echo
 
 INSTALLER_FILENAME="Xpra${EXTRA_VERSION}${BUILD_TYPE}_Setup_${FULL_VERSION}.exe"
@@ -64,7 +66,7 @@ fi
 #echo "* Building Python 3.4 Cython modules (see win32/Python2.7-build.log)"
 #python2.7.exe ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& win32/Python2.7-build.log
 
-echo "* generating installation directory"
+echo "* Generating installation directory"
 CX_FREEZE_LOG="win32/cx_freeze-install.log"
 python2.7.exe ./setup.py install_exe ${BUILD_OPTIONS} --install=${DIST} >& ${CX_FREEZE_LOG}
 if [ "$?" != "0" ]; then
@@ -74,7 +76,7 @@ if [ "$?" != "0" ]; then
 fi
 
 if [ -e "${DIST}/OpenGL" ]; then
-	echo "* adding PyOpenGL to library.zip"
+	echo "* Adding PyOpenGL to library.zip"
 	pushd "${DIST}" >& /dev/null
 	zip -qmor "library.zip" OpenGL
 	popd >& /dev/null
@@ -134,6 +136,9 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	echo "* Creating the installer using InnoSetup"
 	rm -f "Xpra_Setup.exe" "${INSTALLER_FILENAME}" "${INNOSETUP_LOG}"
 	cp "win32/xpra.iss" "xpra.iss"
+	if [ "${MSYSTEM_CARCH}" == "x86_64" ]; then
+		cat "win32/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/$/ (64-bit)/g' > "xpra.iss"
+	fi
 	"${INNOSETUP}" "xpra.iss" >& "${INNOSETUP_LOG}"
 	if [ "$?" != "0" ]; then
 		echo "InnoSetup error - see ${INNOSETUP_LOG}:"
