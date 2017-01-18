@@ -194,9 +194,11 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
+if WIN32 and not MINGW_PREFIX:
+    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
+
 if BITS==64:
     if WIN32:
-        WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
         nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
         nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
         try:
@@ -2157,7 +2159,7 @@ if client_ENABLED:
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED, "gi")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
