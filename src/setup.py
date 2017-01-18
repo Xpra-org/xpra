@@ -64,6 +64,8 @@ WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
 OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
 PYTHON3 = sys.version_info[0] == 3
+import struct
+BITS = struct.calcsize("P")*8
 
 
 if "pkg-info" in sys.argv:
@@ -192,17 +194,20 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
-if WIN32:
-    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
-    nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
-    nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
-    try:
-        import pycuda
-    except:
-        pycuda = None
-    nvenc7_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc7_sdk) and is_msvc()
+if BITS==64:
+    if WIN32:
+        WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
+        nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
+        nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
+        try:
+            import pycuda
+        except:
+            pycuda = None
+        nvenc7_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc7_sdk) and is_msvc()
+    else:
+        nvenc7_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc7")
 else:
-    nvenc7_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc7")
+    nvenc7_ENABLED = False
 
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
@@ -489,9 +494,6 @@ def print_option(prefix, k, v):
             print_option(" "+prefix, kk, vv)
     else:
         print("%s* %s=%s" % (prefix, k, v))
-def print_dict(d):
-    for k,v in d.items():
-        print_option("", k, v)
 
 #*******************************************************************************
 # Utility methods for building with Cython
@@ -1063,8 +1065,9 @@ def install_html5(install_dir="www"):
                                   ]
                 r = get_status_output(minify_cmd)[0]
                 if r!=0:
-                    print("Error: minify for '%s' returned %i" % (f, r))
-                    print(" command: %s" % (minify_cmd,))
+                    print("Error: failed to minify '%s', command returned error %i" % (f, r))
+                    if verbose_ENABLED:
+                        print(" command: %s" % (minify_cmd,))
                 else:
                     print("minified %s" % (f, ))
             else:
@@ -1079,58 +1082,63 @@ if WIN32:
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
-    ###########################################################
-    #START OF HARDCODED SECTION
-    #this should all be done with pkgconfig...
-    #but until someone figures this out, the ugly path code below works
-    #as long as you install in the same place or tweak the paths.
 
-    #ffmpeg is needed for both swscale and x264:
-    libffmpeg_path = ""
-    if dec_avcodec2_ENABLED:
-        libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
+    if MINGW_PREFIX:
+        #all good, no hard-coded mess!
+        pass
     else:
-        if csc_swscale_ENABLED:
+        ###########################################################
+        #START OF HARDCODED SECTION
+        #this should all be done with pkgconfig...
+        #but until someone figures this out, the ugly path code below works
+        #as long as you install in the same place or tweak the paths.
+
+        #ffmpeg is needed for both swscale and x264:
+        libffmpeg_path = ""
+        if dec_avcodec2_ENABLED:
             libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
-    libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
-    libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
-    libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
-    #x265
-    x265_path = WIN32_BUILD_LIB_PREFIX + "x265"
-    x265_include_dir    = x265_path
-    x265_lib_dir        = x265_path
-    x265_bin_dir        = x265_path
-    #x264 (direct from build dir.. yuk - sorry!):
-    x264_path = WIN32_BUILD_LIB_PREFIX + "x264"
-    x264_include_dir    = os.path.join(x264_path, "include")
-    x264_lib_dir        = os.path.join(x264_path, "lib")
-    x264_bin_dir        = os.path.join(x264_path, "bin")
-    # Same for vpx:
-    # http://code.google.com/p/webm/downloads/list
-    #the path after installing may look like this:
-    #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
-    #but we use something more generic, without the version numbers:
-    vpx_path = ""
-    for v in ("vpx", "vpx-1.5", "vpx-1.4", "vpx-1.3"):
-        p = WIN32_BUILD_LIB_PREFIX + v
-        if os.path.exists(p) and os.path.isdir(p):
-            vpx_path = p
-            break
-    vpx_include_dir     = os.path.join(vpx_path, "include")
-    vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
-    vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
-    if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
-        vpx_lib_names = ["vpxmd"]             #msvc builds only?
-    elif os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
-        vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
-    else:
-        vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
+        else:
+            if csc_swscale_ENABLED:
+                libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
+        libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
+        libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
+        libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
+        #x265
+        x265_path = WIN32_BUILD_LIB_PREFIX + "x265"
+        x265_include_dir    = x265_path
+        x265_lib_dir        = x265_path
+        x265_bin_dir        = x265_path
+        #x264 (direct from build dir.. yuk - sorry!):
+        x264_path = WIN32_BUILD_LIB_PREFIX + "x264"
+        x264_include_dir    = os.path.join(x264_path, "include")
+        x264_lib_dir        = os.path.join(x264_path, "lib")
+        x264_bin_dir        = os.path.join(x264_path, "bin")
+        # Same for vpx:
+        # http://code.google.com/p/webm/downloads/list
+        #the path after installing may look like this:
+        #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
+        #but we use something more generic, without the version numbers:
+        vpx_path = ""
+        for v in ("vpx", "vpx-1.5", "vpx-1.4", "vpx-1.3"):
+            p = WIN32_BUILD_LIB_PREFIX + v
+            if os.path.exists(p) and os.path.isdir(p):
+                vpx_path = p
+                break
+        vpx_include_dir     = os.path.join(vpx_path, "include")
+        vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
+        vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
+        if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
+            vpx_lib_names = ["vpxmd"]             #msvc builds only?
+        elif os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
+            vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
+        else:
+            vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
 
-    libyuv_path = WIN32_BUILD_LIB_PREFIX + "libyuv"
-    libyuv_include_dir = os.path.join(libyuv_path, "include")
-    libyuv_lib_dir = os.path.join(libyuv_path, "lib")
-    libyuv_bin_dir = os.path.join(libyuv_path, "bin")
-    libyuv_lib_names = ["yuv"]
+        libyuv_path = WIN32_BUILD_LIB_PREFIX + "libyuv"
+        libyuv_include_dir = os.path.join(libyuv_path, "include")
+        libyuv_lib_dir = os.path.join(libyuv_path, "lib")
+        libyuv_bin_dir = os.path.join(libyuv_path, "bin")
+        libyuv_lib_names = ["yuv"]
 
     # Same for PyGTK / GTK3:
     # http://www.pygtk.org/downloads.html
@@ -1275,7 +1283,7 @@ if WIN32:
                             dll_files.append(dll_path)
                             dll_names.remove(dll_name)
                 if len(dll_names)>0:
-                    print("some DLLs could not be found in '%s':" % (dirs, ))
+                    print("some DLLs could not be found:")
                     for x in dll_names:
                         print(" - lib%s*.dll" % x)
                 add_data_files("", dll_files)
@@ -1340,6 +1348,16 @@ if WIN32:
                     add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
                     
                 add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
+
+            if gtk2_ENABLED:
+                add_dir('lib',      {
+                    "gdk-pixbuf-2.0":    {
+                        "2.10.0"    :   {
+                            "loaders"   :
+                                ["libpixbufloader-%s.dll" % x for x in ("ico", "jpeg", "svg", "bmp")]
+                            },
+                        },
+                    })
 
             if sound_ENABLED:
                 add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
@@ -1413,6 +1431,7 @@ if WIN32:
                 add_exe(script, icon, base_name, base="Win32GUI")
             #END OF cx_freeze SECTION
         else:
+            assert not MINGW_PREFIX, "mingw builds must use cx_Freeze"
             #py2exe recipe for win32com:
             # ModuleFinder can't handle runtime changes to __path__, but win32com uses them
             try:
@@ -1567,7 +1586,7 @@ if WIN32:
                 f = os.path.join(GHOSTSCRIPT_PARENT_DIR, x)
                 if os.path.isdir(f):
                     GHOSTSCRIPT = os.path.join(f, "bin")
-                    print("found ghoscript: %s" % GHOSTSCRIPT)
+                    print("found ghostscript: %s" % GHOSTSCRIPT)
                     break
             assert GHOSTSCRIPT is not None, "cannot find ghostscript installation directory in %s" % GHOSTSCRIPT_PARENT_DIR
             add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
@@ -1610,7 +1629,6 @@ if WIN32:
     #the win32 py-gi installers don't have development headers for pycairo
     #so we hardcode them here instead...
     #(until someone fixes the win32 builds properly)
-    PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
     def pycairo_pkgconfig(*pkgs_options, **ekw):
         try:
             return exec_pkgconfig(*pkgs_options, **ekw)
@@ -1622,6 +1640,7 @@ if WIN32:
             #(until someone fixes the win32 builds properly)
             if "pycairo" in pkgs_options:
                 kw = pkgconfig("cairo", **ekw)
+                PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
                 add_to_keywords(kw, 'include_dirs', PYCAIRO_DIR)
                 checkdirs(PYCAIRO_DIR)
                 return kw
@@ -2463,8 +2482,17 @@ if scripts:
 
 def main():
     if OSX or WIN32 or debug_ENABLED:
+        print()
         print("setup options:")
-        print_dict(setup_options)
+        if verbose_ENABLED:
+            print("setup_options=%s" % (setup_options,))
+        try:
+            from xpra.util import repr_ellipsized as pv
+        except:
+            def pv(v):
+                return str(v)
+        for k,v in setup_options.items():
+            print_option("", k, pv(v))
         print("")
 
     setup(**setup_options)
