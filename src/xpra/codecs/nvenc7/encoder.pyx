@@ -812,7 +812,9 @@ cdef extern from "nvEncodeAPI.h":
         void*                           reserved2[285]                  #[in]:  Reserved and must be set to NULL
 
     #constants:
-    unsigned int NVENCAPI_VERSION
+    unsigned int NVENCAPI_MAJOR_VERSION
+    unsigned int NVENCAPI_MINOR_VERSION
+    uint32_t NVENCAPI_VERSION
     unsigned int NV_ENCODE_API_FUNCTION_LIST_VER
     unsigned int NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER
     unsigned int NV_ENC_INITIALIZE_PARAMS_VER
@@ -1254,7 +1256,7 @@ def get_spec(encoding, colorspace):
     return cs
 
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
-PRETTY_VERSION = [int(NVENCAPI_VERSION), int(NVENCAPI_VERSION)>>24, 0]
+PRETTY_VERSION = [NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION]
 
 def get_version():
     return ".".join((str(x) for x in PRETTY_VERSION))
@@ -2526,7 +2528,7 @@ cdef class Encoder:
 def init_module():
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
-    if NVENCAPI_VERSION!=0x7:
+    if NVENCAPI_MAJOR_VERSION!=0x7:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
