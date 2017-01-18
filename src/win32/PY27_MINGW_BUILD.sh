@@ -91,7 +91,7 @@ if [ "${BUNDLE_PUTTY}" == "1" ]; then
 	echo "* Adding TortoisePlink"
 	TORTOISESVN="/c/Program Files/TortoiseSVN"
 	if [ ! -e "${TORTOISESVN}" ]; then
-		TORTOISESVN="/c/Program Files\(x86\)/TortoiseSVN"
+		TORTOISESVN="/c/Program Files (x86)/TortoiseSVN"
 		if [ ! -e "${TORTOISESVN}" ]; then
 			echo "Missing TortoiseSVN!"
 			exit 1
@@ -124,7 +124,7 @@ fi
 if [ "${DO_INSTALLER}" == "1" ]; then
 	INNOSETUP="/c/Program Files/Inno Setup 5/ISCC.exe"
 	if [ ! -e "${INNOSETUP}" ]; then
-		INNOSETUP="c/Program Files\(x86\)/Inno Setup 5/ISCC.exe"
+		INNOSETUP="/c/Program Files (x86)/Inno Setup 5/ISCC.exe"
 		if [ ! -e "${INNOSETUP}" ]; then
 			echo "cannot find InnoSetup"
 			exit 1
@@ -135,12 +135,13 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	rm -f "Xpra_Setup.exe" "${INSTALLER_FILENAME}" "${INNOSETUP_LOG}"
 	cp "win32/xpra.iss" "xpra.iss"
 	"${INNOSETUP}" "xpra.iss" >& "${INNOSETUP_LOG}"
-	rm "xpra.iss"
 	if [ "$?" != "0" ]; then
 		echo "InnoSetup error - see ${INNOSETUP_LOG}:"
 		tail -n 20 "${INNOSETUP_LOG}"
+		rm "xpra.iss"
 		exit 1
 	fi
+	rm "xpra.iss"
 	mv "Output\Xpra_Setup.exe" "${INSTALLER_FILENAME}"
 
 	if [ "${RUN_INSTALLER}" == "1" ]; then
@@ -156,7 +157,7 @@ fi
 if [ "${DO_MSI}" == "1" ]; then
 	MSIWRAPPER="/c/Program Files/MSI Wrapper/MsiWrapper.exe"
 	if [ ! -e "${MSIWRAPPER}" ]; then
-		MSIWRAPPER="/c/Program Files\(x86\)/MSI Wrapper/MsiWrapper.exe"
+		MSIWRAPPER="/c/Program Files (x86)/MSI Wrapper/MsiWrapper.exe"
 		if [ ! -e "${MSIWRAPPER}" ]; then
 			echo "cannot find MSI Wrapper"
 			exit 1
