@@ -27,7 +27,7 @@ log = Logger("encoder", "nvenc")
 
 import ctypes
 from ctypes import cdll as loader, POINTER
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t
+from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 
 CLIENT_KEYS_STR = get_nvenc_license_keys(7) + get_nvenc_license_keys()
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
@@ -976,7 +976,7 @@ def init_nvencode_library():
     global NvEncodeAPICreateInstance, cuCtxGetCurrent
     if WIN32:
         load = ctypes.WinDLL
-        nvenc_libname = "nvencodeapi.dll"
+        nvenc_libname = "nvencodeapi64.dll"
         cuda_libname = "nvcuda.dll"
     else:
         #assert os.name=="posix"
@@ -989,6 +989,7 @@ def init_nvencode_library():
         x = load(cuda_libname)
         log("init_nvencode_library() %s(%s)=%s", load, cuda_libname, x)
     except Exception as e:
+        log("failed to load '%s'", cuda_libname, exc_info=True)
         raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e))
     cuCtxGetCurrent = x.cuCtxGetCurrent
     cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
@@ -1000,6 +1001,7 @@ def init_nvencode_library():
         x = load(nvenc_libname)
         log("init_nvencode_library() %s(%s)=%s", load, nvenc_libname, x)
     except Exception as e:
+        log("failed to load '%s'", nvenc_libname, exc_info=True)
         raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e))
     NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
     NvEncodeAPICreateInstance.restype = ctypes.c_int
@@ -1296,11 +1298,11 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
-cdef unsigned long cmalloc(size_t size, what) except 0:
+cdef uintptr_t cmalloc(size_t size, what) except 0:
     cdef void *ptr = malloc(size)
     if ptr==NULL:
         raise Exception("failed to allocate %i bytes of memory for %s" % (size, what))
-    return <unsigned long> ptr
+    return <uintptr_t> ptr
 
 cdef nvencStatusInfo(NVENCSTATUS ret):
     if ret in NV_ENC_STATUS_TXT:
@@ -1509,6 +1511,7 @@ cdef class Encoder:
         cdef unsigned int plane_size_div
         cdef unsigned int max_input_stride
         cdef int result
+        cdef uintptr_t context_pointer
 
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
         global last_context_failure
@@ -1535,10 +1538,10 @@ cdef class Encoder:
 
             #get the CUDA context (C pointer):
             #a bit of magic to pass a cython pointer to ctypes:
-            context_pointer = <unsigned long> (&self.cuda_context_ptr)
+            context_pointer = <uintptr_t> (&self.cuda_context_ptr)
             result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
             if DEBUG_API:
-                log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <unsigned long> self.cuda_context_ptr)
+                log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <uintptr_t> self.cuda_context_ptr)
             assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
         except driver.MemoryError as e:
             last_context_failure = time.time()
@@ -1718,7 +1721,7 @@ cdef class Encoder:
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        cdef long resource
+        cdef uintptr_t resource
         cdef Py_ssize_t size
         cdef unsigned char* cptr = NULL
         cdef NVENCSTATUS r                  #
@@ -1734,12 +1737,12 @@ cdef class Encoder:
         registerResource.pitch = self.outputPitch
         registerResource.bufferFormat = self.bufferFmt
         if DEBUG_API:
-            log("nvEncRegisterResource(%#x)", <unsigned long> &registerResource)
+            log("nvEncRegisterResource(%#x)", <uintptr_t> &registerResource)
         with nogil:
             r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
         raiseNVENC(r, "registering CUDA input buffer")
         self.inputHandle = registerResource.registeredResource
-        log("input handle for CUDA buffer: %#x", <unsigned long> self.inputHandle)
+        log("input handle for CUDA buffer: %#x", <uintptr_t> self.inputHandle)
 
         #allocate output buffer:
         memset(&createBitstreamBufferParams, 0, sizeof(NV_ENC_CREATE_BITSTREAM_BUFFER))
@@ -1748,12 +1751,12 @@ cdef class Encoder:
         createBitstreamBufferParams.size = min(1024*1024*2, self.encoder_width*self.encoder_height*3//2)
         createBitstreamBufferParams.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED
         if DEBUG_API:
-            log("nvEncCreateBitstreamBuffer(%#x)", <unsigned long> &createBitstreamBufferParams)
+            log("nvEncCreateBitstreamBuffer(%#x)", <uintptr_t> &createBitstreamBufferParams)
         with nogil:
             r = self.functionList.nvEncCreateBitstreamBuffer(self.context, &createBitstreamBufferParams)
         raiseNVENC(r, "creating output buffer")
         self.bitstreamBuffer = createBitstreamBufferParams.bitstreamBuffer
-        log("output bitstream buffer=%#x", <unsigned long> self.bitstreamBuffer)
+        log("output bitstream buffer=%#x", <uintptr_t> self.bitstreamBuffer)
         assert self.bitstreamBuffer!=NULL
 
 
@@ -1836,7 +1839,7 @@ cdef class Encoder:
         self.clean()
 
     def clean(self):                        #@DuplicatedSignature
-        log("clean() cuda_context=%s, encoder context=%#x", self.cuda_context, <unsigned long> self.context)
+        log("clean() cuda_context=%s, encoder context=%#x", self.cuda_context, <uintptr_t> self.context)
         if self.cuda_context:
             self.cuda_context.push()
             try:
@@ -1892,9 +1895,9 @@ cdef class Encoder:
         if self.context!=NULL and self.frames>0:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
-            log("cuda_clean() unregistering CUDA output buffer input handle %#x", <unsigned long> self.inputHandle)
+            log("cuda_clean() unregistering CUDA output buffer input handle %#x", <uintptr_t> self.inputHandle)
             if DEBUG_API:
-                log("nvEncUnregisterResource(%#x)", <unsigned long> self.inputHandle)
+                log("nvEncUnregisterResource(%#x)", <uintptr_t> self.inputHandle)
             with nogil:
                 r = self.functionList.nvEncUnregisterResource(self.context, self.inputHandle)
             raiseNVENC(r, "unregistering CUDA input buffer")
@@ -1912,16 +1915,16 @@ cdef class Encoder:
             self.cudaOutputBuffer = None
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
-                log("cuda_clean() destroying output bitstream buffer %#x", <unsigned long> self.bitstreamBuffer)
+                log("cuda_clean() destroying output bitstream buffer %#x", <uintptr_t> self.bitstreamBuffer)
                 if DEBUG_API:
-                    log("nvEncDestroyBitstreamBuffer(%#x)", <unsigned long> self.bitstreamBuffer)
+                    log("nvEncDestroyBitstreamBuffer(%#x)", <uintptr_t> self.bitstreamBuffer)
                 with nogil:
                     r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
                 raiseNVENC(r, "destroying output buffer")
                 self.bitstreamBuffer = NULL
-            log("cuda_clean() destroying encoder %#x", <unsigned long> self.context)
+            log("cuda_clean() destroying encoder %#x", <uintptr_t> self.context)
             if DEBUG_API:
-                log("nvEncDestroyEncoder(%#x)", <unsigned long> self.context)
+                log("nvEncDestroyEncoder(%#x)", <uintptr_t> self.context)
             with nogil:
                 r = self.functionList.nvEncDestroyEncoder(self.context)
             raiseNVENC(r, "destroying context")
@@ -2021,7 +2024,7 @@ cdef class Encoder:
         picParams.version = NV_ENC_PIC_PARAMS_VER
         picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS
         if DEBUG_API:
-            log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
+            log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
         with nogil:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
@@ -2146,13 +2149,13 @@ cdef class Encoder:
         mapInputResource.registeredResource  = self.inputHandle
         mapInputResource.mappedBufferFmt = self.bufferFmt
         if DEBUG_API:
-            log("nvEncMapInputResource(%#x) inputHandle=%#x", <unsigned long> &mapInputResource, <unsigned long> self.inputHandle)
+            log("nvEncMapInputResource(%#x) inputHandle=%#x", <uintptr_t> &mapInputResource, <uintptr_t> self.inputHandle)
         with nogil:
             r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
         raiseNVENC(r, "mapping input resource")
         cdef NV_ENC_INPUT_PTR mappedResource = mapInputResource.mappedResource
         if DEBUG_API:
-            log("compress_image(..) device buffer mapped to %#x", <unsigned long> mappedResource)
+            log("compress_image(..) device buffer mapped to %#x", <uintptr_t> mappedResource)
         assert mappedResource!=NULL
 
         memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
@@ -2197,7 +2200,7 @@ cdef class Encoder:
             #picParams.rcParams.maxBitRate = self.max_bitrate
 
             if DEBUG_API:
-                log("nvEncEncodePicture(%#x)", <unsigned long> &picParams)
+                log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
             with nogil:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
@@ -2209,11 +2212,11 @@ cdef class Encoder:
             lockOutputBuffer.doNotWait = 0
             lockOutputBuffer.outputBitstream = self.bitstreamBuffer
             if DEBUG_API:
-                log("nvEncLockBitstream(%#x) bitstreamBuffer=%#x", <unsigned long> &lockOutputBuffer, <unsigned long> self.bitstreamBuffer)
+                log("nvEncLockBitstream(%#x) bitstreamBuffer=%#x", <uintptr_t> &lockOutputBuffer, <uintptr_t> self.bitstreamBuffer)
             with nogil:
                 r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
             raiseNVENC(r, "locking output buffer")
-            log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <unsigned long> lockOutputBuffer.bitstreamBufferPtr)
+            log("compress_image(..) output buffer locked, bitstreamBufferPtr=%#x", <uintptr_t> lockOutputBuffer.bitstreamBufferPtr)
             assert lockOutputBuffer.bitstreamBufferPtr!=NULL
             #copy to python buffer:
             size = lockOutputBuffer.bitstreamSizeInBytes
@@ -2221,13 +2224,13 @@ cdef class Encoder:
             data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
         finally:
             if DEBUG_API:
-                log("nvEncUnlockBitstream(%#x)", <unsigned long> self.bitstreamBuffer)
+                log("nvEncUnlockBitstream(%#x)", <uintptr_t> self.bitstreamBuffer)
             if lockOutputBuffer.bitstreamBufferPtr!=NULL:
                 with nogil:
                     r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
             raiseNVENC(r, "unlocking output buffer")
             if DEBUG_API:
-                log("nvEncUnmapInputResource(%#x)", <unsigned long> self.bitstreamBuffer)
+                log("nvEncUnmapInputResource(%#x)", <uintptr_t> self.bitstreamBuffer)
             with nogil:
                 r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
             raiseNVENC(r, "unmapping input resource")
@@ -2288,7 +2291,7 @@ cdef class Encoder:
         assert self.context, "context is not initialized"
         presets = {}
         if DEBUG_API:
-            log("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
+            log("nvEncGetEncodePresetCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &presetCount)
         with nogil:
             r = self.functionList.nvEncGetEncodePresetCount(self.context, encode_GUID, &presetCount)
         raiseNVENC(r, "getting preset count for %s" % guidstr(encode_GUID))
@@ -2297,7 +2300,7 @@ cdef class Encoder:
         preset_GUIDs = <GUID*> cmalloc(sizeof(GUID) * presetCount, "preset GUIDs")
         try:
             if DEBUG_API:
-                log("nvEncGetEncodePresetGUIDs(%s, %#x)", codecstr(encode_GUID), <unsigned long> &presetCount)
+                log("nvEncGetEncodePresetGUIDs(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &presetCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodePresetGUIDs(self.context, encode_GUID, preset_GUIDs, presetCount, &presetsRetCount)
             raiseNVENC(r, "getting encode presets")
@@ -2313,7 +2316,7 @@ cdef class Encoder:
                     try:
                         encConfig = &presetConfig.presetCfg
                         if DEBUG_API:
-                            log("presetConfig.presetCfg=%s", <unsigned long> encConfig)
+                            log("presetConfig.presetCfg=%s", <uintptr_t> encConfig)
                         gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
                         log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
                     finally:
@@ -2339,7 +2342,7 @@ cdef class Encoder:
         assert self.context, "context is not initialized"
         profiles = {}
         if DEBUG_API:
-            log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &profileCount)
+            log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &profileCount)
         with nogil:
             r = self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount)
         raiseNVENC(r, "getting profile count")
@@ -2349,7 +2352,7 @@ cdef class Encoder:
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
             if DEBUG_API:
-                log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", codecstr(encode_GUID), <unsigned long> profile_GUIDs, <unsigned long> &profileCount)
+                log("nvEncGetEncodeProfileGUIDs(%s, %#x, %#x)", codecstr(encode_GUID), <uintptr_t> profile_GUIDs, <uintptr_t> &profileCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodeProfileGUIDs(self.context, encode_GUID, profile_GUIDs, profileCount, &profilesRetCount)
             raiseNVENC(r, "getting encode profiles")
@@ -2373,7 +2376,7 @@ cdef class Encoder:
         assert self.context, "context is not initialized"
         input_formats = {}
         if DEBUG_API:
-            log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <unsigned long> &inputFmtCount)
+            log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &inputFmtCount)
         with nogil:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
@@ -2382,7 +2385,7 @@ cdef class Encoder:
         inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
         try:
             if DEBUG_API:
-                log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <unsigned long> inputFmts, inputFmtCount, <unsigned long> &inputFmtsRetCount)
+                log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <uintptr_t> inputFmts, inputFmtCount, <uintptr_t> &inputFmtsRetCount)
             with nogil:
                 r = self.functionList.nvEncGetInputFormats(self.context, encode_GUID, inputFmts, inputFmtCount, &inputFmtsRetCount)
             raiseNVENC(r, "getting input formats")
@@ -2422,7 +2425,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r                          #@DuplicatedSignature
         assert self.context, "context is not initialized"
         if DEBUG_API:
-            log("nvEncGetEncodeGUIDCount(%#x, %#x)", <unsigned long> self.context, <unsigned long> &GUIDCount)
+            log("nvEncGetEncodeGUIDCount(%#x, %#x)", <uintptr_t> self.context, <uintptr_t> &GUIDCount)
         with nogil:
             r = self.functionList.nvEncGetEncodeGUIDCount(self.context, &GUIDCount)
         raiseNVENC(r, "getting encoder count")
@@ -2432,7 +2435,7 @@ cdef class Encoder:
         codecs = {}
         try:
             if DEBUG_API:
-                log("nvEncGetEncodeGUIDs(%#x, %i, %#x)", <unsigned long> encode_GUIDs, GUIDCount, <unsigned long> &GUIDRetCount)
+                log("nvEncGetEncodeGUIDs(%#x, %i, %#x)", <uintptr_t> encode_GUIDs, GUIDCount, <uintptr_t> &GUIDRetCount)
             with nogil:
                 r = self.functionList.nvEncGetEncodeGUIDs(self.context, encode_GUIDs, GUIDCount, &GUIDRetCount)
             raiseNVENC(r, "getting list of encode GUIDs")
@@ -2482,18 +2485,18 @@ cdef class Encoder:
         assert self.context is NULL, "context already set"
         assert self.cuda_context and self.cuda_context_ptr!=NULL, "cuda context is not set"
         #params = <NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS*> malloc(sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
-        log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_context, <unsigned long> self.cuda_context_ptr)
+        log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_context, <uintptr_t> self.cuda_context_ptr)
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> cmalloc(sizeof(NV_ENCODE_API_FUNCTION_LIST), "function list")
         assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
-        log("open_encode_session() functionList=%#x", <unsigned long> self.functionList)
+        log("open_encode_session() functionList=%#x", <uintptr_t> self.functionList)
 
         #get NVENC function pointers:
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
         if DEBUG_API:
-            log("NvEncodeAPICreateInstance(%#x)", <unsigned long> self.functionList)
-        r = NvEncodeAPICreateInstance(<unsigned long> self.functionList)
+            log("NvEncodeAPICreateInstance(%#x)", <uintptr_t> self.functionList)
+        r = NvEncodeAPICreateInstance(<uintptr_t> self.functionList)
         raiseNVENC(r, "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
@@ -2507,7 +2510,7 @@ cdef class Encoder:
         cstr = <unsigned char*> &params
         pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
         if DEBUG_API:
-            log("calling nvEncOpenEncodeSessionEx @ %#x", <unsigned long> self.functionList.nvEncOpenEncodeSessionEx)
+            log("calling nvEncOpenEncodeSessionEx @ %#x", <uintptr_t> self.functionList.nvEncOpenEncodeSessionEx)
         self.context = NULL
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
@@ -2516,13 +2519,13 @@ cdef class Encoder:
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
-        log("encoding context=%s", <unsigned long> self.context)
+        log("encoding context=%s", <uintptr_t> self.context)
         if self.context==NULL:
             raise TransientCodecException("cannot open encoding session, context is NULL")
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
-        log("success, encoder context=%#x (%s context%s in use)", <unsigned long> self.context, context_counter, engs(context_counter))
+        log("success, encoder context=%#x (%s context%s in use)", <uintptr_t> self.context, context_counter, engs(context_counter))
 
 
 def init_module():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -194,23 +194,8 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
-if WIN32 and not MINGW_PREFIX:
-    WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
-
-if BITS==64:
-    if WIN32:
-        nvenc7_sdk = WIN32_BUILD_LIB_PREFIX + "Video_Codec_SDK_7.0.1"
-        nvapi_path = WIN32_BUILD_LIB_PREFIX + "NVAPI"
-        try:
-            import pycuda
-        except:
-            pycuda = None
-        nvenc7_ENABLED          = DEFAULT and pycuda and os.path.exists(nvenc7_sdk) and is_msvc()
-    else:
-        nvenc7_ENABLED          = DEFAULT and pkg_config_ok("--exists", "nvenc7")
-else:
-    nvenc7_ENABLED = False
-
+nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
+nvapi_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvapi")
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
 #Cython / gcc / packaging build options:
@@ -226,7 +211,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc7",
+            "nvenc7", "nvapi",
             "vpx", "pillow",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
@@ -1095,6 +1080,7 @@ if WIN32:
         #but until someone figures this out, the ugly path code below works
         #as long as you install in the same place or tweak the paths.
 
+        WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
         #ffmpeg is needed for both swscale and x264:
         libffmpeg_path = ""
         if dec_avcodec2_ENABLED:
@@ -1737,40 +1723,6 @@ if WIN32:
             add_keywords([libyuv_bin_dir], [libyuv_include_dir],
                          [libyuv_lib_dir],
                          libyuv_lib_names)
-        elif ("nvenc7" in pkgs_options[0]):
-            for x in ("pycuda", "pytools"):
-                if x not in external_includes:
-                    external_includes.append(x)
-            nvenc_path = nvenc7_sdk
-            nvenc_include_dir       = nvenc_path + "\\Samples\\common\\inc"
-            nvenc_core_include_dir  = nvenc_path + "\\Samples\\common\\inc"     #FIXME!
-            #let's not use crazy paths, just copy the dll somewhere that makes sense:
-            nvenc_bin_dir           = nvenc_path + "\\bin\\win32\\release"
-            nvenc_lib_names         = []    #not linked against it, we use dlopen!
-
-            #cuda:
-            cuda_include_dir    = os.path.join(cuda_path, "include")
-            cuda_lib_dir        = os.path.join(cuda_path, "lib", "Win32")
-            cuda_bin_dir        = os.path.join(cuda_path, "bin")
-
-            add_keywords([nvenc_bin_dir, cuda_bin_dir], [nvenc_include_dir, nvenc_core_include_dir, cuda_include_dir],
-                         [cuda_lib_dir],
-                         nvenc_lib_names)
-            #prevent py2exe "seems not to be an exe file" error on this DLL and include it ourselves instead:
-            #assume 32-bit for now:
-            #add_data_files('', ["C:\\Windows\System32\nvcuda.dll"])
-            #add_data_files('', ["%s/nvencodeapi.dll" % nvenc_bin_dir])
-        elif "nvapi" in pkgs_options[0]:
-            nvapi_include_dir       = nvapi_path
-            import struct
-            if struct.calcsize("P")==4:
-                nvapi_lib_names         = ["nvapi"]
-                nvapi_lib_dir           = os.path.join(nvapi_path, "x86")
-            else:
-                nvapi_lib_names         = ["nvapi64"]
-                nvapi_lib_dir           = os.path.join(nvapi_path, "amd64")
-
-            add_keywords([], [nvapi_include_dir], [nvapi_lib_dir], nvapi_lib_names)
         elif "pygobject-2.0" in pkgs_options[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -1783,6 +1735,7 @@ if WIN32:
             add_to_keywords(kw, 'include_dirs', GTK_INCLUDE_DIR, cairo_include_dir)
             add_to_keywords(kw, 'libraries', "cairo")
             if PYTHON3:
+                PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
                 cairo_library_dir = os.path.join(PYCAIRO_DIR, "lib")
                 add_to_keywords(kw, "library_dirs", cairo_library_dir)
             checkdirs(cairo_include_dir)
@@ -2222,7 +2175,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
 toggle_packages(nvenc7_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
-if (nvenc7_ENABLED) and WIN32:
+if nvapi_ENABLED:
     cython_add(Extension("xpra.codecs.nvapi_version",
                 ["xpra/codecs/nvapi_version.pyx"],
                 **pkgconfig("nvapi")
@@ -2249,14 +2202,20 @@ if nvenc7_ENABLED:
         for v in ("-5.5", "-6.0", "-6.5", "-7.0", "-7.5", "-8.0", ""):
             path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
-    if not WIN32:
-        #prefer the one we find on the $PATH, if any:
+    def which(cmd):
         try:
-            code, out, err = get_status_output(["which", nvcc_exe])
+            code, out, _ = get_status_output(["which", cmd])
             if code==0:
-                options.insert(0, out)
+                return out
         except:
             pass
+    #prefer the one we find on the $PATH, if any:
+    try:
+        v = which(nvcc_exe)
+        if v and (v not in options):
+            options.insert(0, v)
+    except:
+        pass
     nvcc_versions = {}
     for filename in options:
         if not os.path.exists(filename):
@@ -2310,6 +2269,9 @@ if nvenc7_ENABLED:
             #-ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe"
             cmd += ["--machine", "32"]
         if WIN32:
+            #cmd += ["--compiler-bindir", "C:\\msys64\\mingw64\\bin\\g++.exe"]
+            #cmd += ["--input-drive-prefix", "/"]
+            #cmd += ["--dependency-drive-prefix", "/"]
             cmd += ["-I%s" % os.path.abspath("win32")]
         comp_code_options = [(30, 30), (35, 35)]
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0

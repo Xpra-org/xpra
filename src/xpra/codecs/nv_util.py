@@ -63,8 +63,9 @@ def identify_nvidia_module_version():
             v = get_driver_version()
             log("NVAPI get_driver_version()=%s", v)
         except Exception as e:
-            log.warn("failed to get the driver version through NVAPI:")
+            log.warn("Warning: failed to get the driver version through NVAPI:")
             log.warn(" %s", e)
+            v = []
     else:
         v = get_nvml_driver_version() or get_proc_driver_version()
     #only keep numeric values:
@@ -100,8 +101,10 @@ def identify_cards():
         try:
             nvmlInit()
             deviceCount = nvmlDeviceGetCount()
+            log("identify_cards() will probe %i cards", deviceCount)
             for i in range(deviceCount):
                 handle = nvmlDeviceGetHandleByIndex(i)
+                log("identify_cards() handle(%i)=%s", i, handle)
                 props = {}
                 def meminfo(memory):
                     return {
@@ -151,6 +154,7 @@ def identify_cards():
                     except Exception as e:
                         log("identify_cards() cannot query %s using %s on device %i with handle %s: %s", prop, fn, i, handle, e)
                         continue
+                log("identify_cards() [%i]=%s", i, props)
                 devices[i] = props
             #unitCount = nvmlUnitGetCount()
             #log.info("unitCount=%s", unitCount)
