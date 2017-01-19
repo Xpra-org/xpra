@@ -324,6 +324,13 @@ class Logger(object):
             if x not in KNOWN_FILTERS:
                 self.warn("unknown logging category: %s", x)
 
+    def get_info(self):
+        return {
+            "categories"    : self.categories,
+            "debug"         : self.debug_enabled,
+            "level"         : self.logger.getEffectiveLevel(),
+            }
+
     def __repr__(self):
         return "Logger(%s)" % ", ".join(self.categories)
 
