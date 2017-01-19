@@ -64,16 +64,19 @@ FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
 MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 
 
+def get_digests():
+    import hashlib
+    return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms)))]
+
 def get_network_caps():
     try:
         from xpra.net.mmap_pipe import can_use_mmap
         mmap = can_use_mmap()
     except:
         mmap = False
-    import hashlib
-    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms)))]
+    
     caps = {
-                "digest"                : digests,
+                "digest"                : get_digests(),
                 "compressors"           : compression.get_enabled_compressors(),
                 "encoders"              : packet_encoding.get_enabled_encoders(),
                 "mmap"                  : mmap,
