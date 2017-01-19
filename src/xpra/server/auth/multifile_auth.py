@@ -8,11 +8,12 @@
 
 import os
 import binascii
-import hmac, hashlib
+import hmac
 
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
 from xpra.os_util import strtobytes
 from xpra.util import xor, parse_simple_dict
+from xpra.net.crypto import get_digest_module
 
 
 socket_dir = None
@@ -25,10 +26,11 @@ def init(opts):
 
 
 def getuid(v):
-    try:
-        return int(v)
-    except:
-        log("uid '%s' is not an int", v)
+    if v:
+        try:
+            return int(v)
+        except:
+            log("uid '%s' is not an int", v)
     if os.name=="posix":
         try:
             import pwd
@@ -39,10 +41,11 @@ def getuid(v):
     return -1
 
 def getgid(v):
-    try:
-        return int(v)
-    except:
-        log("gid '%s' is not an int", v)
+    if v:
+        try:
+            return int(v)
+        except:
+            log("gid '%s' is not an int", v)
     if os.name=="posix":
         try:
             import grp          #@UnresolvedImport
@@ -55,14 +58,18 @@ def getgid(v):
 
 def parse_auth_line(line):
     ldata = line.split(b"|")
+    assert len(ldata)>=2, "not enough fields: %i" % (len(ldata))
     log("found %s fields", len(ldata))
-    assert len(ldata)>=4, "not enough fields"
     #parse fields:
     username = ldata[0]
     password = ldata[1]
-    uid = getuid(ldata[2])
-    gid = getgid(ldata[3])
-    displays = ldata[4].split(b",")
+    if len(ldata)>=5:
+        uid = getuid(ldata[2])
+        gid = getgid(ldata[3])
+        displays = ldata[4].split(b",")
+    else:
+        uid, gid = -1, -1
+        displays = []
     env_options = {}
     session_options = {}
     if len(ldata)>=6:
@@ -114,11 +121,13 @@ class Authenticator(FileAuthenticatorBase):
 
     def get_password(self):
         entry = self.get_auth_info()
+        log("get_password() found entry=%s", entry)
         if entry is None:
             return None
         return entry[0]
 
     def authenticate_hmac(self, challenge_response, client_salt):
+        log("authenticate_hmac(%s, %s)", challenge_response, client_salt)
         self.sessions = None
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
@@ -130,13 +139,14 @@ class Authenticator(FileAuthenticatorBase):
             salt = xor(self.salt, client_salt)
         self.salt = None
         entry = self.get_auth_info()
-        log("authenticate(%s) auth-info=%s", self.username, entry)
         if entry is None:
             log.error("Error: authentication failed")
             log.error(" no password for '%s' in '%s'", self.username, self.password_filename)
             return None
+        log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry
-        verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
+        digestmod = get_digest_module(self.digest)
+        verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=digestmod).hexdigest()
         log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
         if not hmac.compare_digest(verify, challenge_response):
             log("expected '%s' but got '%s'", verify, challenge_response)

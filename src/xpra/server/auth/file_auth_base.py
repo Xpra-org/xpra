@@ -41,6 +41,8 @@ class FileAuthenticatorBase(SysAuthenticator):
             return None
         self.salt = get_salt()
         self.digest = choose_digest(digests)
+        if not self.digest:
+            return None
         return self.salt, self.digest
 
     def get_password(self):

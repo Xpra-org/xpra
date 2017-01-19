@@ -10,14 +10,11 @@ import unittest
 import tempfile
 import uuid
 import hmac
-import hashlib
 from xpra.util import xor
 from xpra.os_util import strtobytes, bytestostr
+from xpra.net.protocol import get_digests
+from xpra.net.crypto import get_digest_module
 
-try:
-	from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, env_auth, password_auth
-except:
-	pass
 
 class FakeOpts(object):
 	def __init__(self, d={}):
@@ -27,13 +24,20 @@ class FakeOpts(object):
 
 class TestAuth(unittest.TestCase):
 
-	def _init_auth(self, module, options={}, username="foo", **kwargs):
+	def a(self, name):
+		pmod = "xpra.server.auth"
+		auth_module = __import__(pmod, globals(), locals(), ["%s_auth" % name], -1)
+		mod = getattr(auth_module, "%s_auth" % name, None)
+		assert mod, "cannot load '%s_auth' from %s" % (name, pmod)
+		return mod
+
+	def _init_auth(self, mod_name, options={}, username="foo", **kwargs):
+		mod = self.a(mod_name)
+		return self.do_init_auth(mod, options, username, **kwargs)
+
+	def do_init_auth(self, module, options={}, username="foo", **kwargs):
 		opts = FakeOpts(options)
 		module.init(opts)
-		log = getattr(module, "log", None)
-		if log:
-			import logging
-			log.logger.setLevel(logging.CRITICAL)
 		try:
 			c = module.Authenticator
 		except Exception as e:
@@ -46,43 +50,44 @@ class TestAuth(unittest.TestCase):
 	def _test_module(self, module):
 		a = self._init_auth(module)
 		assert a
-		assert a is not None
 		if a.requires_challenge():
-			challenge = a.get_challenge()
+			challenge = a.get_challenge(get_digests())
 			assert challenge
+		a = self._init_auth(module)
+		assert a
+		if a.requires_challenge():
+			try:
+				challenge = a.get_challenge(["invalid-digest"])
+			except Exception:
+				pass
+			else:
+				assert challenge is None
+		
 
 	def test_all(self):
-		test_modules = [
-						reject_auth,
-						allow_auth,
-						none_auth,
-						file_auth,
-						multifile_auth,
-						env_auth,
-						password_auth,
-						]
+		test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password"]
 		try:
-			from xpra.server.auth import pam_auth
-			test_modules.append(pam_auth)
+			self.a("pam")
+			test_modules.append("pam")
 		except Exception:
 			pass
 		if sys.platform.startswith("win"):
-			from xpra.server.auth import win32_auth
-			test_modules.append(win32_auth)
+			self.a("win32")
+			test_modules.append("win32")
 		for module in test_modules:
 			self._test_module(module)
 
 	def test_fail(self):
 		try:
-			fa = fail_auth()
+			fa = self._init_auth("fail")
 		except:
 			fa = None
-		assert fa is None, "%s did not fail!" % fail_auth
+		assert fa is None, "'fail_auth' did not fail!"
 
 	def test_reject(self):
-		a = self._init_auth(reject_auth)
+		a = self._init_auth("reject")
 		assert a.requires_challenge()
-		c, mac = a.get_challenge()
+		c, mac = a.get_challenge(get_digests())
 		assert c and mac
 		assert not a.get_sessions()
 		assert not a.get_password()
@@ -91,34 +96,35 @@ class TestAuth(unittest.TestCase):
 			assert not a.authenticate(x, x)
 
 	def test_none(self):
-		a = self._init_auth(none_auth)
+		a = self._init_auth("none")
 		assert not a.requires_challenge()
-		assert a.get_challenge() is None
+		assert a.get_challenge(get_digests()) is None
 		assert not a.get_password()
 		for x in (None, "bar"):
 			assert a.authenticate(x, "")
 			assert a.authenticate("", x)
 
 	def test_allow(self):
-		a = self._init_auth(allow_auth)
+		a = self._init_auth("allow")
 		assert a.requires_challenge()
-		assert a.get_challenge()
+		assert a.get_challenge(get_digests())
 		assert not a.get_password()
 		for x in (None, "bar"):
 			assert a.authenticate(x, "")
 			assert a.authenticate("", x)
 
-	def _test_hmac_auth(self, auth_class, password, **kwargs):
+	def _test_hmac_auth(self, mod_name, password, **kwargs):
 		for x in (password, "somethingelse"):
-			a = self._init_auth(auth_class, **kwargs)
+			a = self._init_auth(mod_name, **kwargs)
 			assert a.requires_challenge()
 			assert a.get_password()
-			salt, mac = a.get_challenge()
+			salt, mac = a.get_challenge([x for x in get_digests() if x.startswith("hmac")])
 			assert salt
-			assert mac=="hmac", "invalid mac: %s" % mac
+			assert mac.startswith("hmac"), "invalid mac: %s" % mac
 			client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
 			auth_salt = strtobytes(xor(salt, client_salt))
-			verify = hmac.HMAC(strtobytes(x), auth_salt, digestmod=hashlib.md5).hexdigest()
+			digestmod = get_digest_module(mac)
+			verify = hmac.HMAC(strtobytes(x), auth_salt, digestmod=digestmod).hexdigest()
 			passed = a.authenticate(verify, client_salt)
 			assert passed == (x==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)
 			assert not a.authenticate(verify, client_salt)
@@ -131,43 +137,45 @@ class TestAuth(unittest.TestCase):
 				kwargs = {}
 				if var_name!="XPRA_PASSWORD":
 					kwargs["name"] = var_name
-				self._test_hmac_auth(env_auth, password, name=var_name)
+				self._test_hmac_auth("env", password, name=var_name)
 			finally:
 				del os.environ[var_name]
 
 	def test_password(self):
 		password = strtobytes(uuid.uuid4().hex)
-		self._test_hmac_auth(password_auth, password, value=password)
+		self._test_hmac_auth("password", password, value=password)
 
 
-	def _test_file_auth(self, name, module, genauthdata):
+	def _test_file_auth(self, mod_name, genauthdata):
 		#no file, no go:
-		a = self._init_auth(module)
+		a = self._init_auth(mod_name)
 		assert a.requires_challenge()
 		p = a.get_password()
 		assert not p, "got a password from %s: %s" % (a, p)
 		#challenge twice is a fail
-		assert a.get_challenge()
-		assert not a.get_challenge()
-		assert not a.get_challenge()
+		assert a.get_challenge(get_digests())
+		assert not a.get_challenge(get_digests())
+		assert not a.get_challenge(get_digests())
 		for muck in (0, 1):
-			f = tempfile.NamedTemporaryFile(prefix=name)
+			f = tempfile.NamedTemporaryFile(prefix=mod_name)
 			filename = f.name
 			with f:
-				a = self._init_auth(module, {"password_file" : filename})
+				a = self._init_auth(mod_name, {"password_file" : filename})
 				password, filedata = genauthdata(a)
 				#print("saving password file data='%s' to '%s'" % (filedata, filename))
 				f.write(strtobytes(filedata))
 				f.flush()
 				assert a.requires_challenge()
-				salt, mac = a.get_challenge()
+				salt, mac = a.get_challenge(get_digests())
 				assert salt
-				assert mac=="hmac"
+				assert mac in get_digests()
+				assert mac!="xor"
 				password = strtobytes(password)
 				client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
 				auth_salt = strtobytes(xor(salt, client_salt))
 				if muck==0:
-					verify = hmac.HMAC(password, auth_salt, digestmod=hashlib.md5).hexdigest()
+					digestmod = get_digest_module(mac)
+					verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
 					assert a.authenticate(verify, client_salt)
 					assert not a.authenticate(verify, client_salt)
 					assert a.get_password()==password
@@ -179,16 +187,22 @@ class TestAuth(unittest.TestCase):
 		def genfiledata(a):
 			password = uuid.uuid4().hex
 			return password, password
-		self._test_file_auth("file", file_auth, genfiledata)
+		self._test_file_auth("file", genfiledata)
 
 	def test_multifile(self):
 		def genfiledata(a):
 			password = uuid.uuid4().hex
 			return password, "%s|%s|||" % (a.username, password)
-		self._test_file_auth("multifile", multifile_auth, genfiledata)
+		self._test_file_auth("multifile", genfiledata)
 
 
 def main():
+	import logging
+	from xpra.log import set_default_level
+	if "-v" in sys.argv:
+		set_default_level(logging.DEBUG)
+	else:
+		set_default_level(logging.CRITICAL)
 	try:
 		from xpra.server import auth
 		assert auth
