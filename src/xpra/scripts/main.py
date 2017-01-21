@@ -441,11 +441,12 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",
                       help="Whether the server display should be resized to match the client resolution. Default: %s." % enabled_str(defaults.resize_display))
+    defaults_bind = defaults.bind
     if supports_server or supports_shadow:
         group.add_option("--bind", action="append",
-                          dest="bind", default=list(defaults.bind or []),
+                          dest="bind", default=[],
                           metavar="SOCKET",
-                          help="Listen for connections over unix domain sockets. You may specify this option multiple times to listen on different locations.")
+                          help="Listen for connections over %s. You may specify this option multiple times to listen on different locations. Default: %s" % (["unix domain sockets","named pipes"][WIN32], csv(defaults_bind)))
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
                           metavar="[HOST]:[PORT]",
@@ -893,6 +894,11 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Specifies the file containing the encryption key to use for TCP sockets. (default: '%default')")
 
     options, args = parser.parse_args(cmdline[1:])
+
+    #only use the default bind option if the user hasn't specified one on the command line:
+    if not options.bind:
+        #use the default:
+        options.bind = defaults_bind
 
     #ensure all the option fields are set even though
     #some options are not shown to the user:
