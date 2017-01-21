@@ -7,6 +7,7 @@
 
 ARGS=$@
 DO_CLEAN=${DO_CLEAN:-0}
+DO_CUDA=${DO_CUDA:-1}
 DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
@@ -29,7 +30,9 @@ EXTRA_VERSION=""
 BUILD_TYPE=""
 echo
 echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
-if [ "${MSYSTEM_CARCH}" != "i686" ]; then
+if [ "${MSYSTEM_CARCH}" == "i686" ]; then
+	DO_CUDA="0"
+else
 	BUILD_TYPE="-${MSYSTEM_CARCH}"
 	echo " (64-bit)"
 fi
@@ -51,6 +54,12 @@ mkdir ${DIST} >& /dev/null
 
 if [ "${DO_CLEAN}" == "1" ]; then
 	rm -fr "build"
+fi
+
+if [ "${DO_CUDA}" == "1" ]; then
+	echo "* Building CUDA kernels"
+	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_NV12
+	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_YUV444
 fi
 
 echo "* Building Python 2.7 Cython modules"
