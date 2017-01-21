@@ -166,10 +166,10 @@ def get_icon_filename(basename=None, ext="png"):
     if not basename:
         return None
     filename = basename
+    fext = os.path.splitext(filename)[1]
+    if not fext:
+        filename = "%s.%s" % (filename, ext)
     if not os.path.isabs(filename):
-        fext = os.path.splitext(filename)[1]
-        if not fext:
-            filename = "%s.%s" % (filename, ext)
         icon_dir = get_icon_dir()
         filename = os.path.join(icon_dir, filename)
     if not os.path.exists(filename):
