@@ -58,8 +58,9 @@ fi
 
 if [ "${DO_CUDA}" == "1" ]; then
 	echo "* Building CUDA kernels"
-	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_NV12
-	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_YUV444
+	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_NV12 || exit 1
+	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_YUV444 || exit 1
+	echo
 fi
 
 echo "* Building Python 2.7 Cython modules"

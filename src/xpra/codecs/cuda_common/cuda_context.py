@@ -338,13 +338,17 @@ def get_CUDA_function(device_id, function_name):
         log("get_CUDA_function(%s, %s) cubin file=%s", device_id, function_name, cubin_file)
         data = load_binary_file(cubin_file)
         if not data:
-            log.error("failed to load CUDA bin file %s", cubin_file)
+            log.error("Error: failed to load CUDA bin file '%s'", cubin_file)
             return None
         log(" loaded %s bytes", len(data))
         KERNELS[function_name] = data
     #now load from cubin:
     start = time.time()
-    mod = driver.module_from_buffer(data)
+    try:
+        mod = driver.module_from_buffer(data)
+    except Exception as e:
+        log.error("Error: failed to load module from buffer for '%s'", function_name)
+        return None
     log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
     try:
         CUDA_function = mod.get_function(function_name)

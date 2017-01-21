@@ -195,7 +195,6 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
-nvapi_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvapi")
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
 #Cython / gcc / packaging build options:
@@ -211,7 +210,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc7", "nvapi",
+            "nvenc7",
             "vpx", "pillow",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
@@ -2175,11 +2174,6 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
 toggle_packages(nvenc7_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
-if nvapi_ENABLED:
-    cython_add(Extension("xpra.codecs.nvapi_version",
-                ["xpra/codecs/nvapi_version.pyx"],
-                **pkgconfig("nvapi")
-                ))
 
 if nvenc7_ENABLED:
     #find nvcc:

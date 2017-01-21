@@ -8,7 +8,6 @@ import sys
 import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
-from xpra.os_util import WIN32
 from xpra.util import pver, print_nested_dict, engs, envbool
 
 
@@ -53,21 +52,7 @@ def get_proc_driver_version():
 
 
 def identify_nvidia_module_version():
-    if os.name!="posix":
-        if not WIN32:
-            log.warn("Warning: unable to identify the NVidia driver version on this platform")
-            return None
-        #try the nvapi call:
-        try:
-            from xpra.codecs.nvapi_version import get_driver_version    #@UnresolvedImport
-            v = get_driver_version()
-            log("NVAPI get_driver_version()=%s", v)
-        except Exception as e:
-            log.warn("Warning: failed to get the driver version through NVAPI:")
-            log.warn(" %s", e)
-            v = []
-    else:
-        v = get_nvml_driver_version() or get_proc_driver_version()
+    v = get_nvml_driver_version() or get_proc_driver_version()
     #only keep numeric values:
     numver = []
     try:

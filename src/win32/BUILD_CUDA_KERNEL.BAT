@@ -10,9 +10,14 @@ SET CUDA_SRC=xpra\codecs\cuda_common\%KERNEL%.cu
 SET CUDA_BIN=xpra\codecs\cuda_common\%KERNEL%.fatbin
 
 REM nvcc -fatbin -c %CUDA_SRC% -o %CUDA_BIN% --use-local-env --cl-version %CL_VERSION% -gencode=arch=compute_62,code=sm_62 --machine 64 -v
-ECHO nvcc -fatbin -c %CUDA_SRC% -o %CUDA_BIN% --use-local-env --cl-version %CL_VERSION% -gencode=arch=compute_62,code=sm_62 --machine 64
-nvcc -fatbin -c %CUDA_SRC% -o %CUDA_BIN% --use-local-env --cl-version %CL_VERSION% -gencode=arch=compute_62,code=sm_62 --machine 64
-REM done
+nvcc -fatbin -c %CUDA_SRC% -o %CUDA_BIN% ^
+	--use-local-env --cl-version %CL_VERSION% --machine 64 ^
+	-gencode=arch=compute_50,code=sm_50 ^
+	-gencode=arch=compute_52,code=sm_52 ^
+	-gencode=arch=compute_53,code=sm_53 ^
+	-gencode=arch=compute_60,code=sm_60 ^
+	-gencode=arch=compute_61,code=sm_61 ^
+	-gencode=arch=compute_62,code=sm_62
 
 ENDLOCAL
 SET ERRORLEVEL=0
