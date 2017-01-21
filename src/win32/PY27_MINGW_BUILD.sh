@@ -157,7 +157,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 		exit 1
 	fi
 	rm "xpra.iss"
-	mv "Output\Xpra_Setup.exe" "${INSTALLER_FILENAME}"
+	mv "dist\Xpra_Setup.exe" "${INSTALLER_FILENAME}"
 
 	if [ "${RUN_INSTALLER}" == "1" ]; then
 		echo "* Finished - running the new installer"

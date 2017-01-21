@@ -52,7 +52,7 @@ ECHO Full version           %FULL_VERSION%
 
 ECHO ***************************************************************
 ECHO ****** Clearing build directory
-RMDIR /S /Q build %DIST% Output Temp 2> NUL
+RMDIR /S /Q build %DIST% Temp 2> NUL
 
 if NOT "%VC%"=="" (
 	if "%VSINSTALLDIR%"=="" (

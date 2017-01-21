@@ -6,6 +6,7 @@ AppPublisherURL=http://xpra.org/
 DefaultDirName={pf}\Xpra
 DefaultGroupName=Xpra
 DisableProgramGroupPage=true
+OutputDir=dist
 OutputBaseFilename=Xpra_Setup
 //Compression=none
 //Compression=lzma2/fast

@@ -137,8 +137,7 @@ if "%DO_INSTALLER%"=="1" (
 
 	ECHO ***************************************************************
 	ECHO ****** Finished - running the new installer
-	MOVE /Y Output\Xpra_Setup.exe !INSTALLER_FILENAME!
-	RMDIR Output
+	MOVE /Y dist\Xpra_Setup.exe !INSTALLER_FILENAME!
 	dir !INSTALLER_FILENAME!
 	if "%RUN_INSTALLER%"=="1" (
 		!INSTALLER_FILENAME! %ARGS%
