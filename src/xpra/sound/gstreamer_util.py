@@ -760,7 +760,8 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
                         "device-name"   : device_name,
                         }
     except Exception as e:
-        log.error("Error quering sound devices using %s:", directsound)
+        log("get_directsound_source_defaults%s", (device_name_match, want_monitor_device, remote), exc_info=True)
+        log.error("Error quering sound devices:")
         log.error(" %s", e)
     return {}
 
