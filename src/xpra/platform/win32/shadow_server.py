@@ -8,7 +8,7 @@ import os
 import time
 import ctypes
 
-from ctypes.wintypes import RECT, BOOL, HWND, LPARAM
+from ctypes.wintypes import RECT, BOOL, HWND, LPARAM, HGDIOBJ, LONG, LPVOID
 
 from xpra.log import Logger
 from xpra.util import AdHocStruct, envbool, prettify_plug_name
@@ -48,6 +48,8 @@ CreateCompatibleDC = gdi32.CreateCompatibleDC
 CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
 CreateBitmap = gdi32.CreateBitmap
 GetBitmapBits = gdi32.GetBitmapBits
+GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
+GetBitmapBits.restype  = LONG
 SelectObject = gdi32.SelectObject
 BitBlt = gdi32.BitBlt
 
@@ -269,9 +271,6 @@ class Win32RootWindowModel(RootWindowModel):
             return None
         bitblt_time = time.time()
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
-        from ctypes.wintypes import HGDIOBJ, LONG, LPVOID
-        GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
-        GetBitmapBits.restype  = LONG
         buf_size = width*height*4
         pixels = ctypes.create_string_buffer("", buf_size)
         log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.byref(pixels))
