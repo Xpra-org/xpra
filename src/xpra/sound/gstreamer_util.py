@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -722,23 +722,18 @@ def get_pulse_sink_defaults():
 
 def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
     try:
-        from win32com.directsound import directsound
-    except ImportError as e:
-        log.warn("Warning: failed to import directsound")
-        log.warn(" %s", e)
-        return {}
-    try:
+        from xpra.platform.win32.directsound import get_devices, get_capture_devices
         if not want_monitor_device:
-            devices = directsound.DirectSoundEnumerate()
+            devices = get_devices()
             log("DirectSoundEnumerate found %i device%s", len(devices), engs(devices))
         else:
-            devices = directsound.DirectSoundCaptureEnumerate()
+            devices = get_capture_devices()
             log("DirectSoundCaptureEnumerate found %i device%s", len(devices), engs(devices))
         names = []
         if devices:
-            for guid, name, mod in devices:
-                if mod or guid:
-                    log("* %-32s %s : %s", name, mod, guid)
+            for guid, name in devices:
+                if guid:
+                    log("* %-32s %s : %s", name, guid)
                 else:
                     log("* %s", name)
                 names.append(name)
