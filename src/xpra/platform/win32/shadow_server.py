@@ -47,6 +47,7 @@ gdi32 = ctypes.windll.gdi32
 CreateCompatibleDC = gdi32.CreateCompatibleDC
 CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
 CreateBitmap = gdi32.CreateBitmap
+GetBitmapBits = gdi32.GetBitmapBits
 SelectObject = gdi32.SelectObject
 BitBlt = gdi32.BitBlt
 
@@ -66,6 +67,14 @@ BUTTON_EVENTS = {
                  (5, False) : NOEVENT,
                  }
 
+NULLREGION = 1      #The region is empty.
+SIMPLEREGION = 2    #The region is a single rectangle.
+COMPLEXREGION = 3   #The region is more than a single rectangle.
+REGION_CONSTS = {
+                NULLREGION      : "the region is empty",
+                SIMPLEREGION    : "the region is a single rectangle",
+                COMPLEXREGION   : "the region is more than a single rectangle",
+                }
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 DISABLE_DWM_COMPOSITION = True
 #no composition on XP, don't bother trying:
@@ -223,7 +232,7 @@ class Win32RootWindowModel(RootWindowModel):
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
             self.metrics = metrics
-            self.dc, self.memdc, self.bitmap = None, None, None, None
+            self.dc, self.memdc, self.bitmap = None, None, None
         dx, dy, dw, dh = metrics
         #clamp rectangle requested to the virtual desktop size:
         if x<dx:
@@ -236,29 +245,44 @@ class Win32RootWindowModel(RootWindowModel):
             width = dw
         if height>dh:
             height = dh
+        if not self.dc:
+            self.dc = GetWindowDC(desktop_wnd)
+            assert self.dc, "failed to get a drawing context from the desktop window %s" % desktop_wnd
+            self.memdc = CreateCompatibleDC(self.dc)
+            assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
+            self.bitmap = CreateCompatibleBitmap(self.dc, width, height)
+            assert self.bitmap, "failed to get a compatible bitmap from %s" % self.dc
+        r = SelectObject(self.memdc, self.bitmap)
+        if r==0:
+            log.error("Error: cannot select bitmap object")
+            return None
+        select_time = time.time()
+        log("get_image up to SelectObject (%s) took %ims", REGION_CONSTS.get(r, r), (select_time-start)*1000)
         try:
-            if not self.dc:
-                self.dc = GetWindowDC(desktop_wnd)
-                assert self.dc, "cannot get a drawing context from the desktop window %s" % desktop_wnd
-                self.memdc = self.dc.CreateCompatibleDC()
-                self.bitmap = CreateBitmap()
-                self.bitmap.CreateCompatibleBitmap(self.dc, width, height)
-            self.memdc.SelectObject(self.bitmap)
-            select_time = time.time()
-            log("get_image up to SelectObject took %ims", (select_time-start)*1000)
-            try:
-                self.memdc.BitBlt((0, 0), (width, height), self.dc, (x, y), win32con.SRCCOPY)
-            except Exception as e:
-                log("BitBlt error", exc_info=True)
-                log.error("Error: cannot capture screen")
-                log.error(" %s", e)
+            if BitBlt(self.memdc, 0, 0, width, height, self.dc, x, y, win32con.SRCCOPY)==0:
+                log.error("Error: failed to blit screen capture")
                 return None
-            bitblt_time = time.time()
-            log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
-            pixels = self.bitmap.GetBitmapBits(True)
-            log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
-        finally:
-            pass
+        except Exception as e:
+            log("BitBlt error", exc_info=True)
+            log.error("Error: cannot capture screen")
+            log.error(" %s", e)
+            return None
+        bitblt_time = time.time()
+        log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
+        from ctypes.wintypes import HGDIOBJ, LONG, LPVOID
+        GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
+        GetBitmapBits.restype  = LONG
+        buf_size = width*height*4
+        pixels = ctypes.create_string_buffer("", buf_size)
+        log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.byref(pixels))
+        r = GetBitmapBits(self.bitmap, buf_size, ctypes.byref(pixels))
+        if r==0:
+            log.error("Error: failed to copy screen bitmap data")
+            return None
+        if r!=buf_size:
+            log.warn("Warning: truncating pixel buffer, got %i bytes but expected %i", r, buf_size)
+            pixels = pixels[:r]
+        log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
         assert pixels, "no pixels returned from GetBitmapBits"
         v = ImageWrapper(x, y, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
         if logger==None:
