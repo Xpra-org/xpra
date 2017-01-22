@@ -7,7 +7,8 @@
 # later version. See the file COPYING for details.
 
 import time
-import gtk.gdk
+import gtk
+from gtk import gdk
 #most important with win32 servers:
 import glib
 glib.threads_init()
@@ -45,7 +46,7 @@ class GTKServerBase(ServerBase):
 
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
-        gtk.gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
+        gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
 
     def signal_quit(self, signum, frame):
         gtk_main_quit_on_fatal_exceptions_disable()
@@ -71,11 +72,12 @@ class GTKServerBase(ServerBase):
     def make_hello(self, source):
         capabilities = ServerBase.make_hello(self, source)
         if source.wants_display:
-            display = gtk.gdk.display_get_default()
+            display = gdk.display_get_default()
             capabilities.update({
                 "display"               : display.get_name(),
                 "cursor.default_size"   : display.get_default_cursor_size(),
-                "cursor.max_size"       : display.get_maximal_cursor_size()})
+                "cursor.max_size"       : display.get_maximal_cursor_size(),
+                })
         if source.wants_versions:
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
@@ -83,7 +85,7 @@ class GTKServerBase(ServerBase):
     def get_ui_info(self, proto, *args):
         info = ServerBase.get_ui_info(self, proto, *args)
         info.setdefault("server", {}).update({
-                                              "display"             : gtk.gdk.display_get_default().get_name(),
+                                              "display"             : gdk.display_get_default().get_name(),
                                               "root_window_size"    : self.get_root_window_size(),
                                               })
         info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
@@ -91,7 +93,7 @@ class GTKServerBase(ServerBase):
 
     def send_initial_cursors(self, ss, sharing=False):
         #cursors: get sizes and send:
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
@@ -99,7 +101,7 @@ class GTKServerBase(ServerBase):
     def get_ui_cursor_info(self):
         #(from UI thread)
         #now cursor size info:
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         pos = display.get_default_screen().get_root_window().get_pointer()[:2]
         cinfo = {"position" : pos}
         for prop, size in {"default" : display.get_default_cursor_size(),
@@ -120,19 +122,19 @@ class GTKServerBase(ServerBase):
         return info
 
     def get_root_window_size(self):
-        return gtk.gdk.get_default_root_window().get_size()
+        return gdk.get_default_root_window().get_size()
 
     def get_max_screen_size(self):
-        max_w, max_h = gtk.gdk.get_default_root_window().get_size()
+        max_w, max_h = gdk.get_default_root_window().get_size()
         return max_w, max_h
 
     def set_best_screen_size(self):
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = gdk.get_default_root_window().get_size()
         return root_w, root_h
 
     def calculate_workarea(self, maxw, maxh):
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
-        workarea = gtk.gdk.Rectangle(0, 0, maxw, maxh)
+        workarea = gdk.Rectangle(0, 0, maxw, maxh)
         for ss in self._server_sources.values():
             screen_sizes = ss.screen_sizes
             screenlog("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
@@ -145,7 +147,7 @@ class GTKServerBase(ServerBase):
                 #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
                 if len(display)>=10:
                     work_x, work_y, work_w, work_h = display[6:10]
-                    display_workarea = gtk.gdk.Rectangle(work_x, work_y, work_w, work_h)
+                    display_workarea = gdk.Rectangle(work_x, work_y, work_w, work_h)
                     screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
                     workarea = workarea.intersect(display_workarea)
         #sanity checks:
@@ -153,7 +155,7 @@ class GTKServerBase(ServerBase):
         if workarea.width==0 or workarea.height==0:
             screenlog.warn("Warning: failed to calculate a common workarea")
             screenlog.warn(" using the full display area: %ix%i", maxw, maxh)
-            workarea = gtk.gdk.Rectangle(0, 0, maxw, maxh)
+            workarea = gdk.Rectangle(0, 0, maxw, maxh)
         self.set_workarea(workarea)
 
     def set_workarea(self, workarea):
@@ -168,7 +170,7 @@ class GTKServerBase(ServerBase):
 
     def _move_pointer(self, wid, pos):
         x, y = pos
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
     def do_process_button_action(self, *args):

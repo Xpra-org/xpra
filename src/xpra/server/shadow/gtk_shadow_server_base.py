@@ -1,11 +1,10 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import gtk.gdk
 
 from xpra.log import Logger
 traylog = Logger("tray")
@@ -17,7 +16,8 @@ from xpra.server.shadow.shadow_server_base import ShadowServerBase
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def __init__(self):
-        ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
+        from xpra.gtk_common.gtk_util import get_default_root_window
+        ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         #for managing the systray
         self.tray_menu = None
