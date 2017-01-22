@@ -8,8 +8,6 @@ import os.path
 import sys
 import ctypes
 
-from xpra.platform.win32 import constants as win32con
-
 SHGetFolderPath = ctypes.windll.shell32.SHGetFolderPathW
 
 CSIDL_APPDATA = 26
@@ -77,10 +75,15 @@ def do_get_download_dir():
     #from win32com.shell import shell, shellcon
     #shell.SHGetFolderPath(0, shellcon.CSIDL_MYDOCUMENTS, None, 0)
     try:
+        try:
+            import _winreg as winreg
+        except ImportError:
+            import winreg   #@UnresolvedImport @Reimport
         #use the internet explorer registry key:
         #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
-        from xpra.platform.win32.registry import get_registry_value
-        DOWNLOAD_PATH = get_registry_value(win32con.HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer", "Download Directory")
+        key_path = 'Software\\Microsoft\\Internet Explorer'
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+        DOWNLOAD_PATH = winreg.QueryValueEx(key, 'Download Directory')[0]
     except:
         #fallback to what the documentation says is the default:
         DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")

@@ -58,10 +58,11 @@ if frozen:
 
 def is_wine():
     try:
-        from xpra.platform.win32.registry import RegOpenKeyEx, RegCloseKey
-        hKey = RegOpenKeyEx(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
-        if hKey:
-            RegCloseKey(hKey)
+        try:
+            import _winreg as winreg
+        except ImportError:
+            import winreg   #@UnresolvedImport @Reimport
+        hKey = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
         return hKey is not None
     except:
         #no wine key, assume not present and wait for input
