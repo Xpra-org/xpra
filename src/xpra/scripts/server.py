@@ -1347,6 +1347,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 return 1
             import gtk          #@Reimport
             assert gtk
+        #on win32, this ensures that we get the correct screen size to shadow:
+        from xpra.platform.gui import init as gui_init
+        gui_init()
 
     #setup unix domain socket:
     if not opts.socket_dir and not opts.socket_dirs:
