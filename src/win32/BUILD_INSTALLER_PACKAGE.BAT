@@ -43,7 +43,7 @@ IF EXIST "E:\Xpra-Build-Libs-v1.0.x\" (
 
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET SVNVERSION_EXE=svnversion
-SET EXTRA_VERSION=
+SET EXTRA_VERSION=-Legacy
 
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version_info.major)"') DO set PYTHON_MAJOR_VERSION=%%i
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "import sys;print(sys.version_info.minor)"') DO set PYTHON_MINOR_VERSION=%%i
