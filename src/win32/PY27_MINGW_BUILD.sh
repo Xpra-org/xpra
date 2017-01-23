@@ -15,7 +15,7 @@ DO_MSI=${DO_MSI:-0}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 DIST="./dist"
-BUILD_OPTIONS="--without-enc_x265"
+BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 
 
 ################################################################################

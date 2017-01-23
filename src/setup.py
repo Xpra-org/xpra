@@ -197,6 +197,7 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
+cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
 #Cython / gcc / packaging build options:
@@ -212,7 +213,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc7",
+            "nvenc7", "cuda_rebuild",
             "vpx", "pillow",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
@@ -2245,6 +2246,8 @@ if nvenc7_ENABLED:
     for kernel in kernels:
         cuda_src = "xpra/codecs/cuda_common/%s.cu" % kernel
         cuda_bin = "xpra/codecs/cuda_common/%s.fatbin" % kernel
+        if os.path.exists(cuda_bin) and (cuda_rebuild_ENABLED is False):
+            continue
         reason = should_rebuild(cuda_src, cuda_bin)
         if not reason:
             continue
@@ -2272,13 +2275,9 @@ if nvenc7_ENABLED:
             cmd += ["-I%s" % os.path.abspath("win32")]
         comp_code_options = [(30, 30), (35, 35)]
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
-        if version!="0" and version<"5":
+        if version!="0" and version<"7.5":
             print("CUDA version %s is very unlikely to work")
-            print("try upgrading to version 6.5 or later")
-        if version>="6":
-            comp_code_options.append((50, 50))
-        if version>="7":
-            comp_code_options.append((52, 52))
+            print("try upgrading to version 7.5 or later")
         if version>="7.5":
             comp_code_options.append((53, 53))
         if version>="8.0":
