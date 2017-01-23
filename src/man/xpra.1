@@ -300,18 +300,25 @@ The password is only actually used on Microsoft Windows.
 .TP \w'xpra\ 'u
 \fBxpra start\fP \fI:7\fP
 Start an xpra server using display number \fI:7\fP.
+Note: using \fBDISPLAY=\fP\fI:7 xterm\fP to start applications against
+a specific display is not recommended. Always prefer using xpra's
+\fB\-\-start=\fP command line option instead.
+See this next example:
+.TP
+\fBxpra start\fP \-\-start=firefox\fP
+Start an xpra server, choosing a display automatically and start
+firefox on that virtual display.
+No window will appear until you attach with \fBxpra attach\fP.
+The start child commands will inherit an environment tailored
+for running under xpra.
 .TP
 \fBxpra start\fP \fIssh:bigbox:7 \-\-start=xterm\fP
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
+.TP
 \fBxpra start-desktop \-\-start=xfce4-session\fP
 Start an xfce session in a nested X11 server on an automatically
 assigned display number.
-.TP
-\fBDISPLAY=\fP\fI:7 firefox\fP
-Start \fIfirefox\fP running inside the xpra server.  Run this on the host
-where xpra was started or in terminal forwarded by xpra.  No window will
-appear until you attach with \fBxpra attach\fP.
 .TP
 \fBxpra list\fP
 Show a list of xpra servers you have running on the current host.
@@ -363,10 +370,11 @@ You may omit the display number when using \fBxpra start\fP:
 a display will be chosen for you automatically.
 The display number chosen will be shown in the log output, you should
 also be able to see it with \fBxpra list\fP.
+On Microsoft Windows and Mac OSX, the display number should be omitted.
 
-Otherwise, when starting an xpra server, you must specify the name of
-the display to use.  To do this, simply pick any number you like and
-stick a colon in front of it.
+Otherwise, when starting an xpra server, you may want to specify
+the name of the display to use.  To do this, simply pick any number
+you like and stick a colon in front of it.
 For instance :7, :12, and :3117 are all valid display names.
 Just keep in mind that:
 .IP \(bu
