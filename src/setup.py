@@ -1553,6 +1553,7 @@ if WIN32:
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
             add_console_exe("scripts/xpra",                     "speaker.ico",      "Xpra_Audio")
+            add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
