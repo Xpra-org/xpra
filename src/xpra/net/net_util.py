@@ -88,7 +88,9 @@ def do_get_bind_IPs():
 				if ipmask not in if_ipmasks:
 					if_ipmasks.append(ipmask)
 		except Exception as e:
-			log.error("error on %s: %s", iface, e)
+			log("do_get_bind_IPs()", exc_info=True)
+			log.error("Error parsing network interface '%s':", iface)
+			log.error(" %s", iface, e)
 		iface_ipmasks[iface] = if_ipmasks
 	log("do_get_bind_IPs()=%s", ips)
 	return ips

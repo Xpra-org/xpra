@@ -66,7 +66,7 @@ MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 
 def get_digests():
     import hashlib
-    return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms)))]
+    return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
 
 def get_network_caps():
     try:
@@ -602,7 +602,7 @@ class Protocol(object):
                     start_cb(con.output_bytecount)
                 except:
                     if not self._closed:
-                        log.error("error on %s", start_cb, exc_info=True)
+                        log.error("Error on write start callback %s", start_cb, exc_info=True)
             while buf and not self._closed:
                 written = con.write(buf)
                 if written:
@@ -613,7 +613,7 @@ class Protocol(object):
                     end_cb(self._conn.output_bytecount)
                 except:
                     if not self._closed:
-                        log.error("error on %s", end_cb, exc_info=True)
+                        log.error("Error on write end callback %s", end_cb, exc_info=True)
         return True
 
     def _read_thread_loop(self):

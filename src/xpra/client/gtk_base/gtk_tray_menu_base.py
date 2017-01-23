@@ -17,8 +17,13 @@ from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODING
 from xpra.platform.gui import get_icon_size
 try:
     from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
-except:
+except ImportError:
     TranslatedClipboardProtocolHelper = None
+try:
+    from xpra import clipboard
+    HAS_CLIPBOARD = bool(clipboard)
+except ImportError:
+    HAS_CLIPBOARD = False
 
 from xpra.log import Logger
 log = Logger("menu")
@@ -32,6 +37,7 @@ SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
+SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
 
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {
@@ -271,7 +277,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_keyboardsyncmenuitem())
         if self.client.keyboard_helper:
             menu.append(self.make_layoutsmenuitem())
-        menu.append(self.make_clipboardmenuitem())
+        if SHOW_CLIPBOARD_MENU:
+            menu.append(self.make_clipboardmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
         if self.client.can_scale:

@@ -248,7 +248,9 @@ class typedict(dict):
         try:
             return int(v)
         except Exception as e:
-            typedict.log.warn("error on %s: %s", k, e)
+            typedict.log("intget(%s, %s)", k, d, exc_info=True)
+            typedict.log.warn("Warning: failed to parse %s value '%s':", k, v)
+            typedict.log.warn(" %s", e)
             return d
 
     def boolget(self, k, default_value=False):
@@ -259,7 +261,8 @@ class typedict(dict):
         if v is None:
             return None
         if type(v)!=dict:
-            typedict.log.warn("expected a dict value for %s but got %s", k, type(v))
+            typedict.log("dictget(%s, %s)", k, default_value, exc_info=True)
+            typedict.log.warn("Warning: expected a dict value for %s but got %s", k, type(v))
             return default_value
         return v
 

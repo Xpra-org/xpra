@@ -445,7 +445,9 @@ class ServerCore(object):
                 try:
                     x()
                 except Exception as e:
-                    log.error("error on %s: %s", x, e)
+                    log("start_ready_callbacks()", exc_info=True)
+                    log.error("Error on server start ready callback '%s':", x)
+                    log.error(" %s", e)
         self.idle_add(start_ready_callbacks)
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)
