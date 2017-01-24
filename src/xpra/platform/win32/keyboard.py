@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-from ctypes.wintypes import HANDLE, INT
+from ctypes.wintypes import HANDLE, INT, SHORT
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -17,6 +17,7 @@ log = Logger("keyboard")
 
 user32 = ctypes.windll.user32
 GetKeyState = user32.GetKeyState
+GetKeyState.restype = SHORT
 GetKeyboardLayout = user32.GetKeyboardLayout
 
 
@@ -80,8 +81,9 @@ class Keyboard(KeyboardBase):
         """ Patch NUMLOCK and AltGr """
         names = KeyboardBase.mask_to_names(self, mask)
         if EMULATE_ALTGR:
-            altgr = GetKeyState(win32con.VK_RMENU) not in (0, 1)
-            if altgr:
+            rmenu = GetKeyState(win32con.VK_RMENU)
+            #log("GetKeyState(VK_RMENU)=%s", rmenu)
+            if rmenu not in (0, 1):
                 self.AltGr_modifiers(names)
         if self.num_lock_modifier:
             try:
