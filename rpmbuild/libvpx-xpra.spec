@@ -1,5 +1,5 @@
 Name:	     libvpx-xpra
-Version:     1.6.0
+Version:     1.6.1
 Release:     1%{?dist}
 Summary:     vpx library for xpra
 
@@ -73,6 +73,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jan 24 2016 Antoine Martin <antoine@devloop.org.uk> 1.6.1-1
+- new upstream release
+
 * Sun Jul 24 2016 Antoine Martin <antoine@devloop.org.uk> 1.6.0-1
 - new upstream release
 
