@@ -19,6 +19,7 @@ user32 = ctypes.windll.user32
 GetKeyState = user32.GetKeyState
 GetKeyboardLayout = user32.GetKeyboardLayout
 
+
 def GetKeyboardLayoutList():
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
@@ -78,9 +79,10 @@ class Keyboard(KeyboardBase):
     def mask_to_names(self, mask):
         """ Patch NUMLOCK and AltGr """
         names = KeyboardBase.mask_to_names(self, mask)
-        altgr = GetKeyState(win32con.VK_RMENU) not in (0, 1)
-        if altgr:
-            self.AltGr_modifiers(names)
+        if EMULATE_ALTGR:
+            altgr = GetKeyState(win32con.VK_RMENU) not in (0, 1)
+            if altgr:
+                self.AltGr_modifiers(names)
         if self.num_lock_modifier:
             try:
                 numlock = GetKeyState(win32con.VK_NUMLOCK)
